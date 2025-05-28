@@ -668,7 +668,7 @@ export default function MeditationAdjuster() {
               </p>
               <div className="mt-4 p-4 rounded-lg border border-pink-300 max-w-2xl mx-auto">
                 <p className="text-sm text-pink-600 leading-relaxed">
-                  <strong>Tips:  </strong> This tool was originally designed for{" "}
+                  <strong>Intro:  </strong> This tool was originally designed for{" "}
                   <a
                     href="https://dharmaseed.org/teacher/210/"
                     target="_blank"
@@ -677,7 +677,7 @@ export default function MeditationAdjuster() {
                   >
                     Rob Burbea's guided meditations
                   </a>
-                  , though you may need to adjust the advanced settings for optimal results. Default settings currently
+                  , though you may need to adjust the advanced settings for optimal results. Most guided meditations should be compatible. Enjoy :) [Default settings currently
                   work best with{" "}
                   <a
                     href="https://tasshin.com/guided-meditations/"
@@ -685,7 +685,7 @@ export default function MeditationAdjuster() {
                     rel="noopener noreferrer"
                     className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors"
                   >
-                    Tasshin's collection
+                    Tasshin's collection]
                   </a>
                   .
                 </p>
