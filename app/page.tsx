@@ -147,7 +147,7 @@ export default function MeditationAdjuster() {
     const audioContentDuration = buffer.duration - totalSilenceDuration
 
     // Calculate min and max possible durations
-    const minPossibleDuration = Math.ceil(audioContentDuration / 60) // Round up to nearest minute
+    const minPossibleDuration = Math.max(1, Math.ceil(audioContentDuration / 60)) // Allow extending from 1 minute minimum
 
     // Allow extending to up to 2 hours (120 minutes) regardless of original duration
     const maxPossibleDuration = 120 // 2 hours
@@ -212,23 +212,32 @@ export default function MeditationAdjuster() {
   const loadAudioFile = async (file: File) => {
     if (!audioContext) return
 
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = await audioContext.decodeAudioData(arrayBuffer)
-    setOriginalBuffer(buffer)
+    try {
+      setStatus({ message: "Reading audio file...", type: "info" })
+      const arrayBuffer = await file.arrayBuffer()
 
-    // Analyze audio and set duration limits
-    const { minPossibleDuration, maxPossibleDuration } = analyzeAudioForLimits(buffer)
+      setStatus({ message: "Decoding audio data...", type: "info" })
+      const buffer = await audioContext.decodeAudioData(arrayBuffer)
 
-    // Create URL for audio player
-    if (originalUrl) URL.revokeObjectURL(originalUrl)
-    const blob = new Blob([file], { type: file.type })
-    const url = URL.createObjectURL(blob)
-    setOriginalUrl(url)
+      setStatus({ message: "Analyzing audio structure...", type: "info" })
+      setOriginalBuffer(buffer)
 
-    setStatus({
-      message: `Audio loaded! You can adjust duration between ${minPossibleDuration}-${maxPossibleDuration} minutes (extend up to 2 hours).`,
-      type: "success",
-    })
+      // Analyze audio and set duration limits
+      const { minPossibleDuration, maxPossibleDuration } = analyzeAudioForLimits(buffer)
+
+      // Create URL for audio player
+      if (originalUrl) URL.revokeObjectURL(originalUrl)
+      const blob = new Blob([file], { type: file.type })
+      const url = URL.createObjectURL(blob)
+      setOriginalUrl(url)
+
+      setStatus({
+        message: `Audio loaded! You can adjust duration from ${minPossibleDuration} minutes up to 2 hours (extending pauses as needed).`,
+        type: "success",
+      })
+    } catch (error) {
+      throw error
+    }
   }
 
   // Re-analyze when silence detection settings change
@@ -278,6 +287,20 @@ export default function MeditationAdjuster() {
 
       // Calculate scaling factor based on available silence
       const scaleFactor = availableSilenceDuration / totalSilenceDuration
+
+      // Add this check before calling rebuildAudioWithScaledPauses
+      if (!originalBuffer || !audioContext) {
+        throw new Error("Audio buffer or context not available")
+      }
+
+      // Validate that the buffer has valid properties
+      if (typeof originalBuffer.duration !== "number" || originalBuffer.duration <= 0) {
+        throw new Error("Invalid audio buffer duration")
+      }
+
+      if (originalBuffer.numberOfChannels <= 0 || originalBuffer.sampleRate <= 0) {
+        throw new Error("Invalid audio buffer properties")
+      }
 
       setStatus({ message: "Rebuilding audio with adjusted pauses...", type: "info" })
 
@@ -394,6 +417,15 @@ export default function MeditationAdjuster() {
     preserveNaturalPacing: boolean,
     targetDuration: number,
   ) => {
+    // Safety checks
+    if (!originalBuffer) {
+      throw new Error("Original audio buffer is not available")
+    }
+
+    if (!audioContext) {
+      throw new Error("Audio context is not available")
+    }
+
     const sampleRate = originalBuffer.sampleRate
     const numberOfChannels = originalBuffer.numberOfChannels
 
@@ -423,24 +455,17 @@ export default function MeditationAdjuster() {
 
     // If preserving natural pacing, adjust the scaling to maintain relative pause lengths
     if (preserveNaturalPacing && processedRegions.length > 1) {
-      // Find the shortest and longest pauses
       const shortestOriginal = Math.min(...processedRegions.map((r) => r.originalDuration))
       const longestOriginal = Math.max(...processedRegions.map((r) => r.originalDuration))
 
-      // Only apply if there's significant variation in pause lengths
       if (longestOriginal > shortestOriginal * 1.5) {
-        // Calculate total new silence duration
         const totalNewSilence = processedRegions.reduce((sum, region) => sum + region.newDuration, 0)
-
-        // Calculate target total silence duration
         const targetTotalSilence = targetDuration - audioContentDuration
 
-        // Adjust each region proportionally while maintaining minimum spacing
         if (totalNewSilence > 0 && targetTotalSilence > 0) {
           const adjustmentFactor = targetTotalSilence / totalNewSilence
 
           processedRegions.forEach((region) => {
-            // Adjust duration proportionally but never below minimum spacing
             region.newDuration = Math.max(minSpacing, region.newDuration * adjustmentFactor)
           })
         }
@@ -451,11 +476,9 @@ export default function MeditationAdjuster() {
     const targetTotalSilence = targetDuration - audioContentDuration
     let currentTotalSilence = processedRegions.reduce((sum, region) => sum + region.newDuration, 0)
 
-    // If we're more than 2% off target, try to adjust
     if (Math.abs(currentTotalSilence - targetTotalSilence) / targetTotalSilence > 0.02) {
       const adjustmentFactor = targetTotalSilence / currentTotalSilence
 
-      // Only adjust if it won't make any pause shorter than minimum spacing
       const wouldViolateMinSpacing = processedRegions.some(
         (region) => region.newDuration * adjustmentFactor < minSpacing,
       )
@@ -471,83 +494,133 @@ export default function MeditationAdjuster() {
     // Calculate new total duration
     const newDuration = audioContentDuration + currentTotalSilence
 
-    // Create new buffer
-    const newBuffer = audioContext!.createBuffer(numberOfChannels, Math.floor(newDuration * sampleRate), sampleRate)
+    // Declare newBuffer at function scope
+    let newBuffer: AudioBuffer
 
-    // Process each channel
-    for (let channel = 0; channel < numberOfChannels; channel++) {
-      const originalData = originalBuffer.getChannelData(channel)
-      const newData = newBuffer.getChannelData(channel)
-      const fadeLength = Math.floor(0.005 * sampleRate) // 5ms fade
+    try {
+      // Create new buffer
+      newBuffer = audioContext!.createBuffer(numberOfChannels, Math.floor(newDuration * sampleRate), sampleRate)
 
-      let writeIndex = 0
-      let readIndex = 0
-
-      // If no silence regions, copy everything
-      if (silenceRegions.length === 0) {
-        newData.set(originalData)
-        continue
+      // Validate the new buffer was created successfully
+      if (!newBuffer || typeof newBuffer.duration !== "number") {
+        throw new Error("Failed to create new audio buffer")
       }
 
-      // Copy audio before first silence region
-      if (silenceRegions[0].start > 0) {
-        const samplesToCopy = Math.floor(silenceRegions[0].start * sampleRate)
-        for (let i = 0; i < samplesToCopy; i++) {
-          newData[writeIndex++] = originalData[readIndex++]
+      // Process each channel with chunked processing for better performance
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        const originalData = originalBuffer.getChannelData(channel)
+        const newData = newBuffer.getChannelData(channel)
+        const fadeLength = Math.floor(0.005 * sampleRate) // 5ms fade
+
+        let writeIndex = 0
+        let readIndex = 0
+
+        // If no silence regions, copy everything
+        if (silenceRegions.length === 0) {
+          // Chunked copy for large files
+          const chunkSize = 44100 // 1 second chunks
+          for (let i = 0; i < originalData.length; i += chunkSize) {
+            const end = Math.min(i + chunkSize, originalData.length)
+            const chunk = originalData.subarray(i, end)
+            newData.set(chunk, i)
+
+            // Yield control periodically for mobile browsers
+            if (i % (chunkSize * 10) === 0) {
+              await new Promise((resolve) => setTimeout(resolve, 1))
+            }
+          }
+          continue
         }
 
-        // Apply fade-out at the end of this segment
-        for (let i = Math.max(0, writeIndex - fadeLength); i < writeIndex; i++) {
-          const fadePosition = (writeIndex - i) / fadeLength
-          newData[i] *= fadePosition
-        }
-      }
+        // Copy audio before first silence region
+        if (silenceRegions[0].start > 0) {
+          const samplesToCopy = Math.floor(silenceRegions[0].start * sampleRate)
+          for (let i = 0; i < samplesToCopy; i++) {
+            newData[writeIndex++] = originalData[readIndex++]
+          }
 
-      // Process each silence region
-      for (let i = 0; i < silenceRegions.length; i++) {
-        const region = silenceRegions[i]
-        const processedRegion = processedRegions[i]
-        const regionStartSample = Math.floor(region.start * sampleRate)
-        const regionEndSample = Math.floor(region.end * sampleRate)
-
-        // Skip to the end of the silence region in original
-        readIndex = regionEndSample
-
-        // Calculate new silence length in samples
-        const newSilenceLength = Math.floor(processedRegion.newDuration * sampleRate)
-
-        // Write scaled silence (zeros)
-        for (let j = 0; j < newSilenceLength; j++) {
-          newData[writeIndex++] = 0
-        }
-
-        // Copy audio until next silence region (or end)
-        const nextRegionStart =
-          i < silenceRegions.length - 1 ? Math.floor(silenceRegions[i + 1].start * sampleRate) : originalData.length
-
-        const segmentStart = writeIndex
-        for (let j = readIndex; j < nextRegionStart; j++) {
-          if (writeIndex < newData.length) {
-            newData[writeIndex++] = originalData[j]
+          // Apply fade-out at the end of this segment
+          for (let i = Math.max(0, writeIndex - fadeLength); i < writeIndex; i++) {
+            const fadePosition = (writeIndex - i) / fadeLength
+            newData[i] *= fadePosition
           }
         }
 
-        // Apply fade-in at the beginning of this segment
-        for (let j = 0; j < Math.min(fadeLength, writeIndex - segmentStart); j++) {
-          const fadePosition = j / fadeLength
-          newData[segmentStart + j] *= fadePosition
-        }
+        // Process each silence region
+        for (let i = 0; i < silenceRegions.length; i++) {
+          const region = silenceRegions[i]
+          const processedRegion = processedRegions[i]
+          const regionStartSample = Math.floor(region.start * sampleRate)
+          const regionEndSample = Math.floor(region.end * sampleRate)
 
-        // Apply fade-out at the end of this segment (if not the last segment)
-        if (i < silenceRegions.length - 1) {
-          for (let j = Math.max(0, writeIndex - fadeLength); j < writeIndex; j++) {
-            const fadePosition = (writeIndex - j) / fadeLength
-            newData[j] *= fadePosition
+          // Skip to the end of the silence region in original
+          readIndex = regionEndSample
+
+          // Calculate new silence length in samples
+          const newSilenceLength = Math.floor(processedRegion.newDuration * sampleRate)
+
+          // Write scaled silence (zeros) in chunks
+          const silenceChunkSize = 44100
+          for (let j = 0; j < newSilenceLength; j += silenceChunkSize) {
+            const chunkEnd = Math.min(j + silenceChunkSize, newSilenceLength)
+            for (let k = j; k < chunkEnd; k++) {
+              newData[writeIndex++] = 0
+            }
+
+            // Yield control for large silence regions
+            if (j % (silenceChunkSize * 5) === 0) {
+              await new Promise((resolve) => setTimeout(resolve, 1))
+            }
+          }
+
+          // Copy audio until next silence region (or end)
+          const nextRegionStart =
+            i < silenceRegions.length - 1 ? Math.floor(silenceRegions[i + 1].start * sampleRate) : originalData.length
+
+          const segmentStart = writeIndex
+          const segmentLength = nextRegionStart - readIndex
+
+          // Chunked copy for large segments
+          const copyChunkSize = 44100
+          for (let j = 0; j < segmentLength; j += copyChunkSize) {
+            const chunkEnd = Math.min(j + copyChunkSize, segmentLength)
+            for (let k = j; k < chunkEnd; k++) {
+              if (writeIndex < newData.length && readIndex + k < originalData.length) {
+                newData[writeIndex++] = originalData[readIndex + k]
+              }
+            }
+
+            // Yield control periodically
+            if (j % (copyChunkSize * 5) === 0) {
+              await new Promise((resolve) => setTimeout(resolve, 1))
+            }
+          }
+
+          readIndex = nextRegionStart
+
+          // Apply fade-in at the beginning of this segment
+          for (let j = 0; j < Math.min(fadeLength, writeIndex - segmentStart); j++) {
+            const fadePosition = j / fadeLength
+            newData[segmentStart + j] *= fadePosition
+          }
+
+          // Apply fade-out at the end of this segment (if not the last segment)
+          if (i < silenceRegions.length - 1) {
+            for (let j = Math.max(0, writeIndex - fadeLength); j < writeIndex; j++) {
+              const fadePosition = (writeIndex - j) / fadeLength
+              newData[j] *= fadePosition
+            }
           }
         }
-
-        readIndex = nextRegionStart
       }
+    } catch (error) {
+      console.error("Error creating or processing audio buffer:", error)
+      throw new Error("Failed to process audio buffer")
+    }
+
+    // Validate the final buffer
+    if (!newBuffer || typeof newBuffer.duration !== "number" || newBuffer.duration <= 0) {
+      throw new Error("Generated audio buffer is invalid")
     }
 
     return newBuffer
