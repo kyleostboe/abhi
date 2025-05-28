@@ -80,8 +80,10 @@ export default function MeditationAdjuster() {
     setAudioContext(new AudioContext())
 
     return () => {
-      if (originalUrl) URL.revokeObjectURL(originalUrl)
-      if (processedUrl) URL.revokeObjectURL(processedUrl)
+      cleanupMemory()
+      if (audioContext) {
+        audioContext.close()
+      }
     }
   }, [])
 
@@ -179,6 +181,9 @@ export default function MeditationAdjuster() {
       return
     }
 
+    // Clean up previous session
+    cleanupMemory()
+
     setFile(file)
     // Reset states
     setDurationLimits(null)
@@ -189,6 +194,12 @@ export default function MeditationAdjuster() {
 
     try {
       setStatus({ message: "Loading and analyzing audio file...", type: "info" })
+
+      // Resume audio context if suspended
+      if (audioContext && audioContext.state === "suspended") {
+        await audioContext.resume()
+      }
+
       await loadAudioFile(file)
     } catch (error) {
       setStatus({
@@ -233,6 +244,11 @@ export default function MeditationAdjuster() {
 
     try {
       setStatus({ message: "Processing audio with your selected duration...", type: "info" })
+
+      // Resume audio context if suspended
+      if (audioContext.state === "suspended") {
+        await audioContext.resume()
+      }
 
       const targetDurationSeconds = targetDuration * 60 // Convert to minutes
 
@@ -279,11 +295,19 @@ export default function MeditationAdjuster() {
 
       const cleanedBuffer = processed
 
+      // Clean up previous processed buffer and URL
+      if (processedBuffer) {
+        setProcessedBuffer(null)
+      }
+      if (processedUrl) {
+        URL.revokeObjectURL(processedUrl)
+        setProcessedUrl("")
+      }
+
       setProcessedBuffer(cleanedBuffer)
       setActualDuration(cleanedBuffer.duration)
 
       // Create URL for processed audio
-      if (processedUrl) URL.revokeObjectURL(processedUrl)
       const wavBlob = bufferToWav(cleanedBuffer, compatibilityMode === "high")
       const url = URL.createObjectURL(wavBlob)
       setProcessedUrl(url)
@@ -304,6 +328,13 @@ export default function MeditationAdjuster() {
 
       // Set processing complete
       setIsProcessingComplete(true)
+
+      // Suspend audio context to save memory
+      setTimeout(() => {
+        if (audioContext && audioContext.state !== "closed") {
+          audioContext.suspend()
+        }
+      }, 1000)
     } catch (error) {
       setStatus({
         message: `Error processing audio: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -640,6 +671,42 @@ export default function MeditationAdjuster() {
     return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
   }
 
+  const cleanupMemory = () => {
+    // Clean up audio buffers
+    setOriginalBuffer(null)
+    setProcessedBuffer(null)
+
+    // Revoke URLs
+    if (originalUrl) {
+      URL.revokeObjectURL(originalUrl)
+      setOriginalUrl("")
+    }
+    if (processedUrl) {
+      URL.revokeObjectURL(processedUrl)
+      setProcessedUrl("")
+    }
+
+    // Suspend audio context to free resources
+    if (audioContext && audioContext.state !== "closed") {
+      audioContext.suspend()
+    }
+
+    // Force garbage collection hint
+    if (window.gc) {
+      window.gc()
+    }
+  }
+
+  // Add this new useEffect after the existing ones
+  useEffect(() => {
+    // Cleanup when switching between files or major setting changes
+    return () => {
+      if (processedUrl) {
+        URL.revokeObjectURL(processedUrl)
+      }
+    }
+  }, [file])
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#e9f5f3,#f0f8ff_30%,#f8f0ff_70%)] p-4 md:p-8">
       <motion.div
@@ -663,12 +730,12 @@ export default function MeditationAdjuster() {
               <div className="h-1 w-16 bg-gradient-to-r from-teal-500 to-emerald-400 mx-auto rounded-full mb-4"></div>
               <p className="text-lg text-gray-600 mb-4 font-light">Meditation Length Adjuster</p>
               <p className="text-gray-500 max-w-2xl mx-auto text-sm leading-relaxed">
-                Upload your audio and change the length of pauses to match your desired meditation duration!
-                The app intelligently detects silence periods, scales them proportionally, and preserves spoken content.
+                Upload your audio and change the length of pauses to match your desired meditation duration! The app
+                intelligently detects silence periods, scales them proportionally, and preserves spoken content.
               </p>
               <div className="mt-4 p-4 rounded-lg border border-pink-300 max-w-2xl mx-auto">
                 <p className="text-sm text-pink-600 leading-relaxed">
-                  <strong>Intro:  </strong> This tool was originally designed for{" "}
+                  <strong>Intro: </strong> This tool was originally designed for{" "}
                   <a
                     href="https://dharmaseed.org/teacher/210/"
                     target="_blank"
@@ -677,8 +744,8 @@ export default function MeditationAdjuster() {
                   >
                     Rob Burbea's guided meditations
                   </a>
-                  , though you may need to adjust the advanced settings for optimal results. Most guided meditations should be compatible. Enjoy :) [Default settings currently
-                  work best with{" "}
+                  , though you may need to adjust the advanced settings for optimal results. Most guided meditations
+                  should be compatible. Enjoy :) [Default settings currently work best with{" "}
                   <a
                     href="https://tasshin.com/guided-meditations/"
                     target="_blank"
@@ -687,7 +754,6 @@ export default function MeditationAdjuster() {
                   >
                     Tasshin's collection]
                   </a>
-                  
                 </p>
               </div>
             </motion.div>
