@@ -687,7 +687,7 @@ export default function MeditationAdjuster() {
                   >
                     Tasshin's collection]
                   </a>
-                  .
+                  
                 </p>
               </div>
             </motion.div>
