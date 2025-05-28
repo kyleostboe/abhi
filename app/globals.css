@@ -1,0 +1,253 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 173 80% 40%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 142 76% 65%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 173 80% 40%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 173 80% 40%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 142 76% 65%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 173 80% 40%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom styles for audio player */
+audio {
+  border-radius: 30px;
+  height: 40px;
+}
+
+audio::-webkit-media-controls-panel {
+  background-color: #f9fafb;
+}
+
+audio::-webkit-media-controls-play-button {
+  background-color: #10b981;
+  border-radius: 50%;
+}
+
+audio::-webkit-media-controls-play-button:hover {
+  background-color: #059669;
+}
+
+audio::-webkit-media-controls-current-time-display,
+audio::-webkit-media-controls-time-remaining-display {
+  color: #374151;
+  font-size: 13px;
+}
+
+/* Custom slider styles */
+.slider-thumb {
+  @apply appearance-none w-5 h-5 rounded-full bg-teal-500 cursor-pointer;
+}
+
+.slider-track {
+  @apply appearance-none h-1 rounded bg-teal-200;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  @apply slider-thumb;
+}
+
+input[type="range"]::-moz-range-thumb {
+  @apply slider-thumb;
+}
+
+input[type="range"]::-ms-thumb {
+  @apply slider-thumb;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  @apply slider-track;
+}
+
+input[type="range"]::-moz-range-track {
+  @apply slider-track;
+}
+
+input[type="range"]::-ms-track {
+  @apply slider-track;
+}
+
+/* Update animation keyframes to be more subtle */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Update animation durations */
+.animate-float {
+  animation: float 2s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.animate-float {
+  animation: float 2s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Update slider animation to be more subtle */
+input[type="range"]::-webkit-slider-thumb {
+  transition: transform 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.05);
+}
+
+/* Update card hover effects to be more subtle */
+.card-hover-effect {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover-effect:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Update button hover animation to be more subtle */
+.btn-hover-effect::after {
+  transition: 0.3s;
+}
+
+/* Update button hover animation to be more subtle */
+.btn-hover-effect::after {
+  transition: 0.3s;
+}
+
+/* Update audio player animations */
+audio::-webkit-media-controls-play-button {
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+audio::-webkit-media-controls-play-button:hover {
+  transform: scale(1.05);
+}
+
+/* Tab animations */
+.tabs-animation [data-state="active"] {
+  transition: all 0.3s ease;
+}
+
+.tabs-animation [data-state="active"]:hover {
+  transform: translateY(-2px);
+}
+
+/* Switch animation */
+.switch-animation [data-state="checked"]::before {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Loading animation */
+.loading-shimmer {
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
