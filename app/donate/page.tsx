@@ -72,7 +72,7 @@ export default function DonatePage() {
               <div className="bg-gradient-to-r from-purple-500 to-indigo-500 py-4 px-6">
                 <h2 className="text-xl font-medium text-white flex items-center">
                   <Coins className="h-5 w-5 mr-2" />
-                  Cryptocurrency
+                  Crypto
                 </h2>
               </div>
               <div className="p-6">
