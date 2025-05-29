@@ -44,11 +44,17 @@ export default function MeditationAdjuster() {
   // Mobile optimization states
   const [isScrollLocked, setIsScrollLocked] = useState<boolean>(false)
   const [isMobileProcessing, setIsMobileProcessing] = useState<boolean>(false)
+  const [processingProgress, setProcessingProgress] = useState<number>(0)
+  const [processingStep, setProcessingStep] = useState<string>("")
 
   // Detect mobile device
   const isMobile =
     typeof window !== "undefined" &&
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+
+  // Keep-alive mechanism
+  const keepAliveRef = useRef<NodeJS.Timeout | null>(null)
+  const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Animation variants
   const fadeIn = {
@@ -93,8 +99,80 @@ export default function MeditationAdjuster() {
       if (audioContext) {
         audioContext.close()
       }
+      if (keepAliveRef.current) {
+        clearInterval(keepAliveRef.current)
+      }
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current)
+      }
     }
   }, [])
+
+  // Keep-alive mechanism to prevent browser timeout
+  const startKeepAlive = () => {
+    if (keepAliveRef.current) {
+      clearInterval(keepAliveRef.current)
+    }
+
+    keepAliveRef.current = setInterval(() => {
+      // Send a small heartbeat to keep the browser alive
+      console.log("Keep-alive heartbeat")
+
+      // Force a small DOM update to keep the browser engaged
+      const timestamp = Date.now()
+      document.documentElement.setAttribute("data-timestamp", timestamp.toString())
+
+      // Force garbage collection if available
+      if (window.gc) {
+        window.gc()
+      }
+    }, 2000) // Every 2 seconds
+  }
+
+  const stopKeepAlive = () => {
+    if (keepAliveRef.current) {
+      clearInterval(keepAliveRef.current)
+      keepAliveRef.current = null
+    }
+  }
+
+  // Emergency timeout handler
+  const startProcessingTimeout = () => {
+    if (processingTimeoutRef.current) {
+      clearTimeout(processingTimeoutRef.current)
+    }
+
+    processingTimeoutRef.current = setTimeout(() => {
+      console.warn("Processing timeout - emergency cleanup")
+      emergencyCleanup()
+    }, 60000) // 60 second timeout
+  }
+
+  const stopProcessingTimeout = () => {
+    if (processingTimeoutRef.current) {
+      clearTimeout(processingTimeoutRef.current)
+      processingTimeoutRef.current = null
+    }
+  }
+
+  const emergencyCleanup = () => {
+    setIsProcessing(false)
+    setIsMobileProcessing(false)
+    unlockScroll()
+    stopKeepAlive()
+    stopProcessingTimeout()
+    setStatus({ message: "Processing timed out. Please try with a smaller file or different settings.", type: "error" })
+
+    // Aggressive cleanup
+    cleanupMemory()
+
+    // Force page refresh as last resort
+    setTimeout(() => {
+      if (confirm("The app needs to refresh to free up memory. Continue?")) {
+        window.location.reload()
+      }
+    }, 2000)
+  }
 
   // Trigger animations when settings change
   useEffect(() => {
@@ -128,6 +206,8 @@ export default function MeditationAdjuster() {
       document.body.style.position = "fixed"
       document.body.style.width = "100%"
       document.body.style.height = "100%"
+      document.body.style.top = "0"
+      document.body.style.left = "0"
     }
   }
 
@@ -138,6 +218,8 @@ export default function MeditationAdjuster() {
       document.body.style.position = ""
       document.body.style.width = ""
       document.body.style.height = ""
+      document.body.style.top = ""
+      document.body.style.left = ""
     }
   }
 
@@ -150,12 +232,18 @@ export default function MeditationAdjuster() {
         }
       }
 
+      const preventScroll = (e: TouchEvent) => {
+        e.preventDefault()
+      }
+
       document.addEventListener("touchstart", preventTouch, { passive: false })
-      document.addEventListener("touchmove", preventTouch, { passive: false })
+      document.addEventListener("touchmove", preventScroll, { passive: false })
+      document.addEventListener("touchend", preventTouch, { passive: false })
 
       return () => {
         document.removeEventListener("touchstart", preventTouch)
-        document.removeEventListener("touchmove", preventTouch)
+        document.removeEventListener("touchmove", preventScroll)
+        document.removeEventListener("touchend", preventTouch)
       }
     }
   }, [isMobileProcessing])
@@ -234,6 +322,8 @@ export default function MeditationAdjuster() {
     if (isMobile) {
       lockScroll()
       setIsMobileProcessing(true)
+      startKeepAlive()
+      startProcessingTimeout()
     }
 
     // Clean up previous session more aggressively
@@ -245,6 +335,9 @@ export default function MeditationAdjuster() {
     }
 
     setFile(file)
+    setProcessingProgress(0)
+    setProcessingStep("Initializing...")
+
     // Reset states
     setDurationLimits(null)
     setAudioAnalysis(null)
@@ -254,6 +347,7 @@ export default function MeditationAdjuster() {
 
     try {
       setStatus({ message: "Loading audio file...", type: "info" })
+      setProcessingStep("Loading audio file...")
 
       // Resume audio context if suspended
       if (audioContext && audioContext.state === "suspended") {
@@ -271,6 +365,8 @@ export default function MeditationAdjuster() {
       if (isMobile) {
         unlockScroll()
         setIsMobileProcessing(false)
+        stopKeepAlive()
+        stopProcessingTimeout()
       }
     }
   }
@@ -279,14 +375,15 @@ export default function MeditationAdjuster() {
     if (!audioContext) return
 
     try {
-      setStatus({ message: "Reading audio file...", type: "info" })
+      setProcessingStep("Reading file data...")
+      setProcessingProgress(10)
 
-      // For mobile, process file in smaller chunks
-      const chunkSize = isMobile ? 1024 * 1024 : file.size // 1MB chunks on mobile
+      // For mobile, process file in much smaller chunks
+      const chunkSize = isMobile ? 512 * 1024 : file.size // 512KB chunks on mobile
       let arrayBuffer: ArrayBuffer
 
       if (isMobile && file.size > chunkSize) {
-        // Process in chunks for mobile
+        // Process in very small chunks for mobile
         const chunks: ArrayBuffer[] = []
         let offset = 0
 
@@ -296,40 +393,75 @@ export default function MeditationAdjuster() {
           chunks.push(chunkBuffer)
           offset += chunkSize
 
-          // Update progress and yield control
-          const progress = Math.round((offset / file.size) * 100)
-          setStatus({ message: `Reading audio file... ${progress}%`, type: "info" })
-          await new Promise((resolve) => setTimeout(resolve, 10))
+          // Update progress and yield control more frequently
+          const progress = Math.round((offset / file.size) * 50) + 10 // 10-60%
+          setProcessingProgress(progress)
+          setProcessingStep(`Reading file... ${Math.round((offset / file.size) * 100)}%`)
+
+          // Longer yield time for mobile
+          await new Promise((resolve) => setTimeout(resolve, 50))
+
+          // Keep browser alive
+          if (window.gc && offset % (chunkSize * 4) === 0) {
+            window.gc()
+          }
         }
 
-        // Combine chunks
+        setProcessingStep("Combining file chunks...")
+        setProcessingProgress(60)
+
+        // Combine chunks with yielding
         const totalLength = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0)
         arrayBuffer = new ArrayBuffer(totalLength)
         const uint8Array = new Uint8Array(arrayBuffer)
         let position = 0
 
-        for (const chunk of chunks) {
-          uint8Array.set(new Uint8Array(chunk), position)
-          position += chunk.byteLength
+        for (let i = 0; i < chunks.length; i++) {
+          uint8Array.set(new Uint8Array(chunks[i]), position)
+          position += chunks[i].byteLength
+
+          // Yield every few chunks
+          if (i % 4 === 0) {
+            await new Promise((resolve) => setTimeout(resolve, 10))
+          }
         }
       } else {
         arrayBuffer = await file.arrayBuffer()
       }
 
-      setStatus({ message: "Decoding audio data...", type: "info" })
-      const buffer = await audioContext.decodeAudioData(arrayBuffer)
+      setProcessingStep("Decoding audio data...")
+      setProcessingProgress(70)
 
-      setStatus({ message: "Analyzing audio structure...", type: "info" })
+      // Add timeout for audio decoding
+      const decodePromise = audioContext.decodeAudioData(arrayBuffer)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Audio decoding timeout")), 30000)
+      })
+
+      const buffer = (await Promise.race([decodePromise, timeoutPromise])) as AudioBuffer
+
+      setProcessingStep("Analyzing audio structure...")
+      setProcessingProgress(85)
+
+      // Yield before analysis
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
       setOriginalBuffer(buffer)
 
       // Analyze audio and set duration limits
       const { minPossibleDuration, maxPossibleDuration } = analyzeAudioForLimits(buffer)
+
+      setProcessingStep("Creating audio player...")
+      setProcessingProgress(95)
 
       // Create URL for audio player
       if (originalUrl) URL.revokeObjectURL(originalUrl)
       const blob = new Blob([file], { type: file.type })
       const url = URL.createObjectURL(blob)
       setOriginalUrl(url)
+
+      setProcessingProgress(100)
+      setProcessingStep("Complete!")
 
       setStatus({
         message: `Audio loaded! You can adjust duration from ${minPossibleDuration} minutes up to 2 hours.`,
@@ -355,7 +487,12 @@ export default function MeditationAdjuster() {
     if (isMobile) {
       lockScroll()
       setIsMobileProcessing(true)
+      startKeepAlive()
+      startProcessingTimeout()
     }
+
+    setProcessingProgress(0)
+    setProcessingStep("Initializing processing...")
 
     try {
       setStatus({ message: "Processing audio...", type: "info" })
@@ -365,10 +502,22 @@ export default function MeditationAdjuster() {
         await audioContext.resume()
       }
 
+      setProcessingStep("Calculating target duration...")
+      setProcessingProgress(10)
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
       const targetDurationSeconds = targetDuration * 60
+
+      setProcessingStep("Detecting silence regions...")
+      setProcessingProgress(20)
+      await new Promise((resolve) => setTimeout(resolve, 100))
 
       // Detect silence regions
       const silenceRegions = detectSilenceRegions(originalBuffer, silenceThreshold)
+
+      setProcessingStep("Analyzing audio content...")
+      setProcessingProgress(30)
+      await new Promise((resolve) => setTimeout(resolve, 100))
 
       // Calculate total content duration (non-silence)
       const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
@@ -385,6 +534,10 @@ export default function MeditationAdjuster() {
           type: "info",
         })
       }
+
+      setProcessingStep("Calculating pause adjustments...")
+      setProcessingProgress(40)
+      await new Promise((resolve) => setTimeout(resolve, 100))
 
       // Calculate available silence duration (target - content)
       const availableSilenceDuration = Math.max(targetDurationSeconds - audioContentDuration, minSpacingTotal)
@@ -405,7 +558,8 @@ export default function MeditationAdjuster() {
         throw new Error("Invalid audio buffer properties")
       }
 
-      setStatus({ message: "Rebuilding audio...", type: "info" })
+      setProcessingStep("Rebuilding audio with new pauses...")
+      setProcessingProgress(50)
 
       // Create processed audio with mobile-optimized processing
       const processed = await rebuildAudioWithScaledPauses(
@@ -419,6 +573,10 @@ export default function MeditationAdjuster() {
 
       setPausesAdjusted(silenceRegions.length)
 
+      setProcessingStep("Cleaning up previous audio...")
+      setProcessingProgress(85)
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
       // Clean up previous processed buffer and URL
       if (processedBuffer) {
         setProcessedBuffer(null)
@@ -431,12 +589,17 @@ export default function MeditationAdjuster() {
       setProcessedBuffer(processed)
       setActualDuration(processed.duration)
 
-      setStatus({ message: "Creating download file...", type: "info" })
+      setProcessingStep("Creating download file...")
+      setProcessingProgress(90)
+      await new Promise((resolve) => setTimeout(resolve, 100))
 
       // Create URL for processed audio
       const wavBlob = bufferToWav(processed, compatibilityMode === "high")
       const url = URL.createObjectURL(wavBlob)
       setProcessedUrl(url)
+
+      setProcessingProgress(100)
+      setProcessingStep("Complete!")
 
       const durationDiff = Math.abs(processed.duration - targetDurationSeconds)
       const durationPercent = (durationDiff / targetDurationSeconds) * 100
@@ -469,6 +632,8 @@ export default function MeditationAdjuster() {
       if (isMobile) {
         unlockScroll()
         setIsMobileProcessing(false)
+        stopKeepAlive()
+        stopProcessingTimeout()
       }
     }
   }
@@ -610,7 +775,7 @@ export default function MeditationAdjuster() {
         throw new Error("Failed to create new audio buffer")
       }
 
-      // Process each channel with mobile-optimized chunked processing
+      // Process each channel with ultra-mobile-optimized chunked processing
       for (let channel = 0; channel < numberOfChannels; channel++) {
         const originalData = originalBuffer.getChannelData(channel)
         const newData = newBuffer.getChannelData(channel)
@@ -618,19 +783,25 @@ export default function MeditationAdjuster() {
 
         let writeIndex = 0
         let readIndex = 0
+        let processedSamples = 0
+        const totalSamples = originalData.length
 
         // If no silence regions, copy everything
         if (silenceRegions.length === 0) {
-          // Smaller chunks for mobile devices
-          const chunkSize = isMobile ? 22050 : 44100 // 0.5 second chunks on mobile
+          // Ultra-small chunks for mobile devices
+          const chunkSize = isMobile ? 11025 : 44100 // 0.25 second chunks on mobile
           for (let i = 0; i < originalData.length; i += chunkSize) {
             const end = Math.min(i + chunkSize, originalData.length)
             const chunk = originalData.subarray(i, end)
             newData.set(chunk, i)
 
-            // More frequent yielding on mobile
-            if (i % (chunkSize * (isMobile ? 2 : 10)) === 0) {
-              await new Promise((resolve) => setTimeout(resolve, isMobile ? 5 : 1))
+            processedSamples += end - i
+            const progress = 50 + Math.round((processedSamples / totalSamples) * 30) // 50-80%
+            setProcessingProgress(progress)
+
+            // Much more frequent yielding on mobile
+            if (i % (chunkSize * (isMobile ? 1 : 5)) === 0) {
+              await new Promise((resolve) => setTimeout(resolve, isMobile ? 20 : 5))
             }
           }
           continue
@@ -664,16 +835,21 @@ export default function MeditationAdjuster() {
           const newSilenceLength = Math.floor(processedRegion.newDuration * sampleRate)
 
           // Write scaled silence (zeros) in chunks
-          const silenceChunkSize = 44100
+          const silenceChunkSize = 22050 // Smaller chunks
           for (let j = 0; j < newSilenceLength; j += silenceChunkSize) {
             const chunkEnd = Math.min(j + silenceChunkSize, newSilenceLength)
             for (let k = j; k < chunkEnd; k++) {
               newData[writeIndex++] = 0
             }
 
+            // Update progress
+            const regionProgress = (i / silenceRegions.length) * 30 // 30% for all regions
+            const chunkProgress = (j / newSilenceLength) * (30 / silenceRegions.length)
+            setProcessingProgress(50 + regionProgress + chunkProgress)
+
             // Yield control for large silence regions
-            if (j % (silenceChunkSize * 5) === 0) {
-              await new Promise((resolve) => setTimeout(resolve, 1))
+            if (j % (silenceChunkSize * 2) === 0) {
+              await new Promise((resolve) => setTimeout(resolve, isMobile ? 20 : 5))
             }
           }
 
@@ -685,7 +861,7 @@ export default function MeditationAdjuster() {
           const segmentLength = nextRegionStart - readIndex
 
           // Chunked copy for large segments
-          const copyChunkSize = 44100
+          const copyChunkSize = 22050
           for (let j = 0; j < segmentLength; j += copyChunkSize) {
             const chunkEnd = Math.min(j + copyChunkSize, segmentLength)
             for (let k = j; k < chunkEnd; k++) {
@@ -695,8 +871,8 @@ export default function MeditationAdjuster() {
             }
 
             // Yield control periodically
-            if (j % (copyChunkSize * 5) === 0) {
-              await new Promise((resolve) => setTimeout(resolve, 1))
+            if (j % (copyChunkSize * 2) === 0) {
+              await new Promise((resolve) => setTimeout(resolve, isMobile ? 20 : 5))
             }
           }
 
@@ -896,10 +1072,18 @@ export default function MeditationAdjuster() {
       {/* Mobile Processing Overlay */}
       {isMobileProcessing && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 m-4 text-center">
+          <div className="bg-white rounded-lg p-6 m-4 text-center max-w-sm w-full">
             <div className="animate-spin h-8 w-8 border-4 border-teal-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-700 font-medium">Processing audio...</p>
-            <p className="text-gray-500 text-sm mt-2">Please don't scroll or switch apps</p>
+            <p className="text-gray-700 font-medium mb-2">{processingStep}</p>
+            <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+              <div
+                className="bg-teal-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${processingProgress}%` }}
+              ></div>
+            </div>
+            <p className="text-gray-600 text-sm mb-2">{processingProgress}% complete</p>
+            <p className="text-red-600 text-sm font-medium">⚠️ Please don't scroll or switch apps</p>
+            <p className="text-gray-500 text-xs mt-2">This prevents crashes on mobile devices</p>
           </div>
         </div>
       )}
