@@ -41,6 +41,15 @@ export default function MeditationAdjuster() {
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
   const [buttonText, setButtonText] = useState<string>("Process Audio")
 
+  // Mobile optimization states
+  const [isScrollLocked, setIsScrollLocked] = useState<boolean>(false)
+  const [isMobileProcessing, setIsMobileProcessing] = useState<boolean>(false)
+
+  // Detect mobile device
+  const isMobile =
+    typeof window !== "undefined" &&
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+
   // Animation variants
   const fadeIn = {
     hidden: { opacity: 0, y: 5 },
@@ -110,6 +119,46 @@ export default function MeditationAdjuster() {
     preserveNaturalPacing,
     compatibilityMode,
   ])
+
+  // Lock scroll during processing on mobile
+  const lockScroll = () => {
+    if (isMobile) {
+      setIsScrollLocked(true)
+      document.body.style.overflow = "hidden"
+      document.body.style.position = "fixed"
+      document.body.style.width = "100%"
+      document.body.style.height = "100%"
+    }
+  }
+
+  const unlockScroll = () => {
+    if (isMobile) {
+      setIsScrollLocked(false)
+      document.body.style.overflow = ""
+      document.body.style.position = ""
+      document.body.style.width = ""
+      document.body.style.height = ""
+    }
+  }
+
+  // Prevent touch events during processing
+  useEffect(() => {
+    if (isMobileProcessing) {
+      const preventTouch = (e: TouchEvent) => {
+        if (e.touches.length > 1) {
+          e.preventDefault()
+        }
+      }
+
+      document.addEventListener("touchstart", preventTouch, { passive: false })
+      document.addEventListener("touchmove", preventTouch, { passive: false })
+
+      return () => {
+        document.removeEventListener("touchstart", preventTouch)
+        document.removeEventListener("touchmove", preventTouch)
+      }
+    }
+  }, [isMobileProcessing])
 
   // Handle file upload
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -181,8 +230,19 @@ export default function MeditationAdjuster() {
       return
     }
 
-    // Clean up previous session
+    // Mobile optimization: Lock scroll and disable interactions
+    if (isMobile) {
+      lockScroll()
+      setIsMobileProcessing(true)
+    }
+
+    // Clean up previous session more aggressively
     cleanupMemory()
+
+    // Force garbage collection on mobile
+    if (isMobile && window.gc) {
+      window.gc()
+    }
 
     setFile(file)
     // Reset states
@@ -193,7 +253,7 @@ export default function MeditationAdjuster() {
     setActualDuration(null)
 
     try {
-      setStatus({ message: "Loading and analyzing audio file...", type: "info" })
+      setStatus({ message: "Loading audio file...", type: "info" })
 
       // Resume audio context if suspended
       if (audioContext && audioContext.state === "suspended") {
@@ -206,6 +266,12 @@ export default function MeditationAdjuster() {
         message: `Error loading audio file: ${error instanceof Error ? error.message : "Unknown error"}`,
         type: "error",
       })
+    } finally {
+      // Always unlock scroll and re-enable interactions
+      if (isMobile) {
+        unlockScroll()
+        setIsMobileProcessing(false)
+      }
     }
   }
 
@@ -214,7 +280,41 @@ export default function MeditationAdjuster() {
 
     try {
       setStatus({ message: "Reading audio file...", type: "info" })
-      const arrayBuffer = await file.arrayBuffer()
+
+      // For mobile, process file in smaller chunks
+      const chunkSize = isMobile ? 1024 * 1024 : file.size // 1MB chunks on mobile
+      let arrayBuffer: ArrayBuffer
+
+      if (isMobile && file.size > chunkSize) {
+        // Process in chunks for mobile
+        const chunks: ArrayBuffer[] = []
+        let offset = 0
+
+        while (offset < file.size) {
+          const chunk = file.slice(offset, offset + chunkSize)
+          const chunkBuffer = await chunk.arrayBuffer()
+          chunks.push(chunkBuffer)
+          offset += chunkSize
+
+          // Update progress and yield control
+          const progress = Math.round((offset / file.size) * 100)
+          setStatus({ message: `Reading audio file... ${progress}%`, type: "info" })
+          await new Promise((resolve) => setTimeout(resolve, 10))
+        }
+
+        // Combine chunks
+        const totalLength = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0)
+        arrayBuffer = new ArrayBuffer(totalLength)
+        const uint8Array = new Uint8Array(arrayBuffer)
+        let position = 0
+
+        for (const chunk of chunks) {
+          uint8Array.set(new Uint8Array(chunk), position)
+          position += chunk.byteLength
+        }
+      } else {
+        arrayBuffer = await file.arrayBuffer()
+      }
 
       setStatus({ message: "Decoding audio data...", type: "info" })
       const buffer = await audioContext.decodeAudioData(arrayBuffer)
@@ -232,7 +332,7 @@ export default function MeditationAdjuster() {
       setOriginalUrl(url)
 
       setStatus({
-        message: `Audio loaded! You can adjust duration from ${minPossibleDuration} minutes up to 2 hours (extending pauses as needed).`,
+        message: `Audio loaded! You can adjust duration from ${minPossibleDuration} minutes up to 2 hours.`,
         type: "success",
       })
     } catch (error) {
@@ -251,15 +351,21 @@ export default function MeditationAdjuster() {
   const processAudio = async () => {
     if (!originalBuffer || !audioContext) return
 
+    // Mobile optimization: Lock scroll and disable interactions
+    if (isMobile) {
+      lockScroll()
+      setIsMobileProcessing(true)
+    }
+
     try {
-      setStatus({ message: "Processing audio with your selected duration...", type: "info" })
+      setStatus({ message: "Processing audio...", type: "info" })
 
       // Resume audio context if suspended
       if (audioContext.state === "suspended") {
         await audioContext.resume()
       }
 
-      const targetDurationSeconds = targetDuration * 60 // Convert to minutes
+      const targetDurationSeconds = targetDuration * 60
 
       // Detect silence regions
       const silenceRegions = detectSilenceRegions(originalBuffer, silenceThreshold)
@@ -275,9 +381,7 @@ export default function MeditationAdjuster() {
       // Check if target duration is feasible with minimum spacing
       if (targetDurationSeconds < minRequiredDuration) {
         setStatus({
-          message: `Warning: Target duration is too short for minimum spacing. Using ${Math.ceil(
-            minRequiredDuration / 60,
-          )} minutes instead.`,
+          message: `Using ${Math.ceil(minRequiredDuration / 60)} minutes (minimum required).`,
           type: "info",
         })
       }
@@ -288,12 +392,11 @@ export default function MeditationAdjuster() {
       // Calculate scaling factor based on available silence
       const scaleFactor = availableSilenceDuration / totalSilenceDuration
 
-      // Add this check before calling rebuildAudioWithScaledPauses
+      // Validate buffer
       if (!originalBuffer || !audioContext) {
         throw new Error("Audio buffer or context not available")
       }
 
-      // Validate that the buffer has valid properties
       if (typeof originalBuffer.duration !== "number" || originalBuffer.duration <= 0) {
         throw new Error("Invalid audio buffer duration")
       }
@@ -302,9 +405,9 @@ export default function MeditationAdjuster() {
         throw new Error("Invalid audio buffer properties")
       }
 
-      setStatus({ message: "Rebuilding audio with adjusted pauses...", type: "info" })
+      setStatus({ message: "Rebuilding audio...", type: "info" })
 
-      // Create processed audio with minimum spacing
+      // Create processed audio with mobile-optimized processing
       const processed = await rebuildAudioWithScaledPauses(
         originalBuffer,
         silenceRegions,
@@ -316,8 +419,6 @@ export default function MeditationAdjuster() {
 
       setPausesAdjusted(silenceRegions.length)
 
-      const cleanedBuffer = processed
-
       // Clean up previous processed buffer and URL
       if (processedBuffer) {
         setProcessedBuffer(null)
@@ -327,29 +428,28 @@ export default function MeditationAdjuster() {
         setProcessedUrl("")
       }
 
-      setProcessedBuffer(cleanedBuffer)
-      setActualDuration(cleanedBuffer.duration)
+      setProcessedBuffer(processed)
+      setActualDuration(processed.duration)
+
+      setStatus({ message: "Creating download file...", type: "info" })
 
       // Create URL for processed audio
-      const wavBlob = bufferToWav(cleanedBuffer, compatibilityMode === "high")
+      const wavBlob = bufferToWav(processed, compatibilityMode === "high")
       const url = URL.createObjectURL(wavBlob)
       setProcessedUrl(url)
 
-      const durationDiff = Math.abs(cleanedBuffer.duration - targetDurationSeconds)
+      const durationDiff = Math.abs(processed.duration - targetDurationSeconds)
       const durationPercent = (durationDiff / targetDurationSeconds) * 100
 
       if (durationPercent > 5) {
         setStatus({
-          message: `Audio processing completed! Note: Final duration (${formatDuration(
-            cleanedBuffer.duration,
-          )}) differs from target by ${durationPercent.toFixed(1)}% due to minimum spacing requirements.`,
+          message: `Processing complete! Final duration: ${formatDuration(processed.duration)}`,
           type: "success",
         })
       } else {
         setStatus({ message: "Audio processing completed successfully!", type: "success" })
       }
 
-      // Set processing complete
       setIsProcessingComplete(true)
 
       // Suspend audio context to save memory
@@ -360,12 +460,16 @@ export default function MeditationAdjuster() {
       }, 1000)
     } catch (error) {
       setStatus({
-        message: `Error processing audio: ${error instanceof Error ? error.message : "Unknown error"}`,
+        message: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
         type: "error",
       })
     } finally {
-      // Ensure we set isProcessing to false at the very end
       setIsProcessing(false)
+      // Always unlock scroll and re-enable interactions
+      if (isMobile) {
+        unlockScroll()
+        setIsMobileProcessing(false)
+      }
     }
   }
 
@@ -506,7 +610,7 @@ export default function MeditationAdjuster() {
         throw new Error("Failed to create new audio buffer")
       }
 
-      // Process each channel with chunked processing for better performance
+      // Process each channel with mobile-optimized chunked processing
       for (let channel = 0; channel < numberOfChannels; channel++) {
         const originalData = originalBuffer.getChannelData(channel)
         const newData = newBuffer.getChannelData(channel)
@@ -517,16 +621,16 @@ export default function MeditationAdjuster() {
 
         // If no silence regions, copy everything
         if (silenceRegions.length === 0) {
-          // Chunked copy for large files
-          const chunkSize = 44100 // 1 second chunks
+          // Smaller chunks for mobile devices
+          const chunkSize = isMobile ? 22050 : 44100 // 0.5 second chunks on mobile
           for (let i = 0; i < originalData.length; i += chunkSize) {
             const end = Math.min(i + chunkSize, originalData.length)
             const chunk = originalData.subarray(i, end)
             newData.set(chunk, i)
 
-            // Yield control periodically for mobile browsers
-            if (i % (chunkSize * 10) === 0) {
-              await new Promise((resolve) => setTimeout(resolve, 1))
+            // More frequent yielding on mobile
+            if (i % (chunkSize * (isMobile ? 2 : 10)) === 0) {
+              await new Promise((resolve) => setTimeout(resolve, isMobile ? 5 : 1))
             }
           }
           continue
@@ -745,11 +849,11 @@ export default function MeditationAdjuster() {
   }
 
   const cleanupMemory = () => {
-    // Clean up audio buffers
+    // Clean up audio buffers more aggressively
     setOriginalBuffer(null)
     setProcessedBuffer(null)
 
-    // Revoke URLs
+    // Revoke URLs immediately
     if (originalUrl) {
       URL.revokeObjectURL(originalUrl)
       setOriginalUrl("")
@@ -764,10 +868,17 @@ export default function MeditationAdjuster() {
       audioContext.suspend()
     }
 
-    // Force garbage collection hint
-    if (window.gc) {
+    // Force garbage collection on mobile
+    if (isMobile && window.gc) {
       window.gc()
     }
+
+    // Clear any remaining references
+    setTimeout(() => {
+      if (window.gc) {
+        window.gc()
+      }
+    }, 100)
   }
 
   // Add this new useEffect after the existing ones
@@ -782,6 +893,16 @@ export default function MeditationAdjuster() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#e9f5f3,#f0f8ff_30%,#f8f0ff_70%)] p-4 md:p-8">
+      {/* Mobile Processing Overlay */}
+      {isMobileProcessing && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 m-4 text-center">
+            <div className="animate-spin h-8 w-8 border-4 border-teal-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-gray-700 font-medium">Processing audio...</p>
+            <p className="text-gray-500 text-sm mt-2">Please don't scroll or switch apps</p>
+          </div>
+        </div>
+      )}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
