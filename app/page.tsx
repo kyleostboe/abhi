@@ -41,31 +41,6 @@ export default function MeditationAdjuster() {
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
   const [buttonText, setButtonText] = useState<string>("Process Audio")
 
-  // Mobile optimization states
-  const [isScrollLocked, setIsScrollLocked] = useState<boolean>(false)
-  const [isMobileProcessing, setIsMobileProcessing] = useState<boolean>(false)
-  const [processingProgress, setProcessingProgress] = useState<number>(0)
-  const [processingStep, setProcessingStep] = useState<string>("")
-
-  // Add these new state variables after the existing ones:
-  const [processingState, setProcessingState] = useState<{
-    step: string
-    progress: number
-    canResume: boolean
-    savedData?: any
-  } | null>(null)
-  const [mobileMode, setMobileMode] = useState<boolean>(false)
-  const [processingChunkSize, setProcessingChunkSize] = useState<number>(0)
-
-  // Detect mobile device
-  const isMobile =
-    typeof window !== "undefined" &&
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-
-  // Keep-alive mechanism
-  const keepAliveRef = useRef<NodeJS.Timeout | null>(null)
-  const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-
   // Animation variants
   const fadeIn = {
     hidden: { opacity: 0, y: 5 },
@@ -109,104 +84,8 @@ export default function MeditationAdjuster() {
       if (audioContext) {
         audioContext.close()
       }
-      if (keepAliveRef.current) {
-        clearInterval(keepAliveRef.current)
-      }
-      if (processingTimeoutRef.current) {
-        clearTimeout(processingTimeoutRef.current)
-      }
     }
   }, [])
-
-  // Keep-alive mechanism to prevent browser timeout
-  const startKeepAlive = () => {
-    if (keepAliveRef.current) {
-      clearInterval(keepAliveRef.current)
-    }
-
-    keepAliveRef.current = setInterval(() => {
-      // Send a small heartbeat to keep the browser alive
-      console.log("Keep-alive heartbeat")
-
-      // Force a small DOM update to keep the browser engaged
-      const timestamp = Date.now()
-      document.documentElement.setAttribute("data-timestamp", timestamp.toString())
-
-      // Force garbage collection if available
-      if (window.gc) {
-        window.gc()
-      }
-    }, 2000) // Every 2 seconds
-  }
-
-  const stopKeepAlive = () => {
-    if (keepAliveRef.current) {
-      clearInterval(keepAliveRef.current)
-      keepAliveRef.current = null
-    }
-  }
-
-  // Emergency timeout handler
-  const startProcessingTimeout = () => {
-    if (processingTimeoutRef.current) {
-      clearTimeout(processingTimeoutRef.current)
-    }
-
-    // Change the processing timeout from 60 seconds to 180 seconds
-    processingTimeoutRef.current = setTimeout(() => {
-      console.warn("Processing timeout - emergency cleanup")
-      emergencyCleanup()
-    }, 180000) // 180 second timeout for processing
-  }
-
-  const stopProcessingTimeout = () => {
-    if (processingTimeoutRef.current) {
-      clearTimeout(processingTimeoutRef.current)
-      processingTimeoutRef.current = null
-    }
-  }
-
-  const emergencyCleanup = () => {
-    setIsProcessing(false)
-    setIsMobileProcessing(false)
-    unlockScroll()
-    stopKeepAlive()
-    stopProcessingTimeout()
-
-    // Save current state for potential resume
-    setProcessingState({
-      step: processingStep,
-      progress: processingProgress,
-      canResume: false,
-      savedData: null,
-    })
-
-    setStatus({
-      message: "Processing timed out. Try using smaller files or enable mobile optimization mode.",
-      type: "error",
-    })
-
-    // More aggressive cleanup
-    cleanupMemory()
-
-    // Force multiple garbage collections
-    if (window.gc) {
-      window.gc()
-      setTimeout(() => window.gc && window.gc(), 100)
-      setTimeout(() => window.gc && window.gc(), 500)
-    }
-
-    // Offer refresh as last resort
-    setTimeout(() => {
-      if (
-        confirm(
-          "The processing failed. Would you like to refresh the page to free up memory? (You'll need to re-upload your file)",
-        )
-      ) {
-        window.location.reload()
-      }
-    }, 3000)
-  }
 
   // Trigger animations when settings change
   useEffect(() => {
@@ -231,56 +110,6 @@ export default function MeditationAdjuster() {
     preserveNaturalPacing,
     compatibilityMode,
   ])
-
-  // Lock scroll during processing on mobile
-  const lockScroll = () => {
-    if (isMobile) {
-      setIsScrollLocked(true)
-      document.body.style.overflow = "hidden"
-      document.body.style.position = "fixed"
-      document.body.style.width = "100%"
-      document.body.style.height = "100%"
-      document.body.style.top = "0"
-      document.body.style.left = "0"
-    }
-  }
-
-  const unlockScroll = () => {
-    if (isMobile) {
-      setIsScrollLocked(false)
-      document.body.style.overflow = ""
-      document.body.style.position = ""
-      document.body.style.width = ""
-      document.body.style.height = ""
-      document.body.style.top = ""
-      document.body.style.left = ""
-    }
-  }
-
-  // Prevent touch events during processing
-  useEffect(() => {
-    if (isMobileProcessing) {
-      const preventTouch = (e: TouchEvent) => {
-        if (e.touches.length > 1) {
-          e.preventDefault()
-        }
-      }
-
-      const preventScroll = (e: TouchEvent) => {
-        e.preventDefault()
-      }
-
-      document.addEventListener("touchstart", preventTouch, { passive: false })
-      document.addEventListener("touchmove", preventScroll, { passive: false })
-      document.addEventListener("touchend", preventTouch, { passive: false })
-
-      return () => {
-        document.removeEventListener("touchstart", preventTouch)
-        document.removeEventListener("touchmove", preventScroll)
-        document.removeEventListener("touchend", preventTouch)
-      }
-    }
-  }, [isMobileProcessing])
 
   // Handle file upload
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -352,26 +181,10 @@ export default function MeditationAdjuster() {
       return
     }
 
-    // Mobile optimization: Lock scroll and disable interactions
-    if (isMobile) {
-      lockScroll()
-      setIsMobileProcessing(true)
-      startKeepAlive()
-      startProcessingTimeout()
-    }
-
-    // Clean up previous session more aggressively
+    // Clean up previous session
     cleanupMemory()
 
-    // Force garbage collection on mobile
-    if (isMobile && window.gc) {
-      window.gc()
-    }
-
     setFile(file)
-    setProcessingProgress(0)
-    setProcessingStep("Initializing...")
-
     // Reset states
     setDurationLimits(null)
     setAudioAnalysis(null)
@@ -380,8 +193,7 @@ export default function MeditationAdjuster() {
     setActualDuration(null)
 
     try {
-      setStatus({ message: "Loading audio file...", type: "info" })
-      setProcessingStep("Loading audio file...")
+      setStatus({ message: "Loading and analyzing audio file...", type: "info" })
 
       // Resume audio context if suspended
       if (audioContext && audioContext.state === "suspended") {
@@ -394,14 +206,6 @@ export default function MeditationAdjuster() {
         message: `Error loading audio file: ${error instanceof Error ? error.message : "Unknown error"}`,
         type: "error",
       })
-    } finally {
-      // Always unlock scroll and re-enable interactions
-      if (isMobile) {
-        unlockScroll()
-        setIsMobileProcessing(false)
-        stopKeepAlive()
-        stopProcessingTimeout()
-      }
     }
   }
 
@@ -409,84 +213,17 @@ export default function MeditationAdjuster() {
     if (!audioContext) return
 
     try {
-      setProcessingStep("Reading file data...")
-      setProcessingProgress(10)
+      setStatus({ message: "Reading audio file...", type: "info" })
+      const arrayBuffer = await file.arrayBuffer()
 
-      // For mobile, process file in much smaller chunks
-      const chunkSize = isMobile ? 512 * 1024 : file.size // 512KB chunks on mobile
-      let arrayBuffer: ArrayBuffer
+      setStatus({ message: "Decoding audio data...", type: "info" })
+      const buffer = await audioContext.decodeAudioData(arrayBuffer)
 
-      if (isMobile && file.size > chunkSize) {
-        // Process in very small chunks for mobile
-        const chunks: ArrayBuffer[] = []
-        let offset = 0
-
-        while (offset < file.size) {
-          const chunk = file.slice(offset, offset + chunkSize)
-          const chunkBuffer = await chunk.arrayBuffer()
-          chunks.push(chunkBuffer)
-          offset += chunkSize
-
-          // Update progress and yield control more frequently
-          const progress = Math.round((offset / file.size) * 50) + 10 // 10-60%
-          setProcessingProgress(progress)
-          setProcessingStep(`Reading file... ${Math.round((offset / file.size) * 100)}%`)
-
-          // Longer yield time for mobile
-          await new Promise((resolve) => setTimeout(resolve, 50))
-
-          // Keep browser alive
-          if (window.gc && offset % (chunkSize * 4) === 0) {
-            window.gc()
-          }
-        }
-
-        setProcessingStep("Combining file chunks...")
-        setProcessingProgress(60)
-
-        // Combine chunks with yielding
-        const totalLength = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0)
-        arrayBuffer = new ArrayBuffer(totalLength)
-        const uint8Array = new Uint8Array(arrayBuffer)
-        let position = 0
-
-        for (let i = 0; i < chunks.length; i++) {
-          uint8Array.set(new Uint8Array(chunks[i]), position)
-          position += chunks[i].byteLength
-
-          // Yield every few chunks
-          if (i % 4 === 0) {
-            await new Promise((resolve) => setTimeout(resolve, 10))
-          }
-        }
-      } else {
-        arrayBuffer = await file.arrayBuffer()
-      }
-
-      setProcessingStep("Decoding audio data...")
-      setProcessingProgress(70)
-
-      // Add timeout for audio decoding
-      const decodePromise = audioContext.decodeAudioData(arrayBuffer)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Audio decoding timeout")), 30000)
-      })
-
-      const buffer = (await Promise.race([decodePromise, timeoutPromise])) as AudioBuffer
-
-      setProcessingStep("Analyzing audio structure...")
-      setProcessingProgress(85)
-
-      // Yield before analysis
-      await new Promise((resolve) => setTimeout(resolve, 100))
-
+      setStatus({ message: "Analyzing audio structure...", type: "info" })
       setOriginalBuffer(buffer)
 
       // Analyze audio and set duration limits
       const { minPossibleDuration, maxPossibleDuration } = analyzeAudioForLimits(buffer)
-
-      setProcessingStep("Creating audio player...")
-      setProcessingProgress(95)
 
       // Create URL for audio player
       if (originalUrl) URL.revokeObjectURL(originalUrl)
@@ -494,11 +231,8 @@ export default function MeditationAdjuster() {
       const url = URL.createObjectURL(blob)
       setOriginalUrl(url)
 
-      setProcessingProgress(100)
-      setProcessingStep("Complete!")
-
       setStatus({
-        message: `Audio loaded! You can adjust duration from ${minPossibleDuration} minutes up to 2 hours.`,
+        message: `Audio loaded! You can adjust duration from ${minPossibleDuration} minutes up to 2 hours (extending pauses as needed).`,
         type: "success",
       })
     } catch (error) {
@@ -517,99 +251,18 @@ export default function MeditationAdjuster() {
   const processAudio = async () => {
     if (!originalBuffer || !audioContext) return
 
-    // Mobile: Skip complex analysis and use simple approach
-    if (isMobile) {
-      setIsMobileProcessing(true)
-      lockScroll()
-
-      setProcessingProgress(0)
-      setProcessingStep("Mobile: Starting simple processing...")
-
-      try {
-        setStatus({ message: "Using simplified mobile processing...", type: "info" })
-
-        if (audioContext.state === "suspended") {
-          await audioContext.resume()
-        }
-
-        setProcessingProgress(20)
-        const targetDurationSeconds = targetDuration * 60
-
-        setProcessingProgress(40)
-        const processed = await rebuildAudioWithScaledPauses(
-          originalBuffer,
-          [], // Empty silence regions for mobile
-          1,
-          minSpacingDuration,
-          false, // Simplified mobile mode
-          targetDurationSeconds,
-        )
-
-        setProcessingProgress(80)
-        setProcessedBuffer(processed)
-        setActualDuration(processed.duration)
-
-        const wavBlob = bufferToWav(processed, compatibilityMode === "high")
-        const url = URL.createObjectURL(wavBlob)
-        setProcessedUrl(url)
-
-        setProcessingProgress(100)
-        setProcessingStep("Mobile: Complete!")
-
-        setStatus({
-          message: `Mobile processing complete! Duration: ${formatDuration(processed.duration)}`,
-          type: "success",
-        })
-        setIsProcessingComplete(true)
-      } catch (error) {
-        setStatus({
-          message: `Mobile processing error: ${error instanceof Error ? error.message : "Unknown error"}`,
-          type: "error",
-        })
-      } finally {
-        setIsProcessing(false)
-        setIsMobileProcessing(false)
-        unlockScroll()
-      }
-      return
-    }
-
-    // Desktop processing (existing complex logic)
-    // Mobile optimization: Lock scroll and disable interactions
-    if (isMobile) {
-      lockScroll()
-      setIsMobileProcessing(true)
-      startKeepAlive()
-      startProcessingTimeout()
-    }
-
-    setProcessingProgress(0)
-    setProcessingStep("Initializing processing...")
-
     try {
-      setStatus({ message: "Processing audio...", type: "info" })
+      setStatus({ message: "Processing audio with your selected duration...", type: "info" })
 
       // Resume audio context if suspended
       if (audioContext.state === "suspended") {
         await audioContext.resume()
       }
 
-      setProcessingStep("Calculating target duration...")
-      setProcessingProgress(10)
-      await new Promise((resolve) => setTimeout(resolve, 100))
-
-      const targetDurationSeconds = targetDuration * 60
-
-      setProcessingStep("Detecting silence regions...")
-      setProcessingProgress(20)
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      const targetDurationSeconds = targetDuration * 60 // Convert to minutes
 
       // Detect silence regions
       const silenceRegions = detectSilenceRegions(originalBuffer, silenceThreshold)
-
-      setProcessingStep("Analyzing audio content...")
-      setProcessingProgress(30)
-      await new Promise((resolve) => setTimeout(resolve, 100))
 
       // Calculate total content duration (non-silence)
       const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
@@ -622,14 +275,12 @@ export default function MeditationAdjuster() {
       // Check if target duration is feasible with minimum spacing
       if (targetDurationSeconds < minRequiredDuration) {
         setStatus({
-          message: `Using ${Math.ceil(minRequiredDuration / 60)} minutes (minimum required).`,
+          message: `Warning: Target duration is too short for minimum spacing. Using ${Math.ceil(
+            minRequiredDuration / 60,
+          )} minutes instead.`,
           type: "info",
         })
       }
-
-      setProcessingStep("Calculating pause adjustments...")
-      setProcessingProgress(40)
-      await new Promise((resolve) => setTimeout(resolve, 100))
 
       // Calculate available silence duration (target - content)
       const availableSilenceDuration = Math.max(targetDurationSeconds - audioContentDuration, minSpacingTotal)
@@ -637,11 +288,12 @@ export default function MeditationAdjuster() {
       // Calculate scaling factor based on available silence
       const scaleFactor = availableSilenceDuration / totalSilenceDuration
 
-      // Validate buffer
+      // Add this check before calling rebuildAudioWithScaledPauses
       if (!originalBuffer || !audioContext) {
         throw new Error("Audio buffer or context not available")
       }
 
+      // Validate that the buffer has valid properties
       if (typeof originalBuffer.duration !== "number" || originalBuffer.duration <= 0) {
         throw new Error("Invalid audio buffer duration")
       }
@@ -650,10 +302,9 @@ export default function MeditationAdjuster() {
         throw new Error("Invalid audio buffer properties")
       }
 
-      setProcessingStep("Rebuilding audio with new pauses...")
-      setProcessingProgress(50)
+      setStatus({ message: "Rebuilding audio with adjusted pauses...", type: "info" })
 
-      // Create processed audio with mobile-optimized processing
+      // Create processed audio with minimum spacing
       const processed = await rebuildAudioWithScaledPauses(
         originalBuffer,
         silenceRegions,
@@ -665,9 +316,7 @@ export default function MeditationAdjuster() {
 
       setPausesAdjusted(silenceRegions.length)
 
-      setProcessingStep("Cleaning up previous audio...")
-      setProcessingProgress(85)
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      const cleanedBuffer = processed
 
       // Clean up previous processed buffer and URL
       if (processedBuffer) {
@@ -678,33 +327,29 @@ export default function MeditationAdjuster() {
         setProcessedUrl("")
       }
 
-      setProcessedBuffer(processed)
-      setActualDuration(processed.duration)
-
-      setProcessingStep("Creating download file...")
-      setProcessingProgress(90)
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      setProcessedBuffer(cleanedBuffer)
+      setActualDuration(cleanedBuffer.duration)
 
       // Create URL for processed audio
-      const wavBlob = bufferToWav(processed, compatibilityMode === "high")
+      const wavBlob = bufferToWav(cleanedBuffer, compatibilityMode === "high")
       const url = URL.createObjectURL(wavBlob)
       setProcessedUrl(url)
 
-      setProcessingProgress(100)
-      setProcessingStep("Complete!")
-
-      const durationDiff = Math.abs(processed.duration - targetDurationSeconds)
+      const durationDiff = Math.abs(cleanedBuffer.duration - targetDurationSeconds)
       const durationPercent = (durationDiff / targetDurationSeconds) * 100
 
       if (durationPercent > 5) {
         setStatus({
-          message: `Processing complete! Final duration: ${formatDuration(processed.duration)}`,
+          message: `Audio processing completed! Note: Final duration (${formatDuration(
+            cleanedBuffer.duration,
+          )}) differs from target by ${durationPercent.toFixed(1)}% due to minimum spacing requirements.`,
           type: "success",
         })
       } else {
         setStatus({ message: "Audio processing completed successfully!", type: "success" })
       }
 
+      // Set processing complete
       setIsProcessingComplete(true)
 
       // Suspend audio context to save memory
@@ -715,18 +360,12 @@ export default function MeditationAdjuster() {
       }, 1000)
     } catch (error) {
       setStatus({
-        message: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        message: `Error processing audio: ${error instanceof Error ? error.message : "Unknown error"}`,
         type: "error",
       })
     } finally {
+      // Ensure we set isProcessing to false at the very end
       setIsProcessing(false)
-      // Always unlock scroll and re-enable interactions
-      if (isMobile) {
-        unlockScroll()
-        setIsMobileProcessing(false)
-        stopKeepAlive()
-        stopProcessingTimeout()
-      }
     }
   }
 
@@ -779,29 +418,33 @@ export default function MeditationAdjuster() {
     targetDuration: number,
   ) => {
     // Safety checks
-    if (!originalBuffer || !audioContext) {
-      throw new Error("Audio buffer or context not available")
+    if (!originalBuffer) {
+      throw new Error("Original audio buffer is not available")
+    }
+
+    if (!audioContext) {
+      throw new Error("Audio context is not available")
     }
 
     const sampleRate = originalBuffer.sampleRate
     const numberOfChannels = originalBuffer.numberOfChannels
 
-    // MOBILE SIMPLIFICATION: If on mobile, use a completely different, simple approach
-    if (isMobile) {
-      return await simpleMobileProcessing(originalBuffer, targetDuration)
-    }
-
-    // Keep the existing complex logic for desktop...
-    // [rest of the original function unchanged for desktop]
+    // Calculate original content duration (non-silence)
     const originalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
     const audioContentDuration = originalBuffer.duration - originalSilenceDuration
 
+    // Create a copy of silence regions for processing
     const processedRegions = [...silenceRegions].map((region) => {
       const duration = region.end - region.start
+
+      // Calculate new duration based on scale factor
       let newDuration = duration * scaleFactor
+
+      // Ensure minimum spacing
       if (newDuration < minSpacing) {
         newDuration = minSpacing
       }
+
       return {
         start: region.start,
         end: region.end,
@@ -810,6 +453,7 @@ export default function MeditationAdjuster() {
       }
     })
 
+    // If preserving natural pacing, adjust the scaling to maintain relative pause lengths
     if (preserveNaturalPacing && processedRegions.length > 1) {
       const shortestOriginal = Math.min(...processedRegions.map((r) => r.originalDuration))
       const longestOriginal = Math.max(...processedRegions.map((r) => r.originalDuration))
@@ -820,6 +464,7 @@ export default function MeditationAdjuster() {
 
         if (totalNewSilence > 0 && targetTotalSilence > 0) {
           const adjustmentFactor = targetTotalSilence / totalNewSilence
+
           processedRegions.forEach((region) => {
             region.newDuration = Math.max(minSpacing, region.newDuration * adjustmentFactor)
           })
@@ -827,11 +472,13 @@ export default function MeditationAdjuster() {
       }
     }
 
+    // Iterative adjustment to get closer to target duration
     const targetTotalSilence = targetDuration - audioContentDuration
     let currentTotalSilence = processedRegions.reduce((sum, region) => sum + region.newDuration, 0)
 
     if (Math.abs(currentTotalSilence - targetTotalSilence) / targetTotalSilence > 0.02) {
       const adjustmentFactor = targetTotalSilence / currentTotalSilence
+
       const wouldViolateMinSpacing = processedRegions.some(
         (region) => region.newDuration * adjustmentFactor < minSpacing,
       )
@@ -844,168 +491,136 @@ export default function MeditationAdjuster() {
       }
     }
 
+    // Calculate new total duration
     const newDuration = audioContentDuration + currentTotalSilence
-    const newBuffer = audioContext!.createBuffer(numberOfChannels, Math.floor(newDuration * sampleRate), sampleRate)
 
-    // Desktop processing with larger chunks
-    for (let channel = 0; channel < numberOfChannels; channel++) {
-      setProcessingStep(`Processing channel ${channel + 1}/${numberOfChannels}...`)
+    // Declare newBuffer at function scope
+    let newBuffer: AudioBuffer
 
-      const originalData = originalBuffer.getChannelData(channel)
-      const newData = newBuffer.getChannelData(channel)
-      const fadeLength = Math.floor(0.005 * sampleRate)
+    try {
+      // Create new buffer
+      newBuffer = audioContext!.createBuffer(numberOfChannels, Math.floor(newDuration * sampleRate), sampleRate)
 
-      let writeIndex = 0
-      let readIndex = 0
-
-      if (silenceRegions.length === 0) {
-        newData.set(originalData)
-        continue
+      // Validate the new buffer was created successfully
+      if (!newBuffer || typeof newBuffer.duration !== "number") {
+        throw new Error("Failed to create new audio buffer")
       }
 
-      if (silenceRegions[0].start > 0) {
-        const samplesToCopy = Math.floor(silenceRegions[0].start * sampleRate)
-        for (let i = 0; i < samplesToCopy; i++) {
-          newData[writeIndex++] = originalData[readIndex++]
+      // Process each channel with chunked processing for better performance
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        const originalData = originalBuffer.getChannelData(channel)
+        const newData = newBuffer.getChannelData(channel)
+        const fadeLength = Math.floor(0.005 * sampleRate) // 5ms fade
+
+        let writeIndex = 0
+        let readIndex = 0
+
+        // If no silence regions, copy everything
+        if (silenceRegions.length === 0) {
+          // Chunked copy for large files
+          const chunkSize = 44100 // 1 second chunks
+          for (let i = 0; i < originalData.length; i += chunkSize) {
+            const end = Math.min(i + chunkSize, originalData.length)
+            const chunk = originalData.subarray(i, end)
+            newData.set(chunk, i)
+
+            // Yield control periodically for mobile browsers
+            if (i % (chunkSize * 10) === 0) {
+              await new Promise((resolve) => setTimeout(resolve, 1))
+            }
+          }
+          continue
         }
 
-        for (let i = Math.max(0, writeIndex - fadeLength); i < writeIndex; i++) {
-          const fadePosition = (writeIndex - i) / fadeLength
-          newData[i] *= fadePosition
-        }
-      }
+        // Copy audio before first silence region
+        if (silenceRegions[0].start > 0) {
+          const samplesToCopy = Math.floor(silenceRegions[0].start * sampleRate)
+          for (let i = 0; i < samplesToCopy; i++) {
+            newData[writeIndex++] = originalData[readIndex++]
+          }
 
-      for (let i = 0; i < silenceRegions.length; i++) {
-        const region = silenceRegions[i]
-        const processedRegion = processedRegions[i]
-        const regionEndSample = Math.floor(region.end * sampleRate)
-
-        readIndex = regionEndSample
-        const newSilenceLength = Math.floor(processedRegion.newDuration * sampleRate)
-
-        for (let j = 0; j < newSilenceLength; j++) {
-          newData[writeIndex++] = 0
-        }
-
-        const nextRegionStart =
-          i < silenceRegions.length - 1 ? Math.floor(silenceRegions[i + 1].start * sampleRate) : originalData.length
-
-        const segmentStart = writeIndex
-        const segmentLength = nextRegionStart - readIndex
-
-        for (let j = 0; j < segmentLength; j++) {
-          if (writeIndex < newData.length && readIndex + j < originalData.length) {
-            newData[writeIndex++] = originalData[readIndex + j]
+          // Apply fade-out at the end of this segment
+          for (let i = Math.max(0, writeIndex - fadeLength); i < writeIndex; i++) {
+            const fadePosition = (writeIndex - i) / fadeLength
+            newData[i] *= fadePosition
           }
         }
 
-        readIndex = nextRegionStart
+        // Process each silence region
+        for (let i = 0; i < silenceRegions.length; i++) {
+          const region = silenceRegions[i]
+          const processedRegion = processedRegions[i]
+          const regionStartSample = Math.floor(region.start * sampleRate)
+          const regionEndSample = Math.floor(region.end * sampleRate)
 
-        for (let j = 0; j < Math.min(fadeLength, writeIndex - segmentStart); j++) {
-          const fadePosition = j / fadeLength
-          newData[segmentStart + j] *= fadePosition
-        }
+          // Skip to the end of the silence region in original
+          readIndex = regionEndSample
 
-        if (i < silenceRegions.length - 1) {
-          for (let j = Math.max(0, writeIndex - fadeLength); j < writeIndex; j++) {
-            const fadePosition = (writeIndex - j) / fadeLength
-            newData[j] *= fadePosition
+          // Calculate new silence length in samples
+          const newSilenceLength = Math.floor(processedRegion.newDuration * sampleRate)
+
+          // Write scaled silence (zeros) in chunks
+          const silenceChunkSize = 44100
+          for (let j = 0; j < newSilenceLength; j += silenceChunkSize) {
+            const chunkEnd = Math.min(j + silenceChunkSize, newSilenceLength)
+            for (let k = j; k < chunkEnd; k++) {
+              newData[writeIndex++] = 0
+            }
+
+            // Yield control for large silence regions
+            if (j % (silenceChunkSize * 5) === 0) {
+              await new Promise((resolve) => setTimeout(resolve, 1))
+            }
+          }
+
+          // Copy audio until next silence region (or end)
+          const nextRegionStart =
+            i < silenceRegions.length - 1 ? Math.floor(silenceRegions[i + 1].start * sampleRate) : originalData.length
+
+          const segmentStart = writeIndex
+          const segmentLength = nextRegionStart - readIndex
+
+          // Chunked copy for large segments
+          const copyChunkSize = 44100
+          for (let j = 0; j < segmentLength; j += copyChunkSize) {
+            const chunkEnd = Math.min(j + copyChunkSize, segmentLength)
+            for (let k = j; k < chunkEnd; k++) {
+              if (writeIndex < newData.length && readIndex + k < originalData.length) {
+                newData[writeIndex++] = originalData[readIndex + k]
+              }
+            }
+
+            // Yield control periodically
+            if (j % (copyChunkSize * 5) === 0) {
+              await new Promise((resolve) => setTimeout(resolve, 1))
+            }
+          }
+
+          readIndex = nextRegionStart
+
+          // Apply fade-in at the beginning of this segment
+          for (let j = 0; j < Math.min(fadeLength, writeIndex - segmentStart); j++) {
+            const fadePosition = j / fadeLength
+            newData[segmentStart + j] *= fadePosition
+          }
+
+          // Apply fade-out at the end of this segment (if not the last segment)
+          if (i < silenceRegions.length - 1) {
+            for (let j = Math.max(0, writeIndex - fadeLength); j < writeIndex; j++) {
+              const fadePosition = (writeIndex - j) / fadeLength
+              newData[j] *= fadePosition
+            }
           }
         }
       }
-
-      // Yield only occasionally on desktop
-      if (channel % 1 === 0) {
-        await new Promise((resolve) => setTimeout(resolve, 10))
-      }
+    } catch (error) {
+      console.error("Error creating or processing audio buffer:", error)
+      throw new Error("Failed to process audio buffer")
     }
 
-    return newBuffer
-  }
-
-  // NEW: Ultra-simple mobile processing function
-  const simpleMobileProcessing = async (originalBuffer: AudioBuffer, targetDurationSeconds: number) => {
-    setProcessingStep("Mobile: Simple duration adjustment...")
-
-    const sampleRate = originalBuffer.sampleRate
-    const numberOfChannels = originalBuffer.numberOfChannels
-    const originalDuration = originalBuffer.duration
-
-    // Calculate how much silence to add/remove
-    const durationDiff = targetDurationSeconds - originalDuration
-    const numberOfPauses = Math.max(3, Math.min(10, Math.floor(originalDuration / 60))) // 3-10 pauses based on length
-    const pauseAdjustment = durationDiff / numberOfPauses
-
-    // If we need to shorten significantly, just speed up slightly instead
-    if (durationDiff < -60) {
-      setProcessingStep("Mobile: Slight speed adjustment...")
-      return await simpleSpeedAdjust(originalBuffer, targetDurationSeconds / originalDuration)
-    }
-
-    // For extending or small adjustments, insert simple pauses
-    const newDuration = Math.max(targetDurationSeconds, originalDuration + numberOfPauses * 0.5) // At least 0.5s per pause
-    const newBuffer = audioContext!.createBuffer(numberOfChannels, Math.floor(newDuration * sampleRate), sampleRate)
-
-    for (let channel = 0; channel < numberOfChannels; channel++) {
-      setProcessingStep(`Mobile: Processing channel ${channel + 1}/${numberOfChannels}...`)
-
-      const originalData = originalBuffer.getChannelData(channel)
-      const newData = newBuffer.getChannelData(channel)
-
-      const segmentSize = Math.floor(originalData.length / numberOfPauses)
-      let writeIndex = 0
-
-      for (let segment = 0; segment < numberOfPauses; segment++) {
-        const segmentStart = segment * segmentSize
-        const segmentEnd = segment === numberOfPauses - 1 ? originalData.length : (segment + 1) * segmentSize
-
-        // Copy original segment
-        for (let i = segmentStart; i < segmentEnd; i++) {
-          if (writeIndex < newData.length) {
-            newData[writeIndex++] = originalData[i]
-          }
-        }
-
-        // Add pause (except after last segment)
-        if (segment < numberOfPauses - 1) {
-          const pauseSamples = Math.floor(Math.max(0.5, pauseAdjustment) * sampleRate)
-          for (let i = 0; i < pauseSamples && writeIndex < newData.length; i++) {
-            newData[writeIndex++] = 0
-          }
-        }
-
-        // Yield every segment
-        await new Promise((resolve) => setTimeout(resolve, 50))
-      }
-    }
-
-    setProcessingStep("Mobile: Complete!")
-    return newBuffer
-  }
-
-  // NEW: Simple speed adjustment for when we need to shorten significantly
-  const simpleSpeedAdjust = async (originalBuffer: AudioBuffer, speedFactor: number) => {
-    const sampleRate = originalBuffer.sampleRate
-    const numberOfChannels = originalBuffer.numberOfChannels
-    const newLength = Math.floor(originalBuffer.length / speedFactor)
-
-    const newBuffer = audioContext!.createBuffer(numberOfChannels, newLength, sampleRate)
-
-    for (let channel = 0; channel < numberOfChannels; channel++) {
-      const originalData = originalBuffer.getChannelData(channel)
-      const newData = newBuffer.getChannelData(channel)
-
-      for (let i = 0; i < newLength; i++) {
-        const sourceIndex = Math.floor(i * speedFactor)
-        if (sourceIndex < originalData.length) {
-          newData[i] = originalData[sourceIndex]
-        }
-
-        // Yield every 10000 samples
-        if (i % 10000 === 0) {
-          await new Promise((resolve) => setTimeout(resolve, 10))
-        }
-      }
+    // Validate the final buffer
+    if (!newBuffer || typeof newBuffer.duration !== "number" || newBuffer.duration <= 0) {
+      throw new Error("Generated audio buffer is invalid")
     }
 
     return newBuffer
@@ -1130,11 +745,11 @@ export default function MeditationAdjuster() {
   }
 
   const cleanupMemory = () => {
-    // Clean up audio buffers more aggressively
+    // Clean up audio buffers
     setOriginalBuffer(null)
     setProcessedBuffer(null)
 
-    // Revoke URLs immediately
+    // Revoke URLs
     if (originalUrl) {
       URL.revokeObjectURL(originalUrl)
       setOriginalUrl("")
@@ -1149,17 +764,10 @@ export default function MeditationAdjuster() {
       audioContext.suspend()
     }
 
-    // Force garbage collection on mobile
-    if (isMobile && window.gc) {
+    // Force garbage collection hint
+    if (window.gc) {
       window.gc()
     }
-
-    // Clear any remaining references
-    setTimeout(() => {
-      if (window.gc) {
-        window.gc()
-      }
-    }, 100)
   }
 
   // Add this new useEffect after the existing ones
@@ -1174,24 +782,6 @@ export default function MeditationAdjuster() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#e9f5f3,#f0f8ff_30%,#f8f0ff_70%)] p-4 md:p-8">
-      {/* Mobile Processing Overlay */}
-      {isMobileProcessing && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 m-4 text-center max-w-sm w-full">
-            <div className="animate-spin h-8 w-8 border-4 border-teal-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-700 font-medium mb-2">{processingStep}</p>
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-              <div
-                className="bg-teal-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${processingProgress}%` }}
-              ></div>
-            </div>
-            <p className="text-gray-600 text-sm mb-2">{processingProgress}% complete</p>
-            <p className="text-red-600 text-sm font-medium">⚠️ Please don't scroll or switch apps</p>
-            <p className="text-gray-500 text-xs mt-2">This prevents crashes on mobile devices</p>
-          </div>
-        </div>
-      )}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -1567,29 +1157,6 @@ export default function MeditationAdjuster() {
                       <div className="text-xs text-indigo-500/70 mt-2">
                         High Compatibility mode ensures better playback on devices like AirPods
                       </div>
-                    </div>
-                  </Card>
-                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-orange-50 to-red-50">
-                    <div className="bg-gradient-to-r from-orange-500 to-red-500 py-3 px-6">
-                      <h3 className="text-white font-medium">Mobile Optimization</h3>
-                    </div>
-                    <div className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-orange-700 mb-1">
-                            Enable ultra-aggressive mobile optimization (slower but more stable)
-                          </p>
-                        </div>
-                        <Switch
-                          checked={mobileMode || isMobile}
-                          onCheckedChange={setMobileMode}
-                          disabled={isMobile}
-                          className="data-[state=checked]:bg-orange-500"
-                        />
-                      </div>
-                      {isMobile && (
-                        <div className="text-xs text-orange-600 mt-2">Automatically enabled on mobile devices</div>
-                      )}
                     </div>
                   </Card>
                 </div>
