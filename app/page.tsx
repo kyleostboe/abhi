@@ -29,7 +29,10 @@ export default function MeditationAdjuster() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
   const [minSilenceDuration, setMinSilenceDuration] = useState<number>(3) // Default to 3 seconds
   const [minSpacingDuration, setMinSpacingDuration] = useState<number>(1.5) // Default to 1.5 seconds
-  const [durationLimits, setDurationLimits] = useState<{ min: number; max: number } | null>(null)
+  const [durationLimits, setDurationLimits] = useState<{
+    min: number
+    max: number
+  } | null>(null)
   const [audioAnalysis, setAudioAnalysis] = useState<{
     totalSilence: number
     contentDuration: number
@@ -42,15 +45,27 @@ export default function MeditationAdjuster() {
   const [buttonText, setButtonText] = useState<string>("Process Audio")
 
   // Mobile optimization states
-  const [isScrollLocked, setIsScrollLocked] = useState<boolean>(false)
-  const [isMobileProcessing, setIsMobileProcessing] = useState<boolean>(false)
   const [processingProgress, setProcessingProgress] = useState<number>(0)
   const [processingStep, setProcessingStep] = useState<string>("")
 
+  // Mobile optimization states
+  // const [isMobile, setIsMobile] = useState<boolean>(false)
+
   // Detect mobile device
-  const isMobile =
-    typeof window !== "undefined" &&
-    (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile/i.test(navigator.userAgent) || window.innerWidth <= 768)
+  // useEffect(() => {
+  //   const mobileQuery = window.matchMedia("(max-width: 768px)")
+  //   setIsMobile(mobileQuery.matches)
+
+  //   const listener = (e: MediaQueryListEvent) => {
+  //     setIsMobile(e.matches)
+  //   }
+
+  //   mobileQuery.addEventListener("change", listener)
+
+  //   return () => {
+  //     mobileQuery.removeEventListener("change", listener)
+  //   }
+  // }, [])
 
   // Keep-alive mechanism
   const keepAliveRef = useRef<NodeJS.Timeout | null>(null)
@@ -109,29 +124,24 @@ export default function MeditationAdjuster() {
   }, [])
 
   // Prevent touch events during processing
-  useEffect(() => {
-    if (isMobileProcessing) {
-      const preventTouch = (e: TouchEvent) => {
-        if (e.touches.length > 1) {
-          e.preventDefault()
-        }
-      }
+  // useEffect(() => {
+  //   const preventTouch = (e: Event) => {
+  //     if (isProcessing) {
+  //       e.preventDefault()
+  //       e.stopImmediatePropagation()
+  //     }
+  //   }
 
-      const preventScroll = (e: TouchEvent) => {
-        e.preventDefault()
-      }
+  //   if (isMobile && isProcessing) {
+  //     document.addEventListener("touchmove", preventTouch, { passive: false })
+  //     document.addEventListener("touchstart", preventTouch, { passive: false })
+  //   }
 
-      document.addEventListener("touchstart", preventTouch, { passive: false })
-      document.addEventListener("touchmove", preventScroll, { passive: false })
-      document.addEventListener("touchend", preventTouch, { passive: false })
-
-      return () => {
-        document.removeEventListener("touchstart", preventTouch)
-        document.removeEventListener("touchmove", preventScroll)
-        document.removeEventListener("touchend", preventTouch)
-      }
-    }
-  }, [isMobileProcessing])
+  //   return () => {
+  //     document.removeEventListener("touchmove", preventTouch)
+  //     document.removeEventListener("touchstart", preventTouch)
+  //   }
+  // }, [isMobile, isProcessing])
 
   // Trigger animations when settings change
   useEffect(() => {
@@ -222,57 +232,39 @@ export default function MeditationAdjuster() {
   }
 
   // Lock scroll during processing on mobile
-  const lockScroll = () => {
-    if (isMobile) {
-      setIsScrollLocked(true)
-      document.body.style.overflow = "hidden"
-      document.body.style.position = "fixed"
-      document.body.style.width = "100%"
-      document.body.style.height = "100%"
-      document.body.style.top = "0"
-      document.body.style.left = "0"
-    }
-  }
+  // useEffect(() => {
+  //   if (isMobile && isProcessing) {
+  //     document.body.classList.add("overflow-hidden")
+  //   } else {
+  //     document.body.classList.remove("overflow-hidden")
+  //   }
 
-  const unlockScroll = () => {
-    if (isMobile) {
-      setIsScrollLocked(false)
-      document.body.style.overflow = ""
-      document.body.style.position = ""
-      document.body.style.width = ""
-      document.body.style.height = ""
-      document.body.style.top = ""
-      document.body.style.left = ""
-    }
-  }
+  //   return () => {
+  //     document.body.classList.remove("overflow-hidden")
+  //   }
+  // }, [isMobile, isProcessing])
 
   // Keep-alive mechanism to prevent browser timeout
-  const startKeepAlive = () => {
-    if (keepAliveRef.current) {
-      clearInterval(keepAliveRef.current)
-    }
+  // useEffect(() => {
+  //   if (isProcessing) {
+  //     keepAliveRef.current = setInterval(() => {
+  //       fetch("/api/keep-alive").catch(() => {
+  //         console.warn("Keep-alive failed")
+  //       })
+  //     }, 60000) // Ping every 60 seconds
+  //   } else {
+  //     if (keepAliveRef.current) {
+  //       clearInterval(keepAliveRef.current)
+  //       keepAliveRef.current = null
+  //     }
+  //   }
 
-    keepAliveRef.current = setInterval(() => {
-      // Send a small heartbeat to keep the browser alive
-      console.log("Keep-alive heartbeat")
-
-      // Force a small DOM update to keep the browser engaged
-      const timestamp = Date.now()
-      document.documentElement.setAttribute("data-timestamp", timestamp.toString())
-
-      // Force garbage collection if available
-      if (window.gc) {
-        window.gc()
-      }
-    }, 2000) // Every 2 seconds
-  }
-
-  const stopKeepAlive = () => {
-    if (keepAliveRef.current) {
-      clearInterval(keepAliveRef.current)
-      keepAliveRef.current = null
-    }
-  }
+  //   return () => {
+  //     if (keepAliveRef.current) {
+  //       clearInterval(keepAliveRef.current)
+  //     }
+  //   }
+  // }, [isProcessing])
 
   // Emergency timeout handler
   const startProcessingTimeout = () => {
@@ -295,11 +287,6 @@ export default function MeditationAdjuster() {
 
   const emergencyCleanup = () => {
     setIsProcessing(false)
-    setIsMobileProcessing(false)
-    unlockScroll()
-    stopKeepAlive()
-    stopProcessingTimeout()
-
     setStatus({
       message: "Processing timed out. Try using a smaller file or try again.",
       type: "error",
@@ -323,20 +310,17 @@ export default function MeditationAdjuster() {
     }
 
     // Mobile optimization: Lock scroll and disable interactions
-    if (isMobile) {
-      lockScroll()
-      setIsMobileProcessing(true)
-      startKeepAlive()
-      startProcessingTimeout()
-    }
+    // if (isMobile) {
+    //   document.body.classList.add("overflow-hidden")
+    // }
 
     // Clean up previous session more aggressively
     cleanupMemory()
 
     // Force garbage collection on mobile
-    if (isMobile && window.gc) {
-      window.gc()
-    }
+    // if (isMobile && window.gc) {
+    //   window.gc()
+    // }
 
     setFile(file)
     setProcessingProgress(0)
@@ -366,12 +350,10 @@ export default function MeditationAdjuster() {
       })
     } finally {
       // Always unlock scroll and re-enable interactions
-      if (isMobile) {
-        unlockScroll()
-        setIsMobileProcessing(false)
-        stopKeepAlive()
-        stopProcessingTimeout()
-      }
+      setIsProcessing(false)
+      // if (isMobile) {
+      //   document.body.classList.remove("overflow-hidden")
+      // }
     }
   }
 
@@ -383,55 +365,10 @@ export default function MeditationAdjuster() {
       setProcessingProgress(10)
 
       // For mobile, process file in much smaller chunks
-      const chunkSize = isMobile ? 512 * 1024 : file.size // 512KB chunks on mobile
+      const chunkSize = file.size // 512KB chunks on mobile
       let arrayBuffer: ArrayBuffer
 
-      if (isMobile && file.size > chunkSize) {
-        // Process in very small chunks for mobile
-        const chunks: ArrayBuffer[] = []
-        let offset = 0
-
-        while (offset < file.size) {
-          const chunk = file.slice(offset, offset + chunkSize)
-          const chunkBuffer = await chunk.arrayBuffer()
-          chunks.push(chunkBuffer)
-          offset += chunkSize
-
-          // Update progress and yield control more frequently
-          const progress = Math.round((offset / file.size) * 50) + 10 // 10-60%
-          setProcessingProgress(progress)
-          setProcessingStep(`Reading file... ${Math.round((offset / file.size) * 100)}%`)
-
-          // Longer yield time for mobile
-          await new Promise((resolve) => setTimeout(resolve, 50))
-
-          // Keep browser alive
-          if (window.gc && offset % (chunkSize * 4) === 0) {
-            window.gc()
-          }
-        }
-
-        setProcessingStep("Combining file chunks...")
-        setProcessingProgress(60)
-
-        // Combine chunks with yielding
-        const totalLength = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0)
-        arrayBuffer = new ArrayBuffer(totalLength)
-        const uint8Array = new Uint8Array(arrayBuffer)
-        let position = 0
-
-        for (let i = 0; i < chunks.length; i++) {
-          uint8Array.set(new Uint8Array(chunks[i]), position)
-          position += chunks[i].byteLength
-
-          // Yield every few chunks
-          if (i % 4 === 0) {
-            await new Promise((resolve) => setTimeout(resolve, 10))
-          }
-        }
-      } else {
-        arrayBuffer = await file.arrayBuffer()
-      }
+      arrayBuffer = await file.arrayBuffer()
 
       setProcessingStep("Decoding audio data...")
       setProcessingProgress(70)
@@ -488,12 +425,9 @@ export default function MeditationAdjuster() {
     if (!originalBuffer || !audioContext) return
 
     // Mobile optimization: Lock scroll and disable interactions
-    if (isMobile) {
-      lockScroll()
-      setIsMobileProcessing(true)
-      startKeepAlive()
-      startProcessingTimeout()
-    }
+    // if (isMobile) {
+    //   document.body.classList.add("overflow-hidden")
+    // }
 
     setIsProcessing(true)
     setProcessingProgress(0)
@@ -623,15 +557,10 @@ export default function MeditationAdjuster() {
       })
     } finally {
       // Always unlock scroll and re-enable interactions
-      if (isMobile) {
-        unlockScroll()
-        setIsMobileProcessing(false)
-        stopKeepAlive()
-        stopProcessingTimeout()
-      }
-
-      // Ensure we set isProcessing to false at the very end
       setIsProcessing(false)
+      // if (isMobile) {
+      //   document.body.classList.remove("overflow-hidden")
+      // }
     }
   }
 
@@ -1031,7 +960,7 @@ export default function MeditationAdjuster() {
     }
 
     // Force garbage collection on mobile
-    if (isMobile && window.gc) {
+    if (window.gc) {
       window.gc()
     }
 
@@ -1056,23 +985,6 @@ export default function MeditationAdjuster() {
   return (
     <>
       {/* Mobile Processing Overlay */}
-      {isMobileProcessing && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 m-4 text-center max-w-sm w-full">
-            <div className="animate-spin h-8 w-8 border-4 border-teal-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-700 font-medium mb-2">{processingStep}</p>
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-              <div
-                className="bg-teal-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${processingProgress}%` }}
-              ></div>
-            </div>
-            <p className="text-gray-600 text-sm mb-2">{processingProgress}% complete</p>
-            <p className="text-red-600 text-sm font-medium">⚠️ Please don't scroll or switch apps</p>
-            <p className="text-gray-500 text-xs mt-2">This prevents crashes on mobile devices</p>
-          </div>
-        </div>
-      )}
       <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#e9f5f3,#f0f8ff_30%,#f8f0ff_70%)] p-4 md:p-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
