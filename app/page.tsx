@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { motion, AnimatePresence, useAnimation } from "framer-motion"
 import { Navigation } from "@/components/navigation"
+import { DebugPanel } from "@/components/debug-panel"
 
 export default function MeditationAdjuster() {
   // State variables
@@ -48,6 +49,60 @@ export default function MeditationAdjuster() {
   // Mobile optimization states
   const [processingProgress, setProcessingProgress] = useState<number>(0)
   const [processingStep, setProcessingStep] = useState<string>("")
+
+  // Add these debug utilities at the top of the component, after the state declarations:
+
+  // Debug logging utility
+  const debugLog = (message: string, data?: any) => {
+    const timestamp = new Date().toISOString()
+    console.log(`[${timestamp}] ${message}`, data || "")
+
+    // Also store in sessionStorage for later retrieval
+    const logs = JSON.parse(sessionStorage.getItem("abhi-debug-logs") || "[]")
+    logs.push({ timestamp, message, data })
+    if (logs.length > 100) logs.shift() // Keep only last 100 logs
+    sessionStorage.setItem("abhi-debug-logs", JSON.stringify(logs))
+  }
+
+  // Performance monitoring
+  const performanceMonitor = {
+    start: (label: string) => {
+      performance.mark(`${label}-start`)
+      debugLog(`Performance: ${label} started`)
+    },
+    end: (label: string) => {
+      performance.mark(`${label}-end`)
+      try {
+        performance.measure(label, `${label}-start`, `${label}-end`)
+        const measure = performance.getEntriesByName(label)[0]
+        debugLog(`Performance: ${label} completed`, { duration: `${measure.duration.toFixed(2)}ms` })
+      } catch (e) {
+        debugLog(`Performance: ${label} measurement failed`, e)
+      }
+    },
+  }
+
+  // Device info for debugging
+  useEffect(() => {
+    const deviceInfo = {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      memory: (navigator as any).deviceMemory || "unknown",
+      cores: navigator.hardwareConcurrency || "unknown",
+      connection: (navigator as any).connection?.effectiveType || "unknown",
+      screenSize: `${window.screen.width}x${window.screen.height}`,
+      viewportSize: `${window.innerWidth}x${window.innerHeight}`,
+      pixelRatio: window.devicePixelRatio,
+    }
+
+    debugLog("Device Info", deviceInfo)
+
+    // Add visible debug info to the page (only in development)
+    if (process.env.NODE_ENV === "development") {
+      console.log("=== ABHI DEBUG INFO ===")
+      console.table(deviceInfo)
+    }
+  }, [])
 
   // Mobile optimization states
   // const [isMobile, setIsMobile] = useState<boolean>(false)
@@ -444,15 +499,35 @@ export default function MeditationAdjuster() {
 
       const targetDurationSeconds = targetDuration * 60 // Convert to minutes
 
+      // Add performance monitoring:
+      performanceMonitor.start("audio-processing")
+      debugLog("Starting audio processing", {
+        bufferDuration: originalBuffer.duration,
+        targetDuration: targetDuration,
+        sampleRate: originalBuffer.sampleRate,
+      })
+
       // Detect silence regions
       setProcessingStep("Detecting silence regions...")
       setProcessingProgress(20)
+
+      // Before detectSilenceRegions:
+      performanceMonitor.start("silence-detection")
+
       const silenceRegions = detectSilenceRegions(originalBuffer, silenceThreshold)
+
+      // After detectSilenceRegions:
+      performanceMonitor.end("silence-detection")
 
       // Calculate total content duration (non-silence)
       setProcessingStep("Calculating adjustments...")
       setProcessingProgress(40)
       const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+      debugLog("Silence regions detected", {
+        count: silenceRegions.length,
+        totalSilence: totalSilenceDuration,
+      })
+
       const audioContentDuration = originalBuffer.duration - totalSilenceDuration
 
       // Calculate minimum required duration with minimum spacing
@@ -492,6 +567,9 @@ export default function MeditationAdjuster() {
       setProcessingStep("Rebuilding audio with adjusted pauses...")
       setProcessingProgress(60)
 
+      // Before rebuildAudioWithScaledPauses:
+      performanceMonitor.start("audio-rebuild")
+
       // Create processed audio with minimum spacing
       const processed = await rebuildAudioWithScaledPauses(
         originalBuffer,
@@ -501,6 +579,9 @@ export default function MeditationAdjuster() {
         preserveNaturalPacing,
         targetDurationSeconds,
       )
+
+      // After rebuildAudioWithScaledPauses:
+      performanceMonitor.end("audio-rebuild")
 
       setPausesAdjusted(silenceRegions.length)
 
@@ -551,11 +632,18 @@ export default function MeditationAdjuster() {
           audioContext.suspend()
         }
       }, 1000)
+
+      // At the end of processAudio (in the try block):
+      performanceMonitor.end("audio-processing")
+      debugLog("Audio processing completed successfully")
     } catch (error) {
       setStatus({
         message: `Error processing audio: ${error instanceof Error ? error.message : "Unknown error"}`,
         type: "error",
       })
+
+      // In the catch block:
+      debugLog("Audio processing failed", error)
     } finally {
       // Always unlock scroll and re-enable interactions
       setIsProcessing(false)
@@ -722,7 +810,7 @@ export default function MeditationAdjuster() {
 
             // Yield control periodically for mobile browsers
             if (i % (chunkSize * 10) === 0) {
-              await new Promise((resolve) => setTimeout(resolve, 1))
+              await new Promise((resolve) => requestAnimationFrame(resolve))
             }
           }
           continue
@@ -765,7 +853,7 @@ export default function MeditationAdjuster() {
 
             // Yield control for large silence regions
             if (j % (silenceChunkSize * 5) === 0) {
-              await new Promise((resolve) => setTimeout(resolve, 1))
+              await new Promise((resolve) => requestAnimationFrame(resolve))
             }
           }
 
@@ -788,7 +876,7 @@ export default function MeditationAdjuster() {
 
             // Yield control periodically
             if (j % (copyChunkSize * 5) === 0) {
-              await new Promise((resolve) => setTimeout(resolve, 1))
+              await new Promise((resolve) => requestAnimationFrame(resolve))
             }
           }
 
@@ -807,6 +895,11 @@ export default function MeditationAdjuster() {
               newData[j] *= fadePosition
             }
           }
+          // After each requestAnimationFrame call:
+          debugLog("Yielding control to browser", {
+            channel,
+            progress: `${Math.round((writeIndex / newData.length) * 100)}%`,
+          })
         }
       }
     } catch (error) {
@@ -1560,6 +1653,8 @@ export default function MeditationAdjuster() {
         <div className="mt-8 text-center text-xs text-gray-400 pb-6">
           <p>abhī • Meditation Length Adjuster • {new Date().getFullYear()}</p>
         </div>
+        {/* Debug Panel - only shows in development or with ?debug=true */}
+        <DebugPanel />
       </motion.div>
     </div>
   )
