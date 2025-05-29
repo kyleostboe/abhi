@@ -138,11 +138,8 @@ export default function DonatePage() {
           <div className="text-center max-w-2xl mx-auto">
             <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-r from-teal-50 to-emerald-50">
               <div className="p-8">
-                <h3 className="text-2xl font-light text-teal-700 mb-4">Thank You for Your Support</h3>
-                <p className="text-gray-600">
-                  Your generosity will keep this project alive and allow me to make it better!
-                  Every contribution is deeply appreciated.
-                </p>
+                <h3 className="text-2xl font-light text-teal-700 mb-4">Thank You</h3>
+                <p className="text-gray-600">Every contribution is deeply appreciated {"<3"}</p>
               </div>
             </Card>
           </div>
