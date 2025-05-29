@@ -668,7 +668,7 @@ export default function MeditationAdjuster() {
                     <span className="text-sm font-medium text-orange-700">Mobile Device Detected</span>
                   </div>
                   <p className="text-xs text-orange-600">
-                    For best performance on mobile, use files under 50MB and expect longer processing times.
+                    For best performance on mobile, use .mp3 files under 50MB and expect longer processing times.
                     {memoryWarning && " Your device has limited memory - consider using smaller files."}
                   </p>
                 </div>
@@ -676,7 +676,7 @@ export default function MeditationAdjuster() {
 
               <div className="mt-4 p-4 rounded-lg border border-pink-300 max-w-2xl mx-auto">
                 <p className="text-sm text-pink-600 leading-relaxed">
-                  <strong>Intro: </strong> This tool was originally designed for{" "}
+                  <strong>Intro: </strong> Mobile webapp is limited and buggy for now; try on a laptop or computer for a smoother experience and larger max file-upload sizes. Mp3 files seem to do best. The aim is for this tool to work for any of{" "}
                   <a
                     href="https://dharmaseed.org/teacher/210/"
                     target="_blank"
@@ -685,8 +685,7 @@ export default function MeditationAdjuster() {
                   >
                     Rob Burbea's guided meditations
                   </a>
-                  , though you may need to adjust the advanced settings for optimal results. Most guided meditations
-                  should be compatible. Enjoy :) [Default settings currently work best with{" "}
+                  , though any guided meditation under the file size limits should be compatible. Depending on the audio, you may need to adjust the advanced settings for optimal results. Enjoy :) [Default settings currently appear to work best with{" "}
                   <a
                     href="https://tasshin.com/guided-meditations/"
                     target="_blank"

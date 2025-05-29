@@ -205,12 +205,6 @@ export default function ContactPage() {
                   </div>
                 </div>
               </Card>
-
-              <div className="bg-gradient-to-r from-teal-500/10 to-emerald-500/10 rounded-lg p-6 text-center">
-                <p className="text-gray-600 text-sm">
-                  Thank you for using abhī!
-                </p>
-              </div>
             </div>
           </div>
         </motion.div>
