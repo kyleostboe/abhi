@@ -141,7 +141,7 @@ export default function MeditationAdjuster() {
 
   // File size validation for mobile
   const validateFileSize = (file: File): boolean => {
-    const maxSize = isMobileDevice ? 50 * 1024 * 1024 : 200 * 1024 * 1024 // 50MB for mobile, 200MB for desktop
+    const maxSize = isMobileDevice ? 50 * 1024 * 1024 : 1444 * 1024 * 1024 // 50MB for mobile, 200MB for desktop
     if (file.size > maxSize) {
       setStatus({
         message: `File too large. Maximum size is ${isMobileDevice ? "50MB" : "200MB"} for ${isMobileDevice ? "mobile" : "desktop"} devices.`,
@@ -632,555 +632,599 @@ export default function MeditationAdjuster() {
   }, [targetDuration, silenceThreshold, minSilenceDuration, minSpacingDuration, preserveNaturalPacing])
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#e9f5f3,#f0f8ff_30%,#f8f0ff_70%)] p-4 md:p-8">
-      <Navigation />
+    // Temporary mobile access disabled
+    isMobileDevice ? (
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#e9f5f3,#f0f8ff_30%,#f8f0ff_70%)] p-4 md:p-8 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="max-w-md mx-auto bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden p-8 text-center"
+        >
+          <div className="mb-6">
+            <h1 className="text-4xl md:text-5xl font-extralight text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-teal-500 to-emerald-400 mb-3">
+              abhī
+            </h1>
+            <div className="h-1 w-16 bg-gradient-to-r from-teal-500 to-emerald-400 mx-auto rounded-full mb-4"></div>
+          </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="max-w-4xl mx-auto bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden"
-      >
-        {/* Header */}
-        <div className="relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-teal-500/20 via-purple-500/10 to-blue-500/20 blur-3xl transform -translate-y-1/2"></div>
-          <div className="relative pt-16 pb-12 px-8 text-center">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-            >
-              <h1 className="text-5xl md:text-6xl font-extralight text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-teal-500 to-emerald-400 mb-3">
-                abhī
-              </h1>
-              <div className="h-1 w-16 bg-gradient-to-r from-teal-500 to-emerald-400 mx-auto rounded-full mb-4"></div>
-              <p className="text-lg text-gray-600 mb-4 font-light">Meditation Length Adjuster</p>
-              <p className="text-gray-500 max-w-2xl mx-auto text-sm leading-relaxed">
-                Upload your audio and change the length of pauses to match your desired meditation duration! The app
-                intelligently detects silence periods, scales them proportionally, and preserves spoken content.
-              </p>
+          <div className="mb-6">
+            <AlertTriangle className="h-20 w-20
+             text-teal-400 mx-auto mb-6 opacity-80" />
+            <h2 className="text-3xl font-extralight text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-emerald-500 mb-4"></h2>
+            <p className="text-gray-600 leading-relaxed text-base font-medium">
+              I'm working hard to optimize abhī for mobile devices. For now, this tool can be used from a desktop or
+              laptop computer.
+            </p>
+          </div>
 
-              {/* Mobile warning */}
-              {isMobileDevice && (
-                <div className="mt-4 p-3 rounded-lg border border-orange-300 bg-orange-50 max-w-2xl mx-auto">
-                  <div className="flex items-center justify-center mb-2">
-                    <AlertTriangle className="h-4 w-4 text-orange-600 mr-2" />
-                    <span className="text-sm font-medium text-orange-700">Mobile Device Detected</span>
+          <div className="mt-8 p-4 bg-teal-50 rounded-lg">
+            <p className="text-sm text-teal-700">
+              Want to be notified when mobile acess is available?
+              <a href="/contact" className="text-teal-600 hover:text-teal-700 underline font-medium ml-1">
+                Contact me
+              </a>
+            </p>
+          </div>
+        </motion.div>
+      </div>
+    ) : (
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#e9f5f3,#f0f8ff_30%,#f8f0ff_70%)] p-4 md:p-8">
+        <Navigation />
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="max-w-4xl mx-auto bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden"
+        >
+          {/* Header */}
+          <div className="relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-teal-500/20 via-purple-500/10 to-blue-500/20 blur-3xl transform -translate-y-1/2"></div>
+            <div className="relative pt-16 pb-12 px-8 text-center">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+              >
+                <h1 className="text-5xl md:text-6xl font-extralight text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-teal-500 to-emerald-400 mb-3">
+                  abhī
+                </h1>
+                <div className="h-1 w-16 bg-gradient-to-r from-teal-500 to-emerald-400 mx-auto rounded-full mb-4"></div>
+                <p className="text-lg text-gray-600 mb-4 font-light">Meditation Length Adjuster</p>
+                <p className="text-gray-500 max-w-2xl mx-auto text-sm leading-relaxed">
+                  Upload your audio and change the length of pauses to match your desired meditation duration! The app
+                  intelligently detects silence periods, scales them proportionally, and preserves spoken content.
+                </p>
+
+                {/* Mobile warning */}
+                {isMobileDevice && (
+                  <div className="mt-4 p-3 rounded-lg border border-orange-300 bg-orange-50 max-w-2xl mx-auto">
+                    <div className="flex items-center justify-center mb-2">
+                      <AlertTriangle className="h-4 w-4 text-orange-600 mr-2" />
+                      <span className="text-sm font-medium text-orange-700">Mobile Device Detected</span>
+                    </div>
+                    <p className="text-xs text-orange-600">
+                      For best performance on mobile, use files under 50MB and expect longer processing times.
+                      {memoryWarning && " Your device has limited memory - consider using smaller files."}
+                    </p>
                   </div>
-                  <p className="text-xs text-orange-600">
-                    For best performance on mobile, use .mp3 files under 50MB and expect longer processing times.
-                    {memoryWarning && " Your device has limited memory - consider using smaller files."}
+                )}
+
+                <div className="mt-4 p-4 rounded-lg border border-pink-300 max-w-2xl mx-auto">
+                  <p className="text-sm text-pink-600 leading-relaxed">
+                    <strong>Intro: </strong> The aim is for this tool to work for any of{" "}
+                    <a
+                      href="https://dharmaseed.org/teacher/210/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors"
+                    >
+                      Rob Burbea's guided meditations
+                    </a>
+                    , though any guided meditation should be compatible. Depending on the
+                    audio, you may need to adjust the advanced settings for optimal results. Enjoy :) [Default settings
+                    currently appear to work best with{" "}
+                    <a
+                      href="https://tasshin.com/guided-meditations/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors"
+                    >
+                      Tasshin's collection]
+                    </a>
                   </p>
                 </div>
-              )}
-
-              <div className="mt-4 p-4 rounded-lg border border-pink-300 max-w-2xl mx-auto">
-                <p className="text-sm text-pink-600 leading-relaxed">
-                  <strong>Intro: </strong> Mobile webapp is limited and buggy for now; try on a laptop or computer for a smoother experience and larger max file-upload sizes. Mp3 files seem to do best. The aim is for this tool to work for any of{" "}
-                  <a
-                    href="https://dharmaseed.org/teacher/210/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors"
-                  >
-                    Rob Burbea's guided meditations
-                  </a>
-                  , though any guided meditation under the file size limits should be compatible. Depending on the audio, you may need to adjust the advanced settings for optimal results. Enjoy :) [Default settings currently appear to work best with{" "}
-                  <a
-                    href="https://tasshin.com/guided-meditations/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors"
-                  >
-                    Tasshin's collection]
-                  </a>
-                </p>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-
-        <div className="px-6 md:px-10 pb-10">
-          {/* Upload Area */}
-          <motion.div
-            whileHover={{ scale: 1.005, boxShadow: "0 8px 20px rgba(0,0,0,0.08)" }}
-            whileTap={{ scale: 0.995 }}
-            transition={{ type: "spring", stiffness: 400, damping: 20 }}
-            ref={uploadAreaRef}
-            className="border-2 border-dashed border-teal-300 bg-gradient-to-br from-teal-50 to-blue-50 rounded-2xl p-10 md:p-16 text-center mb-8 cursor-pointer transition-all hover:border-teal-400"
-            onClick={() => fileInputRef.current?.click()}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <div className="mb-4 bg-gradient-to-br from-teal-400 to-emerald-300 text-white p-4 rounded-full inline-block">
-              <Upload size={32} />
+              </motion.div>
             </div>
-            <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <div className="text-lg font-medium text-teal-800 mb-2">Drop your audio file here or click to browse</div>
-              <div className="text-sm text-teal-600/70">
-                Supports MP3, WAV, and OGG files
-                {isMobileDevice && " (max 50MB for mobile)"}
-              </div>
-            </motion.div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept=".mp3,.wav,.ogg,audio/*"
-              onChange={handleFileSelect}
-            />
-          </motion.div>
-
-          {/* File Info */}
-          <AnimatePresence>
-            {file && (
-              <motion.div
-                initial={{ opacity: 0, y: 10, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: "auto" }}
-                exit={{ opacity: 0, y: -10, height: 0 }}
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                className="bg-gradient-to-r from-teal-50 to-emerald-50 rounded-xl p-5 mb-6 border border-teal-100 shadow-sm overflow-hidden"
-              >
-                <div className="flex items-center">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 30, delay: 0.1 }}
-                    className="bg-teal-100 p-2 rounded-lg mr-4"
-                  >
-                    <Volume2 className="h-5 w-5 text-teal-600" />
-                  </motion.div>
-                  <div>
-                    <motion.div
-                      initial={{ opacity: 0, x: -5 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="font-medium text-teal-800 mb-1"
-                    >
-                      {file.name}
-                    </motion.div>
-                    <motion.div
-                      initial={{ opacity: 0, x: -5 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                      className="text-sm text-teal-600/70"
-                    >
-                      Size: {formatFileSize(file.size)} • Type: {file.type}
-                    </motion.div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Processing Progress */}
-          <AnimatePresence>
-            {isProcessing && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="mb-6"
-              >
-                <Card className="p-6 bg-gradient-to-r from-pink-50 to-purple-50 border-pink-200">
-                  <div className="text-center mb-4">
-                    <h3 className="text-lg font-medium text-pink-700 mb-2">Processing Audio</h3>
-                    <p className="text-sm text-pink-600">{processingStep}</p>
-                  </div>
-                  <div className="w-full bg-pink-200 rounded-full h-2 mb-2">
-                    <div
-                      className="bg-gradient-to-r from-pink-500 to-purple-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${processingProgress}%` }}
-                    ></div>
-                  </div>
-                  <div className="text-center text-sm text-pink-600">{processingProgress}% complete</div>
-                </Card>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Audio Analysis Info */}
-          <AnimatePresence>
-            {audioAnalysis && durationLimits && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ delay: 0.1 }}
-                className="mb-10 mt-8"
-              >
-                <Alert className="border-none bg-gradient-to-r from-blue-50 to-purple-50 shadow-sm p-1">
-                  <div className="p-4">
-                    <div className="flex items-center mb-4">
-                      <div className="bg-blue-100 p-2 rounded-lg mr-3">
-                        <Info className="h-4 w-4 text-blue-600" />
-                      </div>
-                      <div className="font-medium text-blue-800 text-lg">Audio Analysis</div>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-white/60 p-3 rounded-lg text-center">
-                        <div className="text-xs text-blue-500 uppercase tracking-wide mb-1">Content</div>
-                        <div className="font-medium text-blue-800">{formatDuration(audioAnalysis.contentDuration)}</div>
-                      </div>
-                      <div className="bg-white/60 p-3 rounded-lg text-center">
-                        <div className="text-xs text-blue-500 uppercase tracking-wide mb-1">Silence</div>
-                        <div className="font-medium text-blue-800">{formatDuration(audioAnalysis.totalSilence)}</div>
-                      </div>
-                      <div className="bg-white/60 p-3 rounded-lg text-center">
-                        <div className="text-xs text-blue-500 uppercase tracking-wide mb-1">Pauses</div>
-                        <div className="font-medium text-blue-800">{audioAnalysis.silenceRegions}</div>
-                      </div>
-                      <div className="bg-white/60 p-3 rounded-lg text-center">
-                        <div className="text-xs text-blue-500 uppercase tracking-wide mb-1">Range</div>
-                        <div className="font-medium text-blue-800">
-                          {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Alert>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Controls */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mb-8"
-          >
-            <Tabs defaultValue="basic" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100/70 p-1 rounded-lg">
-                <TabsTrigger
-                  value="basic"
-                  className="data-[state=active]:bg-white data-[state=active]:text-teal-700 data-[state=active]:shadow-sm rounded-md"
-                >
-                  <Clock className="h-4 w-4 mr-2" />
-                  Basic Settings
-                </TabsTrigger>
-                <TabsTrigger
-                  value="advanced"
-                  className="data-[state=active]:bg-white data-[state=active]:text-teal-700 data-[state=active]:shadow-sm rounded-md"
-                >
-                  <Settings2 className="h-4 w-4 mr-2" />
-                  Advanced Settings
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="basic" className="mt-0 space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-teal-50 to-emerald-50">
-                    <div className="bg-gradient-to-r from-teal-500 to-emerald-500 py-3 px-6">
-                      <h3 className="text-white font-medium flex items-center">
-                        <Clock className="h-4 w-4 mr-2" />
-                        Target Duration
-                      </h3>
-                    </div>
-                    <div className="p-6">
-                      <div className="mb-4">
-                        <Slider
-                          value={[targetDuration]}
-                          min={durationLimits?.min || 5}
-                          max={durationLimits?.max || (isMobileDevice ? 60 : 120)}
-                          step={1}
-                          onValueChange={(value) => setTargetDuration(value[0])}
-                          disabled={!durationLimits}
-                          className="py-4"
-                        />
-                      </div>
-                      <div className="text-center">
-                        <span className="text-3xl font-light text-teal-700">{targetDuration}</span>
-                        <span className="text-lg text-teal-600 ml-1">minutes</span>
-                      </div>
-                      {durationLimits && (
-                        <div className="text-center text-xs text-teal-500/70 mt-2">
-                          Range: {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-
-                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-blue-50 to-purple-50">
-                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 py-3 px-6">
-                      <h3 className="text-white font-medium flex items-center">
-                        <Volume2 className="h-4 w-4 mr-2" />
-                        Silence Threshold
-                      </h3>
-                    </div>
-                    <div className="p-6">
-                      <div className="mb-4">
-                        <Slider
-                          value={[silenceThreshold]}
-                          min={0.001}
-                          max={0.05}
-                          step={0.001}
-                          onValueChange={(value) => setSilenceThreshold(value[0])}
-                          className="py-4"
-                        />
-                      </div>
-                      <div className="text-center">
-                        <span className="text-3xl font-light text-blue-700">{silenceThreshold.toFixed(3)}</span>
-                      </div>
-                      <div className="text-center text-xs text-blue-500/70 mt-2">Lower = more sensitive</div>
-                    </div>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="advanced" className="mt-0 space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-emerald-50 to-teal-50">
-                    <div className="bg-gradient-to-r from-emerald-500 to-teal-500 py-3 px-6">
-                      <h3 className="text-white font-medium">Min Silence Duration</h3>
-                    </div>
-                    <div className="p-6">
-                      <div className="mb-4">
-                        <Slider
-                          value={[minSilenceDuration]}
-                          min={1}
-                          max={15}
-                          step={0.5}
-                          onValueChange={(value) => setMinSilenceDuration(value[0])}
-                          className="py-4"
-                        />
-                      </div>
-                      <div className="text-center">
-                        <span className="text-3xl font-light text-emerald-700">{minSilenceDuration}</span>
-                        <span className="text-lg text-emerald-600 ml-1">seconds</span>
-                      </div>
-                      <div className="text-center text-xs text-emerald-500/70 mt-2">Shorter = detect more pauses</div>
-                    </div>
-                  </Card>
-
-                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-purple-50 to-blue-50">
-                    <div className="bg-gradient-to-r from-purple-500 to-blue-500 py-3 px-6">
-                      <h3 className="text-white font-medium">Min Spacing Between Content</h3>
-                    </div>
-                    <div className="p-6">
-                      <div className="mb-4">
-                        <Slider
-                          value={[minSpacingDuration]}
-                          min={0.5}
-                          max={5}
-                          step={0.1}
-                          onValueChange={(value) => setMinSpacingDuration(value[0])}
-                          className="py-4"
-                        />
-                      </div>
-                      <div className="text-center">
-                        <span className="text-3xl font-light text-purple-700">{minSpacingDuration.toFixed(1)}</span>
-                        <span className="text-lg text-purple-600 ml-1">seconds</span>
-                      </div>
-                      <div className="text-center text-xs text-purple-500/70 mt-2">
-                        Minimum pause between speaking parts
-                      </div>
-                    </div>
-                  </Card>
-
-                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-blue-50 to-indigo-50">
-                    <div className="bg-gradient-to-r from-blue-500 to-indigo-500 py-3 px-6">
-                      <h3 className="text-white font-medium">Preserve Natural Pacing</h3>
-                    </div>
-                    <div className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-blue-700 mb-1">
-                            Maintain the relative length of pauses (longer pauses stay longer)
-                          </p>
-                        </div>
-                        <Switch
-                          checked={preserveNaturalPacing}
-                          onCheckedChange={setPreserveNaturalPacing}
-                          className="data-[state=checked]:bg-blue-500"
-                        />
-                      </div>
-                    </div>
-                  </Card>
-
-                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-indigo-50 to-purple-50">
-                    <div className="bg-gradient-to-r from-indigo-500 to-purple-500 py-3 px-6">
-                      <h3 className="text-white font-medium">Compatibility Mode</h3>
-                    </div>
-                    <div className="p-6">
-                      <Select value={compatibilityMode} onValueChange={(value) => setCompatibilityMode(value)}>
-                        <SelectTrigger className="w-full mb-2 border-indigo-200 focus:ring-indigo-500">
-                          <SelectValue placeholder="Select compatibility mode" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="standard">Standard Quality</SelectItem>
-                          <SelectItem value="high">High Compatibility (Recommended for Mobile)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <div className="text-xs text-indigo-500/70 mt-2">
-                        High Compatibility mode ensures better playback on mobile devices and AirPods
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </motion.div>
-
-          {/* Process Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mb-8"
-          >
-            <Button
-              className={`w-full py-7 text-lg font-medium tracking-wider rounded-xl shadow-lg transition-all border-none ${
-                isProcessing
-                  ? "bg-gradient-to-r from-pink-400 to-pink-500"
-                  : isProcessingComplete
-                    ? "bg-gradient-to-r from-emerald-400 to-emerald-500"
-                    : "bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600"
-              }`}
-              disabled={!originalBuffer || isProcessing || !durationLimits}
-              onClick={processAudio}
-            >
-              {isProcessing && (
-                <div className="flex items-center justify-center">
-                  <div className="mr-3 h-5 w-5">
-                    <svg
-                      className="animate-spin h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                  </div>
-                  <span>Processing Audio{isMobileDevice ? " (This may take longer on mobile)" : ""}...</span>
-                </div>
-              )}
-              {!isProcessing && isProcessingComplete && <span>Complete! 🎉</span>}
-              {!isProcessing && !isProcessingComplete && (
-                <div className="flex items-center justify-center">
-                  <Wand2 className="mr-2 h-5 w-5" />
-                  <span>Process Audio</span>
-                </div>
-              )}
-            </Button>
-          </motion.div>
-
-          {/* Status Message */}
-          <AnimatePresence>
-            {status && (
-              <motion.div
-                initial={{ opacity: 0, y: 10, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: "auto" }}
-                exit={{ opacity: 0, y: -10, height: 0 }}
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                className={`p-4 rounded-xl mb-8 text-center shadow-sm overflow-hidden ${
-                  status.type === "info"
-                    ? "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200"
-                    : status.type === "success"
-                      ? "bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 border border-emerald-200"
-                      : "bg-gradient-to-r from-red-50 to-red-100 text-red-700 border border-red-200"
-                }`}
-              >
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-                  {status.message}
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Audio Players */}
-          <div className="space-y-6">
-            {/* Original Audio */}
-            {originalUrl && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-                <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-gray-100">
-                  <div className="bg-gradient-to-r from-gray-700 to-gray-800 py-3 px-6">
-                    <h3 className="text-white font-medium">Original Audio</h3>
-                  </div>
-                  <div className="p-6">
-                    <div className="bg-white rounded-lg p-3 shadow-sm mb-4">
-                      <audio controls className="w-full" src={originalUrl}></audio>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-white/60 p-3 rounded-lg text-center">
-                        <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Duration</div>
-                        <div className="font-medium text-gray-800">
-                          {originalBuffer ? formatDuration(originalBuffer.duration) : "--"}
-                        </div>
-                      </div>
-                      <div className="bg-white/60 p-3 rounded-lg text-center">
-                        <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">File Size</div>
-                        <div className="font-medium text-gray-800">{formatFileSize(file?.size || 0)}</div>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            )}
-
-            {/* Processed Audio */}
-            {processedUrl && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-teal-50 to-emerald-50">
-                  <div className="bg-gradient-to-r from-teal-600 to-emerald-600 py-3 px-6">
-                    <h3 className="text-white font-medium">Processed Audio</h3>
-                  </div>
-                  <div className="p-6">
-                    <div className="bg-white rounded-lg p-3 shadow-sm mb-4">
-                      <audio controls className="w-full" src={processedUrl}></audio>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                      <div className="bg-white/60 p-3 rounded-lg text-center">
-                        <div className="text-xs text-teal-500 uppercase tracking-wide mb-1">Duration</div>
-                        <div className="font-medium text-teal-800">
-                          {processedBuffer ? formatDuration(processedBuffer.duration) : "--"}
-                          {actualDuration && targetDuration && (
-                            <div className="text-xs text-teal-600 mt-1">
-                              {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="bg-white/60 p-3 rounded-lg text-center">
-                        <div className="text-xs text-teal-500 uppercase tracking-wide mb-1">Pauses Adjusted</div>
-                        <div className="font-medium text-teal-800">{pausesAdjusted}</div>
-                      </div>
-                    </div>
-                    <Button
-                      className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition-all border-none"
-                      onClick={downloadProcessedAudio}
-                    >
-                      <div className="flex items-center justify-center">
-                        <Download className="mr-2 h-5 w-5" />
-                        Download Processed Audio
-                      </div>
-                    </Button>
-                  </div>
-                </Card>
-              </motion.div>
-            )}
           </div>
-        </div>
 
-        {/* Footer */}
-        <div className="mt-8 text-center text-xs text-gray-400 pb-6">
-          <p>abhī • Meditation Length Adjuster • {new Date().getFullYear()}</p>
-          {isMobileDevice && <p className="mt-1">Mobile-optimized version</p>}
-        </div>
-      </motion.div>
-    </div>
+          <div className="px-6 md:px-10 pb-10">
+            {/* Upload Area */}
+            <motion.div
+              whileHover={{ scale: 1.005, boxShadow: "0 8px 20px rgba(0,0,0,0.08)" }}
+              whileTap={{ scale: 0.995 }}
+              transition={{ type: "spring", stiffness: 400, damping: 20 }}
+              ref={uploadAreaRef}
+              className="border-2 border-dashed border-teal-300 bg-gradient-to-br from-teal-50 to-blue-50 rounded-2xl p-10 md:p-16 text-center mb-8 cursor-pointer transition-all hover:border-teal-400"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <div className="mb-4 bg-gradient-to-br from-teal-400 to-emerald-300 text-white p-4 rounded-full inline-block">
+                <Upload size={32} />
+              </div>
+              <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                <div className="text-lg font-medium text-teal-800 mb-2">
+                  Drop your audio file here or click to browse
+                </div>
+                <div className="text-sm text-teal-600/70">
+                  Supports MP3, WAV, and OGG files
+                  {isMobileDevice && " (max 50MB for mobile)"}
+                </div>
+              </motion.div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept=".mp3,.wav,.ogg,audio/*"
+                onChange={handleFileSelect}
+              />
+            </motion.div>
+
+            {/* File Info */}
+            <AnimatePresence>
+              {file && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: "auto" }}
+                  exit={{ opacity: 0, y: -10, height: 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  className="bg-gradient-to-r from-teal-50 to-emerald-50 rounded-xl p-5 mb-6 border border-teal-100 shadow-sm overflow-hidden"
+                >
+                  <div className="flex items-center">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 30, delay: 0.1 }}
+                      className="bg-teal-100 p-2 rounded-lg mr-4"
+                    >
+                      <Volume2 className="h-5 w-5 text-teal-600" />
+                    </motion.div>
+                    <div>
+                      <motion.div
+                        initial={{ opacity: 0, x: -5 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="font-medium text-teal-800 mb-1"
+                      >
+                        {file.name}
+                      </motion.div>
+                      <motion.div
+                        initial={{ opacity: 0, x: -5 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="text-sm text-teal-600/70"
+                      >
+                        Size: {formatFileSize(file.size)} • Type: {file.type}
+                      </motion.div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Processing Progress */}
+            <AnimatePresence>
+              {isProcessing && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="mb-6"
+                >
+                  <Card className="p-6 bg-gradient-to-r from-pink-50 to-purple-50 border-pink-200">
+                    <div className="text-center mb-4">
+                      <h3 className="text-lg font-medium text-pink-700 mb-2">Processing Audio</h3>
+                      <p className="text-sm text-pink-600">{processingStep}</p>
+                    </div>
+                    <div className="w-full bg-pink-200 rounded-full h-2 mb-2">
+                      <div
+                        className="bg-gradient-to-r from-pink-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${processingProgress}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-center text-sm text-pink-600">{processingProgress}% complete</div>
+                  </Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Audio Analysis Info */}
+            <AnimatePresence>
+              {audioAnalysis && durationLimits && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ delay: 0.1 }}
+                  className="mb-10 mt-8"
+                >
+                  <Alert className="border-none bg-gradient-to-r from-blue-50 to-purple-50 shadow-sm p-1">
+                    <div className="p-4">
+                      <div className="flex items-center mb-4">
+                        <div className="bg-blue-100 p-2 rounded-lg mr-3">
+                          <Info className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <div className="font-medium text-blue-800 text-lg">Audio Analysis</div>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-white/60 p-3 rounded-lg text-center">
+                          <div className="text-xs text-blue-500 uppercase tracking-wide mb-1">Content</div>
+                          <div className="font-medium text-blue-800">
+                            {formatDuration(audioAnalysis.contentDuration)}
+                          </div>
+                        </div>
+                        <div className="bg-white/60 p-3 rounded-lg text-center">
+                          <div className="text-xs text-blue-500 uppercase tracking-wide mb-1">Silence</div>
+                          <div className="font-medium text-blue-800">{formatDuration(audioAnalysis.totalSilence)}</div>
+                        </div>
+                        <div className="bg-white/60 p-3 rounded-lg text-center">
+                          <div className="text-xs text-blue-500 uppercase tracking-wide mb-1">Pauses</div>
+                          <div className="font-medium text-blue-800">{audioAnalysis.silenceRegions}</div>
+                        </div>
+                        <div className="bg-white/60 p-3 rounded-lg text-center">
+                          <div className="text-xs text-blue-500 uppercase tracking-wide mb-1">Range</div>
+                          <div className="font-medium text-blue-800">
+                            {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Alert>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Controls */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mb-8"
+            >
+              <Tabs defaultValue="basic" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100/70 p-1 rounded-lg">
+                  <TabsTrigger
+                    value="basic"
+                    className="data-[state=active]:bg-white data-[state=active]:text-teal-700 data-[state=active]:shadow-sm rounded-md"
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    Basic Settings
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="advanced"
+                    className="data-[state=active]:bg-white data-[state=active]:text-teal-700 data-[state=active]:shadow-sm rounded-md"
+                  >
+                    <Settings2 className="h-4 w-4 mr-2" />
+                    Advanced Settings
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="basic" className="mt-0 space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-teal-50 to-emerald-50">
+                      <div className="bg-gradient-to-r from-teal-500 to-emerald-500 py-3 px-6">
+                        <h3 className="text-white font-medium flex items-center">
+                          <Clock className="h-4 w-4 mr-2" />
+                          Target Duration
+                        </h3>
+                      </div>
+                      <div className="p-6">
+                        <div className="mb-4">
+                          <Slider
+                            value={[targetDuration]}
+                            min={durationLimits?.min || 5}
+                            max={durationLimits?.max || (isMobileDevice ? 60 : 120)}
+                            step={1}
+                            onValueChange={(value) => setTargetDuration(value[0])}
+                            disabled={!durationLimits}
+                            className="py-4"
+                          />
+                        </div>
+                        <div className="text-center">
+                          <span className="text-3xl font-light text-teal-700">{targetDuration}</span>
+                          <span className="text-lg text-teal-600 ml-1">minutes</span>
+                        </div>
+                        {durationLimits && (
+                          <div className="text-center text-xs text-teal-500/70 mt-2">
+                            Range: {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+
+                    <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-blue-50 to-purple-50">
+                      <div className="bg-gradient-to-r from-blue-500 to-purple-500 py-3 px-6">
+                        <h3 className="text-white font-medium flex items-center">
+                          <Volume2 className="h-4 w-4 mr-2" />
+                          Silence Threshold
+                        </h3>
+                      </div>
+                      <div className="p-6">
+                        <div className="mb-4">
+                          <Slider
+                            value={[silenceThreshold]}
+                            min={0.001}
+                            max={0.05}
+                            step={0.001}
+                            onValueChange={(value) => setSilenceThreshold(value[0])}
+                            className="py-4"
+                          />
+                        </div>
+                        <div className="text-center">
+                          <span className="text-3xl font-light text-blue-700">{silenceThreshold.toFixed(3)}</span>
+                        </div>
+                        <div className="text-center text-xs text-blue-500/70 mt-2">Lower = more sensitive</div>
+                      </div>
+                    </Card>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="advanced" className="mt-0 space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-emerald-50 to-teal-50">
+                      <div className="bg-gradient-to-r from-emerald-500 to-teal-500 py-3 px-6">
+                        <h3 className="text-white font-medium">Min Silence Duration</h3>
+                      </div>
+                      <div className="p-6">
+                        <div className="mb-4">
+                          <Slider
+                            value={[minSilenceDuration]}
+                            min={1}
+                            max={15}
+                            step={0.5}
+                            onValueChange={(value) => setMinSilenceDuration(value[0])}
+                            className="py-4"
+                          />
+                        </div>
+                        <div className="text-center">
+                          <span className="text-3xl font-light text-emerald-700">{minSilenceDuration}</span>
+                          <span className="text-lg text-emerald-600 ml-1">seconds</span>
+                        </div>
+                        <div className="text-center text-xs text-emerald-500/70 mt-2">Shorter = detect more pauses</div>
+                      </div>
+                    </Card>
+
+                    <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-purple-50 to-blue-50">
+                      <div className="bg-gradient-to-r from-purple-500 to-blue-500 py-3 px-6">
+                        <h3 className="text-white font-medium">Min Spacing Between Content</h3>
+                      </div>
+                      <div className="p-6">
+                        <div className="mb-4">
+                          <Slider
+                            value={[minSpacingDuration]}
+                            min={0.0}
+                            max={5}
+                            step={0.1}
+                            onValueChange={(value) => setMinSpacingDuration(value[0])}
+                            className="py-4"
+                          />
+                        </div>
+                        <div className="text-center">
+                          <span className="text-3xl font-light text-purple-700">{minSpacingDuration.toFixed(1)}</span>
+                          <span className="text-lg text-purple-600 ml-1">seconds</span>
+                        </div>
+                        <div className="text-center text-xs text-purple-500/70 mt-2">
+                          Minimum pause between speaking parts
+                        </div>
+                      </div>
+                    </Card>
+
+                    <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-blue-50 to-indigo-50">
+                      <div className="bg-gradient-to-r from-blue-500 to-indigo-500 py-3 px-6">
+                        <h3 className="text-white font-medium">Preserve Natural Pacing</h3>
+                      </div>
+                      <div className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-blue-700 mb-1">
+                              Maintain the relative length of pauses (longer pauses stay longer)
+                            </p>
+                          </div>
+                          <Switch
+                            checked={preserveNaturalPacing}
+                            onCheckedChange={setPreserveNaturalPacing}
+                            className="data-[state=checked]:bg-blue-500"
+                          />
+                        </div>
+                      </div>
+                    </Card>
+
+                    <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-indigo-50 to-purple-50">
+                      <div className="bg-gradient-to-r from-indigo-500 to-purple-500 py-3 px-6">
+                        <h3 className="text-white font-medium">Compatibility Mode</h3>
+                      </div>
+                      <div className="p-6">
+                        <Select value={compatibilityMode} onValueChange={(value) => setCompatibilityMode(value)}>
+                          <SelectTrigger className="w-full mb-2 border-indigo-200 focus:ring-indigo-500">
+                            <SelectValue placeholder="Select compatibility mode" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="standard">Standard Quality</SelectItem>
+                            <SelectItem value="high">High Compatibility (Recommended for Mobile)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <div className="text-xs text-indigo-500/70 mt-2">
+                          High Compatibility mode ensures better playback on mobile devices and AirPods
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </motion.div>
+
+            {/* Process Button */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mb-8"
+            >
+              <Button
+                className={`w-full py-7 text-lg font-medium tracking-wider rounded-xl shadow-lg transition-all border-none ${
+                  isProcessing
+                    ? "bg-gradient-to-r from-pink-400 to-pink-500"
+                    : isProcessingComplete
+                      ? "bg-gradient-to-r from-emerald-400 to-emerald-500"
+                      : "bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600"
+                }`}
+                disabled={!originalBuffer || isProcessing || !durationLimits}
+                onClick={processAudio}
+              >
+                {isProcessing && (
+                  <div className="flex items-center justify-center">
+                    <div className="mr-3 h-5 w-5">
+                      <svg
+                        className="animate-spin h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                    </div>
+                    <span>Processing Audio...</span>
+                  </div>
+                )}
+                {!isProcessing && isProcessingComplete && <span>Complete 🎉</span>}
+                {!isProcessing && !isProcessingComplete && (
+                  <div className="flex items-center justify-center">
+                    <Wand2 className="mr-2 h-5 w-5" />
+                    <span>Process Audio</span>
+                  </div>
+                )}
+              </Button>
+            </motion.div>
+
+            {/* Status Message */}
+            <AnimatePresence>
+              {status && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: "auto" }}
+                  exit={{ opacity: 0, y: -10, height: 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  className={`p-4 rounded-xl mb-8 text-center shadow-sm overflow-hidden ${
+                    status.type === "info"
+                      ? "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200"
+                      : status.type === "success"
+                        ? "bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 border border-emerald-200"
+                        : "bg-gradient-to-r from-red-50 to-red-100 text-red-700 border border-red-200"
+                  }`}
+                >
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+                    {status.message}
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Audio Players */}
+            <div className="space-y-6">
+              {/* Original Audio */}
+              {originalUrl && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+                  <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-gray-100">
+                    <div className="bg-gradient-to-r from-gray-700 to-gray-800 py-3 px-6">
+                      <h3 className="text-white font-medium">Original Audio</h3>
+                    </div>
+                    <div className="p-6">
+                      <div className="bg-white rounded-lg p-3 shadow-sm mb-4">
+                        <audio controls className="w-full" src={originalUrl}></audio>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-white/60 p-3 rounded-lg text-center">
+                          <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Duration</div>
+                          <div className="font-medium text-gray-800">
+                            {originalBuffer ? formatDuration(originalBuffer.duration) : "--"}
+                          </div>
+                        </div>
+                        <div className="bg-white/60 p-3 rounded-lg text-center">
+                          <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">File Size</div>
+                          <div className="font-medium text-gray-800">{formatFileSize(file?.size || 0)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
+
+              {/* Processed Audio */}
+              {processedUrl && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+                  <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-teal-50 to-emerald-50">
+                    <div className="bg-gradient-to-r from-teal-600 to-emerald-600 py-3 px-6">
+                      <h3 className="text-white font-medium">Processed Audio</h3>
+                    </div>
+                    <div className="p-6">
+                      <div className="bg-white rounded-lg p-3 shadow-sm mb-4">
+                        <audio controls className="w-full" src={processedUrl}></audio>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="bg-white/60 p-3 rounded-lg text-center">
+                          <div className="text-xs text-teal-500 uppercase tracking-wide mb-1">Duration</div>
+                          <div className="font-medium text-teal-800">
+                            {processedBuffer ? formatDuration(processedBuffer.duration) : "--"}
+                            {actualDuration && targetDuration && (
+                              <div className="text-xs text-teal-600 mt-1">
+                                {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="bg-white/60 p-3 rounded-lg text-center">
+                          <div className="text-xs text-teal-500 uppercase tracking-wide mb-1">Pauses Adjusted</div>
+                          <div className="font-medium text-teal-800">{pausesAdjusted}</div>
+                        </div>
+                      </div>
+                      <Button
+                        className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition-all border-none"
+                        onClick={downloadProcessedAudio}
+                      >
+                        <div className="flex items-center justify-center">
+                          <Download className="mr-2 h-5 w-5" />
+                          Download Processed Audio
+                        </div>
+                      </Button>
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="mt-8 text-center text-xs text-gray-400 pb-6">
+            <p>abhī • Meditation Length Adjuster • {new Date().getFullYear()}</p>
+            {isMobileDevice && <p className="mt-1">Mobile-optimized version</p>}
+          </div>
+        </motion.div>
+      </div>
+    )
   )
 }

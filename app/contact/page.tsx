@@ -161,7 +161,7 @@ export default function ContactPage() {
 
                   <div className="space-y-4">
                     <a
-                      href="mailto:your-kyle@ostboe.com"
+                      href="mailto:kyle@ostboe.com"
                       className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       <div className="bg-teal-100 p-2 rounded-full mr-3">

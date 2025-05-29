@@ -140,8 +140,8 @@ export default function DonatePage() {
               <div className="p-8">
                 <h3 className="text-2xl font-light text-teal-700 mb-4">Thank You for Your Support</h3>
                 <p className="text-gray-600">
-                  Your generosity helps keep this project alive and enables me to continue developing new features.
-                  Every contribution, no matter how small, is deeply appreciated.
+                  Your generosity will keep this project alive and allow me to make it better!
+                  Every contribution is deeply appreciated.
                 </p>
               </div>
             </Card>
