@@ -601,7 +601,7 @@ export default function MeditationAdjuster() {
                     rel="noopener noreferrer"
                     className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors dark:text-pink-400 dark:hover:text-pink-300 dark:hover:bg-pink-900"
                   >
-                    Rob Burbea's guided meditations
+                    Rob Burbea's meditations
                   </a>
                   , though any guided meditation (under {isMobileDevice ? "50MB" : "500MB"}) should be compatible.
                   Depending on the audio, you may need to adjust the advanced settings for optimal results. Enjoy :)
