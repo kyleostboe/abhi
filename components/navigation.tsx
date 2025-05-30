@@ -1,6 +1,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { ThemeToggle } from "./theme-toggle" // Import the new ThemeToggle
 
 export function Navigation() {
   const pathname = usePathname()
@@ -20,12 +21,19 @@ export function Navigation() {
           key={item.path}
           href={item.path}
           className={`px-3 py-2 rounded text-base font-light transition-all ${
-            isActive(item.path) ? "text-teal-700 font-medium" : "text-gray-500 hover:text-teal-600"
+            isActive(item.path)
+              ? "text-teal-700 dark:text-teal-400 font-medium" // Added dark mode text color
+              : "text-gray-500 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-300" // Added dark mode text color
           }`}
         >
           {item.name}
         </Link>
       ))}
+      <div className="ml-auto pl-4 md:ml-8">
+        {" "}
+        {/* Added wrapper for toggle */}
+        <ThemeToggle />
+      </div>
     </div>
   )
 }

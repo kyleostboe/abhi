@@ -38,38 +38,45 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#e9f5f3,#f0f8ff_30%,#f8f0ff_70%)]">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#e9f5f3,#f0f8ff_30%,#f8f0ff_70%)] dark:bg-[radial-gradient(circle_at_top_right,#0F172A,#111827_30%,#1E1B34_70%)] transition-colors duration-300 ease-in-out">
       <Navigation />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <h1 className="text-4xl font-light text-center text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-teal-500 to-emerald-400 mb-2">
+          <h1 className="text-4xl font-light text-center text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-teal-500 to-emerald-400 mb-2 dark:from-teal-400 dark:via-teal-300 dark:to-emerald-200">
             Get in Touch
           </h1>
-          <p className="text-center text-gray-600 mb-12">Have questions or feedback? I'd love to hear from you!</p>
+          <p className="text-center text-gray-600 mb-12 dark:text-gray-300">
+            Have questions or feedback? I'd love to hear from you!
+          </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Contact Form */}
             <div className="md:col-span-2">
-              <Card className="overflow-hidden border-none shadow-lg bg-white/80 backdrop-blur-md">
+              <Card className="overflow-hidden border-none shadow-lg bg-white/80 backdrop-blur-md dark:bg-gray-900/80 transition-colors duration-300 ease-in-out">
                 <div className="p-6">
-                  <h2 className="text-xl font-medium text-gray-800 mb-4">Send a Message</h2>
+                  <h2 className="text-xl font-medium text-gray-800 mb-4 dark:text-gray-200">Send a Message</h2>
 
                   {isSubmitted ? (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-center"
+                      className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-center dark:bg-emerald-950 dark:border-emerald-700"
                     >
-                      <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-2" />
-                      <h3 className="text-lg font-medium text-emerald-700">Message Sent!</h3>
-                      <p className="text-emerald-600">Thank you for reaching out. I'll get back to you soon.</p>
+                      <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-2 dark:text-emerald-300" />
+                      <h3 className="text-lg font-medium text-emerald-700 dark:text-emerald-200">Message Sent!</h3>
+                      <p className="text-emerald-600 dark:text-emerald-400">
+                        Thank you for reaching out. I'll get back to you soon.
+                      </p>
                     </motion.div>
                   ) : (
                     <form onSubmit={handleSubmit}>
                       <div className="space-y-4">
                         <div>
-                          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                          <label
+                            htmlFor="name"
+                            className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300"
+                          >
                             Your Name
                           </label>
                           <Input
@@ -78,12 +85,15 @@ export default function ContactPage() {
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             required
-                            className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
+                            className="border-gray-200 focus:border-teal-500 focus:ring-teal-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:focus:border-teal-400 dark:focus:ring-teal-400"
                           />
                         </div>
 
                         <div>
-                          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                          <label
+                            htmlFor="email"
+                            className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300"
+                          >
                             Email Address
                           </label>
                           <Input
@@ -92,12 +102,15 @@ export default function ContactPage() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
+                            className="border-gray-200 focus:border-teal-500 focus:ring-teal-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:focus:border-teal-400 dark:focus:ring-teal-400"
                           />
                         </div>
 
                         <div>
-                          <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+                          <label
+                            htmlFor="message"
+                            className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300"
+                          >
                             Message
                           </label>
                           <Textarea
@@ -106,14 +119,14 @@ export default function ContactPage() {
                             onChange={(e) => setMessage(e.target.value)}
                             required
                             rows={5}
-                            className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
+                            className="border-gray-200 focus:border-teal-500 focus:ring-teal-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:focus:border-teal-400 dark:focus:ring-teal-400"
                           />
                         </div>
 
                         <Button
                           type="submit"
                           disabled={isSubmitting}
-                          className="w-full bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                          className="w-full bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-medium py-2 px-4 rounded-md transition-colors dark:from-teal-700 dark:to-emerald-700 dark:hover:from-teal-800 dark:hover:to-emerald-800"
                         >
                           {isSubmitting ? (
                             <span className="flex items-center">
@@ -155,21 +168,21 @@ export default function ContactPage() {
 
             {/* Contact Info */}
             <div>
-              <Card className="overflow-hidden border-none shadow-lg bg-white/80 backdrop-blur-md mb-6">
+              <Card className="overflow-hidden border-none shadow-lg bg-white/80 backdrop-blur-md dark:bg-gray-900/80 transition-colors duration-300 ease-in-out mb-6">
                 <div className="p-6">
-                  <h2 className="text-xl font-medium text-gray-800 mb-4">Connect With Me</h2>
+                  <h2 className="text-xl font-medium text-gray-800 mb-4 dark:text-gray-200">Connect With Me</h2>
 
                   <div className="space-y-4">
                     <a
                       href="mailto:kyle@ostboe.com"
-                      className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors dark:hover:bg-gray-800"
                     >
-                      <div className="bg-teal-100 p-2 rounded-full mr-3">
-                        <Mail className="h-5 w-5 text-teal-600" />
+                      <div className="bg-teal-100 p-2 rounded-full mr-3 dark:bg-teal-800">
+                        <Mail className="h-5 w-5 text-teal-600 dark:text-teal-300" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-700">Email</p>
-                        <p className="text-sm text-gray-500">kyle@ostboe.com</p>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">kyle@ostboe.com</p>
                       </div>
                     </a>
 
@@ -177,14 +190,14 @@ export default function ContactPage() {
                       href="https://x.com/kyleostboe"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors dark:hover:bg-gray-800"
                     >
-                      <div className="bg-blue-100 p-2 rounded-full mr-3">
-                        <Twitter className="h-5 w-5 text-blue-600" />
+                      <div className="bg-blue-100 p-2 rounded-full mr-3 dark:bg-blue-800">
+                        <Twitter className="h-5 w-5 text-blue-600 dark:text-blue-300" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-700">X (Twitter)</p>
-                        <p className="text-sm text-gray-500">@kyleostboe</p>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">X (Twitter)</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">@kyleostboe</p>
                       </div>
                     </a>
 
@@ -192,14 +205,14 @@ export default function ContactPage() {
                       href="https://www.instagram.com/kyleostboe/"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors dark:hover:bg-gray-800"
                     >
-                      <div className="bg-pink-100 p-2 rounded-full mr-3">
-                        <Instagram className="h-5 w-5 text-pink-600" />
+                      <div className="bg-pink-100 p-2 rounded-full mr-3 dark:bg-pink-800">
+                        <Instagram className="h-5 w-5 text-pink-600 dark:text-pink-300" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-700">Instagram</p>
-                        <p className="text-sm text-gray-500">@kyleostboe</p>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Instagram</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">@kyleostboe</p>
                       </div>
                     </a>
                   </div>

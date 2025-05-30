@@ -79,19 +79,35 @@
 audio {
   border-radius: 30px;
   height: 40px;
+  /* Use CSS variables for background to allow dark mode override */
+  background-color: var(--audio-panel-bg, #f9fafb);
 }
 
 audio::-webkit-media-controls-panel {
-  background-color: #f9fafb;
+  background-color: var(--audio-panel-bg, #f9fafb); /* Light: Tailwind gray-50 */
+  border-radius: 30px;
+  padding: 0 10px;
+}
+
+/* Dark mode specific styles for audio player */
+html.dark audio::-webkit-media-controls-panel {
+  background-color: #1f2937; /* Dark: Tailwind slate-800 */
 }
 
 audio::-webkit-media-controls-play-button {
-  background-color: #10b981;
+  background-color: var(--audio-play-button-bg, #10b981); /* Light: Tailwind emerald-500 */
   border-radius: 50%;
+  color: white; /* Ensure icon is visible */
+}
+html.dark audio::-webkit-media-controls-play-button {
+  background-color: #059669; /* Slightly darker emerald for dark mode play button */
 }
 
 audio::-webkit-media-controls-play-button:hover {
-  background-color: #059669;
+  background-color: var(--audio-play-button-hover-bg, #059669); /* Light: Tailwind emerald-600 */
+}
+html.dark audio::-webkit-media-controls-play-button:hover {
+  background-color: #047857; /* Even darker emerald for dark mode play button hover */
 }
 
 audio::-webkit-media-controls-current-time-display,
@@ -99,14 +115,24 @@ audio::-webkit-media-controls-time-remaining-display {
   color: #374151;
   font-size: 13px;
 }
+html.dark audio::-webkit-media-controls-current-time-display,
+html.dark audio::-webkit-media-controls-time-remaining-display {
+  color: #cbd5e1; /* Dark: Tailwind slate-300 */
+}
 
 /* Custom slider styles */
 .slider-thumb {
   @apply appearance-none w-5 h-5 rounded-full bg-teal-500 cursor-pointer;
 }
+html.dark .slider-thumb {
+  @apply bg-teal-400; /* Dark mode thumb color */
+}
 
 .slider-track {
   @apply appearance-none h-1 rounded bg-teal-200;
+}
+html.dark .slider-track {
+  @apply bg-teal-700; /* Dark mode track color */
 }
 
 input[type="range"]::-webkit-slider-thumb {
