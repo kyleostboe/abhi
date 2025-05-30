@@ -25,6 +25,7 @@ const isMobile = () => {
 // Memory management utilities
 const forceGarbageCollection = () => {
   if (typeof window !== "undefined" && (window as any).gc) {
+    console.log("Attempting to force garbage collection.")
     ;(window as any).gc()
   }
 }
@@ -36,19 +37,22 @@ const monitorMemory = () => {
     const memory = (performance as any).memory
     const usedMB = memory.usedJSHeapSize / 1048576
     const limitMB = memory.jsHeapSizeLimit / 1048576
-
-    if (usedMB > limitMB * 0.7) {
+    console.log(`Memory usage: ${usedMB.toFixed(2)}MB / ${limitMB.toFixed(2)}MB`)
+    if (usedMB > limitMB * 0.75) {
+      // Increased threshold slightly
+      console.warn("High memory usage detected, forcing GC.")
       forceGarbageCollection()
+      return true // Indicate high memory
     }
   }
+  return false // Indicate normal memory
 }
 
 export default function MeditationAdjuster() {
   const [file, setFile] = useState<File | null>(null)
   const [originalBuffer, setOriginalBuffer] = useState<AudioBuffer | null>(null)
-  const [processedBuffer, setProcessedBuffer] = useState<AudioBuffer | null>(null)
-  const [audioContext, setAudioContext] = useState<AudioContext | null>(null)
-  const audioContextRef = useRef<AudioContext | null>(null) // Ref to manage AudioContext instance for cleanup
+  const [processedBufferState, setProcessedBufferState] = useState<AudioBuffer | null>(null) // Renamed to avoid conflict
+  const audioContextRef = useRef<AudioContext | null>(null)
 
   const [targetDuration, setTargetDuration] = useState<number>(20)
   const [silenceThreshold, setSilenceThreshold] = useState<number>(0.01)
@@ -80,48 +84,39 @@ export default function MeditationAdjuster() {
   const uploadAreaRef = useRef<HTMLDivElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Step 1: Determine mobile status on mount
   useEffect(() => {
     setIsMobileDevice(isMobile())
     if (typeof navigator !== "undefined" && (navigator as any).deviceMemory) {
       const deviceMemory = (navigator as any).deviceMemory
-      if (deviceMemory < 4) setMemoryWarning(true)
+      if (deviceMemory < 4) {
+        console.warn("Device memory less than 4GB, enabling memory warnings.")
+        setMemoryWarning(true)
+      }
     }
   }, [])
 
-  // Step 2: Initialize AudioContext once isMobileDevice is known, and manage its lifecycle
   useEffect(() => {
     if (typeof window === "undefined") return
 
-    // Cleanup previous context if this effect re-runs (e.g., isMobileDevice changes)
     if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-      console.log("Closing previous AudioContext instance due to re-initialization.")
       audioContextRef.current.close().catch((err) => console.warn("Error closing previous AudioContext:", err))
     }
 
     const AudioContextAPI = window.AudioContext || (window as any).webkitAudioContext
     if (AudioContextAPI) {
       const sampleRate = isMobileDevice ? 22050 : 44100
-      console.log(`Initializing AudioContext. Mobile: ${isMobileDevice}, Sample Rate: ${sampleRate}`)
       try {
         const ctx = new AudioContextAPI({ sampleRate })
-        setAudioContext(ctx) // Set to state for other parts of the app to use
-        audioContextRef.current = ctx // Store in ref for cleanup
-        console.log("Initial AudioContext state:", ctx.state)
-
-        // Attempt to resume if suspended, often requires user interaction (especially on mobile)
+        audioContextRef.current = ctx
         if (ctx.state === "suspended") {
-          console.log("AudioContext is initially suspended. Setting up resume on first user interaction.")
           const resumeContextOnInteraction = async () => {
             if (audioContextRef.current && audioContextRef.current.state === "suspended") {
               try {
                 await audioContextRef.current.resume()
-                console.log("AudioContext resumed on first user interaction. State:", audioContextRef.current.state)
               } catch (e) {
                 console.error("Error resuming AudioContext on user interaction:", e)
               }
             }
-            // Remove listeners after first interaction
             document.removeEventListener("click", resumeContextOnInteraction, true)
             document.removeEventListener("touchend", resumeContextOnInteraction, true)
             document.removeEventListener("keydown", resumeContextOnInteraction, true)
@@ -131,33 +126,27 @@ export default function MeditationAdjuster() {
           document.addEventListener("keydown", resumeContextOnInteraction, { once: true, capture: true })
         }
       } catch (error) {
-        console.error("Failed to create AudioContext:", error)
         setStatus({
           message: `Error initializing audio system: ${error instanceof Error ? error.message : "Unknown error"}`,
           type: "error",
         })
       }
     } else {
-      console.error("AudioContext API not supported.")
       setStatus({ message: "Your browser does not support the required Audio API.", type: "error" })
     }
-
     return () => {
-      // Use the ref for cleanup to ensure we're closing the context created in this effect run
       if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-        console.log("Closing AudioContext from main useEffect cleanup (unmount or isMobileDevice change).")
         audioContextRef.current
           .close()
           .catch((err) => console.warn("Error closing AudioContext in main useEffect cleanup:", err))
-        audioContextRef.current = null // Clear the ref
+        audioContextRef.current = null
       }
     }
-  }, [isMobileDevice]) // Re-run if isMobileDevice changes
+  }, [isMobileDevice])
 
   const cleanupMemory = useCallback(() => {
-    console.log("Running cleanupMemory.")
     setOriginalBuffer(null)
-    setProcessedBuffer(null)
+    setProcessedBufferState(null)
     if (originalUrl) {
       URL.revokeObjectURL(originalUrl)
       setOriginalUrl("")
@@ -166,21 +155,20 @@ export default function MeditationAdjuster() {
       URL.revokeObjectURL(processedUrl)
       setProcessedUrl("")
     }
-    // DO NOT suspend audioContext here. Its lifecycle is managed by processAudio completion and unmount.
     forceGarbageCollection()
-    if (isMobileDevice) setTimeout(() => forceGarbageCollection(), 100) // isMobileDevice is stable here
+    if (isMobileDevice) setTimeout(() => forceGarbageCollection(), 100)
   }, [originalUrl, processedUrl, isMobileDevice])
 
-  const validateFileSize = (file: File): boolean => {
+  const validateFileSize = (fileToValidate: File): boolean => {
     const maxSize = isMobileDevice ? 50 * 1024 * 1024 : 500 * 1024 * 1024
-    if (file.size > maxSize) {
-      setStatus({
-        message: `File too large. Maximum size is ${isMobileDevice ? "50MB" : "500MB"}.`,
-        type: "error",
-      })
+    if (fileToValidate.size > maxSize) {
+      setStatus({ message: `File too large. Max ${isMobileDevice ? "50MB" : "500MB"}.`, type: "error" })
       return false
     }
-    if ((isMobileDevice && file.size > 20 * 1024 * 1024) || (!isMobileDevice && file.size > 150 * 1024 * 1024)) {
+    if (
+      (isMobileDevice && fileToValidate.size > 20 * 1024 * 1024) ||
+      (!isMobileDevice && fileToValidate.size > 150 * 1024 * 1024)
+    ) {
       setMemoryWarning(true)
     } else {
       setMemoryWarning(false)
@@ -194,37 +182,28 @@ export default function MeditationAdjuster() {
       return
     }
     if (!validateFileSize(selectedFile)) return
-
-    // Ensure audio context is available before proceeding
     if (!audioContextRef.current || audioContextRef.current.state === "closed") {
-      console.error("handleFile: AudioContext is not available or closed. State:", audioContextRef.current?.state)
-      setStatus({ message: "Audio system not ready. Please try refreshing the page.", type: "error" })
-      // Attempt to re-initialize or guide user, for now, just error out.
-      // Potentially, you could try to recreate the context here if audioContextRef.current is null.
+      setStatus({ message: "Audio system not ready. Please refresh.", type: "error" })
       return
     }
-
-    cleanupMemory() // Clears buffers and URLs, does NOT suspend context
-    await sleep(100) // Give cleanup a moment
-
+    cleanupMemory()
+    await sleep(100)
     setFile(selectedFile)
     setProcessingProgress(0)
     setProcessingStep("Initializing...")
     setDurationLimits(null)
     setAudioAnalysis(null)
     setProcessedUrl("")
-    setProcessedBuffer(null)
+    setProcessedBufferState(null)
     setActualDuration(null)
     setIsProcessingComplete(false)
-    setStatus(null) // Clear previous status
-
+    setStatus(null)
     try {
       setStatus({ message: "Loading audio file...", type: "info" })
       await loadAudioFile(selectedFile)
     } catch (error) {
-      console.error("Error in handleFile after calling loadAudioFile:", error)
       setStatus({
-        message: `Error loading audio file: ${error instanceof Error ? error.message : "Unknown error"}`,
+        message: `Error loading audio: ${error instanceof Error ? error.message : "Unknown"}`,
         type: "error",
       })
       setOriginalBuffer(null)
@@ -238,34 +217,37 @@ export default function MeditationAdjuster() {
   ): Promise<{ start: number; end: number }[]> => {
     const sampleRate = buffer.sampleRate
     const channelData = buffer.getChannelData(0)
-    const minSilenceSamples = minSilenceDur * sampleRate
     const silenceRegions: { start: number; end: number }[] = []
     let silenceStart: number | null = null
     let consecutiveSilentSamples = 0
-    const skipSamples = isMobileDevice ? 10 : 5
+    const skipSamples = isMobileDevice ? 20 : 10 // Slightly increased skip for mobile
 
     for (let i = 0; i < channelData.length; i += skipSamples) {
-      if (i % (isMobileDevice ? 22050 * 5 : 44100 * 10) === 0) await sleep(0)
+      if (i % (sampleRate * (isMobileDevice ? 2 : 5)) === 0) {
+        // Sleep every few seconds of audio
+        await sleep(0)
+        setProcessingProgress(20 + Math.floor((i / channelData.length) * 10)) // Progress for silence detection
+      }
       const amplitude = Math.abs(channelData[i])
       if (amplitude < threshold) {
         if (silenceStart === null) silenceStart = i
         consecutiveSilentSamples++
       } else {
-        if (silenceStart !== null && consecutiveSilentSamples * (skipSamples / sampleRate) >= minSilenceDur) {
-          // Check actual duration
+        if (silenceStart !== null && (consecutiveSilentSamples * skipSamples) / sampleRate >= minSilenceDur) {
           silenceRegions.push({ start: silenceStart / sampleRate, end: i / sampleRate })
         }
         silenceStart = null
         consecutiveSilentSamples = 0
       }
     }
-    if (silenceStart !== null && consecutiveSilentSamples * (skipSamples / sampleRate) >= minSilenceDur) {
+    if (silenceStart !== null && (consecutiveSilentSamples * skipSamples) / sampleRate >= minSilenceDur) {
       silenceRegions.push({ start: silenceStart / sampleRate, end: channelData.length / sampleRate })
     }
     return silenceRegions
   }
 
   const analyzeAudioForLimits = async (buffer: AudioBuffer) => {
+    setProcessingStep("Analyzing audio for limits...")
     const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
     const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
     const audioContentDuration = buffer.duration - totalSilenceDuration
@@ -279,109 +261,79 @@ export default function MeditationAdjuster() {
     })
     if (targetDuration < minPossibleDuration) setTargetDuration(minPossibleDuration)
     else if (targetDuration > maxPossibleDuration) setTargetDuration(maxPossibleDuration)
+    setProcessingStep("Analysis complete.")
   }
 
   const loadAudioFile = useCallback(
     async (fileToLoad: File) => {
-      // Use audioContextRef.current for operations, audioContext (state) for reactivity if needed elsewhere
       const currentAudioContext = audioContextRef.current
-
       if (!currentAudioContext) {
-        setStatus({ message: "Audio context not initialized. Please refresh.", type: "error" })
-        throw new Error("AudioContext not initialized in loadAudioFile")
+        setStatus({ message: "Audio context not initialized.", type: "error" })
+        throw new Error("AudioContext not initialized")
       }
-
-      // Ensure AudioContext is running
       let attempts = 0
-      const maxAttempts = 3 // Max 3 attempts to resume
+      const maxAttempts = 3
       while (currentAudioContext.state !== "running" && attempts < maxAttempts) {
         attempts++
-        console.log(
-          `loadAudioFile: AudioContext not running (state: ${currentAudioContext.state}). Attempt ${attempts} to resume.`,
-        )
         if (currentAudioContext.state === "suspended") {
           try {
             await currentAudioContext.resume()
-            console.log(`loadAudioFile: AudioContext resumed. New state: ${currentAudioContext.state}`)
-            if (currentAudioContext.state !== "running" && attempts < maxAttempts) await sleep(50 * attempts) // Wait a bit if still not running
+            if (currentAudioContext.state !== "running") await sleep(50 * attempts)
           } catch (err) {
-            console.error(`loadAudioFile: Error resuming AudioContext (attempt ${attempts}):`, err)
-            // If resume fails, break and let it error out
             break
           }
         } else if (currentAudioContext.state === "closed") {
-          console.error("loadAudioFile: AudioContext is closed. Cannot proceed.")
-          setStatus({ message: "Audio system closed. Please refresh.", type: "error" })
-          throw new Error("AudioContext is closed in loadAudioFile")
+          setStatus({ message: "Audio system closed.", type: "error" })
+          throw new Error("AudioContext closed")
         }
-        // If still not running, and not closed, wait a bit before retrying
-        if (
-          currentAudioContext.state !== "running" &&
-          currentAudioContext.state !== "closed" &&
-          attempts < maxAttempts
-        ) {
+        if (currentAudioContext.state !== "running" && currentAudioContext.state !== "closed" && attempts < maxAttempts)
           await sleep(100 * attempts)
-        }
       }
-
       if (currentAudioContext.state !== "running") {
-        console.error(
-          `loadAudioFile: AudioContext failed to reach 'running' state after ${attempts} attempts. Current state: ${currentAudioContext.state}.`,
-        )
-        setStatus({ message: "Failed to start audio system. Please try again or refresh.", type: "error" })
-        throw new Error(`AudioContext could not be started. State: ${currentAudioContext.state}`)
+        setStatus({ message: "Failed to start audio system.", type: "error" })
+        throw new Error(`AudioContext not running: ${currentAudioContext.state}`)
       }
-
       setProcessingStep("Reading file data...")
       setProcessingProgress(10)
       const arrayBuffer = await fileToLoad.arrayBuffer()
       setProcessingStep("Decoding audio data...")
       setProcessingProgress(50)
-
       try {
-        const decodePromise = currentAudioContext.decodeAudioData(arrayBuffer)
-        const timeoutPromise = new Promise<never>(
-          (_, reject) => setTimeout(() => reject(new Error("Audio decoding timeout (30s)")), 30000), // 30s timeout
+        const decodePromise = currentAudioContext.decodeAudioData(arrayBuffer.slice(0)) // Use slice(0) to work with a copy
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Audio decoding timeout (30s)")), 30000),
         )
         const buffer = await Promise.race([decodePromise, timeoutPromise])
-
         setProcessingStep("Analyzing audio...")
         setProcessingProgress(80)
         await sleep(50)
-
-        setOriginalBuffer(buffer) // This will trigger analyzeAudioForLimits via useEffect
-
+        setOriginalBuffer(buffer) // Triggers analyzeAudioForLimits
         setProcessingStep("Creating audio player...")
         setProcessingProgress(95)
-        if (originalUrl) URL.revokeObjectURL(originalUrl) // Revoke previous if any
+        if (originalUrl) URL.revokeObjectURL(originalUrl)
         const blob = new Blob([fileToLoad], { type: fileToLoad.type })
         const url = URL.createObjectURL(blob)
         setOriginalUrl(url)
-
         setProcessingProgress(100)
-        setProcessingStep("Complete!")
+        setProcessingStep("Load complete!")
         setStatus({
-          message: `Audio loaded. Adjust from ${Math.ceil(buffer.duration / 60)} min to ${isMobileDevice ? "1 hour" : "2 hours"}.`,
+          message: `Audio loaded. Duration: ${formatDuration(buffer.duration)}. Adjust from ${durationLimits?.min || 1} to ${durationLimits?.max || (isMobileDevice ? 60 : 120)} min.`,
           type: "success",
         })
       } catch (decodeError) {
-        console.error("Error during audio decoding:", decodeError)
         setStatus({
-          message: `Error decoding audio: ${decodeError instanceof Error ? decodeError.message : "Unknown decoding error"}`,
+          message: `Error decoding: ${decodeError instanceof Error ? decodeError.message : "Unknown"}`,
           type: "error",
         })
-        throw decodeError // Re-throw to be caught by handleFile
+        throw decodeError
       }
     },
-    [originalUrl, isMobileDevice, silenceThreshold, minSilenceDuration], // audioContext (state) removed, using ref. Added analysis params as they affect it indirectly
-  )
+    [originalUrl, isMobileDevice, durationLimits],
+  ) // Added durationLimits
 
   useEffect(() => {
-    if (originalBuffer) {
-      console.log("Original buffer changed, analyzing for limits.")
-      analyzeAudioForLimits(originalBuffer)
-    }
-  }, [originalBuffer, silenceThreshold, minSilenceDuration]) // Ensure all dependencies for analyzeAudioForLimits are here
+    if (originalBuffer) analyzeAudioForLimits(originalBuffer)
+  }, [originalBuffer, silenceThreshold, minSilenceDuration])
 
   const processAudio = async () => {
     const currentAudioContext = audioContextRef.current
@@ -389,49 +341,42 @@ export default function MeditationAdjuster() {
       setStatus({ message: "Original audio or audio system not ready.", type: "error" })
       return
     }
-
     setIsProcessing(true)
     setProcessingProgress(0)
     setProcessingStep("Starting processing...")
-
-    // Ensure context is running before heavy processing
     if (currentAudioContext.state === "suspended") {
       try {
-        console.log("processAudio: Resuming AudioContext before processing.")
         await currentAudioContext.resume()
-        if (currentAudioContext.state !== "running") {
-          throw new Error("Failed to resume AudioContext for processing.")
-        }
+        if (currentAudioContext.state !== "running") throw new Error("Failed to resume for processing.")
       } catch (err) {
-        console.error("processAudio: Error resuming AudioContext:", err)
         setStatus({ message: `Audio system error: ${err instanceof Error ? err.message : "Unknown"}`, type: "error" })
         setIsProcessing(false)
         return
       }
     } else if (currentAudioContext.state === "closed") {
-      setStatus({ message: "Audio system closed. Please refresh.", type: "error" })
+      setStatus({ message: "Audio system closed.", type: "error" })
       setIsProcessing(false)
       return
     }
-
     if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
     processingTimeoutRef.current = setTimeout(
       () => {
         setIsProcessing(false)
-        setStatus({ message: "Processing timed out. Please try a smaller file or refresh.", type: "error" })
+        setStatus({ message: "Processing timed out.", type: "error" })
       },
-      isMobileDevice ? 90000 : 600000,
-    )
+      isMobileDevice ? 120000 : 600000,
+    ) // Increased mobile timeout to 2 mins
 
     try {
       setStatus({ message: "Processing audio...", type: "info" })
       const targetDurationSeconds = targetDuration * 60
-      setProcessingStep("Detecting silence regions...")
-      setProcessingProgress(20)
+      setProcessingStep("Detecting silence regions (step 1/4)...")
+      setProcessingProgress(10)
+      await sleep(10)
       const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
-      await sleep(50)
-      setProcessingStep("Calculating adjustments...")
-      setProcessingProgress(40)
+      setProcessingStep("Calculating adjustments (step 2/4)...")
+      setProcessingProgress(30)
+      await sleep(10)
       const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
       const audioContentDuration = originalBuffer.duration - totalSilenceDuration
       const availableSilenceDuration = Math.max(
@@ -439,45 +384,51 @@ export default function MeditationAdjuster() {
         silenceRegions.length * minSpacingDuration,
       )
       const scaleFactor = totalSilenceDuration > 0 ? availableSilenceDuration / totalSilenceDuration : 1
-      setProcessingStep("Rebuilding audio...")
-      setProcessingProgress(60)
-      const processed = await rebuildAudioWithScaledPauses(
+      setProcessingStep("Rebuilding audio (step 3/4)...")
+      setProcessingProgress(50)
+      await sleep(10)
+
+      const processedAudioBuffer = await rebuildAudioWithScaledPauses(
         originalBuffer,
         silenceRegions,
         scaleFactor,
         minSpacingDuration,
         preserveNaturalPacing,
         availableSilenceDuration,
+        (p) => setProcessingProgress(50 + Math.floor(p * 0.4)), // Progress for rebuild (50% to 90%)
       )
       setPausesAdjusted(silenceRegions.length)
-      if (processedBuffer) setProcessedBuffer(null) // Clear previous processed buffer
-      forceGarbageCollection()
-      await sleep(100)
-      if (processedUrl) URL.revokeObjectURL(processedUrl) // Clear previous processed URL
-      setProcessedUrl("")
-      setProcessedBuffer(processed)
-      setActualDuration(processed.duration)
-      setProcessingStep("Creating download file...")
+
+      // Explicitly release originalBuffer if no longer needed for other operations (e.g. re-analysis)
+      // setOriginalBuffer(null); // Consider if originalBuffer is needed again. If not, this helps.
+      // forceGarbageCollection(); // Try to free memory before WAV conversion
+
+      setProcessingStep("Creating download file (step 4/4)...")
       setProcessingProgress(90)
-      const wavBlob = await bufferToWav(processed, compatibilityMode === "high")
+      await sleep(10)
+      const wavBlob = await bufferToWav(
+        processedAudioBuffer,
+        compatibilityMode === "high",
+        (p) => setProcessingProgress(90 + Math.floor(p * 0.1)), // Progress for WAV (90% to 100%)
+      )
+
+      if (processedUrl) URL.revokeObjectURL(processedUrl)
       const url = URL.createObjectURL(wavBlob)
       setProcessedUrl(url)
+      setActualDuration(processedAudioBuffer.duration) // Use duration from the buffer passed to WAV
+      setProcessedBufferState(processedAudioBuffer) // Store the final buffer
+
       setProcessingProgress(100)
       setProcessingStep("Complete!")
       setStatus({ message: "Audio processing completed successfully!", type: "success" })
       setIsProcessingComplete(true)
     } catch (error) {
       console.error("Error during audio processing:", error)
-      setStatus({
-        message: `Error processing audio: ${error instanceof Error ? error.message : "Unknown error"}`,
-        type: "error",
-      })
+      setStatus({ message: `Processing error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
     } finally {
       setIsProcessing(false)
       if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
-      // Suspend context after processing to save resources, if it's running
       if (currentAudioContext && currentAudioContext.state === "running") {
-        console.log("Suspending AudioContext after processing (in finally block).")
         currentAudioContext.suspend().catch((err) => console.warn("Error suspending AudioContext post-process:", err))
       }
     }
@@ -491,11 +442,17 @@ export default function MeditationAdjuster() {
       minSpacingVal: number,
       preservePacing: boolean,
       targetTotalSilence: number,
+      onProgress: (progress: number) => void,
     ): Promise<AudioBuffer> => {
       const currentAudioContext = audioContextRef.current
       if (!currentAudioContext) throw new Error("Audio context not available for rebuild")
+
+      onProgress(0)
       const sampleRate = buffer.sampleRate
       const numberOfChannels = buffer.numberOfChannels
+      console.log(
+        `Rebuilding: ${buffer.duration.toFixed(2)}s, SR: ${sampleRate}, Channels: ${numberOfChannels}, Target Silence: ${targetTotalSilence.toFixed(2)}s`,
+      )
 
       let dynamicScale = scaleFactorVal
       if (!preservePacing && regions.length > 0) {
@@ -506,31 +463,51 @@ export default function MeditationAdjuster() {
 
       const processedRegions = regions.map((region) => {
         const duration = region.end - region.start
-        let newDuration
-        if (preservePacing) {
-          newDuration = Math.max(duration * dynamicScale, minSpacingVal)
-        } else if (regions.length > 0) {
-          newDuration = Math.max(minSpacingVal, targetTotalSilence / regions.length)
-        } else {
-          newDuration = minSpacingVal
-        }
+        const newDuration = preservePacing
+          ? Math.max(duration * dynamicScale, minSpacingVal)
+          : regions.length > 0
+            ? Math.max(minSpacingVal, targetTotalSilence / regions.length)
+            : minSpacingVal
         return { ...region, newDuration }
       })
 
       const audioContentDur = buffer.duration - regions.reduce((sum, r) => sum + (r.end - r.start), 0)
       const newSilenceDur = processedRegions.reduce((sum, r) => sum + r.newDuration, 0)
       const newTotalDur = audioContentDur + newSilenceDur
-      const newBuffer = currentAudioContext.createBuffer(
-        numberOfChannels,
-        Math.floor(newTotalDur * sampleRate),
-        sampleRate,
+
+      if (newTotalDur <= 0) throw new Error("Calculated new total duration is zero or negative.")
+      console.log(
+        `New total duration: ${newTotalDur.toFixed(2)}s. Content: ${audioContentDur.toFixed(2)}s, New Silence: ${newSilenceDur.toFixed(2)}s`,
       )
+      if (isMobileDevice && newTotalDur > 45 * 60) {
+        // Warn if output is very long on mobile
+        console.warn(`Mobile device: Output duration ${formatDuration(newTotalDur)} may cause issues.`)
+        setMemoryWarning(true)
+      }
+
+      let newBuffer: AudioBuffer
+      try {
+        newBuffer = currentAudioContext.createBuffer(
+          numberOfChannels,
+          Math.max(1, Math.floor(newTotalDur * sampleRate)),
+          sampleRate,
+        )
+      } catch (e) {
+        console.error(`Error creating new AudioBuffer of duration ${newTotalDur.toFixed(2)}s:`, e)
+        forceGarbageCollection() // Attempt to free memory
+        throw new Error(
+          `Failed to create output buffer (duration: ${newTotalDur.toFixed(2)}s). Memory limit likely exceeded. Try a shorter target duration.`,
+        )
+      }
+
+      onProgress(10) // Progress after buffer creation
 
       for (let channel = 0; channel < numberOfChannels; channel++) {
         const originalData = buffer.getChannelData(channel)
         const newData = newBuffer.getChannelData(channel)
         let writeIndex = 0
         let readIndex = 0
+        const totalSamples = originalData.length
 
         if (regions.length > 0 && regions[0].start > 0) {
           const samplesToCopy = Math.floor(regions[0].start * sampleRate)
@@ -538,105 +515,188 @@ export default function MeditationAdjuster() {
         }
 
         for (let i = 0; i < regions.length; i++) {
-          if (i % (isMobileDevice ? 20 : 40) === 0) await sleep(0)
+          if (i % (isMobileDevice ? 5 : 10) === 0) {
+            // More frequent sleep/progress
+            await sleep(0)
+            onProgress(10 + Math.floor((i / regions.length) * 80)) // Progress within region loop (10% to 90%)
+          }
           const region = regions[i]
           const processedReg = processedRegions[i]
-          readIndex = Math.floor(region.end * sampleRate)
+          readIndex = Math.floor(region.end * sampleRate) // Move readIndex past the original silence
           const newSilenceLength = Math.floor(processedReg.newDuration * sampleRate)
           for (let j = 0; j < newSilenceLength; j++) {
             if (writeIndex < newData.length) newData[writeIndex++] = 0
           }
-
-          const nextRegionStart =
-            i < regions.length - 1 ? Math.floor(regions[i + 1].start * sampleRate) : originalData.length
+          const nextRegionStart = i < regions.length - 1 ? Math.floor(regions[i + 1].start * sampleRate) : totalSamples
           const segmentLength = nextRegionStart - readIndex
-
           for (let j = 0; j < segmentLength; j++) {
-            if (writeIndex < newData.length && readIndex + j < originalData.length) {
+            if (writeIndex < newData.length && readIndex + j < totalSamples) {
               newData[writeIndex++] = originalData[readIndex + j]
             }
           }
           readIndex = nextRegionStart
         }
+        // Copy any remaining audio after the last silence region
+        if (readIndex < totalSamples && regions.length === 0) {
+          // If no silence regions, copy all
+          for (let i = readIndex; i < totalSamples; i++)
+            if (writeIndex < newData.length) newData[writeIndex++] = originalData[i]
+        } else if (
+          readIndex < totalSamples &&
+          regions.length > 0 &&
+          regions[regions.length - 1].end * sampleRate < totalSamples
+        ) {
+          // This case should be covered by the loop logic if nextRegionStart is totalSamples
+        }
       }
+      onProgress(100)
       return newBuffer
     },
-    [isMobileDevice], // audioContextRef is stable, isMobileDevice for sleep timings
+    [isMobileDevice],
   )
 
   const bufferToWav = useCallback(
-    async (buffer: AudioBuffer, highCompatibility = true): Promise<Blob> => {
+    async (buffer: AudioBuffer, highCompatibility = true, onProgress: (progress: number) => void): Promise<Blob> => {
       const currentAudioContext = audioContextRef.current
       if (!currentAudioContext) throw new Error("Audio context not available for WAV conversion")
-      const targetSampleRate = highCompatibility ? 44100 : buffer.sampleRate
-      let resampledBuffer = buffer
 
+      onProgress(0)
+      let targetSampleRate = highCompatibility ? 44100 : buffer.sampleRate
+      // **Aggressive sample rate reduction for mobile on long audio**
+      if (isMobileDevice && highCompatibility && buffer.duration > 15 * 60) {
+        // 15 minutes
+        targetSampleRate = Math.min(targetSampleRate, 22050) // Cap at 22050Hz
+        console.log(`Mobile WAV Export: Duration > 15min, capping sample rate to ${targetSampleRate}Hz`)
+      } else if (isMobileDevice && buffer.sampleRate > 22050) {
+        // If not high compatibility, but mobile and original SR is high, also consider capping
+        // targetSampleRate = Math.min(targetSampleRate, 22050);
+        // console.log(`Mobile WAV Export: Original SR > 22050Hz, capping to ${targetSampleRate}Hz`);
+      }
+
+      let resampledBuffer = buffer
       if (buffer.sampleRate !== targetSampleRate) {
+        console.log(`Resampling from ${buffer.sampleRate}Hz to ${targetSampleRate}Hz for WAV export.`)
         const ratio = targetSampleRate / buffer.sampleRate
         const newLength = Math.floor(buffer.length * ratio)
-        resampledBuffer = currentAudioContext.createBuffer(buffer.numberOfChannels, newLength, targetSampleRate)
+        try {
+          resampledBuffer = currentAudioContext.createBuffer(buffer.numberOfChannels, newLength, targetSampleRate)
+        } catch (e) {
+          console.error(`Error creating resampled buffer of duration ${(newLength / targetSampleRate).toFixed(2)}s:`, e)
+          forceGarbageCollection()
+          throw new Error(
+            `Failed to create resample buffer (target SR: ${targetSampleRate}Hz). Memory limit likely exceeded.`,
+          )
+        }
+
+        onProgress(10) // Progress after resample buffer creation
+
         for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
           const oldData = buffer.getChannelData(channel)
           const newData = resampledBuffer.getChannelData(channel)
           for (let i = 0; i < newLength; i++) {
-            if (i % (isMobileDevice ? 22050 * 2 : 44100 * 4) === 0) await sleep(0)
+            if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
+              // Sleep every 1-2s of resampled audio
+              await sleep(0)
+              onProgress(
+                10 +
+                  Math.floor(
+                    ((channel * (newLength / buffer.numberOfChannels) + i) / (newLength * buffer.numberOfChannels)) *
+                      40,
+                  ),
+              ) // Progress 10% to 50%
+            }
             const oldIndex = i / ratio
             const index = Math.floor(oldIndex)
-            newData[i] = oldData[Math.min(index, oldData.length - 1)]
+            const frac = oldIndex - index
+            // Basic linear interpolation (can be improved, but good enough for now)
+            const samp1 = oldData[Math.min(index, oldData.length - 1)]
+            const samp2 = oldData[Math.min(index + 1, oldData.length - 1)]
+            newData[i] = samp1 + (samp2 - samp1) * frac
           }
         }
+        // buffer = null; // Attempt to release original buffer if it was large and resampled
+        // forceGarbageCollection();
+      } else {
+        onProgress(50) // Skip resampling progress
       }
 
-      const length = resampledBuffer.length
+      const numSamples = resampledBuffer.length
       const numberOfChannels = resampledBuffer.numberOfChannels
-      const arrayBuffer = new ArrayBuffer(44 + length * numberOfChannels * 2)
-      const view = new DataView(arrayBuffer)
+      const bytesPerSample = 2 // 16-bit PCM
+      const dataSize = numSamples * numberOfChannels * bytesPerSample
+      const fileSize = 44 + dataSize // Header size + data size
+
+      console.log(
+        `WAV Export: Samples: ${numSamples}, Channels: ${numberOfChannels}, SR: ${targetSampleRate}, DataSize: ${formatFileSize(dataSize)}`,
+      )
+      if (isMobileDevice && fileSize > 40 * 1024 * 1024) {
+        // Warn if WAV blob itself is large on mobile
+        console.warn(`Mobile device: WAV file size ${formatFileSize(fileSize)} may cause issues.`)
+        setMemoryWarning(true)
+      }
+
+      let finalArrayBuffer: ArrayBuffer
+      try {
+        finalArrayBuffer = new ArrayBuffer(fileSize)
+      } catch (e) {
+        console.error(`Error creating final ArrayBuffer for WAV (size ${formatFileSize(fileSize)}):`, e)
+        // resampledBuffer = null; // Attempt to release
+        // forceGarbageCollection();
+        throw new Error(
+          `Failed to create WAV data buffer (size: ${formatFileSize(fileSize)}). Memory limit likely exceeded.`,
+        )
+      }
+
+      const view = new DataView(finalArrayBuffer)
       const writeString = (offset: number, string: string) => {
         for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i))
       }
       writeString(0, "RIFF")
-      view.setUint32(4, 36 + length * numberOfChannels * 2, true)
+      view.setUint32(4, 36 + dataSize, true)
       writeString(8, "WAVE")
       writeString(12, "fmt ")
       view.setUint32(16, 16, true)
       view.setUint16(20, 1, true)
       view.setUint16(22, numberOfChannels, true)
       view.setUint32(24, targetSampleRate, true)
-      view.setUint32(28, targetSampleRate * numberOfChannels * 2, true)
-      view.setUint16(32, numberOfChannels * 2, true)
+      view.setUint32(28, targetSampleRate * numberOfChannels * bytesPerSample, true)
+      view.setUint16(32, numberOfChannels * bytesPerSample, true)
       view.setUint16(34, 16, true)
       writeString(36, "data")
-      view.setUint32(40, length * numberOfChannels * 2, true)
+      view.setUint32(40, dataSize, true)
+
       let offset = 44
-      for (let i = 0; i < length; i++) {
-        if (i % (isMobileDevice ? 22050 * 2 : 44100 * 4) === 0) await sleep(0)
+      for (let i = 0; i < numSamples; i++) {
+        if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
+          // Sleep every 1-2s
+          await sleep(0)
+          onProgress(50 + Math.floor((i / numSamples) * 50)) // Progress 50% to 100%
+        }
         for (let channel = 0; channel < numberOfChannels; channel++) {
           const sample = Math.max(-1, Math.min(1, resampledBuffer.getChannelData(channel)[i]))
           view.setInt16(offset, sample * 0x7fff, true)
-          offset += 2
+          offset += bytesPerSample
         }
       }
-      return new Blob([arrayBuffer], { type: "audio/wav" })
+      onProgress(100)
+      return new Blob([finalArrayBuffer], { type: "audio/wav" })
     },
-    [isMobileDevice], // audioContextRef is stable
+    [isMobileDevice],
   )
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (selectedFile) handleFile(selectedFile)
-    e.target.value = "" // Reset file input
+    e.target.value = ""
   }
-
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     if (uploadAreaRef.current) uploadAreaRef.current.classList.add("border-primary")
   }
-
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault()
     if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
   }
-
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
@@ -645,36 +705,35 @@ export default function MeditationAdjuster() {
   }
 
   const downloadProcessedAudio = async () => {
-    if (!processedBuffer || !file) return
-    const wavBlob = await bufferToWav(processedBuffer, compatibilityMode === "high")
-    const url = URL.createObjectURL(wavBlob)
+    if (!processedBufferState || !file) return
+    // Re-use bufferToWav for download to ensure consistency, or assume processedUrl is from compatible WAV
+    // For simplicity, let's assume processedUrl is already the correct WAV blob URL
+    // If not, you'd call: const wavBlob = await bufferToWav(processedBufferState, compatibilityMode === "high", () => {});
+    // const url = URL.createObjectURL(wavBlob);
+
     const a = document.createElement("a")
-    a.href = url
+    a.href = processedUrl // Use the already created URL
     a.download = `${file.name.split(".")[0]}_adjusted.wav`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    // URL.revokeObjectURL(url); // Only if you re-created it here
   }
 
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = Math.floor(seconds % 60)
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
+    const secs = Math.floor(seconds % 60)
+    return `${minutes}:${secs.toString().padStart(2, "0")}`
   }
-
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return "0 Bytes"
     const k = 1024
-    const sizes = ["Bytes", "KB", "MB", "GB"]
     const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${["Bytes", "KB", "MB", "GB"][i]}`
   }
 
   useEffect(() => {
-    if (isProcessingComplete) {
-      setIsProcessingComplete(false) // Reset for next processing cycle
-    }
+    if (isProcessingComplete) setIsProcessingComplete(false)
   }, [
     targetDuration,
     silenceThreshold,
@@ -683,10 +742,9 @@ export default function MeditationAdjuster() {
     preserveNaturalPacing,
     isProcessingComplete,
   ])
-
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined
-    if (isProcessing) interval = setInterval(() => monitorMemory(), 5000)
+    if (isProcessing) interval = setInterval(monitorMemory, 3000) // Check memory more often
     return () => {
       if (interval) clearInterval(interval)
     }
@@ -704,10 +762,9 @@ export default function MeditationAdjuster() {
               <h3 className="font-medium text-orange-700 dark:text-orange-300 mb-1">Mobile Optimization Tips</h3>
               <p className="text-sm text-orange-600 dark:text-orange-400 mb-1">For best performance on mobile:</p>
               <ul className="list-disc pl-5 text-sm text-orange-600 dark:text-orange-400 space-y-1">
-                <li>Use files under 50MB</li>
-                <li>Close other apps/tabs</li>
-                <li>Use shorter meditations (under 45 min)</li>
-                <li>Stay on this page during processing</li>
+                <li>Use files under 50MB. Processing long audio (&gt;20-30 min output) can be slow or unstable.</li>
+                <li>Close other apps/tabs. Stay on this page during processing.</li>
+                <li>If issues occur, try a shorter target duration or refresh the page.</li>
               </ul>
             </div>
           </div>
@@ -721,7 +778,8 @@ export default function MeditationAdjuster() {
             <div>
               <h3 className="font-medium text-yellow-700 dark:text-yellow-300 mb-1">High Memory Usage Expected</h3>
               <p className="text-sm text-yellow-600 dark:text-yellow-400">
-                The selected file is large or your device has limited memory. Processing may be slow.
+                Large files or long target durations require significant memory. Processing may be slow or unstable on
+                devices with limited RAM.
               </p>
             </div>
           </div>
@@ -1104,12 +1162,15 @@ export default function MeditationAdjuster() {
                           <SelectValue placeholder="Select compatibility mode" />
                         </SelectTrigger>
                         <SelectContent className="dark:bg-gray-800 dark:text-gray-200">
-                          <SelectItem value="standard">Standard Quality</SelectItem>
-                          <SelectItem value="high">High Compatibility (Mobile/AirPods)</SelectItem>
+                          <SelectItem value="standard">Standard Quality (Original SR)</SelectItem>
+                          <SelectItem value="high">
+                            High Compatibility (44.1kHz or 22.05kHz for Mobile Long Audio)
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <div className="text-xs text-indigo-500/70 mt-2 dark:text-indigo-400/70">
-                        High Compatibility for better playback on mobile/AirPods.
+                        High Compatibility for better playback on mobile/AirPods. May reduce sample rate for long audio
+                        on mobile.
                       </div>
                     </div>
                   </Card>
@@ -1227,50 +1288,51 @@ export default function MeditationAdjuster() {
                 </Card>
               </motion.div>
             )}
-            {processedUrl && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-950 dark:to-emerald-950">
-                  <div className="bg-gradient-to-r from-teal-600 to-emerald-600 py-3 px-6 dark:from-teal-700 dark:to-emerald-700">
-                    <h3 className="text-white font-medium">Processed Audio</h3>
-                  </div>
-                  <div className="p-6">
-                    <div className="bg-white rounded-lg p-3 shadow-sm mb-4 dark:bg-gray-700">
-                      <audio controls className="w-full" src={processedUrl}></audio>
+            {processedUrl &&
+              processedBufferState && ( // Ensure processedBufferState is also available
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+                  <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-950 dark:to-emerald-950">
+                    <div className="bg-gradient-to-r from-teal-600 to-emerald-600 py-3 px-6 dark:from-teal-700 dark:to-emerald-700">
+                      <h3 className="text-white font-medium">Processed Audio</h3>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                      <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60">
-                        <div className="text-xs text-teal-500 uppercase tracking-wide mb-1 dark:text-teal-400">
-                          Duration
+                    <div className="p-6">
+                      <div className="bg-white rounded-lg p-3 shadow-sm mb-4 dark:bg-gray-700">
+                        <audio controls className="w-full" src={processedUrl}></audio>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60">
+                          <div className="text-xs text-teal-500 uppercase tracking-wide mb-1 dark:text-teal-400">
+                            Duration
+                          </div>
+                          <div className="font-medium text-teal-800 dark:text-teal-200">
+                            {formatDuration(actualDuration || 0)} {/* Use actualDuration state */}
+                            {actualDuration && targetDuration && (
+                              <div className="text-xs text-teal-600 mt-1 dark:text-teal-400">
+                                {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="font-medium text-teal-800 dark:text-teal-200">
-                          {processedBuffer ? formatDuration(processedBuffer.duration) : "--"}
-                          {actualDuration && targetDuration && (
-                            <div className="text-xs text-teal-600 mt-1 dark:text-teal-400">
-                              {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
-                            </div>
-                          )}
+                        <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60">
+                          <div className="text-xs text-teal-500 uppercase tracking-wide mb-1 dark:text-teal-400">
+                            Pauses Adjusted
+                          </div>
+                          <div className="font-medium text-teal-800 dark:text-teal-200">{pausesAdjusted}</div>
                         </div>
                       </div>
-                      <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60">
-                        <div className="text-xs text-teal-500 uppercase tracking-wide mb-1 dark:text-teal-400">
-                          Pauses Adjusted
+                      <Button
+                        className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition-all border-none dark:from-teal-700 dark:to-emerald-700 dark:hover:from-teal-800 dark:hover:to-emerald-800"
+                        onClick={downloadProcessedAudio}
+                      >
+                        <div className="flex items-center justify-center">
+                          <Download className="mr-2 h-5 w-5" />
+                          Download Processed Audio
                         </div>
-                        <div className="font-medium text-teal-800 dark:text-teal-200">{pausesAdjusted}</div>
-                      </div>
+                      </Button>
                     </div>
-                    <Button
-                      className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition-all border-none dark:from-teal-700 dark:to-emerald-700 dark:hover:from-teal-800 dark:hover:to-emerald-800"
-                      onClick={downloadProcessedAudio}
-                    >
-                      <div className="flex items-center justify-center">
-                        <Download className="mr-2 h-5 w-5" />
-                        Download Processed Audio
-                      </div>
-                    </Button>
-                  </div>
-                </Card>
-              </motion.div>
-            )}
+                  </Card>
+                </motion.div>
+              )}
           </div>
         </div>
         <div className="mt-8 text-center text-xs text-gray-400 pb-6 dark:text-gray-500">
