@@ -48,6 +48,7 @@ export default function MeditationAdjuster() {
   const [originalBuffer, setOriginalBuffer] = useState<AudioBuffer | null>(null)
   const [processedBuffer, setProcessedBuffer] = useState<AudioBuffer | null>(null)
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null) // Ref to manage AudioContext instance for cleanup
 
   const [targetDuration, setTargetDuration] = useState<number>(20)
   const [silenceThreshold, setSilenceThreshold] = useState<number>(0.01)
@@ -79,6 +80,7 @@ export default function MeditationAdjuster() {
   const uploadAreaRef = useRef<HTMLDivElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Step 1: Determine mobile status on mount
   useEffect(() => {
     setIsMobileDevice(isMobile())
     if (typeof navigator !== "undefined" && (navigator as any).deviceMemory) {
@@ -87,34 +89,87 @@ export default function MeditationAdjuster() {
     }
   }, [])
 
+  // Step 2: Initialize AudioContext once isMobileDevice is known, and manage its lifecycle
   useEffect(() => {
     if (typeof window === "undefined") return
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext
-    if (AudioContext) {
-      const ctx = new AudioContext({ sampleRate: isMobileDevice ? 22050 : 44100 })
-      setAudioContext(ctx)
+
+    // Cleanup previous context if this effect re-runs (e.g., isMobileDevice changes)
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      console.log("Closing previous AudioContext instance due to re-initialization.")
+      audioContextRef.current.close().catch((err) => console.warn("Error closing previous AudioContext:", err))
     }
+
+    const AudioContextAPI = window.AudioContext || (window as any).webkitAudioContext
+    if (AudioContextAPI) {
+      const sampleRate = isMobileDevice ? 22050 : 44100
+      console.log(`Initializing AudioContext. Mobile: ${isMobileDevice}, Sample Rate: ${sampleRate}`)
+      try {
+        const ctx = new AudioContextAPI({ sampleRate })
+        setAudioContext(ctx) // Set to state for other parts of the app to use
+        audioContextRef.current = ctx // Store in ref for cleanup
+        console.log("Initial AudioContext state:", ctx.state)
+
+        // Attempt to resume if suspended, often requires user interaction (especially on mobile)
+        if (ctx.state === "suspended") {
+          console.log("AudioContext is initially suspended. Setting up resume on first user interaction.")
+          const resumeContextOnInteraction = async () => {
+            if (audioContextRef.current && audioContextRef.current.state === "suspended") {
+              try {
+                await audioContextRef.current.resume()
+                console.log("AudioContext resumed on first user interaction. State:", audioContextRef.current.state)
+              } catch (e) {
+                console.error("Error resuming AudioContext on user interaction:", e)
+              }
+            }
+            // Remove listeners after first interaction
+            document.removeEventListener("click", resumeContextOnInteraction, true)
+            document.removeEventListener("touchend", resumeContextOnInteraction, true)
+            document.removeEventListener("keydown", resumeContextOnInteraction, true)
+          }
+          document.addEventListener("click", resumeContextOnInteraction, { once: true, capture: true })
+          document.addEventListener("touchend", resumeContextOnInteraction, { once: true, capture: true })
+          document.addEventListener("keydown", resumeContextOnInteraction, { once: true, capture: true })
+        }
+      } catch (error) {
+        console.error("Failed to create AudioContext:", error)
+        setStatus({
+          message: `Error initializing audio system: ${error instanceof Error ? error.message : "Unknown error"}`,
+          type: "error",
+        })
+      }
+    } else {
+      console.error("AudioContext API not supported.")
+      setStatus({ message: "Your browser does not support the required Audio API.", type: "error" })
+    }
+
     return () => {
-      cleanupMemory()
-      if (audioContext) audioContext.close()
-      if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
+      // Use the ref for cleanup to ensure we're closing the context created in this effect run
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        console.log("Closing AudioContext from main useEffect cleanup (unmount or isMobileDevice change).")
+        audioContextRef.current
+          .close()
+          .catch((err) => console.warn("Error closing AudioContext in main useEffect cleanup:", err))
+        audioContextRef.current = null // Clear the ref
+      }
     }
-  }, [isMobileDevice]) // audioContext dependency removed as it's set here
+  }, [isMobileDevice]) // Re-run if isMobileDevice changes
 
   const cleanupMemory = useCallback(() => {
+    console.log("Running cleanupMemory.")
     setOriginalBuffer(null)
     setProcessedBuffer(null)
-    if (originalUrl) URL.revokeObjectURL(originalUrl)
-    setOriginalUrl("")
-    if (processedUrl) URL.revokeObjectURL(processedUrl)
-    setProcessedUrl("")
-    if (audioContext && audioContext.state !== "closed") {
-      // No need to await suspend, and check if context exists
-      audioContext.suspend().catch((err) => console.warn("Error suspending audio context:", err))
+    if (originalUrl) {
+      URL.revokeObjectURL(originalUrl)
+      setOriginalUrl("")
     }
+    if (processedUrl) {
+      URL.revokeObjectURL(processedUrl)
+      setProcessedUrl("")
+    }
+    // DO NOT suspend audioContext here. Its lifecycle is managed by processAudio completion and unmount.
     forceGarbageCollection()
-    if (isMobileDevice) setTimeout(() => forceGarbageCollection(), 100)
-  }, [audioContext, originalUrl, processedUrl, isMobileDevice])
+    if (isMobileDevice) setTimeout(() => forceGarbageCollection(), 100) // isMobileDevice is stable here
+  }, [originalUrl, processedUrl, isMobileDevice])
 
   const validateFileSize = (file: File): boolean => {
     const maxSize = isMobileDevice ? 50 * 1024 * 1024 : 500 * 1024 * 1024
@@ -140,7 +195,16 @@ export default function MeditationAdjuster() {
     }
     if (!validateFileSize(selectedFile)) return
 
-    cleanupMemory()
+    // Ensure audio context is available before proceeding
+    if (!audioContextRef.current || audioContextRef.current.state === "closed") {
+      console.error("handleFile: AudioContext is not available or closed. State:", audioContextRef.current?.state)
+      setStatus({ message: "Audio system not ready. Please try refreshing the page.", type: "error" })
+      // Attempt to re-initialize or guide user, for now, just error out.
+      // Potentially, you could try to recreate the context here if audioContextRef.current is null.
+      return
+    }
+
+    cleanupMemory() // Clears buffers and URLs, does NOT suspend context
     await sleep(100) // Give cleanup a moment
 
     setFile(selectedFile)
@@ -158,11 +222,11 @@ export default function MeditationAdjuster() {
       setStatus({ message: "Loading audio file...", type: "info" })
       await loadAudioFile(selectedFile)
     } catch (error) {
+      console.error("Error in handleFile after calling loadAudioFile:", error)
       setStatus({
         message: `Error loading audio file: ${error instanceof Error ? error.message : "Unknown error"}`,
         type: "error",
       })
-      // Ensure buffer is cleared on error
       setOriginalBuffer(null)
     }
   }
@@ -187,14 +251,15 @@ export default function MeditationAdjuster() {
         if (silenceStart === null) silenceStart = i
         consecutiveSilentSamples++
       } else {
-        if (silenceStart !== null && consecutiveSilentSamples >= minSilenceSamples) {
+        if (silenceStart !== null && consecutiveSilentSamples * (skipSamples / sampleRate) >= minSilenceDur) {
+          // Check actual duration
           silenceRegions.push({ start: silenceStart / sampleRate, end: i / sampleRate })
         }
         silenceStart = null
         consecutiveSilentSamples = 0
       }
     }
-    if (silenceStart !== null && consecutiveSilentSamples >= minSilenceSamples) {
+    if (silenceStart !== null && consecutiveSilentSamples * (skipSamples / sampleRate) >= minSilenceDur) {
       silenceRegions.push({ start: silenceStart / sampleRate, end: channelData.length / sampleRate })
     }
     return silenceRegions
@@ -218,59 +283,136 @@ export default function MeditationAdjuster() {
 
   const loadAudioFile = useCallback(
     async (fileToLoad: File) => {
-      if (!audioContext) {
-        setStatus({ message: "Audio context not ready.", type: "error" })
-        return
+      // Use audioContextRef.current for operations, audioContext (state) for reactivity if needed elsewhere
+      const currentAudioContext = audioContextRef.current
+
+      if (!currentAudioContext) {
+        setStatus({ message: "Audio context not initialized. Please refresh.", type: "error" })
+        throw new Error("AudioContext not initialized in loadAudioFile")
+      }
+
+      // Ensure AudioContext is running
+      let attempts = 0
+      const maxAttempts = 3 // Max 3 attempts to resume
+      while (currentAudioContext.state !== "running" && attempts < maxAttempts) {
+        attempts++
+        console.log(
+          `loadAudioFile: AudioContext not running (state: ${currentAudioContext.state}). Attempt ${attempts} to resume.`,
+        )
+        if (currentAudioContext.state === "suspended") {
+          try {
+            await currentAudioContext.resume()
+            console.log(`loadAudioFile: AudioContext resumed. New state: ${currentAudioContext.state}`)
+            if (currentAudioContext.state !== "running" && attempts < maxAttempts) await sleep(50 * attempts) // Wait a bit if still not running
+          } catch (err) {
+            console.error(`loadAudioFile: Error resuming AudioContext (attempt ${attempts}):`, err)
+            // If resume fails, break and let it error out
+            break
+          }
+        } else if (currentAudioContext.state === "closed") {
+          console.error("loadAudioFile: AudioContext is closed. Cannot proceed.")
+          setStatus({ message: "Audio system closed. Please refresh.", type: "error" })
+          throw new Error("AudioContext is closed in loadAudioFile")
+        }
+        // If still not running, and not closed, wait a bit before retrying
+        if (
+          currentAudioContext.state !== "running" &&
+          currentAudioContext.state !== "closed" &&
+          attempts < maxAttempts
+        ) {
+          await sleep(100 * attempts)
+        }
+      }
+
+      if (currentAudioContext.state !== "running") {
+        console.error(
+          `loadAudioFile: AudioContext failed to reach 'running' state after ${attempts} attempts. Current state: ${currentAudioContext.state}.`,
+        )
+        setStatus({ message: "Failed to start audio system. Please try again or refresh.", type: "error" })
+        throw new Error(`AudioContext could not be started. State: ${currentAudioContext.state}`)
       }
 
       setProcessingStep("Reading file data...")
       setProcessingProgress(10)
-      if (audioContext.state === "suspended") await audioContext.resume()
-
       const arrayBuffer = await fileToLoad.arrayBuffer()
       setProcessingStep("Decoding audio data...")
       setProcessingProgress(50)
 
-      const decodePromise = audioContext.decodeAudioData(arrayBuffer)
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Audio decoding timeout")), 30000),
-      )
-      const buffer = await Promise.race([decodePromise, timeoutPromise])
+      try {
+        const decodePromise = currentAudioContext.decodeAudioData(arrayBuffer)
+        const timeoutPromise = new Promise<never>(
+          (_, reject) => setTimeout(() => reject(new Error("Audio decoding timeout (30s)")), 30000), // 30s timeout
+        )
+        const buffer = await Promise.race([decodePromise, timeoutPromise])
 
-      setProcessingStep("Analyzing audio...")
-      setProcessingProgress(80)
-      await sleep(50) // Brief pause before heavy analysis
+        setProcessingStep("Analyzing audio...")
+        setProcessingProgress(80)
+        await sleep(50)
 
-      setOriginalBuffer(buffer) // Set buffer BEFORE calling analyze
-      // analyzeAudioForLimits will be called by the useEffect watching originalBuffer
+        setOriginalBuffer(buffer) // This will trigger analyzeAudioForLimits via useEffect
 
-      setProcessingStep("Creating audio player...")
-      setProcessingProgress(95)
-      if (originalUrl) URL.revokeObjectURL(originalUrl)
-      const blob = new Blob([fileToLoad], { type: fileToLoad.type })
-      const url = URL.createObjectURL(blob)
-      setOriginalUrl(url)
+        setProcessingStep("Creating audio player...")
+        setProcessingProgress(95)
+        if (originalUrl) URL.revokeObjectURL(originalUrl) // Revoke previous if any
+        const blob = new Blob([fileToLoad], { type: fileToLoad.type })
+        const url = URL.createObjectURL(blob)
+        setOriginalUrl(url)
 
-      setProcessingProgress(100)
-      setProcessingStep("Complete!")
-      setStatus({
-        message: `Audio loaded. Adjust from ${Math.ceil(buffer.duration / 60)} min to ${isMobileDevice ? "1 hour" : "2 hours"}.`,
-        type: "success",
-      })
+        setProcessingProgress(100)
+        setProcessingStep("Complete!")
+        setStatus({
+          message: `Audio loaded. Adjust from ${Math.ceil(buffer.duration / 60)} min to ${isMobileDevice ? "1 hour" : "2 hours"}.`,
+          type: "success",
+        })
+      } catch (decodeError) {
+        console.error("Error during audio decoding:", decodeError)
+        setStatus({
+          message: `Error decoding audio: ${decodeError instanceof Error ? decodeError.message : "Unknown decoding error"}`,
+          type: "error",
+        })
+        throw decodeError // Re-throw to be caught by handleFile
+      }
     },
-    [audioContext, originalUrl, isMobileDevice],
-  ) // analyzeAudioForLimits removed, will be triggered by useEffect
+    [originalUrl, isMobileDevice, silenceThreshold, minSilenceDuration], // audioContext (state) removed, using ref. Added analysis params as they affect it indirectly
+  )
 
-  // Effect for re-analyzing when settings or buffer change
   useEffect(() => {
-    if (originalBuffer) analyzeAudioForLimits(originalBuffer)
-  }, [silenceThreshold, minSilenceDuration, originalBuffer])
+    if (originalBuffer) {
+      console.log("Original buffer changed, analyzing for limits.")
+      analyzeAudioForLimits(originalBuffer)
+    }
+  }, [originalBuffer, silenceThreshold, minSilenceDuration]) // Ensure all dependencies for analyzeAudioForLimits are here
 
   const processAudio = async () => {
-    if (!originalBuffer || !audioContext) return
+    const currentAudioContext = audioContextRef.current
+    if (!originalBuffer || !currentAudioContext) {
+      setStatus({ message: "Original audio or audio system not ready.", type: "error" })
+      return
+    }
+
     setIsProcessing(true)
     setProcessingProgress(0)
     setProcessingStep("Starting processing...")
+
+    // Ensure context is running before heavy processing
+    if (currentAudioContext.state === "suspended") {
+      try {
+        console.log("processAudio: Resuming AudioContext before processing.")
+        await currentAudioContext.resume()
+        if (currentAudioContext.state !== "running") {
+          throw new Error("Failed to resume AudioContext for processing.")
+        }
+      } catch (err) {
+        console.error("processAudio: Error resuming AudioContext:", err)
+        setStatus({ message: `Audio system error: ${err instanceof Error ? err.message : "Unknown"}`, type: "error" })
+        setIsProcessing(false)
+        return
+      }
+    } else if (currentAudioContext.state === "closed") {
+      setStatus({ message: "Audio system closed. Please refresh.", type: "error" })
+      setIsProcessing(false)
+      return
+    }
 
     if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
     processingTimeoutRef.current = setTimeout(
@@ -283,7 +425,6 @@ export default function MeditationAdjuster() {
 
     try {
       setStatus({ message: "Processing audio...", type: "info" })
-      if (audioContext.state === "suspended") await audioContext.resume()
       const targetDurationSeconds = targetDuration * 60
       setProcessingStep("Detecting silence regions...")
       setProcessingProgress(20)
@@ -309,10 +450,10 @@ export default function MeditationAdjuster() {
         availableSilenceDuration,
       )
       setPausesAdjusted(silenceRegions.length)
-      if (processedBuffer) setProcessedBuffer(null)
+      if (processedBuffer) setProcessedBuffer(null) // Clear previous processed buffer
       forceGarbageCollection()
       await sleep(100)
-      if (processedUrl) URL.revokeObjectURL(processedUrl)
+      if (processedUrl) URL.revokeObjectURL(processedUrl) // Clear previous processed URL
       setProcessedUrl("")
       setProcessedBuffer(processed)
       setActualDuration(processed.duration)
@@ -325,9 +466,8 @@ export default function MeditationAdjuster() {
       setProcessingStep("Complete!")
       setStatus({ message: "Audio processing completed successfully!", type: "success" })
       setIsProcessingComplete(true)
-      if (audioContext && audioContext.state !== "closed")
-        audioContext.suspend().catch((err) => console.warn("Error suspending audio context post-process:", err))
     } catch (error) {
+      console.error("Error during audio processing:", error)
       setStatus({
         message: `Error processing audio: ${error instanceof Error ? error.message : "Unknown error"}`,
         type: "error",
@@ -335,6 +475,11 @@ export default function MeditationAdjuster() {
     } finally {
       setIsProcessing(false)
       if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
+      // Suspend context after processing to save resources, if it's running
+      if (currentAudioContext && currentAudioContext.state === "running") {
+        console.log("Suspending AudioContext after processing (in finally block).")
+        currentAudioContext.suspend().catch((err) => console.warn("Error suspending AudioContext post-process:", err))
+      }
     }
   }
 
@@ -347,7 +492,8 @@ export default function MeditationAdjuster() {
       preservePacing: boolean,
       targetTotalSilence: number,
     ): Promise<AudioBuffer> => {
-      if (!audioContext) throw new Error("Audio context not available for rebuild")
+      const currentAudioContext = audioContextRef.current
+      if (!currentAudioContext) throw new Error("Audio context not available for rebuild")
       const sampleRate = buffer.sampleRate
       const numberOfChannels = buffer.numberOfChannels
 
@@ -374,7 +520,11 @@ export default function MeditationAdjuster() {
       const audioContentDur = buffer.duration - regions.reduce((sum, r) => sum + (r.end - r.start), 0)
       const newSilenceDur = processedRegions.reduce((sum, r) => sum + r.newDuration, 0)
       const newTotalDur = audioContentDur + newSilenceDur
-      const newBuffer = audioContext.createBuffer(numberOfChannels, Math.floor(newTotalDur * sampleRate), sampleRate)
+      const newBuffer = currentAudioContext.createBuffer(
+        numberOfChannels,
+        Math.floor(newTotalDur * sampleRate),
+        sampleRate,
+      )
 
       for (let channel = 0; channel < numberOfChannels; channel++) {
         const originalData = buffer.getChannelData(channel)
@@ -411,19 +561,20 @@ export default function MeditationAdjuster() {
       }
       return newBuffer
     },
-    [audioContext, isMobileDevice],
+    [isMobileDevice], // audioContextRef is stable, isMobileDevice for sleep timings
   )
 
   const bufferToWav = useCallback(
     async (buffer: AudioBuffer, highCompatibility = true): Promise<Blob> => {
-      if (!audioContext) throw new Error("Audio context not available for WAV conversion")
+      const currentAudioContext = audioContextRef.current
+      if (!currentAudioContext) throw new Error("Audio context not available for WAV conversion")
       const targetSampleRate = highCompatibility ? 44100 : buffer.sampleRate
       let resampledBuffer = buffer
 
       if (buffer.sampleRate !== targetSampleRate) {
         const ratio = targetSampleRate / buffer.sampleRate
         const newLength = Math.floor(buffer.length * ratio)
-        resampledBuffer = audioContext.createBuffer(buffer.numberOfChannels, newLength, targetSampleRate)
+        resampledBuffer = currentAudioContext.createBuffer(buffer.numberOfChannels, newLength, targetSampleRate)
         for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
           const oldData = buffer.getChannelData(channel)
           const newData = resampledBuffer.getChannelData(channel)
@@ -467,12 +618,13 @@ export default function MeditationAdjuster() {
       }
       return new Blob([arrayBuffer], { type: "audio/wav" })
     },
-    [audioContext, isMobileDevice],
+    [isMobileDevice], // audioContextRef is stable
   )
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (selectedFile) handleFile(selectedFile)
+    e.target.value = "" // Reset file input
   }
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -521,9 +673,16 @@ export default function MeditationAdjuster() {
 
   useEffect(() => {
     if (isProcessingComplete) {
-      setIsProcessingComplete(false)
+      setIsProcessingComplete(false) // Reset for next processing cycle
     }
-  }, [targetDuration, silenceThreshold, minSilenceDuration, minSpacingDuration, preserveNaturalPacing]) // isProcessingComplete removed from deps as per original intent
+  }, [
+    targetDuration,
+    silenceThreshold,
+    minSilenceDuration,
+    minSpacingDuration,
+    preserveNaturalPacing,
+    isProcessingComplete,
+  ])
 
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined
