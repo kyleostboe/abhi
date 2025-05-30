@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "abhī - Meditation Pause Adjuster",
     description: "Adjust the length of pauses in meditation audio files to match a target duration",
-    url: "https://your-app-url.com", // Replace with your actual deployed URL
+    url: "https://v0-abhi-ten.vercel.app/", // Replace with your actual deployed URL
     images: [
       {
         url: "/placeholder.svg?height=630&width=1200",
