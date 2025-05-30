@@ -10,6 +10,26 @@ export const metadata: Metadata = {
   title: "abhī - Meditation Pause Adjuster",
   description: "Adjust the length of pauses in meditation audio files to match a target duration",
   generator: "v0.dev",
+  openGraph: {
+    title: "abhī - Meditation Pause Adjuster",
+    description: "Adjust the length of pauses in meditation audio files to match a target duration",
+    url: "https://your-app-url.com", // Replace with your actual deployed URL
+    images: [
+      {
+        url: "/placeholder.svg?height=630&width=1200",
+        width: 1200,
+        height: 630,
+        alt: "abhī - Meditation Pause Adjuster",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "abhī - Meditation Pause Adjuster",
+    description: "Adjust the length of pauses in meditation audio files to match a target duration",
+    images: ["/placeholder.svg?height=630&width=1200"],
+  },
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
