@@ -687,7 +687,10 @@ export default function MeditationAdjuster() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (selectedFile) handleFile(selectedFile)
-    e.target.value = ""
+    // Clear the input value to allow selecting the same file again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
   }
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -871,6 +874,7 @@ export default function MeditationAdjuster() {
             className="relative border-2 border-dashed border-teal-400/70 bg-gradient-to-br from-teal-50 to-blue-50 rounded-2xl p-10 md:p-16 text-center mb-8 cursor-pointer transition-all hover:border-teal-500/90 dark:border-teal-600/70 dark:from-teal-950 dark:to-blue-950 dark:hover:border-teal-500/90 overflow-hidden"
             onClick={() => {
               console.log("Upload area clicked!")
+              // Removed the problematic type manipulation
               fileInputRef.current?.click()
             }}
             onDragOver={handleDragOver}
@@ -1330,36 +1334,34 @@ export default function MeditationAdjuster() {
                         <audio controls className="w-full" src={processedUrl}></audio>
                       </div>
                       <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60">
-                          <div className="text-xs text-teal-500 uppercase tracking-wide mb-1 dark:text-teal-400">
-                            Duration
-                          </div>
-                          <div className="font-medium text-teal-800 dark:text-teal-200">
-                            {formatDuration(actualDuration || 0)} {/* Use actualDuration state */}
-                            {actualDuration && targetDuration && (
-                              <div className="text-xs text-teal-600 mt-1 dark:text-teal-400">
-                                {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
-                              </div>
-                            )}
-                          </div>
+                        <div className="text-xs text-teal-500 uppercase tracking-wide mb-1 dark:text-teal-400">
+                          Duration
                         </div>
-                        <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60">
-                          <div className="text-xs text-teal-500 uppercase tracking-wide mb-1 dark:text-teal-400">
-                            Pauses Adjusted
-                          </div>
-                          <div className="font-medium text-teal-800 dark:text-teal-200">{pausesAdjusted}</div>
+                        <div className="font-medium text-teal-800 dark:text-teal-200">
+                          {formatDuration(actualDuration || 0)} {/* Use actualDuration state */}
+                          {actualDuration && targetDuration && (
+                            <div className="text-xs text-teal-600 mt-1 dark:text-teal-400">
+                              {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <Button
-                        className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition-all border-none dark:from-teal-700 dark:to-emerald-700 dark:hover:from-teal-800 dark:hover:to-emerald-800"
-                        onClick={downloadProcessedAudio}
-                      >
-                        <div className="flex items-center justify-center">
-                          <Download className="mr-2 h-5 w-5" />
-                          Download Processed Audio
+                      <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60">
+                        <div className="text-xs text-teal-500 uppercase tracking-wide mb-1 dark:text-teal-400">
+                          Pauses Adjusted
                         </div>
-                      </Button>
+                        <div className="font-medium text-teal-800 dark:text-teal-200">{pausesAdjusted}</div>
+                      </div>
                     </div>
+                    <Button
+                      className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition-all border-none dark:from-teal-700 dark:to-emerald-700 dark:hover:from-teal-800 dark:hover:to-emerald-800"
+                      onClick={downloadProcessedAudio}
+                    >
+                      <div className="flex items-center justify-center">
+                        <Download className="mr-2 h-5 w-5" />
+                        Download Processed Audio
+                      </div>
+                    </Button>
                   </Card>
                 </motion.div>
               )}
