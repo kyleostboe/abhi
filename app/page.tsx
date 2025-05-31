@@ -872,11 +872,7 @@ export default function MeditationAdjuster() {
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
             ref={uploadAreaRef}
             className="relative border-2 border-dashed border-teal-400/70 bg-gradient-to-br from-teal-50 to-blue-50 rounded-2xl p-10 md:p-16 text-center mb-8 cursor-pointer transition-all hover:border-teal-500/90 dark:border-teal-600/70 dark:from-teal-950 dark:to-blue-950 dark:hover:border-teal-500/90 overflow-hidden"
-            onClick={() => {
-              console.log("Upload area clicked!")
-              // Removed the problematic type manipulation
-              fileInputRef.current?.click()
-            }}
+            onClick={() => fileInputRef.current?.click()}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
