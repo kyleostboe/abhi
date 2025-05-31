@@ -10,16 +10,21 @@ export const metadata: Metadata = {
   title: "abhī - Meditation Pause Adjuster",
   description: "Adjust the length of pauses in meditation audio files to match a target duration",
   generator: "v0.dev",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
+  },
   openGraph: {
     title: "abhī - Meditation Pause Adjuster",
     description: "Adjust the length of pauses in meditation audio files to match a target duration",
-    url: "https://v0-abhi-ten.vercel.app/", // IMPORTANT: Replace with your actual deployed URL
+    url: "https://v0-abhi-ten.vercel.app/", // IMPORTANT: Make sure this is your live, deployed URL
     images: [
       {
-        url: "https://v0-abhi-ten.vercel.app/custom-og-image.png", // Absolute URL for your custom OG image
-        width: 1200, // Assuming a standard OG image width, adjust if your image is different
-        height: 630, // Assuming a standard OG image height, adjust if your image is different
-        alt: "Abstract artwork for abhī meditation app",
+        url: "https://v0-abhi-ten.vercel.app/og-image.png", // Updated to use the new artwork
+        width: 1200,
+        height: 630,
+        alt: "Abstract flowing artwork for abhī meditation app with blue and teal patterns",
       },
     ],
     type: "website",
@@ -28,24 +33,17 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "abhī - Meditation Pause Adjuster",
     description: "Adjust the length of pauses in meditation audio files to match a target duration",
-    images: ["https://v0-abhi-ten.vercel.app/custom-og-image.png"], // Absolute URL for your custom Twitter image
+    images: ["https://v0-abhi-ten.vercel.app/og-image.png"], // Updated to use the new artwork
   },
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  // Added a console log here to confirm RootLayout execution on server/client
   console.log("RootLayout is rendering.")
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
       <body className={`${inter.className} transition-colors duration-300 ease-in-out`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light" // Explicitly set to light
-          enableSystem={false} // Disable system preference detection
-          disableTransitionOnChange={false}
-        >
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange={false}>
           {children}
         </ThemeProvider>
       </body>

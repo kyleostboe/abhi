@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { Mail, Twitter, Instagram, Send, CheckCircle } from "lucide-react"
+import { Mail, Twitter, Instagram, Send, CheckCircle, Github } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -213,6 +213,21 @@ export default function ContactPage() {
                       <div>
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Instagram</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">@kyleostboe</p>
+                      </div>
+                    </a>
+
+                    <a
+                      href="https://github.com/kyleostboe"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors dark:hover:bg-gray-800"
+                    >
+                      <div className="bg-gray-200 p-2 rounded-full mr-3 dark:bg-gray-700">
+                        <Github className="h-5 w-5 text-gray-800 dark:text-gray-300" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">GitHub</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">kyleostboe</p>
                       </div>
                     </a>
                   </div>
