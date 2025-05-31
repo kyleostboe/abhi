@@ -687,10 +687,7 @@ export default function MeditationAdjuster() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (selectedFile) handleFile(selectedFile)
-    // Clear the input value to allow selecting the same file again
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ""
-    }
+    e.target.value = ""
   }
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -793,45 +790,20 @@ export default function MeditationAdjuster() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl dark:shadow-2xl dark:shadow-black/40 overflow-hidden dark:bg-gray-900/80 transition-colors duration-300 ease-in-out"
-        style={{
-          borderRadius: "3rem 2.5rem 3rem 2.5rem",
-        }}
+        className="max-w-4xl mx-auto bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden dark:bg-gray-900/80 transition-colors duration-300 ease-in-out"
       >
-        {/* Organic corner decorations */}
-
         <div className="relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 dark:from-amber-600/20 dark:via-rose-500/15 dark:via-purple-600/10 dark:to-teal-500/20"></div>
-            <div className="absolute top-2 left-8 w-16 h-12 bg-gradient-to-br from-emerald-300/30 to-teal-400/25 rounded-full transform rotate-12 dark:from-emerald-500/30 dark:to-teal-600/25"></div>
-            <div className="absolute top-6 right-12 w-20 h-8 bg-gradient-to-bl from-rose-300/25 to-purple-400/20 rounded-full transform -rotate-6 dark:from-rose-500/25 dark:to-purple-600/20"></div>
-            <div className="absolute top-1 left-1/3 w-12 h-16 bg-gradient-to-tr from-amber-300/20 to-orange-400/15 rounded-full transform rotate-45 dark:from-amber-500/20 dark:to-orange-600/15"></div>
-            <div className="absolute top-8 right-1/4 w-14 h-10 bg-gradient-to-tl from-blue-300/25 to-indigo-400/20 rounded-full transform -rotate-12 dark:from-blue-500/25 dark:to-indigo-600/20"></div>
-          </div>
+          <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-teal-500/20 via-purple-500/10 to-blue-500/20 blur-3xl transform -translate-y-1/2 dark:from-teal-900/20 dark:via-purple-900/10 dark:to-blue-900/20"></div>
           <div className="relative pt-16 pb-12 px-8 text-center">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
             >
-              <h1
-                className="text-5xl md:text-6xl font-light text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-rose-400 via-purple-500 to-teal-400 mb-3 dark:from-amber-400 dark:via-rose-300 dark:via-purple-400 dark:to-teal-300 transform hover:scale-105 transition-transform duration-700 ease-out tracking-wide"
-                style={{
-                  fontFamily: 'Georgia, "Times New Roman", serif',
-                  textShadow: "0 0 25px rgba(139, 69, 19, 0.25)",
-                }}
-              >
+              <h1 className="text-5xl md:text-6xl font-extralight text-transparent bg-clip-text bg-gradient-to-r from-sky-500 via-violet-500 to-green-500 mb-3 dark:from-sky-400 dark:via-violet-400 dark:to-green-400">
                 abhī
               </h1>
-              <div className="flex justify-center items-center mb-4 space-x-1">
-                <div className="w-3 h-3 bg-gradient-to-br from-teal-400 to-emerald-300 rounded-sm transform rotate-12 dark:from-teal-500 dark:to-emerald-400"></div>
-                <div className="w-2 h-2 bg-gradient-to-br from-rose-400 to-pink-300 rounded-full dark:from-rose-500 dark:to-pink-400"></div>
-                <div className="w-4 h-2 bg-gradient-to-br from-amber-400 to-orange-300 rounded-full transform -rotate-6 dark:from-amber-500 dark:to-orange-400"></div>
-                <div className="w-16 h-1 bg-gradient-to-r from-teal-500 to-emerald-400 rounded-full dark:from-teal-400 dark:to-emerald-300"></div>
-                <div className="w-4 h-2 bg-gradient-to-br from-purple-400 to-indigo-300 rounded-full transform rotate-6 dark:from-purple-500 dark:to-indigo-400"></div>
-                <div className="w-2 h-2 bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full dark:from-blue-500 dark:to-cyan-400"></div>
-                <div className="w-3 h-3 bg-gradient-to-br from-emerald-400 to-teal-300 rounded-sm transform -rotate-12 dark:from-emerald-500 dark:to-teal-400"></div>
-              </div>
+              <div className="h-1 w-16 bg-gradient-to-r from-teal-500 to-emerald-400 mx-auto rounded-full mb-4 dark:from-teal-400 dark:to-emerald-300"></div>
               <p className="text-lg text-gray-600 mb-4 font-light dark:text-gray-300">Meditation Length Adjuster</p>
               <p className="text-gray-500 max-w-2xl mx-auto text-sm leading-relaxed dark:text-gray-400">
                 Upload your audio and change the length of pauses to match your desired meditation duration. The app
@@ -871,33 +843,31 @@ export default function MeditationAdjuster() {
             whileTap={{ scale: 0.995 }}
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
             ref={uploadAreaRef}
-            className="relative border-2 border-dashed border-teal-400/70 bg-gradient-to-br from-teal-50 to-blue-50 rounded-2xl p-10 md:p-16 text-center mb-8 cursor-pointer transition-all hover:border-teal-500/90 dark:border-teal-600/70 dark:from-teal-950 dark:to-blue-950 dark:hover:border-teal-500/90 overflow-hidden"
+            className="border-2 border-dashed border-teal-300 bg-gradient-to-br from-teal-50 to-blue-50 rounded-2xl p-10 md:p-16 text-center mb-8 cursor-pointer transition-all hover:border-teal-400 dark:border-teal-700 dark:from-teal-950 dark:to-blue-950 dark:hover:border-teal-600"
             onClick={() => fileInputRef.current?.click()}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            style={{
-              borderRadius: "2rem 1.5rem 2rem 1.5rem",
-            }}
           >
-            {/* Organic mosaic decorations */}
-
-            <div className="relative z-10">
-              <div className="mb-4 bg-gradient-to-br from-teal-400 to-emerald-300 text-white p-4 rounded-full inline-block dark:from-teal-600 dark:to-emerald-500">
-                <Upload size={32} />
-              </div>
-              <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                <div className="text-lg font-medium text-teal-800 mb-2 dark:text-teal-200">
-                  Drop your audio file here or click to browse
-                </div>
-                <div className="text-sm text-teal-600/70 dark:text-teal-400/70">
-                  Supports MP3, WAV, and OGG files (Max: {isMobileDevice ? "50MB" : "500MB"})
-                </div>
-              </motion.div>
+            <div className="mb-4 bg-gradient-to-br from-teal-400 to-emerald-300 text-white p-4 rounded-full inline-block dark:from-teal-600 dark:to-emerald-500">
+              <Upload size={32} />
             </div>
+            <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+              <div className="text-lg font-medium text-teal-800 mb-2 dark:text-teal-200">
+                Drop your audio file here or click to browse
+              </div>
+              <div className="text-sm text-teal-600/70 dark:text-teal-400/70">
+                Supports MP3, WAV, and OGG files (Max: {isMobileDevice ? "50MB" : "500MB"})
+              </div>
+            </motion.div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept=".mp3,.wav,.ogg,audio/*"
+              onChange={handleFileSelect}
+            />
           </motion.div>
-
-          <input ref={fileInputRef} type="file" accept="audio/*" onChange={handleFileSelect} className="hidden" />
 
           <AnimatePresence>
             {file && (
@@ -1330,34 +1300,36 @@ export default function MeditationAdjuster() {
                         <audio controls className="w-full" src={processedUrl}></audio>
                       </div>
                       <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="text-xs text-teal-500 uppercase tracking-wide mb-1 dark:text-teal-400">
-                          Duration
+                        <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60">
+                          <div className="text-xs text-teal-500 uppercase tracking-wide mb-1 dark:text-teal-400">
+                            Duration
+                          </div>
+                          <div className="font-medium text-teal-800 dark:text-teal-200">
+                            {formatDuration(actualDuration || 0)} {/* Use actualDuration state */}
+                            {actualDuration && targetDuration && (
+                              <div className="text-xs text-teal-600 mt-1 dark:text-teal-400">
+                                {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="font-medium text-teal-800 dark:text-teal-200">
-                          {formatDuration(actualDuration || 0)} {/* Use actualDuration state */}
-                          {actualDuration && targetDuration && (
-                            <div className="text-xs text-teal-600 mt-1 dark:text-teal-400">
-                              {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
-                            </div>
-                          )}
+                        <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60">
+                          <div className="text-xs text-teal-500 uppercase tracking-wide mb-1 dark:text-teal-400">
+                            Pauses Adjusted
+                          </div>
+                          <div className="font-medium text-teal-800 dark:text-teal-200">{pausesAdjusted}</div>
                         </div>
                       </div>
-                      <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60">
-                        <div className="text-xs text-teal-500 uppercase tracking-wide mb-1 dark:text-teal-400">
-                          Pauses Adjusted
+                      <Button
+                        className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition-all border-none dark:from-teal-700 dark:to-emerald-700 dark:hover:from-teal-800 dark:hover:to-emerald-800"
+                        onClick={downloadProcessedAudio}
+                      >
+                        <div className="flex items-center justify-center">
+                          <Download className="mr-2 h-5 w-5" />
+                          Download Processed Audio
                         </div>
-                        <div className="font-medium text-teal-800 dark:text-teal-200">{pausesAdjusted}</div>
-                      </div>
+                      </Button>
                     </div>
-                    <Button
-                      className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition-all border-none dark:from-teal-700 dark:to-emerald-700 dark:hover:from-teal-800 dark:hover:to-emerald-800"
-                      onClick={downloadProcessedAudio}
-                    >
-                      <div className="flex items-center justify-center">
-                        <Download className="mr-2 h-5 w-5" />
-                        Download Processed Audio
-                      </div>
-                    </Button>
                   </Card>
                 </motion.div>
               )}
