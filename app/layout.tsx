@@ -7,11 +7,11 @@ import { ThemeProvider } from "@/components/theme-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "abhī - Meditation Pause Adjuster",
+  title: "abhī - Meditation Length Adjuster",
   description: "Adjust the length of pauses in meditation audio files to match a target duration",
   generator: "v0.dev",
   openGraph: {
-    title: "abhī - Meditation Pause Adjuster",
+    title: "abhī - Meditation Length Adjuster",
     description: "Adjust the length of pauses in meditation audio files to match a target duration",
     url: "https://v0-abhi-ten.vercel.app/",
     images: [
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "abhī - Meditation Pause Adjuster",
+    title: "abhī - Meditation Length Adjuster",
     description: "Adjust the length of pauses in meditation audio files to match a target duration",
     images: ["https://v0-abhi-ten.vercel.app/og-image-v2.png"],
   },

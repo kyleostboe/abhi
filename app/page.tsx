@@ -786,7 +786,7 @@ export default function MeditationAdjuster() {
         </div>
       )}
 
-            <motion.div
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -827,7 +827,7 @@ export default function MeditationAdjuster() {
                 <div className="w-2 h-2 bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full dark:from-blue-500 dark:to-cyan-400"></div>
                 <div className="w-3 h-3 bg-gradient-to-br from-emerald-400 to-teal-300 rounded-sm transform -rotate-12 dark:from-emerald-500 dark:to-teal-400"></div>
               </div>
-              <p className="text-lg text-gray-600 mb-4 font-light dark:text-gray-300">Meditation Length Adjuster</p>
+              <p className="text-lg text-gray-600 mb-4 font-medium dark:text-gray-300">Meditation Length Adjuster</p>
               <p className="text-gray-500 max-w-2xl mx-auto text-sm leading-relaxed dark:text-gray-400">
                 Upload your audio and change the length of pauses to match your desired meditation duration. The app
                 intelligently detects silence periods, scales them proportionally, and preserves spoken content.
