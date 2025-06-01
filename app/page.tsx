@@ -834,7 +834,7 @@ export default function MeditationAdjuster() {
               </p>
               <div className="mt-4 p-4 rounded-lg border border-pink-300 max-w-2xl mx-auto dark:border-pink-700">
                 <p className="text-sm text-pink-600 leading-relaxed dark:text-pink-300">
-                  <strong>Intro: </strong> I orginally put this together for{" "}
+                  <strong>Note: </strong> Depending on the audio, you may need to adjust the advanced settings for optimal results. Any guided meditation (under {isMobileDevice ? "50MB" : "500MB"}) should be compatible. Enjoy:) <strong> Resources: </strong> {" "}
                   <a
                     href="https://dharmaseed.org/teacher/210/"
                     target="_blank"
@@ -842,18 +842,23 @@ export default function MeditationAdjuster() {
                     className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors dark:text-pink-400 dark:hover:text-pink-300 dark:hover:bg-pink-900"
                   >
                     Rob Burbea's meditations
-                  </a>
-                  , though any guided meditation (under {isMobileDevice ? "50MB" : "500MB"}) should be compatible.
-                  Depending on the audio, you may need to adjust the advanced settings for optimal results. Enjoy :)
-                  [Default settings currently appear to work best with{" "}
+                  </a> {" "}
                   <a
                     href="https://tasshin.com/guided-meditations/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors dark:text-pink-400 dark:hover:text-pink-300 dark:hover:bg-pink-900"
                   >
-                    Tasshin's collection]
-                  </a>
+                    Tasshin & friend's meditations
+                  </a> {" "}
+                  <a
+                    href="https://www.tarabrach.com/guided-meditations-meditations-that-free-the-heart/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors dark:text-pink-400 dark:hover:text-pink-300 dark:hover:bg-pink-900"
+                    >
+                      Tara Brach's meditations
+                      </a>
                 </p>
               </div>
             </motion.div>
