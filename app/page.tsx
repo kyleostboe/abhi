@@ -838,6 +838,14 @@ export default function MeditationAdjuster() {
                   <p className="text-sm text-pink-600 leading-relaxed dark:text-pink-300">
                     <strong> Resources: </strong> {" "}
                   <a
+                    href="https://dharmaseed.org/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors dark:text-pink-400 dark:hover:text-pink-300 dark:hover:bg-pink-900"
+                  >
+                    Dharma Seed
+                  </a> {" "}
+                  <a
                     href="https://dharmaseed.org/teacher/210/"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -860,6 +868,14 @@ export default function MeditationAdjuster() {
                     className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors dark:text-pink-400 dark:hover:text-pink-300 dark:hover:bg-pink-900"
                     >
                       Tara Brach's meditations
+                      </a> {" "}
+                      <a
+                    href="https://meditofoundation.org/meditations"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors dark:text-pink-400 dark:hover:text-pink-300 dark:hover:bg-pink-900"
+                    >
+                      Medito Foundation
                       </a>
                 </p>
               </div>
