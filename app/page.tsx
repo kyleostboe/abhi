@@ -829,12 +829,12 @@ export default function MeditationAdjuster() {
               </div>
               <p className="text-lg text-gray-600 mb-4 font-medium dark:text-gray-300">Meditation Length Adjuster</p>
               <p className="text-gray-500 max-w-2xl mx-auto text-sm leading-relaxed dark:text-gray-400">
-                Upload your audio and change the length of pauses to match your desired meditation duration. The app
+                Upload your audio and change the length of pauses to match your desired duration. The app
                 intelligently detects silence periods, scales them proportionally, and preserves spoken content.
               </p>
               <div className="mt-4 p-4 rounded-lg border border-pink-300 max-w-2xl mx-auto dark:border-pink-700">
                 <p className="text-sm text-pink-600 leading-relaxed dark:text-pink-300">
-                  <strong>Note: </strong> Depending on the audio, you may need to adjust the advanced settings for optimal results. Any guided meditation (under {isMobileDevice ? "50MB" : "500MB"}) should be compatible. Enjoy:) </p>
+                  <strong>Note: </strong> Depending on the audio, you may need to adjust the advanced settings for optimal results. Any guided meditation, talk, podcast, or audiobook (under {isMobileDevice ? "50MB" : "500MB"}) should be compatible. Enjoy:) </p>
                   <p className="text-sm text-pink-600 leading-relaxed dark:text-pink-300">
                     <strong> Resources: </strong> {" "}
                   <a
@@ -843,7 +843,7 @@ export default function MeditationAdjuster() {
                     rel="noopener noreferrer"
                     className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors dark:text-pink-400 dark:hover:text-pink-300 dark:hover:bg-pink-900"
                   >
-                    Rob Burbea's meditations
+                    Rob Burbea's talks & retreats
                   </a> {" "}
                   <a
                     href="https://tasshin.com/guided-meditations/"
