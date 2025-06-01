@@ -834,7 +834,9 @@ export default function MeditationAdjuster() {
               </p>
               <div className="mt-4 p-4 rounded-lg border border-pink-300 max-w-2xl mx-auto dark:border-pink-700">
                 <p className="text-sm text-pink-600 leading-relaxed dark:text-pink-300">
-                  <strong>Note: </strong> Depending on the audio, you may need to adjust the advanced settings for optimal results. Any guided meditation (under {isMobileDevice ? "50MB" : "500MB"}) should be compatible. Enjoy:) <strong> Resources: </strong> {" "}
+                  <strong>Note: </strong> Depending on the audio, you may need to adjust the advanced settings for optimal results. Any guided meditation (under {isMobileDevice ? "50MB" : "500MB"}) should be compatible. Enjoy:) </p>
+                  <p className="text-sm text-pink-600 leading-relaxed dark:text-pink-300">
+                    <strong> Resources: </strong> {" "}
                   <a
                     href="https://dharmaseed.org/teacher/210/"
                     target="_blank"
