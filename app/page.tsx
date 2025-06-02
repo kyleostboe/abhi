@@ -751,7 +751,7 @@ export default function MeditationAdjuster() {
   }, [isProcessing])
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#e9f5f3,#f0f8ff_30%,#f8f0ff_70%)] dark:bg-[radial-gradient(circle_at_top_right,#0F172A,#111827_30%,#1E1B34_70%)] p-4 md:p-8 transition-colors duration-300 ease-in-out">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,hsl(var(--logo-emerald)/0.1),hsl(var(--logo-teal)/0.1)_30%,hsl(var(--logo-purple)/0.1)_70%)] dark:bg-[radial-gradient(circle_at_top_right,#0F172A,#111827_30%,#1E1B34_70%)] p-4 md:p-8 transition-colors duration-300 ease-in-out">
       <Navigation />
 
       {isMobileDevice && (
@@ -811,7 +811,7 @@ export default function MeditationAdjuster() {
               transition={{ delay: 0.2, duration: 0.5 }}
             >
               <h1
-                className="text-5xl md:text-6xl font-light text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-rose-400 via-purple-500 to-teal-400 mb-3 dark:from-amber-400 dark:via-rose-300 dark:via-purple-400 dark:to-teal-300 transform hover:scale-105 transition-transform duration-700 ease-out tracking-wide"
+                className="text-5xl md:text-6xl font-light text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal mb-3 dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out tracking-wide"
                 style={{
                   fontFamily: 'Georgia, "Times New Roman", serif',
                   textShadow: "0 0 25px rgba(139, 69, 19, 0.25)",
@@ -820,26 +820,22 @@ export default function MeditationAdjuster() {
                 abhī
               </h1>
               <div className="flex justify-center items-center mb-4 space-x-1">
-                <div className="w-3 h-3 bg-gradient-to-br from-teal-400 to-emerald-300 rounded-sm transform rotate-12 dark:from-teal-500 dark:to-emerald-400"></div>
-                <div className="w-2 h-2 bg-gradient-to-br from-rose-400 to-pink-300 rounded-full dark:from-rose-500 dark:to-pink-400"></div>
-                <div className="w-4 h-2 bg-gradient-to-br from-amber-400 to-orange-300 rounded-full transform -rotate-6 dark:from-amber-500 dark:to-orange-400"></div>
-                <div className="w-16 h-1 bg-gradient-to-r from-teal-500 to-emerald-400 rounded-full dark:from-teal-400 dark:to-emerald-300"></div>
-                <div className="w-4 h-2 bg-gradient-to-br from-purple-400 to-indigo-300 rounded-full transform rotate-6 dark:from-purple-500 dark:to-indigo-400"></div>
+                <div className="w-3 h-3 bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 dark:from-logo-teal dark:to-logo-emerald"></div>
+                <div className="w-2 h-2 bg-gradient-to-br from-logo-rose to-pink-300 rounded-full dark:from-logo-rose dark:to-pink-400"></div>
+                <div className="w-4 h-2 bg-gradient-to-br from-logo-amber to-orange-300 rounded-full transform -rotate-6 dark:from-logo-amber dark:to-orange-400"></div>
+                <div className="w-16 h-1 bg-gradient-to-r from-logo-teal to-logo-emerald rounded-full dark:from-logo-teal dark:to-logo-emerald"></div>
+                <div className="w-4 h-2 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-full transform rotate-6 dark:from-logo-purple dark:to-indigo-400"></div>
                 <div className="w-2 h-2 bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full dark:from-blue-500 dark:to-cyan-400"></div>
-                <div className="w-3 h-3 bg-gradient-to-br from-emerald-400 to-teal-300 rounded-sm transform -rotate-12 dark:from-emerald-500 dark:to-teal-400"></div>
+                <div className="w-3 h-3 bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 dark:from-logo-emerald dark:to-logo-teal"></div>
               </div>
               <p className="text-lg text-gray-600 mb-4 font-medium dark:text-gray-300">Meditation Length Adjuster</p>
-              <p className="text-gray-500 max-w-2xl mx-auto text-sm leading-relaxed dark:text-gray-400">
-                Upload your audio and change the length of pauses to match your desired duration. The app intelligently
-                detects silence periods, scales them proportionally, and preserves spoken content.
-              </p>
-              <div className="mt-4 p-4 rounded-lg border border-pink-300 max-w-2xl mx-auto dark:border-pink-700">
-                <p className="text-sm text-pink-600 leading-relaxed dark:text-pink-300">
+              <div className="mt-4 p-4 rounded-lg border border-logo-rose-300 max-w-2xl mx-auto dark:border-logo-rose-700">
+                <p className="text-sm text-logo-rose-600 leading-relaxed dark:text-logo-rose-300">
                   <strong>Note: </strong> The meditations linked below are sourced from publicly available, free
                   content. This app only adjusts silence periods to fit user schedules. Teachers, please feel free to{" "}
                   <a
                     href="/contact"
-                    className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors dark:text-pink-400 dark:hover:text-pink-300 dark:hover:bg-pink-900"
+                    className="text-logo-rose-500 hover:text-logo-rose-600 underline font-medium hover:bg-logo-rose-100 px-1 rounded transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900"
                   >
                     contact me
                   </a>{" "}
@@ -847,13 +843,13 @@ export default function MeditationAdjuster() {
                   Any guided meditation, talk, podcast, or audiobook (under {isMobileDevice ? "50MB" : "500MB"}) should
                   be compatible. Enjoy:){" "}
                 </p>
-                <p className="text-sm text-pink-600 leading-relaxed dark:text-pink-300">
+                <p className="text-sm text-logo-rose-600 leading-relaxed dark:text-logo-rose-300">
                   <strong> Resources: </strong>{" "}
                   <a
                     href="https://dharmaseed.org/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors dark:text-pink-400 dark:hover:text-pink-300 dark:hover:bg-pink-900"
+                    className="text-logo-rose-500 hover:text-logo-rose-600 underline font-medium hover:bg-logo-rose-100 px-1 rounded transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900"
                   >
                     Dharma Seed
                   </a>{" "}
@@ -861,7 +857,7 @@ export default function MeditationAdjuster() {
                     href="https://dharmaseed.org/teacher/210/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors dark:text-pink-400 dark:hover:text-pink-300 dark:hover:bg-pink-900"
+                    className="text-logo-rose-500 hover:text-logo-rose-600 underline font-medium hover:bg-logo-rose-100 px-1 rounded transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900"
                   >
                     Rob Burbea's talks & retreats
                   </a>{" "}
@@ -869,7 +865,7 @@ export default function MeditationAdjuster() {
                     href="https://tasshin.com/guided-meditations/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors dark:text-pink-400 dark:hover:text-pink-300 dark:hover:bg-pink-900"
+                    className="text-logo-rose-500 hover:text-logo-rose-600 underline font-medium hover:bg-logo-rose-100 px-1 rounded transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900"
                   >
                     Tasshin & friend's meditations
                   </a>{" "}
@@ -877,7 +873,7 @@ export default function MeditationAdjuster() {
                     href="https://www.tarabrach.com/guided-meditations-meditations-that-free-the-heart/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors dark:text-pink-400 dark:hover:text-pink-300 dark:hover:bg-pink-900"
+                    className="text-logo-rose-500 hover:text-logo-rose-600 underline font-medium hover:bg-logo-rose-100 px-1 rounded transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900"
                   >
                     Tara Brach's meditations
                   </a>{" "}
@@ -885,7 +881,7 @@ export default function MeditationAdjuster() {
                     href="https://meditofoundation.org/meditations"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors dark:text-pink-400 dark:hover:text-pink-300 dark:hover:bg-pink-900"
+                    className="text-logo-rose-500 hover:text-logo-rose-600 underline font-medium hover:bg-logo-rose-100 px-1 rounded transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900"
                   >
                     Medito Foundation
                   </a>
@@ -901,20 +897,20 @@ export default function MeditationAdjuster() {
             whileTap={{ scale: 0.995 }}
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
             ref={uploadAreaRef}
-            className="border-2 border-dashed border-teal-300 bg-gradient-to-br from-teal-50 to-blue-50 rounded-2xl p-10 md:p-16 text-center mb-8 cursor-pointer transition-all hover:border-teal-400 dark:border-teal-700 dark:from-teal-950 dark:to-blue-950 dark:hover:border-teal-600"
+            className="border-2 border-dashed border-logo-teal-300 bg-gradient-to-br from-logo-teal-50 to-logo-purple-50 rounded-2xl p-10 md:p-16 text-center mb-8 cursor-pointer transition-all hover:border-logo-teal-400 dark:border-logo-teal-700 dark:from-logo-teal-950 dark:to-logo-purple-950 dark:hover:border-logo-teal-600"
             onClick={() => fileInputRef.current?.click()}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
-            <div className="mb-4 bg-gradient-to-br from-teal-400 to-emerald-300 text-white p-4 rounded-full inline-block dark:from-teal-600 dark:to-emerald-500">
+            <div className="mb-4 bg-gradient-to-br from-logo-teal-400 to-logo-emerald-300 text-white p-4 rounded-full inline-block dark:from-logo-teal-600 dark:to-logo-emerald-500">
               <Upload size={32} />
             </div>
             <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <div className="text-lg font-medium text-teal-800 mb-2 dark:text-teal-200">
+              <div className="text-lg font-medium text-logo-teal-800 mb-2 dark:text-logo-teal-200">
                 Drop your audio file here or click to browse
               </div>
-              <div className="text-sm text-teal-600/70 dark:text-teal-400/70">
+              <div className="text-sm text-logo-teal-600/70 dark:text-logo-teal-400/70">
                 Supports MP3, WAV, and OGG files (Max: {isMobileDevice ? "50MB" : "500MB"})
               </div>
             </motion.div>
@@ -934,23 +930,23 @@ export default function MeditationAdjuster() {
                 animate={{ opacity: 1, y: 0, height: "auto" }}
                 exit={{ opacity: 0, y: -10, height: 0 }}
                 transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                className="bg-gradient-to-r from-teal-50 to-emerald-50 rounded-xl p-5 mb-6 border border-teal-100 shadow-sm overflow-hidden dark:from-teal-950 dark:to-emerald-950 dark:border-teal-800"
+                className="bg-gradient-to-r from-logo-teal-50 to-logo-emerald-50 rounded-xl p-5 mb-6 border border-logo-teal-100 shadow-sm overflow-hidden dark:from-logo-teal-950 dark:to-logo-emerald-950 dark:border-logo-teal-800"
               >
                 <div className="flex items-center">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 500, damping: 30, delay: 0.1 }}
-                    className="bg-teal-100 p-2 rounded-lg mr-4 dark:bg-teal-800"
+                    className="bg-logo-teal-100 p-2 rounded-lg mr-4 dark:bg-logo-teal-800"
                   >
-                    <Volume2 className="h-5 w-5 text-teal-600 dark:text-teal-300" />
+                    <Volume2 className="h-5 w-5 text-logo-teal-600 dark:text-logo-teal-300" />
                   </motion.div>
                   <div>
                     <motion.div
                       initial={{ opacity: 0, x: -5 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
-                      className="font-medium text-teal-800 mb-1 dark:text-teal-200"
+                      className="font-medium text-logo-teal-800 mb-1 dark:text-logo-teal-200"
                     >
                       {file.name}
                     </motion.div>
@@ -958,7 +954,7 @@ export default function MeditationAdjuster() {
                       initial={{ opacity: 0, x: -5 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.3 }}
-                      className="text-sm text-teal-600/70 dark:text-teal-400/70"
+                      className="text-sm text-logo-teal-600/70 dark:text-logo-teal-400/70"
                     >
                       Size: {formatFileSize(file.size)} • Type: {file.type}
                     </motion.div>
@@ -976,18 +972,20 @@ export default function MeditationAdjuster() {
                 exit={{ opacity: 0, y: -10 }}
                 className="mb-6"
               >
-                <Card className="p-6 bg-gradient-to-r from-pink-50 to-purple-50 border-pink-200 dark:from-pink-950 dark:to-purple-950 dark:border-pink-800">
+                <Card className="p-6 bg-gradient-to-r from-logo-rose-50 to-logo-purple-50 border-logo-rose-200 dark:from-logo-rose-950 dark:to-logo-purple-950 dark:border-logo-rose-800">
                   <div className="text-center mb-4">
-                    <h3 className="text-lg font-medium text-pink-700 dark:text-pink-300 mb-2">Processing Audio</h3>
-                    <p className="text-sm text-pink-600 dark:text-pink-400">{processingStep}</p>
+                    <h3 className="text-lg font-medium text-logo-rose-700 dark:text-logo-rose-300 mb-2">
+                      Processing Audio
+                    </h3>
+                    <p className="text-sm text-logo-rose-600 dark:text-logo-rose-400">{processingStep}</p>
                   </div>
-                  <div className="w-full bg-pink-200 rounded-full h-2 mb-2 dark:bg-pink-800">
+                  <div className="w-full bg-logo-rose-200 rounded-full h-2 mb-2 dark:bg-logo-rose-800">
                     <div
-                      className="bg-gradient-to-r from-pink-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                      className="bg-gradient-to-r from-logo-rose-500 to-logo-purple-500 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${processingProgress}%` }}
                     ></div>
                   </div>
-                  <div className="text-center text-sm text-pink-600 dark:text-pink-400">
+                  <div className="text-center text-sm text-logo-rose-600 dark:text-logo-rose-400">
                     {processingProgress}% complete
                   </div>
                 </Card>
@@ -1004,44 +1002,46 @@ export default function MeditationAdjuster() {
                 transition={{ delay: 0.1 }}
                 className="mb-10 mt-8"
               >
-                <Alert className="border-none bg-gradient-to-r from-blue-50 to-purple-50 shadow-sm p-1 dark:from-blue-950 dark:to-purple-950">
+                <Alert className="border-none bg-gradient-to-r from-logo-purple-50 to-logo-blue-50 shadow-sm p-1 dark:from-logo-purple-950 dark:to-logo-blue-950">
                   <div className="p-4">
                     <div className="flex items-center mb-4">
-                      <div className="bg-blue-100 p-2 rounded-lg mr-3 dark:bg-blue-800">
-                        <Info className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                      <div className="bg-logo-purple-100 p-2 rounded-lg mr-3 dark:bg-logo-purple-800">
+                        <Info className="h-4 w-4 text-logo-purple-600 dark:text-logo-purple-300" />
                       </div>
-                      <div className="font-medium text-blue-800 text-lg dark:text-blue-200">Audio Analysis</div>
+                      <div className="font-medium text-logo-purple-800 text-lg dark:text-logo-purple-200">
+                        Audio Analysis
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60">
-                        <div className="text-xs text-blue-500 uppercase tracking-wide mb-1 dark:text-blue-400">
+                        <div className="text-xs text-logo-purple-500 uppercase tracking-wide mb-1 dark:text-logo-purple-400">
                           Content
                         </div>
-                        <div className="font-medium text-blue-800 dark:text-blue-200">
+                        <div className="font-medium text-logo-purple-800 dark:text-logo-purple-200">
                           {formatDuration(audioAnalysis.contentDuration)}
                         </div>
                       </div>
                       <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60">
-                        <div className="text-xs text-blue-500 uppercase tracking-wide mb-1 dark:text-blue-400">
+                        <div className="text-xs text-logo-purple-500 uppercase tracking-wide mb-1 dark:text-logo-purple-400">
                           Silence
                         </div>
-                        <div className="font-medium text-blue-800 dark:text-blue-200">
+                        <div className="font-medium text-logo-purple-800 dark:text-logo-purple-200">
                           {formatDuration(audioAnalysis.totalSilence)}
                         </div>
                       </div>
                       <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60">
-                        <div className="text-xs text-blue-500 uppercase tracking-wide mb-1 dark:text-blue-400">
+                        <div className="text-xs text-logo-purple-500 uppercase tracking-wide mb-1 dark:text-logo-purple-400">
                           Pauses
                         </div>
-                        <div className="font-medium text-blue-800 dark:text-blue-200">
+                        <div className="font-medium text-logo-purple-800 dark:text-logo-purple-200">
                           {audioAnalysis.silenceRegions}
                         </div>
                       </div>
                       <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60">
-                        <div className="text-xs text-blue-500 uppercase tracking-wide mb-1 dark:text-blue-400">
+                        <div className="text-xs text-logo-purple-500 uppercase tracking-wide mb-1 dark:text-logo-purple-400">
                           Range
                         </div>
-                        <div className="font-medium text-blue-800 dark:text-blue-200">
+                        <div className="font-medium text-logo-purple-800 dark:text-logo-purple-200">
                           {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
                         </div>
                       </div>
@@ -1062,14 +1062,14 @@ export default function MeditationAdjuster() {
               <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100/70 p-1 rounded-lg dark:bg-gray-800/70">
                 <TabsTrigger
                   value="basic"
-                  className="data-[state=active]:bg-white data-[state=active]:text-teal-700 data-[state=active]:shadow-sm rounded-md dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-teal-300 dark:text-gray-300"
+                  className="data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-sm rounded-md dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-logo-teal-300 dark:text-gray-300"
                 >
                   <Clock className="h-4 w-4 mr-2" />
                   Basic Settings
                 </TabsTrigger>
                 <TabsTrigger
                   value="advanced"
-                  className="data-[state=active]:bg-white data-[state=active]:text-teal-700 data-[state=active]:shadow-sm rounded-md dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-teal-300 dark:text-gray-300"
+                  className="data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-sm rounded-md dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-logo-teal-300 dark:text-gray-300"
                 >
                   <Settings2 className="h-4 w-4 mr-2" />
                   Advanced Settings
@@ -1077,8 +1077,8 @@ export default function MeditationAdjuster() {
               </TabsList>
               <TabsContent value="basic" className="mt-0 space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
-                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-950 dark:to-emerald-950">
-                    <div className="bg-gradient-to-r from-teal-500 to-emerald-500 py-3 px-6 dark:from-teal-700 dark:to-emerald-700">
+                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-logo-teal-50 to-logo-emerald-50 dark:from-logo-teal-950 dark:to-logo-emerald-950">
+                    <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
                       <h3 className="text-white font-medium flex items-center">
                         <Clock className="h-4 w-4 mr-2" />
                         Target Duration
@@ -1097,18 +1097,20 @@ export default function MeditationAdjuster() {
                         />
                       </div>
                       <div className="text-center">
-                        <span className="text-3xl font-light text-teal-700 dark:text-teal-300">{targetDuration}</span>
-                        <span className="text-lg text-teal-600 ml-1 dark:text-teal-400">minutes</span>
+                        <span className="text-3xl font-light text-logo-teal-700 dark:text-logo-teal-300">
+                          {targetDuration}
+                        </span>
+                        <span className="text-lg text-logo-teal-600 ml-1 dark:text-logo-teal-400">minutes</span>
                       </div>
                       {durationLimits && (
-                        <div className="text-center text-xs text-teal-500/70 mt-2 dark:text-teal-400/70">
+                        <div className="text-center text-xs text-logo-teal-500/70 mt-2 dark:text-logo-teal-400/70">
                           Range: {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
                         </div>
                       )}
                     </div>
                   </Card>
-                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950">
-                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 py-3 px-6 dark:from-blue-700 dark:to-purple-700">
+                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-logo-purple-50 to-logo-blue-50 dark:from-logo-purple-950 dark:to-logo-blue-950">
+                    <div className="bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 py-3 px-6 dark:from-logo-purple-700 dark:to-logo-blue-700">
                       <h3 className="text-white font-medium flex items-center">
                         <Volume2 className="h-4 w-4 mr-2" />
                         Silence Threshold
@@ -1126,11 +1128,11 @@ export default function MeditationAdjuster() {
                         />
                       </div>
                       <div className="text-center">
-                        <span className="text-3xl font-light text-blue-700 dark:text-blue-300">
+                        <span className="text-3xl font-light text-logo-purple-700 dark:text-logo-purple-300">
                           {silenceThreshold.toFixed(3)}
                         </span>
                       </div>
-                      <div className="text-center text-xs text-blue-500/70 mt-2 dark:text-blue-400/70">
+                      <div className="text-center text-xs text-logo-purple-500/70 mt-2 dark:text-logo-purple-400/70">
                         Lower = more sensitive
                       </div>
                     </div>
@@ -1139,8 +1141,8 @@ export default function MeditationAdjuster() {
               </TabsContent>
               <TabsContent value="advanced" className="mt-0 space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
-                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950">
-                    <div className="bg-gradient-to-r from-emerald-500 to-teal-500 py-3 px-6 dark:from-emerald-700 dark:to-teal-700">
+                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-logo-emerald-50 to-logo-teal-50 dark:from-logo-emerald-950 dark:to-logo-teal-950">
+                    <div className="bg-gradient-to-r from-logo-emerald-500 to-logo-teal-500 py-3 px-6 dark:from-logo-emerald-700 dark:to-logo-teal-700">
                       <h3 className="text-white font-medium">Min Silence Duration</h3>
                     </div>
                     <div className="p-6">
@@ -1155,18 +1157,18 @@ export default function MeditationAdjuster() {
                         />
                       </div>
                       <div className="text-center">
-                        <span className="text-3xl font-light text-emerald-700 dark:text-emerald-300">
+                        <span className="text-3xl font-light text-logo-emerald-700 dark:text-logo-emerald-300">
                           {minSilenceDuration}
                         </span>
-                        <span className="text-lg text-emerald-600 ml-1 dark:text-emerald-400">seconds</span>
+                        <span className="text-lg text-logo-emerald-600 ml-1 dark:text-logo-emerald-400">seconds</span>
                       </div>
-                      <div className="text-center text-xs text-emerald-500/70 mt-2 dark:text-emerald-400/70">
+                      <div className="text-center text-xs text-logo-emerald-500/70 mt-2 dark:text-logo-emerald-400/70">
                         Shorter = detect more pauses
                       </div>
                     </div>
                   </Card>
-                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950 dark:to-blue-950">
-                    <div className="bg-gradient-to-r from-purple-500 to-blue-500 py-3 px-6 dark:from-purple-700 dark:to-blue-700">
+                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-logo-purple-50 to-logo-blue-50 dark:from-logo-purple-950 dark:to-logo-blue-950">
+                    <div className="bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 py-3 px-6 dark:from-logo-purple-700 dark:to-logo-blue-700">
                       <h3 className="text-white font-medium">Min Spacing Between Content</h3>
                     </div>
                     <div className="p-6">
@@ -1181,42 +1183,42 @@ export default function MeditationAdjuster() {
                         />
                       </div>
                       <div className="text-center">
-                        <span className="text-3xl font-light text-purple-700 dark:text-purple-300">
+                        <span className="text-3xl font-light text-logo-purple-700 dark:text-logo-purple-300">
                           {minSpacingDuration.toFixed(1)}
                         </span>
-                        <span className="text-lg text-purple-600 ml-1 dark:text-purple-400">seconds</span>
+                        <span className="text-lg text-logo-purple-600 ml-1 dark:text-logo-purple-400">seconds</span>
                       </div>
-                      <div className="text-center text-xs text-purple-500/70 mt-2 dark:text-purple-400/70">
+                      <div className="text-center text-xs text-logo-purple-500/70 mt-2 dark:text-logo-purple-400/70">
                         Minimum pause between speaking parts
                       </div>
                     </div>
                   </Card>
-                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
-                    <div className="bg-gradient-to-r from-blue-500 to-indigo-500 py-3 px-6 dark:from-blue-700 dark:to-indigo-700">
+                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-logo-blue-50 to-logo-purple-50 dark:from-logo-blue-950 dark:to-logo-purple-950">
+                    <div className="bg-gradient-to-r from-logo-blue-500 to-logo-purple-500 py-3 px-6 dark:from-logo-blue-700 dark:to-logo-purple-700">
                       <h3 className="text-white font-medium">Preserve Natural Pacing</h3>
                     </div>
                     <div className="p-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-blue-700 mb-1 dark:text-blue-300">
+                          <p className="text-sm text-logo-blue-700 mb-1 dark:text-logo-blue-300">
                             Maintain the relative length of pauses
                           </p>
                         </div>
                         <Switch
                           checked={preserveNaturalPacing}
                           onCheckedChange={setPreserveNaturalPacing}
-                          className="data-[state=checked]:bg-blue-500 dark:data-[state=checked]:bg-blue-700"
+                          className="data-[state=checked]:bg-logo-blue-500 dark:data-[state=checked]:bg-logo-blue-700"
                         />
                       </div>
                     </div>
                   </Card>
-                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950">
-                    <div className="bg-gradient-to-r from-indigo-500 to-purple-500 py-3 px-6 dark:from-indigo-700 dark:to-purple-700">
+                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-logo-purple-50 to-logo-rose-50 dark:from-logo-purple-950 dark:to-logo-rose-950">
+                    <div className="bg-gradient-to-r from-logo-purple-500 to-logo-rose-500 py-3 px-6 dark:from-logo-purple-700 dark:to-logo-rose-700">
                       <h3 className="text-white font-medium">Compatibility Mode</h3>
                     </div>
                     <div className="p-6">
                       <Select value={compatibilityMode} onValueChange={(value) => setCompatibilityMode(value)}>
-                        <SelectTrigger className="w-full mb-2 border-indigo-200 focus:ring-indigo-500 dark:border-indigo-700 dark:bg-gray-800 dark:text-gray-200">
+                        <SelectTrigger className="w-full mb-2 border-logo-purple-200 focus:ring-logo-purple-500 dark:border-logo-purple-700 dark:bg-gray-800 dark:text-gray-200">
                           <SelectValue placeholder="Select compatibility mode" />
                         </SelectTrigger>
                         <SelectContent className="dark:bg-gray-800 dark:text-gray-200">
@@ -1226,7 +1228,7 @@ export default function MeditationAdjuster() {
                           </SelectItem>
                         </SelectContent>
                       </Select>
-                      <div className="text-xs text-indigo-500/70 mt-2 dark:text-indigo-400/70">
+                      <div className="text-xs text-logo-purple-500/70 mt-2 dark:text-logo-purple-400/70">
                         High Compatibility for better playback on mobile/AirPods. May reduce sample rate for long audio
                         on mobile.
                       </div>
@@ -1244,7 +1246,7 @@ export default function MeditationAdjuster() {
             className="mb-8 text-center"
           >
             <Button
-              className={`w-full py-7 text-lg font-medium tracking-wider rounded-xl shadow-lg transition-all border-none ${isProcessing ? "bg-gradient-to-r from-pink-400 to-pink-500 dark:from-pink-600 dark:to-pink-700" : isProcessingComplete ? "bg-gradient-to-r from-emerald-400 to-emerald-500 dark:from-emerald-600 dark:to-emerald-700" : "bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 dark:from-teal-700 dark:to-emerald-700 dark:hover:from-teal-800 dark:hover:to-emerald-800"}`}
+              className={`w-full py-7 text-lg font-medium tracking-wider rounded-xl shadow-lg transition-all border-none ${isProcessing ? "bg-gradient-to-r from-logo-rose-400 to-logo-rose-500 dark:from-logo-rose-600 dark:to-logo-rose-700" : isProcessingComplete ? "bg-gradient-to-r from-logo-emerald-400 to-logo-emerald-500 dark:from-logo-emerald-600 dark:to-logo-emerald-700" : "bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:from-logo-teal-600 hover:to-logo-emerald-600 dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"}`}
               disabled={!originalBuffer || isProcessing || !durationLimits}
               onClick={processAudio}
             >
@@ -1304,7 +1306,7 @@ export default function MeditationAdjuster() {
                 animate={{ opacity: 1, y: 0, height: "auto" }}
                 exit={{ opacity: 0, y: -10, height: 0 }}
                 transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                className={`p-4 rounded-xl mb-8 text-center shadow-sm overflow-hidden ${status.type === "info" ? "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200 dark:from-blue-950 dark:to-blue-900 dark:text-blue-300 dark:border-blue-700" : status.type === "success" ? "bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 border border-emerald-200 dark:from-emerald-950 dark:to-emerald-900 dark:text-emerald-300 dark:border-emerald-700" : "bg-gradient-to-r from-red-50 to-red-100 text-red-700 border border-red-200 dark:from-red-950 dark:to-red-900 dark:text-red-300 dark:border-red-700"}`}
+                className={`p-4 rounded-xl mb-8 text-center shadow-sm overflow-hidden ${status.type === "info" ? "bg-gradient-to-r from-logo-blue-50 to-logo-blue-100 text-logo-blue-700 border border-logo-blue-200 dark:from-logo-blue-950 dark:to-logo-blue-900 dark:text-logo-blue-300 dark:border-logo-blue-700" : status.type === "success" ? "bg-gradient-to-r from-logo-emerald-50 to-logo-emerald-100 text-logo-emerald-700 border border-logo-emerald-200 dark:from-logo-emerald-950 dark:to-logo-emerald-900 dark:text-logo-emerald-300 dark:border-logo-emerald-700" : "bg-gradient-to-r from-red-50 to-red-100 text-red-700 border border-red-200 dark:from-red-950 dark:to-red-900 dark:text-red-300 dark:border-red-700"}`}
               >
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
                   {status.message}
@@ -1349,8 +1351,8 @@ export default function MeditationAdjuster() {
             {processedUrl &&
               processedBufferState && ( // Ensure processedBufferState is also available
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                  <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-950 dark:to-emerald-950">
-                    <div className="bg-gradient-to-r from-teal-600 to-emerald-600 py-3 px-6 dark:from-teal-700 dark:to-emerald-700">
+                  <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-logo-teal-50 to-logo-emerald-50 dark:from-logo-teal-950 dark:to-logo-emerald-950">
+                    <div className="bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
                       <h3 className="text-white font-medium">Processed Audio</h3>
                     </div>
                     <div className="p-6">
@@ -1359,27 +1361,27 @@ export default function MeditationAdjuster() {
                       </div>
                       <div className="grid grid-cols-2 gap-4 mb-6">
                         <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60">
-                          <div className="text-xs text-teal-500 uppercase tracking-wide mb-1 dark:text-teal-400">
+                          <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                             Duration
                           </div>
-                          <div className="font-medium text-teal-800 dark:text-teal-200">
-                            {formatDuration(actualDuration || 0)} {/* Use actualDuration state */}
+                          <div className="font-medium text-logo-teal-800 dark:text-logo-teal-200">
+                            {formatDuration(actualDuration || 0)}
                             {actualDuration && targetDuration && (
-                              <div className="text-xs text-teal-600 mt-1 dark:text-teal-400">
+                              <div className="text-xs text-logo-teal-600 mt-1 dark:text-logo-teal-400">
                                 {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
                               </div>
                             )}
                           </div>
                         </div>
                         <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60">
-                          <div className="text-xs text-teal-500 uppercase tracking-wide mb-1 dark:text-teal-400">
+                          <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                             Pauses Adjusted
                           </div>
-                          <div className="font-medium text-teal-800 dark:text-teal-200">{pausesAdjusted}</div>
+                          <div className="font-medium text-logo-teal-800 dark:text-logo-teal-200">{pausesAdjusted}</div>
                         </div>
                       </div>
                       <Button
-                        className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition-all border-none dark:from-teal-700 dark:to-emerald-700 dark:hover:from-teal-800 dark:hover:to-emerald-800"
+                        className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
                         onClick={downloadProcessedAudio}
                       >
                         <div className="flex items-center justify-center">

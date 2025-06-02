@@ -38,12 +38,12 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#e9f5f3,#f0f8ff_30%,#f8f0ff_70%)] dark:bg-[radial-gradient(circle_at_top_right,#0F172A,#111827_30%,#1E1B34_70%)] transition-colors duration-300 ease-in-out">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,hsl(var(--logo-emerald)/0.1),hsl(var(--logo-teal)/0.1)_30%,hsl(var(--logo-purple)/0.1)_70%)] dark:bg-[radial-gradient(circle_at_top_right,#0F172A,#111827_30%,#1E1B34_70%)] transition-colors duration-300 ease-in-out">
       <Navigation />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <h1 className="text-4xl font-light text-center text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-teal-500 to-emerald-400 mb-2 dark:from-teal-400 dark:via-teal-300 dark:to-emerald-200">
+          <h1 className="text-4xl font-light text-center text-transparent bg-clip-text bg-gradient-to-r from-logo-teal-600 via-logo-teal-500 to-logo-emerald-400 mb-2 dark:from-logo-teal-400 dark:via-logo-teal-300 dark:to-logo-emerald-200">
             Get in Touch
           </h1>
           <p className="text-center text-gray-600 mb-12 dark:text-gray-300">
@@ -61,11 +61,13 @@ export default function ContactPage() {
                     <motion.div
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-center dark:bg-emerald-950 dark:border-emerald-700"
+                      className="bg-logo-emerald-50 border border-logo-emerald-200 rounded-lg p-4 text-center dark:bg-logo-emerald-950 dark:border-logo-emerald-700"
                     >
-                      <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-2 dark:text-emerald-300" />
-                      <h3 className="text-lg font-medium text-emerald-700 dark:text-emerald-200">Message Sent!</h3>
-                      <p className="text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle className="h-12 w-12 text-logo-emerald-500 mx-auto mb-2 dark:text-logo-emerald-300" />
+                      <h3 className="text-lg font-medium text-logo-emerald-700 dark:text-logo-emerald-200">
+                        Message Sent!
+                      </h3>
+                      <p className="text-logo-emerald-600 dark:text-logo-emerald-400">
                         Thank you for reaching out. I'll get back to you soon.
                       </p>
                     </motion.div>
@@ -85,7 +87,7 @@ export default function ContactPage() {
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             required
-                            className="border-gray-200 focus:border-teal-500 focus:ring-teal-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:focus:border-teal-400 dark:focus:ring-teal-400"
+                            className="border-gray-200 focus:border-logo-teal-500 focus:ring-logo-teal-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:focus:border-logo-teal-400 dark:focus:ring-logo-teal-400"
                           />
                         </div>
 
@@ -102,7 +104,7 @@ export default function ContactPage() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            className="border-gray-200 focus:border-teal-500 focus:ring-teal-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:focus:border-teal-400 dark:focus:ring-teal-400"
+                            className="border-gray-200 focus:border-logo-teal-500 focus:ring-logo-teal-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:focus:border-logo-teal-400 dark:focus:ring-logo-teal-400"
                           />
                         </div>
 
@@ -119,14 +121,14 @@ export default function ContactPage() {
                             onChange={(e) => setMessage(e.target.value)}
                             required
                             rows={5}
-                            className="border-gray-200 focus:border-teal-500 focus:ring-teal-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:focus:border-teal-400 dark:focus:ring-teal-400"
+                            className="border-gray-200 focus:border-logo-teal-500 focus:ring-logo-teal-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:focus:border-logo-teal-400 dark:focus:ring-logo-teal-400"
                           />
                         </div>
 
                         <Button
                           type="submit"
                           disabled={isSubmitting}
-                          className="w-full bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-medium py-2 px-4 rounded-md transition-colors dark:from-teal-700 dark:to-emerald-700 dark:hover:from-teal-800 dark:hover:to-emerald-800"
+                          className="w-full bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:from-logo-teal-600 hover:to-logo-emerald-600 text-white font-medium py-2 px-4 rounded-md transition-colors dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
                         >
                           {isSubmitting ? (
                             <span className="flex items-center">
@@ -177,8 +179,8 @@ export default function ContactPage() {
                       href="mailto:kyle@ostboe.com"
                       className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors dark:hover:bg-gray-800"
                     >
-                      <div className="bg-teal-100 p-2 rounded-full mr-3 dark:bg-teal-800">
-                        <Mail className="h-5 w-5 text-teal-600 dark:text-teal-300" />
+                      <div className="bg-logo-teal-100 p-2 rounded-full mr-3 dark:bg-logo-teal-800">
+                        <Mail className="h-5 w-5 text-logo-teal-600 dark:text-logo-teal-300" />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</p>
@@ -192,8 +194,8 @@ export default function ContactPage() {
                       rel="noopener noreferrer"
                       className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors dark:hover:bg-gray-800"
                     >
-                      <div className="bg-blue-100 p-2 rounded-full mr-3 dark:bg-blue-800">
-                        <Twitter className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                      <div className="bg-logo-blue-100 p-2 rounded-full mr-3 dark:bg-logo-blue-800">
+                        <Twitter className="h-5 w-5 text-logo-blue-600 dark:text-logo-blue-300" />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">X (Twitter)</p>
@@ -207,8 +209,8 @@ export default function ContactPage() {
                       rel="noopener noreferrer"
                       className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors dark:hover:bg-gray-800"
                     >
-                      <div className="bg-pink-100 p-2 rounded-full mr-3 dark:bg-pink-800">
-                        <Instagram className="h-5 w-5 text-pink-600 dark:text-pink-300" />
+                      <div className="bg-logo-rose-100 p-2 rounded-full mr-3 dark:bg-logo-rose-800">
+                        <Instagram className="h-5 w-5 text-logo-rose-600 dark:text-logo-rose-300" />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Instagram</p>

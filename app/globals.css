@@ -95,19 +95,19 @@ html.dark audio::-webkit-media-controls-panel {
 }
 
 audio::-webkit-media-controls-play-button {
-  background-color: var(--audio-play-button-bg, #10b981); /* Light: Tailwind emerald-500 */
+  background-color: var(--audio-play-button-bg, hsl(var(--logo-emerald))); /* Use logo-emerald */
   border-radius: 50%;
-  color: white; /* Ensure icon is visible */
+  color: white;
 }
 html.dark audio::-webkit-media-controls-play-button {
-  background-color: #059669; /* Slightly darker emerald for dark mode play button */
+  background-color: hsl(var(--logo-emerald) / 0.8); /* Slightly darker emerald for dark mode */
 }
 
 audio::-webkit-media-controls-play-button:hover {
-  background-color: var(--audio-play-button-hover-bg, #059669); /* Light: Tailwind emerald-600 */
+  background-color: var(--audio-play-button-hover-bg, hsl(var(--logo-emerald) / 0.9)); /* Use logo-emerald */
 }
 html.dark audio::-webkit-media-controls-play-button:hover {
-  background-color: #047857; /* Even darker emerald for dark mode play button hover */
+  background-color: hsl(var(--logo-emerald) / 0.7); /* Even darker emerald for dark mode hover */
 }
 
 audio::-webkit-media-controls-current-time-display,
@@ -122,17 +122,17 @@ html.dark audio::-webkit-media-controls-time-remaining-display {
 
 /* Custom slider styles */
 .slider-thumb {
-  @apply appearance-none w-5 h-5 rounded-full bg-teal-500 cursor-pointer;
+  @apply appearance-none w-5 h-5 rounded-full bg-logo-teal cursor-pointer; /* Use logo-teal */
 }
 html.dark .slider-thumb {
-  @apply bg-teal-400; /* Dark mode thumb color */
+  @apply bg-logo-teal; /* Use logo-teal */
 }
 
 .slider-track {
-  @apply appearance-none h-1 rounded bg-teal-200;
+  @apply appearance-none h-1 rounded bg-logo-teal-200; /* Use a lighter shade of logo-teal */
 }
 html.dark .slider-track {
-  @apply bg-teal-700; /* Dark mode track color */
+  @apply bg-logo-teal-700; /* Use a darker shade of logo-teal */
 }
 
 input[type="range"]::-webkit-slider-thumb {

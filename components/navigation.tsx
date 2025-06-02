@@ -22,8 +22,8 @@ export function Navigation() {
           href={item.path}
           className={`px-3 py-2 rounded text-base font-light transition-all ${
             isActive(item.path)
-              ? "text-teal-700 dark:text-teal-400 font-medium" // Added dark mode text color
-              : "text-gray-500 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-300" // Added dark mode text color
+              ? "text-logo-teal-700 dark:text-logo-teal-400 font-medium" // Updated dark mode text color
+              : "text-gray-500 dark:text-gray-400 hover:text-logo-teal-600 dark:hover:text-logo-teal-300" // Updated dark mode text color
           }`}
         >
           {item.name}
