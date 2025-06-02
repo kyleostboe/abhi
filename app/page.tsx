@@ -794,6 +794,7 @@ export default function MeditationAdjuster() {
         style={{
           borderRadius: "3rem 2.5rem 3rem 2.5rem",
         }}
+        role="application"
       >
         <div className="relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
@@ -834,8 +835,8 @@ export default function MeditationAdjuster() {
               </p>
               <div className="mt-4 p-4 rounded-lg border border-pink-300 max-w-2xl mx-auto dark:border-pink-700">
                 <p className="text-sm text-pink-600 leading-relaxed dark:text-pink-300">
-                  <strong>Note: </strong> The meditations linked below are sourced from publicly available, free content.
-                  This app only adjusts silence periods to fit user schedules. Teachers, please feel free to{" "}
+                  <strong>Note: </strong> The meditations linked below are sourced from publicly available, free
+                  content. This app only adjusts silence periods to fit user schedules. Teachers, please feel free to{" "}
                   <a
                     href="/contact"
                     className="text-pink-500 hover:text-pink-600 underline font-medium hover:bg-pink-100 px-1 rounded transition-colors dark:text-pink-400 dark:hover:text-pink-300 dark:hover:bg-pink-900"
