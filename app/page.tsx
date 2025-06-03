@@ -177,7 +177,7 @@ export default function MeditationAdjuster() {
   }
 
   const handleFile = async (selectedFile: File) => {
-    if (!selectedFile.type.startsWith("audio/")) {
+    if (!selectedFile.type.startsWith("audio/") && !selectedFile.name.toLowerCase().endsWith(".m4a")) {
       setStatus({ message: "Please select a valid audio file.", type: "error" })
       return
     }
@@ -246,13 +246,17 @@ export default function MeditationAdjuster() {
     return silenceRegions
   }
 
-  const analyzeAudioForLimits = async (buffer: AudioBuffer) => {
+  const analyzeAudioForLimits = async (buffer: AudioBuffer, minSpacing: number) => {
     setProcessingStep("Analyzing audio for limits...")
     const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
     const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
     const audioContentDuration = buffer.duration - totalSilenceDuration
-    const minPossibleDuration = Math.max(1, Math.ceil(audioContentDuration / 60))
+
+    // Calculate minimum possible duration accounting for minimum spacing
+    const minRequiredSpacing = silenceRegions.length > 0 ? silenceRegions.length * minSpacing : 0
+    const minPossibleDuration = Math.max(1, Math.ceil((audioContentDuration + minRequiredSpacing) / 60))
     const maxPossibleDuration = isMobileDevice ? 60 : 120
+
     setDurationLimits({ min: minPossibleDuration, max: maxPossibleDuration })
     setAudioAnalysis({
       totalSilence: totalSilenceDuration,
@@ -317,7 +321,7 @@ export default function MeditationAdjuster() {
         setProcessingProgress(100)
         setProcessingStep("Load complete!")
         setStatus({
-          message: `Audio loaded. Duration: ${formatDuration(buffer.duration)}. Adjust from ${durationLimits?.min || 1} to ${durationLimits?.max || (isMobileDevice ? 60 : 120)} min.`,
+          message: `Audio loaded. Duration: ${formatDuration(buffer.duration)}.`,
           type: "success",
         })
       } catch (decodeError) {
@@ -332,8 +336,8 @@ export default function MeditationAdjuster() {
   ) // Added durationLimits
 
   useEffect(() => {
-    if (originalBuffer) analyzeAudioForLimits(originalBuffer)
-  }, [originalBuffer, silenceThreshold, minSilenceDuration])
+    if (originalBuffer) analyzeAudioForLimits(originalBuffer, minSpacingDuration)
+  }, [originalBuffer, silenceThreshold, minSilenceDuration, minSpacingDuration])
 
   const processAudio = async () => {
     const currentAudioContext = audioContextRef.current
@@ -878,6 +882,14 @@ export default function MeditationAdjuster() {
                     Tara Brach's meditations
                   </a>{" "}
                   <a
+                    href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDaDo3?usp=drive_link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-logo-rose-500 hover:text-logo-rose-600 underline font-medium hover:bg-logo-rose-100 px-1 rounded transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900"
+                  >
+                    Toby Sola's meditations
+                  </a>{" "}
+                  <a
                     href="https://meditofoundation.org/meditations"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -911,14 +923,14 @@ export default function MeditationAdjuster() {
                 Drop your audio file here or click to browse
               </div>
               <div className="text-sm text-logo-teal-600/70 dark:text-logo-teal-400/70">
-                Supports MP3, WAV, and OGG files (Max: {isMobileDevice ? "50MB" : "500MB"})
+                Supports MP3, WAV, OGG, and M4A files (Max: {isMobileDevice ? "50MB" : "500MB"})
               </div>
             </motion.div>
             <input
               ref={fileInputRef}
               type="file"
               className="hidden"
-              accept=".mp3,.wav,.ogg,audio/*"
+              accept=".mp3,.wav,.ogg,.m4a,audio/*"
               onChange={handleFileSelect}
             />
           </motion.div>
