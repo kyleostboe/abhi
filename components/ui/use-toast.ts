@@ -182,7 +182,8 @@ function useToast() {
         listeners.splice(index, 1)
       }
     }
-  }, [state])
+    // Register listener only once on mount
+  }, [])
 
   return {
     ...state,
