@@ -31,7 +31,6 @@ export function Navigation() {
       ))}
       <div className="ml-auto pl-4 md:ml-8">
         {" "}
-        {/* Added wrapper for toggle */}
         <ThemeToggle />
       </div>
     </div>
