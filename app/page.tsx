@@ -835,7 +835,7 @@ export default function MeditationAdjuster() {
               <p className="text-lg text-gray-600 mb-4 font-medium dark:text-gray-300">Meditation Length Adjuster</p>
               <div className="mt-4 p-4 rounded-lg border border-logo-rose-300 max-w-2xl mx-auto dark:border-logo-rose-700">
                 <p className="text-sm text-logo-rose-600 leading-relaxed dark:text-logo-rose-300">
-                  <strong>Note: </strong> The meditations linked below are sourced from publicly available, free
+                  <strong>Note: </strong> The meditations below are sourced from publicly available, free
                   content. This app only adjusts silence periods to fit user schedules. Teachers, please feel free to{" "}
                   <a
                     href="/contact"
@@ -847,57 +847,60 @@ export default function MeditationAdjuster() {
                   Any guided meditation, talk, podcast, or audiobook (under {isMobileDevice ? "50MB" : "500MB"}) should
                   be compatible. Enjoy:){" "}
                 </p>
-                <p className="text-sm text-logo-rose-600 leading-relaxed dark:text-logo-rose-300">
-                  <strong> Resources: </strong>{" "}
+              </div>
+
+              <div className="mt-4 p-4 rounded-lg border border-logo-rose-300 max-w-2xl mx-auto dark:border-logo-rose-700 bg-white/60 backdrop-blur-sm dark:bg-gray-900/60">
+                <h3 className="mb-2 dark:text-white text-gray-600 text-sm font-extrabold">Resources</h3>
+                <div className="text-sm text-logo-rose-600 leading-relaxed dark:text-logo-rose-300 flex flex-wrap gap-2 justify-center text-center">
                   <a
                     href="https://dharmaseed.org/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-logo-rose-500 hover:text-logo-rose-600 underline font-medium hover:bg-logo-rose-100 px-1 rounded transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900"
+                    className="inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline font-medium hover:bg-logo-rose-100 px-2 py-1 rounded border border-pink-300 transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900 dark:border-pink-600"
                   >
                     Dharma Seed
-                  </a>{" "}
+                  </a>
                   <a
                     href="https://dharmaseed.org/teacher/210/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-logo-rose-500 hover:text-logo-rose-600 underline font-medium hover:bg-logo-rose-100 px-1 rounded transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900"
+                    className="inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline font-medium hover:bg-logo-rose-100 px-2 py-1 rounded border border-pink-300 transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900 dark:border-pink-600"
                   >
                     Rob Burbea's talks & retreats
-                  </a>{" "}
+                  </a>
                   <a
                     href="https://tasshin.com/guided-meditations/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-logo-rose-500 hover:text-logo-rose-600 underline font-medium hover:bg-logo-rose-100 px-1 rounded transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900"
+                    className="inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline font-medium hover:bg-logo-rose-100 px-2 py-1 rounded border border-pink-300 transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900 dark:border-pink-600"
                   >
                     Tasshin & friend's meditations
-                  </a>{" "}
+                  </a>
                   <a
                     href="https://www.tarabrach.com/guided-meditations-meditations-that-free-the-heart/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-logo-rose-500 hover:text-logo-rose-600 underline font-medium hover:bg-logo-rose-100 px-1 rounded transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900"
+                    className="inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline font-medium hover:bg-logo-rose-100 px-2 py-1 rounded border border-pink-300 transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900 dark:border-pink-600"
                   >
                     Tara Brach's meditations
-                  </a>{" "}
+                  </a>
                   <a
                     href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDaDo3?usp=drive_link"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-logo-rose-500 hover:text-logo-rose-600 underline font-medium hover:bg-logo-rose-100 px-1 rounded transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900"
+                    className="inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline font-medium hover:bg-logo-rose-100 px-2 py-1 rounded border border-pink-300 transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900 dark:border-pink-600"
                   >
                     Toby Sola's meditations
-                  </a>{" "}
+                  </a>
                   <a
                     href="https://meditofoundation.org/meditations"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-logo-rose-500 hover:text-logo-rose-600 underline font-medium hover:bg-logo-rose-100 px-1 rounded transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900"
+                    className="inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline font-medium hover:bg-logo-rose-100 px-2 py-1 rounded border border-pink-300 transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900 dark:border-pink-600"
                   >
                     Medito Foundation
                   </a>
-                </p>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -984,7 +987,7 @@ export default function MeditationAdjuster() {
                 exit={{ opacity: 0, y: -10 }}
                 className="mb-6"
               >
-                <Card className="p-6 bg-gradient-to-r from-logo-rose-50 to-logo-purple-50 border-logo-rose-200 dark:from-logo-rose-950 dark:to-logo-purple-950 dark:border-logo-rose-800">
+                <Card className="p-6 bg-gradient-to-r from-logo-rose-50 to-logo-purple-50 border-logo-rose-200 dark:from-logo-rose-950 dark:to-logo-purple-950">
                   <div className="text-center mb-4">
                     <h3 className="text-lg font-medium text-logo-rose-700 dark:text-logo-rose-300 mb-2">
                       Processing Audio
@@ -1179,8 +1182,8 @@ export default function MeditationAdjuster() {
                       </div>
                     </div>
                   </Card>
-                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-logo-purple-50 to-logo-blue-50 dark:from-logo-purple-950 dark:to-logo-blue-950">
-                    <div className="bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 py-3 px-6 dark:from-logo-purple-700 dark:to-logo-blue-700">
+                  <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-logo-blue-50 to-logo-purple-50 dark:from-logo-blue-950 dark:to-logo-purple-950">
+                    <div className="bg-gradient-to-r from-logo-blue-500 to-logo-purple-500 py-3 px-6 dark:from-logo-blue-700 dark:to-logo-purple-700">
                       <h3 className="text-white font-medium">Min Spacing Between Content</h3>
                     </div>
                     <div className="p-6">
