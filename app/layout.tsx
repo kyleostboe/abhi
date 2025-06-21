@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     url: "https://v0-abhi-ten.vercel.app/",
     images: [
       {
-        url: "/og-image-v2.png?v=3",
+        url: "/og-image-v2.png?v=4",
         width: 1200,
         height: 630,
         alt: "abhī meditation app interface showing pause adjustment features",
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "abhī - Meditation Length Adjuster",
     description: "Adjust the length of pauses in meditation audio files to match a target duration",
-    images: ["/og-image-v2.png?v=3"],
+    images: ["/og-image-v2.png?v=4"],
   },
 }
 
