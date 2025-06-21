@@ -843,7 +843,7 @@ export default function MeditationAdjuster() {
                   >
                     contact me
                   </a>{" "}
-                  to opt out. Depending on the audio, you may need to tweak the advanced settings for optimal results.
+                  to opt out. Depending on the audio, users may need to tweak the advanced settings for optimal results.
                   Any guided meditation, talk, podcast, or audiobook (under {isMobileDevice ? "50MB" : "500MB"}) should
                   be compatible. Enjoy:){" "}
                 </p>
