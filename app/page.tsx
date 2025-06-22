@@ -835,8 +835,8 @@ export default function MeditationAdjuster() {
               <p className="text-lg text-gray-600 mb-4 font-medium dark:text-gray-300">Meditation Length Adjuster</p>
               <div className="mt-4 p-4 rounded-lg border border-logo-rose-300 max-w-2xl mx-auto dark:border-logo-rose-700">
                 <p className="text-sm text-logo-rose-600 leading-relaxed dark:text-logo-rose-300">
-                  <strong>Note: </strong> The meditations below are sourced from publicly available, free
-                  content. This app only adjusts silence periods to fit user schedules. Teachers, please feel free to{" "}
+                  <strong>Note: </strong> The meditations below are sourced from publicly available, free content. This
+                  app only adjusts silence periods to fit user schedules. Teachers, please feel free to{" "}
                   <a
                     href="/contact"
                     className="text-logo-rose-500 hover:text-logo-rose-600 underline font-medium hover:bg-logo-rose-100 px-1 rounded transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900"
@@ -899,6 +899,14 @@ export default function MeditationAdjuster() {
                     className="inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline font-medium hover:bg-logo-rose-100 px-2 py-1 rounded border border-pink-300 transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900 dark:border-pink-600"
                   >
                     Medito Foundation
+                  </a>
+                  <a
+                    href="https://www.freebuddhistaudio.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline font-medium hover:bg-logo-rose-100 px-2 py-1 rounded border border-pink-300 transition-colors dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:hover:bg-logo-rose-900 dark:border-pink-600"
+                  >
+                    freebuddhistaudio
                   </a>
                 </div>
               </div>
