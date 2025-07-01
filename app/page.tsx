@@ -6,22 +6,44 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
 import { Alert } from "@/components/ui/alert"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Info, Upload, Volume2, Clock, Wand2, Settings2, AlertTriangle, Smartphone, Download } from "lucide-react"
+import {
+  Info,
+  Upload,
+  Volume2,
+  Clock,
+  Wand2,
+  Download,
+  Settings2,
+  AlertTriangle,
+  ListPlus,
+  Music2,
+  Mic,
+  StopCircle,
+  Play,
+  PlusCircle,
+  CircleDotDashed,
+  Smartphone,
+} from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { toast } from "@/components/ui/use-toast"
 import {
   INSTRUCTIONS_LIBRARY,
   SOUND_CUES_LIBRARY,
   generateSyntheticSound,
+  MUSICAL_NOTES,
+  playNote,
   type Instruction,
   type SoundCue,
 } from "@/lib/meditation-data"
+import { VisualTimeline } from "@/components/visual-timeline"
 
 // Add this near the top of the file, after the imports
 const NOTE_FREQUENCIES = {
@@ -48,26 +70,16 @@ const NOTE_FREQUENCIES = {
   B5: 987.77,
 }
 
-// Enhanced mobile detection with more comprehensive checks
+// Mobile detection
 const isMobile = () => {
   if (typeof window === "undefined") return false
-
-  // Check user agent
-  const userAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-
-  // Check screen size
-  const screenSize = window.innerWidth <= 768
-
-  // Check touch capability
-  const touchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0
-
-  // Check device memory if available
-  const lowMemory = (navigator as any).deviceMemory ? (navigator as any).deviceMemory <= 4 : false
-
-  return userAgent || screenSize || (touchDevice && window.innerWidth <= 1024)
+  return (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    window.innerWidth <= 768
+  )
 }
 
-// Enhanced memory management utilities for mobile
+// Memory management utilities
 const forceGarbageCollection = () => {
   if (typeof window !== "undefined" && (window as any).gc) {
     console.log("Attempting to force garbage collection.")
@@ -92,25 +104,14 @@ const monitorMemory = () => {
   return false
 }
 
-// Mobile-optimized audio context settings
-const getMobileAudioSettings = (isMobileDevice: boolean) => {
-  return {
-    sampleRate: isMobileDevice ? 22050 : 44100, // Lower sample rate for mobile
-    bufferSize: isMobileDevice ? 1024 : 4096, // Smaller buffer for mobile
-    maxDuration: isMobileDevice ? 30 * 60 : 120 * 60, // 30 min max on mobile vs 2 hours desktop
-    maxFileSize: isMobileDevice ? 25 * 1024 * 1024 : 500 * 1024 * 1024, // 25MB vs 500MB
-    processingTimeout: isMobileDevice ? 60000 : 300000, // 1 min vs 5 min timeout
-  }
-}
-
 interface TimelineEvent {
   id: string
   type: "instruction_sound" | "recorded_voice"
   startTime: number
   instructionText?: string
   soundCueId?: string
-  soundCueName?: string
-  soundCueSrc?: string
+  soundCueName?: string // Added for direct storage
+  soundCueSrc?: string // Added for direct storage
   recordedAudioUrl?: string
   recordedInstructionLabel?: string
   duration?: number
@@ -119,18 +120,13 @@ interface TimelineEvent {
 interface TimelineItem {
   id: string
   type: "instruction" | "sound"
-  duration: number
+  duration: number // in seconds
   content: Instruction | SoundCue
 }
 
 export default function HomePage() {
   // State for mode toggle (Length Adjuster vs Labs)
   const [activeMode, setActiveMode] = useState<"adjuster" | "labs">("adjuster")
-
-  // Mobile-specific states
-  const [isMobileDevice, setIsMobileDevice] = useState<boolean>(false)
-  const [mobileOptimized, setMobileOptimized] = useState<boolean>(false)
-  const [touchInteraction, setTouchInteraction] = useState<boolean>(false)
 
   // == States for Length Adjuster ==
   const [file, setFile] = useState<File | null>(null)
@@ -160,6 +156,7 @@ export default function HomePage() {
   } | null>(null)
   const [actualDuration, setActualDuration] = useState<number | null>(null)
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
+  const [isMobileDevice, setIsMobileDevice] = useState<boolean>(false)
   const [memoryWarning, setMemoryWarning] = useState<boolean>(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadAreaRef = useRef<HTMLDivElement>(null)
@@ -189,68 +186,27 @@ export default function HomePage() {
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
   const [currentTab, setCurrentTab] = useState<string>("instructions")
   const [isPlaying, setIsPlaying] = useState<boolean>(false)
-  const [currentPlaybackTime, setCurrentPlaybackTime] = useState<number>(0)
+  const [currentPlaybackTime, setCurrentPlaybackTime] = useState<number>(0) // in seconds
   const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null)
-  const [volume, setVolume] = useState<number>(75)
+  const [volume, setVolume] = useState<number>(75) // Default volume 75%
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const currentItemStartTimeRef = useRef<number>(0)
 
+  // New state to manage client-side mounting for hydration safety
+  const [hasMounted, setHasMounted] = useState(false)
+
   const totalDuration = timeline.reduce((sum, item) => sum + item.duration, 0)
 
-  // Mobile-specific settings
-  const mobileSettings = getMobileAudioSettings(isMobileDevice)
-
-  // Enhanced mobile detection on mount
-  useEffect(() => {
-    const checkMobile = () => {
-      const mobile = isMobile()
-      setIsMobileDevice(mobile)
-      setMobileOptimized(mobile)
-
-      // Set touch interaction detection
-      setTouchInteraction("ontouchstart" in window)
-
-      // Adjust default settings for mobile
-      if (mobile) {
-        setLabsTotalDuration(300) // 5 minutes default on mobile vs 10 minutes
-        setTargetDuration(10) // 10 minutes default on mobile vs 20 minutes
-      }
+  const addTimelineItem = useCallback((item: Instruction | SoundCue, type: "instruction" | "sound") => {
+    const newItem: TimelineItem = {
+      id: `${type}-${Date.now()}`,
+      type,
+      duration: type === "instruction" ? 60 : 5, // Default duration: 60s for instruction, 5s for sound
+      content: item,
     }
-
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-    window.addEventListener("orientationchange", checkMobile)
-
-    return () => {
-      window.removeEventListener("resize", checkMobile)
-      window.removeEventListener("orientationchange", checkMobile)
-    }
+    setTimeline((prev) => [...prev, newItem])
   }, [])
-
-  // Enhanced memory monitoring for mobile
-  useEffect(() => {
-    if (typeof navigator !== "undefined" && (navigator as any).deviceMemory) {
-      const deviceMemory = (navigator as any).deviceMemory
-      if (deviceMemory < 4 || isMobileDevice) {
-        console.warn("Low memory device detected, enabling memory warnings.")
-        setMemoryWarning(true)
-      }
-    }
-  }, [isMobileDevice])
-
-  const addTimelineItem = useCallback(
-    (item: Instruction | SoundCue, type: "instruction" | "sound") => {
-      const newItem: TimelineItem = {
-        id: `${type}-${Date.now()}`,
-        type,
-        duration: type === "instruction" ? (isMobileDevice ? 30 : 60) : 5, // Shorter default on mobile
-        content: item,
-      }
-      setTimeline((prev) => [...prev, newItem])
-    },
-    [isMobileDevice],
-  )
 
   const updateTimelineItemDuration = useCallback((index: number, newDuration: number) => {
     setTimeline((prev) => prev.map((item, i) => (i === index ? { ...item, duration: Math.max(1, newDuration) } : item)))
@@ -272,6 +228,7 @@ export default function HomePage() {
     async (src: string) => {
       const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.src === src)
 
+      // Defensive check: Ensure soundCue exists and its src property is a string
       if (!soundCue || typeof soundCue.src !== "string") {
         console.error("Invalid sound cue or src property for src:", src, "Found soundCue:", soundCue)
         toast({
@@ -284,8 +241,8 @@ export default function HomePage() {
 
       try {
         if (soundCue.src.startsWith("synthetic:")) {
-          // Mobile-optimized synthetic sound generation
-          await generateSyntheticSound(soundCue, isMobileDevice)
+          // Generate and play synthetic sound
+          await generateSyntheticSound(soundCue)
 
           toast({
             title: "Playing Sound",
@@ -293,27 +250,11 @@ export default function HomePage() {
             variant: "default",
           })
         } else {
+          // Handle actual audio files
           if (labsAudioRef.current) {
             labsAudioRef.current.src = soundCue.src
             labsAudioRef.current.volume = volume / 100
-
-            // Mobile-specific audio handling
-            if (isMobileDevice) {
-              labsAudioRef.current.preload = "metadata"
-              labsAudioRef.current.load()
-            }
-
-            await labsAudioRef.current.play().catch((e) => {
-              console.error("Error playing audio:", e)
-              if (isMobileDevice) {
-                toast({
-                  title: "Audio Playback",
-                  description: "Tap to enable audio playback on mobile",
-                  variant: "default",
-                })
-              }
-            })
-
+            await labsAudioRef.current.play().catch((e) => console.error("Error playing audio:", e))
             toast({
               title: "Playing Sound",
               description: `Now playing: ${soundCue.name || "Audio file"}`,
@@ -332,18 +273,18 @@ export default function HomePage() {
         })
       }
     },
-    [volume, isMobileDevice],
+    [volume],
   )
 
   const startPlayback = useCallback(() => {
     if (timeline.length === 0) return
 
     setIsPlaying(true)
-    currentItemStartTimeRef.current = currentPlaybackTime
+    currentItemStartTimeRef.current = currentPlaybackTime // Store start time of current item
 
     playbackIntervalRef.current = setInterval(() => {
       setCurrentPlaybackTime((prevTime) => {
-        const newTime = prevTime + 0.1
+        const newTime = prevTime + 0.1 // Increment by 100ms
 
         let accumulatedDuration = 0
         let foundActiveItem = false
@@ -352,8 +293,9 @@ export default function HomePage() {
           if (newTime >= accumulatedDuration && newTime < accumulatedDuration + item.duration) {
             if (activeItemIndex !== i) {
               setActiveItemIndex(i)
+              // Play sound cue when it becomes active
               if (item.type === "sound") {
-                playLabsSound(item.content.src)
+                playLabsSound(item.content.src) // Pass src string to playLabsSound
               }
             }
             foundActiveItem = true
@@ -367,6 +309,7 @@ export default function HomePage() {
         }
 
         if (newTime >= totalDuration) {
+          // End of timeline
           clearInterval(playbackIntervalRef.current!)
           setIsPlaying(false)
           setCurrentPlaybackTime(0)
@@ -375,7 +318,7 @@ export default function HomePage() {
         }
         return newTime
       })
-    }, 100)
+    }, 100) // Update every 100ms
   }, [timeline, currentPlaybackTime, totalDuration, activeItemIndex, playLabsSound])
 
   const pausePlayback = useCallback(() => {
@@ -393,6 +336,7 @@ export default function HomePage() {
   }, [pausePlayback])
 
   useEffect(() => {
+    // Cleanup interval on component unmount
     return () => {
       if (playbackIntervalRef.current) {
         clearInterval(playbackIntervalRef.current)
@@ -400,6 +344,7 @@ export default function HomePage() {
     }
   }, [])
 
+  // Update audio volume if audioRef exists
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume / 100
@@ -413,21 +358,22 @@ export default function HomePage() {
   }
 
   const handleSaveTimeline = () => {
+    // Placeholder for save functionality
     console.log("Saving timeline:", timeline)
     alert("Save functionality not yet implemented.")
   }
 
   const handleLoadTimeline = () => {
+    // Placeholder for load functionality
     console.log("Loading timeline...")
     alert("Load functionality not yet implemented.")
   }
 
-  // Mobile-optimized WAV conversion
   const bufferToWavOld = async (buffer: AudioBuffer): Promise<Blob> => {
-    const numberOfChannels = isMobileDevice ? 1 : buffer.numberOfChannels // Mono on mobile
+    const numberOfChannels = buffer.numberOfChannels
     const numSamples = buffer.length
-    const sampleRate = isMobileDevice ? Math.min(buffer.sampleRate, 22050) : buffer.sampleRate // Lower sample rate on mobile
-    const bytesPerSample = 2
+    const sampleRate = buffer.sampleRate
+    const bytesPerSample = 2 // Assuming 16-bit PCM
     const blockAlign = numberOfChannels * bytesPerSample
     const byteRate = sampleRate * blockAlign
     const dataSize = numSamples * blockAlign
@@ -438,24 +384,36 @@ export default function HomePage() {
 
     // RIFF identifier
     dataView.setUint32(0, 0x52494646, false) // "RIFF"
+    // File size
     dataView.setUint32(4, fileSize - 8, true)
+    // RIFF type
     dataView.setUint32(8, 0x57415645, false) // "WAVE"
+    // Format chunk identifier
     dataView.setUint32(12, 0x666d7420, false) // "fmt "
+    // Format chunk size
     dataView.setUint32(16, 16, true)
+    // Audio format (PCM = 1)
     dataView.setUint16(20, 1, true)
+    // Number of channels
     dataView.setUint16(22, numberOfChannels, true)
+    // Sample rate
     dataView.setUint32(24, sampleRate, true)
+    // Byte rate (Sample Rate * Block Align)
     dataView.setUint32(28, byteRate, true)
+    // Block align (Number of Channels * Bytes per Sample)
     dataView.setUint16(32, blockAlign, true)
+    // Bits per sample
     dataView.setUint16(34, bytesPerSample * 8, true)
+    // Data chunk identifier
     dataView.setUint32(36, 0x64617461, false) // "data"
+    // Data chunk size
     dataView.setUint32(40, dataSize, true)
 
+    // Write the samples to the data chunk
     let offset = 44
     for (let i = 0; i < numSamples; i++) {
       for (let channel = 0; channel < numberOfChannels; channel++) {
-        const channelData = buffer.getChannelData(Math.min(channel, buffer.numberOfChannels - 1))
-        const sample = channelData[i]
+        const sample = buffer.getChannelData(channel)[i]
         const amplitude = Math.max(-1, Math.min(1, sample))
         dataView.setInt16(offset, amplitude * 0x7fff, true)
         offset += bytesPerSample
@@ -465,22 +423,59 @@ export default function HomePage() {
     return new Blob([arrayBuffer], { type: "audio/wav" })
   }
 
-  // Mobile-optimized audio export
+  const addSyntheticToContext = (ctx: OfflineAudioContext, cue: SoundCue, start: number, duration: number) => {
+    const gainNode = ctx.createGain()
+    gainNode.gain.setValueAtTime(0.3, start) // Reduced gain for synthetic sounds
+    gainNode.connect(ctx.destination)
+
+    if (cue.src === "synthetic:sine440") {
+      const osc = ctx.createOscillator()
+      osc.type = "sine"
+      osc.frequency.setValueAtTime(440, start)
+      osc.connect(gainNode)
+      osc.start(start)
+      osc.stop(start + duration)
+    } else if (cue.src === "synthetic:triangle880") {
+      const osc = ctx.createOscillator()
+      osc.type = "triangle"
+      osc.frequency.setValueAtTime(880, start)
+      osc.connect(gainNode)
+      osc.start(start)
+      osc.stop(start + duration)
+    } else if (cue.src === "synthetic:square220") {
+      const osc = ctx.createOscillator()
+      osc.type = "square"
+      osc.frequency.setValueAtTime(220, start)
+      osc.connect(gainNode)
+      osc.start(start)
+      osc.stop(start + duration)
+    } else if (cue.src === "synthetic:sawtooth660") {
+      const osc = ctx.createOscillator()
+      osc.type = "sawtooth"
+      osc.frequency.setValueAtTime(660, start)
+      osc.connect(gainNode)
+      osc.start(start)
+      osc.stop(start + duration)
+    } else {
+      console.warn("Unknown synthetic sound:", cue.src)
+    }
+  }
+
   const handleExportAudio = async () => {
     setIsGeneratingAudio(true)
     setGenerationProgress(0)
     setGenerationStep("Initializing...")
 
     try {
-      console.log("Starting mobile-optimized audio export with events:", timelineEvents)
+      console.log("Starting audio export with events:", timelineEvents)
 
-      const maxAudioDuration = Math.min(labsTotalDuration, mobileSettings.maxDuration)
+      // Calculate the maximum end time needed for the OfflineAudioContext
+      const maxAudioDuration = labsTotalDuration // Start with the user-defined total duration
 
-      // Use mobile-optimized audio context settings
       const ctx = new OfflineAudioContext({
-        numberOfChannels: isMobileDevice ? 1 : 2, // Mono on mobile
-        sampleRate: mobileSettings.sampleRate,
-        length: Math.ceil(maxAudioDuration * mobileSettings.sampleRate),
+        numberOfChannels: 1,
+        sampleRate: 44100,
+        length: Math.ceil(maxAudioDuration * 44100), // Ensure length is an integer
       })
 
       let processedEventsCount = 0
@@ -491,31 +486,36 @@ export default function HomePage() {
         console.log(`Processing event ${event.id} at time ${eventStartTime}:`, event)
 
         if (event.type === "instruction_sound") {
+          // Handle instruction_sound events - these should include sound cues
           let soundProcessed = false
 
+          // First try using the stored soundCueSrc
           if (event.soundCueSrc) {
             setGenerationStep(`Adding sound: ${event.soundCueName || "Sound Cue"}`)
             console.log(`Processing sound cue from soundCueSrc: ${event.soundCueSrc}`)
 
             if (event.soundCueSrc.startsWith("synthetic:")) {
+              // Find the sound cue from the library to get full parameters
               const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
               if (soundCue) {
                 console.log(`Found synthetic sound cue:`, soundCue)
 
+                // Generate synthetic sound using Web Audio API
                 const oscillator = ctx.createOscillator()
                 const gainNode = ctx.createGain()
 
                 oscillator.connect(gainNode)
                 gainNode.connect(ctx.destination)
 
+                // Set oscillator properties from sound cue
                 oscillator.type = soundCue.waveform || "sine"
                 oscillator.frequency.setValueAtTime(soundCue.frequency || 440, eventStartTime)
 
-                // Mobile-optimized envelope (shorter, simpler)
-                const attackDuration = isMobileDevice ? 0.005 : soundCue.attackDuration || 0.01
-                const releaseDuration = isMobileDevice ? 0.25 : soundCue.releaseDuration || 0.5
-                const eventDuration = Math.min((soundCue.duration || 1000) / 1000, isMobileDevice ? 2 : 5)
-                const peakVolume = isMobileDevice ? 0.4 : 0.5
+                // Create envelope
+                const attackDuration = soundCue.attackDuration || 0.01
+                const releaseDuration = soundCue.releaseDuration || 0.5
+                const eventDuration = (soundCue.duration || 1000) / 1000 // Convert ms to seconds
+                const peakVolume = 0.5 // Increased volume for better audibility
 
                 gainNode.gain.setValueAtTime(0, eventStartTime)
                 gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + attackDuration)
@@ -528,10 +528,9 @@ export default function HomePage() {
                 oscillator.start(eventStartTime)
                 oscillator.stop(eventStartTime + eventDuration)
 
-                // Simplified harmonics for mobile
-                if (soundCue.harmonics && !isMobileDevice) {
-                  soundCue.harmonics.slice(0, 2).forEach((harmonic, index) => {
-                    // Limit harmonics on mobile
+                // Add harmonics if specified
+                if (soundCue.harmonics) {
+                  soundCue.harmonics.forEach((harmonic, index) => {
                     const harmonicOsc = ctx.createOscillator()
                     const harmonicGain = ctx.createGain()
 
@@ -541,7 +540,7 @@ export default function HomePage() {
                     harmonicOsc.type = soundCue.waveform || "sine"
                     harmonicOsc.frequency.setValueAtTime(harmonic, eventStartTime)
 
-                    const harmonicVolume = (peakVolume * 0.2) / (index + 1)
+                    const harmonicVolume = (peakVolume * 0.3) / (index + 1)
 
                     harmonicGain.gain.setValueAtTime(0, eventStartTime)
                     harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + attackDuration)
@@ -563,12 +562,14 @@ export default function HomePage() {
                 console.log(`Successfully added synthetic sound at ${eventStartTime}`)
               }
             } else if (event.soundCueSrc.startsWith("musical:")) {
+              // Handle musical notes
               const noteMatch = event.soundCueSrc.match(/musical:([A-G])(\d)/)
               if (noteMatch) {
                 const note = noteMatch[1]
                 const octave = Number.parseInt(noteMatch[2])
                 console.log(`Processing musical note: ${note}${octave}`)
 
+                // Get frequency from NOTE_FREQUENCIES
                 const noteKey = `${note}${octave}` as keyof typeof NOTE_FREQUENCIES
                 const frequency = NOTE_FREQUENCIES[noteKey]
 
@@ -582,9 +583,10 @@ export default function HomePage() {
                   oscillator.type = "sine"
                   oscillator.frequency.setValueAtTime(frequency, eventStartTime)
 
-                  const eventDuration = isMobileDevice ? 0.6 : 0.8
-                  const peakVolume = isMobileDevice ? 0.3 : 0.4
+                  const eventDuration = 0.8 // Default duration for musical notes
+                  const peakVolume = 0.4 // Good volume for musical notes
 
+                  // Gentle envelope for musical notes
                   gainNode.gain.setValueAtTime(0, eventStartTime)
                   gainNode.gain.exponentialRampToValueAtTime(peakVolume, eventStartTime + 0.05)
                   gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
@@ -597,6 +599,7 @@ export default function HomePage() {
                 }
               }
             } else {
+              // Handle pre-recorded audio files
               try {
                 console.log(`Loading pre-recorded audio: ${event.soundCueSrc}`)
                 const response = await fetch(event.soundCueSrc)
@@ -608,7 +611,7 @@ export default function HomePage() {
                 source.buffer = audioBuffer
                 source.connect(gainNode)
                 gainNode.connect(ctx.destination)
-                gainNode.gain.setValueAtTime(isMobileDevice ? 0.3 : 0.4, eventStartTime)
+                gainNode.gain.setValueAtTime(0.4, eventStartTime) // Good volume for pre-recorded sounds
                 source.start(eventStartTime)
 
                 soundProcessed = true
@@ -619,40 +622,76 @@ export default function HomePage() {
             }
           }
 
+          // Fallback: try to find sound cue by ID if soundCueSrc didn't work
           if (!soundProcessed && event.soundCueId) {
             console.log(`Fallback: trying to find sound cue by ID: ${event.soundCueId}`)
             const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
-            if (soundCue && soundCue.src.startsWith("synthetic:")) {
+            if (soundCue) {
               setGenerationStep(`Adding sound: ${soundCue.name}`)
               console.log(`Found sound cue by ID:`, soundCue)
 
-              const oscillator = ctx.createOscillator()
-              const gainNode = ctx.createGain()
+              if (soundCue.src.startsWith("synthetic:")) {
+                // Generate synthetic sound using Web Audio API
+                const oscillator = ctx.createOscillator()
+                const gainNode = ctx.createGain()
 
-              oscillator.connect(gainNode)
-              gainNode.connect(ctx.destination)
+                oscillator.connect(gainNode)
+                gainNode.connect(ctx.destination)
 
-              oscillator.type = soundCue.waveform || "sine"
-              oscillator.frequency.setValueAtTime(soundCue.frequency || 440, eventStartTime)
+                // Set oscillator properties from sound cue
+                oscillator.type = soundCue.waveform || "sine"
+                oscillator.frequency.setValueAtTime(soundCue.frequency || 440, eventStartTime)
 
-              const attackDuration = isMobileDevice ? 0.005 : soundCue.attackDuration || 0.01
-              const releaseDuration = isMobileDevice ? 0.25 : soundCue.releaseDuration || 0.5
-              const eventDuration = Math.min((soundCue.duration || 1000) / 1000, isMobileDevice ? 2 : 5)
-              const peakVolume = isMobileDevice ? 0.4 : 0.5
+                // Create envelope
+                const attackDuration = soundCue.attackDuration || 0.01
+                const releaseDuration = soundCue.releaseDuration || 0.5
+                const eventDuration = (soundCue.duration || 1000) / 1000 // Convert ms to seconds
+                const peakVolume = 0.5 // Increased volume
 
-              gainNode.gain.setValueAtTime(0, eventStartTime)
-              gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + attackDuration)
+                gainNode.gain.setValueAtTime(0, eventStartTime)
+                gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + attackDuration)
 
-              if (eventDuration > attackDuration + releaseDuration) {
-                gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
+                if (eventDuration > attackDuration + releaseDuration) {
+                  gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
+                }
+                gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
+
+                oscillator.start(eventStartTime)
+                oscillator.stop(eventStartTime + eventDuration)
+
+                // Add harmonics if specified
+                if (soundCue.harmonics) {
+                  soundCue.harmonics.forEach((harmonic, index) => {
+                    const harmonicOsc = ctx.createOscillator()
+                    const harmonicGain = ctx.createGain()
+
+                    harmonicOsc.connect(harmonicGain)
+                    harmonicGain.connect(ctx.destination)
+
+                    harmonicOsc.type = soundCue.waveform || "sine"
+                    harmonicOsc.frequency.setValueAtTime(harmonic, eventStartTime)
+
+                    const harmonicVolume = (peakVolume * 0.3) / (index + 1)
+
+                    harmonicGain.gain.setValueAtTime(0, eventStartTime)
+                    harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + attackDuration)
+
+                    if (eventDuration > attackDuration + releaseDuration) {
+                      harmonicGain.gain.linearRampToValueAtTime(
+                        harmonicVolume,
+                        eventStartTime + eventDuration - releaseDuration,
+                      )
+                    }
+                    harmonicGain.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
+
+                    harmonicOsc.start(eventStartTime)
+                    harmonicOsc.stop(eventStartTime + eventDuration)
+                  })
+                }
+
+                soundProcessed = true
+                console.log(`Successfully added synthetic sound from ID at ${eventStartTime}`)
               }
-              gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
-
-              oscillator.start(eventStartTime)
-              oscillator.stop(eventStartTime + eventDuration)
-
-              soundProcessed = true
-              console.log(`Successfully added synthetic sound from ID at ${eventStartTime}`)
             }
           }
 
@@ -673,7 +712,7 @@ export default function HomePage() {
             source.buffer = audioBuffer
             source.connect(gainNode)
             gainNode.connect(ctx.destination)
-            gainNode.gain.setValueAtTime(isMobileDevice ? 0.7 : 0.8, eventStartTime)
+            gainNode.gain.setValueAtTime(0.8, eventStartTime) // Higher volume for voice
             source.start(eventStartTime)
 
             console.log(`Successfully added recorded voice at ${eventStartTime}`)
@@ -683,59 +722,33 @@ export default function HomePage() {
         }
 
         processedEventsCount++
-        setGenerationProgress(Math.floor((processedEventsCount / totalEvents) * 80))
-        setGenerationStep(
-          `Processing event ${processedEventsCount} of ${totalEvents}: ${event.type === "instruction_sound" ? event.instructionText?.substring(0, 20) + "..." : event.recordedInstructionLabel || "Voice recording"}`,
-        )
-
-        // More frequent memory cleanup on mobile
-        if (isMobileDevice && processedEventsCount % 3 === 0) {
-          await sleep(10)
-          forceGarbageCollection()
-        }
+        setGenerationProgress(Math.floor((processedEventsCount / totalEvents) * 80)) // Progress up to 80% for event processing
       }
 
       setGenerationStep("Rendering audio...")
-      setGenerationProgress(80)
+      setGenerationProgress(80) // Set to 80% before rendering
       console.log("Starting audio rendering...")
 
       const rendered = await ctx.startRendering()
       console.log("Audio rendering complete, creating WAV blob...")
 
-      const wavBlob = await bufferToWavOld(rendered)
+      const wavBlob = await bufferToWavOld(rendered) // Use the existing bufferToWav function
       const url = URL.createObjectURL(wavBlob)
       setGeneratedAudioUrl(url)
 
-      // Auto-play with mobile considerations
-      setTimeout(() => {
-        if (labsAudioRef.current) {
-          labsAudioRef.current.src = url
-          labsAudioRef.current.volume = volume / 100
-
-          if (isMobileDevice) {
-            // On mobile, don't auto-play due to browser restrictions
-            toast({
-              title: "Audio Ready",
-              description: "Tap the play button to listen to your meditation",
-              variant: "default",
-            })
-          } else {
-            labsAudioRef.current.play().catch((e) => console.error("Error auto-playing generated audio:", e))
-          }
-        }
-      }, 500)
+      // Play generated audio
+      if (labsAudioRef.current) {
+        labsAudioRef.current.src = url
+        labsAudioRef.current.volume = volume / 100
+        await labsAudioRef.current.play().catch((e) => console.error("Error playing generated audio:", e))
+      }
 
       setIsGeneratingAudio(false)
       setGenerationProgress(100)
       setGenerationStep("Export Complete")
 
-      console.log("Mobile-optimized audio export completed successfully!")
-      toast({
-        title: "Export Complete",
-        description: isMobileDevice
-          ? "Mobile-optimized audio ready!"
-          : "Timeline audio exported with sound cues included!",
-      })
+      console.log("Audio export completed successfully!")
+      toast({ title: "Export Complete", description: "Timeline audio exported with sound cues included!" })
     } catch (error) {
       console.error("Audio export failed:", error)
       toast({
@@ -745,11 +758,39 @@ export default function HomePage() {
       })
     } finally {
       setIsGeneratingAudio(false)
-      forceGarbageCollection()
     }
   }
 
-  // Enhanced audio context initialization for mobile
+  // == Effects for Length Adjuster ==
+  useEffect(() => {
+    // Set hasMounted to true after the initial render on the client
+    setHasMounted(true)
+
+    const checkMobile = () => {
+      const mobile = isMobile()
+      setIsMobileDevice(mobile)
+      // No need for setMobileOptimized, can use isMobileDevice directly
+      if (mobile) {
+        setLabsTotalDuration(300)
+        setTargetDuration(10)
+      }
+    }
+    checkMobile()
+    window.addEventListener("resize", checkMobile)
+    window.addEventListener("orientationchange", checkMobile)
+    if (typeof navigator !== "undefined" && (navigator as any).deviceMemory) {
+      const deviceMemory = (navigator as any).deviceMemory
+      if (deviceMemory < 4) {
+        console.warn("Device memory less than 4GB, enabling memory warnings.")
+        setMemoryWarning(true)
+      }
+    }
+    return () => {
+      window.removeEventListener("resize", checkMobile)
+      window.removeEventListener("orientationchange", checkMobile)
+    }
+  }, [])
+
   useEffect(() => {
     if (typeof window === "undefined") return
 
@@ -759,29 +800,25 @@ export default function HomePage() {
 
     const AudioContextAPI = window.AudioContext || (window as any).webkitAudioContext
     if (AudioContextAPI) {
+      const sampleRate = isMobileDevice ? 22050 : 44100
       try {
-        const ctx = new AudioContextAPI({ sampleRate: mobileSettings.sampleRate })
+        const ctx = new AudioContextAPI({ sampleRate })
         audioContextRef.current = ctx
-
         if (ctx.state === "suspended") {
           const resumeContextOnInteraction = async () => {
             if (audioContextRef.current && audioContextRef.current.state === "suspended") {
               try {
                 await audioContextRef.current.resume()
-                console.log("AudioContext resumed successfully")
               } catch (e) {
                 console.error("Error resuming AudioContext on user interaction:", e)
               }
             }
             document.removeEventListener("click", resumeContextOnInteraction, true)
-            document.removeEventListener("touchend", resumeContextOnInteraction, true)
-            document.removeEventListener("keydown", resumeContextOnInteraction, true)
+            document.addEventListener("touchend", resumeContextOnInteraction, true)
+            document.addEventListener("keydown", resumeContextOnInteraction, true)
           }
-
-          // Enhanced mobile interaction detection
           document.addEventListener("click", resumeContextOnInteraction, { once: true, capture: true })
           document.addEventListener("touchend", resumeContextOnInteraction, { once: true, capture: true })
-          document.addEventListener("touchstart", resumeContextOnInteraction, { once: true, capture: true })
           document.addEventListener("keydown", resumeContextOnInteraction, { once: true, capture: true })
         }
       } catch (error) {
@@ -793,7 +830,6 @@ export default function HomePage() {
     } else {
       setStatus({ message: "Your browser does not support the required Audio API.", type: "error" })
     }
-
     return () => {
       if (audioContextRef.current && audioContextRef.current.state !== "closed") {
         audioContextRef.current
@@ -802,7 +838,7 @@ export default function HomePage() {
         audioContextRef.current = null
       }
     }
-  }, [mobileSettings.sampleRate])
+  }, [isMobileDevice])
 
   const cleanupMemory = useCallback(() => {
     setOriginalBuffer(null)
@@ -820,15 +856,15 @@ export default function HomePage() {
   }, [originalUrl, processedUrl, isMobileDevice])
 
   const validateFileSize = (fileToValidate: File): boolean => {
-    const maxSize = mobileSettings.maxFileSize
+    const maxSize = isMobileDevice ? 50 * 1024 * 1024 : 500 * 1024 * 1024
     if (fileToValidate.size > maxSize) {
-      setStatus({
-        message: `File too large. Max ${isMobileDevice ? "25MB" : "500MB"}.`,
-        type: "error",
-      })
+      setStatus({ message: `File too large. Max ${isMobileDevice ? "50MB" : "500MB"}.`, type: "error" })
       return false
     }
-    if (fileToValidate.size > maxSize * 0.4) {
+    if (
+      (isMobileDevice && fileToValidate.size > 20 * 1024 * 1024) ||
+      (!isMobileDevice && fileToValidate.size > 150 * 1024 * 1024)
+    ) {
       setMemoryWarning(true)
     } else {
       setMemoryWarning(false)
@@ -875,7 +911,6 @@ export default function HomePage() {
     }
   }
 
-  // Mobile-optimized silence detection
   const detectSilenceRegions = async (
     buffer: AudioBuffer,
     threshold: number,
@@ -886,10 +921,10 @@ export default function HomePage() {
     const silenceRegions: { start: number; end: number }[] = []
     let silenceStart: number | null = null
     let consecutiveSilentSamples = 0
-    const skipSamples = isMobileDevice ? 50 : 10 // More aggressive skipping on mobile
+    const skipSamples = isMobileDevice ? 20 : 10
 
     for (let i = 0; i < channelData.length; i += skipSamples) {
-      if (i % (sampleRate * (isMobileDevice ? 5 : 5)) === 0) {
+      if (i % (sampleRate * (isMobileDevice ? 2 : 5)) === 0) {
         await sleep(0)
         setProcessingProgress(20 + Math.floor((i / channelData.length) * 10))
       }
@@ -918,7 +953,7 @@ export default function HomePage() {
     const audioContentDuration = buffer.duration - totalSilenceDuration
     const minRequiredSpacing = silenceRegions.length > 0 ? silenceRegions.length * minSpacing : 0
     const minPossibleDuration = Math.max(1, Math.ceil((audioContentDuration + minRequiredSpacing) / 60))
-    const maxPossibleDuration = Math.floor(mobileSettings.maxDuration / 60) // Use mobile settings
+    const maxPossibleDuration = isMobileDevice ? 60 : 120
     setDurationLimits({ min: minPossibleDuration, max: maxPossibleDuration })
     setAudioAnalysis({
       totalSilence: totalSilenceDuration,
@@ -1025,10 +1060,13 @@ export default function HomePage() {
       return
     }
     if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
-    processingTimeoutRef.current = setTimeout(() => {
-      setIsProcessing(false)
-      setStatus({ message: "Processing timed out.", type: "error" })
-    }, mobileSettings.processingTimeout)
+    processingTimeoutRef.current = setTimeout(
+      () => {
+        setIsProcessing(false)
+        setStatus({ message: "Processing timed out.", type: "error" })
+      },
+      isMobileDevice ? 120000 : 600000,
+    )
 
     try {
       setStatus({ message: "Processing audio...", type: "info" })
@@ -1085,7 +1123,6 @@ export default function HomePage() {
       if (currentAudioContext && currentAudioContext.state === "running") {
         currentAudioContext.suspend().catch((err) => console.warn("Error suspending AudioContext post-process:", err))
       }
-      forceGarbageCollection()
     }
   }
 
@@ -1121,14 +1158,14 @@ export default function HomePage() {
       const newSilenceDur = processedRegions.reduce((sum, r) => sum + r.newDuration, 0)
       const newTotalDur = audioContentDur + newSilenceDur
       if (newTotalDur <= 0) throw new Error("Calculated new total duration is zero or negative.")
-      if (isMobileDevice && newTotalDur > mobileSettings.maxDuration) {
+      if (isMobileDevice && newTotalDur > 45 * 60) {
         console.warn(`Mobile device: Output duration ${formatDuration(newTotalDur)} may cause issues.`)
         setMemoryWarning(true)
       }
       let newBuffer: AudioBuffer
       try {
         newBuffer = currentAudioContext.createBuffer(
-          isMobileDevice ? 1 : buffer.numberOfChannels, // Mono on mobile
+          buffer.numberOfChannels,
           Math.max(1, Math.floor(newTotalDur * buffer.sampleRate)),
           buffer.sampleRate,
         )
@@ -1139,8 +1176,8 @@ export default function HomePage() {
         )
       }
       onProgress(10)
-      for (let channel = 0; channel < newBuffer.numberOfChannels; channel++) {
-        const originalData = buffer.getChannelData(Math.min(channel, buffer.numberOfChannels - 1))
+      for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+        const originalData = buffer.getChannelData(channel)
         const newData = newBuffer.getChannelData(channel)
         let writeIndex = 0
         let readIndex = 0
@@ -1150,7 +1187,7 @@ export default function HomePage() {
           for (let i = 0; i < samplesToCopy; i++) newData[writeIndex++] = originalData[readIndex++]
         }
         for (let i = 0; i < regions.length; i++) {
-          if (i % (isMobileDevice ? 2 : 10) === 0) {
+          if (i % (isMobileDevice ? 5 : 10) === 0) {
             await sleep(0)
             onProgress(10 + Math.floor((i / regions.length) * 80))
           }
@@ -1179,7 +1216,7 @@ export default function HomePage() {
       onProgress(100)
       return newBuffer
     },
-    [isMobileDevice, mobileSettings.maxDuration],
+    [isMobileDevice],
   )
 
   const bufferToWav = useCallback(
@@ -1187,20 +1224,16 @@ export default function HomePage() {
       const currentAudioContext = audioContextRef.current
       if (!currentAudioContext) throw new Error("Audio context not available for WAV conversion")
       onProgress(0)
-      let targetSampleRate = highCompatibility ? (isMobileDevice ? 22050 : 44100) : buffer.sampleRate
-      if (isMobileDevice && highCompatibility && buffer.duration > 10 * 60) {
-        targetSampleRate = Math.min(targetSampleRate, 16000) // Even lower for long mobile audio
+      let targetSampleRate = highCompatibility ? 44100 : buffer.sampleRate
+      if (isMobileDevice && highCompatibility && buffer.duration > 15 * 60) {
+        targetSampleRate = Math.min(targetSampleRate, 22050)
       }
       let resampledBuffer = buffer
       if (buffer.sampleRate !== targetSampleRate) {
         const ratio = targetSampleRate / buffer.sampleRate
         const newLength = Math.floor(buffer.length * ratio)
         try {
-          resampledBuffer = currentAudioContext.createBuffer(
-            isMobileDevice ? 1 : buffer.numberOfChannels,
-            newLength,
-            targetSampleRate,
-          )
+          resampledBuffer = currentAudioContext.createBuffer(buffer.numberOfChannels, newLength, targetSampleRate)
         } catch (e) {
           forceGarbageCollection()
           throw new Error(
@@ -1208,17 +1241,16 @@ export default function HomePage() {
           )
         }
         onProgress(10)
-        for (let channel = 0; channel < resampledBuffer.numberOfChannels; channel++) {
-          const oldData = buffer.getChannelData(Math.min(channel, buffer.numberOfChannels - 1))
+        for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+          const oldData = buffer.getChannelData(channel)
           const newData = resampledBuffer.getChannelData(channel)
           for (let i = 0; i < newLength; i++) {
-            if (i % (targetSampleRate * (isMobileDevice ? 2 : 2)) === 0) {
+            if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
               await sleep(0)
               onProgress(
                 10 +
                   Math.floor(
-                    ((channel * (newLength / resampledBuffer.numberOfChannels) + i) /
-                      (newLength * resampledBuffer.numberOfChannels)) *
+                    ((channel * (newLength / buffer.numberOfChannels) + i) / (newLength * buffer.numberOfChannels)) *
                       40,
                   ),
               )
@@ -1239,7 +1271,7 @@ export default function HomePage() {
       const bytesPerSample = 2
       const dataSize = numSamples * numberOfChannels * bytesPerSample
       const fileSize = 44 + dataSize
-      if (isMobileDevice && fileSize > 20 * 1024 * 1024) {
+      if (isMobileDevice && fileSize > 40 * 1024 * 1024) {
         setMemoryWarning(true)
       }
       let finalArrayBuffer: ArrayBuffer
@@ -1269,7 +1301,7 @@ export default function HomePage() {
       view.setUint32(40, dataSize, true)
       let offset = 44
       for (let i = 0; i < numSamples; i++) {
-        if (i % (targetSampleRate * (isMobileDevice ? 2 : 2)) === 0) {
+        if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
           await sleep(0)
           onProgress(50 + Math.floor((i / numSamples) * 50))
         }
@@ -1344,16 +1376,16 @@ export default function HomePage() {
 
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined
-    if (isProcessing) interval = setInterval(monitorMemory, isMobileDevice ? 5000 : 3000) // Less frequent monitoring on mobile
+    if (isProcessing) interval = setInterval(monitorMemory, 3000)
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [isProcessing, isMobileDevice])
+  }, [isProcessing])
 
   // == Effects and Handlers for Labs ==
   useEffect(() => {
     labsAudioRef.current = new Audio()
-    labsAudioRef.current.preload = isMobileDevice ? "none" : "metadata" // Optimize for mobile
+    labsAudioRef.current.preload = "none"
     labsAudioRef.current.volume = 0.7
     if (labsAudioRef.current) {
       labsAudioRef.current.onerror = (e) => console.warn("Labs Audio error:", e)
@@ -1368,7 +1400,45 @@ export default function HomePage() {
         mediaRecorderRef.current.stop()
       }
     }
-  }, [isMobileDevice])
+  }, [])
+
+  const playLabsSoundOld = async (src: string) => {
+    try {
+      // Find the sound cue by src
+      const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.src === src)
+
+      if (soundCue && soundCue.src.startsWith("synthetic:")) {
+        // Generate and play synthetic sound
+        await generateSyntheticSound(soundCue)
+
+        toast({
+          title: "Playing Sound",
+          description: `Now playing: ${soundCue.name}`,
+          variant: "default",
+        })
+      } else {
+        // Handle actual audio files
+        if (labsAudioRef.current) {
+          labsAudioRef.current.src = src
+          await labsAudioRef.current.play().catch((e) => console.error("Error playing audio:", e))
+          toast({
+            title: "Playing Sound",
+            description: `Now playing: ${soundCue?.name || "Audio file"}`,
+            variant: "default",
+          })
+        } else {
+          throw new Error("Audio player not initialized.")
+        }
+      }
+    } catch (error) {
+      console.error("Labs Audio playback failed:", error)
+      toast({
+        title: "Audio Playback Failed",
+        description: `Could not play sound. Error: ${error instanceof Error ? error.message : "Unknown"}`,
+        variant: "destructive",
+      })
+    }
+  }
 
   const handleAddInstructionSoundEvent = () => {
     let instructionTextToAdd = ""
@@ -1392,8 +1462,10 @@ export default function HomePage() {
       startTime: 0,
       instructionText: instructionTextToAdd,
       soundCueId: selectedSoundCue.id,
-      soundCueName: selectedSoundCue.name,
-      soundCueSrc: selectedSoundCue.src,
+      soundCueName: selectedSoundCue.name, // Store the name directly
+      soundCueSrc: selectedSoundCue.src, // Store the src directly
+      // Duration for instruction_sound events will be calculated during audio generation
+      // based on the actual sound cue duration or a default for synthetic sounds.
     }
     setTimelineEvents((prev) => [...prev, newEvent].sort((a, b) => a.startTime - b.startTime))
     setSelectedLibraryInstruction(null)
@@ -1404,33 +1476,11 @@ export default function HomePage() {
     })
   }
 
-  // Mobile-optimized recording
   const startRecording = async () => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
-        const constraints = {
-          audio: isMobileDevice
-            ? {
-                sampleRate: 22050, // Lower sample rate for mobile
-                channelCount: 1, // Mono for mobile
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true,
-              }
-            : { audio: true },
-        }
-
-        const stream = await navigator.mediaDevices.getUserMedia(constraints)
-
-        // Mobile-optimized MediaRecorder options
-        const options = isMobileDevice
-          ? {
-              mimeType: "audio/webm;codecs=opus",
-              audioBitsPerSecond: 32000, // Lower bitrate for mobile
-            }
-          : {}
-
-        mediaRecorderRef.current = new MediaRecorder(stream, options)
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        mediaRecorderRef.current = new MediaRecorder(stream)
         const blobs: Blob[] = []
 
         mediaRecorderRef.current.ondataavailable = (event) => {
@@ -1449,10 +1499,7 @@ export default function HomePage() {
         mediaRecorderRef.current.start()
         setIsRecording(true)
         setRecordedAudioUrl(null)
-        toast({
-          title: "Recording Started",
-          description: isMobileDevice ? "Mobile-optimized recording active" : "Recording started",
-        })
+        toast({ title: "Recording Started" })
       } catch (err) {
         toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" })
       }
@@ -1466,6 +1513,7 @@ export default function HomePage() {
       mediaRecorderRef.current.stop()
       setIsRecording(false)
 
+      // Stop all tracks to release microphone
       if (mediaRecorderRef.current.stream) {
         mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop())
       }
@@ -1479,8 +1527,10 @@ export default function HomePage() {
       const updated = prev.map((event) =>
         event.id === eventId ? { ...event, startTime: Math.max(0, Math.min(newTime, labsTotalDuration)) } : event,
       )
+      // Simple sort by startTime, with stable sorting for events at the same time
       return updated.sort((a, b) => {
         if (a.startTime === b.startTime) {
+          // For events at the same time, maintain their relative order based on original array position
           const aIndex = prev.findIndex((e) => e.id === a.id)
           const bIndex = prev.findIndex((e) => e.id === b.id)
           return aIndex - bIndex
@@ -1493,6 +1543,12 @@ export default function HomePage() {
   const removeTimelineEvent = (eventId: string) => {
     setTimelineEvents((prev) => prev.filter((event) => event.id !== eventId))
     toast({ title: "Event Removed" })
+  }
+
+  const formatTimeOld = (timeInSeconds: number): string => {
+    const minutes = Math.floor(timeInSeconds / 60)
+    const seconds = Math.floor(timeInSeconds % 60)
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`
   }
 
   // Safe input handlers with validation
@@ -1521,19 +1577,16 @@ export default function HomePage() {
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target?.value
     if (typeof value === "string" && !isNaN(Number(value))) {
-      const minutes = Number(value, 10)
-      const maxMinutes = isMobileDevice ? 30 : 120 // Mobile limit: 30 minutes
-      const finalDuration = Math.max(1, Math.min(minutes, maxMinutes)) * 60
-      setLabsTotalDuration(finalDuration)
+      setLabsTotalDuration(Math.max(60, Number(value, 10) * 60) || 60)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-2 md:p-8 md:pt-0">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-0">
       <Navigation />
 
-      {/* Mobile optimization indicator */}
-      {isMobileDevice && (
+      {/* Only render mobile optimization indicator if hasMounted and isMobileDevice is true */}
+      {hasMounted && isMobileDevice && (
         <div className="mb-4 p-3 rounded-lg bg-gradient-to-r from-blue-100 to-cyan-50 border border-blue-300 shadow-sm dark:shadow-white/10 dark:from-blue-950 dark:to-cyan-900 dark:border-blue-700">
           <div className="flex items-start">
             <Smartphone className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
@@ -1548,18 +1601,15 @@ export default function HomePage() {
         </div>
       )}
 
-      {memoryWarning && activeMode === "adjuster" && (
-        <div className="mb-4 p-3 rounded-lg bg-gradient-to-r from-yellow-100 to-amber-50 border border-yellow-300 shadow-sm dark:shadow-white/10 dark:from-yellow-950 dark:to-amber-900 dark:border-yellow-700">
+      {hasMounted && memoryWarning && activeMode === "adjuster" && (
+        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-yellow-100 to-amber-50 border border-yellow-300 shadow-sm dark:shadow-white/10 dark:from-yellow-950 dark:to-amber-900 dark:border-yellow-700">
           <div className="flex items-start">
-            <AlertTriangle className="h-5 w-5 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="h-6 w-6 text-yellow-500 mr-3 flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-medium text-yellow-700 dark:text-yellow-300 mb-1 text-sm">
-                {isMobileDevice ? "Mobile Memory Warning" : "High Memory Usage Expected"}
-              </h3>
-              <p className="text-xs text-yellow-600 dark:text-yellow-400">
-                {isMobileDevice
-                  ? "Large files may cause issues on mobile devices. Consider using smaller files or shorter durations."
-                  : "Large files or long target durations require significant memory. Processing may be slow or unstable on devices with limited RAM."}
+              <h3 className="font-medium text-yellow-700 dark:text-yellow-300 mb-1">High Memory Usage Expected</h3>
+              <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                Large files or long target durations require significant memory. Processing may be slow or unstable on
+                devices with limited RAM.
               </p>
             </div>
           </div>
@@ -1572,7 +1622,7 @@ export default function HomePage() {
         transition={{ duration: 0.6 }}
         className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl dark:shadow-2xl dark:shadow-white/40 overflow-hidden dark:bg-gray-900/80 transition-colors duration-300 ease-in-out"
         style={{
-          borderRadius: isMobileDevice ? "1.5rem" : "3rem 2.5rem 3rem 2.5rem",
+          borderRadius: hasMounted && isMobileDevice ? "1.5rem" : "3rem 2.5rem 3rem 2.5rem",
         }}
         role="application"
       >
@@ -1584,17 +1634,17 @@ export default function HomePage() {
             <div className="absolute top-1 left-1/3 w-12 h-16 bg-gradient-to-tr from-amber-300/20 to-orange-400/15 rounded-full transform rotate-45 dark:from-amber-500/20 dark:to-orange-600/15"></div>
             <div className="absolute top-8 right-1/4 w-14 h-10 bg-gradient-to-tl from-blue-300/25 to-indigo-400/20 rounded-full transform -rotate-12 dark:from-blue-500/25 dark:to-indigo-600/20"></div>
           </div>
-          <div className="relative text-center px-4 md:px-6 pt-12 md:pt-16">
+          <div className="relative text-center px-6 pt-16">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
             >
               <h1
-                className={`${isMobileDevice ? "text-4xl" : "text-5xl md:text-6xl"} text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out tracking-wide mb-[3px] font-black`}
+                className={`${hasMounted && isMobileDevice ? "text-4xl" : "text-5xl md:text-6xl"} text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out tracking-wide mb-[3px] font-black`}
                 style={{
                   fontFamily: 'Georgia, "Times New Roman", serif',
-                  textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
+                  textShadow: "0 0 25px rgba(139, 69, 19, 0.25)",
                 }}
               >
                 abhī
@@ -1604,38 +1654,38 @@ export default function HomePage() {
                 <div className="w-2 h-2 bg-gradient-to-br from-logo-rose to-pink-300 rounded-full dark:from-logo-rose dark:to-pink-400"></div>
                 <div className="w-4 h-2 bg-gradient-to-br from-logo-amber to-orange-300 rounded-full transform -rotate-6 dark:from-logo-amber dark:to-orange-400"></div>
                 <div
-                  className={`${isMobileDevice ? "w-12" : "w-16"} dark:bg-white h-[3px] bg-gray-500 px-0 mx-0 rounded-md`}
+                  className={`${hasMounted && isMobileDevice ? "w-12" : "w-16"} dark:bg-white h-[3px] bg-gray-500 px-0 mx-0 rounded-md`}
                 ></div>
                 <div className="w-4 h-2 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-full transform rotate-6 dark:from-logo-purple dark:to-indigo-400"></div>
                 <div className="w-2 h-2 bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full dark:from-blue-500 dark:to-cyan-400"></div>
                 <div className="w-3 h-3 bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 dark:from-logo-emerald dark:to-logo-teal"></div>
               </div>
 
-              {/* Mode Switch - Mobile Optimized */}
-              <div className="flex flex-col items-center space-y-4 my-8 md:my-12">
+              {/* Mode Switch */}
+              <div className="flex flex-col items-center space-y-4 my-12">
                 <div
-                  className={`relative bg-gray-100 dark:bg-gray-800 p-1 shadow-lg dark:shadow-white/10 rounded-xl font-black ${isMobileDevice ? "px-2 py-[2px]" : "px-3.5 py-[3px]"} dark:shadow-white/20 shadow-lg`}
+                  className={`relative bg-gray-100 dark:bg-gray-800 p-1 shadow-lg dark:shadow-white/10 rounded-xl font-black ${hasMounted && isMobileDevice ? "px-2 py-[2px]" : "px-3.5 py-[3px]"} dark:shadow-white/20 shadow-lg`}
                 >
-                  <div className={`flex ${isMobileDevice ? "gap-x-[4px]" : "gap-x-[7px]"}`}>
+                  <div className={`flex ${hasMounted && isMobileDevice ? "gap-x-[4px]" : "gap-x-[7px]"}`}>
                     <button
                       onClick={() => setActiveMode("adjuster")}
-                      className={`transition-all duration-300 relative z-10 font-black font-serif rounded-none leading-7 mx-0 my-0 text-center ${isMobileDevice ? "px-2 py-[6px] text-xs" : "px-3.5 py-[9px] text-sm"} tracking-normal pr-3.5 ${
+                      className={`transition-all duration-300 relative z-10 font-black font-serif rounded-none leading-7 mx-0 my-0 text-center ${hasMounted && isMobileDevice ? "px-2 py-[6px] text-xs" : "px-3.5 py-[9px] text-sm"} tracking-normal pr-3.5 ${
                         activeMode === "adjuster"
                           ? "text-white"
                           : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                       }`}
                     >
-                      {isMobileDevice ? "Adjuster" : "Length Adjuster"}
+                      {hasMounted && isMobileDevice ? "Adjuster" : "Length Adjuster"}
                     </button>
                     <button
                       onClick={() => setActiveMode("labs")}
-                      className={`rounded-full transition-all duration-300 relative z-10 text-center font-black font-serif ${isMobileDevice ? "px-2 py-[6px] text-xs" : "px-3.5 py-[9px] text-sm"} tracking-normal ${
+                      className={`rounded-full transition-all duration-300 relative z-10 text-center font-black font-serif ${hasMounted && isMobileDevice ? "px-2 py-[6px] text-xs" : "px-3.5 py-[9px] text-sm"} tracking-normal ${
                         activeMode === "labs"
                           ? "text-white"
                           : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                       }`}
                     >
-                      {isMobileDevice ? "Lab" : "Meditation Lab"}
+                      {hasMounted && isMobileDevice ? "Lab" : "Meditation Lab"}
                     </button>
                   </div>
                   <div
@@ -1650,53 +1700,43 @@ export default function HomePage() {
             </motion.div>
           </div>
 
-          <div className={`${isMobileDevice ? "px-3 md:px-6" : "px-6 md:px-10"} pb-6 md:pb-10 font-serif font-black`}>
+          <div
+            className={`${hasMounted && isMobileDevice ? "px-3 md:px-6" : "px-6 md:px-10"} pb-10 font-serif font-black`}
+          >
             {/* Conditional Rendering based on activeMode */}
             {activeMode === "adjuster" ? (
-              // == Length Adjuster UI - Mobile Optimized ==
+              // == Length Adjuster UI ==
               <>
-                {/* Note and Resources sections - Mobile Optimized */}
-                <div className="mb-4 md:mb-6 space-y-3 md:space-y-4">
-                  <div
-                    className={`p-3 md:p-4 rounded-lg max-w-2xl mx-auto dark:border-logo-rose-700 border-solid border text-center border-logo-rose-600`}
-                  >
-                    <p
-                      className={`text-logo-rose-600 leading-relaxed dark:text-logo-rose-300 font-serif font-black ${isMobileDevice ? "text-xs" : "text-xs"}`}
-                    >
-                      <strong
-                        className={`pr-1.5 font-black font-serif text-center ${isMobileDevice ? "text-xs" : "text-sm"} text-logo-amber-600`}
-                      >
+                {/* Note and Resources sections - moved to proper position */}
+                <div className="mb-6 space-y-4">
+                  <div className="p-4 rounded-lg max-w-2xl mx-auto dark:border-logo-rose-700 border-solid border text-center border-logo-rose-600">
+                    <p className="text-logo-rose-600 leading-relaxed dark:text-logo-rose-300 font-serif font-black text-xs">
+                      <strong className="pr-1.5 font-black font-serif text-center text-sm text-logo-amber-600">
                         Note:{" "}
                       </strong>{" "}
                       The meditations below are sourced from publicly available, free content. The length adjuster only
                       alters silence periods to fit user schedules. Teachers, please feel free to{" "}
                       <a
                         href="/contact"
-                        className={`hover:text-logo-rose-600 underline px-1 rounded transition-colors transition-shadow dark:hover:text-logo-rose-300 font-black ${isMobileDevice ? "text-xs" : "text-sm"} text-logo-purple-300`}
+                        className="hover:text-logo-rose-600 underline px-1 rounded transition-colors transition-shadow dark:hover:text-logo-rose-300 font-black text-sm text-logo-purple-300"
                       >
                         contact me
                       </a>{" "}
                       to opt out. Depending on the audio, users may need to tweak the advanced settings for optimal
                       results. Any guided meditation, talk, podcast, or audiobook (under{" "}
-                      {isMobileDevice ? "25MB" : "500MB"}) should be compatible. Enjoy:){" "}
+                      {hasMounted && isMobileDevice ? "50MB" : "500MB"}) should be compatible. Enjoy:){" "}
                     </p>
                   </div>
-                  <div
-                    className={`p-3 md:p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto dark:border-logo-rose-700 backdrop-blur-sm dark:bg-gray-900/60 border-0 py-3 md:py-4 px-0 pt-1.5 bg-transparent`}
-                  >
-                    <h3
-                      className={`mb-2 dark:text-white text-center font-black px-0 pb-1.5 rounded ${isMobileDevice ? "text-sm" : "text-base"} text-logo-rose-600`}
-                    >
+                  <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto dark:border-logo-rose-700 backdrop-blur-sm dark:bg-gray-900/60 border-0 py-4 px-0 pt-1.5 bg-transparent">
+                    <h3 className="mb-2 dark:text-white text-center font-black px-0 pb-1.5 rounded text-base text-logo-rose-600">
                       Resources
                     </h3>
-                    <div
-                      className={`${isMobileDevice ? "text-xs" : "text-sm"} text-logo-rose-600 leading-relaxed dark:text-logo-rose-300 flex flex-wrap gap-1 md:gap-2 justify-center text-center px-px`}
-                    >
+                    <div className="text-sm text-logo-rose-600 leading-relaxed dark:text-logo-rose-300 flex flex-wrap gap-2 justify-center text-center px-px">
                       <a
                         href="https://dharmaseed.org/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`dark:text-gray-200 font-black text-logo-rose-600 ${isMobileDevice ? "px-3 py-1 text-xs" : "px-5 py-1"} border-logo-rose-600 border transition-all duration-200 ease-out hover:shadow-none hover:translate-y-px rounded-sm shadow-md`}
+                        className="dark:text-gray-200 font-black text-logo-rose-600 px-5 py-1 border-logo-rose-600 border transition-all duration-200 ease-out hover:shadow-none hover:translate-y-px rounded-sm shadow-md"
                       >
                         Dharma Seed
                       </a>
@@ -1704,76 +1744,78 @@ export default function HomePage() {
                         href="https://dharmaseed.org/teacher/210/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline py-1 transition-colors transition-shadow transition-transform duration-200 ease-out dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:border-pink-600 dark:shadow-white/10 ${isMobileDevice ? "px-3 text-xs" : "px-5"} font-black font-serif border border-logo-rose-600 hover:shadow-none hover:translate-y-px rounded-sm shadow-md`}
+                        className="inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline py-1 transition-colors transition-shadow transition-transform duration-200 ease-out dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:border-pink-600 dark:shadow-white/10 px-5 font-black font-serif border border-logo-rose-600 hover:shadow-none hover:translate-y-px rounded-sm shadow-md"
                       >
-                        {isMobileDevice ? "Rob Burbea" : "Rob Burbea's talks & retreats"}
+                        Rob Burbea's talks & retreats
                       </a>
                       <a
                         href="https://tasshin.com/guided-meditations/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline py-1 transition-colors transition-shadow transition-transform duration-200 ease-out dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:border-pink-600 dark:shadow-white/10 ${isMobileDevice ? "px-3 text-xs" : "px-5"} font-black font-serif border border-logo-rose-600 hover:shadow-none hover:translate-y-px rounded-sm shadow-md`}
+                        className="inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline py-1 transition-colors transition-shadow transition-transform duration-200 ease-out dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:border-pink-600 dark:shadow-white/10 px-5 font-black font-serif border border-logo-rose-600 hover:shadow-none hover:translate-y-px rounded-sm shadow-md"
                       >
-                        {isMobileDevice ? "Tasshin" : "Tasshin & friend's meditations"}
+                        Tasshin & friend's meditations
                       </a>
                       <a
                         href="https://www.tarabrach.com/guided-meditations/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline py-1 transition-colors transition-shadow transition-transform duration-200 ease-out dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:border-pink-600 dark:shadow-white/10 ${isMobileDevice ? "px-3 text-xs" : "px-5"} font-serif font-black border border-logo-rose-600 hover:shadow-none hover:translate-y-px rounded-sm shadow-md`}
+                        className="inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline py-1 transition-colors transition-shadow transition-transform duration-200 ease-out dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border border-logo-rose-600 hover:shadow-none hover:translate-y-px rounded-sm shadow-md"
                       >
-                        {isMobileDevice ? "Tara Brach" : "Tara Brach's meditations"}
+                        Tara Brach's meditations
                       </a>
                       <a
                         href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDaDo3?usp=drive_link"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline py-1 transition-colors transition-shadow transition-transform duration-200 ease-out dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:border-pink-600 dark:shadow-white/10 ${isMobileDevice ? "px-3 text-xs" : "px-5"} font-serif font-black border border-logo-rose-600 hover:shadow-none hover:translate-y-px rounded-sm shadow-md`}
+                        className="inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline py-1 transition-colors transition-shadow transition-transform duration-200 ease-out dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border border-logo-rose-600 hover:shadow-none hover:translate-y-px rounded-sm shadow-md"
                       >
-                        {isMobileDevice ? "Toby Sola" : "Toby Sola's meditations"}
+                        Toby Sola's meditations
                       </a>
                       <a
                         href="https://meditofoundation.org/meditations"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline py-1 transition-colors transition-shadow transition-transform duration-200 ease-out dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:border-pink-600 dark:shadow-white/10 ${isMobileDevice ? "px-3 text-xs" : "px-5"} font-serif font-black border border-logo-rose-600 hover:shadow-none hover:translate-y-px rounded-sm shadow-md`}
+                        className="inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline py-1 transition-colors transition-shadow transition-transform duration-200 ease-out dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border border-logo-rose-600 hover:shadow-none hover:translate-y-px rounded-sm shadow-md"
                       >
-                        {isMobileDevice ? "Medito" : "Medito Foundation"}
+                        Medito Foundation
                       </a>
                       <a
                         href="https://www.freebuddhistaudio.com"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`dark:text-gray-200 font-black text-logo-rose-600 ${isMobileDevice ? "px-3 py-1 text-xs" : "px-5 py-1"} border-logo-rose-600 border transition-all duration-200 ease-out hover:shadow-none hover:translate-y-px rounded-sm shadow-md`}
+                        className="dark:text-gray-200 font-black text-logo-rose-600 px-5 py-1 border-logo-rose-600 border transition-all duration-200 ease-out hover:shadow-none hover:translate-y-px rounded-sm shadow-md"
                       >
-                        {isMobileDevice ? "FBA" : "freebuddhistaudio"}
+                        freebuddhistaudio
                       </a>
                     </div>
                   </div>
                 </div>
 
-                {/* Upload Area - Mobile Optimized */}
+                {/* Upload Area */}
                 <motion.div
-                  whileHover={{ scale: isMobileDevice ? 1 : 1.005 }}
+                  whileHover={{ scale: 1.005 }}
                   whileTap={{ scale: 0.995 }}
                   transition={{ type: "spring", stiffness: 400, damping: 20 }}
                   ref={uploadAreaRef}
-                  className={`overflow-hidden border-none bg-white dark:bg-gray-900 ${isMobileDevice ? "rounded-xl" : "rounded-2xl"} mb-6 md:mb-8 cursor-pointer transition-all duration-300 shadow-none hover:shadow-lg dark:shadow-white/10 dark:hover:shadow-white/20`}
+                  className={`overflow-hidden border-none bg-white dark:bg-gray-900 ${hasMounted && isMobileDevice ? "rounded-xl" : "rounded-2xl"} mb-8 cursor-pointer transition-all duration-300 shadow-none hover:shadow-lg dark:shadow-white/10 dark:hover:shadow-white/20`}
                   onClick={() => fileInputRef.current?.click()}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                 >
                   <div
-                    className={`bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 ${isMobileDevice ? "py-2 px-4" : "py-3 px-6"} dark:from-logo-teal-700 dark:to-logo-purple-700 border-dashed border-0`}
+                    className={`bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 ${hasMounted && isMobileDevice ? "py-2 px-4" : "py-3 px-6"} dark:from-logo-teal-700 dark:to-logo-purple-700 border-dashed border-0`}
                   >
-                    <h3 className={`text-white flex items-center font-black ${isMobileDevice ? "text-sm" : ""}`}>
-                      <Upload className={`${isMobileDevice ? "h-3 w-3" : "h-4 w-4"} mr-2`} />
+                    <h3
+                      className={`text-white flex items-center font-black ${hasMounted && isMobileDevice ? "text-sm" : ""}`}
+                    >
+                      <Upload className={`${hasMounted && isMobileDevice ? "h-3 w-3" : "h-4 w-4"} mr-2`} />
                       Upload Audio
                     </h3>
                   </div>
                   <div
-                    className={`${isMobileDevice ? "p-6 py-8" : "p-10 md:p-16"} text-center ${isMobileDevice ? "py-8" : "md:py-14"} border-dashed border-stone-300 border-2 ${isMobileDevice ? "rounded-b-xl" : "rounded-b-2xl"} border-t-0`}
+                    className={`${hasMounted && isMobileDevice ? "p-6 py-8" : "p-10 md:p-16"} text-center ${hasMounted && isMobileDevice ? "py-8" : "md:py-14"} border-dashed border-stone-300 border-2 ${hasMounted && isMobileDevice ? "rounded-b-xl" : "rounded-b-2xl"} border-t-0`}
                   >
                     <motion.div
                       initial={{ opacity: 0, y: 5 }}
@@ -1781,14 +1823,12 @@ export default function HomePage() {
                       transition={{ delay: 0.2 }}
                     >
                       <div
-                        className={`dark:text-gray-200 font-serif mb-2.5 font-black ${isMobileDevice ? "text-sm" : "text-base"} text-gray-600`}
+                        className={`dark:text-gray-200 font-serif mb-2.5 font-black ${hasMounted && isMobileDevice ? "text-sm" : "text-base"} text-gray-600`}
                       >
-                        {isMobileDevice ? "Tap to select audio file" : "Drop your audio file here or click to browse"}
+                        Drop your audio file here or click to browse
                       </div>
-                      <div
-                        className={`dark:text-gray-400/70 text-stone-400 font-serif ${isMobileDevice ? "text-xs" : "text-xs"}`}
-                      >
-                        Supports MP3, WAV, OGG, and M4A files (Max: {isMobileDevice ? "25MB" : "500MB"})
+                      <div className={`dark:text-gray-400/70 text-stone-400 font-serif text-xs`}>
+                        Supports MP3, WAV, OGG, and M4A files (Max: {hasMounted && isMobileDevice ? "50MB" : "500MB"})
                       </div>
                     </motion.div>
                   </div>
@@ -1808,17 +1848,17 @@ export default function HomePage() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className={`bg-white ${isMobileDevice ? "p-3" : "p-5"} mb-4 md:mb-6 border dark:shadow-white/20 overflow-hidden dark:bg-gray-900 dark:border-gray-800 ${isMobileDevice ? "rounded-lg" : "rounded-xl"} shadow-none border-logo-teal`}
+                      className={`bg-white ${hasMounted && isMobileDevice ? "p-3" : "p-5"} mb-6 border dark:shadow-white/20 overflow-hidden dark:bg-gray-900 dark:border-gray-800 ${hasMounted && isMobileDevice ? "rounded-lg" : "rounded-xl"} shadow-none border-logo-teal`}
                     >
                       <div className="flex items-center">
                         <motion.div
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
                           transition={{ type: "spring", stiffness: 500, damping: 30, delay: 0.1 }}
-                          className={`${isMobileDevice ? "p-1" : "p-2"} rounded-lg mr-3 md:mr-4 dark:bg-gray-800 bg-transparent`}
+                          className={`p-2 rounded-lg mr-4 dark:bg-gray-800 bg-transparent`}
                         >
                           <Volume2
-                            className={`${isMobileDevice ? "h-4 w-4" : "h-5 w-5"} dark:text-gray-300 text-logo-purple-300`}
+                            className={`${hasMounted && isMobileDevice ? "h-4 w-4" : "h-5 w-5"} dark:text-gray-300 text-logo-purple-300`}
                           />
                         </motion.div>
                         <div>
@@ -1826,9 +1866,9 @@ export default function HomePage() {
                             initial={{ opacity: 0, x: -5 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.2 }}
-                            className={`mb-1 dark:text-gray-200 font-black ${isMobileDevice ? "text-xs" : "text-sm"} text-logo-purple-300`}
+                            className={`mb-1 dark:text-gray-200 font-black ${hasMounted && isMobileDevice ? "text-xs" : "text-sm"} text-logo-purple-300`}
                           >
-                            {isMobileDevice
+                            {hasMounted && isMobileDevice
                               ? file.name.substring(0, 25) + (file.name.length > 25 ? "..." : "")
                               : file.name}
                           </motion.div>
@@ -1836,7 +1876,7 @@ export default function HomePage() {
                             initial={{ opacity: 0, x: -5 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.3 }}
-                            className={`dark:text-gray-400/70 font-black ${isMobileDevice ? "text-xs" : "text-xs"} text-logo-purple-300`}
+                            className={`dark:text-gray-400/70 font-black ${hasMounted && isMobileDevice ? "text-xs" : "text-xs"} text-logo-purple-300`}
                           >
                             Size: {formatFileSize(file.size)} • Type: {file.type || "Unknown"}
                           </motion.div>
@@ -1852,22 +1892,14 @@ export default function HomePage() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="mb-4 md:mb-6"
+                      className="mb-6"
                     >
-                      <Card
-                        className={`${isMobileDevice ? "p-4" : "p-6"} bg-gradient-to-r from-logo-rose-50 to-logo-purple-50 border-logo-rose-200 shadow-sm dark:shadow-white/10 dark:from-logo-rose-950 dark:to-logo-purple-950`}
-                      >
-                        <div className="text-center mb-3 md:mb-4">
-                          <h3
-                            className={`${isMobileDevice ? "text-base" : "text-lg"} font-medium text-logo-rose-700 dark:text-logo-rose-300 mb-2`}
-                          >
+                      <Card className="p-6 bg-gradient-to-r from-logo-rose-50 to-logo-purple-50 border-logo-rose-200 shadow-sm dark:shadow-white/10 dark:from-logo-rose-950 dark:to-logo-purple-950">
+                        <div className="text-center mb-4">
+                          <h3 className="text-lg font-medium text-logo-rose-700 dark:text-logo-rose-300 mb-2">
                             Processing Audio
                           </h3>
-                          <p
-                            className={`${isMobileDevice ? "text-xs" : "text-sm"} text-logo-rose-600 dark:text-logo-rose-400`}
-                          >
-                            {processingStep}
-                          </p>
+                          <p className="text-sm text-logo-rose-600 dark:text-logo-rose-400">{processingStep}</p>
                         </div>
                         <div className="w-full bg-logo-rose-200 rounded-full h-2 mb-2 dark:bg-logo-rose-800">
                           <div
@@ -1875,9 +1907,7 @@ export default function HomePage() {
                             style={{ width: `${processingProgress}%` }}
                           ></div>
                         </div>
-                        <div
-                          className={`text-center ${isMobileDevice ? "text-xs" : "text-sm"} text-logo-rose-600 dark:text-logo-rose-400`}
-                        >
+                        <div className="text-center text-sm text-logo-rose-600 dark:text-logo-rose-400">
                           {processingProgress}% complete
                         </div>
                       </Card>
@@ -1892,83 +1922,49 @@ export default function HomePage() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       transition={{ delay: 0.1 }}
-                      className="mb-6 md:mb-10 mt-6 md:mt-8"
+                      className="mb-10 mt-8"
                     >
-                      <Alert
-                        className={`bg-white dark:bg-gray-900 shadow-lg dark:shadow-white/10 ${isMobileDevice ? "p-1" : "p-1"} border border-logo-rose-600`}
-                      >
-                        <div className={`${isMobileDevice ? "p-3" : "p-4"}`}>
-                          <div className="flex items-center mb-3 md:mb-4">
-                            <div
-                              className={`${isMobileDevice ? "p-1" : "p-2"} rounded-lg mr-2 md:mr-3 dark:bg-gray-700 bg-transparent`}
-                            >
-                              <Info
-                                className={`${isMobileDevice ? "h-3 w-3" : "h-4 w-4"} dark:text-gray-300 text-logo-rose-600`}
-                              />
+                      <Alert className="bg-white dark:bg-gray-900 shadow-lg dark:shadow-white/10 p-1 border border-logo-rose-600">
+                        <div className="p-4">
+                          <div className="flex items-center mb-4">
+                            <div className="p-2 rounded-lg mr-3 dark:bg-gray-700 bg-transparent">
+                              <Info className="h-4 w-4 dark:text-gray-300 text-logo-rose-600" />
                             </div>
-                            <div
-                              className={`${isMobileDevice ? "text-base" : "text-lg"} dark:text-gray-200 font-black text-logo-rose-600`}
-                            >
+                            <div className="text-lg dark:text-gray-200 font-black text-logo-rose-600">
                               Audio Analysis
                             </div>
                           </div>
-                          <div
-                            className={`grid ${isMobileDevice ? "grid-cols-2 gap-2" : "grid-cols-2 md:grid-cols-4 gap-4"}`}
-                          >
-                            <div
-                              className={`bg-white ${isMobileDevice ? "p-2" : "p-3"} rounded-lg text-center dark:bg-gray-900 shadow-lg dark:shadow-white/10 border-logo-rose-600 border`}
-                            >
-                              <div
-                                className={`${isMobileDevice ? "text-xs" : "text-xs"} uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-rose-600`}
-                              >
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-white p-3 rounded-lg text-center dark:bg-gray-900 shadow-lg dark:shadow-white/10 border-logo-rose-600 border">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-rose-600">
                                 Content
                               </div>
-                              <div
-                                className={`dark:text-gray-200 font-black text-logo-rose-600 ${isMobileDevice ? "text-xs" : ""}`}
-                              >
+                              <div className="dark:text-gray-200 font-black text-logo-rose-600">
                                 {formatDuration(audioAnalysis.contentDuration)}
                               </div>
                             </div>
-                            <div
-                              className={`bg-white ${isMobileDevice ? "p-2" : "p-3"} rounded-lg text-center dark:bg-gray-900 shadow-lg dark:shadow-white/10 border-logo-rose-600 border`}
-                            >
-                              <div
-                                className={`${isMobileDevice ? "text-xs" : "text-xs"} uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-rose-600`}
-                              >
+                            <div className="bg-white p-3 rounded-lg text-center dark:bg-gray-900 shadow-lg dark:shadow-white/10 border-logo-rose-600 border">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-rose-600">
                                 Silence
                               </div>
-                              <div
-                                className={`dark:text-gray-200 font-black text-logo-rose-600 ${isMobileDevice ? "text-xs" : ""}`}
-                              >
+                              <div className="dark:text-gray-200 font-black text-logo-rose-600">
                                 {formatDuration(audioAnalysis.totalSilence)}
                               </div>
                             </div>
-                            <div
-                              className={`bg-white ${isMobileDevice ? "p-2" : "p-3"} rounded-lg text-center dark:bg-gray-900 shadow-lg dark:shadow-white/10 border border-logo-rose-600`}
-                            >
-                              <div
-                                className={`${isMobileDevice ? "text-xs" : "text-xs"} uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-rose-600`}
-                              >
+                            <div className="bg-white p-3 rounded-lg text-center dark:bg-gray-900 shadow-lg dark:shadow-white/10 border border-logo-rose-600">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-rose-600">
                                 Pauses
                               </div>
-                              <div
-                                className={`dark:text-gray-200 font-black text-logo-rose-600 ${isMobileDevice ? "text-xs" : ""}`}
-                              >
+                              <div className="dark:text-gray-200 font-black text-logo-rose-600">
                                 {audioAnalysis.silenceRegions}
                               </div>
                             </div>
-                            <div
-                              className={`bg-white ${isMobileDevice ? "p-2" : "p-3"} rounded-lg text-center dark:bg-gray-900 shadow-lg dark:shadow-white/10 border-logo-rose-600 border ${isMobileDevice ? "col-span-2" : ""}`}
-                            >
-                              <div
-                                className={`${isMobileDevice ? "text-xs" : "text-xs"} uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-rose-600`}
-                              >
+                            <div className="bg-white p-3 rounded-lg text-center dark:bg-gray-900 shadow-lg dark:shadow-white/10 border-logo-rose-600 border">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-rose-600">
                                 Range
                               </div>
-                              <div
-                                className={`dark:text-gray-200 font-black text-logo-rose-600 ${isMobileDevice ? "text-xs" : ""}`}
-                              >
-                                {durationLimits.min} min to {isMobileDevice ? "30 min" : "2 hours"}
+                              <div className="dark:text-gray-200 font-black text-logo-rose-600">
+                                {durationLimits.min} min to {hasMounted && isMobileDevice ? "1 hour" : "2 hours"}
                               </div>
                             </div>
                           </div>
@@ -1982,209 +1978,155 @@ export default function HomePage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="mb-6 md:mb-8"
+                  className="mb-8"
                 >
                   <Tabs defaultValue="basic" className="w-full font-serif font-black">
-                    <TabsList
-                      className={`grid w-full grid-cols-2 mb-4 md:mb-6 bg-gray-100/70 ${isMobileDevice ? "p-0.5" : "p-1"} rounded-md dark:bg-gray-800/70`}
-                    >
+                    <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100/70 p-1 rounded-md dark:bg-gray-800/70">
                       <TabsTrigger
                         value="basic"
-                        className={`data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-sm dark:data-[state=active]:shadow-white/20 rounded-sm dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-logo-teal-300 dark:text-gray-300 ${isMobileDevice ? "text-xs py-2" : ""}`}
+                        className="data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-sm dark:data-[state=active]:shadow-white/20 rounded-sm dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-logo-teal-300 dark:text-gray-300"
                       >
-                        <Clock className={`${isMobileDevice ? "h-3 w-3" : "h-4 w-4"} mr-1 md:mr-2`} />
-                        {isMobileDevice ? "Basic" : "Basic Settings"}
+                        <Clock className="h-4 w-4 mr-2" />
+                        Basic Settings
                       </TabsTrigger>
                       <TabsTrigger
                         value="advanced"
-                        className={`data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-sm dark:data-[state=active]:shadow-white/20 rounded-sm dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-logo-teal-300 dark:text-gray-300 ${isMobileDevice ? "text-xs py-2" : ""}`}
+                        className="data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-sm dark:data-[state=active]:shadow-white/20 rounded-sm dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-logo-teal-300 dark:text-gray-300"
                       >
-                        <Settings2 className={`${isMobileDevice ? "h-3 w-3" : "h-4 w-4"} mr-1 md:mr-2`} />
-                        {isMobileDevice ? "Advanced" : "Advanced Settings"}
+                        <Settings2 className="h-4 w-4 mr-2" />
+                        Advanced Settings
                       </TabsTrigger>
                     </TabsList>
-                    <TabsContent value="basic" className="mt-0 space-y-4 md:space-y-6">
-                      <div className={`grid ${isMobileDevice ? "grid-cols-1 gap-4" : "md:grid-cols-2 gap-6"}`}>
+                    <TabsContent value="basic" className="mt-0 space-y-6">
+                      <div className="grid md:grid-cols-2 gap-6">
                         <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div
-                            className={`bg-gradient-to-r from-logo-amber-500 to-indigo-500 ${isMobileDevice ? "py-2 px-4" : "py-3 px-6"} dark:from-logo-amber-700 dark:to-indigo-700`}
-                          >
-                            <h3
-                              className={`text-white flex items-center font-black ${isMobileDevice ? "text-sm" : ""}`}
-                            >
-                              <Clock className={`${isMobileDevice ? "h-3 w-3" : "h-4 w-4"} mr-2`} />
+                          <div className="bg-gradient-to-r from-logo-amber-500 to-indigo-500 py-3 px-6 dark:from-logo-amber-700 dark:to-indigo-700">
+                            <h3 className="text-white flex items-center font-black">
+                              <Clock className="h-4 w-4 mr-2" />
                               Target Duration
                             </h3>
                           </div>
-                          <div className={`${isMobileDevice ? "p-4" : "p-6"}`}>
-                            <div className="mb-3 md:mb-4">
+                          <div className="p-6">
+                            <div className="mb-4">
                               <Slider
                                 value={[targetDuration]}
                                 min={durationLimits?.min || 5}
-                                max={durationLimits?.max || (isMobileDevice ? 30 : 120)}
+                                max={durationLimits?.max || (hasMounted && isMobileDevice ? 60 : 120)}
                                 step={1}
                                 onValueChange={(value) => setTargetDuration(value[0])}
                                 disabled={!durationLimits}
-                                className={`${isMobileDevice ? "py-2" : "py-4"}`}
+                                className="py-4"
                                 rangeClassName="bg-gradient-to-r from-logo-amber-500 to-indigo-500"
                               />
                             </div>
                             <div className="text-center font-serif font-black">
-                              <span
-                                className={`text-logo-amber-700 dark:text-logo-amber-300 ${isMobileDevice ? "text-xl" : "text-2xl"} font-black`}
-                              >
+                              <span className="text-logo-amber-700 dark:text-logo-amber-300 text-2xl font-black">
                                 {targetDuration}
                               </span>
-                              <span
-                                className={`${isMobileDevice ? "text-base" : "text-lg"} text-logo-amber-600 ml-1 dark:text-logo-amber-400`}
-                              >
-                                minutes
-                              </span>
+                              <span className="text-lg text-logo-amber-600 ml-1 dark:text-logo-amber-400">minutes</span>
                             </div>
                             {durationLimits && (
-                              <div
-                                className={`text-center ${isMobileDevice ? "text-xs" : "text-xs"} text-logo-amber-500/70 mt-2 dark:text-logo-amber-400/70`}
-                              >
-                                Range: {durationLimits.min} min to {isMobileDevice ? "30 min" : "2 hours"}
+                              <div className="text-center text-xs text-logo-amber-500/70 mt-2 dark:text-logo-amber-400/70">
+                                Range: {durationLimits.min} min to {hasMounted && isMobileDevice ? "1 hour" : "2 hours"}
                               </div>
                             )}
                           </div>
                         </Card>
                         <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div
-                            className={`bg-gradient-to-r from-indigo-500 to-logo-amber-500 ${isMobileDevice ? "py-2 px-4" : "py-3 px-6"} dark:from-indigo-700 dark:to-logo-amber-700`}
-                          >
-                            <h3
-                              className={`text-white flex items-center font-black ${isMobileDevice ? "text-sm" : ""}`}
-                            >
-                              <Volume2 className={`${isMobileDevice ? "h-3 w-3" : "h-4 w-4"} mr-2`} />
+                          <div className="bg-gradient-to-r from-indigo-500 to-logo-amber-500 py-3 px-6 dark:from-indigo-700 dark:to-logo-amber-700">
+                            <h3 className="text-white flex items-center font-black">
+                              <Volume2 className="h-4 w-4 mr-2" />
                               Silence Threshold
                             </h3>
                           </div>
-                          <div className={`${isMobileDevice ? "p-4" : "p-6"}`}>
-                            <div className="mb-3 md:mb-4">
+                          <div className="p-6">
+                            <div className="mb-4">
                               <Slider
                                 value={[silenceThreshold]}
                                 min={0.001}
                                 max={0.05}
                                 step={0.001}
                                 onValueChange={(value) => setSilenceThreshold(value[0])}
-                                className={`${isMobileDevice ? "py-2" : "py-4"}`}
+                                className="py-4"
                                 rangeClassName="bg-gradient-to-r from-indigo-500 to-logo-amber-500"
                               />
                             </div>
                             <div className="text-center">
-                              <span
-                                className={`text-indigo-700 dark:text-indigo-300 font-serif font-black ${isMobileDevice ? "text-xl" : "text-2xl"}`}
-                              >
+                              <span className="text-indigo-700 dark:text-indigo-300 font-serif font-black text-2xl">
                                 {silenceThreshold.toFixed(3)}
                               </span>
                             </div>
-                            <div
-                              className={`text-center text-indigo-500/70 dark:text-indigo-400/70 font-black font-serif mt-0 ${isMobileDevice ? "text-xs" : "text-sm"}`}
-                            >
+                            <div className="text-center text-indigo-500/70 dark:text-indigo-400/70 font-black font-serif mt-0 text-sm">
                               Lower = more sensitive
                             </div>
                           </div>
                         </Card>
                       </div>
                     </TabsContent>
-                    <TabsContent value="advanced" className="mt-0 space-y-4 md:space-y-6">
-                      <div
-                        className={`grid ${isMobileDevice ? "grid-cols-1 gap-4" : "md:grid-cols-2 gap-6"} font-serif font-black`}
-                      >
+                    <TabsContent value="advanced" className="mt-0 space-y-6">
+                      <div className="grid md:grid-cols-2 gap-6 font-serif font-black">
                         <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div
-                            className={`bg-gradient-to-r from-logo-amber-500 to-logo-rose-500 ${isMobileDevice ? "py-2 px-4" : "py-3 px-6"} dark:from-logo-amber-700 dark:to-logo-rose-700`}
-                          >
-                            <h3 className={`text-white font-black ${isMobileDevice ? "text-sm" : ""}`}>
-                              Min Silence Duration
-                            </h3>
+                          <div className="bg-gradient-to-r from-logo-amber-500 to-logo-rose-500 py-3 px-6 dark:from-logo-amber-700 dark:to-logo-rose-700">
+                            <h3 className="text-white font-black">Min Silence Duration</h3>
                           </div>
-                          <div className={`${isMobileDevice ? "p-4" : "p-6"} font-serif font-black`}>
-                            <div className="mb-3 md:mb-4">
+                          <div className="p-6 font-serif font-black">
+                            <div className="mb-4">
                               <Slider
                                 value={[minSilenceDuration]}
                                 min={1}
                                 max={15}
                                 step={0.5}
                                 onValueChange={(value) => setMinSilenceDuration(value[0])}
-                                className={`${isMobileDevice ? "py-2" : "py-4"}`}
+                                className="py-4"
                                 rangeClassName="bg-gradient-to-r from-logo-amber-500 to-logo-rose-500"
                               />
                             </div>
                             <div className="text-center">
-                              <span
-                                className={`text-logo-amber-700 dark:text-logo-amber-300 ${isMobileDevice ? "text-xl" : "text-2xl"} font-black`}
-                              >
+                              <span className="text-logo-amber-700 dark:text-logo-amber-300 text-2xl font-black">
                                 {minSilenceDuration}
                               </span>
-                              <span
-                                className={`${isMobileDevice ? "text-base" : "text-lg"} text-logo-rose-600 ml-1 dark:text-logo-rose-400`}
-                              >
-                                seconds
-                              </span>
+                              <span className="text-lg text-logo-rose-600 ml-1 dark:text-logo-rose-400">seconds</span>
                             </div>
-                            <div
-                              className={`text-center text-logo-amber-500/70 mt-2 dark:text-logo-amber-400/70 ${isMobileDevice ? "text-xs" : "text-sm"}`}
-                            >
+                            <div className="text-center text-logo-amber-500/70 mt-2 dark:text-logo-amber-400/70 text-sm">
                               Shorter = detect more pauses
                             </div>
                           </div>
                         </Card>
                         <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div
-                            className={`bg-gradient-to-r from-logo-purple-500 to-logo-teal-500 ${isMobileDevice ? "py-2 px-4" : "py-3 px-6"} dark:from-logo-purple-700 dark:to-logo-teal-700`}
-                          >
-                            <h3 className={`text-white font-black ${isMobileDevice ? "text-sm" : ""}`}>
-                              Min Spacing Between Content
-                            </h3>
+                          <div className="bg-gradient-to-r from-logo-purple-500 to-logo-teal-500 py-3 px-6 dark:from-logo-purple-700 dark:to-logo-teal-700">
+                            <h3 className="text-white font-black">Min Spacing Between Content</h3>
                           </div>
-                          <div className={`${isMobileDevice ? "p-4" : "p-6"}`}>
-                            <div className="mb-3 md:mb-4">
+                          <div className="p-6">
+                            <div className="mb-4">
                               <Slider
                                 value={[minSpacingDuration]}
                                 min={0.0}
                                 max={5}
                                 step={0.1}
                                 onValueChange={(value) => setMinSpacingDuration(value[0])}
-                                className={`${isMobileDevice ? "py-2" : "py-4"}`}
+                                className="py-4"
                                 rangeClassName="bg-gradient-to-r from-logo-purple-500 to-logo-teal-500"
                               />
                             </div>
                             <div className="text-center">
-                              <span
-                                className={`text-logo-purple-700 dark:text-logo-purple-300 font-black ${isMobileDevice ? "text-xl" : "text-2xl"}`}
-                              >
+                              <span className="text-logo-purple-700 dark:text-logo-purple-300 font-black text-2xl">
                                 {minSpacingDuration.toFixed(1)}
                               </span>
-                              <span
-                                className={`${isMobileDevice ? "text-base" : "text-lg"} text-logo-teal-600 ml-1 dark:text-logo-teal-400`}
-                              >
-                                seconds
-                              </span>
+                              <span className="text-lg text-logo-teal-600 ml-1 dark:text-logo-teal-400">seconds</span>
                             </div>
-                            <div
-                              className={`text-center text-logo-purple-500/70 mt-2 dark:text-logo-purple-400/70 ${isMobileDevice ? "text-xs" : "text-sm"}`}
-                            >
+                            <div className="text-center text-logo-purple-500/70 mt-2 dark:text-logo-purple-400/70 text-sm">
                               Minimum pause between speaking parts
                             </div>
                           </div>
                         </Card>
                         <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div
-                            className={`bg-gradient-to-r from-logo-rose-500 to-logo-purple-500 ${isMobileDevice ? "py-2 px-4" : "py-3 px-6"} dark:from-logo-rose-700 dark:to-logo-purple-700`}
-                          >
-                            <h3 className={`text-white font-black ${isMobileDevice ? "text-sm" : ""}`}>
-                              Preserve Natural Pacing
-                            </h3>
+                          <div className="bg-gradient-to-r from-logo-rose-500 to-logo-purple-500 py-3 px-6 dark:from-logo-rose-700 dark:to-logo-purple-700">
+                            <h3 className="text-white font-black">Preserve Natural Pacing</h3>
                           </div>
-                          <div className={`${isMobileDevice ? "p-4" : "p-6"}`}>
+                          <div className="p-6">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p
-                                  className={`${isMobileDevice ? "text-xs" : "text-sm"} text-logo-rose-700 mb-1 dark:text-logo-rose-300`}
-                                >
+                                <p className="text-sm text-logo-rose-700 mb-1 dark:text-logo-rose-300">
                                   Maintain the relative length of pauses
                                 </p>
                               </div>
@@ -2197,35 +2139,24 @@ export default function HomePage() {
                           </div>
                         </Card>
                         <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div
-                            className={`bg-gradient-to-r from-logo-teal-500 to-logo-amber-500 ${isMobileDevice ? "py-2 px-4" : "py-3 px-6"} dark:from-logo-teal-700 dark:to-logo-amber-700`}
-                          >
-                            <h3 className={`text-white font-black ${isMobileDevice ? "text-sm" : ""}`}>
-                              Compatibility Mode
-                            </h3>
+                          <div className="bg-gradient-to-r from-logo-teal-500 to-logo-amber-500 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-amber-700">
+                            <h3 className="text-white font-black">Compatibility Mode</h3>
                           </div>
-                          <div className={`${isMobileDevice ? "p-4" : "p-6"}`}>
+                          <div className="p-6">
                             <Select value={compatibilityMode} onValueChange={(value) => setCompatibilityMode(value)}>
-                              <SelectTrigger
-                                className={`w-full mb-2 border-logo-teal-200 focus:ring-logo-teal-500 dark:border-logo-teal-700 dark:bg-gray-800 dark:text-gray-200 ${isMobileDevice ? "text-sm" : ""}`}
-                              >
+                              <SelectTrigger className="w-full mb-2 border-logo-teal-200 focus:ring-logo-teal-500 dark:border-logo-teal-700 dark:bg-gray-800 dark:text-gray-200">
                                 <SelectValue placeholder="Select compatibility mode" />
                               </SelectTrigger>
                               <SelectContent className="dark:bg-gray-800 dark:text-gray-200">
                                 <SelectItem value="standard">Standard Quality (Original SR)</SelectItem>
                                 <SelectItem value="high">
-                                  {isMobileDevice
-                                    ? "High Compatibility (Mobile Optimized)"
-                                    : "High Compatibility (44.1kHz or 22.05kHz for Mobile Long Audio)"}
+                                  High Compatibility (44.1kHz or 22.05kHz for Mobile Long Audio)
                                 </SelectItem>
                               </SelectContent>
                             </Select>
-                            <div
-                              className={`${isMobileDevice ? "text-xs" : "text-xs"} text-logo-teal-500/70 dark:text-logo-teal-400/70 mt-3.5`}
-                            >
-                              {isMobileDevice
-                                ? "High Compatibility optimizes audio for mobile playback and reduces file size."
-                                : "High Compatibility for better playback on mobile/AirPods. May reduce sample rate for long audio on mobile."}
+                            <div className="text-xs text-logo-teal-500/70 dark:text-logo-teal-400/70 mt-3.5">
+                              High Compatibility for better playback on mobile/AirPods. May reduce sample rate for long
+                              audio on mobile.
                             </div>
                           </div>
                         </Card>
@@ -2238,18 +2169,18 @@ export default function HomePage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="mb-3 md:mb-4 text-center font-serif font-black"
+                  className="mb-4 text-center font-serif font-black"
                 >
                   <Button
-                    className={`w-full ${isMobileDevice ? "py-5 text-base" : "py-7 text-lg"} font-medium tracking-wider ${isMobileDevice ? "rounded-lg" : "rounded-xl"} transition-all border-none bg-gradient-to-r from-gray-600 to-gray-800 dark:from-gray-600 dark:via-gray-700 dark:via-gray-800 dark:via-gray-900 dark:via-gray-950 dark:to-black shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none`}
+                    className={`w-full ${hasMounted && isMobileDevice ? "py-5 text-base" : "py-7 text-lg"} font-medium tracking-wider ${hasMounted && isMobileDevice ? "rounded-lg" : "rounded-xl"} transition-all border-none bg-gradient-to-r from-gray-600 to-gray-800 dark:from-gray-600 dark:via-gray-700 dark:via-gray-800 dark:via-gray-900 dark:via-gray-950 dark:to-black shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none`}
                     disabled={!originalBuffer || isProcessing || !durationLimits}
                     onClick={processAudio}
                   >
                     <div className="flex items-center justify-center">
                       {isProcessing && (
-                        <div className={`mr-2 md:mr-3 ${isMobileDevice ? "h-4 w-4" : "h-5 w-5"}`}>
+                        <div className={`${hasMounted && isMobileDevice ? "mr-2 h-4 w-4" : "mr-3 h-5 w-5"}`}>
                           <svg
-                            className={`animate-spin ${isMobileDevice ? "h-4 w-4" : "h-5 w-5"} text-white`}
+                            className={`animate-spin ${hasMounted && isMobileDevice ? "h-4 w-4" : "h-5 w-5"} text-white`}
                             xmlns="http://www.w3.org/2000/svg"
                             fill="none"
                             viewBox="0 0 24 24"
@@ -2270,7 +2201,7 @@ export default function HomePage() {
                           </svg>
                         </div>
                       )}
-                      <Wand2 className={`mr-2 ${isMobileDevice ? "h-5 w-5" : "h-6 w-6"}`} />
+                      <Wand2 className={`${hasMounted && isMobileDevice ? "mr-2 h-5 w-5" : "mr-2 h-6 w-6"}`} />
                       <span className="font-black">Process Audio</span>
                     </div>
                   </Button>
@@ -2281,13 +2212,13 @@ export default function HomePage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="mb-3 md:mb-4 text-center"
+                    className="mb-4 text-center"
                   >
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => window.location.reload()}
-                      className={`text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-black ${isMobileDevice ? "text-sm" : ""}`}
+                      className={`text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-black ${hasMounted && isMobileDevice ? "text-sm" : ""}`}
                       aria-label="Cancel processing and reload page"
                     >
                       Cancel
@@ -2302,10 +2233,10 @@ export default function HomePage() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className={`${isMobileDevice ? "p-3" : "p-4"} ${isMobileDevice ? "rounded-lg" : "rounded-xl"} mb-6 md:mb-8 text-center dark:shadow-white/10 overflow-hidden bg-white dark:bg-gray-900 shadow-none border-logo-rose-600 border ${status.type === "info" ? "text-logo-rose-700 border border-logo-rose-400 dark:text-logo-rose-300 dark:border-logo-rose-600" : status.type === "success" ? "text-logo-emerald-700 border border-logo-emerald-400 dark:text-logo-emerald-300 dark:border-logo-emerald-600" : "text-red-700 border border-red-400 dark:text-red-300 dark:border-red-600"}`}
+                      className={`p-4 rounded-xl mb-8 text-center dark:shadow-white/10 overflow-hidden bg-white dark:bg-gray-900 shadow-none border-logo-rose-600 border ${status.type === "info" ? "text-logo-rose-700 border border-logo-rose-400 dark:text-logo-rose-300 dark:border-logo-rose-600" : status.type === "success" ? "text-logo-emerald-700 border border-logo-emerald-400 dark:text-logo-emerald-300 dark:border-logo-emerald-600" : "text-red-700 border border-red-400 dark:text-red-300 dark:border-red-600"}`}
                     >
                       <motion.div
-                        className={`${isMobileDevice ? "text-xs" : "text-sm"} text-logo-teal`}
+                        className={`text-sm text-logo-teal`}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.2 }}
@@ -2316,7 +2247,7 @@ export default function HomePage() {
                   )}
                 </AnimatePresence>
 
-                <div className="space-y-4 md:space-y-6">
+                <div className="space-y-6">
                   {originalUrl && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
@@ -2324,38 +2255,32 @@ export default function HomePage() {
                       transition={{ delay: 0.4 }}
                     >
                       <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-                        <div
-                          className={`bg-gradient-to-r from-gray-700 to-gray-800 ${isMobileDevice ? "py-2 px-4" : "py-3 px-6"} dark:from-gray-800 dark:to-gray-900`}
-                        >
-                          <h3 className={`text-white font-black ${isMobileDevice ? "text-sm" : ""}`}>Original Audio</h3>
+                        <div className="bg-gradient-to-r from-gray-700 to-gray-800 py-3 px-6 dark:from-gray-800 dark:to-gray-900">
+                          <h3 className="text-white font-black">Original Audio</h3>
                         </div>
-                        <div className={`${isMobileDevice ? "p-4" : "p-6"}`}>
+                        <div className="p-6">
                           <div
-                            className={`bg-white rounded-lg ${isMobileDevice ? "p-2" : "p-3"} shadow-sm dark:shadow-white/10 mb-3 md:mb-4 dark:bg-gray-700`}
+                            className={`bg-white rounded-lg ${hasMounted && isMobileDevice ? "p-2" : "p-3"} shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700`}
                           >
                             <audio controls className="w-full" src={originalUrl}></audio>
                           </div>
-                          <div className={`grid grid-cols-2 gap-3 md:gap-4`}>
-                            <div className="bg-white/60 p-2 md:p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                              <div
-                                className={`${isMobileDevice ? "text-xs" : "text-xs"} text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400`}
-                              >
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                              <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
                                 Duration
                               </div>
                               <div
-                                className={`text-gray-800 dark:text-black font-black ${isMobileDevice ? "text-sm" : ""}`}
+                                className={`text-gray-800 dark:text-black font-black ${hasMounted && isMobileDevice ? "text-sm" : ""}`}
                               >
                                 {originalBuffer ? formatDuration(originalBuffer.duration) : "--"}
                               </div>
                             </div>
-                            <div className="bg-white/60 p-2 md:p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                              <div
-                                className={`${isMobileDevice ? "text-xs" : "text-xs"} text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400`}
-                              >
+                            <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                              <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
                                 File Size
                               </div>
                               <div
-                                className={`text-gray-800 dark:text-gray-200 font-black ${isMobileDevice ? "text-sm" : ""}`}
+                                className={`text-gray-800 dark:text-gray-200 font-black ${hasMounted && isMobileDevice ? "text-sm" : ""}`}
                               >
                                 {formatFileSize(file?.size || 0)}
                               </div>
@@ -2372,58 +2297,48 @@ export default function HomePage() {
                       transition={{ delay: 0.5 }}
                     >
                       <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-logo-teal-50 to-logo-emerald-50 dark:from-logo-teal-950 dark:to-logo-emerald-950">
-                        <div
-                          className={`bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 ${isMobileDevice ? "py-2 px-4" : "py-3 px-6"} dark:from-logo-teal-700 dark:to-logo-emerald-700`}
-                        >
-                          <h3 className={`text-white font-black ${isMobileDevice ? "text-sm" : ""}`}>
-                            Processed Audio
-                          </h3>
+                        <div className="bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
+                          <h3 className="text-white font-black">Processed Audio</h3>
                         </div>
-                        <div className={`${isMobileDevice ? "p-4" : "p-6"}`}>
+                        <div className="p-6">
                           <div
-                            className={`bg-white rounded-lg ${isMobileDevice ? "p-2" : "p-3"} shadow-sm dark:shadow-white/10 mb-3 md:mb-4 dark:bg-gray-700`}
+                            className={`bg-white rounded-lg ${hasMounted && isMobileDevice ? "p-2" : "p-3"} shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700`}
                           >
                             <audio controls className="w-full" src={processedUrl}></audio>
                           </div>
-                          <div className={`grid grid-cols-2 gap-3 md:gap-4 mb-4 md:mb-6`}>
-                            <div className="bg-white/60 p-2 md:p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                              <div
-                                className={`${isMobileDevice ? "text-xs" : "text-xs"} text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400`}
-                              >
+                          <div className="grid grid-cols-2 gap-4 mb-6">
+                            <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                              <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                                 Duration
                               </div>
                               <div
-                                className={`text-logo-teal-800 dark:text-black font-black ${isMobileDevice ? "text-sm" : ""}`}
+                                className={`text-logo-teal-800 dark:text-black font-black ${hasMounted && isMobileDevice ? "text-sm" : ""}`}
                               >
                                 {formatDuration(actualDuration || 0)}
                                 {actualDuration && targetDuration && (
-                                  <div
-                                    className={`${isMobileDevice ? "text-xs" : "text-xs"} text-logo-teal-600 mt-1 dark:text-gray-900`}
-                                  >
+                                  <div className={`text-xs text-logo-teal-600 mt-1 dark:text-gray-900`}>
                                     {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
                                   </div>
                                 )}
                               </div>
                             </div>
-                            <div className="bg-white/60 p-2 md:p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                              <div
-                                className={`${isMobileDevice ? "text-xs" : "text-xs"} text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400`}
-                              >
+                            <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                              <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                                 Pauses Adjusted
                               </div>
                               <div
-                                className={`text-logo-teal-800 dark:text-logo-teal-200 font-black ${isMobileDevice ? "text-sm" : ""}`}
+                                className={`text-logo-teal-800 dark:text-logo-teal-200 font-black ${hasMounted && isMobileDevice ? "text-sm" : ""}`}
                               >
                                 {pausesAdjusted}
                               </div>
                             </div>
                           </div>
                           <Button
-                            className={`w-full ${isMobileDevice ? "py-3" : "py-4"} ${isMobileDevice ? "rounded-lg" : "rounded-xl"} shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800`}
+                            className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
                             onClick={downloadProcessedAudio}
                           >
                             <div className="flex items-center justify-center font-black">
-                              <Download className={`mr-2 ${isMobileDevice ? "h-4 w-4" : "h-5 w-5"}`} />
+                              <Download className="mr-2 h-5 w-5" />
                               Download Processed Audio
                             </div>
                           </Button>
@@ -2434,16 +2349,16 @@ export default function HomePage() {
                 </div>
               </>
             ) : (
-              // == Labs UI - Mobile Optimized ==
+              // == Labs UI ==
               <motion.div
                 key="labs-content"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
-                className="space-y-4 md:space-y-6"
+                className="space-y-6"
               >
-                {/* Meditation Setup for Labs - Mobile Optimized */}
+                {/* Meditation Setup for Labs */}
                 <motion.div
                   className=""
                   initial={{ opacity: 0, y: 20 }}
@@ -2451,20 +2366,18 @@ export default function HomePage() {
                   transition={{ delay: 0.1 }}
                 >
                   <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-gradient-to-br from-logo-purple-50 to-logo-blue-50 dark:from-logo-purple-950 dark:to-logo-blue-950">
-                    <div
-                      className={`bg-gradient-to-r from-indigo-500 via-logo-rose-500 to-logo-amber-500 ${isMobileDevice ? "py-2 px-4" : "py-3 px-6"} dark:from-indigo-700 dark:via-logo-rose-700 dark:to-logo-amber-700`}
-                    >
-                      <h3 className={`text-white flex items-center font-black ${isMobileDevice ? "text-sm" : ""}`}>
-                        <Settings2 className={`${isMobileDevice ? "h-3 w-3" : "h-4 w-4"} mr-2`} />
+                    <div className="bg-gradient-to-r from-indigo-500 via-logo-rose-500 to-logo-amber-500 py-3 px-6 dark:from-indigo-700 dark:via-logo-rose-700 dark:to-logo-amber-700">
+                      <h3 className="text-white flex items-center font-black">
+                        <Settings2 className="h-4 w-4 mr-2" />
                         Session Setup
                       </h3>
                     </div>
-                    <div className={`${isMobileDevice ? "p-4" : "p-6"} bg-white text-sm font-black`}>
-                      <div className={`grid ${isMobileDevice ? "grid-cols-1 gap-4" : "md:grid-cols-2 gap-6"}`}>
+                    <div className="p-6 bg-white text-sm font-black">
+                      <div className="grid md:grid-cols-2 gap-6">
                         <div className="">
                           <Label
                             htmlFor="labs-title"
-                            className={`text-logo-purple-700 dark:text-logo-purple-300 font-black ${isMobileDevice ? "text-sm" : ""}`}
+                            className="text-logo-purple-700 dark:text-logo-purple-300 font-black"
                           >
                             Meditation Title
                           </Label>
@@ -2473,18 +2386,18 @@ export default function HomePage() {
                             value={meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
-                            className={`mt-1 ${isMobileDevice ? "text-sm" : "text-sm"} font-black`}
+                            className="mt-1 text-sm font-black"
                           />
                         </div>
                         <div>
                           <Label
                             htmlFor="labs-duration"
-                            className={`text-logo-purple-700 dark:text-logo-purple-300 font-black ${isMobileDevice ? "text-sm" : ""}`}
+                            className="text-logo-purple-700 dark:text-logo-purple-300 font-black"
                           >
                             Duration (minutes){" "}
-                            {isMobileDevice && (
+                            {hasMounted && isMobileDevice && (
                               <span className="text-xs text-gray-500">
-                                max {Math.floor(mobileSettings.maxDuration / 60)}
+                                max {Math.floor(60 / 60)} {/* Max 60 minutes for mobile labs */}
                               </span>
                             )}
                           </Label>
@@ -2494,8 +2407,8 @@ export default function HomePage() {
                             value={labsTotalDuration / 60}
                             onChange={handleDurationChange}
                             min="1"
-                            max={isMobileDevice ? Math.floor(mobileSettings.maxDuration / 60) : 120}
-                            className={`mt-1 ${isMobileDevice ? "text-sm" : "text-sm"} font-black`}
+                            max={hasMounted && isMobileDevice ? 60 : 120}
+                            className="mt-1 text-sm font-black"
                           />
                         </div>
                       </div>
@@ -2503,13 +2416,371 @@ export default function HomePage() {
                   </Card>
                 </motion.div>
 
-                {/* Note: The rest of the Labs UI would continue here, but I'll just show the closing tags to complete the component */}
+                {/* Main Content Grid for Labs */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
+                      <div className="bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 py-3 px-6 dark:from-logo-purple-600 dark:to-logo-blue-600">
+                        <h3 className="text-white flex items-center font-black">
+                          <ListPlus className="h-4 w-4 mr-2" />
+                          Instructions Library
+                        </h3>
+                      </div>
+                      <div className="p-6 space-y-4">
+                        <Accordion type="single" collapsible className="w-full">
+                          {instructionCategories.map((category) => (
+                            <AccordionItem
+                              value={category}
+                              key={category}
+                              className="border-b border-gray-100 dark:border-gray-800"
+                            >
+                              <AccordionTrigger className="text-logo-purple-600 dark:text-logo-purple-400 hover:no-underline py-3">
+                                {category}
+                              </AccordionTrigger>
+                              <AccordionContent className="pb-4">
+                                <div className="space-y-2">
+                                  {INSTRUCTIONS_LIBRARY.filter((instr) => instr.category === category).map((instr) => (
+                                    <Button
+                                      key={instr.id}
+                                      variant={selectedLibraryInstruction?.id === instr.id ? "default" : "ghost"}
+                                      size="sm"
+                                      className={`w-full text-left justify-start h-auto py-3 px-3 text-sm ${selectedLibraryInstruction?.id === instr.id ? "bg-white text-black border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-black dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                                      onClick={() => {
+                                        setSelectedLibraryInstruction(instr)
+                                        setCustomInstructionText("")
+                                      }}
+                                    >
+                                      <span className="text-wrap leading-relaxed font-black text-sm">{instr.text}</span>
+                                    </Button>
+                                  ))}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          ))}
+                        </Accordion>
+                        <div className="border-gray-100 dark:border-gray-800 pt-4 border-t-0">
+                          <Label htmlFor="custom" className="text-logo-purple-600 dark:text-logo-purple-400 font-black">
+                            Custom Instruction
+                          </Label>
+                          <Textarea
+                            id="custom"
+                            value={customInstructionText}
+                            onChange={handleCustomInstructionChange}
+                            placeholder="Enter your own instruction..."
+                            rows={3}
+                            className="mt-2 text-sm font-black"
+                          />
+                        </div>
+                      </div>
+                    </Card>
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
+                      <div className="bg-gradient-to-r from-logo-emerald-500 to-logo-teal-500 py-3 px-6 dark:from-logo-emerald-600 dark:to-logo-teal-600">
+                        <h3 className="text-white flex items-center font-black">
+                          <Music2 className="h-4 w-4 mr-2" />
+                          Musical Notes
+                        </h3>
+                      </div>
+                      <div className="p-6 space-y-4 font-black">
+                        <Accordion type="single" collapsible className="w-full">
+                          {Object.entries(MUSICAL_NOTES).map(([category, notes]) => (
+                            <AccordionItem
+                              value={category}
+                              key={category}
+                              className="border-b border-gray-100 dark:border-gray-800"
+                            >
+                              <AccordionTrigger className="text-logo-emerald-700 dark:text-logo-emerald-500 hover:no-underline py-3">
+                                {category}
+                              </AccordionTrigger>
+                              <AccordionContent className="pb-4">
+                                <div className="space-y-2">
+                                  {notes.map((note) => (
+                                    <div key={note.id} className="flex items-center gap-2 font-black">
+                                      <Button
+                                        variant={selectedSoundCue?.id === note.id ? "default" : "ghost"}
+                                        size="sm"
+                                        className={`flex-1 justify-start font-black ${selectedSoundCue?.id === note.id ? "bg-white text-black border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-black dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                                        onClick={() =>
+                                          setSelectedSoundCue({
+                                            id: note.id,
+                                            name: note.name,
+                                            src: `musical:${note.note}${note.octave}`,
+                                          })
+                                        }
+                                      >
+                                        {note.name}
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => playNote(note.note, note.octave)}
+                                        className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
+                                        title={`Preview ${note.name}`}
+                                      >
+                                        <Play className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          ))}
+                        </Accordion>
+                        <Button
+                          className="w-full bg-white text-logo-purple-600 border border-logo-purple-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-purple-400 dark:border-logo-purple-700 dark:hover:bg-gray-800"
+                          onClick={handleAddInstructionSoundEvent}
+                          disabled={(!selectedLibraryInstruction && !customInstructionText.trim()) || !selectedSoundCue}
+                        >
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          <span className="font-black">Add to Timeline</span>
+                        </Button>
+                      </div>
+                    </Card>
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
+                      <div className="bg-gradient-to-r from-logo-rose-500 to-logo-amber-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600">
+                        <h3 className="text-white flex items-center font-black">
+                          <Mic className="h-4 w-4 mr-2" />
+                          Voice Recording
+                        </h3>
+                      </div>
+                      <div className="p-6 space-y-4">
+                        <div>
+                          <Label
+                            htmlFor="recording-label"
+                            className="text-logo-rose-600 dark:text-logo-rose-400 font-black"
+                          >
+                            Recording Label
+                          </Label>
+                          <Input
+                            id="recording-label"
+                            value={recordingLabel}
+                            onChange={handleRecordingLabelChange}
+                            placeholder="Describe this recording..."
+                            className="mt-1 text-sm font-black"
+                          />
+                        </div>
+                        <Button
+                          onClick={isRecording ? stopRecording : startRecording}
+                          variant={isRecording ? "destructive" : "default"}
+                          className="w-full font-black bg-white text-logo-rose-600 border border-logo-rose-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-logo-rose-700 dark:hover:bg-gray-800"
+                        >
+                          {isRecording ? (
+                            <>
+                              <StopCircle className="mr-2 h-4 w-4" />
+                              Stop Recording
+                            </>
+                          ) : (
+                            <>
+                              <Mic className="mr-2 h-4 w-4" />
+                              Start Recording
+                            </>
+                          )}
+                        </Button>
+                        <AnimatePresence>
+                          {recordedAudioUrl && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4"
+                            >
+                              <div className="space-y-2">
+                                <audio controls src={recordedAudioUrl} className="w-full" preload="metadata" />
+                              </div>
+                              <Button
+                                onClick={async () => {
+                                  if (!recordingLabel.trim()) {
+                                    toast({
+                                      title: "Missing Label",
+                                      description: "Please provide a label for the recording.",
+                                      variant: "destructive",
+                                    })
+                                    return
+                                  }
 
-                <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                  <p className="font-black text-sm">
-                    {isMobileDevice ? "Mobile Labs interface loading..." : "Labs interface optimized for your device"}
-                  </p>
+                                  if (!recordedAudioUrl) return
+
+                                  // Get duration from audio element if available, otherwise use 0
+                                  let duration = 0
+                                  const audioElements = document.querySelectorAll(
+                                    'audio[src="' + recordedAudioUrl + '"]',
+                                  )
+                                  if (audioElements.length > 0) {
+                                    const audio = audioElements[0] as HTMLAudioElement
+                                    if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+                                      duration = audio.duration
+                                    }
+                                  }
+
+                                  const newEvent: TimelineEvent = {
+                                    id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+                                    type: "recorded_voice",
+                                    startTime: 0,
+                                    recordedAudioUrl: recordedAudioUrl,
+                                    recordedInstructionLabel: recordingLabel.trim(),
+                                    duration: duration,
+                                  }
+
+                                  setTimelineEvents((prev) =>
+                                    [...prev, newEvent].sort((a, b) => a.startTime - b.startTime),
+                                  )
+
+                                  // Clean up
+                                  setRecordedAudioUrl(null)
+                                  setRecordedBlobs([])
+                                  setRecordingLabel("")
+
+                                  toast({
+                                    title: "Recording Added",
+                                    description: `"${recordingLabel.trim()}" added to timeline.`,
+                                  })
+                                }}
+                                className="w-full bg-white text-logo-rose-600 border border-logo-rose-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-logo-rose-700 dark:hover:bg-gray-800 font-black"
+                              >
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Add to Timeline
+                              </Button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </Card>
+                  </motion.div>
                 </div>
+                {/* Timeline Editor for Labs */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+                  <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+                    <div className="bg-gradient-to-r from-gray-700 to-gray-800 py-4 px-6 dark:from-gray-800 dark:to-gray-900">
+                      <h3 className="text-white text-lg flex items-center font-black">
+                        <CircleDotDashed className="h-5 w-5 mr-2" />
+                        Timeline Editor
+                      </h3>
+                    </div>
+                    <div className="p-6 pb-6">
+                      <VisualTimeline
+                        events={timelineEvents}
+                        totalDuration={labsTotalDuration}
+                        onUpdateEvent={updateEventStartTime}
+                        onRemoveEvent={removeTimelineEvent}
+                      />
+                    </div>
+                  </Card>
+                </motion.div>
+                {/* Generate Audio Section for Labs */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+                  <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+                    <div className="bg-gradient-to-r from-logo-amber-500 to-logo-rose-500 py-4 px-6 dark:from-logo-amber-600 dark:to-logo-rose-600">
+                      <h3 className="text-white text-lg flex items-center font-black">
+                        <Wand2 className="h-5 w-5 mr-2" />
+                        Generate Audio
+                      </h3>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      {timelineEvents.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                          <p className="font-black">Add events to your timeline to generate audio</p>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between mb-4">
+                            <div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 font-black">
+                                Timeline contains {timelineEvents.length} event{timelineEvents.length !== 1 ? "s" : ""}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-500 font-black">
+                                Duration: {formatTime(labsTotalDuration)}
+                              </p>
+                            </div>
+                          </div>
+
+                          <Button
+                            onClick={handleExportAudio}
+                            disabled={isGeneratingAudio || timelineEvents.length === 0}
+                            className="w-full py-4 bg-gradient-to-r from-logo-amber-500 to-logo-rose-500 hover:from-logo-amber-600 hover:to-logo-rose-600 text-white border-none shadow-lg dark:shadow-white/20 font-black"
+                          >
+                            <div className="flex items-center justify-center">
+                              {isGeneratingAudio && (
+                                <div className="mr-3 h-5 w-5">
+                                  <svg
+                                    className="animate-spin h-5 w-5 text-white"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <circle
+                                      className="opacity-25"
+                                      cx="12"
+                                      cy="12"
+                                      r="10"
+                                      stroke="currentColor"
+                                      strokeWidth="4"
+                                    ></circle>
+                                    <path
+                                      className="opacity-75"
+                                      fill="currentColor"
+                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    ></path>
+                                  </svg>
+                                </div>
+                              )}
+                              <Wand2 className="mr-2 h-5 w-5" />
+                              <span>{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
+                            </div>
+                          </Button>
+
+                          <AnimatePresence>
+                            {generatedAudioUrl && !isGeneratingAudio && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4"
+                              >
+                                <div className="bg-gradient-to-r from-logo-emerald-50 to-logo-teal-50 dark:from-logo-emerald-950 dark:to-logo-teal-950 p-4 rounded-lg border border-logo-emerald-200 dark:border-logo-emerald-800 text-white">
+                                  <h4 className="text-sm font-black text-logo-emerald-700 dark:text-logo-emerald-300 mb-3">
+                                    Generated Audio
+                                  </h4>
+                                  <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-3 dark:bg-gray-700">
+                                    <audio controls className="w-full" src={generatedAudioUrl}></audio>
+                                  </div>
+                                  <Button
+                                    onClick={() => {
+                                      const a = document.createElement("a")
+                                      a.href = generatedAudioUrl
+                                      a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
+                                      document.body.appendChild(a)
+                                      a.click()
+                                      document.body.removeChild(a)
+                                    }}
+                                    className="w-full bg-gradient-to-r from-logo-emerald-500 to-logo-teal-500 hover:from-logo-emerald-600 hover:to-logo-teal-600 text-white border-none font-black"
+                                  >
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Download Audio
+                                  </Button>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </>
+                      )}
+                    </div>
+                  </Card>
+                </motion.div>
               </motion.div>
             )}
           </div>
