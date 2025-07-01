@@ -43,6 +43,7 @@ import {
   type SoundCue,
 } from "@/lib/meditation-data"
 import { VisualTimeline } from "@/components/visual-timeline"
+import { cn } from "@/lib/utils" // Import cn utility
 
 // Add this near the top of the file, after the imports
 const NOTE_FREQUENCIES = {
@@ -2116,17 +2117,17 @@ export default function HomePage() {
                   className="mb-4 text-center font-serif font-black"
                 >
                   <Button
-                    className={`
-                    w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all
-                    shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none
-                    ${
+                    className={cn(
+                      "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
+                      "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none",
+                      "border", // Base border
                       isProcessing
-                        ? "bg-white text-indigo-600 border border-black"
-                        : "bg-gradient-to-r from-green-500 via-teal-500 via-indigo-500 to-logo-rose-500 text-white border border-transparent"
-                    }
-                    hover:bg-white hover:text-indigo-600 hover:border-black
-                    active:bg-white active:text-indigo-600 active:border-black
-                  `}
+                        ? "bg-white text-indigo-600 border-black" // Processing state
+                        : "bg-gradient-to-r from-green-500 via-teal-500 via-indigo-500 to-logo-rose-500 text-white border-transparent", // Default state
+                      // Apply hover/active styles that match the 'isProcessing' state
+                      "hover:bg-white hover:text-indigo-600 hover:border-black hover:[background-image:none]",
+                      "active:bg-white active:text-indigo-600 active:border-black active:[background-image:none]",
+                    )}
                     disabled={!originalBuffer || isProcessing || !durationLimits}
                     onClick={processAudio}
                   >
