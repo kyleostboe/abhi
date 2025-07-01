@@ -1616,7 +1616,7 @@ export default function HomePage() {
                 <div className="w-3 h-3 bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 dark:from-logo-teal dark:to-logo-emerald"></div>
                 <div className="w-2 h-2 bg-gradient-to-br from-logo-rose to-pink-300 rounded-full dark:from-logo-rose dark:to-pink-400"></div>
                 <div className="w-4 h-2 bg-gradient-to-br from-logo-amber to-orange-300 rounded-full transform -rotate-6 dark:from-logo-amber dark:to-orange-400"></div>
-                <div className="w-16 dark:bg-white px-0 mx-0 rounded-md bg-black h-[3px]"></div>
+                <div className="w-16 dark:bg-white px-0 mx-0 rounded-md h-[3px] bg-gray-600"></div>
                 <div className="w-4 h-2 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-full transform rotate-6 dark:from-logo-purple dark:to-indigo-400"></div>
                 <div className="w-2 h-2 bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full dark:from-blue-500 dark:to-cyan-400"></div>
                 <div className="w-3 h-3 bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 dark:from-logo-emerald dark:to-logo-teal"></div>
@@ -1624,7 +1624,7 @@ export default function HomePage() {
 
               {/* Mode Switch */}
               <div className="flex flex-col items-center space-y-4 my-12">
-                <div className="grid mx-auto grid-cols-2 bg-gray-100/70 p-1 rounded-md dark:bg-gray-800/70 w-5/12 h-auto font-serif text-black shadow-inner">
+                <div className="grid mx-auto grid-cols-2 bg-gray-100/70 p-1 rounded-md dark:bg-gray-800/70 w-5/12 h-auto font-serif shadow-inner text-gray-600">
                   <button
                     onClick={() => setActiveMode("adjuster")}
                     className={cn(
@@ -1639,7 +1639,7 @@ export default function HomePage() {
                   <button
                     onClick={() => setActiveMode("labs")}
                     className={cn(
-                      "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-sm",
+                      "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-sm text-gray-600",
                       activeMode === "labs"
                         ? "bg-white text-black shadow-sm dark:shadow-white/20 dark:bg-gray-700 dark:text-black"
                         : "text-black dark:text-black hover:bg-gray-50 dark:hover:bg-gray-800",
