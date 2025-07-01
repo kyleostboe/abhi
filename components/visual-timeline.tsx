@@ -11,7 +11,7 @@ import { SOUND_CUES_LIBRARY, generateSyntheticSound } from "../lib/meditation-da
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
-import { playNote } from "../lib/audio-utils" // Declare the playNote variable
+import { playNote } from "../lib/audio-utils" // Corrected import path
 
 interface TimelineEvent {
   id: string
