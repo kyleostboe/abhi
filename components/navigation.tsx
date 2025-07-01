@@ -23,7 +23,7 @@ export function Navigation() {
               size="sm"
               className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
             >
-              <Home className="w-4 h-4" />
+              <Home className="w-4 h-4 text-black" />
             </Button>
           </Link>
           <Link href="/contact">
@@ -32,7 +32,7 @@ export function Navigation() {
               size="sm"
               className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
             >
-              <Mail className="h-4 w-4" />
+              <Mail className="h-4 w-4 text-black" />
             </Button>
           </Link>
           <Link href="/about">
@@ -41,7 +41,7 @@ export function Navigation() {
               size="sm"
               className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
             >
-              <HeartIcon className="h-4 w-4" />
+              <HeartIcon className="h-4 w-4 text-black" />
             </Button>
           </Link>
           <ThemeToggle />
