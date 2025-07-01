@@ -1659,7 +1659,7 @@ export default function HomePage() {
               <>
                 {/* Note and Resources sections - moved to proper position */}
                 <div className="mb-6 space-y-4">
-                  <div className="p-4 rounded-lg max-w-2xl mx-auto dark:border-logo-rose-700 border-solid border text-center border-logo-rose-600">
+                  <div className="p-4 rounded-lg max-w-2xl mx-auto dark:border-logo-rose-700 border-solid border text-center border-logo-rose-600 shadow-inner">
                     <p className="text-logo-rose-600 leading-relaxed dark:text-logo-rose-300 font-serif font-black text-xs">
                       <strong className="pr-1.5 font-black font-serif text-center text-sm text-logo-amber-600">
                         Note:{" "}
