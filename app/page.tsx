@@ -332,10 +332,166 @@ export default function HomePage() {
     alert("Load functionality not yet implemented.")
   }
 
-  const handleExportAudio = () => {
-    // Placeholder for export functionality
-    console.log("Exporting timeline as audio...")
-    alert("Export audio functionality not yet implemented.")
+  const bufferToWav = async (buffer: AudioBuffer): Promise<Blob> => {
+    const length = buffer.length
+    const numberOfChannels = buffer.numberOfChannels
+    const sampleRate = buffer.sampleRate
+    const arrayBuffer = new ArrayBuffer(44 + length * numberOfChannels * 2)
+    const view = new DataView(arrayBuffer)
+
+    const writeString = (offset: number, str: string) => {
+      for (let i = 0; i < str.length; i++) {
+        view.setUint8(offset + i, str.charCodeAt(i))
+      }
+    }
+
+    writeString(0, "RIFF")
+    view.setUint32(4, 36 + length * numberOfChannels * 2, true)
+    writeString(8, "WAVE")
+    writeString(12, "fmt ")
+    view.setUint32(16, 16, true)
+    view.setUint16(20, 1, true)
+    view.setUint16(22, numberOfChannels, true)
+    view.setUint32(24, sampleRate, true)
+    view.setUint32(28, sampleRate * numberOfChannels * 2, true)
+    view.setUint16(32, numberOfChannels * 2, true)
+    view.setUint16(34, 16, true)
+    writeString(36, "data")
+    view.setUint32(40, length * numberOfChannels * 2, true)
+
+    let offset = 44
+    for (let i = 0; i < length; i++) {
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        const sample = Math.max(-1, Math.min(1, buffer.getChannelData(channel)[i]))
+        view.setInt16(offset, sample * 0x7fff, true)
+        offset += 2
+      }
+    }
+
+    return new Blob([arrayBuffer], { type: "audio/wav" })
+  }
+
+  const addSyntheticToContext = (
+    ctx: OfflineAudioContext,
+    cue: SoundCue,
+    start: number,
+  ) => {
+    const duration = (cue.duration || 1000) / 1000
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+
+    const waveform: OscillatorType = (cue.waveform || "sine") as OscillatorType
+    const frequency = cue.frequency || 440
+    const attack = cue.attackDuration || 0.01
+    const release = cue.releaseDuration || 0.5
+    const peak = 0.5
+    const end = 0.001
+
+    osc.type = waveform
+    osc.frequency.setValueAtTime(frequency, start)
+
+    const sustainStart = start + attack
+    const releaseStart = start + duration - release
+
+    gain.gain.setValueAtTime(0, start)
+    gain.gain.linearRampToValueAtTime(peak, start + attack)
+    if (releaseStart > sustainStart) {
+      gain.gain.linearRampToValueAtTime(peak, releaseStart)
+    } else {
+      gain.gain.linearRampToValueAtTime(
+        peak,
+        Math.max(start + attack, start + duration - release),
+      )
+    }
+    gain.gain.exponentialRampToValueAtTime(end, start + duration)
+
+    if (cue.harmonics) {
+      cue.harmonics.forEach((h, idx) => {
+        const hOsc = ctx.createOscillator()
+        const hGain = ctx.createGain()
+        hOsc.connect(hGain)
+        hGain.connect(ctx.destination)
+
+        hOsc.type = waveform
+        hOsc.frequency.setValueAtTime(h, start)
+
+        const vol = (peak * 0.2) / (idx + 1)
+        hGain.gain.setValueAtTime(0, start)
+        hGain.gain.linearRampToValueAtTime(vol, start + attack)
+        if (releaseStart > sustainStart) {
+          hGain.gain.linearRampToValueAtTime(vol, releaseStart)
+        } else {
+          hGain.gain.linearRampToValueAtTime(
+            vol,
+            Math.max(start + attack, start + duration - release),
+          )
+        }
+        hGain.gain.exponentialRampToValueAtTime(end, start + duration)
+        hOsc.start(start)
+        hOsc.stop(start + duration)
+      })
+    }
+
+    osc.start(start)
+    osc.stop(start + duration)
+  }
+
+  const handleExportAudio = async () => {
+    if (timelineEvents.length === 0) {
+      toast({
+        title: "No Events",
+        description: "Add events to the timeline before exporting.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      const sampleRate = 44100
+      const ctx = new OfflineAudioContext(
+        1,
+        Math.ceil(sampleRate * labsTotalDuration),
+        sampleRate,
+      )
+
+      for (const evt of timelineEvents) {
+        const start = evt.startTime
+        if (evt.type === "instruction_sound" && evt.soundCueId) {
+          const cue = SOUND_CUES_LIBRARY.find((s) => s.id === evt.soundCueId)
+          if (cue) addSyntheticToContext(ctx, cue, start)
+        } else if (evt.type === "recorded_voice" && evt.recordedAudioUrl) {
+          const res = await fetch(evt.recordedAudioUrl)
+          const buf = await res.arrayBuffer()
+          const audioBuf = await ctx.decodeAudioData(buf.slice(0))
+          const src = ctx.createBufferSource()
+          src.buffer = audioBuf
+          src.connect(ctx.destination)
+          src.start(start)
+        }
+      }
+
+      const rendered = await ctx.startRendering()
+      const wavBlob = await bufferToWav(rendered)
+      const url = URL.createObjectURL(wavBlob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `${meditationTitle.replace(/\s+/g, "_") || "meditation"}.wav`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      toast({ title: "Export Complete", description: "Timeline audio exported." })
+    } catch (err) {
+      console.error("Export failed", err)
+      toast({
+        title: "Export Failed",
+        description: err instanceof Error ? err.message : "Unknown error",
+        variant: "destructive",
+      })
+    }
   }
 
   // == Effects for Length Adjuster ==
