@@ -2116,14 +2116,17 @@ export default function HomePage() {
                   className="mb-4 text-center font-serif font-black"
                 >
                   <Button
-                    className="w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all border bg-gradient-to-r from-green-500 via-teal-500 via-indigo-500 to-logo-rose-500 hover:bg-white hover:text-indigo-600 active:bg-white active:text-indigo-600 shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none hover:border-gradient-to-r hover:from-green-500 hover:via-teal-500 hover:via-indigo-500 hover:to-logo-rose-500 active:border-gradient-to-r active:from-green-500 active:via-teal-500 active:via-indigo-500 active:to-logo-rose-500"
-                    style={{
-                      borderImage: isProcessing
-                        ? "linear-gradient(to right, #10b981, #14b8a6, #6366f1, #f43f5e) 1"
-                        : undefined,
-                      borderWidth: "1px",
-                      borderStyle: "solid",
-                    }}
+                    className={`
+                    w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all
+                    shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none
+                    ${
+                      isProcessing
+                        ? "bg-white text-indigo-600 border border-black"
+                        : "bg-gradient-to-r from-green-500 via-teal-500 via-indigo-500 to-logo-rose-500 text-white border border-transparent"
+                    }
+                    hover:bg-white hover:text-indigo-600 hover:border-black
+                    active:bg-white active:text-indigo-600 active:border-black
+                  `}
                     disabled={!originalBuffer || isProcessing || !durationLimits}
                     onClick={processAudio}
                   >
@@ -2666,7 +2669,8 @@ export default function HomePage() {
                                     <path
                                       className="opacity-75"
                                       fill="currentColor"
-                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291
+                                      A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                     ></path>
                                   </svg>
                                 </div>
