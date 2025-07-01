@@ -22,7 +22,6 @@ import {
   Play,
   PlusCircle,
   CircleDotDashed,
-  Smartphone,
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
@@ -192,9 +191,6 @@ export default function HomePage() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const currentItemStartTimeRef = useRef<number>(0)
-
-  // New state to manage client-side mounting for hydration safety
-  const [hasMounted, setHasMounted] = useState(false)
 
   const totalDuration = timeline.reduce((sum, item) => sum + item.duration, 0)
 
@@ -763,31 +759,13 @@ export default function HomePage() {
 
   // == Effects for Length Adjuster ==
   useEffect(() => {
-    // Set hasMounted to true after the initial render on the client
-    setHasMounted(true)
-
-    const checkMobile = () => {
-      const mobile = isMobile()
-      setIsMobileDevice(mobile)
-      // No need for setMobileOptimized, can use isMobileDevice directly
-      if (mobile) {
-        setLabsTotalDuration(300)
-        setTargetDuration(10)
-      }
-    }
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-    window.addEventListener("orientationchange", checkMobile)
+    setIsMobileDevice(isMobile())
     if (typeof navigator !== "undefined" && (navigator as any).deviceMemory) {
       const deviceMemory = (navigator as any).deviceMemory
       if (deviceMemory < 4) {
         console.warn("Device memory less than 4GB, enabling memory warnings.")
         setMemoryWarning(true)
       }
-    }
-    return () => {
-      window.removeEventListener("resize", checkMobile)
-      window.removeEventListener("orientationchange", checkMobile)
     }
   }, [])
 
@@ -1585,23 +1563,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-0">
       <Navigation />
 
-      {/* Only render mobile optimization indicator if hasMounted and isMobileDevice is true */}
-      {hasMounted && isMobileDevice && (
-        <div className="mb-4 p-3 rounded-lg bg-gradient-to-r from-blue-100 to-cyan-50 border border-blue-300 shadow-sm dark:shadow-white/10 dark:from-blue-950 dark:to-cyan-900 dark:border-blue-700">
-          <div className="flex items-start">
-            <Smartphone className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-medium text-blue-700 dark:text-blue-300 mb-1 text-sm">Mobile Optimized</h3>
-              <p className="text-xs text-blue-600 dark:text-blue-400">
-                Audio processing optimized for mobile devices. Lower sample rates and reduced memory usage for better
-                performance.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {hasMounted && memoryWarning && activeMode === "adjuster" && (
+      {memoryWarning && activeMode === "adjuster" && (
         <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-yellow-100 to-amber-50 border border-yellow-300 shadow-sm dark:shadow-white/10 dark:from-yellow-950 dark:to-amber-900 dark:border-yellow-700">
           <div className="flex items-start">
             <AlertTriangle className="h-6 w-6 text-yellow-500 mr-3 flex-shrink-0 mt-0.5" />
@@ -1622,7 +1584,7 @@ export default function HomePage() {
         transition={{ duration: 0.6 }}
         className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl dark:shadow-2xl dark:shadow-white/40 overflow-hidden dark:bg-gray-900/80 transition-colors duration-300 ease-in-out"
         style={{
-          borderRadius: hasMounted && isMobileDevice ? "1.5rem" : "3rem 2.5rem 3rem 2.5rem",
+          borderRadius: "3rem 2.5rem 3rem 2.5rem",
         }}
         role="application"
       >
@@ -1641,7 +1603,7 @@ export default function HomePage() {
               transition={{ delay: 0.2, duration: 0.5 }}
             >
               <h1
-                className={`${hasMounted && isMobileDevice ? "text-4xl" : "text-5xl md:text-6xl"} text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out tracking-wide mb-[3px] font-black`}
+                className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out tracking-wide mb-[3px] font-black md:text-6xl"
                 style={{
                   fontFamily: 'Georgia, "Times New Roman", serif',
                   textShadow: "0 0 25px rgba(139, 69, 19, 0.25)",
@@ -1653,9 +1615,7 @@ export default function HomePage() {
                 <div className="w-3 h-3 bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 dark:from-logo-teal dark:to-logo-emerald"></div>
                 <div className="w-2 h-2 bg-gradient-to-br from-logo-rose to-pink-300 rounded-full dark:from-logo-rose dark:to-pink-400"></div>
                 <div className="w-4 h-2 bg-gradient-to-br from-logo-amber to-orange-300 rounded-full transform -rotate-6 dark:from-logo-amber dark:to-orange-400"></div>
-                <div
-                  className={`${hasMounted && isMobileDevice ? "w-12" : "w-16"} dark:bg-white h-[3px] bg-gray-500 px-0 mx-0 rounded-md`}
-                ></div>
+                <div className="w-16 dark:bg-white h-[3px] bg-gray-500 px-0 mx-0 rounded-md"></div>
                 <div className="w-4 h-2 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-full transform rotate-6 dark:from-logo-purple dark:to-indigo-400"></div>
                 <div className="w-2 h-2 bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full dark:from-blue-500 dark:to-cyan-400"></div>
                 <div className="w-3 h-3 bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 dark:from-logo-emerald dark:to-logo-teal"></div>
@@ -1663,29 +1623,27 @@ export default function HomePage() {
 
               {/* Mode Switch */}
               <div className="flex flex-col items-center space-y-4 my-12">
-                <div
-                  className={`relative bg-gray-100 dark:bg-gray-800 p-1 shadow-lg dark:shadow-white/10 rounded-xl font-black ${hasMounted && isMobileDevice ? "px-2 py-[2px]" : "px-3.5 py-[3px]"} dark:shadow-white/20 shadow-lg`}
-                >
-                  <div className={`flex ${hasMounted && isMobileDevice ? "gap-x-[4px]" : "gap-x-[7px]"}`}>
+                <div className="relative bg-gray-100 dark:bg-gray-800 p-1 shadow-lg dark:shadow-white/10 rounded-xl font-black px-3.5 py-[3px] dark:shadow-white/20 shadow-lg">
+                  <div className="flex gap-x-[7px]">
                     <button
                       onClick={() => setActiveMode("adjuster")}
-                      className={`transition-all duration-300 relative z-10 font-black font-serif rounded-none leading-7 mx-0 my-0 text-center ${hasMounted && isMobileDevice ? "px-2 py-[6px] text-xs" : "px-3.5 py-[9px] text-sm"} tracking-normal pr-3.5 ${
+                      className={`transition-all duration-300 relative z-10 font-black font-serif rounded-none leading-7 mx-0 my-0 text-center px-3.5 py-[9px] tracking-normal text-sm pr-3.5 ${
                         activeMode === "adjuster"
                           ? "text-white"
                           : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                       }`}
                     >
-                      {hasMounted && isMobileDevice ? "Adjuster" : "Length Adjuster"}
+                      Length Adjuster
                     </button>
                     <button
                       onClick={() => setActiveMode("labs")}
-                      className={`rounded-full transition-all duration-300 relative z-10 text-center font-black font-serif ${hasMounted && isMobileDevice ? "px-2 py-[6px] text-xs" : "px-3.5 py-[9px] text-sm"} tracking-normal ${
+                      className={`rounded-full transition-all duration-300 relative z-10 text-center font-black font-serif px-3.5 py-[9px] tracking-normal text-sm ${
                         activeMode === "labs"
                           ? "text-white"
                           : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                       }`}
                     >
-                      {hasMounted && isMobileDevice ? "Lab" : "Meditation Lab"}
+                      Meditation Lab
                     </button>
                   </div>
                   <div
@@ -1700,9 +1658,7 @@ export default function HomePage() {
             </motion.div>
           </div>
 
-          <div
-            className={`${hasMounted && isMobileDevice ? "px-3 md:px-6" : "px-6 md:px-10"} pb-10 font-serif font-black`}
-          >
+          <div className="px-6 md:px-10 pb-10 font-serif font-black">
             {/* Conditional Rendering based on activeMode */}
             {activeMode === "adjuster" ? (
               // == Length Adjuster UI ==
@@ -1724,7 +1680,7 @@ export default function HomePage() {
                       </a>{" "}
                       to opt out. Depending on the audio, users may need to tweak the advanced settings for optimal
                       results. Any guided meditation, talk, podcast, or audiobook (under{" "}
-                      {hasMounted && isMobileDevice ? "50MB" : "500MB"}) should be compatible. Enjoy:){" "}
+                      {isMobileDevice ? "50MB" : "500MB"}) should be compatible. Enjoy:){" "}
                     </p>
                   </div>
                   <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto dark:border-logo-rose-700 backdrop-blur-sm dark:bg-gray-900/60 border-0 py-4 px-0 pt-1.5 bg-transparent">
@@ -1798,37 +1754,29 @@ export default function HomePage() {
                   whileTap={{ scale: 0.995 }}
                   transition={{ type: "spring", stiffness: 400, damping: 20 }}
                   ref={uploadAreaRef}
-                  className={`overflow-hidden border-none bg-white dark:bg-gray-900 ${hasMounted && isMobileDevice ? "rounded-xl" : "rounded-2xl"} mb-8 cursor-pointer transition-all duration-300 shadow-none hover:shadow-lg dark:shadow-white/10 dark:hover:shadow-white/20`}
+                  className="overflow-hidden border-none bg-white dark:bg-gray-900 rounded-2xl mb-8 cursor-pointer transition-all duration-300 shadow-none hover:shadow-lg dark:shadow-white/10 dark:hover:shadow-white/20"
                   onClick={() => fileInputRef.current?.click()}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                 >
-                  <div
-                    className={`bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 ${hasMounted && isMobileDevice ? "py-2 px-4" : "py-3 px-6"} dark:from-logo-teal-700 dark:to-logo-purple-700 border-dashed border-0`}
-                  >
-                    <h3
-                      className={`text-white flex items-center font-black ${hasMounted && isMobileDevice ? "text-sm" : ""}`}
-                    >
-                      <Upload className={`${hasMounted && isMobileDevice ? "h-3 w-3" : "h-4 w-4"} mr-2`} />
+                  <div className="bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-purple-700 border-dashed border-0">
+                    <h3 className="text-white flex items-center font-black">
+                      <Upload className="h-4 w-4 mr-2" />
                       Upload Audio
                     </h3>
                   </div>
-                  <div
-                    className={`${hasMounted && isMobileDevice ? "p-6 py-8" : "p-10 md:p-16"} text-center ${hasMounted && isMobileDevice ? "py-8" : "md:py-14"} border-dashed border-stone-300 border-2 ${hasMounted && isMobileDevice ? "rounded-b-xl" : "rounded-b-2xl"} border-t-0`}
-                  >
+                  <div className="p-10 md:p-16 text-center md:py-14 border-dashed border-stone-300 border-2 rounded-b-2xl border-t-0">
                     <motion.div
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
-                      <div
-                        className={`dark:text-gray-200 font-serif mb-2.5 font-black ${hasMounted && isMobileDevice ? "text-sm" : "text-base"} text-gray-600`}
-                      >
+                      <div className="dark:text-gray-200 font-serif mb-2.5 font-black text-base text-gray-600">
                         Drop your audio file here or click to browse
                       </div>
-                      <div className={`dark:text-gray-400/70 text-stone-400 font-serif text-xs`}>
-                        Supports MP3, WAV, OGG, and M4A files (Max: {hasMounted && isMobileDevice ? "50MB" : "500MB"})
+                      <div className="dark:text-gray-400/70 text-stone-400 font-serif text-xs">
+                        Supports MP3, WAV, OGG, and M4A files (Max: {isMobileDevice ? "50MB" : "500MB"})
                       </div>
                     </motion.div>
                   </div>
@@ -1848,35 +1796,31 @@ export default function HomePage() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className={`bg-white ${hasMounted && isMobileDevice ? "p-3" : "p-5"} mb-6 border dark:shadow-white/20 overflow-hidden dark:bg-gray-900 dark:border-gray-800 ${hasMounted && isMobileDevice ? "rounded-lg" : "rounded-xl"} shadow-none border-logo-teal`}
+                      className="bg-white p-5 mb-6 border dark:shadow-white/20 overflow-hidden dark:bg-gray-900 dark:border-gray-800 rounded-xl shadow-none border-logo-teal"
                     >
                       <div className="flex items-center">
                         <motion.div
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
                           transition={{ type: "spring", stiffness: 500, damping: 30, delay: 0.1 }}
-                          className={`p-2 rounded-lg mr-4 dark:bg-gray-800 bg-transparent`}
+                          className="p-2 rounded-lg mr-4 dark:bg-gray-800 bg-transparent"
                         >
-                          <Volume2
-                            className={`${hasMounted && isMobileDevice ? "h-4 w-4" : "h-5 w-5"} dark:text-gray-300 text-logo-purple-300`}
-                          />
+                          <Volume2 className="h-5 w-5 dark:text-gray-300 text-logo-purple-300" />
                         </motion.div>
                         <div>
                           <motion.div
                             initial={{ opacity: 0, x: -5 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.2 }}
-                            className={`mb-1 dark:text-gray-200 font-black ${hasMounted && isMobileDevice ? "text-xs" : "text-sm"} text-logo-purple-300`}
+                            className="mb-1 dark:text-gray-200 font-black text-sm text-logo-purple-300"
                           >
-                            {hasMounted && isMobileDevice
-                              ? file.name.substring(0, 25) + (file.name.length > 25 ? "..." : "")
-                              : file.name}
+                            {file.name}
                           </motion.div>
                           <motion.div
                             initial={{ opacity: 0, x: -5 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.3 }}
-                            className={`dark:text-gray-400/70 font-black ${hasMounted && isMobileDevice ? "text-xs" : "text-xs"} text-logo-purple-300`}
+                            className="dark:text-gray-400/70 font-black text-xs text-logo-purple-300"
                           >
                             Size: {formatFileSize(file.size)} • Type: {file.type || "Unknown"}
                           </motion.div>
@@ -1964,7 +1908,7 @@ export default function HomePage() {
                                 Range
                               </div>
                               <div className="dark:text-gray-200 font-black text-logo-rose-600">
-                                {durationLimits.min} min to {hasMounted && isMobileDevice ? "1 hour" : "2 hours"}
+                                {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
                               </div>
                             </div>
                           </div>
@@ -2011,7 +1955,7 @@ export default function HomePage() {
                               <Slider
                                 value={[targetDuration]}
                                 min={durationLimits?.min || 5}
-                                max={durationLimits?.max || (hasMounted && isMobileDevice ? 60 : 120)}
+                                max={durationLimits?.max || (isMobileDevice ? 60 : 120)}
                                 step={1}
                                 onValueChange={(value) => setTargetDuration(value[0])}
                                 disabled={!durationLimits}
@@ -2027,7 +1971,7 @@ export default function HomePage() {
                             </div>
                             {durationLimits && (
                               <div className="text-center text-xs text-logo-amber-500/70 mt-2 dark:text-logo-amber-400/70">
-                                Range: {durationLimits.min} min to {hasMounted && isMobileDevice ? "1 hour" : "2 hours"}
+                                Range: {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
                               </div>
                             )}
                           </div>
@@ -2172,15 +2116,22 @@ export default function HomePage() {
                   className="mb-4 text-center font-serif font-black"
                 >
                   <Button
-                    className={`w-full ${hasMounted && isMobileDevice ? "py-5 text-base" : "py-7 text-lg"} font-medium tracking-wider ${hasMounted && isMobileDevice ? "rounded-lg" : "rounded-xl"} transition-all border-none bg-gradient-to-r from-gray-600 to-gray-800 dark:from-gray-600 dark:via-gray-700 dark:via-gray-800 dark:via-gray-900 dark:via-gray-950 dark:to-black shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none`}
+                    className="w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all border bg-gradient-to-r from-green-500 via-teal-500 via-indigo-500 to-logo-rose-500 hover:bg-white hover:text-indigo-600 active:bg-white active:text-indigo-600 shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none hover:border-gradient-to-r hover:from-green-500 hover:via-teal-500 hover:via-indigo-500 hover:to-logo-rose-500 active:border-gradient-to-r active:from-green-500 active:via-teal-500 active:via-indigo-500 active:to-logo-rose-500"
+                    style={{
+                      borderImage: isProcessing
+                        ? "linear-gradient(to right, #10b981, #14b8a6, #6366f1, #f43f5e) 1"
+                        : undefined,
+                      borderWidth: "1px",
+                      borderStyle: "solid",
+                    }}
                     disabled={!originalBuffer || isProcessing || !durationLimits}
                     onClick={processAudio}
                   >
                     <div className="flex items-center justify-center">
                       {isProcessing && (
-                        <div className={`${hasMounted && isMobileDevice ? "mr-2 h-4 w-4" : "mr-3 h-5 w-5"}`}>
+                        <div className="mr-3 h-5 w-5">
                           <svg
-                            className={`animate-spin ${hasMounted && isMobileDevice ? "h-4 w-4" : "h-5 w-5"} text-white`}
+                            className="animate-spin h-5 w-5 text-white"
                             xmlns="http://www.w3.org/2000/svg"
                             fill="none"
                             viewBox="0 0 24 24"
@@ -2201,7 +2152,7 @@ export default function HomePage() {
                           </svg>
                         </div>
                       )}
-                      <Wand2 className={`${hasMounted && isMobileDevice ? "mr-2 h-5 w-5" : "mr-2 h-6 w-6"}`} />
+                      <Wand2 className="mr-2 h-6 w-6" />
                       <span className="font-black">Process Audio</span>
                     </div>
                   </Button>
@@ -2218,7 +2169,7 @@ export default function HomePage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => window.location.reload()}
-                      className={`text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-black ${hasMounted && isMobileDevice ? "text-sm" : ""}`}
+                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-black"
                       aria-label="Cancel processing and reload page"
                     >
                       Cancel
@@ -2236,7 +2187,7 @@ export default function HomePage() {
                       className={`p-4 rounded-xl mb-8 text-center dark:shadow-white/10 overflow-hidden bg-white dark:bg-gray-900 shadow-none border-logo-rose-600 border ${status.type === "info" ? "text-logo-rose-700 border border-logo-rose-400 dark:text-logo-rose-300 dark:border-logo-rose-600" : status.type === "success" ? "text-logo-emerald-700 border border-logo-emerald-400 dark:text-logo-emerald-300 dark:border-logo-emerald-600" : "text-red-700 border border-red-400 dark:text-red-300 dark:border-red-600"}`}
                     >
                       <motion.div
-                        className={`text-sm text-logo-teal`}
+                        className="text-sm text-logo-teal"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.2 }}
@@ -2259,9 +2210,7 @@ export default function HomePage() {
                           <h3 className="text-white font-black">Original Audio</h3>
                         </div>
                         <div className="p-6">
-                          <div
-                            className={`bg-white rounded-lg ${hasMounted && isMobileDevice ? "p-2" : "p-3"} shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700`}
-                          >
+                          <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
                             <audio controls className="w-full" src={originalUrl}></audio>
                           </div>
                           <div className="grid grid-cols-2 gap-4">
@@ -2269,9 +2218,7 @@ export default function HomePage() {
                               <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
                                 Duration
                               </div>
-                              <div
-                                className={`text-gray-800 dark:text-black font-black ${hasMounted && isMobileDevice ? "text-sm" : ""}`}
-                              >
+                              <div className="text-gray-800 dark:text-black font-black">
                                 {originalBuffer ? formatDuration(originalBuffer.duration) : "--"}
                               </div>
                             </div>
@@ -2279,9 +2226,7 @@ export default function HomePage() {
                               <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
                                 File Size
                               </div>
-                              <div
-                                className={`text-gray-800 dark:text-gray-200 font-black ${hasMounted && isMobileDevice ? "text-sm" : ""}`}
-                              >
+                              <div className="text-gray-800 dark:text-gray-200 font-black">
                                 {formatFileSize(file?.size || 0)}
                               </div>
                             </div>
@@ -2301,9 +2246,7 @@ export default function HomePage() {
                           <h3 className="text-white font-black">Processed Audio</h3>
                         </div>
                         <div className="p-6">
-                          <div
-                            className={`bg-white rounded-lg ${hasMounted && isMobileDevice ? "p-2" : "p-3"} shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700`}
-                          >
+                          <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
                             <audio controls className="w-full" src={processedUrl}></audio>
                           </div>
                           <div className="grid grid-cols-2 gap-4 mb-6">
@@ -2311,12 +2254,10 @@ export default function HomePage() {
                               <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                                 Duration
                               </div>
-                              <div
-                                className={`text-logo-teal-800 dark:text-black font-black ${hasMounted && isMobileDevice ? "text-sm" : ""}`}
-                              >
+                              <div className="text-logo-teal-800 dark:text-black font-black">
                                 {formatDuration(actualDuration || 0)}
                                 {actualDuration && targetDuration && (
-                                  <div className={`text-xs text-logo-teal-600 mt-1 dark:text-gray-900`}>
+                                  <div className="text-xs text-logo-teal-600 mt-1 dark:text-gray-900">
                                     {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
                                   </div>
                                 )}
@@ -2326,9 +2267,7 @@ export default function HomePage() {
                               <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                                 Pauses Adjusted
                               </div>
-                              <div
-                                className={`text-logo-teal-800 dark:text-logo-teal-200 font-black ${hasMounted && isMobileDevice ? "text-sm" : ""}`}
-                              >
+                              <div className="text-logo-teal-800 dark:text-logo-teal-200 font-black">
                                 {pausesAdjusted}
                               </div>
                             </div>
@@ -2394,12 +2333,7 @@ export default function HomePage() {
                             htmlFor="labs-duration"
                             className="text-logo-purple-700 dark:text-logo-purple-300 font-black"
                           >
-                            Duration (minutes){" "}
-                            {hasMounted && isMobileDevice && (
-                              <span className="text-xs text-gray-500">
-                                max {Math.floor(60 / 60)} {/* Max 60 minutes for mobile labs */}
-                              </span>
-                            )}
+                            Duration (minutes)
                           </Label>
                           <Input
                             id="labs-duration"
@@ -2407,7 +2341,6 @@ export default function HomePage() {
                             value={labsTotalDuration / 60}
                             onChange={handleDurationChange}
                             min="1"
-                            max={hasMounted && isMobileDevice ? 60 : 120}
                             className="mt-1 text-sm font-black"
                           />
                         </div>
@@ -2597,7 +2530,7 @@ export default function HomePage() {
                               initial={{ opacity: 0, height: 0 }}
                               animate={{ opacity: 1, height: "auto" }}
                               exit={{ opacity: 0, height: 0 }}
-                              className="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4"
+                              className="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-4"
                             >
                               <div className="space-y-2">
                                 <audio controls src={recordedAudioUrl} className="w-full" preload="metadata" />
