@@ -2221,7 +2221,7 @@ export default function HomePage() {
                               <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
                                 Duration
                               </div>
-                              <div className="text-gray-800 dark:text-black font-black">
+                              <div className="dark:text-black font-black text-black">
                                 {originalBuffer ? formatDuration(originalBuffer.duration) : "--"}
                               </div>
                             </div>
@@ -2229,7 +2229,7 @@ export default function HomePage() {
                               <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
                                 File Size
                               </div>
-                              <div className="text-gray-800 dark:text-gray-200 font-black">
+                              <div className="dark:text-gray-200 font-black text-black">
                                 {formatFileSize(file?.size || 0)}
                               </div>
                             </div>
@@ -2257,7 +2257,7 @@ export default function HomePage() {
                               <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                                 Duration
                               </div>
-                              <div className="text-logo-teal-800 dark:text-black font-black">
+                              <div className="dark:text-black font-black text-black">
                                 {formatDuration(actualDuration || 0)}
                                 {actualDuration && targetDuration && (
                                   <div className="text-xs text-logo-teal-600 mt-1 dark:text-gray-900">
@@ -2270,7 +2270,7 @@ export default function HomePage() {
                               <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                                 Pauses Adjusted
                               </div>
-                              <div className="text-logo-teal-800 dark:text-logo-teal-200 font-black">
+                              <div className="dark:text-logo-teal-200 font-black text-black">
                                 {pausesAdjusted}
                               </div>
                             </div>
