@@ -111,129 +111,1015 @@ export default function HomePage() {
   const [minSpacingDuration, setMinSpacingDuration] = useState<number>(1.5)
   const [preserveNaturalPacing, setPreserveNaturalPacing] = useState<boolean>(true)
   const [compatibilityMode, setCompatibilityMode] = useState<string>("high")
-  \
-  const [status, setStatus<{ message: string;
-  type: string
-}
-| null>(null)\
-const [originalUrl, setOriginalUrl<string>("\")\
-  const [processedUrl, setProcessedUrl<string>(\"\")\
-  const [pausesAdjusted, setPausesAdjusted<number>(0)\
-  const [isProcessing, setIsProcessing<boolean>(false)\
-  const [processingProgress, setProcessingProgress<number>(0)\
-  const [processingStep, setProcessingStep<string>(\"\")
-\
-const [durationLimits, setDurationLimits<{ min: number;
-max: number
-} | null>(null)\
-const [audioAnalysis, setAudioAnalysis<{\
-    totalSilence: number\
-    contentDuration: number\
-    silenceRegions: number\
-} | null>(null)\
-const [actualDuration, setActualDuration<number | null>(null
-)\
-const [isProcessingComplete, setIsProcessingComplete<boolean>(false
-)\
-const [isMobileDevice, setIsMobileDevice<boolean>(false
-)\
-const [memoryWarning, setMemoryWarning<boolean>(false
-)
-const fileInputRef = useRef<HTMLInputElement>(null)
-const uploadAreaRef = useRef<HTMLDivElement>(null)
-const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-// == States for Labs ==\
-const [meditationTitle, setMeditationTitle<string>("My Custom Meditation\")\
-  const [labsTotalDuration, setLabsTotalDuration<number>(600)\
-  const [timelineEvents, setTimelineEvents<TimelineEvent[]>([])\
-  const [selectedLibraryInstruction, setSelectedLibraryInstruction<Instruction | null>(null)\
-  const [customInstructionText, setCustomInstructionText<string>(\"\")
-const [selectedSoundCue, setSelectedSoundCue<SoundCue | null>(null
-)
-const [isRecording, setIsRecording<boolean>(false
-)
-const [recordedAudioUrl, setRecordedAudioUrl<string | null>(null
-)
-const [recordedBlobs, setRecordedBlobs<Blob[]
->([])
-const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-const labsAudioRef = useRef<HTMLAudioElement | null>(null)
-const instructionCategories = Array.from(new Set(INSTRUCTIONS_LIBRARY.map((instr) => instr.category)))
-const [recordingLabel, setRecordingLabel<string>(""
-)
+  const [status, setStatus] = useState<{ message: string; type: string } | null>(null)
+  const [originalUrl, setOriginalUrl] = useState<string>("")
+  const [processedUrl, setProcessedUrl] = useState<string>("")
+  const [pausesAdjusted, setPausesAdjusted] = useState<number>(0)
+  const [isProcessing, setIsProcessing] = useState<boolean>(false)
+  const [processingProgress, setProcessingProgress] = useState<number>(0)
+  const [processingStep, setProcessingStep] = useState<string>("")
 
-// Audio generation states
-const [isGeneratingAudio, setIsGeneratingAudio<boolean>(false
-)
-const [generationProgress, setGenerationProgress<number>(0
-)
-const [generationStep, setGenerationStep<string>(""
-)
-const [generatedAudioUrl, setGeneratedAudioUrl<string | null>(null
-)
+  const [durationLimits, setDurationLimits] = useState<{ min: number; max: number } | null>(null)
+  const [audioAnalysis, setAudioAnalysis] = useState<{
+    totalSilence: number
+    contentDuration: number
+    silenceRegions: number
+  } | null>(null)
+  const [actualDuration, setActualDuration] = useState<number | null>(null)
+  const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
+  const [isMobileDevice, setIsMobileDevice] = useState<boolean>(false)
+  const [memoryWarning, setMemoryWarning] = useState<boolean>(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const uploadAreaRef = useRef<HTMLDivElement>(null)
+  const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-const [timeline, setTimeline<TimelineItem[]
->([])
-const [currentTab, setCurrentTab<string>("instructions"
-)
-const [isPlaying, setIsPlaying<boolean>(false
-)
-const [currentPlaybackTime, setCurrentPlaybackTime<number>(0
-) // in seconds
-const [activeItemIndex, setActiveItemIndex<number | null>(null
-)
-const [volume, setVolume<number>(75
-) // Default volume 75%
-const audioRef = useRef<HTMLAudioElement | null>(null)
-const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null)
-const currentItemStartTimeRef = useRef<number>(0)
+  // == States for Labs ==
+  const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
+  const [labsTotalDuration, setLabsTotalDuration] = useState<number>(600)
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
+  const [selectedLibraryInstruction, setSelectedLibraryInstruction] = useState<Instruction | null>(null)
+  const [customInstructionText, setCustomInstructionText] = useState<string>("")
+  const [selectedSoundCue, setSelectedSoundCue] = useState<SoundCue | null>(null)
+  const [isRecording, setIsRecording] = useState<boolean>(false)
+  const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null)
+  const [recordedBlobs, setRecordedBlobs] = useState<Blob[]>([])
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const labsAudioRef = useRef<HTMLAudioElement | null>(null)
+  const instructionCategories = Array.from(new Set(INSTRUCTIONS_LIBRARY.map((instr) => instr.category)))
+  const [recordingLabel, setRecordingLabel] = useState<string>("")
 
-const totalDuration = timeline.reduce((sum, item) => sum + item.duration, 0)
+  // Audio generation states
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState<boolean>(false)
+  const [generationProgress, setGenerationProgress] = useState<number>(0)
+  const [generationStep, setGenerationStep] = useState<string>("")
+  const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
 
-const addTimelineItem = useCallback((item: Instruction | SoundCue, type: "instruction" | "sound") => {
-  const newItem: TimelineItem = {
-    id: `${type}-${Date.now()}`,
-    type,
-    duration: type === "instruction" ? 60 : 5, // Default duration: 60s for instruction, 5s for sound
-    content: item,
-  }
-  setTimeline((prev) => [...prev, newItem])
-}, [])
+  const [timeline, setTimeline] = useState<TimelineItem[]>([])
+  const [currentTab, setCurrentTab] = useState<string>("instructions")
+  const [isPlaying, setIsPlaying] = useState<boolean>(false)
+  const [currentPlaybackTime, setCurrentPlaybackTime] = useState<number>(0) // in seconds
+  const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null)
+  const [volume, setVolume] = useState<number>(75) // Default volume 75%
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const currentItemStartTimeRef = useRef<number>(0)
 
-const updateTimelineItemDuration = useCallback((index: number, newDuration: number) => {
-  setTimeline((prev) => prev.map((item, i) => (i === index ? { ...item, duration: Math.max(1, newDuration) } : item)))
-}, [])
+  const totalDuration = timeline.reduce((sum, item) => sum + item.duration, 0)
 
-const removeTimelineItem = useCallback(
-  (index: number) => {
-    setTimeline((prev) => prev.filter((_, i) => i !== index))
-    if (activeItemIndex === index) {
-      setActiveItemIndex(null)
-    } else if (activeItemIndex !== null && activeItemIndex > index) {
-      setActiveItemIndex((prev) => (prev !== null ? prev - 1 : null))
+  const addTimelineItem = useCallback((item: Instruction | SoundCue, type: "instruction" | "sound") => {
+    const newItem: TimelineItem = {
+      id: `${type}-${Date.now()}`,
+      type,
+      duration: type === "instruction" ? 60 : 5, // Default duration: 60s for instruction, 5s for sound
+      content: item,
     }
-  },
-  [activeItemIndex],
-)
+    setTimeline((prev) => [...prev, newItem])
+  }, [])
 
-const playLabsSound = useCallback(
-  async (src: string) => {
-    const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.src === src)
+  const updateTimelineItemDuration = useCallback((index: number, newDuration: number) => {
+    setTimeline((prev) => prev.map((item, i) => (i === index ? { ...item, duration: Math.max(1, newDuration) } : item)))
+  }, [])
 
-    // Defensive check: Ensure soundCue exists and its src property is a string
-    if (!soundCue || typeof soundCue.src !== "string") {
-      console.error("Invalid sound cue or src property for src:", src, "Found soundCue:", soundCue)
+  const removeTimelineItem = useCallback(
+    (index: number) => {
+      setTimeline((prev) => prev.filter((_, i) => i !== index))
+      if (activeItemIndex === index) {
+        setActiveItemIndex(null)
+      } else if (activeItemIndex !== null && activeItemIndex > index) {
+        setActiveItemIndex((prev) => (prev !== null ? prev - 1 : null))
+      }
+    },
+    [activeItemIndex],
+  )
+
+  const playLabsSound = useCallback(
+    async (src: string) => {
+      const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.src === src)
+
+      // Defensive check: Ensure soundCue exists and its src property is a string
+      if (!soundCue || typeof soundCue.src !== "string") {
+        console.error("Invalid sound cue or src property for src:", src, "Found soundCue:", soundCue)
+        toast({
+          title: "Sound Playback Error",
+          description: "The selected sound cue is malformed or not found.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      try {
+        if (soundCue.src.startsWith("synthetic:")) {
+          // Generate and play synthetic sound
+          await generateSyntheticSound(soundCue)
+
+          toast({
+            title: "Playing Sound",
+            description: `Now playing: ${soundCue.name}`,
+            variant: "default",
+          })
+        } else {
+          // Handle actual audio files
+          if (labsAudioRef.current) {
+            labsAudioRef.current.src = soundCue.src
+            labsAudioRef.current.volume = volume / 100
+            await labsAudioRef.current.play().catch((e) => console.error("Error playing audio:", e))
+            toast({
+              title: "Playing Sound",
+              description: `Now playing: ${soundCue.name || "Audio file"}`,
+              variant: "default",
+            })
+          } else {
+            throw new Error("Audio player not initialized.")
+          }
+        }
+      } catch (error) {
+        console.error("Labs Audio playback failed:", error)
+        toast({
+          title: "Audio Playback Failed",
+          description: `Could not play sound. Error: ${error instanceof Error ? error.message : "Unknown"}`,
+          variant: "destructive",
+        })
+      }
+    },
+    [volume],
+  )
+
+  const startPlayback = useCallback(() => {
+    if (timeline.length === 0) return
+
+    setIsPlaying(true)
+    currentItemStartTimeRef.current = currentPlaybackTime // Store start time of current item
+
+    playbackIntervalRef.current = setInterval(() => {
+      setCurrentPlaybackTime((prevTime) => {
+        const newTime = prevTime + 0.1 // Increment by 100ms
+
+        let accumulatedDuration = 0
+        let foundActiveItem = false
+        for (let i = 0; i < timeline.length; i++) {
+          const item = timeline[i]
+          if (newTime >= accumulatedDuration && newTime < accumulatedDuration + item.duration) {
+            if (activeItemIndex !== i) {
+              setActiveItemIndex(i)
+              // Play sound cue when it becomes active
+              if (item.type === "sound") {
+                playLabsSound(item.content.src) // Pass src string to playLabsSound
+              }
+            }
+            foundActiveItem = true
+            break
+          }
+          accumulatedDuration += item.duration
+        }
+
+        if (!foundActiveItem) {
+          setActiveItemIndex(null)
+        }
+
+        if (newTime >= totalDuration) {
+          // End of timeline
+          clearInterval(playbackIntervalRef.current!)
+          setIsPlaying(false)
+          setCurrentPlaybackTime(0)
+          setActiveItemIndex(null)
+          return 0
+        }
+        return newTime
+      })
+    }, 100) // Update every 100ms
+  }, [timeline, currentPlaybackTime, totalDuration, activeItemIndex, playLabsSound])
+
+  const pausePlayback = useCallback(() => {
+    if (playbackIntervalRef.current) {
+      clearInterval(playbackIntervalRef.current)
+      playbackIntervalRef.current = null
+    }
+    setIsPlaying(false)
+  }, [])
+
+  const resetPlayback = useCallback(() => {
+    pausePlayback()
+    setCurrentPlaybackTime(0)
+    setActiveItemIndex(null)
+  }, [pausePlayback])
+
+  useEffect(() => {
+    // Cleanup interval on component unmount
+    return () => {
+      if (playbackIntervalRef.current) {
+        clearInterval(playbackIntervalRef.current)
+      }
+    }
+  }, [])
+
+  // Update audio volume if audioRef exists
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume / 100
+    }
+  }, [volume])
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = Math.floor(seconds % 60)
+    return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`
+  }
+
+  const handleSaveTimeline = () => {
+    // Placeholder for save functionality
+    console.log("Saving timeline:", timeline)
+    alert("Save functionality not yet implemented.")
+  }
+
+  const handleLoadTimeline = () => {
+    // Placeholder for load functionality
+    console.log("Loading timeline...")
+    alert("Load functionality not yet implemented.")
+  }
+
+  const bufferToWavOld = async (buffer: AudioBuffer): Promise<Blob> => {
+    const numberOfChannels = buffer.numberOfChannels
+    const numSamples = buffer.length
+    const sampleRate = buffer.sampleRate
+    const bytesPerSample = 2 // Assuming 16-bit PCM
+    const blockAlign = numberOfChannels * bytesPerSample
+    const byteRate = sampleRate * blockAlign
+    const dataSize = numSamples * blockAlign
+    const fileSize = 44 + dataSize
+
+    const arrayBuffer = new ArrayBuffer(fileSize)
+    const dataView = new DataView(arrayBuffer)
+
+    // RIFF identifier
+    dataView.setUint32(0, 0x52494646, false) // "RIFF"
+    // File size
+    dataView.setUint32(4, fileSize - 8, true)
+    // RIFF type
+    dataView.setUint32(8, 0x57415645, false) // "WAVE"
+    // Format chunk identifier
+    dataView.setUint32(12, 0x666d7420, false) // "fmt "
+    // Format chunk size
+    dataView.setUint32(16, 16, true)
+    // Audio format (PCM = 1)
+    dataView.setUint16(20, 1, true)
+    // Number of channels
+    dataView.setUint16(22, numberOfChannels, true)
+    // Sample rate
+    dataView.setUint32(24, sampleRate, true)
+    // Byte rate (Sample Rate * Block Align)
+    dataView.setUint32(28, byteRate, true)
+    // Block align (Number of Channels * Bytes per Sample)
+    dataView.setUint16(32, blockAlign, true)
+    // Bits per sample
+    dataView.setUint16(34, bytesPerSample * 8, true)
+    // Data chunk identifier
+    dataView.setUint32(36, 0x64617461, false) // "data"
+    // Data chunk size
+    dataView.setUint32(40, dataSize, true)
+
+    // Write the samples to the data chunk
+    let offset = 44
+    for (let i = 0; i < numSamples; i++) {
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        const sample = buffer.getChannelData(channel)[i]
+        const amplitude = Math.max(-1, Math.min(1, sample))
+        dataView.setInt16(offset, amplitude * 0x7fff, true)
+        offset += bytesPerSample
+      }
+    }
+
+    return new Blob([arrayBuffer], { type: "audio/wav" })
+  }
+
+  const addSyntheticToContext = (ctx: OfflineAudioContext, cue: SoundCue, start: number, duration: number) => {
+    const gainNode = ctx.createGain()
+    gainNode.gain.setValueAtTime(0.3, start) // Reduced gain for synthetic sounds
+    gainNode.connect(ctx.destination)
+
+    if (cue.src === "synthetic:sine440") {
+      const osc = ctx.createOscillator()
+      osc.type = "sine"
+      osc.frequency.setValueAtTime(440, start)
+      osc.connect(gainNode)
+      osc.start(start)
+      osc.stop(start + duration)
+    } else if (cue.src === "synthetic:triangle880") {
+      const osc = ctx.createOscillator()
+      osc.type = "triangle"
+      osc.frequency.setValueAtTime(880, start)
+      osc.connect(gainNode)
+      osc.start(start)
+      osc.stop(start + duration)
+    } else if (cue.src === "synthetic:square220") {
+      const osc = ctx.createOscillator()
+      osc.type = "square"
+      osc.frequency.setValueAtTime(220, start)
+      osc.connect(gainNode)
+      osc.start(start)
+      osc.stop(start + duration)
+    } else if (cue.src === "synthetic:sawtooth660") {
+      const osc = ctx.createOscillator()
+      osc.type = "sawtooth"
+      osc.frequency.setValueAtTime(660, start)
+      osc.connect(gainNode)
+      osc.start(start)
+      osc.stop(start + duration)
+    } else {
+      console.warn("Unknown synthetic sound:", cue.src)
+    }
+  }
+
+  const handleExportAudio = async () => {
+    setIsGeneratingAudio(true)
+    setGenerationProgress(0)
+    setGenerationStep("Initializing...")
+
+    try {
+      const ctx = new OfflineAudioContext({
+        numberOfChannels: 1,
+        sampleRate: 44100,
+        length: 44100 * labsTotalDuration,
+      })
+
+      let currentTime = 0
+      for (const event of timelineEvents) {
+        if (event.type === "instruction_sound" && event.soundCueId) {
+          const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
+          if (soundCue) {
+            setGenerationStep(`Adding sound: ${soundCue.name}`)
+            setGenerationProgress(50)
+            if (soundCue.src.startsWith("synthetic:")) {
+              addSyntheticToContext(ctx, soundCue, currentTime, 5) // Synthetic sounds are 5 seconds long
+            } else {
+              // Load and play audio file
+              const response = await fetch(soundCue.src)
+              const arrayBuffer = await response.arrayBuffer()
+              const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+              const source = ctx.createBufferSource()
+              source.buffer = audioBuffer
+              source.connect(ctx.destination)
+              source.start(currentTime)
+            }
+          }
+        }
+        currentTime += 5 // Assuming 5 seconds for each sound cue
+      }
+
+      setGenerationStep("Rendering audio...")
+      setGenerationProgress(90)
+      const rendered = await ctx.startRendering()
+      const wavBlob = await bufferToWav(rendered, true, (p) => setGenerationProgress(90 + Math.floor(p * 0.1)))
+      const url = URL.createObjectURL(wavBlob)
+      setGeneratedAudioUrl(url)
+
+      // Clean up
+      setIsGeneratingAudio(false)
+      setGenerationProgress(100)
+      setGenerationStep("Export Complete")
+
+      toast({ title: "Export Complete", description: "Timeline audio exported." })
+    } catch (error) {
+      console.error("Audio export failed:", error)
       toast({
-        title: "Sound Playback Error",
-        description: "The selected sound cue is malformed or not found.",
+        title: "Audio Export Failed",
+        description: `Could not export audio. Error: ${error instanceof Error ? error.message : "Unknown"}`,
         variant: "destructive",
       })
+    } finally {
+      setIsGeneratingAudio(false)
+    }
+  }
+
+  // == Effects for Length Adjuster ==
+  useEffect(() => {
+    setIsMobileDevice(isMobile())
+    if (typeof navigator !== "undefined" && (navigator as any).deviceMemory) {
+      const deviceMemory = (navigator as any).deviceMemory
+      if (deviceMemory < 4) {
+        console.warn("Device memory less than 4GB, enabling memory warnings.")
+        setMemoryWarning(true)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      audioContextRef.current.close().catch((err) => console.warn("Error closing previous AudioContext:", err))
+    }
+
+    const AudioContextAPI = window.AudioContext || (window as any).webkitAudioContext
+    if (AudioContextAPI) {
+      const sampleRate = isMobileDevice ? 22050 : 44100
+      try {
+        const ctx = new AudioContextAPI({ sampleRate })
+        audioContextRef.current = ctx
+        if (ctx.state === "suspended") {
+          const resumeContextOnInteraction = async () => {
+            if (audioContextRef.current && audioContextRef.current.state === "suspended") {
+              try {
+                await audioContextRef.current.resume()
+              } catch (e) {
+                console.error("Error resuming AudioContext on user interaction:", e)
+              }
+            }
+            document.removeEventListener("click", resumeContextOnInteraction, true)
+            document.removeEventListener("touchend", resumeContextOnInteraction, true)
+            document.removeEventListener("keydown", resumeContextOnInteraction, true)
+          }
+          document.addEventListener("click", resumeContextOnInteraction, { once: true, capture: true })
+          document.addEventListener("touchend", resumeContextOnInteraction, { once: true, capture: true })
+          document.addEventListener("keydown", resumeContextOnInteraction, { once: true, capture: true })
+        }
+      } catch (error) {
+        setStatus({
+          message: `Error initializing audio system: ${error instanceof Error ? error.message : "Unknown error"}`,
+          type: "error",
+        })
+      }
+    } else {
+      setStatus({ message: "Your browser does not support the required Audio API.", type: "error" })
+    }
+    return () => {
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        audioContextRef.current
+          .close()
+          .catch((err) => console.warn("Error closing AudioContext in main useEffect cleanup:", err))
+        audioContextRef.current = null
+      }
+    }
+  }, [isMobileDevice])
+
+  const cleanupMemory = useCallback(() => {
+    setOriginalBuffer(null)
+    setProcessedBufferState(null)
+    if (originalUrl) {
+      URL.revokeObjectURL(originalUrl)
+      setOriginalUrl("")
+    }
+    if (processedUrl) {
+      URL.revokeObjectURL(processedUrl)
+      setProcessedUrl("")
+    }
+    forceGarbageCollection()
+    if (isMobileDevice) setTimeout(() => forceGarbageCollection(), 100)
+  }, [originalUrl, processedUrl, isMobileDevice])
+
+  const validateFileSize = (fileToValidate: File): boolean => {
+    const maxSize = isMobileDevice ? 50 * 1024 * 1024 : 500 * 1024 * 1024
+    if (fileToValidate.size > maxSize) {
+      setStatus({ message: `File too large. Max ${isMobileDevice ? "50MB" : "500MB"}.`, type: "error" })
+      return false
+    }
+    if (
+      (isMobileDevice && fileToValidate.size > 20 * 1024 * 1024) ||
+      (!isMobileDevice && fileToValidate.size > 150 * 1024 * 1024)
+    ) {
+      setMemoryWarning(true)
+    } else {
+      setMemoryWarning(false)
+    }
+    return true
+  }
+
+  const handleFile = async (selectedFile: File) => {
+    if (!selectedFile || !selectedFile.type) {
+      setStatus({ message: "Invalid file selected.", type: "error" })
       return
     }
 
+    if (!selectedFile.type.startsWith("audio/") && !selectedFile.name.toLowerCase().endsWith(".m4a")) {
+      setStatus({ message: "Please select a valid audio file.", type: "error" })
+      return
+    }
+    if (!validateFileSize(selectedFile)) return
+    if (!audioContextRef.current || audioContextRef.current.state === "closed") {
+      setStatus({ message: "Audio system not ready. Please refresh.", type: "error" })
+      return
+    }
+    cleanupMemory()
+    await sleep(100)
+    setFile(selectedFile)
+    setProcessingProgress(0)
+    setProcessingStep("Initializing...")
+    setDurationLimits(null)
+    setAudioAnalysis(null)
+    setProcessedUrl("")
+    setProcessedBufferState(null)
+    setActualDuration(null)
+    setIsProcessingComplete(false)
+    setStatus(null)
     try {
-      if (soundCue.src.startsWith("synthetic:")) {
+      setStatus({ message: "Loading audio file...", type: "info" })
+      await loadAudioFile(selectedFile)
+    } catch (error) {
+      setStatus({
+        message: `Error loading audio: ${error instanceof Error ? error.message : "Unknown"}`,
+        type: "error",
+      })
+      setOriginalBuffer(null)
+    }
+  }
+
+  const detectSilenceRegions = async (
+    buffer: AudioBuffer,
+    threshold: number,
+    minSilenceDur: number,
+  ): Promise<{ start: number; end: number }[]> => {
+    const sampleRate = buffer.sampleRate
+    const channelData = buffer.getChannelData(0)
+    const silenceRegions: { start: number; end: number }[] = []
+    let silenceStart: number | null = null
+    let consecutiveSilentSamples = 0
+    const skipSamples = isMobileDevice ? 20 : 10
+
+    for (let i = 0; i < channelData.length; i += skipSamples) {
+      if (i % (sampleRate * (isMobileDevice ? 2 : 5)) === 0) {
+        await sleep(0)
+        setProcessingProgress(20 + Math.floor((i / channelData.length) * 10))
+      }
+      const amplitude = Math.abs(channelData[i])
+      if (amplitude < threshold) {
+        if (silenceStart === null) silenceStart = i
+        consecutiveSilentSamples++
+      } else {
+        if (silenceStart !== null && (consecutiveSilentSamples * skipSamples) / sampleRate >= minSilenceDur) {
+          silenceRegions.push({ start: silenceStart / sampleRate, end: i / sampleRate })
+        }
+        silenceStart = null
+        consecutiveSilentSamples = 0
+      }
+    }
+    if (silenceStart !== null && (consecutiveSilentSamples * skipSamples) / sampleRate >= minSilenceDur) {
+      silenceRegions.push({ start: silenceStart / sampleRate, end: channelData.length / sampleRate })
+    }
+    return silenceRegions
+  }
+
+  const analyzeAudioForLimits = async (buffer: AudioBuffer, minSpacing: number) => {
+    setProcessingStep("Analyzing audio for limits...")
+    const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
+    const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+    const audioContentDuration = buffer.duration - totalSilenceDuration
+    const minRequiredSpacing = silenceRegions.length > 0 ? silenceRegions.length * minSpacing : 0
+    const minPossibleDuration = Math.max(1, Math.ceil((audioContentDuration + minRequiredSpacing) / 60))
+    const maxPossibleDuration = isMobileDevice ? 60 : 120
+    setDurationLimits({ min: minPossibleDuration, max: maxPossibleDuration })
+    setAudioAnalysis({
+      totalSilence: totalSilenceDuration,
+      contentDuration: audioContentDuration,
+      silenceRegions: silenceRegions.length,
+    })
+    if (targetDuration < minPossibleDuration) setTargetDuration(minPossibleDuration)
+    else if (targetDuration > maxPossibleDuration) setTargetDuration(maxPossibleDuration)
+    setProcessingStep("Analysis complete.")
+  }
+
+  const loadAudioFile = useCallback(
+    async (fileToLoad: File) => {
+      const currentAudioContext = audioContextRef.current
+      if (!currentAudioContext) {
+        setStatus({ message: "Audio context not initialized.", type: "error" })
+        throw new Error("AudioContext not initialized")
+      }
+      let attempts = 0
+      const maxAttempts = 3
+      while (currentAudioContext.state !== "running" && attempts < maxAttempts) {
+        attempts++
+        if (currentAudioContext.state === "suspended") {
+          try {
+            await currentAudioContext.resume()
+            if (currentAudioContext.state !== "running") await sleep(50 * attempts)
+          } catch (err) {
+            break
+          }
+        } else if (currentAudioContext.state === "closed") {
+          setStatus({ message: "Audio system closed.", type: "error" })
+          throw new Error("AudioContext closed")
+        }
+        if (currentAudioContext.state !== "running" && currentAudioContext.state !== "closed" && attempts < maxAttempts)
+          await sleep(100 * attempts)
+      }
+      if (currentAudioContext.state !== "running") {
+        setStatus({ message: "Failed to start audio system.", type: "error" })
+        throw new Error(`AudioContext not running: ${currentAudioContext.state}`)
+      }
+      setProcessingStep("Reading file data...")
+      setProcessingProgress(10)
+      const arrayBuffer = await fileToLoad.arrayBuffer()
+      setProcessingStep("Decoding audio data...")
+      setProcessingProgress(50)
+      try {
+        const decodePromise = currentAudioContext.decodeAudioData(arrayBuffer.slice(0))
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Audio decoding timeout (30s)")), 30000),
+        )
+        const buffer = await Promise.race([decodePromise, timeoutPromise])
+        setProcessingStep("Analyzing audio...")
+        setProcessingProgress(80)
+        await sleep(50)
+        setOriginalBuffer(buffer)
+        setProcessingStep("Creating audio player...")
+        setProcessingProgress(95)
+        if (originalUrl) URL.revokeObjectURL(originalUrl)
+        const blob = new Blob([fileToLoad], { type: fileToLoad.type })
+        const url = URL.createObjectURL(blob)
+        setOriginalUrl(url)
+        setProcessingProgress(100)
+        setProcessingStep("Load complete!")
+        setStatus({
+          message: `Audio loaded. Duration: ${formatDuration(buffer.duration)}.`,
+          type: "success",
+        })
+      } catch (decodeError) {
+        setStatus({
+          message: `Error decoding: ${decodeError instanceof Error ? decodeError.message : "Unknown"}`,
+          type: "error",
+        })
+        throw decodeError
+      }
+    },
+    [originalUrl, isMobileDevice],
+  )
+
+  useEffect(() => {
+    if (originalBuffer) analyzeAudioForLimits(originalBuffer, minSpacingDuration)
+  }, [originalBuffer, silenceThreshold, minSilenceDuration, minSpacingDuration])
+
+  const processAudio = async () => {
+    const currentAudioContext = audioContextRef.current
+    if (!originalBuffer || !currentAudioContext) {
+      setStatus({ message: "Original audio or audio system not ready.", type: "error" })
+      return
+    }
+    setIsProcessing(true)
+    setProcessingProgress(0)
+    setProcessingStep("Starting processing...")
+    if (currentAudioContext.state === "suspended") {
+      try {
+        await currentAudioContext.resume()
+        if (currentAudioContext.state !== "running") throw new Error("Failed to resume for processing.")
+      } catch (err) {
+        setStatus({ message: `Audio system error: ${err instanceof Error ? err.message : "Unknown"}`, type: "error" })
+        setIsProcessing(false)
+        return
+      }
+    } else if (currentAudioContext.state === "closed") {
+      setStatus({ message: "Audio system closed.", type: "error" })
+      setIsProcessing(false)
+      return
+    }
+    if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
+    processingTimeoutRef.current = setTimeout(
+      () => {
+        setIsProcessing(false)
+        setStatus({ message: "Processing timed out.", type: "error" })
+      },
+      isMobileDevice ? 120000 : 600000,
+    )
+
+    try {
+      setStatus({ message: "Processing audio...", type: "info" })
+      const targetDurationSeconds = targetDuration * 60
+      setProcessingStep("Detecting silence regions (step 1/4)...")
+      setProcessingProgress(10)
+      await sleep(10)
+      const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
+      setProcessingStep("Calculating adjustments (step 2/4)...")
+      setProcessingProgress(30)
+      await sleep(10)
+      const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+      const audioContentDuration = originalBuffer.duration - totalSilenceDuration
+      const availableSilenceDuration = Math.max(
+        targetDurationSeconds - audioContentDuration,
+        silenceRegions.length * minSpacingDuration,
+      )
+      const scaleFactor = totalSilenceDuration > 0 ? availableSilenceDuration / totalSilenceDuration : 1
+      setProcessingStep("Rebuilding audio (step 3/4)...")
+      setProcessingProgress(50)
+      await sleep(10)
+
+      const processedAudioBuffer = await rebuildAudioWithScaledPauses(
+        originalBuffer,
+        silenceRegions,
+        scaleFactor,
+        minSpacingDuration,
+        preserveNaturalPacing,
+        availableSilenceDuration,
+        (p) => setProcessingProgress(50 + Math.floor(p * 0.4)),
+      )
+      setPausesAdjusted(silenceRegions.length)
+      setProcessingStep("Creating download file (step 4/4)...")
+      setProcessingProgress(90)
+      await sleep(10)
+      const wavBlob = await bufferToWav(processedAudioBuffer, compatibilityMode === "high", (p) =>
+        setProcessingProgress(90 + Math.floor(p * 0.1)),
+      )
+      if (processedUrl) URL.revokeObjectURL(processedUrl)
+      const url = URL.createObjectURL(wavBlob)
+      setProcessedUrl(url)
+      setActualDuration(processedAudioBuffer.duration)
+      setProcessedBufferState(processedAudioBuffer)
+      setProcessingProgress(100)
+      setProcessingStep("Complete!")
+      setStatus({ message: "Audio processing completed successfully!", type: "success" })
+      setIsProcessingComplete(true)
+    } catch (error) {
+      console.error("Error during audio processing:", error)
+      setStatus({ message: `Processing error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
+    } finally {
+      setIsProcessing(false)
+      if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
+      if (currentAudioContext && currentAudioContext.state === "running") {
+        currentAudioContext.suspend().catch((err) => console.warn("Error suspending AudioContext post-process:", err))
+      }
+    }
+  }
+
+  const rebuildAudioWithScaledPauses = useCallback(
+    async (
+      buffer: AudioBuffer,
+      regions: { start: number; end: number }[],
+      scaleFactorVal: number,
+      minSpacingVal: number,
+      preservePacing: boolean,
+      targetTotalSilence: number,
+      onProgress: (progress: number) => void,
+    ): Promise<AudioBuffer> => {
+      const currentAudioContext = audioContextRef.current
+      if (!currentAudioContext) throw new Error("Audio context not available for rebuild")
+      onProgress(0)
+      const sampleRate = buffer.sampleRate
+      const numberOfChannels = buffer.numberOfChannels
+      let dynamicScale = scaleFactorVal
+      if (!preservePacing && regions.length > 0) {
+        const currentTotalSilence = regions.reduce((sum, r) => sum + (r.end - r.start), 0)
+        dynamicScale = currentTotalSilence > 0 ? targetTotalSilence / currentTotalSilence : 1
+        if (!isFinite(dynamicScale) || dynamicScale <= 0) dynamicScale = 1
+      }
+      const processedRegions = regions.map((region) => {
+        const duration = region.end - region.start
+        const newDuration = preservePacing
+          ? Math.max(duration * dynamicScale, minSpacingVal)
+          : regions.length > 0
+            ? Math.max(minSpacingVal, targetTotalSilence / regions.length)
+            : minSpacingVal
+        return { ...region, newDuration }
+      })
+      const audioContentDur = buffer.duration - regions.reduce((sum, r) => sum + (r.end - r.start), 0)
+      const newSilenceDur = processedRegions.reduce((sum, r) => sum + r.newDuration, 0)
+      const newTotalDur = audioContentDur + newSilenceDur
+      if (newTotalDur <= 0) throw new Error("Calculated new total duration is zero or negative.")
+      if (isMobileDevice && newTotalDur > 45 * 60) {
+        console.warn(`Mobile device: Output duration ${formatDuration(newTotalDur)} may cause issues.`)
+        setMemoryWarning(true)
+      }
+      let newBuffer: AudioBuffer
+      try {
+        newBuffer = currentAudioContext.createBuffer(
+          numberOfChannels,
+          Math.max(1, Math.floor(newTotalDur * sampleRate)),
+          sampleRate,
+        )
+      } catch (e) {
+        forceGarbageCollection()
+        throw new Error(
+          `Failed to create output buffer (duration: ${newTotalDur.toFixed(2)}s). Memory limit likely exceeded. Try a shorter target duration.`,
+        )
+      }
+      onProgress(10)
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        const originalData = buffer.getChannelData(channel)
+        const newData = newBuffer.getChannelData(channel)
+        let writeIndex = 0
+        let readIndex = 0
+        const totalSamples = originalData.length
+        if (regions.length > 0 && regions[0].start > 0) {
+          const samplesToCopy = Math.floor(regions[0].start * sampleRate)
+          for (let i = 0; i < samplesToCopy; i++) newData[writeIndex++] = originalData[readIndex++]
+        }
+        for (let i = 0; i < regions.length; i++) {
+          if (i % (isMobileDevice ? 5 : 10) === 0) {
+            await sleep(0)
+            onProgress(10 + Math.floor((i / regions.length) * 80))
+          }
+          const region = regions[i]
+          const processedReg = processedRegions[i]
+          readIndex = Math.floor(region.end * sampleRate)
+          const newSilenceLength = Math.floor(processedReg.newDuration * sampleRate)
+          for (let j = 0; j < newSilenceLength; j++) {
+            if (writeIndex < newData.length) newData[writeIndex++] = 0
+          }
+          const nextRegionStart = i < regions.length - 1 ? Math.floor(regions[i + 1].start * sampleRate) : totalSamples
+          const segmentLength = nextRegionStart - readIndex
+          for (let j = 0; j < segmentLength; j++) {
+            if (writeIndex < newData.length && readIndex + j < totalSamples) {
+              newData[writeIndex++] = originalData[readIndex + j]
+            }
+          }
+          readIndex = nextRegionStart
+        }
+        if (readIndex < totalSamples && regions.length === 0) {
+          for (let i = readIndex; i < totalSamples; i++)
+            if (writeIndex < newData.length) newData[writeIndex++] = originalData[i]
+        }
+      }
+      onProgress(100)
+      return newBuffer
+    },
+    [isMobileDevice],
+  )
+
+  const bufferToWav = useCallback(
+    async (buffer: AudioBuffer, highCompatibility = true, onProgress: (progress: number) => void): Promise<Blob> => {
+      const currentAudioContext = audioContextRef.current
+      if (!currentAudioContext) throw new Error("Audio context not available for WAV conversion")
+      onProgress(0)
+      let targetSampleRate = highCompatibility ? 44100 : buffer.sampleRate
+      if (isMobileDevice && highCompatibility && buffer.duration > 15 * 60) {
+        targetSampleRate = Math.min(targetSampleRate, 22050)
+      }
+      let resampledBuffer = buffer
+      if (buffer.sampleRate !== targetSampleRate) {
+        const ratio = targetSampleRate / buffer.sampleRate
+        const newLength = Math.floor(buffer.length * ratio)
+        try {
+          resampledBuffer = currentAudioContext.createBuffer(buffer.numberOfChannels, newLength, targetSampleRate)
+        } catch (e) {
+          forceGarbageCollection()
+          throw new Error(
+            `Failed to create resample buffer (target SR: ${targetSampleRate}Hz). Memory limit likely exceeded.`,
+          )
+        }
+        onProgress(10)
+        for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+          const oldData = buffer.getChannelData(channel)
+          const newData = resampledBuffer.getChannelData(channel)
+          for (let i = 0; i < newLength; i++) {
+            if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
+              await sleep(0)
+              onProgress(
+                10 +
+                  Math.floor(
+                    ((channel * (newLength / buffer.numberOfChannels) + i) / (newLength * buffer.numberOfChannels)) * 40,
+                  ),
+              )
+            }
+            const oldIndex = i / ratio
+            const index = Math.floor(oldIndex)
+            const frac = oldIndex - index
+            const samp1 = oldData[Math.min(index, oldData.length - 1)]
+            const samp2 = oldData[Math.min(index + 1, oldData.length - 1)]
+            newData[i] = samp1 + (samp2 - samp1) * frac
+          }
+        }
+      } else {
+        onProgress(50)
+      }
+      const numSamples = resampledBuffer.length
+      const numberOfChannels = resampledBuffer.numberOfChannels
+      const bytesPerSample = 2
+      const dataSize = numSamples * numberOfChannels * bytesPerSample
+      const fileSize = 44 + dataSize
+      if (isMobileDevice && fileSize > 40 * 1024 * 1024) {
+        setMemoryWarning(true)
+      }
+      let finalArrayBuffer: ArrayBuffer
+      try {
+        finalArrayBuffer = new ArrayBuffer(fileSize)
+      } catch (e) {
+        throw new Error(
+          `Failed to create WAV data buffer (size: ${formatFileSize(fileSize)}). Memory limit likely exceeded.`,
+        )
+      }
+      const view = new DataView(finalArrayBuffer)
+      const writeString = (offset: number, string: string) => {
+        for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i))
+      }
+      writeString(0, "RIFF")
+      view.setUint32(4, 36 + dataSize, true)
+      writeString(8, "WAVE")
+      writeString(12, "fmt ")
+      view.setUint32(16, 16, true)
+      view.setUint16(20, 1, true)
+      view.setUint16(22, numberOfChannels, true)
+      view.setUint32(24, targetSampleRate, true)
+      view.setUint32(28, targetSampleRate * numberOfChannels * bytesPerSample, true)
+      view.setUint16(32, numberOfChannels * bytesPerSample, true)
+      view.setUint16(34, 16, true)
+      writeString(36, "data")
+      view.setUint32(40, dataSize, true)
+      let offset = 44
+      for (let i = 0; i < numSamples; i++) {
+        if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
+          await sleep(0)
+          onProgress(50 + Math.floor((i / numSamples) * 50))
+        }
+        for (let channel = 0; channel < numberOfChannels; channel++) {
+          const sample = Math.max(-1, Math.min(1, resampledBuffer.getChannelData(channel)[i]))
+          view.setInt16(offset, sample * 0x7fff, true)
+          offset += bytesPerSample
+        }
+      }
+      onProgress(100)
+      return new Blob([finalArrayBuffer], { type: "audio/wav" })
+    },
+    [isMobileDevice],
+  )
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0]
+    if (selectedFile) handleFile(selectedFile)
+    if (e.target) e.target.value = ""
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (uploadAreaRef.current) uploadAreaRef.current.classList.add("border-primary")
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
+    const files = e.dataTransfer.files
+    if (files.length > 0) handleFile(files[0])
+  }
+
+  const downloadProcessedAudio = async () => {
+    if (!processedBufferState || !file) return
+    const a = document.createElement("a")
+    a.href = processedUrl
+    a.download = `${file.name.split(".")[0]}_adjusted.wav`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
+  const formatDuration = (timeInSeconds: number) => {
+    const minutes = Math.floor(timeInSeconds / 60)
+    const seconds = Math.floor(timeInSeconds % 60)
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes"
+    const k = 1024
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${["Bytes", "KB", "MB", "GB"][i]}`
+  }
+
+  useEffect(() => {
+    if (isProcessingComplete) setIsProcessingComplete(false)
+  }, [
+    targetDuration,
+    silenceThreshold,
+    minSilenceDuration,
+    minSpacingDuration,
+    preserveNaturalPacing,
+    isProcessingComplete,
+  ])
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | undefined
+    if (isProcessing) interval = setInterval(monitorMemory, 3000)
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isProcessing])
+
+  // == Effects and Handlers for Labs ==
+  useEffect(() => {
+    labsAudioRef.current = new Audio()
+    labsAudioRef.current.preload = "none"
+    labsAudioRef.current.volume = 0.7
+    if (labsAudioRef.current) {
+      labsAudioRef.current.onerror = (e) => console.warn("Labs Audio error:", e)
+    }
+    return () => {
+      if (labsAudioRef.current) {
+        labsAudioRef.current.pause()
+        labsAudioRef.current.src = ""
+        labsAudioRef.current = null
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+        mediaRecorderRef.current.stop()
+      }
+    }
+  }, [])
+
+  const playLabsSoundOld = async (src: string) => {
+    try {
+      // Find the sound cue by src
+      const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.src === src)
+
+      if (soundCue && soundCue.src.startsWith("synthetic:")) {
         // Generate and play synthetic sound
         await generateSyntheticSound(soundCue)
 
@@ -245,12 +1131,11 @@ const playLabsSound = useCallback(
       } else {
         // Handle actual audio files
         if (labsAudioRef.current) {
-          labsAudioRef.current.src = soundCue.src
-          labsAudioRef.current.volume = volume / 100
+          labsAudioRef.current.src = src
           await labsAudioRef.current.play().catch((e) => console.error("Error playing audio:", e))
           toast({
             title: "Playing Sound",
-            description: `Now playing: ${soundCue.name || "Audio file"}`,
+            description: `Now playing: ${soundCue?.name || "Audio file"}`,
             variant: "default",
           })
         } else {
@@ -265,1055 +1150,146 @@ const playLabsSound = useCallback(
         variant: "destructive",
       })
     }
-  },
-  [volume],
-)
-
-const startPlayback = useCallback(() => {
-  if (timeline.length === 0) return
-
-  setIsPlaying(true)
-  currentItemStartTimeRef.current = currentPlaybackTime // Store start time of current item
-
-  playbackIntervalRef.current = setInterval(() => {
-    setCurrentPlaybackTime((prevTime) => {
-      const newTime = prevTime + 0.1 // Increment by 100ms
-
-      let accumulatedDuration = 0
-      let foundActiveItem = false
-      for (let i = 0; i < timeline.length; i++) {
-        const item = timeline[i]
-        if (newTime >= accumulatedDuration && newTime < accumulatedDuration + item.duration) {
-          if (activeItemIndex !== i) {
-            setActiveItemIndex(i)
-            // Play sound cue when it becomes active
-            if (item.type === "sound") {
-              playLabsSound(item.content.src) // Pass src string to playLabsSound
-            }
-          }
-          foundActiveItem = true
-          break
-        }
-        accumulatedDuration += item.duration
-      }
-
-      if (!foundActiveItem) {
-        setActiveItemIndex(null)
-      }
-
-      if (newTime >= totalDuration) {
-        // End of timeline
-        clearInterval(playbackIntervalRef.current!)
-        setIsPlaying(false)
-        setCurrentPlaybackTime(0)
-        setActiveItemIndex(null)
-        return 0
-      }
-      return newTime
-    })
-  }, 100) // Update every 100ms
-}, [timeline, currentPlaybackTime, totalDuration, activeItemIndex, playLabsSound])
-
-const pausePlayback = useCallback(() => {
-  if (playbackIntervalRef.current) {
-    clearInterval(playbackIntervalRef.current)
-    playbackIntervalRef.current = null
-  }
-  setIsPlaying(false)
-}, [])
-
-const resetPlayback = useCallback(() => {
-  pausePlayback()
-  setCurrentPlaybackTime(0)
-  setActiveItemIndex(null)
-}, [pausePlayback])
-
-useEffect(() => {
-  // Cleanup interval on component unmount
-  return () => {
-    if (playbackIntervalRef.current) {
-      clearInterval(playbackIntervalRef.current)
-    }
-  }
-}, [])
-
-// Update audio volume if audioRef exists
-useEffect(() => {
-  if (audioRef.current) {
-    audioRef.current.volume = volume / 100
-  }
-}, [volume])
-
-const formatTime = (seconds: number) => {
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = Math.floor(seconds % 60)
-  return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`
-}
-
-const handleSaveTimeline = () => {
-  // Placeholder for save functionality
-  console.log("Saving timeline:", timeline)
-  alert("Save functionality not yet implemented.")
-}
-
-const handleLoadTimeline = () => {
-  // Placeholder for load functionality
-  console.log("Loading timeline...")
-  alert("Load functionality not yet implemented.")
-}
-
-const bufferToWavOld = async (buffer: AudioBuffer): Promise<Blob> => {
-  const numberOfChannels = buffer.numberOfChannels
-  const numSamples = buffer.length
-  const sampleRate = buffer.sampleRate
-  const bytesPerSample = 2 // Assuming 16-bit PCM
-  const blockAlign = numberOfChannels * bytesPerSample
-  const byteRate = sampleRate * blockAlign
-  const dataSize = numSamples * blockAlign
-  const fileSize = 44 + dataSize
-
-  const arrayBuffer = new ArrayBuffer(fileSize)
-  const dataView = new DataView(arrayBuffer)
-
-  // RIFF identifier
-  dataView.setUint32(0, 0x52494646, false) // "RIFF"
-  // File size
-  dataView.setUint32(4, fileSize - 8, true)
-  // RIFF type
-  dataView.setUint32(8, 0x57415645, false) // "WAVE"
-  // Format chunk identifier
-  dataView.setUint32(12, 0x666d7420, false) // "fmt "
-  // Format chunk size
-  dataView.setUint32(16, 16, true)
-  // Audio format (PCM = 1)
-  dataView.setUint16(20, 1, true)
-  // Number of channels
-  dataView.setUint16(22, numberOfChannels, true)
-  // Sample rate
-  dataView.setUint32(24, sampleRate, true)
-  // Byte rate (Sample Rate * Block Align)
-  dataView.setUint32(28, byteRate, true)
-  // Block align (Number of Channels * Bytes per Sample)
-  dataView.setUint16(32, blockAlign, true)
-  // Bits per sample
-  dataView.setUint16(34, bytesPerSample * 8, true)
-  // Data chunk identifier
-  dataView.setUint32(36, 0x64617461, false) // "data"
-  // Data chunk size
-  dataView.setUint32(40, dataSize, true)
-
-  // Write the samples to the data chunk
-  let offset = 44
-  for (let i = 0; i < numSamples; i++) {
-    for (let channel = 0; channel < numberOfChannels; channel++) {
-      const sample = buffer.getChannelData(channel)[i]
-      const amplitude = Math.max(-1, Math.min(1, sample))
-      dataView.setInt16(offset, amplitude * 0x7fff, true)
-      offset += bytesPerSample
-    }
   }
 
-  return new Blob([arrayBuffer], { type: "audio/wav" })
-}
-
-const addSyntheticToContext = (ctx: OfflineAudioContext, cue: SoundCue, start: number, duration: number) => {
-  const gainNode = ctx.createGain()
-  gainNode.gain.setValueAtTime(0.3, start) // Reduced gain for synthetic sounds
-  gainNode.connect(ctx.destination)
-
-  if (cue.src === "synthetic:sine440") {
-    const osc = ctx.createOscillator()
-    osc.type = "sine"
-    osc.frequency.setValueAtTime(440, start)
-    osc.connect(gainNode)
-    osc.start(start)
-    osc.stop(start + duration)
-  } else if (cue.src === "synthetic:triangle880") {
-    const osc = ctx.createOscillator()
-    osc.type = "triangle"
-    osc.frequency.setValueAtTime(880, start)
-    osc.connect(gainNode)
-    osc.start(start)
-    osc.stop(start + duration)
-  } else if (cue.src === "synthetic:square220") {
-    const osc = ctx.createOscillator()
-    osc.type = "square"
-    osc.frequency.setValueAtTime(220, start)
-    osc.connect(gainNode)
-    osc.start(start)
-    osc.stop(start + duration)
-  } else if (cue.src === "synthetic:sawtooth660") {
-    const osc = ctx.createOscillator()
-    osc.type = "sawtooth"
-    osc.frequency.setValueAtTime(660, start)
-    osc.connect(gainNode)
-    osc.start(start)
-    osc.stop(start + duration)
-  } else {
-    console.warn("Unknown synthetic sound:", cue.src)
-  }
-}
-
-const handleExportAudio = async () => {
-  setIsGeneratingAudio(true)
-  setGenerationProgress(0)
-  setGenerationStep("Initializing...")
-
-  try {
-    const ctx = new OfflineAudioContext({
-      numberOfChannels: 1,
-      sampleRate: 44100,
-      length: 44100 * labsTotalDuration,
-    })
-
-    let currentTime = 0
-    for (const event of timelineEvents) {
-      if (event.type === "instruction_sound" && event.soundCueId) {
-        const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
-        if (soundCue) {
-          setGenerationStep(`Adding sound: ${soundCue.name}`)
-          setGenerationProgress(50)
-          if (soundCue.src.startsWith("synthetic:")) {
-            addSyntheticToContext(ctx, soundCue, currentTime, 5) // Synthetic sounds are 5 seconds long
-          } else {
-            // Load and play audio file
-            const response = await fetch(soundCue.src)
-            const arrayBuffer = await response.arrayBuffer()
-            const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
-            const source = ctx.createBufferSource()
-            source.buffer = audioBuffer
-            source.connect(ctx.destination)
-            source.start(currentTime)
-          }
-        }
-      }
-      currentTime += 5 // Assuming 5 seconds for each sound cue
-    }
-
-    setGenerationStep("Rendering audio...")
-    setGenerationProgress(90)
-    const rendered = await ctx.startRendering()
-    const wavBlob = await bufferToWav(rendered, true, (p) => setGenerationProgress(90 + Math.floor(p * 0.1)))
-    const url = URL.createObjectURL(wavBlob)
-    setGeneratedAudioUrl(url)
-
-    // Clean up
-    setIsGeneratingAudio(false)
-    setGenerationProgress(100)
-    setGenerationStep("Export Complete")
-
-    toast({ title: "Export Complete", description: "Timeline audio exported." })
-  } catch (error) {
-    console.error("Audio export failed:", error)
-    toast({
-      title: "Audio Export Failed",
-      description: `Could not export audio. Error: ${error instanceof Error ? error.message : "Unknown"}`,
-      variant: "destructive",
-    })
-  } finally {
-    setIsGeneratingAudio(false)
-  }
-}
-
-// == Effects for Length Adjuster ==
-useEffect(() => {
-  setIsMobileDevice(isMobile())
-  if (typeof navigator !== "undefined" && (navigator as any).deviceMemory) {
-    const deviceMemory = (navigator as any).deviceMemory
-    if (deviceMemory < 4) {
-      console.warn("Device memory less than 4GB, enabling memory warnings.")
-      setMemoryWarning(true)
-    }
-  }
-}, [])
-
-useEffect(() => {
-  if (typeof window === "undefined") return
-
-  if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-    audioContextRef.current.close().catch((err) => console.warn("Error closing previous AudioContext:", err))
-  }
-
-  const AudioContextAPI = window.AudioContext || (window as any).webkitAudioContext
-  if (AudioContextAPI) {
-    const sampleRate = isMobileDevice ? 22050 : 44100
-    try {
-      const ctx = new AudioContextAPI({ sampleRate })
-      audioContextRef.current = ctx
-      if (ctx.state === "suspended") {
-        const resumeContextOnInteraction = async () => {
-          if (audioContextRef.current && audioContextRef.current.state === "suspended") {
-            try {
-              await audioContextRef.current.resume()
-            } catch (e) {
-              console.error("Error resuming AudioContext on user interaction:", e)
-            }
-          }
-          document.removeEventListener("click", resumeContextOnInteraction, true)
-          document.removeEventListener("touchend", resumeContextOnInteraction, true)
-          document.removeEventListener("keydown", resumeContextOnInteraction, true)
-        }
-        document.addEventListener("click", resumeContextOnInteraction, { once: true, capture: true })
-        document.addEventListener("touchend", resumeContextOnInteraction, { once: true, capture: true })
-        document.addEventListener("keydown", resumeContextOnInteraction, { once: true, capture: true })
-      }
-    } catch (error) {
-      setStatus({
-        message: `Error initializing audio system: ${error instanceof Error ? error.message : "Unknown error"}`,
-        type: "error",
+  const handleAddInstructionSoundEvent = () => {
+    let instructionTextToAdd = ""
+    if (selectedLibraryInstruction) instructionTextToAdd = selectedLibraryInstruction.text
+    else if (customInstructionText.trim() !== "") instructionTextToAdd = customInstructionText.trim()
+    else {
+      toast({
+        title: "Missing Instruction",
+        description: "Please select or enter an instruction.",
+        variant: "destructive",
       })
-    }
-  } else {
-    setStatus({ message: "Your browser does not support the required Audio API.", type: "error" })
-  }
-  return () => {
-    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-      audioContextRef.current
-        .close()
-        .catch((err) => console.warn("Error closing AudioContext in main useEffect cleanup:", err))
-      audioContextRef.current = null
-    }
-  }
-}, [isMobileDevice])
-
-const cleanupMemory = useCallback(() => {
-  setOriginalBuffer(null)
-  setProcessedBufferState(null)
-  if (originalUrl) {
-    URL.revokeObjectURL(originalUrl)
-    setOriginalUrl("")
-  }
-  if (processedUrl) {
-    URL.revokeObjectURL(processedUrl)
-    setProcessedUrl("")
-  }
-  forceGarbageCollection()
-  if (isMobileDevice) setTimeout(() => forceGarbageCollection(), 100)
-}, [originalUrl, processedUrl, isMobileDevice])
-
-const validateFileSize = (fileToValidate: File): boolean => {
-  const maxSize = isMobileDevice ? 50 * 1024 * 1024 : 500 * 1024 * 1024
-  if (fileToValidate.size > maxSize) {
-    setStatus({ message: `File too large. Max ${isMobileDevice ? "50MB" : "500MB"}.`, type: "error" })
-    return false
-  }
-  if (
-    (isMobileDevice && fileToValidate.size > 20 * 1024 * 1024) ||
-    (!isMobileDevice && fileToValidate.size > 150 * 1024 * 1024)
-  ) {
-    setMemoryWarning(true)
-  } else {
-    setMemoryWarning(false)
-  }
-  return true
-}
-
-const handleFile = async (selectedFile: File) => {
-  if (!selectedFile || !selectedFile.type) {
-    setStatus({ message: "Invalid file selected.", type: "error" })
-    return
-  }
-
-  if (!selectedFile.type.startsWith("audio/") && !selectedFile.name.toLowerCase().endsWith(".m4a")) {
-    setStatus({ message: "Please select a valid audio file.", type: "error" })
-    return
-  }
-  if (!validateFileSize(selectedFile)) return
-  if (!audioContextRef.current || audioContextRef.current.state === "closed") {
-    setStatus({ message: "Audio system not ready. Please refresh.", type: "error" })
-    return
-  }
-  cleanupMemory()
-  await sleep(100)
-  setFile(selectedFile)
-  setProcessingProgress(0)
-  setProcessingStep("Initializing...")
-  setDurationLimits(null)
-  setAudioAnalysis(null)
-  setProcessedUrl("")
-  setProcessedBufferState(null)
-  setActualDuration(null)
-  setIsProcessingComplete(false)
-  setStatus(null)
-  try {
-    setStatus({ message: "Loading audio file...", type: "info" })
-    await loadAudioFile(selectedFile)
-  } catch (error) {
-    setStatus({
-      message: `Error loading audio: ${error instanceof Error ? error.message : "Unknown"}`,
-      type: "error",
-    })
-    setOriginalBuffer(null)
-  }
-}
-
-const detectSilenceRegions = async (
-  buffer: AudioBuffer,
-  threshold: number,
-  minSilenceDur: number,
-): Promise<{ start: number; end: number }[]> => {
-  const sampleRate = buffer.sampleRate
-  const channelData = buffer.getChannelData(0)
-  const silenceRegions: { start: number; end: number }[] = []
-  let silenceStart: number | null = null
-  let consecutiveSilentSamples = 0
-  const skipSamples = isMobileDevice ? 20 : 10
-
-  for (let i = 0; i < channelData.length; i += skipSamples) {
-    if (i % (sampleRate * (isMobileDevice ? 2 : 5)) === 0) {
-      await sleep(0)
-      setProcessingProgress(20 + Math.floor((i / channelData.length) * 10))
-    }
-    const amplitude = Math.abs(channelData[i])
-    if (amplitude < threshold) {
-      if (silenceStart === null) silenceStart = i
-      consecutiveSilentSamples++
-    } else {
-      if (silenceStart !== null && (consecutiveSilentSamples * skipSamples) / sampleRate >= minSilenceDur) {
-        silenceRegions.push({ start: silenceStart / sampleRate, end: i / sampleRate })
-      }
-      silenceStart = null
-      consecutiveSilentSamples = 0
-    }
-  }
-  if (silenceStart !== null && (consecutiveSilentSamples * skipSamples) / sampleRate >= minSilenceDur) {
-    silenceRegions.push({ start: silenceStart / sampleRate, end: channelData.length / sampleRate })
-  }
-  return silenceRegions
-}
-
-const analyzeAudioForLimits = async (buffer: AudioBuffer, minSpacing: number) => {
-  setProcessingStep("Analyzing audio for limits...")
-  const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
-  const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
-  const audioContentDuration = buffer.duration - totalSilenceDuration
-  const minRequiredSpacing = silenceRegions.length > 0 ? silenceRegions.length * minSpacing : 0
-  const minPossibleDuration = Math.max(1, Math.ceil((audioContentDuration + minRequiredSpacing) / 60))
-  const maxPossibleDuration = isMobileDevice ? 60 : 120
-  setDurationLimits({ min: minPossibleDuration, max: maxPossibleDuration })
-  setAudioAnalysis({
-    totalSilence: totalSilenceDuration,
-    contentDuration: audioContentDuration,
-    silenceRegions: silenceRegions.length,
-  })
-  if (targetDuration < minPossibleDuration) setTargetDuration(minPossibleDuration)
-  else if (targetDuration > maxPossibleDuration) setTargetDuration(maxPossibleDuration)
-  setProcessingStep("Analysis complete.")
-}
-
-const loadAudioFile = useCallback(
-  async (fileToLoad: File) => {
-    const currentAudioContext = audioContextRef.current
-    if (!currentAudioContext) {
-      setStatus({ message: "Audio context not initialized.", type: "error" })
-      throw new Error("AudioContext not initialized")
-    }
-    let attempts = 0
-    const maxAttempts = 3
-    while (currentAudioContext.state !== "running" && attempts < maxAttempts) {
-      attempts++
-      if (currentAudioContext.state === "suspended") {
-        try {
-          await currentAudioContext.resume()
-          if (currentAudioContext.state !== "running") await sleep(50 * attempts)
-        } catch (err) {
-          break
-        }
-      } else if (currentAudioContext.state === "closed") {
-        setStatus({ message: "Audio system closed.", type: "error" })
-        throw new Error("AudioContext closed")
-      }
-      if (currentAudioContext.state !== "running" && currentAudioContext.state !== "closed" && attempts < maxAttempts)
-        await sleep(100 * attempts)
-    }
-    if (currentAudioContext.state !== "running") {
-      setStatus({ message: "Failed to start audio system.", type: "error" })
-      throw new Error(`AudioContext not running: ${currentAudioContext.state}`)
-    }
-    setProcessingStep("Reading file data...")
-    setProcessingProgress(10)
-    const arrayBuffer = await fileToLoad.arrayBuffer()
-    setProcessingStep("Decoding audio data...")
-    setProcessingProgress(50)
-    try {
-      const decodePromise = currentAudioContext.decodeAudioData(arrayBuffer.slice(0))
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Audio decoding timeout (30s)")), 30000),
-      )
-      const buffer = await Promise.race([decodePromise, timeoutPromise])
-      setProcessingStep("Analyzing audio...")
-      setProcessingProgress(80)
-      await sleep(50)
-      setOriginalBuffer(buffer)
-      setProcessingStep("Creating audio player...")
-      setProcessingProgress(95)
-      if (originalUrl) URL.revokeObjectURL(originalUrl)
-      const blob = new Blob([fileToLoad], { type: fileToLoad.type })
-      const url = URL.createObjectURL(blob)
-      setOriginalUrl(url)
-      setProcessingProgress(100)
-      setProcessingStep("Load complete!")
-      setStatus({
-        message: `Audio loaded. Duration: ${formatDuration(buffer.duration)}.`,
-        type: "success",
-      })
-    } catch (decodeError) {
-      setStatus({
-        message: `Error decoding: ${decodeError instanceof Error ? decodeError.message : "Unknown"}`,
-        type: "error",
-      })
-      throw decodeError
-    }
-  },
-  [originalUrl, isMobileDevice],
-)
-
-useEffect(() => {
-  if (originalBuffer) analyzeAudioForLimits(originalBuffer, minSpacingDuration)
-}, [originalBuffer, silenceThreshold, minSilenceDuration, minSpacingDuration])
-
-const processAudio = async () => {
-  const currentAudioContext = audioContextRef.current
-  if (!originalBuffer || !currentAudioContext) {
-    setStatus({ message: "Original audio or audio system not ready.", type: "error" })
-    return
-  }
-  setIsProcessing(true)
-  setProcessingProgress(0)
-  setProcessingStep("Starting processing...")
-  if (currentAudioContext.state === "suspended") {
-    try {
-      await currentAudioContext.resume()
-      if (currentAudioContext.state !== "running") throw new Error("Failed to resume for processing.")
-    } catch (err) {
-      setStatus({ message: `Audio system error: ${err instanceof Error ? err.message : "Unknown"}`, type: "error" })
-      setIsProcessing(false)
       return
     }
-  } else if (currentAudioContext.state === "closed") {
-    setStatus({ message: "Audio system closed.", type: "error" })
-    setIsProcessing(false)
-    return
-  }
-  if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
-  processingTimeoutRef.current = setTimeout(
-    () => {
-      setIsProcessing(false)
-      setStatus({ message: "Processing timed out.", type: "error" })
-    },
-    isMobileDevice ? 120000 : 600000,
-  )
-
-  try {
-    setStatus({ message: "Processing audio...", type: "info" })
-    const targetDurationSeconds = targetDuration * 60
-    setProcessingStep("Detecting silence regions (step 1/4)...")
-    setProcessingProgress(10)
-    await sleep(10)
-    const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration) // Corrected: Removed duplicate 'const'
-    setProcessingStep("Calculating adjustments (step 2/4)...")
-    setProcessingProgress(30)
-    await sleep(10)
-    const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
-    const audioContentDuration = originalBuffer.duration - totalSilenceDuration
-    const availableSilenceDuration = Math.max(
-      targetDurationSeconds - audioContentDuration,
-      silenceRegions.length * minSpacingDuration,
-    )
-    const scaleFactor = totalSilenceDuration > 0 ? availableSilenceDuration / totalSilenceDuration : 1
-    setProcessingStep("Rebuilding audio (step 3/4)...")
-    setProcessingProgress(50)
-    await sleep(10)
-
-    const processedAudioBuffer = await rebuildAudioWithScaledPauses(
-      originalBuffer,
-      silenceRegions,
-      scaleFactor,
-      minSpacingDuration,
-      preserveNaturalPacing,
-      availableSilenceDuration,
-      (p) => setProcessingProgress(50 + Math.floor(p * 0.4)),
-    )
-    setPausesAdjusted(silenceRegions.length)
-    setProcessingStep("Creating download file (step 4/4)...")
-    setProcessingProgress(90)
-    await sleep(10)
-    const wavBlob = await bufferToWav(processedAudioBuffer, compatibilityMode === "high", (p) =>
-      setProcessingProgress(90 + Math.floor(p * 0.1)),
-    )
-    if (processedUrl) URL.revokeObjectURL(processedUrl)
-    const url = URL.createObjectURL(wavBlob)
-    setProcessedUrl(url)
-    setActualDuration(processedAudioBuffer.duration)
-    setProcessedBufferState(processedAudioBuffer)
-    setProcessingProgress(100)
-    setProcessingStep("Complete!")
-    setStatus({ message: "Audio processing completed successfully!", type: "success" })
-    setIsProcessingComplete(true)
-  } catch (error) {
-    console.error("Error during audio processing:", error)
-    setStatus({ message: `Processing error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
-  } finally {
-    setIsProcessing(false)
-    if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
-    if (currentAudioContext && currentAudioContext.state === "running") {
-      currentAudioContext.suspend().catch((err) => console.warn("Error suspending AudioContext post-process:", err))
+    if (!selectedSoundCue) {
+      toast({ title: "Missing Sound Cue", description: "Please select a sound cue.", variant: "destructive" })
+      return
     }
-  }
-}
-
-const rebuildAudioWithScaledPauses = useCallback(
-  async (
-    buffer: AudioBuffer,
-    regions: { start: number; end: number }[],
-    scaleFactorVal: number,
-    minSpacingVal: number,
-    preservePacing: boolean,
-    targetTotalSilence: number,
-    onProgress: (progress: number) => void,
-  ): Promise<AudioBuffer> => {
-    const currentAudioContext = audioContextRef.current
-    if (!currentAudioContext) throw new Error("Audio context not available for rebuild")
-    onProgress(0)
-    const sampleRate = buffer.sampleRate
-    const numberOfChannels = buffer.numberOfChannels
-    let dynamicScale = scaleFactorVal
-    if (!preservePacing && regions.length > 0) {
-      const currentTotalSilence = regions.reduce((sum, r) => sum + (r.end - r.start), 0)
-      dynamicScale = currentTotalSilence > 0 ? targetTotalSilence / currentTotalSilence : 1
-      if (!isFinite(dynamicScale) || dynamicScale <= 0) dynamicScale = 1
+    const newEvent: TimelineEvent = {
+      id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      type: "instruction_sound",
+      startTime: 0,
+      instructionText: instructionTextToAdd,
+      soundCueId: selectedSoundCue.id,
     }
-    const processedRegions = regions.map((region) => {
-      const duration = region.end - region.start
-      const newDuration = preservePacing
-        ? Math.max(duration * dynamicScale, minSpacingVal)
-        : regions.length > 0
-          ? Math.max(minSpacingVal, targetTotalSilence / regions.length)
-          : minSpacingVal
-      return { ...region, newDuration }
+    setTimelineEvents((prev) => [...prev, newEvent].sort((a, b) => a.startTime - b.startTime))
+    setSelectedLibraryInstruction(null)
+    setCustomInstructionText("")
+    toast({
+      title: "Event Added",
+      description: `"${instructionTextToAdd.substring(0, 30)}..." with ${selectedSoundCue.name} added.`,
     })
-    const audioContentDur = buffer.duration - regions.reduce((sum, r) => sum + (r.end - r.start), 0)
-    const newSilenceDur = processedRegions.reduce((sum, r) => sum + r.newDuration, 0)
-    const newTotalDur = audioContentDur + newSilenceDur
-    if (newTotalDur <= 0) throw new Error("Calculated new total duration is zero or negative.")
-    if (isMobileDevice && newTotalDur > 45 * 60) {
-      console.warn(`Mobile device: Output duration ${formatDuration(newTotalDur)} may cause issues.`)
-      setMemoryWarning(true)
-    }
-    let newBuffer: AudioBuffer
-    try {
-      newBuffer = currentAudioContext.createBuffer(
-        numberOfChannels,
-        Math.max(1, Math.floor(newTotalDur * sampleRate)),
-        sampleRate,
-      )
-    } catch (e) {
-      forceGarbageCollection()
-      throw new Error(
-        `Failed to create output buffer (duration: ${newTotalDur.toFixed(2)}s). Memory limit likely exceeded. Try a shorter target duration.`,
-      )
-    }
-    onProgress(10)
-    for (let channel = 0; channel < numberOfChannels; channel++) {
-      const originalData = buffer.getChannelData(channel)
-      const newData = newBuffer.getChannelData(channel)
-      let writeIndex = 0
-      let readIndex = 0
-      const totalSamples = originalData.length
-      if (regions.length > 0 && regions[0].start > 0) {
-        const samplesToCopy = Math.floor(regions[0].start * sampleRate)
-        for (let i = 0; i < samplesToCopy; i++) newData[writeIndex++] = originalData[readIndex++]
-      }
-      for (let i = 0; i < regions.length; i++) {
-        if (i % (isMobileDevice ? 5 : 10) === 0) {
-          await sleep(0)
-          onProgress(10 + Math.floor((i / regions.length) * 80))
-        }
-        const region = regions[i]
-        const processedReg = processedRegions[i]
-        readIndex = Math.floor(region.end * sampleRate)
-        const newSilenceLength = Math.floor(processedReg.newDuration * sampleRate)
-        for (let j = 0; j < newSilenceLength; j++) {
-          if (writeIndex < newData.length) newData[writeIndex++] = 0
-        }
-        const nextRegionStart = i < regions.length - 1 ? Math.floor(regions[i + 1].start * sampleRate) : totalSamples
-        const segmentLength = nextRegionStart - readIndex
-        for (let j = 0; j < segmentLength; j++) {
-          if (writeIndex < newData.length && readIndex + j < totalSamples) {
-            newData[writeIndex++] = originalData[readIndex + j]
-          }
-        }
-        readIndex = nextRegionStart
-      }
-      if (readIndex < totalSamples && regions.length === 0) {
-        for (let i = readIndex; i < totalSamples; i++)
-          if (writeIndex < newData.length) newData[writeIndex++] = originalData[i]
-      }
-    }
-    onProgress(100)
-    return newBuffer
-  },
-  [isMobileDevice],
-)
+  }
 
-const bufferToWav = useCallback(
-  async (buffer: AudioBuffer, highCompatibility = true, onProgress: (progress: number) => void): Promise<Blob> => {
-    const currentAudioContext = audioContextRef.current
-    if (!currentAudioContext) throw new Error("Audio context not available for WAV conversion")
-    onProgress(0)
-    let targetSampleRate = highCompatibility ? 44100 : buffer.sampleRate
-    if (isMobileDevice && highCompatibility && buffer.duration > 15 * 60) {
-      targetSampleRate = Math.min(targetSampleRate, 22050)
-    }
-    let resampledBuffer = buffer
-    if (buffer.sampleRate !== targetSampleRate) {
-      const ratio = targetSampleRate / buffer.sampleRate
-      const newLength = Math.floor(buffer.length * ratio)
+  const startRecording = async () => {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
-        resampledBuffer = currentAudioContext.createBuffer(buffer.numberOfChannels, newLength, targetSampleRate)
-      } catch (e) {
-        forceGarbageCollection()
-        throw new Error(
-          `Failed to create resample buffer (target SR: ${targetSampleRate}Hz). Memory limit likely exceeded.`,
-        )
-      }
-      onProgress(10)
-      for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-        const oldData = buffer.getChannelData(channel)
-        const newData = resampledBuffer.getChannelData(channel)
-        for (let i = 0; i < newLength; i++) {
-          if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
-            await sleep(0)
-            onProgress(
-              10 +
-                Math.floor(
-                  ((channel * (newLength / buffer.numberOfChannels) + i) / (newLength * buffer.numberOfChannels)) * 40,
-                ),
-            )
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        mediaRecorderRef.current = new MediaRecorder(stream)
+        const blobs: Blob[] = []
+
+        mediaRecorderRef.current.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            blobs.push(event.data)
           }
-          const oldIndex = i / ratio
-          const index = Math.floor(oldIndex)
-          const frac = oldIndex - index
-          const samp1 = oldData[Math.min(index, oldData.length - 1)]
-          const samp2 = oldData[Math.min(index + 1, oldData.length - 1)]
-          newData[i] = samp1 + (samp2 - samp1) * frac
         }
+
+        mediaRecorderRef.current.onstop = () => {
+          const blob = new Blob(blobs, { type: "audio/webm" })
+          const url = URL.createObjectURL(blob)
+          setRecordedAudioUrl(url)
+          setRecordedBlobs([blob])
+        }
+
+        mediaRecorderRef.current.start()
+        setIsRecording(true)
+        setRecordedAudioUrl(null)
+        toast({ title: "Recording Started" })
+      } catch (err) {
+        toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" })
       }
     } else {
-      onProgress(50)
+      toast({ title: "Unsupported", description: "Audio recording not supported.", variant: "destructive" })
     }
-    const numSamples = resampledBuffer.length
-    const numberOfChannels = resampledBuffer.numberOfChannels
-    const bytesPerSample = 2
-    const dataSize = numSamples * numberOfChannels * bytesPerSample
-    const fileSize = 44 + dataSize
-    if (isMobileDevice && fileSize > 40 * 1024 * 1024) {
-      setMemoryWarning(true)
-    }
-    let finalArrayBuffer: ArrayBuffer
-    try {
-      finalArrayBuffer = new ArrayBuffer(fileSize)
-    } catch (e) {
-      throw new Error(
-        `Failed to create WAV data buffer (size: ${formatFileSize(fileSize)}). Memory limit likely exceeded.`,
-      )
-    }
-    const view = new DataView(finalArrayBuffer)
-    const writeString = (offset: number, string: string) => {
-      for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i))
-    }
-    writeString(0, "RIFF")
-    view.setUint32(4, 36 + dataSize, true)
-    writeString(8, "WAVE")
-    writeString(12, "fmt ")
-    view.setUint32(16, 16, true)
-    view.setUint16(20, 1, true)
-    view.setUint16(22, numberOfChannels, true)
-    view.setUint32(24, targetSampleRate, true)
-    view.setUint32(28, targetSampleRate * numberOfChannels * bytesPerSample, true)
-    view.setUint16(32, numberOfChannels * bytesPerSample, true)
-    view.setUint16(34, 16, true)
-    writeString(36, "data")
-    view.setUint32(40, dataSize, true)
-    let offset = 44
-    for (let i = 0; i < numSamples; i++) {
-      if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
-        await sleep(0)
-        onProgress(50 + Math.floor((i / numSamples) * 50))
-      }
-      for (let channel = 0; channel < numberOfChannels; channel++) {
-        const sample = Math.max(-1, Math.min(1, resampledBuffer.getChannelData(channel)[i]))
-        view.setInt16(offset, sample * 0x7fff, true)
-        offset += bytesPerSample
-      }
-    }
-    onProgress(100)
-    return new Blob([finalArrayBuffer], { type: "audio/wav" })
-  },
-  [isMobileDevice],
-)
-
-const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const selectedFile = e.target.files?.[0]
-  if (selectedFile) handleFile(selectedFile)
-  if (e.target) e.target.value = ""
-}
-
-const handleDragOver = (e: React.DragEvent) => {
-  e.preventDefault()
-  if (uploadAreaRef.current) uploadAreaRef.current.classList.add("border-primary")
-}
-
-const handleDragLeave = (e: React.DragEvent) => {
-  e.preventDefault()
-  if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
-}
-
-const handleDrop = (e: React.DragEvent) => {
-  e.preventDefault()
-  if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
-  const files = e.dataTransfer.files
-  if (files.length > 0) handleFile(files[0])
-}
-
-const downloadProcessedAudio = async () => {
-  if (!processedBufferState || !file) return
-  const a = document.createElement("a")
-  a.href = processedUrl
-  a.download = `${file.name.split(".")[0]}_adjusted.wav`
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-}
-
-const formatDuration = (timeInSeconds: number) => {
-  const minutes = Math.floor(timeInSeconds / 60)
-  const seconds = Math.floor(timeInSeconds % 60)
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`
-}
-
-const formatFileSize = (bytes: number) => {
-  if (bytes === 0) return "0 Bytes"
-  const k = 1024
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${["Bytes", "KB", "MB", "GB"][i]}`
-}
-
-useEffect(() => {
-  if (isProcessingComplete) setIsProcessingComplete(false)
-}, [
-  targetDuration,
-  silenceThreshold,
-  minSilenceDuration,
-  minSpacingDuration,
-  preserveNaturalPacing,
-  isProcessingComplete,
-])
-
-useEffect(() => {
-  let interval: NodeJS.Timeout | undefined
-  if (isProcessing) interval = setInterval(monitorMemory, 3000)
-  return () => {
-    if (interval) clearInterval(interval)
   }
-}, [isProcessing])
 
-// == Effects and Handlers for Labs ==
-useEffect(() => {
-  labsAudioRef.current = new Audio()
-  labsAudioRef.current.preload = "none"
-  labsAudioRef.current.volume = 0.7
-  if (labsAudioRef.current) {
-    labsAudioRef.current.onerror = (e) => console.warn("Labs Audio error:", e)
-  }
-  return () => {
-    if (labsAudioRef.current) {
-      labsAudioRef.current.pause()
-      labsAudioRef.current.src = ""
-      labsAudioRef.current = null
-    }
+  const stopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.stop()
-    }
-  }
-}, [])
+      setIsRecording(false)
 
-const playLabsSoundOld = async (src: string) => {
-  try {
-    // Find the sound cue by src
-    const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.src === src)
-
-    if (soundCue && soundCue.src.startsWith("synthetic:")) {
-      // Generate and play synthetic sound
-      await generateSyntheticSound(soundCue)
-
-      toast({
-        title: "Playing Sound",
-        description: `Now playing: ${soundCue.name}`,
-        variant: "default",
-      })
-    } else {
-      // Handle actual audio files
-      if (labsAudioRef.current) {
-        labsAudioRef.current.src = src
-        await labsAudioRef.current.play().catch((e) => console.error("Error playing audio:", e))
-        toast({
-          title: "Playing Sound",
-          description: `Now playing: ${soundCue?.name || "Audio file"}`,
-          variant: "default",
-        })
-      } else {
-        throw new Error("Audio player not initialized.")
+      // Stop all tracks to release microphone
+      if (mediaRecorderRef.current.stream) {
+        mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop())
       }
+
+      toast({ title: "Recording Stopped" })
     }
-  } catch (error) {
-    console.error("Labs Audio playback failed:", error)
-    toast({
-      title: "Audio Playback Failed",
-      description: `Could not play sound. Error: ${error instanceof Error ? error.message : "Unknown"}`,
-      variant: "destructive",
-    })
   }
-}
 
-const handleAddInstructionSoundEvent = () => {
-  let instructionTextToAdd = ""
-  if (selectedLibraryInstruction) instructionTextToAdd = selectedLibraryInstruction.text
-  else if (customInstructionText.trim() !== "") instructionTextToAdd = customInstructionText.trim()
-  else {
-    toast({
-      title: "Missing Instruction",
-      description: "Please select or enter an instruction.",
-      variant: "destructive",
-    })
-    return
-  }
-  if (!selectedSoundCue) {
-    toast({ title: "Missing Sound Cue", description: "Please select a sound cue.", variant: "destructive" })
-    return
-  }
-  const newEvent: TimelineEvent = {
-    id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-    type: "instruction_sound",
-    startTime: 0,
-    instructionText: instructionTextToAdd,
-    soundCueId: selectedSoundCue.id,
-  }
-  setTimelineEvents((prev) => [...prev, newEvent].sort((a, b) => a.startTime - b.startTime))
-  setSelectedLibraryInstruction(null)
-  setCustomInstructionText("")
-  toast({
-    title: "Event Added",
-    description: `"${instructionTextToAdd.substring(0, 30)}..." with ${selectedSoundCue.name} added.`,
-  })
-}
-
-const startRecording = async () => {
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      mediaRecorderRef.current = new MediaRecorder(stream)
-      const blobs: Blob[] = []
-
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          blobs.push(event.data)
+  const updateEventStartTime = (eventId: string, newTime: number) => {
+    setTimelineEvents((prev) => {
+      const updated = prev.map((event) =>
+        event.id === eventId ? { ...event, startTime: Math.max(0, Math.min(newTime, labsTotalDuration)) } : event,
+      )
+      // Simple sort by startTime, with stable sorting for events at the same time
+      return updated.sort((a, b) => {
+        if (a.startTime === b.startTime) {
+          // For events at the same time, maintain their relative order based on original array position
+          const aIndex = prev.findIndex((e) => e.id === a.id)
+          const bIndex = prev.findIndex((e) => e.id === b.id)
+          return aIndex - bIndex
         }
-      }
-
-      mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(blobs, { type: "audio/webm" })
-        const url = URL.createObjectURL(blob)
-        setRecordedAudioUrl(url)
-        setRecordedBlobs([blob])
-      }
-
-      mediaRecorderRef.current.start()
-      setIsRecording(true)
-      setRecordedAudioUrl(null)
-      toast({ title: "Recording Started" })
-    } catch (err) {
-      toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" })
-    }
-  } else {
-    toast({ title: "Unsupported", description: "Audio recording not supported.", variant: "destructive" })
-  }
-}
-
-const stopRecording = () => {
-  if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-    mediaRecorderRef.current.stop()
-    setIsRecording(false)
-
-    // Stop all tracks to release microphone
-    if (mediaRecorderRef.current.stream) {
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop())
-    }
-
-    toast({ title: "Recording Stopped" })
-  }
-}
-
-const updateEventStartTime = (eventId: string, newTime: number) => {
-  setTimelineEvents((prev) => {
-    const updated = prev.map((event) =>
-      event.id === eventId ? { ...event, startTime: Math.max(0, Math.min(newTime, labsTotalDuration)) } : event,
-    )
-    // Simple sort by startTime, with stable sorting for events at the same time
-    return updated.sort((a, b) => {
-      if (a.startTime === b.startTime) {
-        // For events at the same time, maintain their relative order based on original array position
-        const aIndex = prev.findIndex((e) => e.id === a.id)
-        const bIndex = prev.findIndex((e) => e.id === b.id)
-        return aIndex - bIndex
-      }
-      return a.startTime - b.startTime
+        return a.startTime - b.startTime
+      })
     })
-  })
-}
-
-const removeTimelineEvent = (eventId: string) => {
-  setTimelineEvents((prev) => prev.filter((event) => event.id !== eventId))
-  toast({ title: "Event Removed" })
-}
-
-const formatTimeOld = (timeInSeconds: number): string => {
-  const minutes = Math.floor(timeInSeconds / 60)
-  const seconds = Math.floor(timeInSeconds % 60)
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`
-}
-
-// Safe input handlers with validation
-const handleMeditationTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const value = e.target?.value
-  if (typeof value === "string") {
-    setMeditationTitle(value)
   }
-}
 
-const handleCustomInstructionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-  const value = e.target?.value
-  if (typeof value === "string") {
-    setCustomInstructionText(value)
-    setSelectedLibraryInstruction(null)
+  const removeTimelineEvent = (eventId: string) => {
+    setTimelineEvents((prev) => prev.filter((event) => event.id !== eventId))
+    toast({ title: "Event Removed" })
   }
-}
 
-const handleRecordingLabelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const value = e.target?.value
-  if (typeof value === "string") {
-    setRecordingLabel(value)
+  const formatTimeOld = (timeInSeconds: number): string => {
+    const minutes = Math.floor(timeInSeconds / 60)
+    const seconds = Math.floor(timeInSeconds % 60)
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`
   }
-}
 
-const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const value = e.target?.value
-  if (typeof value === "string" && !isNaN(Number(value))) {
-    setLabsTotalDuration(Math.max(60, Number(value, 10) * 60) || 60)
+  // Safe input handlers with validation
+  const handleMeditationTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target?.value
+    if (typeof value === "string") {
+      setMeditationTitle(value)
+    }
   }
-}
 
-return (
+  const handleCustomInstructionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target?.value
+    if (typeof value === "string") {
+      setCustomInstructionText(value)
+      setSelectedLibraryInstruction(null)
+    }
+  }
+
+  const handleRecordingLabelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target?.value
+    if (typeof value === "string") {
+      setRecordingLabel(value)
+    }
+  }
+
+  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target?.value
+    if (typeof value === "string" && !isNaN(Number(value))) {
+      setLabsTotalDuration(Math.max(60, Number(value, 10) * 60) || 60)
+    }
+  }
+
+  return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-0">
       <Navigation />
 
@@ -1445,6 +1421,54 @@ return (
                   <div className="text-sm text-logo-rose-600 leading-relaxed dark:text-logo-rose-300 flex flex-wrap gap-2 justify-center text-center px-px">
                     <a
                       href="https://dharmaseed.org/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="dark:text-gray-200 font-black text-logo-rose-600 px-5 py-1 border-logo-rose-600 border transition-all duration-200 ease-out hover:shadow-none hover:translate-y-px rounded-sm shadow-md"
+                    >
+                      Dharma Seed
+                    </a>
+                    <a
+                      href="https://dharmaseed.org/teacher/210/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline py-1 transition-colors transition-shadow transition-transform duration-200 ease-out dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:border-pink-600 dark:shadow-white/10 px-5 font-black font-serif border border-logo-rose-600 hover:shadow-none hover:translate-y-px rounded-sm shadow-md"
+                    >
+                      Rob Burbea's talks & retreats
+                    </a>
+                    <a
+                      href="https://tasshin.com/guided-meditations/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline py-1 transition-colors transition-shadow transition-transform duration-200 ease-out dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:border-pink-600 dark:shadow-white/10 px-5 font-black font-serif border border-logo-rose-600 hover:shadow-none hover:translate-y-px rounded-sm shadow-md"
+                    >
+                      Tasshin & friend's meditations
+                    </a>
+                    <a
+                      href="https://www.tarabrach.com/guided-meditations/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline py-1 transition-colors transition-shadow transition-transform duration-200 ease-out dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border border-logo-rose-600 hover:shadow-none hover:translate-y-px rounded-sm shadow-md"
+                    >
+                      Tara Brach's meditations
+                    </a>
+                    <a
+                      href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDaDo3?usp=drive_link"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline py-1 transition-colors transition-shadow transition-transform duration-200 ease-out dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border border-logo-rose-600 hover:shadow-none hover:translate-y-px rounded-sm shadow-md"
+                    >
+                      Toby Sola's meditations
+                    </a>
+                    <a
+                      href="https://meditofoundation.org/meditations"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block text-logo-rose-600 hover:text-logo-rose-700 no-underline py-1 transition-colors transition-shadow transition-transform duration-200 ease-out dark:text-logo-rose-400 dark:hover:text-logo-rose-300 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border border-logo-rose-600 hover:shadow-none hover:translate-y-px rounded-sm shadow-md"
+                    >
+                      Medito Foundation
+                    </a>
+                    <a
+                      href="https://www.freebuddhistaudio.com"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="dark:text-gray-200 font-black text-logo-rose-600 px-5 py-1 border-logo-rose-600 border transition-all duration-200 ease-out hover:shadow-none hover:translate-y-px rounded-sm shadow-md"
@@ -2344,91 +2368,4 @@ return (
                                     strokeWidth="4"
                                   ></circle>
                                   <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                  ></path>
-                                </svg>
-                              </div>
-                            )}
-                            <Wand2 className="mr-2 h-5 w-5" />
-                            <span>{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
-                          </div>
-                        </Button>
-
-                        <AnimatePresence>
-                          {isGeneratingAudio && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              className="space-y-3"
-                            >
-                              <div className="bg-gradient-to-r from-logo-amber-50 to-logo-rose-50 dark:from-logo-amber-950 dark:to-logo-rose-950 p-4 rounded-lg border border-logo-amber-200 dark:border-logo-amber-800">
-                                <div className="text-center mb-3">
-                                  <h4 className="text-sm font-black text-logo-amber-700 dark:text-logo-amber-300 mb-1">
-                                    Generating Audio
-                                  </h4>
-                                  <p className="text-xs text-logo-amber-600 dark:text-logo-amber-400">
-                                    {generationStep}
-                                  </p>
-                                </div>
-                                <div className="w-full bg-logo-amber-200 rounded-full h-2 mb-2 dark:bg-logo-amber-800">
-                                  <div
-                                    className="bg-gradient-to-r from-logo-amber-500 to-logo-rose-500 h-2 rounded-full transition-all duration-300"
-                                    style={{ width: `${generationProgress}%` }}
-                                  ></div>
-                                </div>
-                                <div className="text-center text-xs text-logo-amber-600 dark:text-logo-amber-400">
-                                  {generationProgress}% complete
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-
-                        <AnimatePresence>
-                          {generatedAudioUrl && !isGeneratingAudio && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              className="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4"
-                            >
-                              <div className="bg-gradient-to-r from-logo-emerald-50 to-logo-teal-50 dark:from-logo-emerald-950 dark:to-logo-teal-950 p-4 rounded-lg border border-logo-emerald-200 dark:border-logo-emerald-800">
-                                <h4 className="text-sm font-black text-logo-emerald-700 dark:text-logo-emerald-300 mb-3">
-                                  Generated Audio
-                                </h4>
-                                <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-3 dark:bg-gray-700">
-                                  <audio controls className="w-full" src={generatedAudioUrl}></audio>
-                                </div>
-                                <Button
-                                  onClick={() => {
-                                    const a = document.createElement("a")
-                                    a.href = generatedAudioUrl
-                                    a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
-                                    document.body.appendChild(a)
-                                    a.click()
-                                    document.body.removeChild(a)
-                                  }}
-                                  className="w-full bg-gradient-to-r from-logo-emerald-500 to-logo-teal-500 hover:from-logo-emerald-600 hover:to-logo-teal-600 text-white border-none font-black"
-                                >
-                                  <Download className="mr-2 h-4 w-4" />
-                                  Download Audio
-                                </Button>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </>
-                    )}
-                  </div>
-                </Card>
-              </motion.div>
-            </motion.div>
-          )}
-        </div>
-      </motion.div>
-    </div>
-  )
-}
+                                    className="opacity\
