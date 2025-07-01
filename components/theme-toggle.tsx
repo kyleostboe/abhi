@@ -77,7 +77,7 @@ export function ThemeToggle() {
             exit={{ y: 20, opacity: 0, rotate: 90 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
-            <Sun className="h-5 w-5 text-logo-amber-500" />
+            <Sun className="text-logo-amber-500 w-11 h-11" />
           </motion.div>
         )}
       </AnimatePresence>

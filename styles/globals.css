@@ -92,3 +92,27 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* 
+  Forcefully style native audio player controls.
+  This is notoriously difficult due to Shadow DOM encapsulation.
+  These rules target Webkit-based browsers (Chrome, Safari, Edge).
+*/
+
+/* Target the main panel of the controls and the time displays */
+audio::-webkit-media-controls-panel,
+audio::-webkit-media-controls-current-time-display,
+audio::-webkit-media-controls-time-remaining-display {
+  color: black !important;
+  filter: none !important; /* Disable browser's automatic color inversion in dark mode */
+  text-shadow: none !important; /* Reset any text shadows */
+}
+
+/* Ensure it applies in dark mode too, overriding any theme-based filters */
+.dark audio::-webkit-media-controls-panel,
+.dark audio::-webkit-media-controls-current-time-display,
+.dark audio::-webkit-media-controls-time-remaining-display {
+  color: black !important;
+  filter: none !important;
+  text-shadow: none !important;
+}

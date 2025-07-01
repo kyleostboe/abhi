@@ -33,6 +33,27 @@
     --ring: 173 80% 40%;
 
     --radius: 0.5rem;
+
+    /* Light mode shadow variables */
+    --shadow-light: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+    --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+
+    /* Light mode neutral colors */
+    --neutral-50: 250 250 250;
+    --neutral-100: 245 245 245;
+    --neutral-200: 229 229 229;
+    --neutral-300: 212 212 212;
+    --neutral-400: 163 163 163;
+    --neutral-500: 115 115 115;
+    --neutral-600: 82 82 82;
+    --neutral-700: 64 64 64;
+    --neutral-800: 38 38 38;
+    --neutral-900: 23 23 23;
+    --neutral-950: 10 10 10;
   }
 
   .dark {
@@ -63,6 +84,27 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 173 80% 40%;
+
+    /* Dark mode shadow variables - inverted and enhanced */
+    --shadow-light: 0 1px 3px 0 rgb(255 255 255 / 0.05), 0 1px 2px -1px rgb(255 255 255 / 0.03);
+    --shadow-md: 0 4px 6px -1px rgb(255 255 255 / 0.08), 0 2px 4px -2px rgb(255 255 255 / 0.05);
+    --shadow-lg: 0 10px 15px -3px rgb(255 255 255 / 0.1), 0 4px 6px -4px rgb(255 255 255 / 0.05);
+    --shadow-xl: 0 20px 25px -5px rgb(255 255 255 / 0.15), 0 8px 10px -6px rgb(255 255 255 / 0.08);
+    --shadow-2xl: 0 25px 50px -12px rgb(255 255 255 / 0.2);
+    --shadow-inner: inset 0 2px 4px 0 rgb(255 255 255 / 0.03);
+
+    /* Dark mode neutral colors - inverted */
+    --neutral-50: 10 10 10;
+    --neutral-100: 23 23 23;
+    --neutral-200: 38 38 38;
+    --neutral-300: 64 64 64;
+    --neutral-400: 82 82 82;
+    --neutral-500: 115 115 115;
+    --neutral-600: 163 163 163;
+    --neutral-700: 212 212 212;
+    --neutral-800: 229 229 229;
+    --neutral-900: 245 245 245;
+    --neutral-950: 250 250 250;
   }
 }
 
@@ -75,64 +117,336 @@
   }
 }
 
-/* Custom styles for audio player */
+/* Custom scrollbar styles with dark mode support */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.5);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.6);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.8);
+}
+
+body {
+  @apply bg-background text-foreground;
+}
+
+/* Enhanced shadow utilities with proper dark mode support */
+.shadow-sm {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.dark .shadow-sm {
+  box-shadow: 0 1px 3px 0 rgb(255 255 255 / 0.05), 0 1px 2px -1px rgb(255 255 255 / 0.03);
+}
+
+.shadow {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.dark .shadow {
+  box-shadow: 0 1px 3px 0 rgb(255 255 255 / 0.05), 0 1px 2px -1px rgb(255 255 255 / 0.03);
+}
+
+.shadow-md {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.dark .shadow-md {
+  box-shadow: 0 4px 6px -1px rgb(255 255 255 / 0.08), 0 2px 4px -2px rgb(255 255 255 / 0.05);
+}
+
+.shadow-lg {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgb(255 255 255 / 0.1), 0 4px 6px -4px rgb(255 255 255 / 0.05);
+}
+
+.shadow-xl {
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+.dark .shadow-xl {
+  box-shadow: 0 20px 25px -5px rgb(255 255 255 / 0.15), 0 8px 10px -6px rgb(255 255 255 / 0.08);
+}
+
+.shadow-2xl {
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+}
+
+.dark .shadow-2xl {
+  box-shadow: 0 25px 50px -12px rgb(255 255 255 / 0.2);
+}
+
+.shadow-inner {
+  box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+}
+
+.dark .shadow-inner {
+  box-shadow: inset 0 2px 4px 0 rgb(255 255 255 / 0.03);
+}
+
+.shadow-none {
+  box-shadow: none;
+}
+
+/* Enhanced hover shadow effects */
+.hover\:shadow-sm:hover {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.dark .hover\:shadow-sm:hover {
+  box-shadow: 0 1px 3px 0 rgb(255 255 255 / 0.05), 0 1px 2px -1px rgb(255 255 255 / 0.03);
+}
+
+.hover\:shadow-md:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.dark .hover\:shadow-md:hover {
+  box-shadow: 0 4px 6px -1px rgb(255 255 255 / 0.08), 0 2px 4px -2px rgb(255 255 255 / 0.05);
+}
+
+.hover\:shadow-lg:hover {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark .hover\:shadow-lg:hover {
+  box-shadow: 0 10px 15px -3px rgb(255 255 255 / 0.1), 0 4px 6px -4px rgb(255 255 255 / 0.05);
+}
+
+.hover\:shadow-xl:hover {
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+.dark .hover\:shadow-xl:hover {
+  box-shadow: 0 20px 25px -5px rgb(255 255 255 / 0.15), 0 8px 10px -6px rgb(255 255 255 / 0.08);
+}
+
+.hover\:shadow-2xl:hover {
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+}
+
+.dark .hover\:shadow-2xl:hover {
+  box-shadow: 0 25px 50px -12px rgb(255 255 255 / 0.2);
+}
+
+/* Neutral color utilities with dark mode support */
+.bg-neutral-50 {
+  background-color: hsl(var(--neutral-50));
+}
+
+.bg-neutral-100 {
+  background-color: hsl(var(--neutral-100));
+}
+
+.bg-neutral-200 {
+  background-color: hsl(var(--neutral-200));
+}
+
+.bg-neutral-300 {
+  background-color: hsl(var(--neutral-300));
+}
+
+.bg-neutral-400 {
+  background-color: hsl(var(--neutral-400));
+}
+
+.bg-neutral-500 {
+  background-color: hsl(var(--neutral-500));
+}
+
+.bg-neutral-600 {
+  background-color: hsl(var(--neutral-600));
+}
+
+.bg-neutral-700 {
+  background-color: hsl(var(--neutral-700));
+}
+
+.bg-neutral-800 {
+  background-color: hsl(var(--neutral-800));
+}
+
+.bg-neutral-900 {
+  background-color: hsl(var(--neutral-900));
+}
+
+.bg-neutral-950 {
+  background-color: hsl(var(--neutral-950));
+}
+
+.text-neutral-50 {
+  color: hsl(var(--neutral-50));
+}
+
+.text-neutral-100 {
+  color: hsl(var(--neutral-100));
+}
+
+.text-neutral-200 {
+  color: hsl(var(--neutral-200));
+}
+
+.text-neutral-300 {
+  color: hsl(var(--neutral-300));
+}
+
+.text-neutral-400 {
+  color: hsl(var(--neutral-400));
+}
+
+.text-neutral-500 {
+  color: hsl(var(--neutral-500));
+}
+
+.text-neutral-600 {
+  color: hsl(var(--neutral-600));
+}
+
+.text-neutral-700 {
+  color: hsl(var(--neutral-700));
+}
+
+.text-neutral-800 {
+  color: hsl(var(--neutral-800));
+}
+
+.text-neutral-900 {
+  color: hsl(var(--neutral-900));
+}
+
+.text-neutral-950 {
+  color: hsl(var(--neutral-950));
+}
+
+.border-neutral-50 {
+  border-color: hsl(var(--neutral-50));
+}
+
+.border-neutral-100 {
+  border-color: hsl(var(--neutral-100));
+}
+
+.border-neutral-200 {
+  border-color: hsl(var(--neutral-200));
+}
+
+.border-neutral-300 {
+  border-color: hsl(var(--neutral-300));
+}
+
+.border-neutral-400 {
+  border-color: hsl(var(--neutral-400));
+}
+
+.border-neutral-500 {
+  border-color: hsl(var(--neutral-500));
+}
+
+.border-neutral-600 {
+  border-color: hsl(var(--neutral-600));
+}
+
+.border-neutral-700 {
+  border-color: hsl(var(--neutral-700));
+}
+
+.border-neutral-800 {
+  border-color: hsl(var(--neutral-800));
+}
+
+.border-neutral-900 {
+  border-color: hsl(var(--neutral-900));
+}
+
+.border-neutral-950 {
+  border-color: hsl(var(--neutral-950));
+}
+
+/* Custom styles for audio player with enhanced dark mode support */
 audio {
   border-radius: 30px;
   height: 40px;
-  /* Use CSS variables for background to allow dark mode override */
-  background-color: var(--audio-panel-bg, #f9fafb);
+  background-color: hsl(var(--neutral-50));
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+}
+
+.dark audio {
+  background-color: hsl(var(--neutral-800));
+  box-shadow: var(--shadow-md);
 }
 
 audio::-webkit-media-controls-panel {
-  background-color: var(--audio-panel-bg, #f9fafb); /* Light: Tailwind gray-50 */
+  background-color: hsl(var(--neutral-50));
   border-radius: 30px;
   padding: 0 10px;
 }
 
-/* Dark mode specific styles for audio player */
-html.dark audio::-webkit-media-controls-panel {
-  background-color: #1f2937; /* Dark: Tailwind slate-800 */
+.dark audio::-webkit-media-controls-panel {
+  background-color: hsl(var(--neutral-800));
 }
 
 audio::-webkit-media-controls-play-button {
-  background-color: var(--audio-play-button-bg, hsl(var(--logo-emerald))); /* Use logo-emerald */
+  background-color: hsl(var(--logo-emerald));
   border-radius: 50%;
   color: white;
+  transition: all 0.2s ease;
 }
-html.dark audio::-webkit-media-controls-play-button {
-  background-color: hsl(var(--logo-emerald) / 0.8); /* Slightly darker emerald for dark mode */
+
+.dark audio::-webkit-media-controls-play-button {
+  background-color: hsl(var(--logo-emerald) / 0.9);
 }
 
 audio::-webkit-media-controls-play-button:hover {
-  background-color: var(--audio-play-button-hover-bg, hsl(var(--logo-emerald) / 0.9)); /* Use logo-emerald */
+  background-color: hsl(var(--logo-emerald) / 0.9);
+  transform: scale(1.05);
 }
-html.dark audio::-webkit-media-controls-play-button:hover {
-  background-color: hsl(var(--logo-emerald) / 0.7); /* Even darker emerald for dark mode hover */
+
+.dark audio::-webkit-media-controls-play-button:hover {
+  background-color: hsl(var(--logo-emerald) / 0.8);
 }
 
 audio::-webkit-media-controls-current-time-display,
 audio::-webkit-media-controls-time-remaining-display {
-  color: #374151;
+  color: hsl(var(--neutral-700));
   font-size: 13px;
 }
-html.dark audio::-webkit-media-controls-current-time-display,
-html.dark audio::-webkit-media-controls-time-remaining-display {
-  color: #cbd5e1; /* Dark: Tailwind slate-300 */
+
+.dark audio::-webkit-media-controls-current-time-display,
+.dark audio::-webkit-media-controls-time-remaining-display {
+  color: hsl(var(--neutral-300));
 }
 
-/* Custom slider styles */
+/* Enhanced slider styles with dark mode support */
 .slider-thumb {
-  @apply appearance-none w-5 h-5 rounded-full bg-logo-teal cursor-pointer; /* Use logo-teal */
+  @apply appearance-none w-5 h-5 rounded-full cursor-pointer transition-all duration-200;
+  background-color: hsl(var(--logo-teal));
+  box-shadow: var(--shadow-sm);
 }
-html.dark .slider-thumb {
-  @apply bg-logo-teal; /* Use logo-teal */
+
+.dark .slider-thumb {
+  background-color: hsl(var(--logo-teal));
+  box-shadow: var(--shadow-md);
 }
 
 .slider-track {
-  @apply appearance-none h-1 rounded bg-logo-teal-200; /* Use a lighter shade of logo-teal */
+  @apply appearance-none h-1 rounded transition-all duration-200;
+  background-color: hsl(var(--logo-teal-200));
 }
-html.dark .slider-track {
-  @apply bg-logo-teal-700; /* Use a darker shade of logo-teal */
+
+.dark .slider-track {
+  background-color: hsl(var(--logo-teal-700));
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -159,7 +473,7 @@ input[type="range"]::-ms-track {
   @apply slider-track;
 }
 
-/* Update animation keyframes to be more subtle */
+/* Enhanced animation keyframes */
 @keyframes float {
   0% {
     transform: translateY(0px);
@@ -184,15 +498,6 @@ input[type="range"]::-ms-track {
   }
 }
 
-/* Update animation durations */
-.animate-float {
-  animation: float 2s ease-in-out infinite;
-}
-
-.animate-pulse-slow {
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
 @keyframes shimmer {
   0% {
     background-position: -468px 0;
@@ -202,6 +507,7 @@ input[type="range"]::-ms-track {
   }
 }
 
+/* Animation classes with enhanced dark mode support */
 .animate-float {
   animation: float 2s ease-in-out infinite;
 }
@@ -210,63 +516,67 @@ input[type="range"]::-ms-track {
   animation: pulse 1.5s ease-in-out infinite;
 }
 
-/* Update slider animation to be more subtle */
+/* Enhanced slider animations with dark mode support */
 input[type="range"]::-webkit-slider-thumb {
-  transition: transform 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.15);
+  box-shadow: var(--shadow-lg);
 }
 
 input[type="range"]:active::-webkit-slider-thumb {
   transform: scale(1.05);
 }
 
-/* Update card hover effects to be more subtle */
+/* Enhanced card hover effects with dark mode support */
 .card-hover-effect {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card-hover-effect:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-xl);
 }
 
-/* Update button hover animation to be more subtle */
-.btn-hover-effect::after {
-  transition: 0.3s;
+/* Enhanced button hover effects */
+.btn-hover-effect {
+  transition: all 0.3s ease;
 }
 
-/* Update button hover animation to be more subtle */
-.btn-hover-effect::after {
-  transition: 0.3s;
+.btn-hover-effect:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
 }
 
-/* Update audio player animations */
+/* Enhanced audio player animations with dark mode support */
 audio::-webkit-media-controls-play-button {
-  transition: transform 0.15s ease, background-color 0.15s ease;
+  transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 audio::-webkit-media-controls-play-button:hover {
   transform: scale(1.05);
+  box-shadow: var(--shadow-md);
 }
 
-/* Tab animations */
+/* Enhanced tab animations with dark mode support */
 .tabs-animation [data-state="active"] {
   transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .tabs-animation [data-state="active"]:hover {
   transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
-/* Switch animation */
+/* Enhanced switch animation */
 .switch-animation [data-state="checked"]::before {
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Loading animation */
+/* Enhanced loading animation with dark mode support */
 .loading-shimmer {
   background: linear-gradient(
     to right,
@@ -276,4 +586,368 @@ audio::-webkit-media-controls-play-button:hover {
   );
   background-size: 1000px 100%;
   animation: shimmer 2s infinite;
+}
+
+.dark .loading-shimmer {
+  background: linear-gradient(to right, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0) 100%);
+}
+
+/* Enhanced focus states with dark mode support */
+.focus-ring {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+  --tw-ring-color: hsl(var(--ring));
+  --tw-ring-offset-color: hsl(var(--background));
+}
+
+/* Enhanced border styles with dark mode support */
+.border-adaptive {
+  border-color: hsl(var(--border));
+  transition: border-color 0.3s ease;
+}
+
+.border-adaptive:hover {
+  border-color: hsl(var(--ring));
+}
+
+/* Enhanced text selection with dark mode support */
+::selection {
+  background-color: hsl(var(--primary) / 0.2);
+  color: hsl(var(--foreground));
+}
+
+.dark ::selection {
+  background-color: hsl(var(--primary) / 0.3);
+  color: hsl(var(--foreground));
+}
+
+/* Enhanced backdrop blur with dark mode support */
+.backdrop-blur-adaptive {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.dark .backdrop-blur-adaptive {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Enhanced glass morphism effect with dark mode support */
+.glass-morphism {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-lg);
+}
+
+.dark .glass-morphism {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Enhanced gradient overlays with dark mode support */
+.gradient-overlay-light {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+}
+
+.dark .gradient-overlay-light {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.1) 100%);
+}
+
+/* Enhanced interactive states with dark mode support */
+.interactive-element {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.interactive-element:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.interactive-element:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Enhanced form elements with dark mode support */
+.form-input {
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.form-input:focus {
+  border-color: hsl(var(--ring));
+  box-shadow: var(--shadow-md);
+  outline: none;
+}
+
+.dark .form-input {
+  background-color: hsl(var(--muted));
+  border-color: hsl(var(--border));
+  box-shadow: var(--shadow-md);
+}
+
+.dark .form-input:focus {
+  box-shadow: var(--shadow-lg);
+}
+
+/* Enhanced tooltip styles with dark mode support */
+.tooltip {
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--shadow-lg);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  z-index: 50;
+}
+
+.dark .tooltip {
+  box-shadow: var(--shadow-xl);
+}
+
+/* Enhanced modal/dialog styles with dark mode support */
+.modal-overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.dark .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.modal-content {
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--shadow-2xl);
+  border-radius: 1rem;
+}
+
+.dark .modal-content {
+  box-shadow: var(--shadow-2xl);
+}
+
+/* Enhanced navigation styles with dark mode support */
+.nav-item {
+  transition: all 0.2s ease;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.nav-item:hover {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  box-shadow: var(--shadow-sm);
+}
+
+.nav-item.active {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  box-shadow: var(--shadow-md);
+}
+
+/* Enhanced progress bar styles with dark mode support */
+.progress-bar {
+  background-color: hsl(var(--muted));
+  border-radius: 9999px;
+  overflow: hidden;
+  box-shadow: var(--shadow-inner);
+}
+
+.progress-fill {
+  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--secondary)));
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.dark .progress-fill {
+  box-shadow: var(--shadow-md);
+}
+
+/* Enhanced status indicators with dark mode support */
+.status-success {
+  background-color: hsl(var(--logo-emerald) / 0.1);
+  color: hsl(var(--logo-emerald));
+  border: 1px solid hsl(var(--logo-emerald) / 0.2);
+}
+
+.status-warning {
+  background-color: hsl(var(--logo-amber) / 0.1);
+  color: hsl(var(--logo-amber));
+  border: 1px solid hsl(var(--logo-amber) / 0.2);
+}
+
+.status-error {
+  background-color: hsl(var(--destructive) / 0.1);
+  color: hsl(var(--destructive));
+  border: 1px solid hsl(var(--destructive) / 0.2);
+}
+
+.status-info {
+  background-color: hsl(var(--logo-blue) / 0.1);
+  color: hsl(var(--logo-blue));
+  border: 1px solid hsl(var(--logo-blue) / 0.2);
+}
+
+/* Enhanced code block styles with dark mode support */
+.code-block {
+  background-color: hsl(var(--muted));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  padding: 1rem;
+  font-family: "Courier New", monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  box-shadow: var(--shadow-sm);
+}
+
+.dark .code-block {
+  box-shadow: var(--shadow-md);
+}
+
+/* Enhanced table styles with dark mode support */
+.table-container {
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.table-header {
+  background-color: hsl(var(--muted));
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.table-row {
+  border-bottom: 1px solid hsl(var(--border));
+  transition: background-color 0.2s ease;
+}
+
+.table-row:hover {
+  background-color: hsl(var(--accent));
+}
+
+.dark .table-container {
+  box-shadow: var(--shadow-md);
+}
+
+/* Enhanced badge styles with dark mode support */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.badge-primary {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.badge-secondary {
+  background-color: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+}
+
+.badge-outline {
+  background-color: transparent;
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.dark .badge {
+  box-shadow: var(--shadow-md);
+}
+
+/* Enhanced divider styles with dark mode support */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, hsl(var(--border)) 50%, transparent 100%);
+  margin: 1rem 0;
+}
+
+.divider-vertical {
+  width: 1px;
+  background: linear-gradient(180deg, transparent 0%, hsl(var(--border)) 50%, transparent 100%);
+  margin: 0 1rem;
+}
+
+/* Enhanced skeleton loading styles with dark mode support */
+.skeleton {
+  background: linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--muted) / 0.8) 50%, hsl(var(--muted)) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 0.25rem;
+}
+
+.dark .skeleton {
+  background: linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--muted) / 0.6) 50%, hsl(var(--muted)) 100%);
+}
+
+/* Enhanced print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}
+
+/* Enhanced accessibility styles */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Enhanced high contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --shadow-light: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.2);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.2);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.2);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.2);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+  }
+
+  .dark {
+    --shadow-light: 0 1px 3px 0 rgb(255 255 255 / 0.2), 0 1px 2px -1px rgb(255 255 255 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(255 255 255 / 0.2), 0 2px 4px -2px rgb(255 255 255 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(255 255 255 / 0.2), 0 4px 6px -4px rgb(255 255 255 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(255 255 255 / 0.3), 0 8px 10px -6px rgb(255 255 255 / 0.2);
+    --shadow-2xl: 0 25px 50px -12px rgb(255 255 255 / 0.4);
+  }
 }
