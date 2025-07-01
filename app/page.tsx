@@ -332,11 +332,30 @@ export default function HomePage() {
     alert("Load functionality not yet implemented.")
   }
 
-  const handleExportAudio = () => {
-    // Placeholder for export functionality
-    console.log("Exporting timeline as audio...")
-    alert("Export audio functionality not yet implemented.")
-  }
+  335  const bufferToWav = async (buffer: AudioBuffer): Promise<Blob> => {
+...
+371    return new Blob([arrayBuffer], { type: "audio/wav" })
+372  }
+
+374  const addSyntheticToContext = (
+375    ctx: OfflineAudioContext,
+376    cue: SoundCue,
+377    start: number,
+...
+437    osc.start(start)
+438    osc.stop(start + duration)
+439  }
+
+441  const handleExportAudio = async () => {
+...
+475    const rendered = await ctx.startRendering()
+476    const wavBlob = await bufferToWav(rendered)
+477    const url = URL.createObjectURL(wavBlob)
+...
+486    toast({ title: "Export Complete", description: "Timeline audio exported." })
+...
+494  }
+
 
   // == Effects for Length Adjuster ==
   useEffect(() => {
