@@ -21,7 +21,7 @@ const Slider = React.forwardRef<
         className={cn("absolute h-full bg-gradient-to-r from-amber-400 to-rose-400", rangeClassName)}
       />
     </SliderPrimitive.Track>
-    <SliderPrimitive.Thumb className="block h-5 rounded-full border-2 bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 w-5 border-black" />
+    <SliderPrimitive.Thumb className="block h-5 rounded-full border-2 bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 w-5 border-slate-200" />
   </SliderPrimitive.Root>
 ))
 Slider.displayName = SliderPrimitive.Root.displayName
