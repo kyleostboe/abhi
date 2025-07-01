@@ -2319,6 +2319,137 @@ export default function HomePage() {
                   </div>
                 </Card>
               </motion.div>
+              {/* Generate Audio Section for Labs */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+                <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+                  <div className="bg-gradient-to-r from-logo-amber-500 to-logo-rose-500 py-4 px-6 dark:from-logo-amber-600 dark:to-logo-rose-600">
+                    <h3 className="text-white text-lg flex items-center font-black">
+                      <Wand2 className="h-5 w-5 mr-2" />
+                      Generate Audio
+                    </h3>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    {timelineEvents.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                        <p className="font-black">Add events to your timeline to generate audio</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 font-black">
+                              Timeline contains {timelineEvents.length} event{timelineEvents.length !== 1 ? "s" : ""}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-500 font-black">
+                              Duration: {formatTime(labsTotalDuration)}
+                            </p>
+                          </div>
+                        </div>
+
+                        <Button
+                          onClick={handleExportAudio}
+                          disabled={isGeneratingAudio || timelineEvents.length === 0}
+                          className="w-full py-4 bg-gradient-to-r from-logo-amber-500 to-logo-rose-500 hover:from-logo-amber-600 hover:to-logo-rose-600 text-white border-none shadow-lg dark:shadow-white/20 font-black"
+                        >
+                          <div className="flex items-center justify-center">
+                            {isGeneratingAudio && (
+                              <div className="mr-3 h-5 w-5">
+                                <svg
+                                  className="animate-spin h-5 w-5 text-white"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                  ></circle>
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  ></path>
+                                </svg>
+                              </div>
+                            )}
+                            <Wand2 className="mr-2 h-5 w-5" />
+                            <span>{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
+                          </div>
+                        </Button>
+
+                        <AnimatePresence>
+                          {isGeneratingAudio && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="space-y-3"
+                            >
+                              <div className="bg-gradient-to-r from-logo-amber-50 to-logo-rose-50 dark:from-logo-amber-950 dark:to-logo-rose-950 p-4 rounded-lg border border-logo-amber-200 dark:border-logo-amber-800">
+                                <div className="text-center mb-3">
+                                  <h4 className="text-sm font-black text-logo-amber-700 dark:text-logo-amber-300 mb-1">
+                                    Generating Audio
+                                  </h4>
+                                  <p className="text-xs text-logo-amber-600 dark:text-logo-amber-400">
+                                    {generationStep}
+                                  </p>
+                                </div>
+                                <div className="w-full bg-logo-amber-200 rounded-full h-2 mb-2 dark:bg-logo-amber-800">
+                                  <div
+                                    className="bg-gradient-to-r from-logo-amber-500 to-logo-rose-500 h-2 rounded-full transition-all duration-300"
+                                    style={{ width: `${generationProgress}%` }}
+                                  ></div>
+                                </div>
+                                <div className="text-center text-xs text-logo-amber-600 dark:text-logo-amber-400">
+                                  {generationProgress}% complete
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
+                        <AnimatePresence>
+                          {generatedAudioUrl && !isGeneratingAudio && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4"
+                            >
+                              <div className="bg-gradient-to-r from-logo-emerald-50 to-logo-teal-50 dark:from-logo-emerald-950 dark:to-logo-teal-950 p-4 rounded-lg border border-logo-emerald-200 dark:border-logo-emerald-800">
+                                <h4 className="text-sm font-black text-logo-emerald-700 dark:text-logo-emerald-300 mb-3">
+                                  Generated Audio
+                                </h4>
+                                <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-3 dark:bg-gray-700">
+                                  <audio controls className="w-full" src={generatedAudioUrl}></audio>
+                                </div>
+                                <Button
+                                  onClick={() => {
+                                    const a = document.createElement("a")
+                                    a.href = generatedAudioUrl
+                                    a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
+                                    document.body.appendChild(a)
+                                    a.click()
+                                    document.body.removeChild(a)
+                                  }}
+                                  className="w-full bg-gradient-to-r from-logo-emerald-500 to-logo-teal-500 hover:from-logo-emerald-600 hover:to-logo-teal-600 text-white border-none font-black"
+                                >
+                                  <Download className="mr-2 h-4 w-4" />
+                                  Download Audio
+                                </Button>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </>
+                    )}
+                  </div>
+                </Card>
+              </motion.div>
             </motion.div>
           )}
         </div>
