@@ -6,7 +6,7 @@ import { useState, useRef, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, Music2Icon, MicIcon, Check, X, Play } from "lucide-react"
+import { Trash2, Music2Icon,Music2Icon, MicIcon,MicIcon, Check, X, Play } from "lucide-react"
 import { SOUND_CUES_LIBRARY, generateSyntheticSound } from "../lib/meditation-data"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
@@ -55,9 +55,7 @@ const getInitialPosition = (index: number, totalEvents: number, duration: number
   return spacing * (index + 1)
 }
 
-export function VisualTimeline({ events = [], totalDuration, onUpdateEvent, onRemoveEvent }: VisualTimelineProps) {
-  // Safety check to ensure events is always an array
-  const safeEvents = events || []
+export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveEvent }: VisualTimelineProps) {
   const [draggedEvent, setDraggedEvent] = useState<string | null>(null)
   const [dragOffset, setDragOffset] = useState(0)
   const timelineRef = useRef<HTMLDivElement>(null)
@@ -253,15 +251,15 @@ export function VisualTimeline({ events = [], totalDuration, onUpdateEvent, onRe
 
           {/* Events on Timeline */}
           <AnimatePresence>
-            {safeEvents.map((event, index) => {
+            {events.map((event, index) => {
               // Only use initial positioning for truly new events that haven't been positioned yet
               // and when there are multiple events at the exact same time (collision detection)
-              const eventsAtSameTime = safeEvents.filter((e) => e.startTime === event.startTime)
+              const eventsAtSameTime = events.filter((e) => e.startTime === event.startTime)
               const shouldUseInitialPosition =
                 event.startTime === 0 && eventsAtSameTime.length > 1 && draggedEvent !== event.id // Don't use initial position if this event is being dragged
 
               const displayTime = shouldUseInitialPosition
-                ? getInitialPosition(index, safeEvents.length, totalDuration)
+                ? getInitialPosition(index, events.length, totalDuration)
                 : event.startTime
 
               return (
@@ -273,7 +271,7 @@ export function VisualTimeline({ events = [], totalDuration, onUpdateEvent, onRe
                   className={cn(
                     "absolute top-1/2 -translate-y-1/2 w-10 h-10 rounded-full shadow-md dark:shadow-white/20 cursor-grab active:cursor-grabbing flex items-center justify-center text-white",
                     draggedEvent === event.id ? "z-30 shadow-lg dark:shadow-white/30 ring-2 ring-white/50" : "z-10",
-                    getEventColor(event.id, safeEvents),
+                    getEventColor(event.id, events),
                   )}
                   style={{
                     left: `calc(${getPositionFromTime(displayTime)} - 20px)`,
@@ -329,7 +327,7 @@ export function VisualTimeline({ events = [], totalDuration, onUpdateEvent, onRe
       <div className="space-y-3">
         <h4 className="text-lg font-black text-gray-800 dark:text-gray-200">Timeline Events</h4>
         <AnimatePresence>
-          {safeEvents.length === 0 ? (
+          {events.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -340,7 +338,7 @@ export function VisualTimeline({ events = [], totalDuration, onUpdateEvent, onRe
               <div className="text-sm">Add instructions and sound cues to build your meditation timeline</div>
             </motion.div>
           ) : (
-            safeEvents.map((event, index) => (
+            events.map((event, index) => (
               <motion.div
                 key={event.id}
                 initial={{ opacity: 0, y: 10 }}
@@ -354,7 +352,7 @@ export function VisualTimeline({ events = [], totalDuration, onUpdateEvent, onRe
                       <div
                         className={cn(
                           "w-8 h-8 rounded-full flex items-center justify-center text-white shadow-sm",
-                          getEventColor(event.id, safeEvents),
+                          getEventColor(event.id, events),
                         )}
                       >
                         {event.type === "instruction_sound" ? (
