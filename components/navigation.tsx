@@ -3,11 +3,14 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Home, Mail, HeartIcon,Info } from "lucide-react"
+import { Home, Mail, HeartIcon, Info } from "lucide-react"
 import Link from "next/link"
+import { usePathname } from "next/navigation" // Added import
+import { cn } from "@/lib/utils" // Added import
 
 export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const pathname = usePathname() // Added usePathname hook
 
   return (
     <nav className="max-w-4xl mx-auto mb-8 px-0 w-64">
@@ -21,27 +24,36 @@ export function Navigation() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+              className={cn(
+                "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200",
+                pathname === "/" && "text-black font-bold",
+              )}
             >
-              <Home className="w-4 h-4 text-black" />
+              <Home className={cn("w-4 h-4", pathname === "/" ? "text-black" : "text-gray-600")} />
             </Button>
           </Link>
           <Link href="/contact">
             <Button
               variant="ghost"
               size="sm"
-              className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+              className={cn(
+                "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200",
+                pathname === "/contact" && "text-black font-bold",
+              )}
             >
-              <Mail className="h-4 w-4 text-gray-600" />
+              <Mail className={cn("h-4 w-4", pathname === "/contact" ? "text-black" : "text-gray-600")} />
             </Button>
           </Link>
           <Link href="/about">
             <Button
               variant="ghost"
               size="sm"
-              className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+              className={cn(
+                "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200",
+                pathname === "/about" && "text-black font-bold",
+              )}
             >
-              <HeartIcon className="h-4 w-4 text-gray-600" />
+              <HeartIcon className={cn("h-4 w-4", pathname === "/about" ? "text-black" : "text-gray-600")} />
             </Button>
           </Link>
           <ThemeToggle />
@@ -70,9 +82,12 @@ export function Navigation() {
             <Button
               variant="ghost"
               size="sm"
-              className="w-full justify-start text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 font-black"
+              className={cn(
+                "w-full justify-start text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 font-black",
+                pathname === "/" && "text-black font-bold",
+              )}
             >
-              <Home className="h-4 w-4 mr-2" />
+              <Home className={cn("h-4 w-4 mr-2", pathname === "/" ? "text-black" : "text-gray-600")} />
               Home
             </Button>
           </Link>
@@ -80,9 +95,12 @@ export function Navigation() {
             <Button
               variant="ghost"
               size="sm"
-              className="w-full justify-start text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 font-black"
+              className={cn(
+                "w-full justify-start text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 font-black",
+                pathname === "/contact" && "text-black font-bold",
+              )}
             >
-              <Mail className="h-4 w-4 mr-2" />
+              <Mail className={cn("h-4 w-4 mr-2", pathname === "/contact" ? "text-black" : "text-gray-600")} />
               Contact
             </Button>
           </Link>
@@ -90,9 +108,12 @@ export function Navigation() {
             <Button
               variant="ghost"
               size="sm"
-              className="w-full justify-start text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 font-black"
+              className={cn(
+                "w-full justify-start text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 font-black",
+                pathname === "/about" && "text-black font-bold",
+              )}
             >
-              <Info className="h-4 w-4 mr-2" />
+              <Info className={cn("h-4 w-4 mr-2", pathname === "/about" ? "text-black" : "text-gray-600")} />
               About
             </Button>
           </Link>
