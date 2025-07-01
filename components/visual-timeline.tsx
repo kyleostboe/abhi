@@ -11,6 +11,7 @@ import { SOUND_CUES_LIBRARY, generateSyntheticSound } from "../lib/meditation-da
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
+import { playNote } from "../lib/audio-utils" // Declare the playNote variable
 
 interface TimelineEvent {
   id: string
@@ -211,10 +212,24 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
 
   const playEventAudio = async (event: TimelineEvent) => {
     try {
-      if (event.type === "instruction_sound" && event.soundCueId) {
-        const soundCue = SOUND_CUES_LIBRARY.find((s) => s.id === event.soundCueId)
-        if (soundCue && soundCue.src.startsWith("synthetic:")) {
-          await generateSyntheticSound(soundCue)
+      if (event.type === "instruction_sound" && event.soundCueSrc) {
+        // Use soundCueSrc directly for playback
+        if (event.soundCueSrc.startsWith("synthetic:")) {
+          const soundCue = SOUND_CUES_LIBRARY.find((s) => s.id === event.soundCueId)
+          if (soundCue) {
+            await generateSyntheticSound(soundCue)
+          }
+        } else if (event.soundCueSrc.startsWith("musical:")) {
+          const noteMatch = event.soundCueSrc.match(/musical:([A-G])(\d)/)
+          if (noteMatch) {
+            const note = noteMatch[1]
+            const octave = Number.parseInt(noteMatch[2])
+            playNote(note, octave) // Use the declared playNote function
+          }
+        } else {
+          const audio = new Audio(event.soundCueSrc)
+          audio.volume = 0.7
+          await audio.play()
         }
       } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
         // Play recorded audio
