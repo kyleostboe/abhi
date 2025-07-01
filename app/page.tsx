@@ -1766,7 +1766,7 @@ export default function HomePage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
-                      <div className="dark:text-gray-200 font-serif mb-2.5 font-black text-base text-black">
+                      <div className="dark:text-gray-200 font-serif mb-2.5 font-black text-base text-gray-600">
                         Drop your audio file here or click to browse
                       </div>
                       <div className="dark:text-gray-400/70 text-stone-400 font-serif text-xs">
