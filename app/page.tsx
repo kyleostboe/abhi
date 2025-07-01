@@ -518,65 +518,69 @@ export default function HomePage() {
         const eventStartTime = event.startTime
         const eventDuration = event.calculatedDuration // Use the calculated duration
 
-        if (event.type === "instruction_sound" && event.soundCueId) {
-          const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
-          if (soundCue) {
-            setGenerationStep(`Adding sound: ${soundCue.name}`)
+        if (event.type === "instruction_sound") {
+          // Handle instruction_sound events - these should include sound cues
+          if (event.soundCueSrc) {
+            setGenerationStep(`Adding sound: ${event.soundCueName || 'Sound Cue'}`)
 
-            if (soundCue.src.startsWith("synthetic:")) {
-              // Generate synthetic sound using Web Audio API
-              const oscillator = ctx.createOscillator()
-              const gainNode = ctx.createGain()
+            if (event.soundCueSrc.startsWith("synthetic:")) {
+              // Find the sound cue from the library to get full parameters
+              const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
+              if (soundCue) {
+                // Generate synthetic sound using Web Audio API
+                const oscillator = ctx.createOscillator()
+                const gainNode = ctx.createGain()
 
-              oscillator.connect(gainNode)
-              gainNode.connect(ctx.destination)
+                oscillator.connect(gainNode)
+                gainNode.connect(ctx.destination)
 
-              // Set oscillator properties from sound cue
-              oscillator.type = soundCue.waveform || "sine"
-              oscillator.frequency.setValueAtTime(soundCue.frequency || 440, eventStartTime)
+                // Set oscillator properties from sound cue
+                oscillator.type = soundCue.waveform || "sine"
+                oscillator.frequency.setValueAtTime(soundCue.frequency || 440, eventStartTime)
 
-              // Create envelope
-              const attackDuration = soundCue.attackDuration || 0.01
-              const releaseDuration = soundCue.releaseDuration || 0.5
-              const peakVolume = 0.3 // Reduced volume for better mixing
+                // Create envelope
+                const attackDuration = soundCue.attackDuration || 0.01
+                const releaseDuration = soundCue.releaseDuration || 0.5
+                const peakVolume = 0.3 // Reduced volume for better mixing
 
-              gainNode.gain.setValueAtTime(0, eventStartTime)
-              gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + attackDuration)
-              gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
-              gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
+                gainNode.gain.setValueAtTime(0, eventStartTime)
+                gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + attackDuration)
+                gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
+                gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
 
-              oscillator.start(eventStartTime)
-              oscillator.stop(eventStartTime + eventDuration)
+                oscillator.start(eventStartTime)
+                oscillator.stop(eventStartTime + eventDuration)
 
-              // Add harmonics if specified
-              if (soundCue.harmonics) {
-                soundCue.harmonics.forEach((harmonic, index) => {
-                  const harmonicOsc = ctx.createOscillator()
-                  const harmonicGain = ctx.createGain()
+                // Add harmonics if specified
+                if (soundCue.harmonics) {
+                  soundCue.harmonics.forEach((harmonic, index) => {
+                    const harmonicOsc = ctx.createOscillator()
+                    const harmonicGain = ctx.createGain()
 
-                  harmonicOsc.connect(harmonicGain)
-                  harmonicGain.connect(ctx.destination)
+                    harmonicOsc.connect(harmonicGain)
+                    harmonicGain.connect(ctx.destination)
 
-                  harmonicOsc.type = soundCue.waveform || "sine"
-                  harmonicOsc.frequency.setValueAtTime(harmonic, eventStartTime)
+                    harmonicOsc.type = soundCue.waveform || "sine"
+                    harmonicOsc.frequency.setValueAtTime(harmonic, eventStartTime)
 
-                  const harmonicVolume = (peakVolume * 0.2) / (index + 1)
+                    const harmonicVolume = (peakVolume * 0.2) / (index + 1)
 
-                  harmonicGain.gain.setValueAtTime(0, eventStartTime)
-                  harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + attackDuration)
-                  harmonicGain.gain.linearRampToValueAtTime(
-                    harmonicVolume,
-                    eventStartTime + eventDuration - releaseDuration,
-                  )
-                  harmonicGain.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
+                    harmonicGain.gain.setValueAtTime(0, eventStartTime)
+                    harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + attackDuration)
+                    harmonicGain.gain.linearRampToValueAtTime(
+                      harmonicVolume,
+                      eventStartTime + eventDuration - releaseDuration,
+                    )
+                    harmonicGain.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
 
-                  harmonicOsc.start(eventStartTime)
-                  harmonicOsc.stop(eventStartTime + eventDuration)
-                })
+                    harmonicOsc.start(eventStartTime)
+                    harmonicOsc.stop(eventStartTime + eventDuration)
+                  })
+                }
               }
-            } else if (soundCue.src.startsWith("musical:")) {
+            } else if (event.soundCueSrc.startsWith("musical:")) {
               // Handle musical notes
-              const noteMatch = soundCue.src.match(/musical:([A-G])(\d)/)
+              const noteMatch = event.soundCueSrc.match(/musical:([A-G])(\d)/)
               if (noteMatch) {
                 const note = noteMatch[1]
                 const octave = Number.parseInt(noteMatch[2])
@@ -606,32 +610,99 @@ export default function HomePage() {
               }
             } else {
               // Handle pre-recorded audio files
-              const response = await fetch(soundCue.src)
-              const arrayBuffer = await response.arrayBuffer()
-              const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
-              const source = ctx.createBufferSource()
-              const gainNode = ctx.createGain()
+              try {
+                const response = await fetch(event.soundCueSrc)
+                const arrayBuffer = await response.arrayBuffer()
+                const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+                const source = ctx.createBufferSource()
+                const gainNode = ctx.createGain()
 
-              source.buffer = audioBuffer
-              source.connect(gainNode)
-              gainNode.connect(ctx.destination)
-              gainNode.gain.setValueAtTime(0.3, eventStartTime) // Reduced volume
-              source.start(eventStartTime)
+                source.buffer = audioBuffer
+                source.connect(gainNode)
+                gainNode.connect(ctx.destination)
+                gainNode.gain.setValueAtTime(0.3, eventStartTime) // Reduced volume
+                source.start(eventStartTime)
+              } catch (error) {
+                console.warn(`Could not load audio file: ${event.soundCueSrc}`, error)
+              }
+            }
+          } else if (event.soundCueId) {
+            // Fallback: try to find sound cue by ID if soundCueSrc is not available
+            const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
+            if (soundCue) {
+              setGenerationStep(`Adding sound: ${soundCue.name}`)
+
+              if (soundCue.src.startsWith("synthetic:")) {
+                // Generate synthetic sound using Web Audio API
+                const oscillator = ctx.createOscillator()
+                const gainNode = ctx.createGain()
+
+                oscillator.connect(gainNode)
+                gainNode.connect(ctx.destination)
+
+                // Set oscillator properties from sound cue
+                oscillator.type = soundCue.waveform || "sine"
+                oscillator.frequency.setValueAtTime(soundCue.frequency || 440, eventStartTime)
+
+                // Create envelope
+                const attackDuration = soundCue.attackDuration || 0.01
+                const releaseDuration = soundCue.releaseDuration || 0.5
+                const peakVolume = 0.3 // Reduced volume for better mixing
+
+                gainNode.gain.setValueAtTime(0, eventStartTime)
+                gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + attackDuration)
+                gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
+                gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
+
+                oscillator.start(eventStartTime)
+                oscillator.stop(eventStartTime + eventDuration)
+
+                // Add harmonics if specified
+                if (soundCue.harmonics) {
+                  soundCue.harmonics.forEach((harmonic, index) => {
+                    const harmonicOsc = ctx.createOscillator()
+                    const harmonicGain = ctx.createGain()
+
+                    harmonicOsc.connect(harmonicGain)
+                    harmonicGain.connect(ctx.destination)
+
+                    harmonicOsc.type = soundCue.waveform || "sine"
+                    harmonicOsc.frequency.setValueAtTime(harmonic, eventStartTime)
+
+                    const harmonicVolume = (peakVolume * 0.2) / (index + 1)
+
+                    harmonicGain.gain.setValueAtTime(0, eventStartTime)
+                    harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + attackDuration)
+                    harmonicGain.gain.linearRampToValueAtTime(
+                      harmonicVolume,
+                      eventStartTime + eventDuration - releaseDuration,
+                    )
+                    harmonicGain.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
+
+                    harmonicOsc.start(eventStartTime)
+                    harmonicOsc.stop(eventStartTime + eventDuration)
+                  })
+                }
+              }
             }
           }
         } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
           setGenerationStep(`Adding recorded voice: ${event.recordedInstructionLabel || "Untitled"}`)
-          const response = await fetch(event.recordedAudioUrl)
-          const arrayBuffer = await response.arrayBuffer()
-          const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
-          const source = ctx.createBufferSource()
-          const gainNode = ctx.createGain()
+          try {
+            const response = await fetch(event.recordedAudioUrl)
+            const arrayBuffer = await response.arrayBuffer()
+            const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+            const source = ctx.createBufferSource()
+            const gainNode = ctx.createGain()
 
-          source.buffer = audioBuffer
-          source.connect(gainNode)
-          gainNode.connect(ctx.destination)
-          gainNode.gain.setValueAtTime(0.7, eventStartTime) // Higher volume for voice
-          source.start(eventStartTime)
+            source.buffer = audioBuffer
+            source.connect(gainNode)
+            gainNode.connect(ctx.destination)
+            gainNode.gain.setValueAtTime(0.7, eventStartTime) // Higher volume for voice
+            source.start(eventStartTime)
+          } catch (error) {
+            console.warn(`Could not load recorded audio: ${event.recordedAudioUrl}`, error)
+          }
         }
 
         processedEventsCount++
@@ -2559,37 +2630,6 @@ export default function HomePage() {
                               <span>{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
                             </div>
                           </Button>
-
-                          <AnimatePresence>
-                            {isGeneratingAudio && (
-                              <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: "auto" }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="space-y-3"
-                              >
-                                <div className="bg-gradient-to-r from-logo-amber-50 to-logo-rose-50 dark:from-logo-amber-950 dark:to-logo-rose-950 p-4 rounded-lg border border-logo-amber-200 dark:border-logo-amber-800">
-                                  <div className="text-center mb-3">
-                                    <h4 className="text-sm font-black text-logo-amber-700 dark:text-logo-amber-300 mb-1">
-                                      Generating Audio
-                                    </h4>
-                                    <p className="text-xs text-logo-amber-600 dark:text-logo-amber-400">
-                                      {generationStep}
-                                    </p>
-                                  </div>
-                                  <div className="w-full bg-logo-amber-200 rounded-full h-2 mb-2 dark:bg-logo-amber-800">
-                                    <div
-                                      className="bg-gradient-to-r from-logo-amber-500 to-logo-rose-500 h-2 rounded-full transition-all duration-300"
-                                      style={{ width: `${generationProgress}%` }}
-                                    ></div>
-                                  </div>
-                                  <div className="text-center text-xs text-logo-amber-600 dark:text-logo-amber-400">
-                                    {generationProgress}% complete
-                                  </div>
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
 
                           <AnimatePresence>
                             {generatedAudioUrl && !isGeneratingAudio && (
