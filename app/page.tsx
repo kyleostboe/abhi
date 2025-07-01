@@ -1879,7 +1879,7 @@ export default function HomePage() {
                             </div>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white p-3 rounded-lg text-center dark:bg-gray-900 shadow-lg dark:shadow-white/10 border-logo-rose-600 border">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 shadow-lg dark:shadow-white/10 border-logo-rose-600 border rounded-md">
                               <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-rose-600">
                                 Content
                               </div>
@@ -1887,7 +1887,7 @@ export default function HomePage() {
                                 {formatDuration(audioAnalysis.contentDuration)}
                               </div>
                             </div>
-                            <div className="bg-white p-3 rounded-lg text-center dark:bg-gray-900 shadow-lg dark:shadow-white/10 border-logo-rose-600 border">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 shadow-lg dark:shadow-white/10 border-logo-rose-600 border rounded-md">
                               <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-rose-600">
                                 Silence
                               </div>
@@ -1895,7 +1895,7 @@ export default function HomePage() {
                                 {formatDuration(audioAnalysis.totalSilence)}
                               </div>
                             </div>
-                            <div className="bg-white p-3 rounded-lg text-center dark:bg-gray-900 shadow-lg dark:shadow-white/10 border border-logo-rose-600">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 shadow-lg dark:shadow-white/10 border border-logo-rose-600 rounded-md">
                               <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-rose-600">
                                 Pauses
                               </div>
@@ -1903,7 +1903,7 @@ export default function HomePage() {
                                 {audioAnalysis.silenceRegions}
                               </div>
                             </div>
-                            <div className="bg-white p-3 rounded-lg text-center dark:bg-gray-900 shadow-lg dark:shadow-white/10 border-logo-rose-600 border">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 shadow-lg dark:shadow-white/10 border-logo-rose-600 border rounded-md">
                               <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-rose-600">
                                 Range
                               </div>
