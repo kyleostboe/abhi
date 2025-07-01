@@ -149,6 +149,12 @@ export default function HomePage() {
   const instructionCategories = Array.from(new Set(INSTRUCTIONS_LIBRARY.map((instr) => instr.category)))
   const [recordingLabel, setRecordingLabel] = useState<string>("")
 
+  // Audio generation states
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState<boolean>(false)
+  const [generationProgress, setGenerationProgress] = useState<number>(0)
+  const [generationStep, setGenerationStep] = useState<string>("")
+  const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
+
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
   const [currentTab, setCurrentTab] = useState("instructions")
   const [isPlaying, setIsPlaying] = useState(false)
@@ -332,30 +338,158 @@ export default function HomePage() {
     alert("Load functionality not yet implemented.")
   }
 
-  335  const bufferToWav = async (buffer: AudioBuffer): Promise<Blob> => {
-...
-371    return new Blob([arrayBuffer], { type: "audio/wav" })
-372  }
+  const bufferToWav = async (buffer: AudioBuffer): Promise<Blob> => {
+    const numberOfChannels = buffer.numberOfChannels
+    const numSamples = buffer.length
+    const sampleRate = buffer.sampleRate
+    const bytesPerSample = 2 // Assuming 16-bit PCM
+    const blockAlign = numberOfChannels * bytesPerSample
+    const byteRate = sampleRate * blockAlign
+    const dataSize = numSamples * blockAlign
+    const fileSize = 44 + dataSize
 
-374  const addSyntheticToContext = (
-375    ctx: OfflineAudioContext,
-376    cue: SoundCue,
-377    start: number,
-...
-437    osc.start(start)
-438    osc.stop(start + duration)
-439  }
+    const arrayBuffer = new ArrayBuffer(fileSize)
+    const dataView = new DataView(arrayBuffer)
 
-441  const handleExportAudio = async () => {
-...
-475    const rendered = await ctx.startRendering()
-476    const wavBlob = await bufferToWav(rendered)
-477    const url = URL.createObjectURL(wavBlob)
-...
-486    toast({ title: "Export Complete", description: "Timeline audio exported." })
-...
-494  }
+    // RIFF identifier
+    dataView.setUint32(0, 0x52494646, false) // "RIFF"
+    // File size
+    dataView.setUint32(4, fileSize - 8, true)
+    // RIFF type
+    dataView.setUint32(8, 0x57415645, false) // "WAVE"
+    // Format chunk identifier
+    dataView.setUint32(12, 0x666d7420, false) // "fmt "
+    // Format chunk size
+    dataView.setUint32(16, 16, true)
+    // Audio format (PCM = 1)
+    dataView.setUint16(20, 1, true)
+    // Number of channels
+    dataView.setUint16(22, numberOfChannels, true)
+    // Sample rate
+    dataView.setUint32(24, sampleRate, true)
+    // Byte rate (Sample Rate * Block Align)
+    dataView.setUint32(28, byteRate, true)
+    // Block align (Number of Channels * Bytes per Sample)
+    dataView.setUint16(32, blockAlign, true)
+    // Bits per sample
+    dataView.setUint16(34, bytesPerSample * 8, true)
+    // Data chunk identifier
+    dataView.setUint32(36, 0x64617461, false) // "data"
+    // Data chunk size
+    dataView.setUint32(40, dataSize, true)
 
+    // Write the samples to the data chunk
+    let offset = 44
+    for (let i = 0; i < numSamples; i++) {
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        const sample = buffer.getChannelData(channel)[i]
+        const amplitude = Math.max(-1, Math.min(1, sample))
+        dataView.setInt16(offset, amplitude * 0x7fff, true)
+        offset += bytesPerSample
+      }
+    }
+
+    return new Blob([arrayBuffer], { type: "audio/wav" })
+  }
+
+  const addSyntheticToContext = (ctx: OfflineAudioContext, cue: SoundCue, start: number, duration: number) => {
+    const gainNode = ctx.createGain()
+    gainNode.gain.setValueAtTime(0.3, start) // Reduced gain for synthetic sounds
+    gainNode.connect(ctx.destination)
+
+    if (cue.src === "synthetic:sine440") {
+      const osc = ctx.createOscillator()
+      osc.type = "sine"
+      osc.frequency.setValueAtTime(440, start)
+      osc.connect(gainNode)
+      osc.start(start)
+      osc.stop(start + duration)
+    } else if (cue.src === "synthetic:triangle880") {
+      const osc = ctx.createOscillator()
+      osc.type = "triangle"
+      osc.frequency.setValueAtTime(880, start)
+      osc.connect(gainNode)
+      osc.start(start)
+      osc.stop(start + duration)
+    } else if (cue.src === "synthetic:square220") {
+      const osc = ctx.createOscillator()
+      osc.type = "square"
+      osc.frequency.setValueAtTime(220, start)
+      osc.connect(gainNode)
+      osc.start(start)
+      osc.stop(start + duration)
+    } else if (cue.src === "synthetic:sawtooth660") {
+      const osc = ctx.createOscillator()
+      osc.type = "sawtooth"
+      osc.frequency.setValueAtTime(660, start)
+      osc.connect(gainNode)
+      osc.start(start)
+      osc.stop(start + duration)
+    } else {
+      console.warn("Unknown synthetic sound:", cue.src)
+    }
+  }
+
+  const handleExportAudio = async () => {
+    setIsGeneratingAudio(true)
+    setGenerationProgress(0)
+    setGenerationStep("Initializing...")
+
+    try {
+      const ctx = new OfflineAudioContext({
+        numberOfChannels: 1,
+        sampleRate: 44100,
+        length: 44100 * labsTotalDuration,
+      })
+
+      let currentTime = 0
+      for (const event of timelineEvents) {
+        if (event.type === "instruction_sound" && event.soundCueId) {
+          const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
+          if (soundCue) {
+            setGenerationStep(`Adding sound: ${soundCue.name}`)
+            setGenerationProgress(50)
+            if (soundCue.src.startsWith("synthetic:")) {
+              addSyntheticToContext(ctx, soundCue, currentTime, 5) // Synthetic sounds are 5 seconds long
+            } else {
+              // Load and play audio file
+              const response = await fetch(soundCue.src)
+              const arrayBuffer = await response.arrayBuffer()
+              const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+              const source = ctx.createBufferSource()
+              source.buffer = audioBuffer
+              source.connect(ctx.destination)
+              source.start(currentTime)
+            }
+          }
+        }
+        currentTime += 5 // Assuming 5 seconds for each sound cue
+      }
+
+      setGenerationStep("Rendering audio...")
+      setGenerationProgress(90)
+      const rendered = await ctx.startRendering()
+      const wavBlob = await bufferToWav(rendered)
+      const url = URL.createObjectURL(wavBlob)
+      setGeneratedAudioUrl(url)
+
+      // Clean up
+      setIsGeneratingAudio(false)
+      setGenerationProgress(100)
+      setGenerationStep("Export Complete")
+
+      toast({ title: "Export Complete", description: "Timeline audio exported." })
+    } catch (error) {
+      console.error("Audio export failed:", error)
+      toast({
+        title: "Audio Export Failed",
+        description: `Could not export audio. Error: ${error instanceof Error ? error.message : "Unknown"}`,
+        variant: "destructive",
+      })
+    } finally {
+      setIsGeneratingAudio(false)
+    }
+  }
 
   // == Effects for Length Adjuster ==
   useEffect(() => {
@@ -651,6 +785,10 @@ export default function HomePage() {
       const targetDurationSeconds = targetDuration * 60
       setProcessingStep("Detecting silence regions (step 1/4)...")
       setProcessingProgress(10)
+      await sleep(10)
+      const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
+      setProcessingStep("Calculating adjustments (step 2/4)...")
+      setProcessingProgress(30)
       await sleep(10)
       const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
       setProcessingStep("Calculating adjustments (step 2/4)...")
