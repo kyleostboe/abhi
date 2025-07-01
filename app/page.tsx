@@ -1924,14 +1924,14 @@ export default function HomePage() {
                         value="basic"
                         className="data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-sm dark:data-[state=active]:shadow-white/20 rounded-sm dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-logo-teal-300 dark:text-gray-300"
                       >
-                        <Clock className="h-4 w-4 mr-2" />
+                        
                         Basic Settings
                       </TabsTrigger>
                       <TabsTrigger
                         value="advanced"
                         className="data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-sm dark:data-[state=active]:shadow-white/20 rounded-sm dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-logo-teal-300 dark:text-gray-300"
                       >
-                        <Settings2 className="h-4 w-4 mr-2" />
+                        
                         Advanced Settings
                       </TabsTrigger>
                     </TabsList>
