@@ -2289,7 +2289,7 @@ export default function HomePage() {
                             </AccordionItem>
                           ))}
                         </Accordion>
-                        <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
+                        <div className="border-gray-100 dark:border-gray-800 pt-4 border-t-0">
                           <Label htmlFor="custom" className="text-logo-purple-600 dark:text-logo-purple-400 font-black">
                             Custom Instruction
                           </Label>
@@ -2599,7 +2599,7 @@ export default function HomePage() {
                                 exit={{ opacity: 0, height: 0 }}
                                 className="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4"
                               >
-                                <div className="bg-gradient-to-r from-logo-emerald-50 to-logo-teal-50 dark:from-logo-emerald-950 dark:to-logo-teal-950 p-4 rounded-lg border border-logo-emerald-200 dark:border-logo-emerald-800">
+                                <div className="bg-gradient-to-r from-logo-emerald-50 to-logo-teal-50 dark:from-logo-emerald-950 dark:to-logo-teal-950 p-4 rounded-lg border border-logo-emerald-200 dark:border-logo-emerald-800 text-white">
                                   <h4 className="text-sm font-black text-logo-emerald-700 dark:text-logo-emerald-300 mb-3">
                                     Generated Audio
                                   </h4>
