@@ -436,44 +436,103 @@ export default function HomePage() {
     setGenerationStep("Initializing...")
 
     try {
+      // Calculate the maximum end time needed for the OfflineAudioContext
+      let maxAudioDuration = labsTotalDuration // Start with the user-defined total duration
+
+      // Pre-calculate actual durations for all events to determine maxAudioDuration
+      const eventsWithCalculatedDurations = await Promise.all(
+        timelineEvents.map(async (event) => {
+          let actualDuration = event.duration || 0 // Start with existing duration or 0
+
+          if (event.type === "instruction_sound" && event.soundCueId) {
+            const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
+            if (soundCue) {
+              if (soundCue.src.startsWith("synthetic:")) {
+                actualDuration = 5 // Default duration for synthetic sounds
+              } else {
+                // For pre-recorded sound files, decode to get actual duration
+                try {
+                  const response = await fetch(soundCue.src)
+                  const arrayBuffer = await response.arrayBuffer()
+                  // Use a temporary AudioContext to decode without affecting the main OfflineAudioContext
+                  const tempAudioContext = new AudioContext()
+                  const audioBuffer = await tempAudioContext.decodeAudioData(arrayBuffer)
+                  actualDuration = audioBuffer.duration
+                  tempAudioContext.close() // Close temp context to free resources
+                } catch (e) {
+                  console.warn(`Could not decode audio for ${soundCue.name}, using default duration.`, e)
+                  actualDuration = 5 // Fallback to default
+                }
+              }
+            }
+          }
+          // For recorded_voice, actualDuration is already set from event.duration
+
+          const eventEndTime = event.startTime + actualDuration
+          if (eventEndTime > maxAudioDuration) {
+            maxAudioDuration = eventEndTime
+          }
+          return { ...event, calculatedDuration: actualDuration } // Store calculated duration
+        }),
+      )
+
       const ctx = new OfflineAudioContext({
         numberOfChannels: 1,
         sampleRate: 44100,
-        length: 44100 * labsTotalDuration,
+        length: Math.ceil(maxAudioDuration * 44100), // Ensure length is an integer
       })
 
-      let currentTime = 0
-      for (const event of timelineEvents) {
+      let processedEventsCount = 0
+      const totalEvents = eventsWithCalculatedDurations.length
+
+      for (const event of eventsWithCalculatedDurations) {
+        const eventStartTime = event.startTime
+        const eventDuration = event.calculatedDuration // Use the calculated duration
+
         if (event.type === "instruction_sound" && event.soundCueId) {
           const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
           if (soundCue) {
             setGenerationStep(`Adding sound: ${soundCue.name}`)
-            setGenerationProgress(50)
             if (soundCue.src.startsWith("synthetic:")) {
-              addSyntheticToContext(ctx, soundCue, currentTime, 5) // Synthetic sounds are 5 seconds long
+              addSyntheticToContext(ctx, soundCue, eventStartTime, eventDuration)
             } else {
-              // Load and play audio file
               const response = await fetch(soundCue.src)
               const arrayBuffer = await response.arrayBuffer()
               const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
               const source = ctx.createBufferSource()
               source.buffer = audioBuffer
               source.connect(ctx.destination)
-              source.start(currentTime)
+              source.start(eventStartTime)
             }
           }
+        } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
+          setGenerationStep(`Adding recorded voice: ${event.recordedInstructionLabel || "Untitled"}`)
+          const response = await fetch(event.recordedAudioUrl)
+          const arrayBuffer = await response.arrayBuffer()
+          const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+          const source = ctx.createBufferSource()
+          source.buffer = audioBuffer
+          source.connect(ctx.destination)
+          source.start(eventStartTime)
         }
-        currentTime += 5 // Assuming 5 seconds for each sound cue
+        processedEventsCount++
+        setGenerationProgress(Math.floor((processedEventsCount / totalEvents) * 80)) // Progress up to 80% for event processing
       }
 
       setGenerationStep("Rendering audio...")
-      setGenerationProgress(90)
+      setGenerationProgress(80) // Set to 80% before rendering
       const rendered = await ctx.startRendering()
-      const wavBlob = await bufferToWav(rendered, true, (p) => setGenerationProgress(90 + Math.floor(p * 0.1)))
+      const wavBlob = await bufferToWav(rendered, true, (p) => setGenerationProgress(80 + Math.floor(p * 0.2))) // Remaining 20% for WAV conversion
       const url = URL.createObjectURL(wavBlob)
       setGeneratedAudioUrl(url)
 
-      // Clean up
+      // Play generated audio
+      if (labsAudioRef.current) {
+        labsAudioRef.current.src = url
+        labsAudioRef.current.volume = volume / 100
+        await labsAudioRef.current.play().catch((e) => console.error("Error playing generated audio:", e))
+      }
+
       setIsGeneratingAudio(false)
       setGenerationProgress(100)
       setGenerationStep("Export Complete")
@@ -1175,6 +1234,8 @@ export default function HomePage() {
       startTime: 0,
       instructionText: instructionTextToAdd,
       soundCueId: selectedSoundCue.id,
+      // Duration for instruction_sound events will be calculated during audio generation
+      // based on the actual sound cue duration or a default for synthetic sounds.
     }
     setTimelineEvents((prev) => [...prev, newEvent].sort((a, b) => a.startTime - b.startTime))
     setSelectedLibraryInstruction(null)
