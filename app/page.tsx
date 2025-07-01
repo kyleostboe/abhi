@@ -1,12 +1,18 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { VisualTimeline } from "@/components/VisualTimeline"
-import type { TimelineEvent } from "@/types"
+import { VisualTimeline } from "@/components/visual-timeline"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/components/ui/use-toast"
+
+interface TimelineEvent {
+  id: string
+  name: string
+  startTime: number
+  duration: number
+}
 
 const defaultTotalDuration = 60
 
