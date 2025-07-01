@@ -338,7 +338,7 @@ export default function HomePage() {
     alert("Load functionality not yet implemented.")
   }
 
-  const bufferToWav = async (buffer: AudioBuffer): Promise<Blob> => {
+  const bufferToWavOld = async (buffer: AudioBuffer): Promise<Blob> => {
     const numberOfChannels = buffer.numberOfChannels
     const numSamples = buffer.length
     const sampleRate = buffer.sampleRate
@@ -786,11 +786,7 @@ export default function HomePage() {
       setProcessingStep("Detecting silence regions (step 1/4)...")
       setProcessingProgress(10)
       await sleep(10)
-      const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
-      setProcessingStep("Calculating adjustments (step 2/4)...")
-      setProcessingProgress(30)
-      await sleep(10)
-      const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
+      const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration) // Corrected: Removed duplicate 'const'
       setProcessingStep("Calculating adjustments (step 2/4)...")
       setProcessingProgress(30)
       await sleep(10)
