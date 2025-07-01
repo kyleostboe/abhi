@@ -464,7 +464,7 @@ export default function HomePage() {
 
     try {
       console.log("Starting audio export with events:", timelineEvents)
-      
+
       // Calculate the maximum end time needed for the OfflineAudioContext
       const maxAudioDuration = labsTotalDuration // Start with the user-defined total duration
 
@@ -487,7 +487,7 @@ export default function HomePage() {
 
           // First try using the stored soundCueSrc
           if (event.soundCueSrc) {
-            setGenerationStep(`Adding sound: ${event.soundCueName || 'Sound Cue'}`)
+            setGenerationStep(`Adding sound: ${event.soundCueName || "Sound Cue"}`)
             console.log(`Processing sound cue from soundCueSrc: ${event.soundCueSrc}`)
 
             if (event.soundCueSrc.startsWith("synthetic:")) {
@@ -495,7 +495,7 @@ export default function HomePage() {
               const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
               if (soundCue) {
                 console.log(`Found synthetic sound cue:`, soundCue)
-                
+
                 // Generate synthetic sound using Web Audio API
                 const oscillator = ctx.createOscillator()
                 const gainNode = ctx.createGain()
@@ -515,7 +515,7 @@ export default function HomePage() {
 
                 gainNode.gain.setValueAtTime(0, eventStartTime)
                 gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + attackDuration)
-                
+
                 if (eventDuration > attackDuration + releaseDuration) {
                   gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
                 }
@@ -540,9 +540,12 @@ export default function HomePage() {
 
                     harmonicGain.gain.setValueAtTime(0, eventStartTime)
                     harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + attackDuration)
-                    
+
                     if (eventDuration > attackDuration + releaseDuration) {
-                      harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + eventDuration - releaseDuration)
+                      harmonicGain.gain.linearRampToValueAtTime(
+                        harmonicVolume,
+                        eventStartTime + eventDuration - releaseDuration,
+                      )
                     }
                     harmonicGain.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
 
@@ -550,7 +553,7 @@ export default function HomePage() {
                     harmonicOsc.stop(eventStartTime + eventDuration)
                   })
                 }
-                
+
                 soundProcessed = true
                 console.log(`Successfully added synthetic sound at ${eventStartTime}`)
               }
@@ -586,7 +589,7 @@ export default function HomePage() {
 
                   oscillator.start(eventStartTime)
                   oscillator.stop(eventStartTime + eventDuration)
-                  
+
                   soundProcessed = true
                   console.log(`Successfully added musical note ${note}${octave} at ${eventStartTime}`)
                 }
@@ -606,7 +609,7 @@ export default function HomePage() {
                 gainNode.connect(ctx.destination)
                 gainNode.gain.setValueAtTime(0.4, eventStartTime) // Good volume for pre-recorded sounds
                 source.start(eventStartTime)
-                
+
                 soundProcessed = true
                 console.log(`Successfully added pre-recorded audio at ${eventStartTime}`)
               } catch (error) {
@@ -643,7 +646,7 @@ export default function HomePage() {
 
                 gainNode.gain.setValueAtTime(0, eventStartTime)
                 gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + attackDuration)
-                
+
                 if (eventDuration > attackDuration + releaseDuration) {
                   gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
                 }
@@ -668,9 +671,12 @@ export default function HomePage() {
 
                     harmonicGain.gain.setValueAtTime(0, eventStartTime)
                     harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + attackDuration)
-                    
+
                     if (eventDuration > attackDuration + releaseDuration) {
-                      harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + eventDuration - releaseDuration)
+                      harmonicGain.gain.linearRampToValueAtTime(
+                        harmonicVolume,
+                        eventStartTime + eventDuration - releaseDuration,
+                      )
                     }
                     harmonicGain.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
 
@@ -678,7 +684,7 @@ export default function HomePage() {
                     harmonicOsc.stop(eventStartTime + eventDuration)
                   })
                 }
-                
+
                 soundProcessed = true
                 console.log(`Successfully added synthetic sound from ID at ${eventStartTime}`)
               }
@@ -688,11 +694,10 @@ export default function HomePage() {
           if (!soundProcessed) {
             console.warn(`Could not process sound for event ${event.id}`)
           }
-
         } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
           setGenerationStep(`Adding recorded voice: ${event.recordedInstructionLabel || "Untitled"}`)
           console.log(`Processing recorded voice: ${event.recordedAudioUrl}`)
-          
+
           try {
             const response = await fetch(event.recordedAudioUrl)
             const arrayBuffer = await response.arrayBuffer()
@@ -705,7 +710,7 @@ export default function HomePage() {
             gainNode.connect(ctx.destination)
             gainNode.gain.setValueAtTime(0.8, eventStartTime) // Higher volume for voice
             source.start(eventStartTime)
-            
+
             console.log(`Successfully added recorded voice at ${eventStartTime}`)
           } catch (error) {
             console.warn(`Could not load recorded audio: ${event.recordedAudioUrl}`, error)
@@ -719,10 +724,10 @@ export default function HomePage() {
       setGenerationStep("Rendering audio...")
       setGenerationProgress(80) // Set to 80% before rendering
       console.log("Starting audio rendering...")
-      
+
       const rendered = await ctx.startRendering()
       console.log("Audio rendering complete, creating WAV blob...")
-      
+
       const wavBlob = await bufferToWavOld(rendered) // Use the existing bufferToWav function
       const url = URL.createObjectURL(wavBlob)
       setGeneratedAudioUrl(url)
@@ -1171,7 +1176,8 @@ export default function HomePage() {
           for (let j = 0; j < newSilenceLength; j++) {
             if (writeIndex < newData.length) newData[writeIndex++] = 0
           }
-          const nextRegionStart = i < regions.length - 1 ? Math.floor(regions[i + 1].start * buffer.sampleRate) : totalSamples
+          const nextRegionStart =
+            i < regions.length - 1 ? Math.floor(regions[i + 1].start * buffer.sampleRate) : totalSamples
           const segmentLength = nextRegionStart - readIndex
           for (let j = 0; j < segmentLength; j++) {
             if (writeIndex < newData.length && readIndex + j < totalSamples) {
@@ -1761,7 +1767,11 @@ export default function HomePage() {
                     </h3>
                   </div>
                   <div className="p-10 md:p-16 text-center md:py-14 border-dashed border-stone-300 border-2 rounded-b-2xl border-t-0">
-                    <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
                       <div className="dark:text-gray-200 font-serif mb-2.5 font-black text-base text-gray-600">
                         Drop your audio file here or click to browse
                       </div>
@@ -1864,7 +1874,9 @@ export default function HomePage() {
                             <div className="p-2 rounded-lg mr-3 dark:bg-gray-700 bg-transparent">
                               <Info className="h-4 w-4 dark:text-gray-300 text-logo-rose-600" />
                             </div>
-                            <div className="text-lg dark:text-gray-200 font-black text-logo-rose-600">Audio Analysis</div>
+                            <div className="text-lg dark:text-gray-200 font-black text-logo-rose-600">
+                              Audio Analysis
+                            </div>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="bg-white p-3 rounded-lg text-center dark:bg-gray-900 shadow-lg dark:shadow-white/10 border-logo-rose-600 border">
@@ -2332,7 +2344,11 @@ export default function HomePage() {
 
                 {/* Main Content Grid for Labs */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
                       <div className="bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 py-3 px-6 dark:from-logo-purple-600 dark:to-logo-blue-600">
                         <h3 className="text-white flex items-center font-black">
@@ -2388,7 +2404,11 @@ export default function HomePage() {
                       </div>
                     </Card>
                   </motion.div>
-                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
                       <div className="bg-gradient-to-r from-logo-emerald-500 to-logo-teal-500 py-3 px-6 dark:from-logo-emerald-600 dark:to-logo-teal-600">
                         <h3 className="text-white flex items-center font-black">
@@ -2452,7 +2472,11 @@ export default function HomePage() {
                       </div>
                     </Card>
                   </motion.div>
-                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
                       <div className="bg-gradient-to-r from-logo-rose-500 to-logo-amber-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600">
                         <h3 className="text-white flex items-center font-black">
@@ -2519,7 +2543,9 @@ export default function HomePage() {
 
                                   // Get duration from audio element if available, otherwise use 0
                                   let duration = 0
-                                  const audioElements = document.querySelectorAll('audio[src="' + recordedAudioUrl + '"]')
+                                  const audioElements = document.querySelectorAll(
+                                    'audio[src="' + recordedAudioUrl + '"]',
+                                  )
                                   if (audioElements.length > 0) {
                                     const audio = audioElements[0] as HTMLAudioElement
                                     if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
@@ -2537,7 +2563,7 @@ export default function HomePage() {
                                   }
 
                                   setTimelineEvents((prev) =>
-                                    ([...prev, newEvent]).sort((a, b) => a.startTime - b.startTime),
+                                    [...prev, newEvent].sort((a, b) => a.startTime - b.startTime),
                                   )
 
                                   // Clean up
@@ -2634,54 +2660,58 @@ export default function HomePage() {
                                       className="opacity-75"
                                       fill="currentColor"
                                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                        </div>
-                      )}
-                      <Wand2 className="mr-2 h-5 w-5" />
-                      <span>{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
-                    </div>
-                  </Button>
-
-                  <AnimatePresence>
-                    {generatedAudioUrl && !isGeneratingAudio && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4"
-                      >
-                        <div className="bg-gradient-to-r from-logo-emerald-50 to-logo-teal-50 dark:from-logo-emerald-950 dark:to-logo-teal-950 p-4 rounded-lg border border-logo-emerald-200 dark:border-logo-emerald-800 text-white">
-                          <h4 className="text-sm font-black text-logo-emerald-700 dark:text-logo-emerald-300 mb-3">
-                            Generated Audio
-                          </h4>
-                          <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-3 dark:bg-gray-700">
-                            <audio controls className="w-full" src={generatedAudioUrl}></audio>
-                          </div>
-                          <Button
-                            onClick={() => {
-                              const a = document.createElement("a")
-                              a.href = generatedAudioUrl
-                              a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
-                              document.body.appendChild(a)
-                              a.click()
-                              document.body.removeChild(a)
-                            }}
-                            className="w-full bg-gradient-to-r from-logo-emerald-500 to-logo-teal-500 hover:from-logo-emerald-600 hover:to-logo-teal-600 text-white border-none font-black"
-                          >
-                            <Download className="mr-2 h-4 w-4" />
-                            Download Audio
+                                    ></path>
+                                  </svg>
+                                </div>
+                              )}
+                              <Wand2 className="mr-2 h-5 w-5" />
+                              <span>{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
+                            </div>
                           </Button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </>
-              )}
-            </div>
-          </Card>
-        </motion.div>
+
+                          <AnimatePresence>
+                            {generatedAudioUrl && !isGeneratingAudio && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4"
+                              >
+                                <div className="bg-gradient-to-r from-logo-emerald-50 to-logo-teal-50 dark:from-logo-emerald-950 dark:to-logo-teal-950 p-4 rounded-lg border border-logo-emerald-200 dark:border-logo-emerald-800 text-white">
+                                  <h4 className="text-sm font-black text-logo-emerald-700 dark:text-logo-emerald-300 mb-3">
+                                    Generated Audio
+                                  </h4>
+                                  <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-3 dark:bg-gray-700">
+                                    <audio controls className="w-full" src={generatedAudioUrl}></audio>
+                                  </div>
+                                  <Button
+                                    onClick={() => {
+                                      const a = document.createElement("a")
+                                      a.href = generatedAudioUrl
+                                      a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
+                                      document.body.appendChild(a)
+                                      a.click()
+                                      document.body.removeChild(a)
+                                    }}
+                                    className="w-full bg-gradient-to-r from-logo-emerald-500 to-logo-teal-500 hover:from-logo-emerald-600 hover:to-logo-teal-600 text-white border-none font-black"
+                                  >
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Download Audio
+                                  </Button>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </>
+                      )}
+                    </div>
+                  </Card>
+                </motion.div>
+              </motion.div>
+            )}
+          </div>
+        </div>
       </motion.div>
     </div>
-  )\
+  )
 }
