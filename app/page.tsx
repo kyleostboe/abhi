@@ -2120,9 +2120,8 @@ export default function HomePage() {
                     className={cn(
                       "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
                       "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none",
-                      "border", // Base border
                       isProcessing
-                        ? "bg-white text-indigo-600 border-black" // Processing state
+                        ? "bg-white text-indigo-600 border border-black" // Processing state
                         : "bg-gradient-to-r from-green-500 via-teal-500 via-indigo-500 to-logo-rose-500 text-white border-transparent", // Default state
                       // Apply hover/active styles that match the 'isProcessing' state
                       "hover:bg-white hover:text-indigo-600 hover:border-black hover:[background-image:none]",
