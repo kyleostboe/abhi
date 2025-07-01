@@ -5,24 +5,12 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
-import { Alert } from "@/components/ui/alert"
 import {
-  Info,
-  Upload,
-  Volume2,
-  Clock,
-  Wand2,
-  Download,
-  Settings2,
-  AlertTriangle,
-  ListPlus,
-  Music2,
-  Mic,
-  StopCircle,
-  Play,
-  PlusCircle,
-  CircleDotDashed,
-} from "lucide-react"
+  Alert,
+  AlertTitle,
+  AlertDescription
+} from "@/components/ui/alert"
+import { Info, Upload, Volume2, Clock, Wand2, Download, Settings2, AlertTriangle, ListPlus, Music2, Mic, StopCircle, Play, PlusCircle, CircleDotDashed } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -130,65 +118,65 @@ export default function HomePage() {
 
   // == States for Length Adjuster ==
   const [file, setFile] = useState<File | null>(null)
-  const [originalBuffer, setOriginalBuffer] = useState<AudioBuffer | null>(null)
-  const [processedBufferState, setProcessedBufferState] = useState<AudioBuffer | null>(null)
+  const [originalBuffer, setOriginalBuffer = useState<AudioBuffer | null>(null)
+  const [processedBufferState, setProcessedBufferState = useState<AudioBuffer | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
-  const [targetDuration, setTargetDuration] = useState<number>(20)
-  const [silenceThreshold, setSilenceThreshold] = useState<number>(0.01)
-  const [minSilenceDuration, setMinSilenceDuration] = useState<number>(3)
-  const [minSpacingDuration, setMinSpacingDuration] = useState<number>(1.5)
-  const [preserveNaturalPacing, setPreserveNaturalPacing] = useState<boolean>(true)
-  const [compatibilityMode, setCompatibilityMode] = useState<string>("high")
+  const [targetDuration, setTargetDuration = useState<number>(20)
+  const [silenceThreshold, setSilenceThreshold = useState<number>(0.01)
+  const [minSilenceDuration, setMinSilenceDuration = useState<number>(3)
+  const [minSpacingDuration, setMinSpacingDuration = useState<number>(1.5)
+  const [preserveNaturalPacing, setPreserveNaturalPacing = useState<boolean>(true)
+  const [compatibilityMode, setCompatibilityMode = useState<string>("high")
 
-  const [status, setStatus] = useState<{ message: string; type: string } | null>(null)
-  const [originalUrl, setOriginalUrl] = useState<string>("")
-  const [processedUrl, setProcessedUrl] = useState<string>("")
-  const [pausesAdjusted, setPausesAdjusted] = useState<number>(0)
-  const [isProcessing, setIsProcessing] = useState<boolean>(false)
-  const [processingProgress, setProcessingProgress] = useState<number>(0)
-  const [processingStep, setProcessingStep] = useState<string>("")
+  const [status, setStatus = useState<{ message: string; type: string } | null>(null)
+  const [originalUrl, setOriginalUrl = useState<string>("")
+  const [processedUrl, setProcessedUrl = useState<string>("")
+  const [pausesAdjusted, setPausesAdjusted = useState<number>(0)
+  const [isProcessing, setIsProcessing = useState<boolean>(false)
+  const [processingProgress, setProcessingProgress = useState<number>(0)
+  const [processingStep, setProcessingStep = useState<string>("")
 
-  const [durationLimits, setDurationLimits] = useState<{ min: number; max: number } | null>(null)
-  const [audioAnalysis, setAudioAnalysis] = useState<{
+  const [durationLimits, setDurationLimits = useState<{ min: number; max: number } | null>(null)
+  const [audioAnalysis, setAudioAnalysis = useState<{
     totalSilence: number
     contentDuration: number
     silenceRegions: number
   } | null>(null)
-  const [actualDuration, setActualDuration] = useState<number | null>(null)
-  const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
-  const [isMobileDevice, setIsMobileDevice] = useState<boolean>(false)
-  const [memoryWarning, setMemoryWarning] = useState<boolean>(false)
+  const [actualDuration, setActualDuration = useState<number | null>(null)
+  const [isProcessingComplete, setIsProcessingComplete = useState<boolean>(false)
+  const [isMobileDevice, setIsMobileDevice = useState<boolean>(false)
+  const [memoryWarning, setMemoryWarning = useState<boolean>(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadAreaRef = useRef<HTMLDivElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // == States for Labs ==
-  const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
-  const [labsTotalDuration, setLabsTotalDuration] = useState<number>(600)
-  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
-  const [selectedLibraryInstruction, setSelectedLibraryInstruction] = useState<Instruction | null>(null)
-  const [customInstructionText, setCustomInstructionText] = useState<string>("")
-  const [selectedSoundCue, setSelectedSoundCue] = useState<SoundCue | null>(null)
-  const [isRecording, setIsRecording] = useState<boolean>(false)
-  const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null)
-  const [recordedBlobs, setRecordedBlobs] = useState<Blob[]>([])
+  const [meditationTitle, setMeditationTitle = useState<string>("My Custom Meditation")
+  const [labsTotalDuration, setLabsTotalDuration = useState<number>(600)
+  const [timelineEvents, setTimelineEvents = useState<TimelineEvent[]>([])
+  const [selectedLibraryInstruction, setSelectedLibraryInstruction = useState<Instruction | null>(null)
+  const [customInstructionText, setCustomInstructionText = useState<string>("")
+  const [selectedSoundCue, setSelectedSoundCue = useState<SoundCue | null>(null)
+  const [isRecording, setIsRecording = useState<boolean>(false)
+  const [recordedAudioUrl, setRecordedAudioUrl = useState<string | null>(null)
+  const [recordedBlobs, setRecordedBlobs = useState<Blob[]>([])
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const labsAudioRef = useRef<HTMLAudioElement | null>(null)
   const instructionCategories = Array.from(new Set(INSTRUCTIONS_LIBRARY.map((instr) => instr.category)))
-  const [recordingLabel, setRecordingLabel] = useState<string>("")
+  const [recordingLabel, setRecordingLabel = useState<string>("")
 
   // Audio generation states
-  const [isGeneratingAudio, setIsGeneratingAudio] = useState<boolean>(false)
-  const [generationProgress, setGenerationProgress] = useState<number>(0)
-  const [generationStep, setGenerationStep] = useState<string>("")
-  const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
+  const [isGeneratingAudio, setIsGeneratingAudio = useState<boolean>(false)
+  const [generationProgress, setGenerationProgress = useState<number>(0)
+  const [generationStep, setGenerationStep = useState<string>("")
+  const [generatedAudioUrl, setGeneratedAudioUrl = useState<string | null>(null)
 
-  const [timeline, setTimeline] = useState<TimelineItem[]>([])
-  const [currentTab, setCurrentTab] = useState<string>("instructions")
-  const [isPlaying, setIsPlaying] = useState<boolean>(false)
-  const [currentPlaybackTime, setCurrentPlaybackTime] = useState<number>(0) // in seconds
-  const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null)
-  const [volume, setVolume] = useState<number>(75) // Default volume 75%
+  const [timeline, setTimeline = useState<TimelineItem[]>([])
+  const [currentTab, setCurrentTab = useState<string>("instructions")
+  const [isPlaying, setIsPlaying = useState<boolean>(false)
+  const [currentPlaybackTime, setCurrentPlaybackTime = useState<number>(0) // in seconds
+  const [activeItemIndex, setActiveItemIndex = useState<number | null>(null)
+  const [volume, setVolume = useState<number>(75) // Default volume 75%
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const currentItemStartTimeRef = useRef<number>(0)
@@ -1631,7 +1619,7 @@ export default function HomePage() {
                       "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-sm",
                       activeMode === "adjuster"
                         ? "bg-white text-gray-600 shadow-sm dark:shadow-white/20 dark:bg-gray-700 dark:text-gray-600"
-                        : "text-gray-600 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800",
+                        : "text-gray-600 dark:text-gray-600",
                     )}
                   >
                     Adjuster
@@ -1642,7 +1630,7 @@ export default function HomePage() {
                       "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-sm text-gray-600",
                       activeMode === "labs"
                         ? "bg-white text-gray-600 shadow-sm dark:shadow-white/20 dark:bg-gray-700 dark:text-gray-600"
-                        : "text-gray-600 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800",
+                        : "text-gray-600 dark:text-gray-600",
                     )}
                   >
                     Encoder
