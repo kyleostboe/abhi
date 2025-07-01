@@ -361,7 +361,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
 
       {/* Event List */}
       <div className="space-y-3">
-        <h4 className="text-lg font-black text-gray-800 dark:text-gray-200">Timeline Events</h4>
+        <h4 className="text-lg font-black dark:text-gray-200 text-gray-600">Timeline Events</h4>
         <AnimatePresence>
           {events.length === 0 ? (
             <motion.div

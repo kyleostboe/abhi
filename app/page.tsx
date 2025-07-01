@@ -2306,7 +2306,7 @@ export default function HomePage() {
                       </h3>
                     </div>
                     <div className="p-6 bg-white text-sm font-black">
-                      <div className="grid md:grid-cols-2 gap-6">
+                      <div className="grid md:grid-cols-2 gap-6 text-gray-600">
                         <div className="">
                           <Label
                             htmlFor="labs-title"
@@ -2429,7 +2429,7 @@ export default function HomePage() {
                                 {category}
                               </AccordionTrigger>
                               <AccordionContent className="pb-4">
-                                <div className="space-y-2">
+                                <div className="space-y-2 text-gray-600">
                                   {notes.map((note) => (
                                     <div key={note.id} className="flex items-center gap-2 font-black">
                                       <Button
