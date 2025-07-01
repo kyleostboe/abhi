@@ -1624,7 +1624,7 @@ export default function HomePage() {
 
               {/* Mode Switch */}
               <div className="flex flex-col items-center space-y-4 my-12">
-                <div className="grid mx-auto grid-cols-2 bg-gray-100/70 p-1 rounded-md dark:bg-gray-800/70 w-5/12 h-auto font-serif text-black">
+                <div className="grid mx-auto grid-cols-2 bg-gray-100/70 p-1 rounded-md dark:bg-gray-800/70 w-5/12 h-auto font-serif text-black shadow-inner">
                   <button
                     onClick={() => setActiveMode("adjuster")}
                     className={cn(
@@ -1634,7 +1634,7 @@ export default function HomePage() {
                         : "text-black dark:text-black hover:bg-gray-50 dark:hover:bg-gray-800",
                     )}
                   >
-                    Length Adjuster
+                    Adjuster
                   </button>
                   <button
                     onClick={() => setActiveMode("labs")}
@@ -1645,7 +1645,7 @@ export default function HomePage() {
                         : "text-black dark:text-black hover:bg-gray-50 dark:hover:bg-gray-800",
                     )}
                   >
-                    Meditation Lab
+                    Encoder
                   </button>
                 </div>
               </div>
