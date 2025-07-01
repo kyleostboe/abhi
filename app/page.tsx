@@ -463,47 +463,10 @@ export default function HomePage() {
     setGenerationStep("Initializing...")
 
     try {
+      console.log("Starting audio export with events:", timelineEvents)
+      
       // Calculate the maximum end time needed for the OfflineAudioContext
-      let maxAudioDuration = labsTotalDuration // Start with the user-defined total duration
-
-      // Pre-calculate actual durations for all events to determine maxAudioDuration
-      const eventsWithCalculatedDurations = await Promise.all(
-        timelineEvents.map(async (event) => {
-          let actualDuration = event.duration || 0 // Start with existing duration or 0
-
-          if (event.type === "instruction_sound" && event.soundCueId) {
-            const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
-            if (soundCue) {
-              if (soundCue.src.startsWith("synthetic:")) {
-                actualDuration = (soundCue.duration || 1000) / 1000 // Convert ms to seconds
-              } else if (soundCue.src.startsWith("musical:")) {
-                actualDuration = 0.8 // Default duration for musical notes
-              } else {
-                // For pre-recorded sound files, decode to get actual duration
-                try {
-                  const response = await fetch(soundCue.src)
-                  const arrayBuffer = await response.arrayBuffer()
-                  // Use a temporary AudioContext to decode without affecting the main OfflineAudioContext
-                  const tempAudioContext = new AudioContext()
-                  const audioBuffer = await tempAudioContext.decodeAudioData(arrayBuffer)
-                  actualDuration = audioBuffer.duration
-                  tempAudioContext.close() // Close temp context to free resources
-                } catch (e) {
-                  console.warn(`Could not decode audio for ${soundCue.name}, using default duration.`, e)
-                  actualDuration = 1 // Fallback to default
-                }
-              }
-            }
-          }
-          // For recorded_voice, actualDuration is already set from event.duration
-
-          const eventEndTime = event.startTime + actualDuration
-          if (eventEndTime > maxAudioDuration) {
-            maxAudioDuration = eventEndTime
-          }
-          return { ...event, calculatedDuration: actualDuration } // Store calculated duration
-        }),
-      )
+      const maxAudioDuration = labsTotalDuration // Start with the user-defined total duration
 
       const ctx = new OfflineAudioContext({
         numberOfChannels: 1,
@@ -512,21 +475,27 @@ export default function HomePage() {
       })
 
       let processedEventsCount = 0
-      const totalEvents = eventsWithCalculatedDurations.length
+      const totalEvents = timelineEvents.length
 
-      for (const event of eventsWithCalculatedDurations) {
+      for (const event of timelineEvents) {
         const eventStartTime = event.startTime
-        const eventDuration = event.calculatedDuration // Use the calculated duration
+        console.log(`Processing event ${event.id} at time ${eventStartTime}:`, event)
 
         if (event.type === "instruction_sound") {
           // Handle instruction_sound events - these should include sound cues
+          let soundProcessed = false
+
+          // First try using the stored soundCueSrc
           if (event.soundCueSrc) {
             setGenerationStep(`Adding sound: ${event.soundCueName || 'Sound Cue'}`)
+            console.log(`Processing sound cue from soundCueSrc: ${event.soundCueSrc}`)
 
             if (event.soundCueSrc.startsWith("synthetic:")) {
               // Find the sound cue from the library to get full parameters
               const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
               if (soundCue) {
+                console.log(`Found synthetic sound cue:`, soundCue)
+                
                 // Generate synthetic sound using Web Audio API
                 const oscillator = ctx.createOscillator()
                 const gainNode = ctx.createGain()
@@ -541,11 +510,15 @@ export default function HomePage() {
                 // Create envelope
                 const attackDuration = soundCue.attackDuration || 0.01
                 const releaseDuration = soundCue.releaseDuration || 0.5
-                const peakVolume = 0.3 // Reduced volume for better mixing
+                const eventDuration = (soundCue.duration || 1000) / 1000 // Convert ms to seconds
+                const peakVolume = 0.5 // Increased volume for better audibility
 
                 gainNode.gain.setValueAtTime(0, eventStartTime)
                 gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + attackDuration)
-                gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
+                
+                if (eventDuration > attackDuration + releaseDuration) {
+                  gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
+                }
                 gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
 
                 oscillator.start(eventStartTime)
@@ -563,20 +536,23 @@ export default function HomePage() {
                     harmonicOsc.type = soundCue.waveform || "sine"
                     harmonicOsc.frequency.setValueAtTime(harmonic, eventStartTime)
 
-                    const harmonicVolume = (peakVolume * 0.2) / (index + 1)
+                    const harmonicVolume = (peakVolume * 0.3) / (index + 1)
 
                     harmonicGain.gain.setValueAtTime(0, eventStartTime)
                     harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + attackDuration)
-                    harmonicGain.gain.linearRampToValueAtTime(
-                      harmonicVolume,
-                      eventStartTime + eventDuration - releaseDuration,
-                    )
+                    
+                    if (eventDuration > attackDuration + releaseDuration) {
+                      harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + eventDuration - releaseDuration)
+                    }
                     harmonicGain.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
 
                     harmonicOsc.start(eventStartTime)
                     harmonicOsc.stop(eventStartTime + eventDuration)
                   })
                 }
+                
+                soundProcessed = true
+                console.log(`Successfully added synthetic sound at ${eventStartTime}`)
               }
             } else if (event.soundCueSrc.startsWith("musical:")) {
               // Handle musical notes
@@ -584,6 +560,7 @@ export default function HomePage() {
               if (noteMatch) {
                 const note = noteMatch[1]
                 const octave = Number.parseInt(noteMatch[2])
+                console.log(`Processing musical note: ${note}${octave}`)
 
                 // Get frequency from NOTE_FREQUENCIES
                 const noteKey = `${note}${octave}` as keyof typeof NOTE_FREQUENCIES
@@ -599,18 +576,25 @@ export default function HomePage() {
                   oscillator.type = "sine"
                   oscillator.frequency.setValueAtTime(frequency, eventStartTime)
 
+                  const eventDuration = 0.8 // Default duration for musical notes
+                  const peakVolume = 0.4 // Good volume for musical notes
+
                   // Gentle envelope for musical notes
                   gainNode.gain.setValueAtTime(0, eventStartTime)
-                  gainNode.gain.exponentialRampToValueAtTime(0.2, eventStartTime + 0.05)
+                  gainNode.gain.exponentialRampToValueAtTime(peakVolume, eventStartTime + 0.05)
                   gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
 
                   oscillator.start(eventStartTime)
                   oscillator.stop(eventStartTime + eventDuration)
+                  
+                  soundProcessed = true
+                  console.log(`Successfully added musical note ${note}${octave} at ${eventStartTime}`)
                 }
               }
             } else {
               // Handle pre-recorded audio files
               try {
+                console.log(`Loading pre-recorded audio: ${event.soundCueSrc}`)
                 const response = await fetch(event.soundCueSrc)
                 const arrayBuffer = await response.arrayBuffer()
                 const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
@@ -620,17 +604,24 @@ export default function HomePage() {
                 source.buffer = audioBuffer
                 source.connect(gainNode)
                 gainNode.connect(ctx.destination)
-                gainNode.gain.setValueAtTime(0.3, eventStartTime) // Reduced volume
+                gainNode.gain.setValueAtTime(0.4, eventStartTime) // Good volume for pre-recorded sounds
                 source.start(eventStartTime)
+                
+                soundProcessed = true
+                console.log(`Successfully added pre-recorded audio at ${eventStartTime}`)
               } catch (error) {
                 console.warn(`Could not load audio file: ${event.soundCueSrc}`, error)
               }
             }
-          } else if (event.soundCueId) {
-            // Fallback: try to find sound cue by ID if soundCueSrc is not available
+          }
+
+          // Fallback: try to find sound cue by ID if soundCueSrc didn't work
+          if (!soundProcessed && event.soundCueId) {
+            console.log(`Fallback: trying to find sound cue by ID: ${event.soundCueId}`)
             const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
             if (soundCue) {
               setGenerationStep(`Adding sound: ${soundCue.name}`)
+              console.log(`Found sound cue by ID:`, soundCue)
 
               if (soundCue.src.startsWith("synthetic:")) {
                 // Generate synthetic sound using Web Audio API
@@ -647,11 +638,15 @@ export default function HomePage() {
                 // Create envelope
                 const attackDuration = soundCue.attackDuration || 0.01
                 const releaseDuration = soundCue.releaseDuration || 0.5
-                const peakVolume = 0.3 // Reduced volume for better mixing
+                const eventDuration = (soundCue.duration || 1000) / 1000 // Convert ms to seconds
+                const peakVolume = 0.5 // Increased volume
 
                 gainNode.gain.setValueAtTime(0, eventStartTime)
                 gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + attackDuration)
-                gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
+                
+                if (eventDuration > attackDuration + releaseDuration) {
+                  gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
+                }
                 gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
 
                 oscillator.start(eventStartTime)
@@ -669,25 +664,35 @@ export default function HomePage() {
                     harmonicOsc.type = soundCue.waveform || "sine"
                     harmonicOsc.frequency.setValueAtTime(harmonic, eventStartTime)
 
-                    const harmonicVolume = (peakVolume * 0.2) / (index + 1)
+                    const harmonicVolume = (peakVolume * 0.3) / (index + 1)
 
                     harmonicGain.gain.setValueAtTime(0, eventStartTime)
                     harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + attackDuration)
-                    harmonicGain.gain.linearRampToValueAtTime(
-                      harmonicVolume,
-                      eventStartTime + eventDuration - releaseDuration,
-                    )
+                    
+                    if (eventDuration > attackDuration + releaseDuration) {
+                      harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + eventDuration - releaseDuration)
+                    }
                     harmonicGain.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
 
                     harmonicOsc.start(eventStartTime)
                     harmonicOsc.stop(eventStartTime + eventDuration)
                   })
                 }
+                
+                soundProcessed = true
+                console.log(`Successfully added synthetic sound from ID at ${eventStartTime}`)
               }
             }
           }
+
+          if (!soundProcessed) {
+            console.warn(`Could not process sound for event ${event.id}`)
+          }
+
         } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
           setGenerationStep(`Adding recorded voice: ${event.recordedInstructionLabel || "Untitled"}`)
+          console.log(`Processing recorded voice: ${event.recordedAudioUrl}`)
+          
           try {
             const response = await fetch(event.recordedAudioUrl)
             const arrayBuffer = await response.arrayBuffer()
@@ -698,8 +703,10 @@ export default function HomePage() {
             source.buffer = audioBuffer
             source.connect(gainNode)
             gainNode.connect(ctx.destination)
-            gainNode.gain.setValueAtTime(0.7, eventStartTime) // Higher volume for voice
+            gainNode.gain.setValueAtTime(0.8, eventStartTime) // Higher volume for voice
             source.start(eventStartTime)
+            
+            console.log(`Successfully added recorded voice at ${eventStartTime}`)
           } catch (error) {
             console.warn(`Could not load recorded audio: ${event.recordedAudioUrl}`, error)
           }
@@ -711,7 +718,11 @@ export default function HomePage() {
 
       setGenerationStep("Rendering audio...")
       setGenerationProgress(80) // Set to 80% before rendering
+      console.log("Starting audio rendering...")
+      
       const rendered = await ctx.startRendering()
+      console.log("Audio rendering complete, creating WAV blob...")
+      
       const wavBlob = await bufferToWavOld(rendered) // Use the existing bufferToWav function
       const url = URL.createObjectURL(wavBlob)
       setGeneratedAudioUrl(url)
@@ -727,7 +738,8 @@ export default function HomePage() {
       setGenerationProgress(100)
       setGenerationStep("Export Complete")
 
-      toast({ title: "Export Complete", description: "Timeline audio exported." })
+      console.log("Audio export completed successfully!")
+      toast({ title: "Export Complete", description: "Timeline audio exported with sound cues included!" })
     } catch (error) {
       console.error("Audio export failed:", error)
       toast({
@@ -775,8 +787,8 @@ export default function HomePage() {
               }
             }
             document.removeEventListener("click", resumeContextOnInteraction, true)
-            document.removeEventListener("touchend", resumeContextOnInteraction, true)
-            document.removeEventListener("keydown", resumeContextOnInteraction, true)
+            document.addEventListener("touchend", resumeContextOnInteraction, true)
+            document.addEventListener("keydown", resumeContextOnInteraction, true)
           }
           document.addEventListener("click", resumeContextOnInteraction, { once: true, capture: true })
           document.addEventListener("touchend", resumeContextOnInteraction, { once: true, capture: true })
@@ -2622,57 +2634,54 @@ export default function HomePage() {
                                       className="opacity-75"
                                       fill="currentColor"
                                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                    ></path>
-                                  </svg>
-                                </div>
-                              )}
-                              <Wand2 className="mr-2 h-5 w-5" />
-                              <span>{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
-                            </div>
-                          </Button>
-
-                          <AnimatePresence>
-                            {generatedAudioUrl && !isGeneratingAudio && (
-                              <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: "auto" }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4"
-                              >
-                                <div className="bg-gradient-to-r from-logo-emerald-50 to-logo-teal-50 dark:from-logo-emerald-950 dark:to-logo-teal-950 p-4 rounded-lg border border-logo-emerald-200 dark:border-logo-emerald-800 text-white">
-                                  <h4 className="text-sm font-black text-logo-emerald-700 dark:text-logo-emerald-300 mb-3">
-                                    Generated Audio
-                                  </h4>
-                                  <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-3 dark:bg-gray-700">
-                                    <audio controls className="w-full" src={generatedAudioUrl}></audio>
-                                  </div>
-                                  <Button
-                                    onClick={() => {
-                                      const a = document.createElement("a")
-                                      a.href = generatedAudioUrl
-                                      a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
-                                      document.body.appendChild(a)
-                                      a.click()
-                                      document.body.removeChild(a)
-                                    }}
-                                    className="w-full bg-gradient-to-r from-logo-emerald-500 to-logo-teal-500 hover:from-logo-emerald-600 hover:to-logo-teal-600 text-white border-none font-black"
-                                  >
-                                    <Download className="mr-2 h-4 w-4" />
-                                    Download Audio
-                                  </Button>
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </>
+                            ></path>
+                          </svg>
+                        </div>
                       )}
+                      <Wand2 className="mr-2 h-5 w-5" />
+                      <span>{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
                     </div>
-                  </Card>
-                </motion.div>
-              </motion.div>
-            )}
-          </div>
+                  </Button>
+
+                  <AnimatePresence>
+                    {generatedAudioUrl && !isGeneratingAudio && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4"
+                      >
+                        <div className="bg-gradient-to-r from-logo-emerald-50 to-logo-teal-50 dark:from-logo-emerald-950 dark:to-logo-teal-950 p-4 rounded-lg border border-logo-emerald-200 dark:border-logo-emerald-800 text-white">
+                          <h4 className="text-sm font-black text-logo-emerald-700 dark:text-logo-emerald-300 mb-3">
+                            Generated Audio
+                          </h4>
+                          <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-3 dark:bg-gray-700">
+                            <audio controls className="w-full" src={generatedAudioUrl}></audio>
+                          </div>
+                          <Button
+                            onClick={() => {
+                              const a = document.createElement("a")
+                              a.href = generatedAudioUrl
+                              a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
+                              document.body.appendChild(a)
+                              a.click()
+                              document.body.removeChild(a)
+                            }}
+                            className="w-full bg-gradient-to-r from-logo-emerald-500 to-logo-teal-500 hover:from-logo-emerald-600 hover:to-logo-teal-600 text-white border-none font-black"
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            Download Audio
+                          </Button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </>
+              )}
+            </div>
+          </Card>
         </motion.div>
-      </div>
-    )\
+      </motion.div>
+    </div>
+  )\
 }
