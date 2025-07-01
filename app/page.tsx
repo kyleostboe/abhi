@@ -719,6 +719,9 @@ export default function HomePage() {
 
         processedEventsCount++
         setGenerationProgress(Math.floor((processedEventsCount / totalEvents) * 80)) // Progress up to 80% for event processing
+        setGenerationStep(
+          `Processing event ${processedEventsCount + 1} of ${totalEvents}: ${event.type === "instruction_sound" ? event.instructionText?.substring(0, 30) + "..." : event.recordedInstructionLabel || "Voice recording"}`,
+        )
       }
 
       setGenerationStep("Rendering audio...")
@@ -731,6 +734,15 @@ export default function HomePage() {
       const wavBlob = await bufferToWavOld(rendered) // Use the existing bufferToWav function
       const url = URL.createObjectURL(wavBlob)
       setGeneratedAudioUrl(url)
+
+      // Auto-play the generated audio as requested
+      setTimeout(() => {
+        if (labsAudioRef.current) {
+          labsAudioRef.current.src = url
+          labsAudioRef.current.volume = volume / 100
+          labsAudioRef.current.play().catch((e) => console.error("Error auto-playing generated audio:", e))
+        }
+      }, 500) // Small delay to ensure UI updates
 
       // Play generated audio
       if (labsAudioRef.current) {
@@ -1606,7 +1618,7 @@ export default function HomePage() {
                 className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out tracking-wide mb-[3px] font-black md:text-6xl"
                 style={{
                   fontFamily: 'Georgia, "Times New Roman", serif',
-                  textShadow: "0 0 25px rgba(139, 69, 19, 0.25)",
+                  textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
                 }}
               >
                 abhī
@@ -2706,6 +2718,29 @@ export default function HomePage() {
                       )}
                     </div>
                   </Card>
+                  {isGeneratingAudio && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4"
+                    >
+                      <div className="bg-gradient-to-r from-logo-amber-50 to-logo-rose-50 dark:from-logo-amber-950 dark:to-logo-rose-950 p-4 rounded-lg border border-logo-amber-200 dark:border-logo-amber-800">
+                        <h4 className="text-sm font-black text-logo-amber-700 dark:text-logo-amber-300 mb-2">
+                          Generating Your Meditation
+                        </h4>
+                        <p className="text-xs text-logo-amber-600 dark:text-logo-amber-400 mb-3">{generationStep}</p>
+                        <div className="w-full bg-logo-amber-200 rounded-full h-2 mb-2 dark:bg-logo-amber-800">
+                          <div
+                            className="bg-gradient-to-r from-logo-amber-500 to-logo-rose-500 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${generationProgress}%` }}
+                          ></div>
+                        </div>
+                        <div className="text-center text-xs text-logo-amber-600 dark:text-logo-amber-400">
+                          {generationProgress}% complete
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
                 </motion.div>
               </motion.div>
             )}
