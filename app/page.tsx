@@ -2121,11 +2121,11 @@ export default function HomePage() {
                       "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
                       "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none",
                       isProcessing
-                        ? "bg-white text-indigo-600 border border-black" // Processing state
-                        : "bg-gradient-to-r from-green-500 via-teal-500 via-indigo-500 to-logo-rose-500 text-white border-transparent", // Default state
+                        ? "bg-white text-indigo-600 border border-black" // Processing state: explicitly add border and color
+                        : "bg-gradient-to-r from-green-500 via-teal-500 via-indigo-500 to-logo-rose-500 text-white", // Default state: no border by default
                       // Apply hover/active styles that match the 'isProcessing' state
-                      "hover:bg-white hover:text-indigo-600 hover:border-black hover:[background-image:none]",
-                      "active:bg-white active:text-indigo-600 active:border-black active:[background-image:none]",
+                      "hover:bg-white hover:text-indigo-600 hover:border hover:border-black hover:[background-image:none]", // Add border on hover
+                      "active:bg-white active:text-indigo-600 active:border active:border-black active:[background-image:none]", // Add border on active
                     )}
                     disabled={!originalBuffer || isProcessing || !durationLimits}
                     onClick={processAudio}
