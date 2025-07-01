@@ -109,6 +109,7 @@ interface TimelineEvent {
   startTime: number
   instructionText?: string
   soundCueId?: string
+  soundCue?: { id: string; name: string; src: string } // Add this line
   recordedAudioUrl?: string
   recordedInstructionLabel?: string
   duration?: number
@@ -461,6 +462,8 @@ export default function HomePage() {
     setGenerationStep("Initializing...")
 
     try {
+      console.log("Starting audio generation with events:", timelineEvents)
+
       // Calculate the maximum end time needed for the OfflineAudioContext
       let maxAudioDuration = labsTotalDuration // Start with the user-defined total duration
 
@@ -470,10 +473,18 @@ export default function HomePage() {
           let actualDuration = event.duration || 0 // Start with existing duration or 0
 
           if (event.type === "instruction_sound" && event.soundCueId) {
-            const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
+            // First try to find in the stored soundCue data, then fallback to library
+            const soundCue = event.soundCue
+              ? event.soundCue
+              : SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
+
+            console.log(`Processing sound cue for event ${event.id}:`, soundCue)
+
             if (soundCue) {
               if (soundCue.src.startsWith("synthetic:")) {
-                actualDuration = (soundCue.duration || 1000) / 1000 // Convert ms to seconds
+                // For synthetic sounds, get duration from SOUND_CUES_LIBRARY
+                const fullSoundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === soundCue.id)
+                actualDuration = fullSoundCue ? (fullSoundCue.duration || 1000) / 1000 : 1 // Convert ms to seconds
               } else if (soundCue.src.startsWith("musical:")) {
                 actualDuration = 0.8 // Default duration for musical notes
               } else {
@@ -481,32 +492,35 @@ export default function HomePage() {
                 try {
                   const response = await fetch(soundCue.src)
                   const arrayBuffer = await response.arrayBuffer()
-                  // Use a temporary AudioContext to decode without affecting the main OfflineAudioContext
                   const tempAudioContext = new AudioContext()
                   const audioBuffer = await tempAudioContext.decodeAudioData(arrayBuffer)
                   actualDuration = audioBuffer.duration
-                  tempAudioContext.close() // Close temp context to free resources
+                  tempAudioContext.close()
                 } catch (e) {
                   console.warn(`Could not decode audio for ${soundCue.name}, using default duration.`, e)
                   actualDuration = 1 // Fallback to default
                 }
               }
+            } else {
+              console.warn(`Sound cue not found for event ${event.id} with soundCueId ${event.soundCueId}`)
+              actualDuration = 1 // Fallback duration
             }
           }
-          // For recorded_voice, actualDuration is already set from event.duration
 
           const eventEndTime = event.startTime + actualDuration
           if (eventEndTime > maxAudioDuration) {
             maxAudioDuration = eventEndTime
           }
-          return { ...event, calculatedDuration: actualDuration } // Store calculated duration
+          return { ...event, calculatedDuration: actualDuration }
         }),
       )
+
+      console.log("Events with calculated durations:", eventsWithCalculatedDurations)
 
       const ctx = new OfflineAudioContext({
         numberOfChannels: 1,
         sampleRate: 44100,
-        length: Math.ceil(maxAudioDuration * 44100), // Ensure length is an integer
+        length: Math.ceil(maxAudioDuration * 44100),
       })
 
       let processedEventsCount = 0
@@ -514,76 +528,88 @@ export default function HomePage() {
 
       for (const event of eventsWithCalculatedDurations) {
         const eventStartTime = event.startTime
-        const eventDuration = event.calculatedDuration // Use the calculated duration
+        const eventDuration = event.calculatedDuration
+
+        console.log(`Processing event ${event.id} at time ${eventStartTime}s for ${eventDuration}s`)
 
         if (event.type === "instruction_sound" && event.soundCueId) {
-          const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
+          // First try stored soundCue, then fallback to library lookup
+          const soundCue = event.soundCue
+            ? event.soundCue
+            : SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
+
           if (soundCue) {
             setGenerationStep(`Adding sound: ${soundCue.name}`)
+            console.log(`Adding sound cue: ${soundCue.name} (${soundCue.src})`)
 
             if (soundCue.src.startsWith("synthetic:")) {
-              // Generate synthetic sound using Web Audio API
-              const oscillator = ctx.createOscillator()
-              const gainNode = ctx.createGain()
+              // Get full sound cue data from library for synthesis parameters
+              const fullSoundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === soundCue.id)
+              if (fullSoundCue) {
+                console.log(`Generating synthetic sound with parameters:`, fullSoundCue)
 
-              oscillator.connect(gainNode)
-              gainNode.connect(ctx.destination)
+                const oscillator = ctx.createOscillator()
+                const gainNode = ctx.createGain()
 
-              // Set oscillator properties from sound cue
-              oscillator.type = soundCue.waveform || "sine"
-              oscillator.frequency.setValueAtTime(soundCue.frequency || 440, eventStartTime)
+                oscillator.connect(gainNode)
+                gainNode.connect(ctx.destination)
 
-              // Create envelope
-              const attackDuration = soundCue.attackDuration || 0.01
-              const releaseDuration = soundCue.releaseDuration || 0.5
-              const peakVolume = 0.3 // Reduced volume for better mixing
+                oscillator.type = fullSoundCue.waveform || "sine"
+                oscillator.frequency.setValueAtTime(fullSoundCue.frequency || 440, eventStartTime)
 
-              gainNode.gain.setValueAtTime(0, eventStartTime)
-              gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + attackDuration)
-              gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
-              gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
+                const attackDuration = fullSoundCue.attackDuration || 0.01
+                const releaseDuration = fullSoundCue.releaseDuration || 0.5
+                const peakVolume = 0.3
 
-              oscillator.start(eventStartTime)
-              oscillator.stop(eventStartTime + eventDuration)
+                gainNode.gain.setValueAtTime(0, eventStartTime)
+                gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + attackDuration)
+                gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
+                gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
 
-              // Add harmonics if specified
-              if (soundCue.harmonics) {
-                soundCue.harmonics.forEach((harmonic, index) => {
-                  const harmonicOsc = ctx.createOscillator()
-                  const harmonicGain = ctx.createGain()
+                oscillator.start(eventStartTime)
+                oscillator.stop(eventStartTime + eventDuration)
 
-                  harmonicOsc.connect(harmonicGain)
-                  harmonicGain.connect(ctx.destination)
+                // Add harmonics if specified
+                if (fullSoundCue.harmonics) {
+                  fullSoundCue.harmonics.forEach((harmonic, index) => {
+                    const harmonicOsc = ctx.createOscillator()
+                    const harmonicGain = ctx.createGain()
 
-                  harmonicOsc.type = soundCue.waveform || "sine"
-                  harmonicOsc.frequency.setValueAtTime(harmonic, eventStartTime)
+                    harmonicOsc.connect(harmonicGain)
+                    harmonicGain.connect(ctx.destination)
 
-                  const harmonicVolume = (peakVolume * 0.2) / (index + 1)
+                    harmonicOsc.type = fullSoundCue.waveform || "sine"
+                    harmonicOsc.frequency.setValueAtTime(harmonic, eventStartTime)
 
-                  harmonicGain.gain.setValueAtTime(0, eventStartTime)
-                  harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + attackDuration)
-                  harmonicGain.gain.linearRampToValueAtTime(
-                    harmonicVolume,
-                    eventStartTime + eventDuration - releaseDuration,
-                  )
-                  harmonicGain.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
+                    const harmonicVolume = (peakVolume * 0.2) / (index + 1)
 
-                  harmonicOsc.start(eventStartTime)
-                  harmonicOsc.stop(eventStartTime + eventDuration)
-                })
+                    harmonicGain.gain.setValueAtTime(0, eventStartTime)
+                    harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + attackDuration)
+                    harmonicGain.gain.linearRampToValueAtTime(
+                      harmonicVolume,
+                      eventStartTime + eventDuration - releaseDuration,
+                    )
+                    harmonicGain.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
+
+                    harmonicOsc.start(eventStartTime)
+                    harmonicOsc.stop(eventStartTime + eventDuration)
+                  })
+                }
               }
             } else if (soundCue.src.startsWith("musical:")) {
-              // Handle musical notes
+              console.log(`Generating musical note: ${soundCue.src}`)
+
               const noteMatch = soundCue.src.match(/musical:([A-G])(\d)/)
               if (noteMatch) {
                 const note = noteMatch[1]
                 const octave = Number.parseInt(noteMatch[2])
 
-                // Get frequency from NOTE_FREQUENCIES
                 const noteKey = `${note}${octave}` as keyof typeof NOTE_FREQUENCIES
                 const frequency = NOTE_FREQUENCIES[noteKey]
 
                 if (frequency) {
+                  console.log(`Playing note ${noteKey} at ${frequency}Hz`)
+
                   const oscillator = ctx.createOscillator()
                   const gainNode = ctx.createGain()
 
@@ -593,17 +619,19 @@ export default function HomePage() {
                   oscillator.type = "sine"
                   oscillator.frequency.setValueAtTime(frequency, eventStartTime)
 
-                  // Gentle envelope for musical notes
                   gainNode.gain.setValueAtTime(0, eventStartTime)
                   gainNode.gain.exponentialRampToValueAtTime(0.2, eventStartTime + 0.05)
                   gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
 
                   oscillator.start(eventStartTime)
                   oscillator.stop(eventStartTime + eventDuration)
+                } else {
+                  console.warn(`Unknown note frequency for ${noteKey}`)
                 }
               }
             } else {
-              // Handle pre-recorded audio files
+              console.log(`Loading pre-recorded audio: ${soundCue.src}`)
+
               const response = await fetch(soundCue.src)
               const arrayBuffer = await response.arrayBuffer()
               const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
@@ -613,12 +641,16 @@ export default function HomePage() {
               source.buffer = audioBuffer
               source.connect(gainNode)
               gainNode.connect(ctx.destination)
-              gainNode.gain.setValueAtTime(0.3, eventStartTime) // Reduced volume
+              gainNode.gain.setValueAtTime(0.3, eventStartTime)
               source.start(eventStartTime)
             }
+          } else {
+            console.error(`Sound cue not found for event ${event.id} with soundCueId ${event.soundCueId}`)
           }
         } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
           setGenerationStep(`Adding recorded voice: ${event.recordedInstructionLabel || "Untitled"}`)
+          console.log(`Adding recorded voice: ${event.recordedInstructionLabel}`)
+
           const response = await fetch(event.recordedAudioUrl)
           const arrayBuffer = await response.arrayBuffer()
           const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
@@ -628,18 +660,22 @@ export default function HomePage() {
           source.buffer = audioBuffer
           source.connect(gainNode)
           gainNode.connect(ctx.destination)
-          gainNode.gain.setValueAtTime(0.7, eventStartTime) // Higher volume for voice
+          gainNode.gain.setValueAtTime(0.7, eventStartTime)
           source.start(eventStartTime)
         }
 
         processedEventsCount++
-        setGenerationProgress(Math.floor((processedEventsCount / totalEvents) * 80)) // Progress up to 80% for event processing
+        setGenerationProgress(Math.floor((processedEventsCount / totalEvents) * 80))
       }
 
       setGenerationStep("Rendering audio...")
-      setGenerationProgress(80) // Set to 80% before rendering
+      setGenerationProgress(80)
+      console.log("Starting audio rendering...")
+
       const rendered = await ctx.startRendering()
-      const wavBlob = await bufferToWavOld(rendered) // Use the existing bufferToWav function
+      console.log("Audio rendering complete, creating WAV blob...")
+
+      const wavBlob = await bufferToWavOld(rendered)
       const url = URL.createObjectURL(wavBlob)
       setGeneratedAudioUrl(url)
 
@@ -654,6 +690,7 @@ export default function HomePage() {
       setGenerationProgress(100)
       setGenerationStep("Export Complete")
 
+      console.log("Audio generation completed successfully!")
       toast({ title: "Export Complete", description: "Timeline audio exported." })
     } catch (error) {
       console.error("Audio export failed:", error)
@@ -1345,18 +1382,29 @@ export default function HomePage() {
       toast({ title: "Missing Sound Cue", description: "Please select a sound cue.", variant: "destructive" })
       return
     }
+
+    // Create a proper sound cue object to store
+    const soundCueToStore = {
+      id: selectedSoundCue.id,
+      name: selectedSoundCue.name,
+      src: selectedSoundCue.src,
+    }
+
     const newEvent: TimelineEvent = {
       id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       type: "instruction_sound",
       startTime: 0,
       instructionText: instructionTextToAdd,
       soundCueId: selectedSoundCue.id,
-      // Duration for instruction_sound events will be calculated during audio generation
-      // based on the actual sound cue duration or a default for synthetic sounds.
+      // Store the sound cue data for easy access
+      soundCue: soundCueToStore,
     }
+
     setTimelineEvents((prev) => [...prev, newEvent].sort((a, b) => a.startTime - b.startTime))
     setSelectedLibraryInstruction(null)
     setCustomInstructionText("")
+    setSelectedSoundCue(null) // Clear selection after adding
+
     toast({
       title: "Event Added",
       description: `"${instructionTextToAdd.substring(0, 30)}..." with ${selectedSoundCue.name} added.`,
