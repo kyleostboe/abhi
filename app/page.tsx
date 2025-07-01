@@ -2381,7 +2381,7 @@ export default function HomePage() {
                                         setCustomInstructionText("")
                                       }}
                                     >
-                                      <span className="text-wrap leading-relaxed font-black text-sm">{instr.text}</span>
+                                      <span className="text-wrap leading-relaxed font-black text-sm text-gray-600">{instr.text}</span>
                                     </Button>
                                   ))}
                                 </div>
