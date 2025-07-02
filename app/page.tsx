@@ -1790,7 +1790,7 @@ export default function HomePage() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="bg-white p-5 mb-6 border dark:shadow-white/20 overflow-hidden dark:bg-gray-900 dark:border-gray-800 rounded-xl shadow-none border-logo-teal"
+                      className="bg-white p-5 mb-6 border dark:shadow-white/20 overflow-hidden dark:bg-gray-900 dark:border-gray-800 rounded-xl border-logo-teal shadow-inner"
                     >
                       <div className="flex items-center">
                         <motion.div
