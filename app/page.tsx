@@ -2636,7 +2636,7 @@ export default function HomePage() {
                         <h3 className="text-white font-black">Generated Audio</h3>
                       </div>
                       <div className="p-6">
-                        <h4 className="mb-2 text-lg font-semibold text-gray-700 dark:text-gray-300">
+                        <h4 className="mb-2 dark:text-gray-300 font-black text-sm text-gray-600">
                           {meditationTitle}
                         </h4>
                         <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
@@ -2647,13 +2647,13 @@ export default function HomePage() {
                             <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                               Total Events
                             </div>
-                            <div className="dark:text-black font-black text-black">{timelineEvents.length}</div>
+                            <div className="dark:text-black font-black text-gray-600">{timelineEvents.length}</div>
                           </div>
                           <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
                             <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                               Total Duration
                             </div>
-                            <div className="dark:text-black font-black text-black">{formatTime(labsTotalDuration)}</div>
+                            <div className="dark:text-black font-black text-gray-600">{formatTime(labsTotalDuration)}</div>
                           </div>
                         </div>
                         <Button
