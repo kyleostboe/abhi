@@ -1624,7 +1624,7 @@ export default function HomePage() {
 
               {/* Mode Switch */}
               <div className="flex flex-col items-center space-y-4 my-12">
-                <div className="grid mx-auto grid-cols-2 bg-gray-100/70 p-1 rounded-md dark:bg-gray-800/70 font-serif text-gray-600 shadow-lg w-64 h-auto">
+                <div className="grid mx-auto grid-cols-2 bg-gray-100/70 p-1 rounded-md dark:bg-gray-800/70 font-serif text-gray-600 w-64 h-auto shadow-inner">
                   <button
                     onClick={() => setActiveMode("adjuster")}
                     className={cn(
