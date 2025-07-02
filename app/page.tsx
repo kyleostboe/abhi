@@ -2524,7 +2524,7 @@ export default function HomePage() {
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
                   <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
                     <div className="bg-gradient-to-r from-gray-700 to-gray-800 py-4 px-6 dark:from-gray-800 dark:to-gray-900">
-                      <h3 className="text-white text-lg flex items-center font-black">Timeline Editor</h3>
+                      <h3 className="text-white flex items-center font-black text-base">Timeline Editor</h3>
                     </div>
                     <div className="p-6 pb-6">
                       <div className="text-center py-8 text-gray-500 dark:text-gray-400">
