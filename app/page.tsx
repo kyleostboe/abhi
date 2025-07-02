@@ -1897,7 +1897,8 @@ export default function HomePage() {
                                 {audioAnalysis.silenceRegions}
                               </div>
                             </div>
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border-logo-rose-600 border rounded-md shadow-md                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-rose-600">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border-logo-rose-600 border rounded-md shadow-md">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-rose-600">
                                 Range
                               </div>
                               <div className="dark:text-gray-200 font-black text-logo-rose-600">
