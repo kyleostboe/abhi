@@ -868,7 +868,7 @@ export default function EncoderPage() {
                                 type="text"
                                 value={instruction.text}
                                 onChange={(e) => updateInstruction(instruction.id, { text: e.target.value })}
-                                className="flex-1 px-2 py-1 border rounded text-sm"
+                                className="flex-1 px-2 py-1 border rounded text-xs font-black text-gray-600 shadow-inner"
                                 placeholder="Instruction text..."
                               />
                               <span className="text-xs text-gray-500 whitespace-nowrap">
@@ -951,7 +951,7 @@ export default function EncoderPage() {
                                   type="text"
                                   value={instruction.text}
                                   onChange={(e) => updateInstruction(instruction.id, { text: e.target.value })}
-                                  className="w-full px-2 py-1 border rounded text-sm mb-2"
+                                  className="w-full px-2 py-1 border rounded text-xs font-black text-gray-600 shadow-inner mb-2"
                                   placeholder="Instruction text..."
                                 />
                                 <p className="text-xs text-gray-500">
