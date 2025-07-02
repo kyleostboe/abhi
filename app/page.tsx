@@ -1607,7 +1607,7 @@ export default function HomePage() {
               transition={{ delay: 0.2, duration: 0.5 }}
             >
               <h1
-                className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-normal"
+                className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter"
                 style={{
                   fontFamily: 'Georgia, "Times New Roman", serif',
                   textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
@@ -1615,7 +1615,7 @@ export default function HomePage() {
               >
                 abhī
               </h1>
-              <div className="font-black text-logo-rose-600 font-serif mb-1.5 text-xs">Meditation Tool</div>
+              <div className="font-black text-logo-rose-600 font-serif text-xs mb-[5px]">Meditation Tool</div>
               <div className="flex justify-center items-center mb-4 space-x-[3px]">
                 <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 dark:from-logo-teal dark:to-logo-emerald w-[13px] h-[13px]"></div>
                 <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full dark:from-logo-rose dark:to-pink-400 h-[9px] w-[9px]"></div>
