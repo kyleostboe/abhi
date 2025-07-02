@@ -2289,7 +2289,7 @@ export default function HomePage() {
                             value={meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
-                            className="mt-1 text-xs font-black text-gray-600 shadow-inner border border-logo-rose-600"
+                            className="mt-1 text-xs font-black text-logo-rose-600 shadow-inner border border-logo-rose-600"
                           />
                         </div>
                         <div className="text-center">
@@ -2302,7 +2302,7 @@ export default function HomePage() {
                             value={labsTotalDuration / 60}
                             onChange={handleDurationChange}
                             min="1"
-                            className="mt-1 text-xs font-black text-gray-600 shadow-inner border border-logo-rose-600"
+                            className="mt-1 text-xs font-black text-logo-rose-600 shadow-inner border border-logo-rose-600"
                           />
                         </div>
                       </div>
