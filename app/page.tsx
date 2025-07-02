@@ -2270,9 +2270,9 @@ export default function HomePage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
                 >
-                  <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-gradient-to-br from-logo-purple-50 to-logo-blue-50 dark:from-logo-purple-950 dark:to-logo-blue-950">
-                    <div className="bg-white">
-                      <h3 className="text-white flex items-center font-black">
+                  <Card className="overflow-hidden border border-logo-rose-600 shadow-inner bg-white dark:bg-gray-900">
+                    <div className="py-3 px-6">
+                      <h3 className="flex items-center font-black text-logo-rose-600">
                         <Settings2 className="h-4 w-4 mr-2" />
                         Session Setup
                       </h3>
@@ -2280,10 +2280,7 @@ export default function HomePage() {
                     <div className="p-6 bg-white text-sm font-black">
                       <div className="grid md:grid-cols-2 gap-6 text-gray-600">
                         <div className="">
-                          <Label
-                            htmlFor="labs-title"
-                            className="text-logo-purple-700 dark:text-logo-purple-300 font-black"
-                          >
+                          <Label htmlFor="labs-title" className="text-logo-rose-600 font-black">
                             Meditation Title
                           </Label>
                           <Input
@@ -2291,14 +2288,11 @@ export default function HomePage() {
                             value={meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
-                            className="mt-1 text-sm font-black"
+                            className="mt-1 text-xs font-black text-gray-600 shadow-inner"
                           />
                         </div>
                         <div>
-                          <Label
-                            htmlFor="labs-duration"
-                            className="text-logo-purple-700 dark:text-logo-purple-300 font-black"
-                          >
+                          <Label htmlFor="labs-duration" className="text-logo-rose-600 font-black">
                             Duration (minutes)
                           </Label>
                           <Input
@@ -2307,7 +2301,7 @@ export default function HomePage() {
                             value={labsTotalDuration / 60}
                             onChange={handleDurationChange}
                             min="1"
-                            className="mt-1 text-sm font-black"
+                            className="mt-1 text-xs font-black text-gray-600 shadow-inner"
                           />
                         </div>
                       </div>
