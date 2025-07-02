@@ -1,21 +1,10 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { toast } from "@/components/ui/use-toast"
-import { InstructionLibrary } from "@/components/instruction-library"
-import { SoundCueLibrary } from "@/components/sound-cue-library"
-import { VisualTimeline } from "@/components/visual-timeline"
 import type { TimelineEvent } from "@/types"
-import { CircleDotDashed, PlusCircle, Mic } from "lucide-react"
-import { Slider } from "@/components/ui/slider"
-import { Separator } from "@/components/ui/separator"
-import { RecordingPlayer } from "@/components/recording-player"
-import { useRecording } from "@/hooks/use-recording"
 import { motion } from "framer-motion"
+import { toast } from "react-toastify"
+import { useRecording } from "@/hooks/useRecording"
 
 export default function Home() {
   const [labsTotalDuration, setLabsTotalDuration] = useState<number>(60)
@@ -121,17 +110,15 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-            <CardHeader className="p-6 pb-0">
-              <CardTitle className="text-lg font-semibold">Total Labs Duration</CardTitle>
-              <CardDescription>Set the total duration of the labs experience in seconds.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
+          <div className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+            <div className="p-6 pb-0">
+              <div className="text-lg font-semibold">Total Labs Duration</div>
+              <div className="">Set the total duration of the labs experience in seconds.</div>
+            </div>
+            <div className="p-6">
               <div className="flex items-center space-x-4">
-                <Label htmlFor="duration" className="text-sm font-medium">
-                  Duration (seconds):
-                </Label>
-                <Input
+                <div className="text-sm font-medium">Duration (seconds):</div>
+                <input
                   type="number"
                   id="duration"
                   value={labsTotalDuration}
@@ -139,15 +126,16 @@ export default function Home() {
                   className="w-24 text-sm"
                 />
               </div>
-              <Slider
+              <input
+                type="range"
                 defaultValue={[labsTotalDuration]}
                 max={600}
                 step={10}
                 onValueChange={(value) => setLabsTotalDuration(value[0])}
-                className="mt-4"
+                className="mt-4 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
               />
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </motion.div>
 
         {/* Instructions Library */}
@@ -157,24 +145,55 @@ export default function Home() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <InstructionLibrary
-            selectedInstruction={selectedLibraryInstruction}
-            onSelectInstruction={(instruction) => setSelectedLibraryInstruction(instruction)}
-          />
+          <div className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+            <div className="p-6 pb-0">
+              <div className="text-lg font-semibold">Instruction Library</div>
+              <div className="">Select an instruction from the library.</div>
+            </div>
+            <div className="p-6">
+              {/* Instruction List */}
+              <div className="grid gap-2">
+                <button
+                  onClick={() => setSelectedLibraryInstruction({ text: "Open the valve" })}
+                  className={`px-4 py-2 rounded-md text-sm font-medium border-2 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=on]:bg-accent data-[state=on]:text-accent-foreground hover:bg-muted hover:text-muted-foreground ${
+                    selectedLibraryInstruction?.text === "Open the valve" ? "bg-accent text-accent-foreground" : ""
+                  }`}
+                >
+                  Open the valve
+                </button>
+                <button
+                  onClick={() => setSelectedLibraryInstruction({ text: "Close the valve" })}
+                  className={`px-4 py-2 rounded-md text-sm font-medium border-2 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=on]:bg-accent data-[state=on]:text-accent-foreground hover:bg-muted hover:text-muted-foreground ${
+                    selectedLibraryInstruction?.text === "Close the valve" ? "bg-accent text-accent-foreground" : ""
+                  }`}
+                >
+                  Close the valve
+                </button>
+                <button
+                  onClick={() => setSelectedLibraryInstruction({ text: "Check the pressure" })}
+                  className={`px-4 py-2 rounded-md text-sm font-medium border-2 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=on]:bg-accent data-[state=on]:text-accent-foreground hover:bg-muted hover:text-muted-foreground ${
+                    selectedLibraryInstruction?.text === "Check the pressure" ? "bg-accent text-accent-foreground" : ""
+                  }`}
+                >
+                  Check the pressure
+                </button>
+              </div>
+            </div>
+          </div>
         </motion.div>
 
         {/* Custom Instruction Input */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-            <CardHeader className="p-6 pb-0">
-              <CardTitle className="text-lg font-semibold">Custom Instruction</CardTitle>
-              <CardDescription>Enter a custom instruction to be used in the timeline.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
+          <div className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+            <div className="p-6 pb-0">
+              <div className="text-lg font-semibold">Custom Instruction</div>
+              <div className="">Enter a custom instruction to be used in the timeline.</div>
+            </div>
+            <div className="p-6">
               <div className="grid gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="instruction">Instruction</Label>
-                  <Input
+                  <div htmlFor="instruction">Instruction</div>
+                  <input
                     id="instruction"
                     placeholder="Enter custom instruction"
                     value={customInstructionText}
@@ -182,16 +201,47 @@ export default function Home() {
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </motion.div>
 
         {/* Sound Cue Library */}
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
-          <SoundCueLibrary
-            selectedSoundCue={selectedSoundCue}
-            onSelectSoundCue={(soundCue) => setSelectedSoundCue(soundCue)}
-          />
+          <div className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+            <div className="p-6 pb-0">
+              <div className="text-lg font-semibold">Sound Cue Library</div>
+              <div className="">Select a sound cue to be played with the instruction.</div>
+            </div>
+            <div className="p-6">
+              {/* Sound Cue List */}
+              <div className="grid gap-2">
+                <button
+                  onClick={() => setSelectedSoundCue({ id: "ding", name: "Ding", src: "/sounds/ding.mp3" })}
+                  className={`px-4 py-2 rounded-md text-sm font-medium border-2 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=on]:bg-accent data-[state=on]:text-accent-foreground hover:bg-muted hover:text-muted-foreground ${
+                    selectedSoundCue?.id === "ding" ? "bg-accent text-accent-foreground" : ""
+                  }`}
+                >
+                  Ding
+                </button>
+                <button
+                  onClick={() => setSelectedSoundCue({ id: "buzz", name: "Buzz", src: "/sounds/buzz.mp3" })}
+                  className={`px-4 py-2 rounded-md text-sm font-medium border-2 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=on]:bg-accent data-[state=on]:text-accent-foreground hover:bg-muted hover:text-muted-foreground ${
+                    selectedSoundCue?.id === "buzz" ? "bg-accent text-accent-foreground" : ""
+                  }`}
+                >
+                  Buzz
+                </button>
+                <button
+                  onClick={() => setSelectedSoundCue({ id: "chime", name: "Chime", src: "/sounds/chime.mp3" })}
+                  className={`px-4 py-2 rounded-md text-sm font-medium border-2 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=on]:bg-accent data-[state=on]:text-accent-foreground hover:bg-muted hover:text-muted-foreground ${
+                    selectedSoundCue?.id === "chime" ? "bg-accent text-accent-foreground" : ""
+                  }`}
+                >
+                  Chime
+                </button>
+              </div>
+            </div>
+          </div>
         </motion.div>
 
         {/* Add Instruction & Sound Event */}
@@ -201,27 +251,42 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <Button
+          <button
             onClick={handleAddInstructionSoundEvent}
-            className="w-full bg-logo-600 text-white hover:bg-logo-700 font-black"
+            className="w-full bg-logo-600 text-white hover:bg-logo-700 font-black px-4 py-2 rounded-md"
           >
-            <PlusCircle className="mr-2 h-4 w-4" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="mr-2 h-4 w-4"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="16" />
+              <line x1="8" y1="12" x2="16" y2="12" />
+            </svg>
             Add Instruction & Sound to Timeline
-          </Button>
+          </button>
         </motion.div>
 
         {/* Voice Recording */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
-          <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-            <CardHeader className="p-6 pb-0">
-              <CardTitle className="text-lg font-semibold">Voice Recording</CardTitle>
-              <CardDescription>Record your voice and add it to the timeline.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
+          <div className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+            <div className="p-6 pb-0">
+              <div className="text-lg font-semibold">Voice Recording</div>
+              <div className="">Record your voice and add it to the timeline.</div>
+            </div>
+            <div className="p-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="recording-label">Recording Label</Label>
-                  <Input
+                  <div htmlFor="recording-label">Recording Label</div>
+                  <input
                     type="text"
                     id="recording-label"
                     placeholder="Enter a label for the recording"
@@ -230,21 +295,34 @@ export default function Home() {
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <Button
+                  <button
                     onClick={recording ? stopRecording : startRecording}
                     disabled={recordedBlobs.length > 0 && !recording}
-                    variant="outline"
-                    className="bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 font-black"
+                    className="bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 font-black px-4 py-2 rounded-md border"
                   >
                     {recording ? "Stop Recording" : "Start Recording"}
-                    <Mic className="ml-2 h-4 w-4" />
-                  </Button>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="ml-2 h-4 w-4"
+                    >
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                      <path d="M19 10v2c0 .8-.7 1.5-1.5 1.5H16l3 3v2c0 .8-.7 1.5-1.5 1.5H5.5A1.5 1.5 0 0 1 4 18v-2l3-3h-1.5A1.5 1.5 0 0 1 4 12v-2"></path>
+                    </svg>
+                  </button>
                 </div>
                 {recordedBlobs.length > 0 && (
                   <>
-                    <Separator />
-                    <RecordingPlayer recordedAudioUrl={recordedAudioUrl} />
-                    <Button
+                    <hr />
+                    <audio controls src={recordedAudioUrl} />
+                    <button
                       onClick={async () => {
                         if (!recordingLabel.trim()) {
                           toast({
@@ -289,16 +367,30 @@ export default function Home() {
                         // Scroll to timeline after adding recording
                         scrollToTimeline()
                       }}
-                      className="w-full bg-white text-logo-rose-600 border border-logo-rose-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-logo-rose-700 dark:hover:bg-gray-800 font-black"
+                      className="w-full bg-white text-logo-rose-600 border border-logo-rose-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-logo-rose-700 dark:hover:bg-gray-800 font-black px-4 py-2 rounded-md"
                     >
-                      <PlusCircle className="mr-2 h-4 w-4" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="mr-2 h-4 w-4"
+                      >
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.83a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14" />
+                      </svg>
                       Add to Timeline
-                    </Button>
+                    </button>
                   </>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </motion.div>
 
         {/* Timeline Editor */}
@@ -308,31 +400,86 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+          <div className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
             <div className="bg-gradient-to-r from-gray-700 to-gray-800 py-4 px-6 dark:from-gray-800 dark:to-gray-900 flex items-center justify-between">
               <h3 className="text-white text-lg flex items-center font-black">
-                <CircleDotDashed className="h-5 w-5 mr-2" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5 mr-2"
+                >
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.83a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14" />
+                </svg>
                 Timeline Editor
               </h3>
-              <Button
+              <button
                 onClick={scrollToInstructionLibrary}
-                variant="ghost"
-                size="sm"
-                className="text-white hover:bg-white/10 font-black"
+                className="text-white hover:bg-white/10 font-black px-4 py-2 rounded-md text-sm"
               >
-                <PlusCircle className="h-4 w-4 mr-1" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4 mr-1"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="16" />
+                  <line x1="8" y1="12" x2="16" y2="12" />
+                </svg>
                 Add Event
-              </Button>
+              </button>
             </div>
             <div className="p-6 pb-6">
-              <VisualTimeline
-                events={timelineEvents}
-                totalDuration={labsTotalDuration}
-                onUpdateEvent={updateEventStartTime}
-                onRemoveEvent={removeTimelineEvent}
-              />
+              <div className="relative">
+                <div className="h-1 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
+                {timelineEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className="absolute top-0"
+                    style={{ left: `${(event.startTime / labsTotalDuration) * 100}%` }}
+                  >
+                    <div className="flex flex-col items-center">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{event.startTime}s</span>
+                      <div className="w-4 h-4 bg-logo-600 dark:bg-logo-400 rounded-full relative z-10"></div>
+                      <button
+                        onClick={() => removeTimelineEvent(event.id)}
+                        className="mt-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </Card>
+          </div>
         </motion.div>
       </div>
     </div>
