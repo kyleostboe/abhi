@@ -77,7 +77,7 @@ export function Navigation() {
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden bg-white dark:bg-gray-800 rounded-lg dark:shadow-white/10 border border-gray-200 dark:border-gray-700 p-4 space-y-2 font-serif font-black shadow-lg">
+        <div className="md:hidden bg-white dark:bg-gray-800 rounded-lg dark:shadow-white/10 border-gray-200 dark:border-gray-700 p-4 space-y-2 font-serif font-black border-0 shadow-lg">
           <Link href="/" onClick={() => setIsMenuOpen(false)}>
             <Button
               variant="ghost"
