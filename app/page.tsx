@@ -24,7 +24,7 @@ export default function Home() {
   const [customInstructionText, setCustomInstructionText] = useState<string>("")
   const [selectedSoundCue, setSelectedSoundCue] = useState<{ id: string; name: string; src: string } | null>(null)
 
-  // Add these refs for scrolling functionality
+  // Add scroll references for smooth navigation
   const instructionLibraryRef = useRef<HTMLDivElement>(null)
   const timelineRef = useRef<HTMLDivElement>(null)
 
