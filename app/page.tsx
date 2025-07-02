@@ -26,6 +26,7 @@ import {
   type SoundCue,
 } from "@/lib/meditation-data"
 import { cn } from "@/lib/utils" // Import cn utility
+import TimelineEditor from "@/components/timeline-editor" // Import the new TimelineEditor component
 
 // Add this near the top of the file, after the imports
 const NOTE_FREQUENCIES = {
@@ -2522,16 +2523,13 @@ export default function HomePage() {
 
                 {/* Timeline Editor for Labs */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                  <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                    <div className="bg-gradient-to-r from-gray-700 to-gray-800 py-4 px-6 dark:from-gray-800 dark:to-gray-900">
-                      <h3 className="text-white flex items-center font-black text-base">Timeline Editor</h3>
-                    </div>
-                    <div className="p-6 pb-6">
-                      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                        <p className="font-black">Timeline editor component would go here</p>
-                      </div>
-                    </div>
-                  </Card>
+                  <TimelineEditor
+                    events={timelineEvents}
+                    totalDuration={labsTotalDuration}
+                    onUpdateEventStartTime={updateEventStartTime}
+                    onRemoveEvent={removeTimelineEvent}
+                    formatTime={formatTime}
+                  />
                 </motion.div>
 
                 {/* Generate Audio Button */}
