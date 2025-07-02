@@ -1625,7 +1625,6 @@ export default function HomePage() {
                 <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full dark:from-blue-500 dark:to-cyan-400 h-[9px] w-[9px]"></div>
                 <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 dark:from-logo-emerald dark:to-logo-teal w-[13px] h-[13px]"></div>
               </div>
-              
 
               {/* Mode Switch */}
               <div className="flex items-center space-y-4 flex-row my-[33px]">
@@ -2273,15 +2272,15 @@ export default function HomePage() {
                   transition={{ delay: 0.1 }}
                 >
                   <Card className="overflow-hidden border border-logo-rose-600 shadow-inner bg-white dark:bg-gray-900">
-                    <div className="py-3 px-6 text-center">
-                      <h3 className="flex items-center font-black text-logo-rose-600 text-center">
+                    <div className="py-3 px-6">
+                      <h3 className="flex items-center justify-center font-black text-logo-rose-600">
                         <Settings2 className="h-4 w-4 mr-2" />
                         Session Setup
                       </h3>
                     </div>
-                    <div className="p-6 bg-white text-sm font-black pt-[3px]">
+                    <div className="p-6 bg-white text-sm font-black">
                       <div className="grid md:grid-cols-2 gap-6 text-gray-600">
-                        <div className="text-center">
+                        <div className="">
                           <Label htmlFor="labs-title" className="text-logo-rose-600 font-black">
                             Meditation Title
                           </Label>
@@ -2293,7 +2292,7 @@ export default function HomePage() {
                             className="mt-1 text-xs font-black text-gray-600 shadow-inner border border-logo-rose-600"
                           />
                         </div>
-                        <div className="text-center">
+                        <div>
                           <Label htmlFor="labs-duration" className="text-logo-rose-600 font-black">
                             Duration (minutes)
                           </Label>
