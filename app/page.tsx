@@ -2278,9 +2278,9 @@ export default function HomePage() {
                         Session Setup
                       </h3>
                     </div>
-                    <div className="p-6 bg-white text-sm font-black">
+                    <div className="p-6 bg-white text-sm font-black pt-3">
                       <div className="grid md:grid-cols-2 gap-6 text-gray-600">
-                        <div className="">
+                        <div className="text-center">
                           <Label htmlFor="labs-title" className="text-logo-rose-600 font-black">
                             Meditation Title
                           </Label>
@@ -2292,7 +2292,7 @@ export default function HomePage() {
                             className="mt-1 text-xs font-black text-gray-600 shadow-inner border border-logo-rose-600"
                           />
                         </div>
-                        <div>
+                        <div className="text-center">
                           <Label htmlFor="labs-duration" className="text-logo-rose-600 font-black">
                             Duration (minutes)
                           </Label>
@@ -2318,8 +2318,8 @@ export default function HomePage() {
                     transition={{ delay: 0.2 }}
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                      <div className="bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 py-3 px-6 dark:from-logo-purple-600 dark:to-logo-blue-600">
-                        <h3 className="text-white flex items-center font-black">
+                      <div className="bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 py-3 px-6 dark:from-logo-purple-600 dark:to-logo-blue-600 text-center">
+                        <h3 className="text-white flex items-center font-black text-center">
                           <ListPlus className="h-4 w-4 mr-2" />
                           Instructions Library
                         </h3>
@@ -2358,7 +2358,7 @@ export default function HomePage() {
                             </AccordionItem>
                           ))}
                         </Accordion>
-                        <div className="border-gray-100 dark:border-gray-800 pt-4 border-t-0">
+                        <div className="border-gray-100 dark:border-gray-800 pt-4 border-t-0 text-center">
                           <Label htmlFor="custom" className="text-logo-purple-600 dark:text-logo-purple-400 font-black">
                             Custom Instruction
                           </Label>
@@ -2380,8 +2380,8 @@ export default function HomePage() {
                     transition={{ delay: 0.3 }}
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                      <div className="bg-gradient-to-r from-logo-emerald-500 to-logo-teal-500 py-3 px-6 dark:from-logo-emerald-600 dark:to-logo-teal-600">
-                        <h3 className="text-white flex items-center font-black">
+                      <div className="bg-gradient-to-r from-logo-emerald-500 to-logo-teal-500 py-3 px-6 dark:from-logo-emerald-600 dark:to-logo-teal-600 text-center">
+                        <h3 className="text-white flex items-center font-black text-center">
                           <Music2 className="h-4 w-4 mr-2" />
                           Musical Notes
                         </h3>
@@ -2455,7 +2455,7 @@ export default function HomePage() {
                         </h3>
                       </div>
                       <div className="p-6 space-y-4">
-                        <div>
+                        <div className="text-center">
                           <Label
                             htmlFor="recording-label"
                             className="text-logo-rose-600 dark:text-logo-rose-400 font-black"

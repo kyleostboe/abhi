@@ -350,7 +350,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
       </div>
 
       {/* Event List */}
-      <div className="space-y-3">
+      <div className="space-y-3 text-center">
         <h4 className="text-lg font-black dark:text-gray-200 text-gray-600">Timeline Events</h4>
         <AnimatePresence>
           {events.length === 0 ? (
