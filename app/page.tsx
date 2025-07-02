@@ -1862,7 +1862,7 @@ export default function HomePage() {
                       transition={{ delay: 0.1 }}
                       className="mb-10 mt-8"
                     >
-                      <Alert className="bg-white dark:bg-gray-900 shadow-lg dark:shadow-white/10 p-1 border border-logo-rose-600">
+                      <Alert className="bg-white dark:bg-gray-900 shadow-lg dark:shadow-white/10 p-1 border border-logo-rose-600 shadow-inner">
                         <div className="p-4">
                           <div className="flex items-center mb-4">
                             <div className="p-2 rounded-lg mr-3 dark:bg-gray-700 bg-transparent">
