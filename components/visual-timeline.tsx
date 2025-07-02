@@ -53,11 +53,8 @@ const getEventColor = (eventId: string, events: TimelineEvent[]) => {
   return EVENT_COLORS[index % EVENT_COLORS.length]
 }
 
-const getInitialPosition = (index: number, totalEvents: number, duration: number) => {
-  if (totalEvents === 1) return duration / 2
-  const spacing = duration / (totalEvents + 1)
-  return spacing * (index + 1)
-}
+// Removed getInitialPosition as it was causing instability.
+// Events at the same startTime will now overlap.
 
 export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveEvent }: VisualTimelineProps) {
   const [draggedEvent, setDraggedEvent] = useState<string | null>(null)
@@ -287,16 +284,9 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
 
           {/* Events on Timeline */}
           <AnimatePresence>
-            {events.map((event, index) => {
-              // Only use initial positioning for truly new events that haven't been positioned yet
-              // and when there are multiple events at the exact same time (collision detection)
-              const eventsAtSameTime = events.filter((e) => e.startTime === event.startTime)
-              const shouldUseInitialPosition =
-                event.startTime === 0 && eventsAtSameTime.length > 1 && draggedEvent !== event.id // Don't use initial position if this event is being dragged
-
-              const displayTime = shouldUseInitialPosition
-                ? getInitialPosition(index, events.length, totalDuration)
-                : event.startTime
+            {events.map((event) => {
+              // Always use the actual start time for positioning to prevent jumping
+              const displayTime = event.startTime
 
               return (
                 <motion.div
