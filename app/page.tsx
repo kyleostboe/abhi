@@ -1624,6 +1624,7 @@ export default function HomePage() {
                 <div className="w-2 h-2 bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full dark:from-blue-500 dark:to-cyan-400"></div>
                 <div className="w-3 h-3 bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 dark:from-logo-emerald dark:to-logo-teal"></div>
               </div>
+              <div className="text-xs font-black text-logo-rose-600 mb-4">Meditation Tool</div>
 
               {/* Mode Switch */}
               <div className="flex flex-col items-center space-y-4 my-12">
