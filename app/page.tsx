@@ -1,10 +1,20 @@
 "use client"
 
 import { useState, useRef } from "react"
-import type { TimelineEvent } from "@/types"
 import { motion } from "framer-motion"
-import { toast } from "react-toastify"
-import { useRecording } from "@/hooks/useRecording"
+
+interface TimelineEvent {
+  id: string
+  type: "instruction_sound" | "recorded_voice"
+  startTime: number
+  instructionText?: string
+  soundCueId?: string
+  soundCueName?: string
+  soundCueSrc?: string
+  recordedAudioUrl?: string
+  recordedInstructionLabel?: string
+  duration?: number
+}
 
 export default function Home() {
   const [labsTotalDuration, setLabsTotalDuration] = useState<number>(60)
@@ -35,15 +45,11 @@ export default function Home() {
     if (selectedLibraryInstruction) instructionTextToAdd = selectedLibraryInstruction.text
     else if (customInstructionText.trim() !== "") instructionTextToAdd = customInstructionText.trim()
     else {
-      toast({
-        title: "Missing Instruction",
-        description: "Please select or enter an instruction.",
-        variant: "destructive",
-      })
+      console.log("Missing Instruction")
       return
     }
     if (!selectedSoundCue) {
-      toast({ title: "Missing Sound Cue", description: "Please select a sound cue.", variant: "destructive" })
+      console.log("Missing Sound Cue")
       return
     }
     const newEvent: TimelineEvent = {
@@ -58,10 +64,7 @@ export default function Home() {
     setTimelineEvents((prev) => [...prev, newEvent].sort((a, b) => a.startTime - b.startTime))
     setSelectedLibraryInstruction(null)
     setCustomInstructionText("")
-    toast({
-      title: "Event Added",
-      description: `"${instructionTextToAdd.substring(0, 30)}..." with ${selectedSoundCue.name} added.`,
-    })
+    console.log("Event Added")
 
     // Scroll to timeline after adding event
     scrollToTimeline()
@@ -79,17 +82,50 @@ export default function Home() {
     setTimelineEvents((prev) => prev.filter((event) => event.id !== eventId))
   }
 
-  const {
-    recording,
-    recordedBlobs,
-    recordingLabel,
-    recordedAudioUrl,
-    startRecording,
-    stopRecording,
-    setRecordingLabel,
-    setRecordedAudioUrl,
-    setRecordedBlobs,
-  } = useRecording()
+  // Recording state
+  const [recording, setRecording] = useState(false)
+  const [recordedBlobs, setRecordedBlobs] = useState<Blob[]>([])
+  const [recordingLabel, setRecordingLabel] = useState("")
+  const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+
+  // Recording functions
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      mediaRecorderRef.current = new MediaRecorder(stream)
+      const blobs: Blob[] = []
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          blobs.push(event.data)
+        }
+      }
+
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(blobs, { type: "audio/webm" })
+        const url = URL.createObjectURL(blob)
+        setRecordedAudioUrl(url)
+        setRecordedBlobs([blob])
+      }
+
+      mediaRecorderRef.current.start()
+      setRecording(true)
+    } catch (err) {
+      console.error("Could not access microphone:", err)
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.stop()
+      setRecording(false)
+
+      if (mediaRecorderRef.current.stream) {
+        mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop())
+      }
+    }
+  }
 
   return (
     <div className="container mx-auto py-10">
@@ -325,11 +361,7 @@ export default function Home() {
                     <button
                       onClick={async () => {
                         if (!recordingLabel.trim()) {
-                          toast({
-                            title: "Missing Label",
-                            description: "Please provide a label for the recording.",
-                            variant: "destructive",
-                          })
+                          console.log("Missing Label")
                           return
                         }
 
@@ -359,10 +391,7 @@ export default function Home() {
                         setRecordedBlobs([])
                         setRecordingLabel("")
 
-                        toast({
-                          title: "Recording Added",
-                          description: `"${recordingLabel.trim()}" added to timeline.`,
-                        })
+                        console.log("Recording Added")
 
                         // Scroll to timeline after adding recording
                         scrollToTimeline()
