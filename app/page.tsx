@@ -2572,7 +2572,7 @@ export default function HomePage() {
                           </div>
                         )}
                         <Wand2 className="mr-2 h-5 w-5" />
-                        <span>{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
+                        <span className="text-base">{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
                       </div>
                     </Button>
                   </div>
