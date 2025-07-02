@@ -2279,7 +2279,7 @@ export default function HomePage() {
                       </h3>
                     </div>
                     <div className="p-6 bg-white text-sm font-black pt-3">
-                      <div className="grid md:grid-cols-2 gap-6 text-gray-600">
+                      <div className="grid md:grid-cols-2 gap-6 text-logo-rose-600">
                         <div className="text-center">
                           <Label htmlFor="labs-title" className="text-logo-rose-600 font-black">
                             Meditation Title
