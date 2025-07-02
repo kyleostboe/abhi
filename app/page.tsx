@@ -1615,7 +1615,7 @@ export default function HomePage() {
               >
                 abhī
               </h1>
-              <div className="text-xs font-black text-logo-rose-600 mb-4">Meditation Tool</div>
+              <div className="font-black text-logo-rose-600 mb-4 font-serif text-xs">Meditation Tool</div>
               <div className="flex justify-center items-center mb-4 space-x-[3px]">
                 <div className="w-3 h-3 bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 dark:from-logo-teal dark:to-logo-emerald"></div>
                 <div className="w-2 h-2 bg-gradient-to-br from-logo-rose to-pink-300 rounded-full dark:from-logo-rose dark:to-pink-400"></div>
@@ -1625,20 +1625,33 @@ export default function HomePage() {
                 <div className="w-2 h-2 bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full dark:from-blue-500 dark:to-cyan-400"></div>
                 <div className="w-3 h-3 bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 dark:from-logo-emerald dark:to-logo-teal"></div>
               </div>
+              
 
               {/* Mode Switch */}
               <div className="flex flex-col items-center space-y-4 my-12">
-                <Label htmlFor="mode-switch" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Select Mode
-                </Label>
-                <Switch
-                  id="mode-switch"
-                  checked={activeMode === "labs"}
-                  onCheckedChange={(checked) => setActiveMode(checked ? "labs" : "adjuster")}
-                  className="data-[state=checked]:bg-logo-purple-500 dark:data-[state=checked]:bg-logo-purple-700"
-                />
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {activeMode === "adjuster" ? "Length Adjuster" : "Meditation Labs"}
+                <div className="grid mx-auto grid-cols-2 bg-gray-100/70 p-1 rounded-md dark:bg-gray-800/70 font-serif text-gray-600 w-64 h-auto shadow-inner">
+                  <button
+                    onClick={() => setActiveMode("adjuster")}
+                    className={cn(
+                      "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-sm",
+                      activeMode === "adjuster"
+                        ? "bg-white text-gray-600 shadow-sm dark:shadow-white/20 dark:bg-gray-700 dark:text-gray-600"
+                        : "text-gray-600 dark:text-gray-600",
+                    )}
+                  >
+                    Adjuster
+                  </button>
+                  <button
+                    onClick={() => setActiveMode("labs")}
+                    className={cn(
+                      "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-sm text-gray-600",
+                      activeMode === "labs"
+                        ? "bg-white text-gray-600 shadow-sm dark:shadow-white/20 dark:bg-gray-700 dark:text-gray-600"
+                        : "text-gray-600 dark:text-gray-600",
+                    )}
+                  >
+                    Encoder
+                  </button>
                 </div>
               </div>
             </motion.div>
