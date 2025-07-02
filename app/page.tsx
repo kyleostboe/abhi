@@ -2582,7 +2582,7 @@ export default function HomePage() {
                     </div>
                   </Card>
                 </motion.div>
-                {/* Generate Audio Section for Labs */}
+                {/* Generate Audio Button for Labs */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
                   <Button
                     onClick={handleExportAudio}
@@ -2624,6 +2624,7 @@ export default function HomePage() {
                     </div>
                   </Button>
                 </motion.div>
+                {/* Generated Audio Section for Labs */}
                 {generatedAudioUrl && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -2649,9 +2650,7 @@ export default function HomePage() {
                             <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                               Total Duration
                             </div>
-                            <div className="dark:text-black font-black text-black">
-                              {formatTime(labsTotalDuration)}
-                            </div>
+                            <div className="dark:text-black font-black text-black">{formatTime(labsTotalDuration)}</div>
                           </div>
                         </div>
                         <Button
@@ -2663,24 +2662,22 @@ export default function HomePage() {
                             a.click()
                             document.body.removeChild(a)
                           }}
-                          className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-
-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
-                          >
-                            <div className="flex items-center justify-center font-black">
-                              <Download className="mr-2 h-5 w-5" />
-                              Download Audio
-                            </div>
-                          </Button>
-                        </div>
-                      </Card>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                          className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                        >
+                          <div className="flex items-center justify-center font-black">
+                            <Download className="mr-2 h-5 w-5" />
+                            Download Audio
+                          </div>
+                        </Button>
+                      </div>
+                    </Card>
+                  </motion.div>
+                )}
               </motion.div>
             )}
           </div>
         </div>
       </motion.div>
-  </div>
+    </div>
   )
 }
