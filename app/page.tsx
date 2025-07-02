@@ -2273,15 +2273,15 @@ export default function HomePage() {
                   transition={{ delay: 0.1 }}
                 >
                   <Card className="overflow-hidden border border-logo-rose-600 shadow-inner bg-white dark:bg-gray-900">
-                    <div className="py-3 px-6">
-                      <h3 className="flex items-center font-black text-logo-rose-600">
+                    <div className="py-3 px-6 text-center">
+                      <h3 className="flex items-center font-black text-logo-rose-600 text-center">
                         <Settings2 className="h-4 w-4 mr-2" />
                         Session Setup
                       </h3>
                     </div>
-                    <div className="p-6 bg-white text-sm font-black">
+                    <div className="p-6 bg-white text-sm font-black pt-[3px]">
                       <div className="grid md:grid-cols-2 gap-6 text-gray-600">
-                        <div className="">
+                        <div className="text-center">
                           <Label htmlFor="labs-title" className="text-logo-rose-600 font-black">
                             Meditation Title
                           </Label>
@@ -2293,7 +2293,7 @@ export default function HomePage() {
                             className="mt-1 text-xs font-black text-gray-600 shadow-inner border border-logo-rose-600"
                           />
                         </div>
-                        <div>
+                        <div className="text-center">
                           <Label htmlFor="labs-duration" className="text-logo-rose-600 font-black">
                             Duration (minutes)
                           </Label>
