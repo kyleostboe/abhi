@@ -353,124 +353,223 @@ export default function EncoderPage() {
 
   const simulateEncoding = async (): Promise<string> => {
     console.log("Encoding audio with instructions:", mappedInstructions)
-    await new Promise((resolve) => setTimeout(resolve, 3000 + Math.random() * 2000))
+
+    // Simulate processing time
+    await new Promise((resolve) => setTimeout(resolve, 2000))
 
     const audioCtx = audioContextRef.current
     const originalBuffer = originalAudioBufferRef.current
     if (!audioCtx || !originalBuffer) throw new Error("AudioContext or original audio not available")
 
-    const estimatedDuration = Math.max(
-      originalBuffer.duration,
-      mappedInstructions.length > 0 ? mappedInstructions[mappedInstructions.length - 1].endTime + 5 : 10,
-    )
+    // Calculate total duration needed
+    const maxInstructionTime =
+      mappedInstructions.length > 0 ? Math.max(...mappedInstructions.map((instr) => instr.endTime)) : 0
+    const estimatedDuration = Math.max(originalBuffer.duration, maxInstructionTime + 2)
 
+    // Create offline context for rendering
     const offlineCtx = new OfflineAudioContext(
-      originalBuffer.numberOfChannels,
+      2, // stereo
       Math.ceil(audioCtx.sampleRate * estimatedDuration),
       audioCtx.sampleRate,
     )
 
-    // Add original audio (full or segments)
-    mappedInstructions.forEach((instr) => {
-      if (instr.keepOriginal) {
-        // Keep original speech segment
-        const startSample = Math.floor(instr.startTime * originalBuffer.sampleRate)
-        const endSample = Math.floor(instr.endTime * originalBuffer.sampleRate)
-        const segmentLength = endSample - startSample
+    // Sort instructions by start time to avoid conflicts
+    const sortedInstructions = [...mappedInstructions].sort((a, b) => a.startTime - b.startTime)
 
-        if (segmentLength > 0 && startSample < originalBuffer.length) {
-          const segmentBuffer = offlineCtx.createBuffer(
-            originalBuffer.numberOfChannels,
-            segmentLength,
-            originalBuffer.sampleRate,
-          )
+    // Process each instruction separately
+    for (const instr of sortedInstructions) {
+      const startTime = Math.max(0, instr.startTime)
 
-          // Copy audio data
-          for (let channel = 0; channel < originalBuffer.numberOfChannels; channel++) {
-            const originalData = originalBuffer.getChannelData(channel)
-            const segmentData = segmentBuffer.getChannelData(channel)
+      // Add original speech if requested
+      if (instr.keepOriginal && startTime < originalBuffer.duration) {
+        try {
+          const startSample = Math.floor(startTime * originalBuffer.sampleRate)
+          const endSample = Math.min(Math.floor(instr.endTime * originalBuffer.sampleRate), originalBuffer.length)
+          const segmentLength = Math.max(0, endSample - startSample)
 
-            for (let i = 0; i < segmentLength && startSample + i < originalData.length; i++) {
-              segmentData[i] = originalData[startSample + i]
+          if (segmentLength > 0) {
+            const segmentBuffer = offlineCtx.createBuffer(
+              originalBuffer.numberOfChannels,
+              segmentLength,
+              originalBuffer.sampleRate,
+            )
+
+            // Copy audio data safely
+            for (let channel = 0; channel < originalBuffer.numberOfChannels; channel++) {
+              const originalData = originalBuffer.getChannelData(channel)
+              const segmentData = segmentBuffer.getChannelData(channel)
+
+              for (let i = 0; i < segmentLength; i++) {
+                if (startSample + i < originalData.length) {
+                  segmentData[i] = originalData[startSample + i]
+                }
+              }
             }
-          }
 
-          const source = offlineCtx.createBufferSource()
-          const gainNode = offlineCtx.createGain()
-          source.buffer = segmentBuffer
-          source.connect(gainNode)
-          gainNode.connect(offlineCtx.destination)
-          gainNode.gain.setValueAtTime(instr.originalVolume / 100, instr.startTime)
-          source.start(instr.startTime)
+            const source = offlineCtx.createBufferSource()
+            const gainNode = offlineCtx.createGain()
+            source.buffer = segmentBuffer
+            source.connect(gainNode)
+            gainNode.connect(offlineCtx.destination)
+
+            const volume = (instr.originalVolume / 100) * 0.8
+            gainNode.gain.setValueAtTime(volume, startTime)
+
+            source.start(startTime)
+          }
+        } catch (error) {
+          console.warn("Error adding original audio segment:", error)
         }
       }
 
       // Add sound cue
-      const soundId = instr.soundId
-      const startTime = instr.startTime
-
-      const oscillator = offlineCtx.createOscillator()
-      const gainNode = offlineCtx.createGain()
-      oscillator.connect(gainNode)
-      gainNode.connect(offlineCtx.destination)
-      gainNode.gain.setValueAtTime((instr.soundVolume / 100) * 0.15, startTime)
-
-      let freq = 440,
-        duration = 0.5,
-        type: OscillatorType = "sine"
-
-      switch (soundId) {
-        case "bell_high":
-          type = "triangle"
-          freq = 1200
-          duration = 0.7
-          break
-        case "bell_mid":
-          type = "triangle"
-          freq = 800
-          duration = 0.8
-          break
-        case "chime_soft":
-          type = "sine"
-          freq = 1500
-          duration = 1.0
-          break
-        case "tone_short_low":
-          type = "sine"
-          freq = 300
-          duration = 0.3
-          break
-        case "tone_short_high":
-          type = "sine"
-          freq = 900
-          duration = 0.3
-          break
-        case "wood_block":
-          const noiseBuffer = offlineCtx.createBuffer(1, offlineCtx.sampleRate * 0.1, offlineCtx.sampleRate)
-          const data = noiseBuffer.getChannelData(0)
-          for (let i = 0; i < data.length; i++) data[i] = Math.random() * 0.5 - 0.25
-          const noiseSource = offlineCtx.createBufferSource()
-          noiseSource.buffer = noiseBuffer
-          noiseSource.connect(gainNode)
-          gainNode.gain.setValueAtTime((instr.soundVolume / 100) * 0.2, startTime)
-          gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.1)
-          noiseSource.start(startTime)
-          noiseSource.stop(startTime + 0.1)
-          return
+      try {
+        await addSoundCue(offlineCtx, instr.soundId, startTime, instr.soundVolume / 100)
+      } catch (error) {
+        console.warn("Error adding sound cue:", error)
       }
+    }
 
-      oscillator.type = type
-      oscillator.frequency.setValueAtTime(freq, startTime)
-      gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration)
-      oscillator.start(startTime)
-      oscillator.stop(startTime + duration)
-    })
-
+    // Render the final audio
     const renderedBuffer = await offlineCtx.startRendering()
-
-    // Convert to WAV blob
     const wavBlob = await bufferToWav(renderedBuffer)
     return URL.createObjectURL(wavBlob)
+  }
+
+  // Helper function to add individual sound cues
+  const addSoundCue = async (
+    offlineCtx: OfflineAudioContext,
+    soundId: string,
+    startTime: number,
+    volumeMultiplier: number,
+  ): Promise<void> => {
+    const baseVolume = 0.3 * volumeMultiplier
+
+    switch (soundId) {
+      case "bell_high": {
+        const oscillator = offlineCtx.createOscillator()
+        const gainNode = offlineCtx.createGain()
+
+        oscillator.connect(gainNode)
+        gainNode.connect(offlineCtx.destination)
+
+        oscillator.type = "triangle"
+        oscillator.frequency.setValueAtTime(1200, startTime)
+
+        gainNode.gain.setValueAtTime(0, startTime)
+        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.01)
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.7)
+
+        oscillator.start(startTime)
+        oscillator.stop(startTime + 0.7)
+        break
+      }
+
+      case "bell_mid": {
+        const oscillator = offlineCtx.createOscillator()
+        const gainNode = offlineCtx.createGain()
+
+        oscillator.connect(gainNode)
+        gainNode.connect(offlineCtx.destination)
+
+        oscillator.type = "triangle"
+        oscillator.frequency.setValueAtTime(800, startTime)
+
+        gainNode.gain.setValueAtTime(0, startTime)
+        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.01)
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.8)
+
+        oscillator.start(startTime)
+        oscillator.stop(startTime + 0.8)
+        break
+      }
+
+      case "chime_soft": {
+        const oscillator = offlineCtx.createOscillator()
+        const gainNode = offlineCtx.createGain()
+
+        oscillator.connect(gainNode)
+        gainNode.connect(offlineCtx.destination)
+
+        oscillator.type = "sine"
+        oscillator.frequency.setValueAtTime(1500, startTime)
+
+        gainNode.gain.setValueAtTime(0, startTime)
+        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.01)
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 1.0)
+
+        oscillator.start(startTime)
+        oscillator.stop(startTime + 1.0)
+        break
+      }
+
+      case "tone_short_low": {
+        const oscillator = offlineCtx.createOscillator()
+        const gainNode = offlineCtx.createGain()
+
+        oscillator.connect(gainNode)
+        gainNode.connect(offlineCtx.destination)
+
+        oscillator.type = "sine"
+        oscillator.frequency.setValueAtTime(300, startTime)
+
+        gainNode.gain.setValueAtTime(0, startTime)
+        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.01)
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3)
+
+        oscillator.start(startTime)
+        oscillator.stop(startTime + 0.3)
+        break
+      }
+
+      case "tone_short_high": {
+        const oscillator = offlineCtx.createOscillator()
+        const gainNode = offlineCtx.createGain()
+
+        oscillator.connect(gainNode)
+        gainNode.connect(offlineCtx.destination)
+
+        oscillator.type = "sine"
+        oscillator.frequency.setValueAtTime(900, startTime)
+
+        gainNode.gain.setValueAtTime(0, startTime)
+        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.01)
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3)
+
+        oscillator.start(startTime)
+        oscillator.stop(startTime + 0.3)
+        break
+      }
+
+      case "wood_block": {
+        // Create a short burst of filtered noise
+        const bufferSize = Math.floor(offlineCtx.sampleRate * 0.1)
+        const noiseBuffer = offlineCtx.createBuffer(1, bufferSize, offlineCtx.sampleRate)
+        const data = noiseBuffer.getChannelData(0)
+
+        // Generate filtered noise for wood block sound
+        for (let i = 0; i < bufferSize; i++) {
+          const decay = Math.exp(-i / (bufferSize * 0.1))
+          data[i] = (Math.random() * 2 - 1) * decay * 0.5
+        }
+
+        const noiseSource = offlineCtx.createBufferSource()
+        const gainNode = offlineCtx.createGain()
+
+        noiseSource.buffer = noiseBuffer
+        noiseSource.connect(gainNode)
+        gainNode.connect(offlineCtx.destination)
+
+        gainNode.gain.setValueAtTime(baseVolume * 0.8, startTime)
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.1)
+
+        noiseSource.start(startTime)
+        break
+      }
+
+      default:
+        console.warn(`Unknown sound ID: ${soundId}`)
+    }
   }
 
   const bufferToWav = async (buffer: AudioBuffer): Promise<Blob> => {
