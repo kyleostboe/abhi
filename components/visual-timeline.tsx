@@ -274,7 +274,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
         {/* Timeline Bar */}
         <div
           ref={timelineRef}
-          className="relative h-20 bg-gradient-to-r from-gray-100/70 to-gray-200/70 dark:from-gray-800/70 dark:to-gray-900/70 rounded-2xl dark:border-gray-700 cursor-pointer overflow-visible border-4 border-gray-200 dark:shadow-white/30 shadow-inner"
+          className="relative h-20 bg-gradient-to-r from-gray-100/70 to-gray-200/70 dark:from-gray-800/70 dark:to-gray-900/70 rounded-2xl dark:border-gray-700 cursor-pointer overflow-visible dark:shadow-white/30 shadow-inner border-gray-700 border-0"
         >
           {/* Background Grid Lines - excluding first and last */}
           {timeMarkers.slice(1, -1).map((time, index) => (
