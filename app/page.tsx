@@ -1607,7 +1607,7 @@ export default function HomePage() {
               transition={{ delay: 0.2, duration: 0.5 }}
             >
               <h1
-                className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter"
+                className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter text-center"
                 style={{
                   fontFamily: 'Georgia, "Times New Roman", serif',
                   textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
@@ -1628,7 +1628,7 @@ export default function HomePage() {
               
 
               {/* Mode Switch */}
-              <div className="flex flex-col items-center space-y-4 my-12">
+              <div className="flex items-center space-y-4 flex-row my-[33px]">
                 <div className="grid mx-auto grid-cols-2 bg-gray-100/70 p-1 dark:bg-gray-800/70 font-serif text-gray-600 w-64 h-auto shadow-inner rounded-md">
                   <button
                     onClick={() => setActiveMode("adjuster")}
