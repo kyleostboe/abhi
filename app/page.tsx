@@ -726,9 +726,22 @@ export default function HomePage() {
       const rendered = await ctx.startRendering()
       console.log("Audio rendering complete, creating WAV blob...")
 
-      const wavBlob = await bufferToWavOld(rendered) // Use the existing bufferToWav function
+      if (rendered.length === 0) {
+        throw new Error("Rendered audio buffer is empty. No audio content was generated.")
+      }
+
+      const wavBlob = await bufferToWavOld(rendered)
+      if (wavBlob.size === 0) {
+        throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
+      }
       const url = URL.createObjectURL(wavBlob)
       setGeneratedAudioUrl(url)
+
+      // Directly assign to the audio element for immediate playback readiness
+      if (labsAudioRef.current) {
+        labsAudioRef.current.src = url
+        labsAudioRef.current.volume = volume / 100
+      }
 
       setIsGeneratingAudio(false)
       setGenerationProgress(100)
