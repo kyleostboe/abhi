@@ -73,10 +73,7 @@ const NOTE_FREQUENCIES = {
 // Mobile detection
 const isMobile = () => {
   if (typeof window === "undefined") return false
-  return (
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-    window.innerWidth <= 768
-  )
+  return /Android|webOS|iPhone|iPad|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768
 }
 
 // Memory management utilities
@@ -2406,7 +2403,7 @@ export default function HomePage() {
                                       <Button
                                         variant={selectedSoundCue?.id === note.id ? "default" : "ghost"}
                                         size="sm"
-                                        className={`flex-1 justify-start font-black ${selectedSoundCue?.id === note.id ? "bg-white text-black border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-black dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                                        className={`flex-1 justify-start font-black ${selectedSoundCue?.id === note.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
                                         onClick={() =>
                                           setSelectedSoundCue({
                                             id: note.id,
@@ -2632,7 +2629,7 @@ export default function HomePage() {
                                       className="opacity-75"
                                       fill="currentColor"
                                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291
-                                      A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                     ></path>
                                   </svg>
                                 </div>
