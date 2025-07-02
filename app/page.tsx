@@ -2111,41 +2111,12 @@ export default function HomePage() {
                     className={cn(
                       "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
                       "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none",
-                      isProcessing
-                        ? "bg-white text-indigo-600 border border-black" // Processing state: explicitly add border and color
-                        : "bg-gradient-to-r from-green-500 via-teal-500 via-indigo-500 to-logo-rose-500 text-white", // Default state: no border by default
-                      // Apply hover/active styles that match the 'isProcessing' state
-                      "hover:bg-white hover:text-indigo-600 hover:border hover:border-black hover:[background-image:none]", // Add border on hover
-                      "active:bg-white active:text-indigo-600 active:border active:border-black active:[background-image:none]", // Add border on active
+                      "bg-gradient-to-r from-green-500 via-indigo-500 to-green-500 text-white",
                     )}
                     disabled={!originalBuffer || isProcessing || !durationLimits}
                     onClick={processAudio}
                   >
                     <div className="flex items-center justify-center">
-                      {isProcessing && (
-                        <div className="mr-3 h-5 w-5">
-                          <svg
-                            className="animate-spin h-5 w-5 text-white"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                        </div>
-                      )}
                       <Wand2 className="mr-2 h-6 w-6" />
                       <span className="font-black">Process Audio</span>
                     </div>
