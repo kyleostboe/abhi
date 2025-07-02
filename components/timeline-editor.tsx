@@ -76,7 +76,7 @@ export default function TimelineEditor({
       <CardContent className="p-6 pb-6">
         {events.length === 0 ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            <p className="font-black">No events added yet. Add instructions or recordings to build your timeline.</p>
+            <p className="font-black">Add instructions or recordings to build your timeline.</p>
           </div>
         ) : (
           <div className="space-y-4">
