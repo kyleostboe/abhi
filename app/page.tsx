@@ -2090,7 +2090,7 @@ export default function HomePage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="mb-4 text-center font-serif font-black"
+                  className="mb-4 text-center font-serif font-black text-base"
                 >
                   <Button
                     className={cn(
