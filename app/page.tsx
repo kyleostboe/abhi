@@ -2319,7 +2319,7 @@ export default function HomePage() {
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
                       <div className="bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 py-3 px-6 dark:from-logo-purple-600 dark:to-logo-blue-600 text-center">
-                        <h3 className="text-white flex items-center font-black text-center">
+                        <h3 className="text-white flex items-center justify-center font-black text-center">
                           <ListPlus className="h-4 w-4 mr-2" />
                           Instructions Library
                         </h3>
@@ -2381,7 +2381,7 @@ export default function HomePage() {
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
                       <div className="bg-gradient-to-r from-logo-emerald-500 to-logo-teal-500 py-3 px-6 dark:from-logo-emerald-600 dark:to-logo-teal-600 text-center">
-                        <h3 className="text-white flex items-center font-black text-center">
+                        <h3 className="text-white flex items-center justify-center font-black text-center">
                           <Music2 className="h-4 w-4 mr-2" />
                           Musical Notes
                         </h3>
@@ -2448,8 +2448,8 @@ export default function HomePage() {
                     transition={{ delay: 0.4 }}
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                      <div className="bg-gradient-to-r from-logo-rose-500 to-logo-amber-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600">
-                        <h3 className="text-white flex items-center font-black">
+                      <div className="bg-gradient-to-r from-logo-rose-500 to-logo-amber-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
+                        <h3 className="text-white flex items-center justify-center font-black">
                           <Mic className="h-4 w-4 mr-2" />
                           Voice Recording
                         </h3>
