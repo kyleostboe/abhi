@@ -13,10 +13,10 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 173 80% 40%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
+    --secondary: 142 76% 65%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
     --muted: 210 40% 96.1%;
@@ -28,11 +28,32 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.6% 91.4%;
-    --input: 214.3 31.6% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 173 80% 40%;
 
     --radius: 0.5rem;
+
+    /* Light mode shadow variables */
+    --shadow-light: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+    --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+
+    /* Light mode neutral colors */
+    --neutral-50: 250 250 250;
+    --neutral-100: 245 245 245;
+    --neutral-200: 229 229 229;
+    --neutral-300: 212 212 212;
+    --neutral-400: 163 163 163;
+    --neutral-500: 115 115 115;
+    --neutral-600: 82 82 82;
+    --neutral-700: 64 64 64;
+    --neutral-800: 38 38 38;
+    --neutral-900: 23 23 23;
+    --neutral-950: 10 10 10;
   }
 
   .dark {
@@ -45,10 +66,10 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
+    --primary: 173 80% 40%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 142 76% 65%;
     --secondary-foreground: 210 40% 98%;
 
     --muted: 217.2 32.6% 17.5%;
@@ -62,7 +83,28 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --ring: 173 80% 40%;
+
+    /* Dark mode shadow variables - inverted and enhanced */
+    --shadow-light: 0 1px 3px 0 rgb(255 255 255 / 0.05), 0 1px 2px -1px rgb(255 255 255 / 0.03);
+    --shadow-md: 0 4px 6px -1px rgb(255 255 255 / 0.08), 0 2px 4px -2px rgb(255 255 255 / 0.05);
+    --shadow-lg: 0 10px 15px -3px rgb(255 255 255 / 0.1), 0 4px 6px -4px rgb(255 255 255 / 0.05);
+    --shadow-xl: 0 20px 25px -5px rgb(255 255 255 / 0.15), 0 8px 10px -6px rgb(255 255 255 / 0.08);
+    --shadow-2xl: 0 25px 50px -12px rgb(255 255 255 / 0.2);
+    --shadow-inner: inset 0 2px 4px 0 rgb(255 255 255 / 0.03);
+
+    /* Dark mode neutral colors - inverted */
+    --neutral-50: 10 10 10;
+    --neutral-100: 23 23 23;
+    --neutral-200: 38 38 38;
+    --neutral-300: 64 64 64;
+    --neutral-400: 82 82 82;
+    --neutral-500: 115 115 115;
+    --neutral-600: 163 163 163;
+    --neutral-700: 212 212 212;
+    --neutral-800: 229 229 229;
+    --neutral-900: 245 245 245;
+    --neutral-950: 250 250 250;
   }
 }
 
@@ -384,99 +426,6 @@ audio::-webkit-media-controls-time-remaining-display {
 .dark audio::-webkit-media-controls-current-time-display,
 .dark audio::-webkit-media-controls-time-remaining-display {
   color: hsl(var(--neutral-300));
-}
-
-/* Custom styling for audio player */
-.custom-audio-player {
-  /* Hide default controls */
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 40px; /* Adjust height as needed */
-  background: transparent; /* Make background transparent to show custom styling */
-  border: none;
-  outline: none;
-}
-
-/* Style the progress bar (track) */
-.custom-audio-player::-webkit-media-controls-timeline {
-  background-color: #e0e0e0; /* Light gray background */
-  border-radius: 5px;
-  height: 10px;
-  margin: 0 10px;
-}
-
-.custom-audio-player::-moz-range-track {
-  background-color: #e0e0e0;
-  border-radius: 5px;
-  height: 10px;
-  margin: 0 10px;
-}
-
-/* Style the played portion of the progress bar */
-.custom-audio-player::-webkit-media-controls-current-time-display,
-.custom-audio-player::-webkit-media-controls-time-remaining-display {
-  color: #333; /* Darker text for time displays */
-  font-size: 0.875rem;
-}
-
-.custom-audio-player::-webkit-media-controls-play-button,
-.custom-audio-player::-webkit-media-controls-volume-slider,
-.custom-audio-player::-webkit-media-controls-mute-button,
-.custom-audio-player::-webkit-media-controls-volume-button,
-.custom-audio-player::-webkit-media-controls-fullscreen-button,
-.custom-audio-player::-webkit-media-controls-toggle-closed-captions-button {
-  /* Hide individual default controls if you want to replace them with custom buttons */
-  display: none !important;
-}
-
-/* Style the playhead (thumb) */
-.custom-audio-player::-webkit-media-controls-timeline-container::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  background-color: #4f46e5; /* Indigo color for the thumb */
-  border: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  cursor: pointer;
-  margin-top: -3px; /* Adjust to center vertically */
-}
-
-.custom-audio-player::-moz-range-thumb {
-  background-color: #4f46e5;
-  border: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-/* Style the filled portion of the progress bar */
-.custom-audio-player::-webkit-media-controls-current-progress {
-  background-color: #4f46e5; /* Indigo color for filled progress */
-  border-radius: 5px;
-}
-
-.custom-audio-player::-moz-range-progress {
-  background-color: #4f46e5;
-  border-radius: 5px;
-}
-
-/* Style the entire controls container */
-.custom-audio-player::-webkit-media-controls-panel {
-  background-color: #f0f0f0; /* Light gray background for controls */
-  border-radius: 8px;
-  padding: 5px 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-/* Fallback for browsers that don't support shadow DOM styling */
-audio {
-  /* Default styling for browsers that don't support custom controls */
-  @apply w-full rounded-lg border border-gray-300 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800;
 }
 
 /* Enhanced slider styles with dark mode support */
