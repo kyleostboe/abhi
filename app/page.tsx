@@ -730,13 +730,6 @@ export default function HomePage() {
       const url = URL.createObjectURL(wavBlob)
       setGeneratedAudioUrl(url)
 
-      // Play generated audio
-      if (labsAudioRef.current) {
-        labsAudioRef.current.src = url
-        labsAudioRef.current.volume = volume / 100
-        await labsAudioRef.current.play().catch((e) => console.error("Error playing generated audio:", e))
-      }
-
       setIsGeneratingAudio(false)
       setGenerationProgress(100)
       setGenerationStep("Export Complete")
