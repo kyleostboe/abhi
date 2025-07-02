@@ -1663,7 +1663,7 @@ export default function HomePage() {
               // == Length Adjuster UI ==
               <>
                 {/* Note and Resources sections - moved to proper position */}
-                <div className="mb-6 space-y-4">
+                <div className="space-y-4 mb-[27px]">
                   <div className="p-4 rounded-lg max-w-2xl dark:border-logo-rose-700 border-solid border text-center border-logo-rose-600 shadow-inner mx-auto">
                     <p className="text-logo-rose-600 leading-relaxed dark:text-logo-rose-300 font-serif font-black text-xs">
                       <strong className="pr-1.5 font-black font-serif text-center text-sm text-logo-amber-600">
@@ -1682,7 +1682,7 @@ export default function HomePage() {
                       {isMobileDevice ? "50MB" : "500MB"}) should be compatible. Enjoy:){" "}
                     </p>
                   </div>
-                  <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto dark:border-logo-rose-700 backdrop-blur-sm dark:bg-gray-900/60 border-0 py-4 px-0 pt-1.5 bg-transparent pb-5">
+                  <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto dark:border-logo-rose-700 backdrop-blur-sm dark:bg-gray-900/60 border-0 py-4 px-0 bg-transparent pb-5 pt-[3px]">
                     <h3 className="mb-2 dark:text-white text-center font-black px-0 pb-1.5 rounded text-base text-logo-rose-600">
                       Resources
                     </h3>
