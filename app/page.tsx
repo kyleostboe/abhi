@@ -6,7 +6,23 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
 import { Alert } from "@/components/ui/alert"
-import { Info, Upload, Volume2, Clock, Wand2, Download, Settings2, AlertTriangle, ListPlus, Music2 } from "lucide-react"
+import {
+  Info,
+  Upload,
+  Volume2,
+  Clock,
+  Wand2,
+  Download,
+  Settings2,
+  AlertTriangle,
+  ListPlus,
+  Music2,
+  Mic,
+  StopCircle,
+  Play,
+  PlusCircle,
+  CircleDotDashed,
+} from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -22,11 +38,12 @@ import {
   SOUND_CUES_LIBRARY,
   MUSICAL_NOTES,
   generateSyntheticSound,
+  playNote,
   type Instruction,
   type SoundCue,
 } from "@/lib/meditation-data"
+import { VisualTimeline } from "@/components/visual-timeline"
 import { cn } from "@/lib/utils" // Import cn utility
-import TimelineEditor from "@/components/timeline-editor" // Import the new TimelineEditor component
 
 // Add this near the top of the file, after the imports
 const NOTE_FREQUENCIES = {
@@ -594,7 +611,7 @@ export default function HomePage() {
                 soundProcessed = true
                 console.log(`Successfully added pre-recorded audio at ${eventStartTime}`)
               } catch (error) {
-                console.warn(`Could not load audio file: ${event.soundCueSrc}`, error)
+                console.warn(`Could not load recorded audio: ${event.soundCueSrc}`, error)
               }
             }
           }
@@ -2403,6 +2420,15 @@ export default function HomePage() {
                                       >
                                         {note.name}
                                       </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => playNote(note.note, note.octave)}
+                                        className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
+                                        title={`Preview ${note.name}`}
+                                      >
+                                        <Play className="h-4 w-4" />
+                                      </Button>
                                     </div>
                                   ))}
                                 </div>
@@ -2415,7 +2441,8 @@ export default function HomePage() {
                           onClick={handleAddInstructionSoundEvent}
                           disabled={(!selectedLibraryInstruction && !customInstructionText.trim()) || !selectedSoundCue}
                         >
-                          Add to Timeline
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          <span className="font-black">Add to Timeline</span>
                         </Button>
                       </div>
                     </Card>
@@ -2427,7 +2454,10 @@ export default function HomePage() {
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
                       <div className="bg-gradient-to-r from-logo-rose-500 to-logo-amber-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600">
-                        <h3 className="text-white flex items-center font-black">Voice Recording</h3>
+                        <h3 className="text-white flex items-center font-black">
+                          <Mic className="h-4 w-4 mr-2" />
+                          Voice Recording
+                        </h3>
                       </div>
                       <div className="p-6 space-y-4">
                         <div>
@@ -2450,7 +2480,17 @@ export default function HomePage() {
                           variant={isRecording ? "destructive" : "default"}
                           className="w-full font-black bg-white text-logo-rose-600 border border-logo-rose-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-logo-rose-700 dark:hover:bg-gray-800"
                         >
-                          {isRecording ? "Stop Recording" : "Start Recording"}
+                          {isRecording ? (
+                            <>
+                              <StopCircle className="mr-2 h-4 w-4" />
+                              Stop Recording
+                            </>
+                          ) : (
+                            <>
+                              <Mic className="mr-2 h-4 w-4" />
+                              Start Recording
+                            </>
+                          )}
                         </Button>
                         <AnimatePresence>
                           {recordedAudioUrl && (
@@ -2476,6 +2516,7 @@ export default function HomePage() {
 
                                   if (!recordedAudioUrl) return
 
+                                  // Get duration from audio element if available, otherwise use 0
                                   let duration = 0
                                   const audioElements = document.querySelectorAll(
                                     'audio[src="' + recordedAudioUrl + '"]',
@@ -2500,6 +2541,7 @@ export default function HomePage() {
                                     [...prev, newEvent].sort((a, b) => a.startTime - b.startTime),
                                   )
 
+                                  // Clean up
                                   setRecordedAudioUrl(null)
                                   setRecordedBlobs([])
                                   setRecordingLabel("")
@@ -2511,6 +2553,7 @@ export default function HomePage() {
                                 }}
                                 className="w-full bg-white text-logo-rose-600 border border-logo-rose-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-logo-rose-700 dark:hover:bg-gray-800 font-black"
                               >
+                                <PlusCircle className="mr-2 h-4 w-4" />
                                 Add to Timeline
                               </Button>
                             </motion.div>
@@ -2520,104 +2563,108 @@ export default function HomePage() {
                     </Card>
                   </motion.div>
                 </div>
-
                 {/* Timeline Editor for Labs */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                  <TimelineEditor
-                    events={timelineEvents}
-                    totalDuration={labsTotalDuration}
-                    onUpdateEventStartTime={updateEventStartTime}
-                    onRemoveEvent={removeTimelineEvent}
-                    formatTime={formatTime}
-                  />
+                  <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+                    <div className="bg-gradient-to-r from-gray-700 to-gray-800 py-4 px-6 dark:from-gray-800 dark:to-gray-900">
+                      <h3 className="text-white text-lg flex items-center font-black">
+                        <CircleDotDashed className="h-5 w-5 mr-2" />
+                        Timeline Editor
+                      </h3>
+                    </div>
+                    <div className="p-6 pb-6">
+                      <VisualTimeline
+                        events={timelineEvents}
+                        totalDuration={labsTotalDuration}
+                        onUpdateEvent={updateEventStartTime}
+                        onRemoveEvent={removeTimelineEvent}
+                      />
+                    </div>
+                  </Card>
                 </motion.div>
-
-                {/* Generate Audio Button */}
+                {/* Generate Audio Section for Labs */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-                  <div className="text-center">
-                    <Button
-                      onClick={handleExportAudio}
-                      disabled={isGeneratingAudio || timelineEvents.length === 0}
-                      className={cn(
-                        "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
-                        "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none",
-                        "bg-gradient-to-r from-green-500 via-indigo-500 to-green-500 text-white",
-                      )}
-                    >
-                      <div className="flex items-center justify-center font-black">
-                        {isGeneratingAudio && (
-                          <div className="mr-3 h-5 w-5">
-                            <svg
-                              className="animate-spin h-5 w-5 text-white"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                              ></circle>
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              ></path>
-                            </svg>
-                          </div>
-                        )}
-                        <Wand2 className="mr-2 h-5 w-5" />
-                        <span className="text-base">{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
-                      </div>
-                    </Button>
-                  </div>
-                </motion.div>
-
-                {/* Generated Audio Section */}
-                <AnimatePresence>
-                  {generatedAudioUrl && !isGeneratingAudio && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5 }}
-                    >
-                      <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-logo-teal-50 to-logo-emerald-50 dark:from-logo-teal-950 dark:to-logo-emerald-950">
-                        <div className="bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
-                          <h3 className="text-white font-black">Generated Audio</h3>
+                  <Button
+                    onClick={handleExportAudio}
+                    disabled={isGeneratingAudio || timelineEvents.length === 0}
+                    className={cn(
+                      "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
+                      "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none",
+                      "bg-gradient-to-r from-green-500 via-indigo-500 to-green-500 text-white",
+                    )}
+                  >
+                    <div className="flex items-center justify-center font-black">
+                      {isGeneratingAudio && (
+                        <div className="mr-3 h-5 w-5">
+                          <svg
+                            className="animate-spin h-5 w-5 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291
+                                    A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
                         </div>
-                        <div className="p-6">
-                          <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
-                            <audio controls className="w-full" src={generatedAudioUrl}></audio>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                              <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
-                                Total Events
-                              </div>
-                              <div className="dark:text-black font-black text-black">{timelineEvents.length}</div>
+                      )}
+                      <Wand2 className="mr-2 h-5 w-5" />
+                      <span>{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
+                    </div>
+                  </Button>
+                </motion.div>
+                {generatedAudioUrl && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-logo-teal-50 to-logo-emerald-50 dark:from-logo-teal-950 dark:to-logo-emerald-950">
+                      <div className="bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
+                        <h3 className="text-white font-black">Generated Audio</h3>
+                      </div>
+                      <div className="p-6">
+                        <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
+                          <audio controls className="w-full" src={generatedAudioUrl}></audio>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                          <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                            <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
+                              Total Events
                             </div>
-                            <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                              <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
-                                Total Duration
-                              </div>
-                              <div className="dark:text-black font-black text-black">
-                                {formatTime(labsTotalDuration)}
-                              </div>
+                            <div className="dark:text-black font-black text-black">{timelineEvents.length}</div>
+                          </div>
+                          <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                            <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
+                              Total Duration
+                            </div>
+                            <div className="dark:text-black font-black text-black">
+                              {formatTime(labsTotalDuration)}
                             </div>
                           </div>
-                          <Button
-                            onClick={() => {
-                              const a = document.createElement("a")
-                              a.href = generatedAudioUrl
-                              a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
-                              document.body.appendChild(a)
-                              a.click()
-                              document.body.removeChild(a)
-                            }}
-                            className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                        </div>
+                        <Button
+                          onClick={() => {
+                            const a = document.createElement("a")
+                            a.href = generatedAudioUrl
+                            a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
+                            document.body.appendChild(a)
+                            a.click()
+                            document.body.removeChild(a)
+                          }}
+                          className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-
+700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
                           >
                             <div className="flex items-center justify-center font-black">
                               <Download className="mr-2 h-5 w-5" />
@@ -2634,6 +2681,6 @@ export default function HomePage() {
           </div>
         </div>
       </motion.div>
-    </div>
+  </div>
   )
 }
