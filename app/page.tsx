@@ -1663,7 +1663,7 @@ export default function HomePage() {
               <>
                 {/* Note and Resources sections - moved to proper position */}
                 <div className="space-y-4 mb-[27px]">
-                  <div className="p-4 max-w-2xl dark:border-logo-rose-700 border-solid border text-center border-logo-rose-600 mx-auto rounded-md shadow-none">
+                  <div className="p-4 max-w-2xl dark:border-logo-rose-700 border-solid border text-center border-logo-rose-600 mx-auto rounded-md shadow-inner">
                     <p className="text-logo-rose-600 leading-relaxed dark:text-logo-rose-300 font-serif font-black text-xs">
                       <strong className="pr-1.5 font-black font-serif text-center text-sm text-logo-amber-600">
                         Note:{" "}
@@ -1681,7 +1681,7 @@ export default function HomePage() {
                       {isMobileDevice ? "50MB" : "500MB"}) should be compatible. Enjoy:){" "}
                     </p>
                   </div>
-                  <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto dark:border-logo-rose-700 backdrop-blur-sm dark:bg-gray-900/60 border-0 py-4 px-0 bg-transparent pb-5 pt-[3px]">
+                  <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto dark:border-logo-rose-700 backdrop-blur-sm dark:bg-gray-900/60 border-0 py-4 px-0 bg-transparent pb-5 pt-0">
                     <h3 className="mb-2 dark:text-white text-center font-black px-0 pb-1.5 rounded text-base text-logo-rose-600">
                       Resources
                     </h3>
@@ -2266,14 +2266,14 @@ export default function HomePage() {
               >
                 {/* Meditation Setup for Labs */}
                 <motion.div
-                  className=""
+                  className="text-logo-rose"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
                 >
                   <Card className="overflow-hidden border border-logo-rose-600 shadow-inner bg-white dark:bg-gray-900 max-w-2xl mx-auto">
                     <div className="py-3 px-6 text-center">
-                      <h3 className="flex items-center justify-center font-black text-logo-rose-600">
+                      <h3 className="flex items-center justify-center font-black text-logo-rose-600 text-left">
                         <Settings2 className="h-4 w-4 mr-2" />
                         Session Setup
                       </h3>
