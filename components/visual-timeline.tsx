@@ -437,7 +437,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                           className="hover:bg-gray-100 dark:hover:bg-gray-800"
                           title="Preview audio"
                         >
-                          <Play className="h-4 w-4" />
+                          <Play className="h-4 w-4 text-gray-600" />
                         </Button>
                         <Button
                           size="sm"
