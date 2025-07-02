@@ -2271,10 +2271,10 @@ export default function HomePage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
                 >
-                  <Card className="overflow-hidden border border-logo-rose-600 shadow-inner bg-white dark:bg-gray-900">
-                    <div className="py-3 px-6">
+                  <Card className="overflow-hidden border border-logo-rose-600 shadow-inner bg-white dark:bg-gray-900 max-w-2xl mx-auto">
+                    <div className="py-3 px-6 text-center">
                       <h3 className="flex items-center justify-center font-black text-logo-rose-600">
-                        
+                        <Settings2 className="h-4 w-4 mr-2" />
                         Session Setup
                       </h3>
                     </div>
