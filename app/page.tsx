@@ -1,7 +1,36 @@
 "use client"
 
-import type React from "react"
+import React from "react"
+
+import { Separator } from "@/components/ui/separator"
 import { useState, useRef, useEffect, useCallback } from "react"
+import { Button } from "@/components/ui/button"
+import { Slider } from "@/components/ui/slider"
+import { Card } from "@/components/ui/card"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import {
+  Info,
+  Upload,
+  Volume2,
+  Clock,
+  Wand2,
+  Download,
+  AlertTriangle,
+  ListPlus,
+  Music2,
+  Mic,
+  StopCircle,
+  Play,
+  PlusCircle,
+  CircleDotDashed,
+} from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Switch } from "@/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Navigation } from "@/components/navigation"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/components/ui/use-toast"
 import {
   INSTRUCTIONS_LIBRARY,
@@ -10,6 +39,7 @@ import {
   type Instruction,
   type SoundCue,
 } from "@/lib/meditation-data"
+import { VisualTimeline } from "@/components/visual-timeline"
 
 // Add this near the top of the file, after the imports
 const NOTE_FREQUENCIES = {
@@ -1318,4 +1348,685 @@ export default function HomePage() {
     silenceThreshold,
     minSilenceDuration,
     minSpacingDuration,
-    preserveNaturalPacing,\
+    preserveNaturalPacing,
+    compatibilityMode,
+  ])
+
+  // Labs: Recording functionality
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = mediaRecorder
+      const chunks: Blob[] = []
+
+      mediaRecorder.ondataavailable = (event) => {
+        chunks.push(event.data)
+      }
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: "audio/webm" })
+        const url = URL.createObjectURL(blob)
+        setRecordedAudioUrl(url)
+        setRecordedBlobs(chunks)
+        stream.getTracks().forEach((track) => track.stop())
+      }
+
+      mediaRecorder.start()
+      setIsRecording(true)
+      toast({ title: "Recording Started", description: "Recording your instruction..." })
+    } catch (err) {
+      console.error("Error accessing microphone:", err)
+      toast({
+        title: "Recording Failed",
+        description: `Could not access microphone: ${err instanceof Error ? err.message : "Unknown"}`,
+        variant: "destructive",
+      })
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
+      toast({ title: "Recording Stopped", description: "Recording saved." })
+    }
+  }
+
+  const addRecordedVoiceToTimeline = () => {
+    if (recordedAudioUrl && recordedBlobs.length > 0) {
+      // Estimate duration (this is a rough estimate, actual duration might vary)
+      const estimatedDuration = recordedBlobs.reduce((sum, blob) => sum + blob.size, 0) / (12000 * 10) // Rough estimate for webm audio
+      const newEvent: TimelineEvent = {
+        id: `recorded-voice-${Date.now()}`,
+        type: "recorded_voice",
+        startTime: labsTotalDuration, // Placeholder, will be adjusted by VisualTimeline
+        recordedAudioUrl: recordedAudioUrl,
+        recordedInstructionLabel: recordingLabel || `Recorded Instruction ${timelineEvents.length + 1}`,
+        duration: Math.max(5, Math.ceil(estimatedDuration)), // Ensure minimum duration
+      }
+      setTimelineEvents((prev) => [...prev, newEvent])
+      setRecordedAudioUrl(null)
+      setRecordedBlobs([])
+      setRecordingLabel("")
+      toast({ title: "Added to Timeline", description: "Recorded voice added to meditation timeline." })
+    } else {
+      toast({
+        title: "No Recording",
+        description: "Please record an instruction first.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const addInstructionToTimeline = () => {
+    if (selectedLibraryInstruction) {
+      const newEvent: TimelineEvent = {
+        id: `instruction-${Date.now()}`,
+        type: "instruction_sound",
+        startTime: labsTotalDuration, // Placeholder
+        instructionText: selectedLibraryInstruction.text,
+        duration: 60, // Default duration for instructions
+      }
+      setTimelineEvents((prev) => [...prev, newEvent])
+      toast({ title: "Added to Timeline", description: "Instruction added to meditation timeline." })
+    } else if (customInstructionText.trim()) {
+      const newEvent: TimelineEvent = {
+        id: `custom-instruction-${Date.now()}`,
+        type: "instruction_sound",
+        startTime: labsTotalDuration, // Placeholder
+        instructionText: customInstructionText.trim(),
+        duration: 60, // Default duration for instructions
+      }
+      setTimelineEvents((prev) => [...prev, newEvent])
+      setCustomInstructionText("")
+      toast({ title: "Added to Timeline", description: "Custom instruction added to meditation timeline." })
+    } else {
+      toast({
+        title: "No Instruction",
+        description: "Please select a library instruction or enter custom text.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const addSoundCueToTimeline = () => {
+    if (selectedSoundCue) {
+      const newEvent: TimelineEvent = {
+        id: `sound-cue-${Date.now()}`,
+        type: "instruction_sound",
+        startTime: labsTotalDuration, // Placeholder
+        soundCueId: selectedSoundCue.id,
+        soundCueName: selectedSoundCue.name,
+        soundCueSrc: selectedSoundCue.src,
+        duration: (selectedSoundCue.duration || 1000) / 1000, // Convert ms to seconds
+      }
+      setTimelineEvents((prev) => [...prev, newEvent])
+      toast({ title: "Added to Timeline", description: "Sound cue added to meditation timeline." })
+    } else {
+      toast({
+        title: "No Sound Cue",
+        description: "Please select a sound cue.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const updateTimelineEvent = useCallback((index: number, newEvent: TimelineEvent) => {
+    setTimelineEvents((prev) => prev.map((event, i) => (i === index ? newEvent : event)))
+  }, [])
+
+  const removeTimelineEvent = useCallback((index: number) => {
+    setTimelineEvents((prev) => prev.filter((_, i) => i !== index))
+  }, [])
+
+  const calculateTotalTimelineDuration = useCallback(() => {
+    if (timelineEvents.length === 0) return 0
+    let total = 0
+    let currentTime = 0
+    for (const event of timelineEvents) {
+      event.startTime = currentTime // Update start time for each event
+      total += event.duration || 0
+      currentTime += event.duration || 0
+    }
+    return total
+  }, [timelineEvents])
+
+  useEffect(() => {
+    const calculatedDuration = calculateTotalTimelineDuration()
+    setLabsTotalDuration(calculatedDuration)
+  }, [timelineEvents, calculateTotalTimelineDuration])
+
+  const handlePlayGeneratedAudio = () => {
+    if (labsAudioRef.current && generatedAudioUrl) {
+      labsAudioRef.current.play().catch((e) => console.error("Error playing generated audio:", e))
+    }
+  }
+
+  const handlePauseGeneratedAudio = () => {
+    if (labsAudioRef.current) {
+      labsAudioRef.current.pause()
+    }
+  }
+
+  const handleStopGeneratedAudio = () => {
+    if (labsAudioRef.current) {
+      labsAudioRef.current.pause()
+      labsAudioRef.current.currentTime = 0
+    }
+  }
+
+  const handleVolumeChange = (value: number[]) => {
+    setVolume(value[0])
+    if (labsAudioRef.current) {
+      labsAudioRef.current.volume = value[0] / 100
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
+      <Navigation />
+      <main className="container mx-auto flex flex-1 flex-col gap-8 p-4 md:p-8">
+        <div className="flex items-center justify-center gap-4">
+          <Button
+            variant={activeMode === "adjuster" ? "default" : "outline"}
+            onClick={() => setActiveMode("adjuster")}
+            className="px-6 py-3 text-lg"
+          >
+            Length Adjuster
+          </Button>
+          <Button
+            variant={activeMode === "labs" ? "default" : "outline"}
+            onClick={() => setActiveMode("labs")}
+            className="px-6 py-3 text-lg"
+          >
+            Labs
+          </Button>
+        </div>
+
+        {activeMode === "adjuster" && (
+          <section className="grid gap-8 lg:grid-cols-2">
+            <Card className="flex flex-col items-center justify-center gap-6 p-6 text-center shadow-lg">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Upload Audio</h2>
+              <div
+                ref={uploadAreaRef}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className="flex w-full cursor-pointer flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed border-gray-300 p-8 transition-colors hover:border-primary dark:border-gray-700"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-12 w-12 text-gray-500 dark:text-gray-400" />
+                <p className="text-gray-600 dark:text-gray-300">Drag & drop your audio file here, or click to browse</p>
+                <Input
+                  type="file"
+                  accept="audio/*,.m4a"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  ref={fileInputRef}
+                />
+              </div>
+              {file && (
+                <div className="text-md text-gray-700 dark:text-gray-300">
+                  Selected: <span className="font-semibold">{file.name}</span> ({formatFileSize(file.size)})
+                </div>
+              )}
+              {status && (
+                <Alert variant={status.type === "error" ? "destructive" : "default"}>
+                  {status.type === "error" ? <AlertTriangle className="h-4 w-4" /> : <Info className="h-4 w-4" />}
+                  <AlertTitle>{status.type === "error" ? "Error" : "Info"}</AlertTitle>
+                  <AlertDescription>{status.message}</AlertDescription>
+                </Alert>
+              )}
+              {memoryWarning && (
+                <Alert variant="warning">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Memory Warning</AlertTitle>
+                  <AlertDescription>
+                    Large files may cause performance issues or crashes, especially on mobile devices. Consider shorter
+                    audio.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </Card>
+
+            <Card className="flex flex-col gap-6 p-6 shadow-lg">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Adjust Settings</h2>
+              <div className="grid gap-4">
+                <div>
+                  <Label htmlFor="target-duration" className="mb-2 block">
+                    Target Duration (minutes): <span className="font-semibold">{targetDuration} min</span>
+                  </Label>
+                  <Slider
+                    id="target-duration"
+                    min={durationLimits?.min || 1}
+                    max={durationLimits?.max || 120}
+                    step={1}
+                    value={[targetDuration]}
+                    onValueChange={(val) => setTargetDuration(val[0])}
+                    disabled={!originalBuffer || isProcessing}
+                  />
+                  {durationLimits && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Min: {durationLimits.min} min, Max: {durationLimits.max} min
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="silence-threshold" className="mb-2 block">
+                    Silence Threshold: <span className="font-semibold">{(silenceThreshold * 100).toFixed(1)}%</span>
+                  </Label>
+                  <Slider
+                    id="silence-threshold"
+                    min={0.001}
+                    max={0.1}
+                    step={0.001}
+                    value={[silenceThreshold]}
+                    onValueChange={(val) => setSilenceThreshold(val[0])}
+                    disabled={!originalBuffer || isProcessing}
+                  />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Lower values detect quieter silences.</p>
+                </div>
+                <div>
+                  <Label htmlFor="min-silence-duration" className="mb-2 block">
+                    Min Silence Duration (seconds):{" "}
+                    <span className="font-semibold">{minSilenceDuration.toFixed(1)}s</span>
+                  </Label>
+                  <Slider
+                    id="min-silence-duration"
+                    min={0.5}
+                    max={10}
+                    step={0.1}
+                    value={[minSilenceDuration]}
+                    onValueChange={(val) => setMinSilenceDuration(val[0])}
+                    disabled={!originalBuffer || isProcessing}
+                  />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Minimum length of a pause to be considered for adjustment.
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="min-spacing-duration" className="mb-2 block">
+                    Min Spacing Duration (seconds):{" "}
+                    <span className="font-semibold">{minSpacingDuration.toFixed(1)}s</span>
+                  </Label>
+                  <Slider
+                    id="min-spacing-duration"
+                    min={0.5}
+                    max={5}
+                    step={0.1}
+                    value={[minSpacingDuration]}
+                    onValueChange={(val) => setMinSpacingDuration(val[0])}
+                    disabled={!originalBuffer || isProcessing}
+                  />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Minimum duration for any pause after adjustment.
+                  </p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="preserve-pacing">Preserve Natural Pacing</Label>
+                  <Switch
+                    id="preserve-pacing"
+                    checked={preserveNaturalPacing}
+                    onCheckedChange={setPreserveNaturalPacing}
+                    disabled={!originalBuffer || isProcessing}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="compatibility-mode">Compatibility Mode</Label>
+                  <Select
+                    value={compatibilityMode}
+                    onValueChange={setCompatibilityMode}
+                    disabled={!originalBuffer || isProcessing}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select mode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="high">High (44.1kHz)</SelectItem>
+                      <SelectItem value="low">Low (Original SR)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  onClick={processAudio}
+                  disabled={!originalBuffer || isProcessing}
+                  className="mt-4 w-full bg-gradient-to-r from-green-500 to-indigo-600 text-white hover:from-green-600 hover:to-indigo-700"
+                >
+                  {isProcessing ? (
+                    <div className="flex items-center gap-2">
+                      <span className="animate-spin">
+                        <Wand2 className="h-5 w-5" />
+                      </span>
+                      {processingStep} ({processingProgress}%)
+                    </div>
+                  ) : (
+                    <>
+                      <Wand2 className="mr-2 h-5 w-5" /> Process Audio
+                    </>
+                  )}
+                </Button>
+              </div>
+            </Card>
+
+            <Card className="col-span-full flex flex-col gap-6 p-6 shadow-lg">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Results</h2>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="flex flex-col gap-4">
+                  <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300">Original Audio</h3>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-gray-500" />
+                    <span className="text-lg font-medium">
+                      Duration: {originalBuffer ? formatDuration(originalBuffer.duration) : "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Upload className="h-5 w-5 text-gray-500" />
+                    <span className="text-lg font-medium">File Size: {file ? formatFileSize(file.size) : "N/A"}</span>
+                  </div>
+                  {originalUrl && (
+                    <audio
+                      controls
+                      src={originalUrl}
+                      className="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800"
+                    />
+                  )}
+                </div>
+                <div className="flex flex-col gap-4">
+                  <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300">Processed Audio</h3>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-gray-500" />
+                    <span className="text-lg font-medium">
+                      Actual Duration: {actualDuration ? formatDuration(actualDuration) : "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Info className="h-5 w-5 text-gray-500" />
+                    <span className="text-lg font-medium">Pauses Adjusted: {pausesAdjusted}</span>
+                  </div>
+                  {processedUrl && (
+                    <audio
+                      controls
+                      src={processedUrl}
+                      className="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800"
+                    />
+                  )}
+                  <Button
+                    onClick={downloadProcessedAudio}
+                    disabled={!processedUrl || isProcessing}
+                    className="mt-4 w-full bg-gradient-to-r from-green-500 to-indigo-600 text-white hover:from-green-600 hover:to-indigo-700"
+                  >
+                    <Download className="mr-2 h-5 w-5" /> Download Processed Audio
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </section>
+        )}
+
+        {activeMode === "labs" && (
+          <section className="grid gap-8 lg:grid-cols-2">
+            {/* Left Column: Timeline Builder */}
+            <Card className="flex flex-col gap-6 p-6 shadow-lg">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Build Meditation Timeline</h2>
+              <div className="grid gap-4">
+                <div>
+                  <Label htmlFor="meditation-title" className="mb-2 block">
+                    Meditation Title
+                  </Label>
+                  <Input
+                    id="meditation-title"
+                    value={meditationTitle}
+                    onChange={(e) => setMeditationTitle(e.target.value)}
+                    placeholder="e.g., Morning Mindfulness"
+                  />
+                </div>
+
+                <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="instructions">Instructions</TabsTrigger>
+                    <TabsTrigger value="sound-cues">Sound Cues</TabsTrigger>
+                    <TabsTrigger value="record-voice">Record Voice</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="instructions" className="mt-4">
+                    <h3 className="mb-3 text-lg font-semibold">Library Instructions</h3>
+                    <Select
+                      onValueChange={(value) =>
+                        setSelectedLibraryInstruction(INSTRUCTIONS_LIBRARY.find((i) => i.id === value) || null)
+                      }
+                      value={selectedLibraryInstruction?.id || ""}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select an instruction" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {instructionCategories.map((category) => (
+                          <React.Fragment key={category}>
+                            <div className="px-2 py-1 text-sm font-medium text-gray-500 dark:text-gray-400">
+                              {category}
+                            </div>
+                            {INSTRUCTIONS_LIBRARY.filter((i) => i.category === category).map((instruction) => (
+                              <SelectItem key={instruction.id} value={instruction.id}>
+                                {instruction.name}
+                              </SelectItem>
+                            ))}
+                          </React.Fragment>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedLibraryInstruction && (
+                      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{selectedLibraryInstruction.text}</p>
+                    )}
+                    <Button onClick={addInstructionToTimeline} className="mt-4 w-full">
+                      <ListPlus className="mr-2 h-4 w-4" /> Add Instruction
+                    </Button>
+
+                    <Separator className="my-6" />
+
+                    <h3 className="mb-3 text-lg font-semibold">Custom Instruction</h3>
+                    <Textarea
+                      placeholder="Enter your custom instruction here..."
+                      value={customInstructionText}
+                      onChange={(e) => setCustomInstructionText(e.target.value)}
+                      rows={4}
+                    />
+                    <Button onClick={addInstructionToTimeline} className="mt-4 w-full">
+                      <PlusCircle className="mr-2 h-4 w-4" /> Add Custom Instruction
+                    </Button>
+                  </TabsContent>
+
+                  <TabsContent value="sound-cues" className="mt-4">
+                    <h3 className="mb-3 text-lg font-semibold">Sound Cues</h3>
+                    <Select
+                      onValueChange={(value) =>
+                        setSelectedSoundCue(SOUND_CUES_LIBRARY.find((s) => s.id === value) || null)
+                      }
+                      value={selectedSoundCue?.id || ""}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a sound cue" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SOUND_CUES_LIBRARY.map((sound) => (
+                          <SelectItem key={sound.id} value={sound.id}>
+                            {sound.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      onClick={() => selectedSoundCue && playLabsSound(selectedSoundCue.src)}
+                      disabled={!selectedSoundCue}
+                      className="mt-4 w-full"
+                    >
+                      <Play className="mr-2 h-4 w-4" /> Preview Sound
+                    </Button>
+                    <Button onClick={addSoundCueToTimeline} className="mt-2 w-full">
+                      <Music2 className="mr-2 h-4 w-4" /> Add Sound Cue
+                    </Button>
+                  </TabsContent>
+
+                  <TabsContent value="record-voice" className="mt-4">
+                    <h3 className="mb-3 text-lg font-semibold">Record Your Voice</h3>
+                    <Input
+                      placeholder="Label for this recording (optional)"
+                      value={recordingLabel}
+                      onChange={(e) => setRecordingLabel(e.target.value)}
+                      className="mb-4"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={startRecording}
+                        disabled={isRecording}
+                        className="flex-1 bg-gradient-to-r from-gray-400 to-gray-600 text-white hover:from-gray-500 hover:to-gray-700"
+                      >
+                        <Mic className="mr-2 h-4 w-4" /> Start Recording
+                      </Button>
+                      <Button onClick={stopRecording} disabled={!isRecording} className="flex-1" variant="destructive">
+                        <StopCircle className="mr-2 h-4 w-4" /> Stop Recording
+                      </Button>
+                    </div>
+                    {recordedAudioUrl && (
+                      <div className="mt-4">
+                        <h4 className="mb-2 text-md font-medium">Recorded Audio Preview:</h4>
+                        <audio controls src={recordedAudioUrl} className="w-full" />
+                        <Button onClick={addRecordedVoiceToTimeline} className="mt-4 w-full">
+                          <ListPlus className="mr-2 h-4 w-4" /> Add Recorded Voice to Timeline
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </Card>
+
+            {/* Right Column: Timeline Display & Audio Generation */}
+            <Card className="flex flex-col gap-6 p-6 shadow-lg">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Meditation Timeline</h2>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-gray-500" />
+                  <span className="text-lg font-medium">Total Duration: {formatDuration(labsTotalDuration)}</span>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleSaveTimeline} variant="outline" size="sm">
+                    Save
+                  </Button>
+                  <Button onClick={handleLoadTimeline} variant="outline" size="sm">
+                    Load
+                  </Button>
+                </div>
+              </div>
+
+              <VisualTimeline
+                timelineEvents={timelineEvents}
+                updateTimelineEvent={updateTimelineEvent}
+                removeTimelineEvent={removeTimelineEvent}
+                totalDuration={labsTotalDuration}
+              />
+
+              <div className="flex items-center gap-4">
+                <Button onClick={startPlayback} disabled={isPlaying || timeline.length === 0}>
+                  <Play className="mr-2 h-5 w-5" /> Play Timeline
+                </Button>
+                <Button onClick={pausePlayback} disabled={!isPlaying}>
+                  Pause
+                </Button>
+                <Button onClick={resetPlayback} disabled={currentPlaybackTime === 0 && !isPlaying}>
+                  Reset
+                </Button>
+                <div className="text-lg font-semibold tabular-nums">
+                  {formatTime(currentPlaybackTime)} / {formatTime(totalDuration)}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Volume2 className="h-5 w-5 text-gray-500" />
+                <Slider
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={[volume]}
+                  onValueChange={handleVolumeChange}
+                  className="w-full"
+                />
+                <span className="text-sm text-gray-600">{volume}%</span>
+              </div>
+
+              <Separator className="my-4" />
+
+              <Card className="bg-gradient-to-r from-green-400 via-indigo-400 to-green-400 p-6 shadow-lg">
+                <h3 className="mb-4 text-xl font-bold text-white">Generate Audio</h3>
+                <Button
+                  onClick={handleExportAudio}
+                  disabled={isGeneratingAudio || timelineEvents.length === 0}
+                  className="w-full bg-gradient-to-r from-green-500 to-indigo-600 text-white hover:from-green-600 hover:to-indigo-700"
+                >
+                  {isGeneratingAudio ? (
+                    <div className="flex items-center gap-2">
+                      <span className="animate-spin">
+                        <Wand2 className="h-5 w-5" />
+                      </span>
+                      {generationStep} ({generationProgress}%)
+                    </div>
+                  ) : (
+                    <>
+                      <Wand2 className="mr-2 h-5 w-5" /> Generate Audio
+                    </>
+                  )}
+                </Button>
+              </Card>
+
+              <Card className="border border-indigo-500 bg-white p-6 shadow-lg">
+                <h3 className="mb-4 text-xl font-bold text-gray-800">Generated Audio</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <CircleDotDashed className="h-5 w-5 text-gray-500" />
+                      <span className="text-lg font-medium">Total Events: {timelineEvents.length}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-gray-500" />
+                      <span className="text-lg font-medium">Total Duration: {formatDuration(labsTotalDuration)}</span>
+                    </div>
+                  </div>
+                </div>
+                {generatedAudioUrl && (
+                  <div className="mt-4 flex flex-col gap-2">
+                    <audio ref={labsAudioRef} controls src={generatedAudioUrl} className="w-full custom-audio-player" />
+                    <div className="flex gap-2">
+                      <Button onClick={handlePlayGeneratedAudio} disabled={!generatedAudioUrl}>
+                        <Play className="mr-2 h-4 w-4" /> Play
+                      </Button>
+                      <Button onClick={handlePauseGeneratedAudio} disabled={!generatedAudioUrl}>
+                        Pause
+                      </Button>
+                      <Button onClick={handleStopGeneratedAudio} disabled={!generatedAudioUrl}>
+                        Stop
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          const a = document.createElement("a")
+                          a.href = generatedAudioUrl
+                          a.download = `${meditationTitle.replace(/\s/g, "_")}_meditation.wav`
+                          document.body.appendChild(a)
+                          a.click()
+                          document.body.removeChild(a)
+                        }}
+                        disabled={!generatedAudioUrl}
+                      >
+                        <Download className="mr-2 h-4 w-4" /> Download
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            </Card>
+          </section>
+        )}
+      </main>
+    </div>
+  )
+}
