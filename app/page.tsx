@@ -2546,7 +2546,7 @@ export default function HomePage() {
                         "bg-gradient-to-r from-green-500 via-indigo-500 to-green-500 text-white",
                       )}
                     >
-                      <div className="flex items-center justify-center">
+                      <div className="flex items-center justify-center font-black">
                         {isGeneratingAudio && (
                           <div className="mr-3 h-5 w-5">
                             <svg
