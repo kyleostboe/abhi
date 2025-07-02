@@ -2540,7 +2540,11 @@ export default function HomePage() {
                     <Button
                       onClick={handleExportAudio}
                       disabled={isGeneratingAudio || timelineEvents.length === 0}
-                      className="py-4 px-8 bg-gradient-to-r from-green-500 via-indigo-500 to-green-500 hover:from-green-600 hover:via-indigo-600 hover:to-green-600 text-white border-none shadow-lg dark:shadow-white/20 font-black text-lg"
+                      className={cn(
+                        "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
+                        "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none",
+                        "bg-gradient-to-r from-green-500 via-indigo-500 to-green-500 text-white",
+                      )}
                     >
                       <div className="flex items-center justify-center">
                         {isGeneratingAudio && (
