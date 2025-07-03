@@ -1758,7 +1758,7 @@ export default function HomePage() {
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                 >
-                  <div className="bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-purple-700 border-dashed border-0">
+                  <div className="bg-gradient-to-r from-logo-pink to-logo-purple to-logo-blue to-logo-green py-3 px-6 dark:from-logo-pink dark:to-logo-green border-dashed border-0">
                     <h3 className="text-white flex items-center font-black">
                       <Upload className="h-4 w-4 mr-2" />
                       Upload Audio
