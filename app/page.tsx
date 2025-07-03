@@ -2392,7 +2392,7 @@ export default function HomePage() {
                               key={category}
                               className="border-b border-gray-100 dark:border-gray-800"
                             >
-                              <AccordionTrigger className="text-logo-emerald-700 dark:text-logo-emerald-500 hover:no-underline py-3">
+                              <AccordionTrigger className="text-logo-teal-700 dark:text-logo-teal-500 hover:no-underline py-3">
                                 {category}
                               </AccordionTrigger>
                               <AccordionContent className="pb-4">
@@ -2430,7 +2430,7 @@ export default function HomePage() {
                           ))}
                         </Accordion>
                         <Button
-                          className="w-full bg-white text-logo-purple-600 border border-logo-purple-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-purple-400 dark:border-logo-purple-700 dark:hover:bg-gray-800"
+                          className="w-full bg-white text-logo-teal-700 border border-logo-teal-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-teal-400 dark:border-logo-teal-700 dark:hover:bg-gray-800"
                           onClick={handleAddInstructionSoundEvent}
                           disabled={(!selectedLibraryInstruction && !customInstructionText.trim()) || !selectedSoundCue}
                         >
