@@ -1773,13 +1773,8 @@ export default function HomePage() {
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                 >
-                  <div className="bg-gradient-to-r from-logo-teal via-logo-emerald to-logo-blue py-3 px-6 dark:from-logo-teal dark:via-logo-emerald dark:to-logo-blue border-dashed border-0">
-                    <h3 className="text-white flex items-center font-black">
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload Audio
-                    </h3>
-                  </div>
-                  <div className="p-10 md:p-16 text-center md:py-14 border-dashed border-stone-300 border-2 rounded-b-2xl border-t-0">
+                  
+                  <div className="p-10 md:p-16 text-center md:py-14 border-2 rounded-b-2xl border-t-2 border-dashed border-gray-300">
                     <motion.div
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
