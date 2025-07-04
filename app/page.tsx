@@ -1886,42 +1886,42 @@ export default function HomePage() {
                         <div className="p-4">
                           <div className="flex items-center mb-4">
                             <div className="p-2 rounded-lg mr-3 dark:bg-gray-700 bg-transparent">
-                              <Info className="h-4 w-4 dark:text-gray-300 text-logo-rose-600" />
+                              <Info className="h-4 w-4 dark:text-gray-300 text-logo-rose-foreground" />
                             </div>
-                            <div className="text-lg dark:text-gray-200 font-black text-logo-rose-600">
+                            <div className="text-lg dark:text-gray-200 font-black text-logo-purple-300">
                               Audio Analysis
                             </div>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border-logo-rose-600 border rounded-md shadow-md">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-rose-600">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-logo-teal">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-purple-300">
                                 Content
                               </div>
-                              <div className="dark:text-black font-black text-black">
+                              <div className="dark:text-black font-black text-logo-purple-300">
                                 {formatDuration(audioAnalysis.contentDuration)}
                               </div>
                             </div>
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border-logo-rose-600 border rounded-md shadow-md">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-rose-600">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-logo-teal">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-purple-300">
                                 Silence
                               </div>
-                              <div className="dark:text-gray-200 font-black text-black">
+                              <div className="dark:text-gray-200 font-black rounded-xl text-logo-purple-300">
                                 {formatDuration(audioAnalysis.totalSilence)}
                               </div>
                             </div>
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border border-logo-rose-600 rounded-md shadow-md">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-rose-600">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-logo-teal">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-purple-300">
                                 Pauses
                               </div>
-                              <div className="dark:text-gray-200 font-black text-black">
+                              <div className="dark:text-gray-200 font-black text-logo-purple-300">
                                 {audioAnalysis.silenceRegions}
                               </div>
                             </div>
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border-logo-rose-600 border rounded-md shadow-md">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-rose-600">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-logo-teal">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-purple-300">
                                 Range
                               </div>
-                              <div className="dark:text-gray-200 font-black text-black">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-purple-300">
                                 {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
                               </div>
                             </div>
