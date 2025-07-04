@@ -2268,7 +2268,7 @@ return (
                           >
                             <div className="flex items-center justify-center font-black">
                               <Download className="mr-2 h-5 w-5" />
-                              Download Processed Audio
+                              Download Audio
                             </div>
                           </Button>
                         </div>
