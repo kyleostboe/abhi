@@ -2,32 +2,18 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { Navigation } from "@/components/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectTrigger } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
-import {
-  Upload,
-  FileText,
-  Music,
-  Wand2,
-  PlayCircle,
-  Download,
-  AlertTriangle,
-  Info,
-  RefreshCcw,
-  Plus,
-  Trash2,
-  Volume2,
-} from "lucide-react"
+import { Upload, FileText, Music, Wand2, PlayCircle, Info, RefreshCcw, Plus, Trash2, Volume2 } from "lucide-react"
 import type { SpeechRecognition } from "web-speech-api"
+import { SectionTitle } from "@/components/section-title"
 
 interface Instruction {
   id: string
@@ -684,9 +670,9 @@ export default function EncoderPage() {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
             >
-              <h1 className="text-4xl md:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out tracking-wide mb-2 font-black">
+              <SectionTitle className="transform hover:scale-105 transition-transform duration-700 ease-out tracking-wide mb-2 font-black">
                 Meditation Encoder
-              </h1>
+              </SectionTitle>
               <p className="text-gray-600 dark:text-gray-300 text-lg mb-8">
                 Transform guided meditations by replacing speech with sound cues
               </p>
@@ -975,168 +961,4 @@ export default function EncoderPage() {
                                   value={instruction.soundId}
                                   onValueChange={(value) => handleSoundMappingChange(instruction.id, value)}
                                 >
-                                  <SelectTrigger className="w-full mt-1">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {availableSounds.map((sound) => (
-                                      <SelectItem key={sound.id} value={sound.id}>
-                                        {sound.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-
-                              <div className="space-y-2">
-                                <div className="flex items-center space-x-2">
-                                  <Switch
-                                    checked={instruction.keepOriginal}
-                                    onCheckedChange={(checked) =>
-                                      updateInstruction(instruction.id, { keepOriginal: checked })
-                                    }
-                                  />
-                                  <Label className="text-sm">Keep Original Speech</Label>
-                                </div>
-
-                                {instruction.keepOriginal && (
-                                  <div>
-                                    <Label className="text-xs">Original Volume: {instruction.originalVolume}%</Label>
-                                    <Slider
-                                      value={[instruction.originalVolume]}
-                                      onValueChange={([value]) =>
-                                        updateInstruction(instruction.id, { originalVolume: value })
-                                      }
-                                      max={100}
-                                      step={5}
-                                      className="mt-1"
-                                    />
-                                  </div>
-                                )}
-
-                                <div>
-                                  <Label className="text-xs">Sound Volume: {instruction.soundVolume}%</Label>
-                                  <Slider
-                                    value={[instruction.soundVolume]}
-                                    onValueChange={([value]) =>
-                                      updateInstruction(instruction.id, { soundVolume: value })
-                                    }
-                                    max={100}
-                                    step={5}
-                                    className="mt-1"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Encode Tab */}
-            <TabsContent value="encode" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Wand2 className="h-5 w-5 mr-2" />
-                    Audio Encoding
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {mappedInstructions.length === 0 ? (
-                    <Alert>
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertTitle>No Instructions Mapped</AlertTitle>
-                      <AlertDescription>Please complete the sound mapping step before encoding.</AlertDescription>
-                    </Alert>
-                  ) : (
-                    <>
-                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <h3 className="font-medium text-blue-800 dark:text-blue-200 mb-2">Encoding Summary</h3>
-                        <p className="text-sm text-blue-600 dark:text-blue-400">
-                          Ready to encode {mappedInstructions.length} instructions with sound cues.
-                        </p>
-                        <ul className="text-xs text-blue-600 dark:text-blue-400 mt-2 space-y-1">
-                          <li>
-                            • Original speech will be{" "}
-                            {mappedInstructions.filter((i) => i.keepOriginal).length > 0
-                              ? "partially preserved"
-                              : "completely replaced"}
-                          </li>
-                          <li>• Sound cues will be added at instruction points</li>
-                          <li>• Output format: WAV (uncompressed)</li>
-                        </ul>
-                      </div>
-
-                      <Button onClick={handleEncoding} disabled={isEncoding} className="w-full" size="lg">
-                        {isEncoding ? (
-                          <>
-                            <RefreshCcw className="h-4 w-4 mr-2 animate-spin" />
-                            Encoding Audio...
-                          </>
-                        ) : (
-                          <>
-                            <Wand2 className="h-4 w-4 mr-2" />
-                            Start Encoding
-                          </>
-                        )}
-                      </Button>
-
-                      {isEncoding && (
-                        <div className="space-y-2">
-                          <Progress value={encodingProgress} className="w-full" />
-                          <p className="text-sm text-center text-gray-600 dark:text-gray-400">
-                            {encodingProgress}% complete
-                          </p>
-                        </div>
-                      )}
-
-                      {encodedAudioUrl && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800"
-                        >
-                          <h3 className="font-medium text-green-800 dark:text-green-200 mb-3">Encoded Audio</h3>
-                          <audio controls className="w-full mb-4" src={encodedAudioUrl} />
-                          <Button onClick={downloadEncodedAudio} className="w-full">
-                            <Download className="h-4 w-4 mr-2" />
-                            Download Encoded Audio
-                          </Button>
-                        </motion.div>
-                      )}
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-
-          {/* Status Messages */}
-          <AnimatePresence>
-            {status && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className={`p-4 rounded-lg text-center ${
-                  status.type === "info"
-                    ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
-                    : status.type === "success"
-                      ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800"
-                      : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800"
-                }`}
-              >
-                {status.message}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </motion.div>
-    </div>
-  )
-}
+                                  <SelectTrigger className="w-full mt-1\
