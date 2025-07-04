@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect, useCallback, useReducer } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
@@ -45,7 +45,7 @@ import {
 import { VisualTimeline } from "@/components/visual-timeline"
 import { cn } from "@/lib/utils" // Import cn utility
 
-// Add this near the top of the file, after the imports
+// Constants
 const NOTE_FREQUENCIES = {
   C3: 130.81,
   D3: 146.83,
@@ -70,11 +70,43 @@ const NOTE_FREQUENCIES = {
   B5: 987.77,
 }
 
-// Mobile detection
-const isMobile = () => {
-  if (typeof window === "undefined") return false
-  return /Android|webOS|iPhone|iPad|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768
+const MOBILE_CONFIG = {
+  maxFileSize: 50 * 1024 * 1024,
+  sampleRate: 22050,
+  maxDuration: 60,
+  skipSamples: 20,
+  memoryThreshold: 20 * 1024 * 1024,
+  processingTimeout: 120000,
 }
+
+const DESKTOP_CONFIG = {
+  maxFileSize: 500 * 1024 * 1024,
+  sampleRate: 44100,
+  maxDuration: 120,
+  skipSamples: 10,
+  memoryThreshold: 150 * 1024 * 1024,
+  processingTimeout: 600000,
+}
+
+// Utility functions
+const isMobile = () =>
+  typeof window !== "undefined" &&
+  (/Android|webOS|iPhone|iPad|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768)
+
+const formatTime = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = Math.floor(seconds % 60)
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
+}
+
+const formatFileSize = (bytes: number) => {
+  if (bytes === 0) return "0 Bytes"
+  const k = 1024
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${["Bytes", "KB", "MB", "GB"][i]}`
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // Memory management utilities
 const forceGarbageCollection = () => {
@@ -83,8 +115,6 @@ const forceGarbageCollection = () => {
     ;(window as any).gc()
   }
 }
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const monitorMemory = () => {
   if (typeof performance !== "undefined" && (performance as any).memory) {
@@ -121,69 +151,302 @@ interface TimelineItem {
   content: Instruction | SoundCue
 }
 
-export default function HomePage() {
-  // State for mode toggle (Length Adjuster vs Labs)
-  const [activeMode, setActiveMode] = useState<"adjuster" | "labs">("adjuster")
+// State management
+interface AppState {
+  // Mode
+  activeMode: "adjuster" | "labs"
 
-  // == States for Length Adjuster ==
-  const [file, setFile] = useState<File | null>(null)
-  const [originalBuffer, setOriginalBuffer] = useState<AudioBuffer | null>(null)
-  const [processedBufferState, setProcessedBufferState] = useState<AudioBuffer | null>(null)
+  // Adjuster states
+  file: File | null
+  originalBuffer: AudioBuffer | null
+  processedBufferState: AudioBuffer | null
+  targetDuration: number
+  silenceThreshold: number
+  minSilenceDuration: number
+  minSpacingDuration: number
+  preserveNaturalPacing: boolean
+  compatibilityMode: string
+  status: { message: string; type: string } | null
+  originalUrl: string
+  processedUrl: string
+  pausesAdjusted: number
+  isProcessing: boolean
+  processingProgress: number
+  processingStep: string
+  durationLimits: { min: number; max: number } | null
+  audioAnalysis: { totalSilence: number; contentDuration: number; silenceRegions: number } | null
+  actualDuration: number | null
+  isProcessingComplete: boolean
+  isMobileDevice: boolean
+  memoryWarning: boolean
+
+  // Labs states
+  meditationTitle: string
+  labsTotalDuration: number
+  timelineEvents: TimelineEvent[]
+  selectedLibraryInstruction: Instruction | null
+  customInstructionText: string
+  selectedSoundCue: SoundCue | null
+  isRecording: boolean
+  recordedAudioUrl: string | null
+  recordedBlobs: Blob[]
+  recordingLabel: string
+  isGeneratingAudio: boolean
+  generationProgress: number
+  generationStep: string
+  generatedAudioUrl: string | null
+  volume: number
+}
+
+const initialState: AppState = {
+  activeMode: "adjuster",
+  file: null,
+  originalBuffer: null,
+  processedBufferState: null,
+  targetDuration: 20,
+  silenceThreshold: 0.01,
+  minSilenceDuration: 3,
+  minSpacingDuration: 1.5,
+  preserveNaturalPacing: true,
+  compatibilityMode: "high",
+  status: null,
+  originalUrl: "",
+  processedUrl: "",
+  pausesAdjusted: 0,
+  isProcessing: false,
+  processingProgress: 0,
+  processingStep: "",
+  durationLimits: null,
+  audioAnalysis: null,
+  actualDuration: null,
+  isProcessingComplete: false,
+  isMobileDevice: false,
+  memoryWarning: false,
+  meditationTitle: "My Custom Meditation",
+  labsTotalDuration: 600,
+  timelineEvents: [],
+  selectedLibraryInstruction: null,
+  customInstructionText: "",
+  selectedSoundCue: null,
+  isRecording: false,
+  recordedAudioUrl: null,
+  recordedBlobs: [],
+  recordingLabel: "",
+  isGeneratingAudio: false,
+  generationProgress: 0,
+  generationStep: "",
+  generatedAudioUrl: null,
+  volume: 75,
+}
+
+function appReducer(state: AppState, action: any): AppState {
+  switch (action.type) {
+    case "SET_MODE":
+      return { ...state, activeMode: action.payload }
+    case "SET_FILE":
+      return { ...state, file: action.payload }
+    case "UPDATE_PROCESSING":
+      return { ...state, ...action.payload }
+    case "SET_TIMELINE_EVENTS":
+      return { ...state, timelineEvents: action.payload }
+    case "UPDATE_LABS":
+      return { ...state, ...action.payload }
+    default:
+      return state
+  }
+}
+
+// UI components
+const GradientCard = ({ title, icon, gradient, children, className = "" }: any) => (
+  <Card className={`overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 ${className}`}>
+    <div className={`bg-gradient-to-r ${gradient} py-3 px-6`}>
+      <h3 className="text-white flex items-center font-black">
+        {icon && <icon className="h-4 w-4 mr-2" />}
+        {title}
+      </h3>
+    </div>
+    {children}
+  </Card>
+)
+
+const ProgressCard = ({ title, progress, step, gradient }: any) => (
+  <Card className={`p-6 bg-gradient-to-r ${gradient} border-logo-rose-200 shadow-sm dark:shadow-white/10`}>
+    <div className="text-center mb-4">
+      <h3 className="text-lg font-medium text-logo-rose-700 dark:text-logo-rose-300 mb-2">{title}</h3>
+      <p className="text-sm text-logo-rose-600 dark:text-logo-rose-400">{step}</p>
+    </div>
+    <div className="w-full bg-logo-rose-200 rounded-full h-2 mb-2 dark:bg-logo-rose-800">
+      <div
+        className="bg-gradient-to-r from-logo-rose-500 to-logo-purple-500 h-2 rounded-full transition-all duration-300"
+        style={{ width: `${progress}%` }}
+      />
+    </div>
+    <div className="text-center text-sm text-logo-rose-600 dark:text-logo-rose-400">{progress}% complete</div>
+  </Card>
+)
+
+const ActionButton = ({ onClick, disabled, gradient, icon, children, loading = false }: any) => (
+  <Button
+    onClick={onClick}
+    disabled={disabled || loading}
+    className={cn(
+      "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
+      "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none",
+      `bg-gradient-to-r ${gradient} text-white`,
+    )}
+  >
+    <div className="flex items-center justify-center font-black">
+      {loading && (
+        <div className="mr-3 h-5 w-5">
+          <svg
+            className="animate-spin h-5 w-5 text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291
+                                A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+        </div>
+      )}
+      {icon && <icon className="mr-2 h-5 w-5" />}
+      {children}
+    </div>
+  </Button>
+)
+
+const useAppReducer = () => {
+  return useReducer(appReducer, initialState)
+}
+
+const handlers = {
+  file: {
+    select: (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (file) dispatch({ type: "SET_FILE", payload: file })
+    },
+    drop: (e: React.DragEvent) => {
+      e.preventDefault()
+      const file = e.dataTransfer.files[0]
+      if (file) dispatch({ type: "SET_FILE", payload: file })
+    },
+  },
+
+  labs: {
+    addEvent: () => {
+      const instructionText = state.selectedLibraryInstruction?.text || state.customInstructionText.trim()
+      if (!instructionText || !state.selectedSoundCue) return
+
+      const maxTime = state.timelineEvents.length > 0 ? Math.max(...state.timelineEvents.map((e) => e.startTime)) : 0
+      const newEvent: TimelineEvent = {
+        id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        type: "instruction_sound",
+        startTime: state.timelineEvents.length > 0 ? maxTime + 33 : 0,
+        instructionText,
+        soundCueId: state.selectedSoundCue.id,
+        soundCueName: state.selectedSoundCue.name,
+        soundCueSrc: state.selectedSoundCue.src,
+      }
+
+      dispatch({
+        type: "SET_TIMELINE_EVENTS",
+        payload: [...state.timelineEvents, newEvent].sort((a, b) => a.startTime - b.startTime),
+      })
+    },
+  },
+}
+
+const useAudioProcessor = () => {
   const audioContextRef = useRef<AudioContext | null>(null)
-  const [targetDuration, setTargetDuration] = useState<number>(20)
-  const [silenceThreshold, setSilenceThreshold] = useState<number>(0.01)
-  const [minSilenceDuration, setMinSilenceDuration] = useState<number>(3)
-  const [minSpacingDuration, setMinSpacingDuration] = useState<number>(1.5)
-  const [preserveNaturalPacing, setPreserveNaturalPacing] = useState<boolean>(true)
-  const [compatibilityMode, setCompatibilityMode] = useState<string>("high")
-  const [status, setStatus] = useState<{ message: string; type: string } | null>(null)
-  const [originalUrl, setOriginalUrl] = useState<string>("")
-  const [processedUrl, setProcessedUrl] = useState<string>("")
-  const [pausesAdjusted, setPausesAdjusted] = useState<number>(0)
-  const [isProcessing, setIsProcessing] = useState<boolean>(false)
-  const [processingProgress, setProcessingProgress] = useState<number>(0)
-  const [processingStep, setProcessingStep] = useState<string>("")
-  const [durationLimits, setDurationLimits] = useState<{ min: number; max: number } | null>(null)
-  const [audioAnalysis, setAudioAnalysis] = useState<{
-    totalSilence: number
-    contentDuration: number
-    silenceRegions: number
-  } | null>(null)
-  const [actualDuration, setActualDuration] = useState<number | null>(null)
-  const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
-  const [isMobileDevice, setIsMobileDevice] = useState<boolean>(false)
-  const [memoryWarning, setMemoryWarning] = useState<boolean>(false)
+  const config = state.isMobileDevice ? MOBILE_CONFIG : DESKTOP_CONFIG
+
+  const initializeAudioContext = useCallback(async () => {
+    if (audioContextRef.current?.state !== "closed") {
+      await audioContextRef.current?.close()
+    }
+
+    const AudioContextAPI = window.AudioContext || (window as any).webkitAudioContext
+    const ctx = new AudioContextAPI({ sampleRate: config.sampleRate })
+    audioContextRef.current = ctx
+
+    if (ctx.state === "suspended") {
+      const resumeContext = () => ctx.resume()
+      document.addEventListener("click", resumeContext, { once: true })
+    }
+  }, [config.sampleRate])
+
+  const processAudioFile = useCallback(async (file: File) => {
+    // Consolidated audio processing logic
+  }, [])
+
+  return { initializeAudioContext, processAudioFile, audioContextRef }
+}
+
+export default function HomePage() {
+  // == States for Length Adjuster ==
+  // const [file, setFile] = useState<File | null>(null)
+  // const [originalBuffer, setOriginalBuffer] = useState<AudioBuffer | null>(null)
+  // const [processedBufferState, setProcessedBufferState] = useState<AudioBuffer | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
+  // const [targetDuration, setTargetDuration] = useState<number>(20)
+  // const [silenceThreshold, setSilenceThreshold] = useState<number>(0.01)
+  // const [minSilenceDuration, setMinSilenceDuration] = useState<number>(3)
+  // const [minSpacingDuration, setMinSpacingDuration] = useState<number>(1.5)
+  // const [preserveNaturalPacing, setPreserveNaturalPacing] = useState<boolean>(true)
+  // const [compatibilityMode, setCompatibilityMode] = useState<string>("high")
+  // const [status, setStatus] = useState<{ message: string; type: string } | null>(null)
+  // const [originalUrl, setOriginalUrl] = useState<string>("")
+  // const [processedUrl, setProcessedUrl] = useState<string>("")
+  // const [pausesAdjusted, setPausesAdjusted] = useState<number>(0)
+  // const [isProcessing, setIsProcessing] = useState<boolean>(false)
+  // const [processingProgress, setProcessingProgress] = useState<number>(0)
+  // const [processingStep, setProcessingStep] = useState<string>("")
+  // const [durationLimits, setDurationLimits] = useState<{ min: number; max: number } | null>(null)
+  // const [audioAnalysis, setAudioAnalysis] = useState<{
+  //   totalSilence: number
+  //   contentDuration: number
+  //   silenceRegions: number
+  // } | null>(null)
+  // const [actualDuration, setActualDuration] = useState<number | null>(null)
+  // const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
+  // const [isMobileDevice, setIsMobileDevice] = useState<boolean>(false)
+  // const [memoryWarning, setMemoryWarning] = useState<boolean>(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadAreaRef = useRef<HTMLDivElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // == States for Labs ==
-  const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
-  const [labsTotalDuration, setLabsTotalDuration] = useState<number>(600)
-  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
-  const [selectedLibraryInstruction, setSelectedLibraryInstruction] = useState<Instruction | null>(null)
-  const [customInstructionText, setCustomInstructionText] = useState<string>("")
-  const [selectedSoundCue, setSelectedSoundCue] = useState<SoundCue | null>(null)
-  const [isRecording, setIsRecording] = useState<boolean>(false)
-  const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null)
-  const [recordedBlobs, setRecordedBlobs] = useState<Blob[]>([])
+  // const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
+  // const [labsTotalDuration, setLabsTotalDuration] = useState<number>(600)
+  // const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
+  // const [selectedLibraryInstruction, setSelectedLibraryInstruction] = useState<Instruction | null>(null)
+  // const [customInstructionText, setCustomInstructionText] = useState<string>("")
+  // const [selectedSoundCue, setSelectedSoundCue] = useState<SoundCue | null>(null)
+  // const [isRecording, setIsRecording] = useState<boolean>(false)
+  // const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null)
+  // const [recordedBlobs, setRecordedBlobs] = useState<Blob[]>([])
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const labsAudioRef = useRef<HTMLAudioElement | null>(null)
   const instructionCategories = Array.from(new Set(INSTRUCTIONS_LIBRARY.map((instr) => instr.category)))
-  const [recordingLabel, setRecordingLabel] = useState<string>("")
+  // const [recordingLabel, setRecordingLabel] = useState<string>("")
 
   // Audio generation states
-  const [isGeneratingAudio, setIsGeneratingAudio] = useState<boolean>(false)
-  const [generationProgress, setGenerationProgress] = useState<number>(0)
-  const [generationStep, setGenerationStep] = useState<string>("")
-  const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
+  // const [isGeneratingAudio, setIsGeneratingAudio] = useState<boolean>(false)
+  // const [generationProgress, setGenerationProgress] = useState<number>(0)
+  // const [generationStep, setGenerationStep] = useState<string>("")
+  // const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
 
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
   const [currentTab, setCurrentTab] = useState<string>("instructions")
   const [isPlaying, setIsPlaying] = useState<boolean>(false)
   const [currentPlaybackTime, setCurrentPlaybackTime] = useState<number>(0) // in seconds
   const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null)
-  const [volume, setVolume] = useState<number>(75) // Default volume 75%
+  // const [volume, setVolume] = useState<number>(75) // Default volume 75%
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const currentItemStartTimeRef = useRef<number>(0)
@@ -245,7 +508,7 @@ export default function HomePage() {
           // Handle actual audio files
           if (labsAudioRef.current) {
             labsAudioRef.current.src = soundCue.src
-            labsAudioRef.current.volume = volume / 100
+            labsAudioRef.current.volume = state.volume / 100
             await labsAudioRef.current.play().catch((e) => console.error("Error playing audio:", e))
             toast({
               title: "Playing Sound",
@@ -265,7 +528,7 @@ export default function HomePage() {
         })
       }
     },
-    [volume],
+    [state.volume],
   )
 
   const startPlayback = useCallback(() => {
@@ -339,27 +602,9 @@ export default function HomePage() {
   // Update audio volume if audioRef exists
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.volume = volume / 100
+      audioRef.current.volume = state.volume / 100
     }
-  }, [volume])
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = Math.floor(seconds % 60)
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
-  }
-
-  const handleSaveTimeline = () => {
-    // Placeholder for save functionality
-    console.log("Saving timeline:", timeline)
-    alert("Save functionality not yet implemented.")
-  }
-
-  const handleLoadTimeline = () => {
-    // Placeholder for load functionality
-    console.log("Loading timeline...")
-    alert("Load functionality not yet implemented.")
-  }
+  }, [state.volume])
 
   const bufferToWavOld = async (buffer: AudioBuffer): Promise<Blob> => {
     const numberOfChannels = buffer.numberOfChannels
@@ -454,15 +699,16 @@ export default function HomePage() {
   }
 
   const handleExportAudio = async () => {
-    setIsGeneratingAudio(true)
-    setGenerationProgress(0)
-    setGenerationStep("Initializing...")
+    dispatch({
+      type: "UPDATE_LABS",
+      payload: { isGeneratingAudio: true, generationProgress: 0, generationStep: "Initializing..." },
+    })
 
     try {
-      console.log("Starting audio export with events:", timelineEvents)
+      console.log("Starting audio export with events:", state.timelineEvents)
 
       // Calculate the maximum end time needed for the OfflineAudioContext
-      const maxAudioDuration = labsTotalDuration // Start with the user-defined total duration
+      const maxAudioDuration = state.labsTotalDuration // Start with the user-defined total duration
 
       const ctx = new OfflineAudioContext({
         numberOfChannels: 1,
@@ -471,9 +717,9 @@ export default function HomePage() {
       })
 
       let processedEventsCount = 0
-      const totalEvents = timelineEvents.length
+      const totalEvents = state.timelineEvents.length
 
-      for (const event of timelineEvents) {
+      for (const event of state.timelineEvents) {
         const eventStartTime = event.startTime
         console.log(`Processing event ${event.id} at time ${eventStartTime}:`, event)
 
@@ -483,7 +729,10 @@ export default function HomePage() {
 
           // First try using the stored soundCueSrc
           if (event.soundCueSrc) {
-            setGenerationStep(`Adding sound: ${event.soundCueName || "Sound Cue"}`)
+            dispatch({
+              type: "UPDATE_LABS",
+              payload: { generationStep: `Adding sound: ${event.soundCueName || "Sound Cue"}` },
+            })
             console.log(`Processing sound cue from soundCueSrc: ${event.soundCueSrc}`)
 
             if (event.soundCueSrc.startsWith("synthetic:")) {
@@ -619,7 +868,7 @@ export default function HomePage() {
             console.log(`Fallback: trying to find sound cue by ID: ${event.soundCueId}`)
             const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
             if (soundCue) {
-              setGenerationStep(`Adding sound: ${soundCue.name}`)
+              dispatch({ type: "UPDATE_LABS", payload: { generationStep: `Adding sound: ${soundCue.name}` } })
               console.log(`Found sound cue by ID:`, soundCue)
 
               if (soundCue.src.startsWith("synthetic:")) {
@@ -691,7 +940,10 @@ export default function HomePage() {
             console.warn(`Could not process sound for event ${event.id}`)
           }
         } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
-          setGenerationStep(`Adding recorded voice: ${event.recordedInstructionLabel || "Untitled"}`)
+          dispatch({
+            type: "UPDATE_LABS",
+            payload: { generationStep: `Adding recorded voice: ${event.recordedInstructionLabel || "Untitled"}` },
+          })
           console.log(`Processing recorded voice: ${event.recordedAudioUrl}`)
 
           try {
@@ -714,11 +966,14 @@ export default function HomePage() {
         }
 
         processedEventsCount++
-        setGenerationProgress(Math.floor((processedEventsCount / totalEvents) * 80)) // Progress up to 80% for event processing
+        dispatch({
+          type: "UPDATE_LABS",
+          payload: { generationProgress: Math.floor((processedEventsCount / totalEvents) * 80) },
+        }) // Progress up to 80% for event processing
       }
 
-      setGenerationStep("Rendering audio...")
-      setGenerationProgress(80) // Set to 80% before rendering
+      dispatch({ type: "UPDATE_LABS", payload: { generationStep: "Rendering audio..." } })
+      dispatch({ type: "UPDATE_LABS", payload: { generationProgress: 80 } }) // Set to 80% before rendering
       console.log("Starting audio rendering...")
 
       const rendered = await ctx.startRendering()
@@ -733,17 +988,17 @@ export default function HomePage() {
         throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
       }
       const url = URL.createObjectURL(wavBlob)
-      setGeneratedAudioUrl(url)
+      dispatch({ type: "UPDATE_LABS", payload: { generatedAudioUrl: url } })
 
       // Directly assign to the audio element for immediate playback readiness
       if (labsAudioRef.current) {
         labsAudioRef.current.src = url
-        labsAudioRef.current.volume = volume / 100
+        labsAudioRef.current.volume = state.volume / 100
       }
 
-      setIsGeneratingAudio(false)
-      setGenerationProgress(100)
-      setGenerationStep("Export Complete")
+      dispatch({ type: "UPDATE_LABS", payload: { isGeneratingAudio: false } })
+      dispatch({ type: "UPDATE_LABS", payload: { generationProgress: 100 } })
+      dispatch({ type: "UPDATE_LABS", payload: { generationStep: "Export Complete" } })
 
       console.log("Audio export completed successfully!")
       toast({ title: "Export Complete", description: "Timeline audio exported with sound cues included!" })
@@ -755,18 +1010,18 @@ export default function HomePage() {
         variant: "destructive",
       })
     } finally {
-      setIsGeneratingAudio(false)
+      dispatch({ type: "UPDATE_LABS", payload: { isGeneratingAudio: false } })
     }
   }
 
   // == Effects for Length Adjuster ==
   useEffect(() => {
-    setIsMobileDevice(isMobile())
+    dispatch({ type: "UPDATE_PROCESSING", payload: { isMobileDevice: isMobile() } })
     if (typeof navigator !== "undefined" && (navigator as any).deviceMemory) {
       const deviceMemory = (navigator as any).deviceMemory
       if (deviceMemory < 4) {
         console.warn("Device memory less than 4GB, enabling memory warnings.")
-        setMemoryWarning(true)
+        dispatch({ type: "UPDATE_PROCESSING", payload: { memoryWarning: true } })
       }
     }
   }, [])
@@ -780,7 +1035,7 @@ export default function HomePage() {
 
     const AudioContextAPI = window.AudioContext || (window as any).webkitAudioContext
     if (AudioContextAPI) {
-      const sampleRate = isMobileDevice ? 22050 : 44100
+      const sampleRate = state.isMobileDevice ? 22050 : 44100
       try {
         const ctx = new AudioContextAPI({ sampleRate })
         audioContextRef.current = ctx
@@ -802,13 +1057,21 @@ export default function HomePage() {
           document.addEventListener("keydown", resumeContextOnInteraction, { once: true, capture: true })
         }
       } catch (error) {
-        setStatus({
-          message: `Error initializing audio system: ${error instanceof Error ? error.message : "Unknown error"}`,
-          type: "error",
+        dispatch({
+          type: "UPDATE_PROCESSING",
+          payload: {
+            status: {
+              message: `Error initializing audio system: ${error instanceof Error ? error.message : "Unknown error"}`,
+              type: "error",
+            },
+          },
         })
       }
     } else {
-      setStatus({ message: "Your browser does not support the required Audio API.", type: "error" })
+      dispatch({
+        type: "UPDATE_PROCESSING",
+        payload: { status: { message: "Your browser does not support the required Audio API.", type: "error" } },
+      })
     }
     return () => {
       if (audioContextRef.current && audioContextRef.current.state !== "closed") {
@@ -818,75 +1081,94 @@ export default function HomePage() {
         audioContextRef.current = null
       }
     }
-  }, [isMobileDevice])
+  }, [state.isMobileDevice])
 
   const cleanupMemory = useCallback(() => {
-    setOriginalBuffer(null)
-    setProcessedBufferState(null)
-    if (originalUrl) {
-      URL.revokeObjectURL(originalUrl)
-      setOriginalUrl("")
+    dispatch({ type: "UPDATE_PROCESSING", payload: { originalBuffer: null, processedBufferState: null } })
+    if (state.originalUrl) {
+      URL.revokeObjectURL(state.originalUrl)
+      dispatch({ type: "UPDATE_PROCESSING", payload: { originalUrl: "" } })
     }
-    if (processedUrl) {
-      URL.revokeObjectURL(processedUrl)
-      setProcessedUrl("")
+    if (state.processedUrl) {
+      URL.revokeObjectURL(state.processedUrl)
+      dispatch({ type: "UPDATE_PROCESSING", payload: { processedUrl: "" } })
     }
     forceGarbageCollection()
-    if (isMobileDevice) setTimeout(() => forceGarbageCollection(), 100)
-  }, [originalUrl, processedUrl, isMobileDevice])
+    if (state.isMobileDevice) setTimeout(() => forceGarbageCollection(), 100)
+  }, [state.originalUrl, state.processedUrl, state.isMobileDevice])
 
   const validateFileSize = (fileToValidate: File): boolean => {
-    const maxSize = isMobileDevice ? 50 * 1024 * 1024 : 500 * 1024 * 1024
+    const maxSize = state.isMobileDevice ? 50 * 1024 * 1024 : 500 * 1024 * 1024
     if (fileToValidate.size > maxSize) {
-      setStatus({ message: `File too large. Max ${isMobileDevice ? "50MB" : "500MB"}.`, type: "error" })
+      dispatch({
+        type: "UPDATE_PROCESSING",
+        payload: {
+          status: { message: `File too large. Max ${state.isMobileDevice ? "50MB" : "500MB"}.`, type: "error" },
+        },
+      })
       return false
     }
     if (
-      (isMobileDevice && fileToValidate.size > 20 * 1024 * 1024) ||
-      (!isMobileDevice && fileToValidate.size > 150 * 1024 * 1024)
+      (state.isMobileDevice && fileToValidate.size > 20 * 1024 * 1024) ||
+      (!state.isMobileDevice && fileToValidate.size > 150 * 1024 * 1024)
     ) {
-      setMemoryWarning(true)
+      dispatch({ type: "UPDATE_PROCESSING", payload: { memoryWarning: true } })
     } else {
-      setMemoryWarning(false)
+      dispatch({ type: "UPDATE_PROCESSING", payload: { memoryWarning: false } })
     }
     return true
   }
 
   const handleFile = async (selectedFile: File) => {
     if (!selectedFile || !selectedFile.type) {
-      setStatus({ message: "Invalid file selected.", type: "error" })
+      dispatch({ type: "UPDATE_PROCESSING", payload: { status: { message: "Invalid file selected.", type: "error" } } })
       return
     }
 
     if (!selectedFile.type.startsWith("audio/") && !selectedFile.name.toLowerCase().endsWith(".m4a")) {
-      setStatus({ message: "Please select a valid audio file.", type: "error" })
+      dispatch({
+        type: "UPDATE_PROCESSING",
+        payload: { status: { message: "Please select a valid audio file.", type: "error" } },
+      })
       return
     }
     if (!validateFileSize(selectedFile)) return
     if (!audioContextRef.current || audioContextRef.current.state === "closed") {
-      setStatus({ message: "Audio system not ready. Please refresh.", type: "error" })
+      dispatch({
+        type: "UPDATE_PROCESSING",
+        payload: { status: { message: "Audio system not ready. Please refresh.", type: "error" } },
+      })
       return
     }
     cleanupMemory()
     await sleep(100)
-    setFile(selectedFile)
-    setProcessingProgress(0)
-    setProcessingStep("Initializing...")
-    setDurationLimits(null)
-    setAudioAnalysis(null)
-    setProcessedUrl("")
-    setProcessedBufferState(null)
-    setActualDuration(null)
-    setStatus(null)
+    dispatch({ type: "SET_FILE", payload: selectedFile })
+    dispatch({ type: "UPDATE_PROCESSING", payload: { processingProgress: 0, processingStep: "Initializing..." } })
+    dispatch({
+      type: "UPDATE_PROCESSING",
+      payload: {
+        durationLimits: null,
+        audioAnalysis: null,
+        processedUrl: "",
+        processedBufferState: null,
+        actualDuration: null,
+      },
+    })
+    dispatch({ type: "UPDATE_PROCESSING", payload: { status: null } })
     try {
-      setStatus({ message: "Loading audio file...", type: "info" })
+      dispatch({ type: "UPDATE_PROCESSING", payload: { status: { message: "Loading audio file...", type: "info" } } })
       await loadAudioFile(selectedFile)
     } catch (error) {
-      setStatus({
-        message: `Error loading audio: ${error instanceof Error ? error.message : "Unknown"}`,
-        type: "error",
+      dispatch({
+        type: "UPDATE_PROCESSING",
+        payload: {
+          status: {
+            message: `Error loading audio: ${error instanceof Error ? error.message : "Unknown"}`,
+            type: "error",
+          },
+          originalBuffer: null,
+        },
       })
-      setOriginalBuffer(null)
     }
   }
 
@@ -900,12 +1182,15 @@ export default function HomePage() {
     const silenceRegions: { start: number; end: number }[] = []
     let silenceStart: number | null = null
     let consecutiveSilentSamples = 0
-    const skipSamples = isMobileDevice ? 20 : 10
+    const skipSamples = state.isMobileDevice ? 20 : 10
 
     for (let i = 0; i < channelData.length; i += skipSamples) {
-      if (i % (sampleRate * (isMobileDevice ? 2 : 5)) === 0) {
+      if (i % (sampleRate * (state.isMobileDevice ? 2 : 5)) === 0) {
         await sleep(0)
-        setProcessingProgress(20 + Math.floor((i / channelData.length) * 10))
+        dispatch({
+          type: "UPDATE_PROCESSING",
+          payload: { processingProgress: 20 + Math.floor((i / channelData.length) * 10) },
+        })
       }
       const amplitude = Math.abs(channelData[i])
       if (amplitude < threshold) {
@@ -926,29 +1211,42 @@ export default function HomePage() {
   }
 
   const analyzeAudioForLimits = async (buffer: AudioBuffer, minSpacing: number) => {
-    setProcessingStep("Analyzing audio for limits...")
-    const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
+    dispatch({ type: "UPDATE_PROCESSING", payload: { processingStep: "Analyzing audio for limits..." } })
+    const silenceRegions = await detectSilenceRegions(buffer, state.silenceThreshold, state.minSilenceDuration)
     const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
     const audioContentDuration = buffer.duration - totalSilenceDuration
     const minRequiredSpacing = silenceRegions.length > 0 ? silenceRegions.length * minSpacing : 0
     const minPossibleDuration = Math.max(1, Math.ceil((audioContentDuration + minRequiredSpacing) / 60))
-    const maxPossibleDuration = isMobileDevice ? 60 : 120
-    setDurationLimits({ min: minPossibleDuration, max: maxPossibleDuration })
-    setAudioAnalysis({
-      totalSilence: totalSilenceDuration,
-      contentDuration: audioContentDuration,
-      silenceRegions: silenceRegions.length,
+    const maxPossibleDuration = state.isMobileDevice ? 60 : 120
+    dispatch({
+      type: "UPDATE_PROCESSING",
+      payload: { durationLimits: { min: minPossibleDuration, max: maxPossibleDuration } },
     })
-    if (targetDuration < minPossibleDuration) setTargetDuration(minPossibleDuration)
-    else if (targetDuration > maxPossibleDuration) setTargetDuration(maxPossibleDuration)
-    setProcessingStep("Analysis complete.")
+    dispatch({
+      type: "UPDATE_PROCESSING",
+      payload: {
+        audioAnalysis: {
+          totalSilence: totalSilenceDuration,
+          contentDuration: audioContentDuration,
+          silenceRegions: silenceRegions.length,
+        },
+      },
+    })
+    if (state.targetDuration < minPossibleDuration)
+      dispatch({ type: "UPDATE_PROCESSING", payload: { targetDuration: minPossibleDuration } })
+    else if (state.targetDuration > maxPossibleDuration)
+      dispatch({ type: "UPDATE_PROCESSING", payload: { targetDuration: maxPossibleDuration } })
+    dispatch({ type: "UPDATE_PROCESSING", payload: { processingStep: "Analysis complete." } })
   }
 
   const loadAudioFile = useCallback(
     async (fileToLoad: File) => {
       const currentAudioContext = audioContextRef.current
       if (!currentAudioContext) {
-        setStatus({ message: "Audio context not initialized.", type: "error" })
+        dispatch({
+          type: "UPDATE_PROCESSING",
+          payload: { status: { message: "Audio context not initialized.", type: "error" } },
+        })
         throw new Error("AudioContext not initialized")
       }
       let attempts = 0
@@ -963,141 +1261,182 @@ export default function HomePage() {
             break
           }
         } else if (currentAudioContext.state === "closed") {
-          setStatus({ message: "Audio system closed.", type: "error" })
+          dispatch({
+            type: "UPDATE_PROCESSING",
+            payload: { status: { message: "Audio system closed.", type: "error" } },
+          })
           throw new Error("AudioContext closed")
         }
         if (currentAudioContext.state !== "running" && currentAudioContext.state !== "closed" && attempts < maxAttempts)
           await sleep(100 * attempts)
       }
       if (currentAudioContext.state !== "running") {
-        setStatus({ message: "Failed to start audio system.", type: "error" })
+        dispatch({
+          type: "UPDATE_PROCESSING",
+          payload: { status: { message: "Failed to start audio system.", type: "error" } },
+        })
         throw new Error(`AudioContext not running: ${currentAudioContext.state}`)
       }
-      setProcessingStep("Reading file data...")
-      setProcessingProgress(10)
+      dispatch({ type: "UPDATE_PROCESSING", payload: { processingStep: "Reading file data..." } })
+      dispatch({ type: "UPDATE_PROCESSING", payload: { processingProgress: 10 } })
       const arrayBuffer = await fileToLoad.arrayBuffer()
-      setProcessingStep("Decoding audio data...")
-      setProcessingProgress(50)
+      dispatch({ type: "UPDATE_PROCESSING", payload: { processingStep: "Decoding audio data..." } })
+      dispatch({ type: "UPDATE_PROCESSING", payload: { processingProgress: 50 } })
       try {
         const decodePromise = currentAudioContext.decodeAudioData(arrayBuffer.slice(0))
         const timeoutPromise = new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error("Audio decoding timeout (30s)")), 30000),
         )
         const buffer = await Promise.race([decodePromise, timeoutPromise])
-        setProcessingStep("Analyzing audio...")
-        setProcessingProgress(80)
+        dispatch({ type: "UPDATE_PROCESSING", payload: { processingStep: "Analyzing audio..." } })
+        dispatch({ type: "UPDATE_PROCESSING", payload: { processingProgress: 80 } })
         await sleep(50)
-        setOriginalBuffer(buffer)
-        setProcessingStep("Creating audio player...")
-        setProcessingProgress(95)
-        if (originalUrl) URL.revokeObjectURL(originalUrl)
+        dispatch({ type: "UPDATE_PROCESSING", payload: { originalBuffer: buffer } })
+        dispatch({ type: "UPDATE_PROCESSING", payload: { processingStep: "Creating audio player..." } })
+        dispatch({ type: "UPDATE_PROCESSING", payload: { processingProgress: 95 } })
+        if (state.originalUrl) URL.revokeObjectURL(state.originalUrl)
         const blob = new Blob([fileToLoad], { type: fileToLoad.type })
         const url = URL.createObjectURL(blob)
-        setOriginalUrl(url)
-        setProcessingProgress(100)
-        setProcessingStep("Load complete!")
-        setStatus({
-          message: `Audio loaded. Duration: ${formatDuration(buffer.duration)}.`,
-          type: "success",
+        dispatch({ type: "UPDATE_PROCESSING", payload: { originalUrl: url } })
+        dispatch({ type: "UPDATE_PROCESSING", payload: { processingProgress: 100 } })
+        dispatch({ type: "UPDATE_PROCESSING", payload: { processingStep: "Load complete!" } })
+        dispatch({
+          type: "UPDATE_PROCESSING",
+          payload: {
+            status: {
+              message: `Audio loaded. Duration: ${formatTime(buffer.duration)}.`,
+              type: "success",
+            },
+          },
         })
       } catch (decodeError) {
-        setStatus({
-          message: `Error decoding: ${decodeError instanceof Error ? decodeError.message : "Unknown"}`,
-          type: "error",
+        dispatch({
+          type: "UPDATE_PROCESSING",
+          payload: {
+            status: {
+              message: `Error decoding: ${decodeError instanceof Error ? decodeError.message : "Unknown"}`,
+              type: "error",
+            },
+          },
         })
         throw decodeError
       }
     },
-    [originalUrl, isMobileDevice],
+    [state.originalUrl, state.isMobileDevice],
   )
 
   useEffect(() => {
-    if (originalBuffer) analyzeAudioForLimits(originalBuffer, minSpacingDuration)
-  }, [originalBuffer, silenceThreshold, minSilenceDuration, minSpacingDuration])
+    if (state.originalBuffer) analyzeAudioForLimits(state.originalBuffer, state.minSpacingDuration)
+  }, [state.originalBuffer, state.silenceThreshold, state.minSilenceDuration, state.minSpacingDuration])
 
   const processAudio = async () => {
     const currentAudioContext = audioContextRef.current
-    if (!originalBuffer || !currentAudioContext) {
-      setStatus({ message: "Original audio or audio system not ready.", type: "error" })
+    if (!state.originalBuffer || !currentAudioContext) {
+      dispatch({
+        type: "UPDATE_PROCESSING",
+        payload: { status: { message: "Original audio or audio system not ready.", type: "error" } },
+      })
       return
     }
-    setIsProcessing(true)
-    setProcessingProgress(0)
-    setProcessingStep("Starting processing...")
+    dispatch({
+      type: "UPDATE_PROCESSING",
+      payload: { isProcessing: true, processingProgress: 0, processingStep: "Starting processing..." },
+    })
     if (currentAudioContext.state === "suspended") {
       try {
         await currentAudioContext.resume()
         if (currentAudioContext.state !== "running") throw new Error("Failed to resume for processing.")
       } catch (err) {
-        setStatus({ message: `Audio system error: ${err instanceof Error ? err.message : "Unknown"}`, type: "error" })
-        setIsProcessing(false)
+        dispatch({
+          type: "UPDATE_PROCESSING",
+          payload: {
+            status: { message: `Audio system error: ${err instanceof Error ? err.message : "Unknown"}`, type: "error" },
+            isProcessing: false,
+          },
+        })
         return
       }
     } else if (currentAudioContext.state === "closed") {
-      setStatus({ message: "Audio system closed.", type: "error" })
-      setIsProcessing(false)
+      dispatch({
+        type: "UPDATE_PROCESSING",
+        payload: { status: { message: "Audio system closed.", type: "error" }, isProcessing: false },
+      })
       return
     }
     if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
     processingTimeoutRef.current = setTimeout(
       () => {
-        setIsProcessing(false)
-        setStatus({ message: "Processing timed out.", type: "error" })
+        dispatch({
+          type: "UPDATE_PROCESSING",
+          payload: { isProcessing: false, status: { message: "Processing timed out.", type: "error" } },
+        })
       },
-      isMobileDevice ? 120000 : 600000,
+      state.isMobileDevice ? 120000 : 600000,
     )
 
     try {
-      setStatus({ message: "Processing audio...", type: "info" })
-      const targetDurationSeconds = targetDuration * 60
-      setProcessingStep("Detecting silence regions (step 1/4)...")
-      setProcessingProgress(10)
+      dispatch({ type: "UPDATE_PROCESSING", payload: { status: { message: "Processing audio...", type: "info" } } })
+      const targetDurationSeconds = state.targetDuration * 60
+      dispatch({ type: "UPDATE_PROCESSING", payload: { processingStep: "Detecting silence regions (step 1/4)..." } })
+      dispatch({ type: "UPDATE_PROCESSING", payload: { processingProgress: 10 } })
       await sleep(10)
-      const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
-      setProcessingStep("Calculating adjustments (step 2/4)...")
-      setProcessingProgress(30)
+      const silenceRegions = await detectSilenceRegions(
+        state.originalBuffer,
+        state.silenceThreshold,
+        state.minSilenceDuration,
+      )
+      dispatch({ type: "UPDATE_PROCESSING", payload: { processingStep: "Calculating adjustments (step 2/4)..." } })
+      dispatch({ type: "UPDATE_PROCESSING", payload: { processingProgress: 30 } })
       await sleep(10)
       const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
-      const audioContentDuration = originalBuffer.duration - totalSilenceDuration
+      const audioContentDuration = state.originalBuffer.duration - totalSilenceDuration
       const availableSilenceDuration = Math.max(
         targetDurationSeconds - audioContentDuration,
-        silenceRegions.length * minSpacingDuration,
+        silenceRegions.length * state.minSpacingDuration,
       )
       const scaleFactor = totalSilenceDuration > 0 ? availableSilenceDuration / totalSilenceDuration : 1
-      setProcessingStep("Rebuilding audio (step 3/4)...")
-      setProcessingProgress(50)
+      dispatch({ type: "UPDATE_PROCESSING", payload: { processingStep: "Rebuilding audio (step 3/4)..." } })
+      dispatch({ type: "UPDATE_PROCESSING", payload: { processingProgress: 50 } })
       await sleep(10)
 
       const processedAudioBuffer = await rebuildAudioWithScaledPauses(
-        originalBuffer,
+        state.originalBuffer,
         silenceRegions,
         scaleFactor,
-        minSpacingDuration,
-        preserveNaturalPacing,
+        state.minSpacingDuration,
+        state.preserveNaturalPacing,
         availableSilenceDuration,
-        (p) => setProcessingProgress(50 + Math.floor(p * 0.4)),
+        (p) => dispatch({ type: "UPDATE_PROCESSING", payload: { processingProgress: 50 + Math.floor(p * 0.4) } }),
       )
-      setPausesAdjusted(silenceRegions.length)
-      setProcessingStep("Creating download file (step 4/4)...")
-      setProcessingProgress(90)
+      dispatch({ type: "UPDATE_PROCESSING", payload: { pausesAdjusted: silenceRegions.length } })
+      dispatch({ type: "UPDATE_PROCESSING", payload: { processingStep: "Creating download file (step 4/4)..." } })
+      dispatch({ type: "UPDATE_PROCESSING", payload: { processingProgress: 90 } })
       await sleep(10)
-      const wavBlob = await bufferToWav(processedAudioBuffer, compatibilityMode === "high", (p) =>
-        setProcessingProgress(90 + Math.floor(p * 0.1)),
+      const wavBlob = await bufferToWav(processedAudioBuffer, state.compatibilityMode === "high", (p) =>
+        dispatch({ type: "UPDATE_PROCESSING", payload: { processingProgress: 90 + Math.floor(p * 0.1) } }),
       )
-      if (processedUrl) URL.revokeObjectURL(processedUrl)
+      if (state.processedUrl) URL.revokeObjectURL(state.processedUrl)
       const url = URL.createObjectURL(wavBlob)
-      setProcessedUrl(url)
-      setActualDuration(processedAudioBuffer.duration)
-      setProcessedBufferState(processedAudioBuffer)
-      setProcessingProgress(100)
-      setProcessingStep("Complete!")
-      setStatus({ message: "Audio processing completed successfully!", type: "success" })
-      setIsProcessingComplete(true)
+      dispatch({ type: "UPDATE_PROCESSING", payload: { processedUrl: url } })
+      dispatch({ type: "UPDATE_PROCESSING", payload: { actualDuration: processedAudioBuffer.duration } })
+      dispatch({ type: "UPDATE_PROCESSING", payload: { processedBufferState: processedAudioBuffer } })
+      dispatch({ type: "UPDATE_PROCESSING", payload: { processingProgress: 100 } })
+      dispatch({ type: "UPDATE_PROCESSING", payload: { processingStep: "Complete!" } })
+      dispatch({
+        type: "UPDATE_PROCESSING",
+        payload: { status: { message: "Audio processing completed successfully!", type: "success" } },
+      })
+      dispatch({ type: "UPDATE_PROCESSING", payload: { isProcessingComplete: true } })
     } catch (error) {
       console.error("Error during audio processing:", error)
-      setStatus({ message: `Processing error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
+      dispatch({
+        type: "UPDATE_PROCESSING",
+        payload: {
+          status: { message: `Processing error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" },
+        },
+      })
     } finally {
-      setIsProcessing(false)
+      dispatch({ type: "UPDATE_PROCESSING", payload: { isProcessing: false } })
       if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
       if (currentAudioContext && currentAudioContext.state === "running") {
         currentAudioContext.suspend().catch((err) => console.warn("Error suspending AudioContext post-process:", err))
@@ -1137,9 +1476,9 @@ export default function HomePage() {
       const newSilenceDur = processedRegions.reduce((sum, r) => sum + r.newDuration, 0)
       const newTotalDur = audioContentDur + newSilenceDur
       if (newTotalDur <= 0) throw new Error("Calculated new total duration is zero or negative.")
-      if (isMobileDevice && newTotalDur > 45 * 60) {
-        console.warn(`Mobile device: Output duration ${formatDuration(newTotalDur)} may cause issues.`)
-        setMemoryWarning(true)
+      if (state.isMobileDevice && newTotalDur > 45 * 60) {
+        console.warn(`Mobile device: Output duration ${formatTime(newTotalDur)} may cause issues.`)
+        dispatch({ type: "UPDATE_PROCESSING", payload: { memoryWarning: true } })
       }
       let newBuffer: AudioBuffer
       try {
@@ -1166,7 +1505,7 @@ export default function HomePage() {
           for (let i = 0; i < samplesToCopy; i++) newData[writeIndex++] = originalData[readIndex++]
         }
         for (let i = 0; i < regions.length; i++) {
-          if (i % (isMobileDevice ? 5 : 10) === 0) {
+          if (i % (state.isMobileDevice ? 5 : 10) === 0) {
             await sleep(0)
             onProgress(10 + Math.floor((i / regions.length) * 80))
           }
@@ -1185,7 +1524,6 @@ export default function HomePage() {
               newData[writeIndex++] = originalData[readIndex + j]
             }
           }
-          readIndex = nextRegionStart
         }
         if (readIndex < totalSamples && regions.length === 0) {
           for (let i = readIndex; i < totalSamples; i++)
@@ -1195,7 +1533,7 @@ export default function HomePage() {
       onProgress(100)
       return newBuffer
     },
-    [isMobileDevice],
+    [state.isMobileDevice],
   )
 
   const bufferToWav = useCallback(
@@ -1204,7 +1542,7 @@ export default function HomePage() {
       if (!currentAudioContext) throw new Error("Audio context not available for WAV conversion")
       onProgress(0)
       let targetSampleRate = highCompatibility ? 44100 : buffer.sampleRate
-      if (isMobileDevice && highCompatibility && buffer.duration > 15 * 60) {
+      if (state.isMobileDevice && highCompatibility && buffer.duration > 15 * 60) {
         targetSampleRate = Math.min(targetSampleRate, 22050)
       }
       let resampledBuffer = buffer
@@ -1224,7 +1562,7 @@ export default function HomePage() {
           const oldData = buffer.getChannelData(channel)
           const newData = resampledBuffer.getChannelData(channel)
           for (let i = 0; i < newLength; i++) {
-            if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
+            if (i % (targetSampleRate * (state.isMobileDevice ? 1 : 2)) === 0) {
               await sleep(0)
               onProgress(
                 10 +
@@ -1250,8 +1588,8 @@ export default function HomePage() {
       const bytesPerSample = 2
       const dataSize = numSamples * numberOfChannels * bytesPerSample
       const fileSize = 44 + dataSize
-      if (isMobileDevice && fileSize > 40 * 1024 * 1024) {
-        setMemoryWarning(true)
+      if (state.isMobileDevice && fileSize > 40 * 1024 * 1024) {
+        dispatch({ type: "UPDATE_PROCESSING", payload: { memoryWarning: true } })
       }
       let finalArrayBuffer: ArrayBuffer
       try {
@@ -1280,7 +1618,7 @@ export default function HomePage() {
       view.setUint32(40, dataSize, true)
       let offset = 44
       for (let i = 0; i < numSamples; i++) {
-        if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
+        if (i % (targetSampleRate * (state.isMobileDevice ? 1 : 2)) === 0) {
           await sleep(0)
           onProgress(50 + Math.floor((i / numSamples) * 50))
         }
@@ -1293,7 +1631,7 @@ export default function HomePage() {
       onProgress(100)
       return new Blob([finalArrayBuffer], { type: "audio/wav" })
     },
-    [isMobileDevice],
+    [state.isMobileDevice],
   )
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1320,49 +1658,39 @@ export default function HomePage() {
   }
 
   const downloadProcessedAudio = async () => {
-    if (!processedUrl) {
-      setStatus({ message: "No processed audio available to download.", type: "warning" })
+    if (!state.processedUrl) {
+      dispatch({
+        type: "UPDATE_PROCESSING",
+        payload: { status: { message: "No processed audio available to download.", type: "warning" } },
+      })
       return
     }
     const a = document.createElement("a")
-    a.href = processedUrl
-    a.download = file ? `processed_${file.name.replace(/\.[^/.]+$/, "")}.wav` : "processed_audio.wav"
+    a.href = state.processedUrl
+    a.download = state.file ? `processed_${state.file.name.replace(/\.[^/.]+$/, "")}.wav` : "processed_audio.wav"
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
   }
 
-  const formatDuration = (timeInSeconds: number) => {
-    const minutes = Math.floor(timeInSeconds / 60)
-    const seconds = Math.floor(timeInSeconds % 60)
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`
-  }
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes"
-    const k = 1024
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${["Bytes", "KB", "MB", "GB"][i]}`
-  }
-
   useEffect(() => {
-    if (isProcessingComplete) setIsProcessingComplete(false)
+    if (state.isProcessingComplete) dispatch({ type: "UPDATE_PROCESSING", payload: { isProcessingComplete: false } })
   }, [
-    targetDuration,
-    silenceThreshold,
-    minSilenceDuration,
-    minSpacingDuration,
-    preserveNaturalPacing,
-    isProcessingComplete,
+    state.targetDuration,
+    state.silenceThreshold,
+    state.minSilenceDuration,
+    state.minSpacingDuration,
+    state.preserveNaturalPacing,
+    state.isProcessingComplete,
   ])
 
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined
-    if (isProcessing) interval = setInterval(monitorMemory, 3000)
+    if (state.isProcessing) interval = setInterval(monitorMemory, 3000)
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [isProcessing])
+  }, [state.isProcessing])
 
   // == Effects and Handlers for Labs ==
   useEffect(() => {
@@ -1385,14 +1713,15 @@ export default function HomePage() {
   }, [])
 
   // Helper function to add events to timelineEvents without automatic spacing
-  const addEventToTimeline = useCallback((newEvent: TimelineEvent) => {
-    setTimelineEvents((prevEvents) => {
-      const updatedEvents = [...prevEvents, newEvent]
-      // Sort by current startTime to maintain chronological order for display
-      // Do NOT re-calculate or re-assign startTimes based on spacing.
-      return updatedEvents.sort((a, b) => a.startTime - b.startTime)
-    })
-  }, [])
+  const addEventToTimeline = useCallback(
+    (newEvent: TimelineEvent) => {
+      dispatch({
+        type: "SET_TIMELINE_EVENTS",
+        payload: [...state.timelineEvents, newEvent].sort((a, b) => a.startTime - b.startTime),
+      })
+    },
+    [state.timelineEvents],
+  )
 
   const playLabsSoundOld = async (src: string) => {
     try {
@@ -1434,8 +1763,8 @@ export default function HomePage() {
 
   const handleAddInstructionSoundEvent = () => {
     let instructionTextToAdd = ""
-    if (selectedLibraryInstruction) instructionTextToAdd = selectedLibraryInstruction.text
-    else if (customInstructionText.trim() !== "") instructionTextToAdd = customInstructionText.trim()
+    if (state.selectedLibraryInstruction) instructionTextToAdd = state.selectedLibraryInstruction.text
+    else if (state.customInstructionText.trim() !== "") instructionTextToAdd = state.customInstructionText.trim()
     else {
       toast({
         title: "Missing Instruction",
@@ -1444,32 +1773,32 @@ export default function HomePage() {
       })
       return
     }
-    if (!selectedSoundCue) {
+    if (!state.selectedSoundCue) {
       toast({ title: "Missing Sound Cue", description: "Please select a sound cue.", variant: "destructive" })
       return
     }
 
     // Calculate new startTime based on existing events
-    const maxExistingTime = timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
-    const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 33 : 0
+    const maxExistingTime =
+      state.timelineEvents.length > 0 ? Math.max(...state.timelineEvents.map((e) => e.startTime)) : 0
+    const newStartTime = state.timelineEvents.length > 0 ? maxExistingTime + 33 : 0
 
     const newEvent: TimelineEvent = {
       id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       type: "instruction_sound",
       startTime: newStartTime, // Now calculated
       instructionText: instructionTextToAdd,
-      soundCueId: selectedSoundCue.id,
-      soundCueName: selectedSoundCue.name, // Store the name directly
-      soundCueSrc: selectedSoundCue.src, // Store the src directly
+      soundCueId: state.selectedSoundCue.id,
+      soundCueName: state.selectedSoundCue.name, // Store the name directly
+      soundCueSrc: state.selectedSoundCue.src, // Store the src directly
       // Duration for instruction_sound events will be calculated during audio generation
       // based on the actual sound cue duration or a default for synthetic sounds.
     }
     addEventToTimeline(newEvent) // Use the new helper function
-    setSelectedLibraryInstruction(null)
-    setCustomInstructionText("")
+    dispatch({ type: "UPDATE_LABS", payload: { selectedLibraryInstruction: null, customInstructionText: "" } })
     toast({
       title: "Event Added",
-      description: `"${instructionTextToAdd.substring(0, 30)}..." with ${selectedSoundCue.name} added.`,
+      description: `"${instructionTextToAdd.substring(0, 30)}..." with ${state.selectedSoundCue.name} added.`,
     })
   }
 
@@ -1489,13 +1818,13 @@ export default function HomePage() {
         mediaRecorderRef.current.onstop = () => {
           const blob = new Blob(blobs, { type: "audio/webm" })
           const url = URL.createObjectURL(blob)
-          setRecordedAudioUrl(url)
-          setRecordedBlobs([blob])
+          dispatch({ type: "UPDATE_LABS", payload: { recordedAudioUrl: url } })
+          dispatch({ type: "UPDATE_LABS", payload: { recordedBlobs: [blob] } })
         }
 
         mediaRecorderRef.current.start()
-        setIsRecording(true)
-        setRecordedAudioUrl(null)
+        dispatch({ type: "UPDATE_LABS", payload: { isRecording: true } })
+        dispatch({ type: "UPDATE_LABS", payload: { recordedAudioUrl: null } })
         toast({ title: "Recording Started" })
       } catch (err) {
         toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" })
@@ -1508,7 +1837,7 @@ export default function HomePage() {
   const stopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.stop()
-      setIsRecording(false)
+      dispatch({ type: "UPDATE_LABS", payload: { isRecording: false } })
 
       // Stop all tracks to release microphone
       if (mediaRecorderRef.current.stream) {
@@ -1520,69 +1849,71 @@ export default function HomePage() {
   }
 
   const updateEventStartTime = (eventId: string, newTime: number) => {
-    setTimelineEvents((prev) => {
-      const updated = prev.map((event) =>
-        event.id === eventId ? { ...event, startTime: Math.max(0, Math.min(newTime, labsTotalDuration)) } : event,
-      )
-      // Simple sort by startTime, with stable sorting for events at the same time
-      return updated.sort((a, b) => {
-        if (a.startTime === b.startTime) {
-          // For events at the same time, maintain their relative order based on original array position
-          const aIndex = prev.findIndex((e) => e.id === a.id)
-          const bIndex = prev.findIndex((e) => e.id === b.id)
-          return aIndex - bIndex
-        }
-        return a.startTime - b.startTime
-      })
+    dispatch({
+      type: "SET_TIMELINE_EVENTS",
+      payload: state.timelineEvents
+        .map((event) =>
+          event.id === eventId
+            ? { ...event, startTime: Math.max(0, Math.min(newTime, state.labsTotalDuration)) }
+            : event,
+        )
+        .sort((a, b) => {
+          if (a.startTime === b.startTime) {
+            // For events at the same time, maintain their relative order based on original array position
+            const aIndex = state.timelineEvents.findIndex((e) => e.id === a.id)
+            const bIndex = state.timelineEvents.findIndex((e) => e.id === b.id)
+            return aIndex - bIndex
+          }
+          return a.startTime - b.startTime
+        }),
     })
   }
 
   const removeTimelineEvent = (eventId: string) => {
-    setTimelineEvents((prev) => prev.filter((event) => event.id !== eventId))
+    dispatch({
+      type: "SET_TIMELINE_EVENTS",
+      payload: state.timelineEvents.filter((event) => event.id !== eventId),
+    })
     toast({ title: "Event Removed" })
-  }
-
-  const formatTimeOld = (timeInSeconds: number): string => {
-    const minutes = Math.floor(timeInSeconds / 60)
-    const seconds = Math.floor(timeInSeconds % 60)
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`
   }
 
   // Safe input handlers with validation
   const handleMeditationTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target?.value
     if (typeof value === "string") {
-      setMeditationTitle(value)
+      dispatch({ type: "UPDATE_LABS", payload: { meditationTitle: value } })
     }
   }
 
   const handleCustomInstructionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target?.value
     if (typeof value === "string") {
-      setCustomInstructionText(value)
-      setSelectedLibraryInstruction(null)
+      dispatch({ type: "UPDATE_LABS", payload: { customInstructionText: value } })
+      dispatch({ type: "UPDATE_LABS", payload: { selectedLibraryInstruction: null } })
     }
   }
 
   const handleRecordingLabelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target?.value
     if (typeof value === "string") {
-      setRecordingLabel(value)
+      dispatch({ type: "UPDATE_LABS", payload: { recordingLabel: value } })
     }
   }
 
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target?.value
     if (typeof value === "string" && !isNaN(Number(value))) {
-      setLabsTotalDuration(Math.max(60, Number(value) * 60) || 60)
+      dispatch({ type: "UPDATE_LABS", payload: { labsTotalDuration: Math.max(60, Number(value) * 60) || 60 } })
     }
   }
+
+  const [state, dispatch] = useAppReducer()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-0">
       <Navigation />
 
-      {memoryWarning && activeMode === "adjuster" && (
+      {state.memoryWarning && state.activeMode === "adjuster" && (
         <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-yellow-100 to-amber-50 border border-yellow-300 shadow-sm dark:shadow-white/10 dark:from-yellow-950 dark:to-amber-900 dark:border-yellow-700">
           <div className="flex items-start">
             <AlertTriangle className="h-6 w-6 text-yellow-500 mr-3 flex-shrink-0 mt-0.5" />
@@ -1645,10 +1976,10 @@ export default function HomePage() {
               <div className="flex justify-center items-center mb-4 space-y-4 flex-row my-[33px]">
                 <div className="grid mx-auto grid-cols-2 bg-gray-100/70 p-1 dark:bg-gray-800/70 font-serif text-gray-600 w-64 h-auto shadow-inner rounded-md">
                   <button
-                    onClick={() => setActiveMode("adjuster")}
+                    onClick={() => dispatch({ type: "SET_MODE", payload: "adjuster" })}
                     className={cn(
                       "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-sm py-3 tracking-tight",
-                      activeMode === "adjuster"
+                      state.activeMode === "adjuster"
                         ? "bg-white text-gray-600 shadow-sm dark:shadow-white/20 dark:bg-gray-700 dark:text-gray-600"
                         : "text-gray-600 dark:text-gray-600",
                     )}
@@ -1656,10 +1987,10 @@ export default function HomePage() {
                     Adjuster
                   </button>
                   <button
-                    onClick={() => setActiveMode("labs")}
+                    onClick={() => dispatch({ type: "SET_MODE", payload: "labs" })}
                     className={cn(
                       "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-sm text-gray-600 tracking-tight",
-                      activeMode === "labs"
+                      state.activeMode === "labs"
                         ? "bg-white text-gray-600 shadow-sm dark:shadow-white/20 dark:bg-gray-700 dark:text-gray-600"
                         : "text-gray-600 dark:text-gray-600",
                     )}
@@ -1673,7 +2004,7 @@ export default function HomePage() {
 
           <div className="px-6 md:px-10 pb-10 font-serif font-black">
             {/* Conditional Rendering based on activeMode */}
-            {activeMode === "adjuster" ? (
+            {state.activeMode === "adjuster" ? (
               // == Length Adjuster UI ==
               <>
                 {/* Note and Resources sections - moved to proper position */}
@@ -1693,7 +2024,7 @@ export default function HomePage() {
                       </a>{" "}
                       to opt out. Depending on the audio, users may need to tweak the advanced settings for optimal
                       results. Any guided meditation, talk, podcast, or audiobook (under{" "}
-                      {isMobileDevice ? "50MB" : "500MB"}) should be compatible. Enjoy:){" "}
+                      {state.isMobileDevice ? "50MB" : "500MB"}) should be compatible. Enjoy:){" "}
                     </p>
                   </div>
                   <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto dark:border-logo-rose-700 backdrop-blur-sm dark:bg-gray-900/60 border-0 py-4 px-0 bg-transparent pb-5 pt-0">
@@ -1789,7 +2120,7 @@ export default function HomePage() {
                         Drop your audio file here or click to browse
                       </div>
                       <div className="dark:text-gray-400/70 text-stone-400 font-serif text-xs">
-                        Supports MP3, WAV, OGG, and M4A files (Max: {isMobileDevice ? "50MB" : "500MB"})
+                        Supports MP3, WAV, OGG, and M4A files (Max: {state.isMobileDevice ? "50MB" : "500MB"})
                       </div>
                     </motion.div>
                   </div>
@@ -1803,7 +2134,7 @@ export default function HomePage() {
                 </motion.div>
 
                 <AnimatePresence>
-                  {file && (
+                  {state.file && (
                     <motion.div
                       initial={{ opacity: 0, y: 10, height: 0 }}
                       animate={{ opacity: 1, y: 0, height: "auto" }}
@@ -1827,7 +2158,7 @@ export default function HomePage() {
                             transition={{ delay: 0.2 }}
                             className="mb-1 dark:text-gray-200 font-black text-sm text-logo-purple-300"
                           >
-                            {file.name}
+                            {state.file.name}
                           </motion.div>
                           <motion.div
                             initial={{ opacity: 0, x: -5 }}
@@ -1835,7 +2166,7 @@ export default function HomePage() {
                             transition={{ delay: 0.3 }}
                             className="dark:text-gray-400/70 font-black text-xs text-logo-purple-300"
                           >
-                            Size: {formatFileSize(file.size)} • Type: {file.type || "Unknown"}
+                            Size: {formatFileSize(state.file.size)} • Type: {state.file.type || "Unknown"}
                           </motion.div>
                         </div>
                       </div>
@@ -1844,36 +2175,25 @@ export default function HomePage() {
                 </AnimatePresence>
 
                 <AnimatePresence>
-                  {isProcessing && (
+                  {state.isProcessing && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       className="mb-6"
                     >
-                      <Card className="p-6 bg-gradient-to-r from-logo-rose-50 to-logo-purple-50 border-logo-rose-200 shadow-sm dark:shadow-white/10 dark:from-logo-rose-950 dark:to-logo-purple-950">
-                        <div className="text-center mb-4">
-                          <h3 className="text-lg font-medium text-logo-rose-700 dark:text-logo-rose-300 mb-2">
-                            Processing Audio
-                          </h3>
-                          <p className="text-sm text-logo-rose-600 dark:text-logo-rose-400">{processingStep}</p>
-                        </div>
-                        <div className="w-full bg-logo-rose-200 rounded-full h-2 mb-2 dark:bg-logo-rose-800">
-                          <div
-                            className="bg-gradient-to-r from-logo-rose-500 to-logo-purple-500 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${processingProgress}%` }}
-                          ></div>
-                        </div>
-                        <div className="text-center text-sm text-logo-rose-600 dark:text-logo-rose-400">
-                          {processingProgress}% complete
-                        </div>
-                      </Card>
+                      <ProgressCard
+                        title="Processing Audio"
+                        step={state.processingStep}
+                        progress={state.processingProgress}
+                        gradient="from-logo-rose-50 to-logo-purple-50 dark:from-logo-rose-950 dark:to-logo-purple-950"
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>
 
                 <AnimatePresence>
-                  {audioAnalysis && durationLimits && (
+                  {state.audioAnalysis && state.durationLimits && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -1897,7 +2217,7 @@ export default function HomePage() {
                                 Content
                               </div>
                               <div className="dark:text-black font-black text-logo-purple-300">
-                                {formatDuration(audioAnalysis.contentDuration)}
+                                {formatTime(state.audioAnalysis.contentDuration)}
                               </div>
                             </div>
                             <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-logo-teal">
@@ -1905,7 +2225,7 @@ export default function HomePage() {
                                 Silence
                               </div>
                               <div className="dark:text-gray-200 font-black rounded-xl text-logo-purple-300">
-                                {formatDuration(audioAnalysis.totalSilence)}
+                                {formatTime(state.audioAnalysis.totalSilence)}
                               </div>
                             </div>
                             <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-logo-teal">
@@ -1913,7 +2233,7 @@ export default function HomePage() {
                                 Pauses
                               </div>
                               <div className="dark:text-gray-200 font-black text-logo-purple-300">
-                                {audioAnalysis.silenceRegions}
+                                {state.audioAnalysis.silenceRegions}
                               </div>
                             </div>
                             <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-logo-teal">
@@ -1921,7 +2241,7 @@ export default function HomePage() {
                                 Range
                               </div>
                               <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-purple-300">
-                                {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
+                                {state.durationLimits.min} min to {state.isMobileDevice ? "1 hour" : "2 hours"}
                               </div>
                             </div>
                           </div>
@@ -1954,91 +2274,96 @@ export default function HomePage() {
                     </TabsList>
                     <TabsContent value="basic" className="mt-0 space-y-6">
                       <div className="grid md:grid-cols-2 gap-6">
-                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div className="bg-gradient-to-r from-logo-amber-500 to-indigo-500 py-3 px-6 dark:from-logo-amber-700 dark:to-indigo-700">
-                            <h3 className="text-white flex items-center font-black">
-                              <Clock className="h-4 w-4 mr-2" />
-                              Target Duration
-                            </h3>
-                          </div>
+                        <GradientCard
+                          title="Target Duration"
+                          icon={Clock}
+                          gradient="from-logo-amber-500 to-indigo-500 dark:from-logo-amber-700 dark:to-indigo-700"
+                          className=""
+                        >
                           <div className="p-6">
                             <div className="mb-4">
                               <Slider
-                                value={[targetDuration]}
-                                min={durationLimits?.min || 5}
-                                max={durationLimits?.max || (isMobileDevice ? 60 : 120)}
+                                value={[state.targetDuration]}
+                                min={state.durationLimits?.min || 5}
+                                max={state.durationLimits?.max || (state.isMobileDevice ? 60 : 120)}
                                 step={1}
-                                onValueChange={(value) => setTargetDuration(value[0])}
-                                disabled={!durationLimits}
+                                onValueChange={(value) =>
+                                  dispatch({ type: "UPDATE_PROCESSING", payload: { targetDuration: value[0] } })
+                                }
+                                disabled={!state.durationLimits}
                                 className="py-4"
                                 rangeClassName="bg-gradient-to-r from-logo-amber-500 to-indigo-500"
                               />
                             </div>
                             <div className="text-center font-serif font-black">
                               <span className="text-logo-amber-700 dark:text-logo-amber-300 text-2xl font-black">
-                                {targetDuration}
+                                {state.targetDuration}
                               </span>
                               <span className="text-lg text-logo-amber-600 ml-1 dark:text-logo-amber-400">minutes</span>
                             </div>
-                            {durationLimits && (
+                            {state.durationLimits && (
                               <div className="text-center text-xs text-logo-amber-500/70 mt-2 dark:text-logo-amber-400/70">
-                                Range: {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
+                                Range: {state.durationLimits.min} min to {state.isMobileDevice ? "1 hour" : "2 hours"}
                               </div>
                             )}
                           </div>
-                        </Card>
-                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div className="bg-gradient-to-r from-indigo-500 to-logo-amber-500 py-3 px-6 dark:from-indigo-700 dark:to-logo-amber-700">
-                            <h3 className="text-white flex items-center font-black">
-                              <Volume2 className="h-4 w-4 mr-2" />
-                              Silence Threshold
-                            </h3>
-                          </div>
+                        </GradientCard>
+                        <GradientCard
+                          title="Silence Threshold"
+                          icon={Volume2}
+                          gradient="from-indigo-500 to-logo-amber-500 dark:from-indigo-700 dark:to-logo-amber-700"
+                          className=""
+                        >
                           <div className="p-6">
                             <div className="mb-4">
                               <Slider
-                                value={[silenceThreshold]}
+                                value={[state.silenceThreshold]}
                                 min={0.001}
                                 max={0.05}
                                 step={0.001}
-                                onValueChange={(value) => setSilenceThreshold(value[0])}
+                                onValueChange={(value) =>
+                                  dispatch({ type: "UPDATE_PROCESSING", payload: { silenceThreshold: value[0] } })
+                                }
                                 className="py-4"
                                 rangeClassName="bg-gradient-to-r from-indigo-500 to-logo-amber-500"
                               />
                             </div>
                             <div className="text-center">
                               <span className="text-indigo-700 dark:text-indigo-300 font-serif font-black text-2xl">
-                                {silenceThreshold.toFixed(3)}
+                                {state.silenceThreshold.toFixed(3)}
                               </span>
                             </div>
                             <div className="text-center text-indigo-500/70 dark:text-indigo-400/70 font-black font-serif mt-0 text-sm">
                               Lower = more sensitive
                             </div>
                           </div>
-                        </Card>
+                        </GradientCard>
                       </div>
                     </TabsContent>
                     <TabsContent value="advanced" className="mt-0 space-y-6">
                       <div className="grid md:grid-cols-2 gap-6 font-serif font-black">
-                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div className="bg-gradient-to-r from-logo-amber-500 to-logo-rose-500 py-3 px-6 dark:from-logo-amber-700 dark:to-logo-rose-700">
-                            <h3 className="text-white font-black">Min Silence Duration</h3>
-                          </div>
+                        <GradientCard
+                          title="Min Silence Duration"
+                          gradient="from-logo-amber-500 to-logo-rose-500 dark:from-logo-amber-700 dark:to-logo-rose-700"
+                          className=""
+                        >
                           <div className="p-6 font-serif font-black">
                             <div className="mb-4">
                               <Slider
-                                value={[minSilenceDuration]}
+                                value={[state.minSilenceDuration]}
                                 min={1}
                                 max={15}
                                 step={0.5}
-                                onValueChange={(value) => setMinSilenceDuration(value[0])}
+                                onValueChange={(value) =>
+                                  dispatch({ type: "UPDATE_PROCESSING", payload: { minSilenceDuration: value[0] } })
+                                }
                                 className="py-4"
                                 rangeClassName="bg-gradient-to-r from-logo-amber-500 to-logo-rose-500"
                               />
                             </div>
                             <div className="text-center">
                               <span className="dark:text-logo-amber-300 text-2xl font-black text-logo-rose-600">
-                                {minSilenceDuration}
+                                {state.minSilenceDuration}
                               </span>
                               <span className="text-lg text-logo-rose-600 ml-1 dark:text-logo-rose-400">seconds</span>
                             </div>
@@ -2046,26 +2371,29 @@ export default function HomePage() {
                               Shorter = detect more pauses
                             </div>
                           </div>
-                        </Card>
-                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div className="bg-gradient-to-r from-logo-purple-500 to-logo-teal-500 py-3 px-6 dark:from-logo-purple-700 dark:to-logo-teal-700">
-                            <h3 className="text-white font-black">Min Spacing Between Content</h3>
-                          </div>
+                        </GradientCard>
+                        <GradientCard
+                          title="Min Spacing Between Content"
+                          gradient="from-logo-purple-500 to-logo-teal-500 dark:from-logo-purple-700 dark:to-logo-teal-700"
+                          className=""
+                        >
                           <div className="p-6">
                             <div className="mb-4">
                               <Slider
-                                value={[minSpacingDuration]}
+                                value={[state.minSpacingDuration]}
                                 min={0.0}
                                 max={5}
                                 step={0.1}
-                                onValueChange={(value) => setMinSpacingDuration(value[0])}
+                                onValueChange={(value) =>
+                                  dispatch({ type: "UPDATE_PROCESSING", payload: { minSpacingDuration: value[0] } })
+                                }
                                 className="py-4"
                                 rangeClassName="bg-gradient-to-r from-logo-purple-500 to-logo-teal-500"
                               />
                             </div>
                             <div className="text-center">
                               <span className="dark:text-logo-purple-300 font-black text-2xl text-logo-teal-600">
-                                {minSpacingDuration.toFixed(1)}
+                                {state.minSpacingDuration.toFixed(1)}
                               </span>
                               <span className="text-lg text-logo-teal-600 ml-1 dark:text-logo-teal-400">seconds</span>
                             </div>
@@ -2073,11 +2401,12 @@ export default function HomePage() {
                               Minimum pause between speaking parts
                             </div>
                           </div>
-                        </Card>
-                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div className="bg-gradient-to-r from-logo-rose-500 to-logo-purple-500 py-3 px-6 dark:from-logo-rose-700 dark:to-logo-purple-700">
-                            <h3 className="text-white font-black">Preserve Natural Pacing</h3>
-                          </div>
+                        </GradientCard>
+                        <GradientCard
+                          title="Preserve Natural Pacing"
+                          gradient="from-logo-rose-500 to-logo-purple-500 dark:from-logo-rose-700 dark:to-logo-purple-700"
+                          className=""
+                        >
                           <div className="p-6">
                             <div className="flex items-center justify-between">
                               <div>
@@ -2086,19 +2415,27 @@ export default function HomePage() {
                                 </p>
                               </div>
                               <Switch
-                                checked={preserveNaturalPacing}
-                                onCheckedChange={setPreserveNaturalPacing}
+                                checked={state.preserveNaturalPacing}
+                                onCheckedChange={(checked) =>
+                                  dispatch({ type: "UPDATE_PROCESSING", payload: { preserveNaturalPacing: checked } })
+                                }
                                 className="data-[state=checked]:bg-logo-rose-500 dark:data-[state=checked]:bg-logo-rose-700"
                               />
                             </div>
                           </div>
-                        </Card>
-                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div className="bg-gradient-to-r from-logo-teal-500 to-logo-amber-500 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-amber-700">
-                            <h3 className="text-white font-black">Compatibility Mode</h3>
-                          </div>
+                        </GradientCard>
+                        <GradientCard
+                          title="Compatibility Mode"
+                          gradient="from-logo-teal-500 to-logo-amber-500 dark:from-logo-teal-700 dark:to-logo-amber-700"
+                          className=""
+                        >
                           <div className="p-6">
-                            <Select value={compatibilityMode} onValueChange={(value) => setCompatibilityMode(value)}>
+                            <Select
+                              value={state.compatibilityMode}
+                              onValueChange={(value) =>
+                                dispatch({ type: "UPDATE_PROCESSING", payload: { compatibilityMode: value } })
+                              }
+                            >
                               <SelectTrigger className="w-full mb-2 border-logo-teal-200 focus:ring-logo-teal-500 dark:border-logo-teal-700 dark:bg-gray-800 dark:text-gray-200">
                                 <SelectValue placeholder="Select compatibility mode" />
                               </SelectTrigger>
@@ -2114,7 +2451,7 @@ export default function HomePage() {
                               audio on mobile.
                             </div>
                           </div>
-                        </Card>
+                        </GradientCard>
                       </div>
                     </TabsContent>
                   </Tabs>
@@ -2126,23 +2463,18 @@ export default function HomePage() {
                   transition={{ delay: 0.3 }}
                   className="mb-4 text-center font-serif font-black text-base"
                 >
-                  <Button
-                    className={cn(
-                      "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
-                      "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none",
-                      "bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 text-white dark:from-logo-teal-700 dark:to-logo-purple-700",
-                    )}
-                    disabled={!originalBuffer || isProcessing || !durationLimits}
+                  <ActionButton
                     onClick={processAudio}
+                    disabled={!state.originalBuffer || state.isProcessing || !state.durationLimits}
+                    gradient="from-logo-teal-500 to-logo-purple-500 dark:from-logo-teal-700 dark:to-logo-purple-700"
+                    icon={Wand2}
+                    loading={state.isProcessing}
                   >
-                    <div className="flex items-center justify-center">
-                      <Wand2 className="mr-2 h-6 w-6" />
-                      <span className="font-black">Process Audio</span>
-                    </div>
-                  </Button>
+                    Process Audio
+                  </ActionButton>
                 </motion.div>
 
-                {isProcessing && (
+                {state.isProcessing && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -2162,13 +2494,13 @@ export default function HomePage() {
                 )}
 
                 <AnimatePresence>
-                  {status && (
+                  {state.status && (
                     <motion.div
                       initial={{ opacity: 0, y: 10, height: 0 }}
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className={`p-4 rounded-xl mb-8 text-center dark:shadow-white/10 overflow-hidden bg-white dark:bg-gray-900 shadow-none border border-logo-blue-300 ${status.type === "info" ? "text-logo-teal-700 border border-logo-teal-400 dark:text-logo-teal-300 dark:border-logo-teal-600" : status.type === "success" ? "text-logo-emerald-700 border border-logo-emerald-400 dark:text-logo-emerald-300 dark:border-logo-emerald-600" : "text-red-700 border border-red-400 dark:text-red-300 dark:border-red-600"}`}
+                      className={`p-4 rounded-xl mb-8 text-center dark:shadow-white/10 overflow-hidden bg-white dark:bg-gray-900 shadow-none border border-logo-blue-300 ${state.status.type === "info" ? "text-logo-teal-700 border border-logo-teal-400 dark:text-logo-teal-300 dark:border-logo-teal-600" : state.status.type === "success" ? "text-logo-emerald-700 border border-logo-emerald-400 dark:text-logo-emerald-300 dark:border-logo-emerald-600" : "text-red-700 border border-red-400 dark:text-red-300 dark:border-red-600"}`}
                     >
                       <motion.div
                         className="text-sm text-logo-teal"
@@ -2176,14 +2508,14 @@ export default function HomePage() {
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.2 }}
                       >
-                        {status.message}
+                        {state.status.message}
                       </motion.div>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
                 <div className="space-y-6">
-                  {originalUrl && (
+                  {state.originalUrl && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -2195,7 +2527,7 @@ export default function HomePage() {
                         </div>
                         <div className="p-6">
                           <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
-                            <audio controls className="w-full" src={originalUrl}></audio>
+                            <audio controls className="w-full" src={state.originalUrl}></audio>
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                             <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
@@ -2203,7 +2535,7 @@ export default function HomePage() {
                                 Duration
                               </div>
                               <div className="dark:text-black font-black text-black">
-                                {originalBuffer ? formatDuration(originalBuffer.duration) : "--"}
+                                {state.originalBuffer ? formatTime(state.originalBuffer.duration) : "--"}
                               </div>
                             </div>
                             <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
@@ -2211,7 +2543,7 @@ export default function HomePage() {
                                 File Size
                               </div>
                               <div className="dark:text-gray-200 font-black text-black">
-                                {formatFileSize(file?.size || 0)}
+                                {formatFileSize(state.file?.size || 0)}
                               </div>
                             </div>
                           </div>
@@ -2219,7 +2551,7 @@ export default function HomePage() {
                       </Card>
                     </motion.div>
                   )}
-                  {processedUrl && processedBufferState && (
+                  {state.processedUrl && state.processedBufferState && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -2231,7 +2563,7 @@ export default function HomePage() {
                         </div>
                         <div className="p-6">
                           <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
-                            <audio controls className="w-full" src={processedUrl}></audio>
+                            <audio controls className="w-full" src={state.processedUrl}></audio>
                           </div>
                           <div className="grid grid-cols-2 gap-4 mb-6">
                             <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
@@ -2239,10 +2571,10 @@ export default function HomePage() {
                                 Duration
                               </div>
                               <div className="dark:text-black font-black text-black">
-                                {formatDuration(actualDuration || 0)}
-                                {actualDuration && targetDuration && (
+                                {formatTime(state.actualDuration || 0)}
+                                {state.actualDuration && state.targetDuration && (
                                   <div className="text-xs text-logo-teal-600 mt-1 dark:text-gray-900">
-                                    {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
+                                    {((state.actualDuration / (state.targetDuration * 60)) * 100).toFixed(1)}% of target
                                   </div>
                                 )}
                               </div>
@@ -2251,7 +2583,9 @@ export default function HomePage() {
                               <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                                 Pauses Adjusted
                               </div>
-                              <div className="dark:text-logo-teal-200 font-black text-black">{pausesAdjusted}</div>
+                              <div className="dark:text-logo-teal-200 font-black text-black">
+                                {state.pausesAdjusted}
+                              </div>
                             </div>
                           </div>
                           <Button
@@ -2301,7 +2635,7 @@ export default function HomePage() {
                           </Label>
                           <Input
                             id="labs-title"
-                            value={meditationTitle}
+                            value={state.meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
                             className="mt-1 text-xs font-black text-logo-rose-600 shadow-inner border border-gray-600 focus:ring-logo-rose-600 focus:border-logo-rose-600" // Changed border to gray-600
@@ -2314,7 +2648,7 @@ export default function HomePage() {
                           <Input
                             id="labs-duration"
                             type="number"
-                            value={labsTotalDuration / 60}
+                            value={state.labsTotalDuration / 60}
                             onChange={handleDurationChange}
                             min="1"
                             className="mt-1 text-xs font-black text-logo-rose-600 shadow-inner border border-gray-600 focus:ring-logo-rose-600 focus:border-logo-rose-600" // Changed border to gray-600
@@ -2355,12 +2689,14 @@ export default function HomePage() {
                                   {INSTRUCTIONS_LIBRARY.filter((instr) => instr.category === category).map((instr) => (
                                     <Button
                                       key={instr.id}
-                                      variant={selectedLibraryInstruction?.id === instr.id ? "default" : "ghost"}
+                                      variant={state.selectedLibraryInstruction?.id === instr.id ? "default" : "ghost"}
                                       size="sm"
-                                      className={`w-full text-left justify-start h-auto py-3 px-3 text-sm ${selectedLibraryInstruction?.id === instr.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                                      className={`w-full text-left justify-start h-auto py-3 px-3 text-sm ${state.selectedLibraryInstruction?.id === instr.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
                                       onClick={() => {
-                                        setSelectedLibraryInstruction(instr)
-                                        setCustomInstructionText("")
+                                        dispatch({
+                                          type: "UPDATE_LABS",
+                                          payload: { selectedLibraryInstruction: instr, customInstructionText: "" },
+                                        })
                                       }}
                                     >
                                       <span className="text-wrap leading-relaxed font-black text-sm text-gray-600">
@@ -2379,7 +2715,7 @@ export default function HomePage() {
                           </Label>
                           <Textarea
                             id="custom"
-                            value={customInstructionText}
+                            value={state.customInstructionText}
                             onChange={handleCustomInstructionChange}
                             placeholder="Enter your own instruction..."
                             rows={3}
@@ -2417,14 +2753,19 @@ export default function HomePage() {
                                   {notes.map((note) => (
                                     <div key={note.id} className="flex items-center gap-2 font-black">
                                       <Button
-                                        variant={selectedSoundCue?.id === note.id ? "default" : "ghost"}
+                                        variant={state.selectedSoundCue?.id === note.id ? "default" : "ghost"}
                                         size="sm"
-                                        className={`flex-1 justify-start font-black ${selectedSoundCue?.id === note.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                                        className={`flex-1 justify-start font-black ${state.selectedSoundCue?.id === note.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
                                         onClick={() =>
-                                          setSelectedSoundCue({
-                                            id: note.id,
-                                            name: note.name,
-                                            src: `musical:${note.note}${note.octave}`,
+                                          dispatch({
+                                            type: "UPDATE_LABS",
+                                            payload: {
+                                              selectedSoundCue: {
+                                                id: note.id,
+                                                name: note.name,
+                                                src: `musical:${note.note}${note.octave}`,
+                                              },
+                                            },
                                           })
                                         }
                                       >
@@ -2448,8 +2789,11 @@ export default function HomePage() {
                         </Accordion>
                         <Button
                           className="w-full bg-white text-logo-emerald-700 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-emerald-400 dark:border-gray-600 dark:hover:bg-gray-800" // Changed border to gray-600
-                          onClick={handleAddInstructionSoundEvent}
-                          disabled={(!selectedLibraryInstruction && !customInstructionText.trim()) || !selectedSoundCue}
+                          onClick={handlers.labs.addEvent}
+                          disabled={
+                            (!state.selectedLibraryInstruction && !state.customInstructionText.trim()) ||
+                            !state.selectedSoundCue
+                          }
                         >
                           <PlusCircle className="mr-2 h-4 w-4" />
                           <span className="font-black">Add to Timeline</span>
@@ -2479,18 +2823,18 @@ export default function HomePage() {
                           </Label>
                           <Input
                             id="recording-label"
-                            value={recordingLabel}
+                            value={state.recordingLabel}
                             onChange={handleRecordingLabelChange}
                             placeholder="Describe this recording..."
                             className="mt-1 text-sm font-black"
                           />
                         </div>
                         <Button
-                          onClick={isRecording ? stopRecording : startRecording}
-                          variant={isRecording ? "destructive" : "default"}
+                          onClick={state.isRecording ? stopRecording : startRecording}
+                          variant={state.isRecording ? "destructive" : "default"}
                           className="w-full font-black bg-gradient-to-r from-gray-600 to-gray-700 text-white dark:from-gray-700 dark:to-gray-800" // Changed to gray gradient
                         >
-                          {isRecording ? (
+                          {state.isRecording ? (
                             <>
                               <StopCircle className="mr-2 h-4 w-4" />
                               Stop Recording
@@ -2503,7 +2847,7 @@ export default function HomePage() {
                           )}
                         </Button>
                         <AnimatePresence>
-                          {recordedAudioUrl && (
+                          {state.recordedAudioUrl && (
                             <motion.div
                               initial={{ opacity: 0, height: 0 }}
                               animate={{ opacity: 1, height: "auto" }}
@@ -2511,11 +2855,11 @@ export default function HomePage() {
                               className="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-4"
                             >
                               <div className="space-y-2">
-                                <audio controls src={recordedAudioUrl} className="w-full" preload="metadata" />
+                                <audio controls src={state.recordedAudioUrl} className="w-full" preload="metadata" />
                               </div>
                               <Button
                                 onClick={async () => {
-                                  if (!recordingLabel.trim()) {
+                                  if (!state.recordingLabel.trim()) {
                                     toast({
                                       title: "Missing Label",
                                       description: "Please provide a label for the recording.",
@@ -2524,12 +2868,12 @@ export default function HomePage() {
                                     return
                                   }
 
-                                  if (!recordedAudioUrl) return
+                                  if (!state.recordedAudioUrl) return
 
                                   // Get duration from audio element if available, otherwise use 0
                                   let duration = 0
                                   const audioElements = document.querySelectorAll(
-                                    'audio[src="' + recordedAudioUrl + '"]',
+                                    'audio[src="' + state.recordedAudioUrl + '"]',
                                   )
                                   if (audioElements.length > 0) {
                                     const audio = audioElements[0] as HTMLAudioElement
@@ -2540,28 +2884,31 @@ export default function HomePage() {
 
                                   // Calculate new startTime based on existing events
                                   const maxExistingTime =
-                                    timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
-                                  const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 33 : 0
+                                    state.timelineEvents.length > 0
+                                      ? Math.max(...state.timelineEvents.map((e) => e.startTime))
+                                      : 0
+                                  const newStartTime = state.timelineEvents.length > 0 ? maxExistingTime + 33 : 0
 
                                   const newEvent: TimelineEvent = {
                                     id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
                                     type: "recorded_voice",
                                     startTime: newStartTime, // Now calculated
-                                    recordedAudioUrl: recordedAudioUrl,
-                                    recordedInstructionLabel: recordingLabel.trim(),
+                                    recordedAudioUrl: state.recordedAudioUrl,
+                                    recordedInstructionLabel: state.recordingLabel.trim(),
                                     duration: duration,
                                   }
 
                                   addEventToTimeline(newEvent) // Use the new helper function
 
                                   // Clean up
-                                  setRecordedAudioUrl(null)
-                                  setRecordedBlobs([])
-                                  setRecordingLabel("")
+                                  dispatch({
+                                    type: "UPDATE_LABS",
+                                    payload: { recordedAudioUrl: null, recordedBlobs: [], recordingLabel: "" },
+                                  })
 
                                   toast({
                                     title: "Recording Added",
-                                    description: `"${recordingLabel.trim()}" added to timeline.`,
+                                    description: `"${state.recordingLabel.trim()}" added to timeline.`,
                                   })
                                 }}
                                 className="w-full bg-white text-logo-rose-600 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black" // Changed border to gray-600
@@ -2587,8 +2934,8 @@ export default function HomePage() {
                     </div>
                     <div className="p-6 pb-6">
                       <VisualTimeline
-                        events={timelineEvents}
-                        totalDuration={labsTotalDuration}
+                        events={state.timelineEvents}
+                        totalDuration={state.labsTotalDuration}
                         onUpdateEvent={updateEventStartTime}
                         onRemoveEvent={removeTimelineEvent}
                       />
@@ -2597,48 +2944,18 @@ export default function HomePage() {
                 </motion.div>
                 {/* Generate Audio Button for Labs */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-                  <Button
+                  <ActionButton
                     onClick={handleExportAudio}
-                    disabled={isGeneratingAudio || timelineEvents.length === 0}
-                    className={cn(
-                      "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
-                      "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none",
-                      "bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 text-white dark:from-logo-teal-700 dark:to-logo-purple-700",
-                    )}
+                    disabled={state.isGeneratingAudio || state.timelineEvents.length === 0}
+                    gradient="from-logo-teal-500 to-logo-purple-500 dark:from-logo-teal-700 dark:to-logo-purple-700"
+                    icon={Wand2}
+                    loading={state.isGeneratingAudio}
                   >
-                    <div className="flex items-center justify-center font-black">
-                      {isGeneratingAudio && (
-                        <div className="mr-3 h-5 w-5">
-                          <svg
-                            className="animate-spin h-5 w-5 text-white"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291
-                                A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                        </div>
-                      )}
-                      <Wand2 className="mr-2 h-5 w-5" />
-                      <span className="text-base">{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
-                    </div>
-                  </Button>
+                    Generate Audio
+                  </ActionButton>
                 </motion.div>
                 {/* Generated Audio Section for Labs */}
-                {generatedAudioUrl && (
+                {state.generatedAudioUrl && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -2649,31 +2966,35 @@ export default function HomePage() {
                         <h3 className="text-white font-black">Generated Audio</h3>
                       </div>
                       <div className="p-6">
-                        <h4 className="mb-2 dark:text-gray-300 font-black text-sm text-gray-600">{meditationTitle}</h4>
+                        <h4 className="mb-2 dark:text-gray-300 font-black text-sm text-gray-600">
+                          {state.meditationTitle}
+                        </h4>
                         <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
-                          <audio controls className="w-full" src={generatedAudioUrl}></audio>
+                          <audio controls className="w-full" src={state.generatedAudioUrl}></audio>
                         </div>
                         <div className="grid grid-cols-2 gap-4 mb-6">
                           <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
                             <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                               Total Events
                             </div>
-                            <div className="dark:text-black font-black text-gray-600">{timelineEvents.length}</div>
+                            <div className="dark:text-black font-black text-gray-600">
+                              {state.timelineEvents.length}
+                            </div>
                           </div>
                           <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
                             <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                               Total Duration
                             </div>
                             <div className="dark:text-black font-black text-gray-600">
-                              {formatTime(labsTotalDuration)}
+                              {formatTime(state.labsTotalDuration)}
                             </div>
                           </div>
                         </div>
                         <Button
                           onClick={() => {
                             const a = document.createElement("a")
-                            a.href = generatedAudioUrl
-                            a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
+                            a.href = state.generatedAudioUrl
+                            a.download = `${state.meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
                             document.body.appendChild(a)
                             a.click()
                             document.body.removeChild(a)
