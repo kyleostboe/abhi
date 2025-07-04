@@ -398,7 +398,7 @@ export default function HomePage() {
     // Bits per sample
     dataView.setUint16(34, bytesPerSample * 8, true)
     // Data chunk identifier
-    dataView.setUint36(36, 0x64617461, false) // "data"
+    dataView.setUint32(36, 0x64617461, false) // "data"
     // Data chunk size
     dataView.setUint32(40, dataSize, true)
 
@@ -1385,30 +1385,17 @@ export default function HomePage() {
     }
   }, [])
 
-  // Helper function to add events to timelineEvents with automatic spacing
+  // Helper function to add events to timelineEvents without automatic spacing
   const addEventToTimeline = useCallback(
     (newEvent: TimelineEvent) => {
       setTimelineEvents((prevEvents) => {
         const updatedEvents = [...prevEvents, newEvent]
-        const numEvents = updatedEvents.length
-
-        // Calculate spacing based on the new total number of events
-        // If there's only one event, it should be at 0.
-        // If there are N events, there are N-1 intervals.
-        const spacing = numEvents > 1 ? labsTotalDuration / (numEvents - 1) : 0
-
-        // Sort by current startTime to maintain relative order, then re-assign new startTimes
-        const sortedAndRepositioned = updatedEvents
-          .sort((a, b) => a.startTime - b.startTime)
-          .map((event, index) => ({
-            ...event,
-            startTime: index * spacing,
-          }))
-
-        return sortedAndRepositioned
+        // Sort by current startTime to maintain chronological order for display
+        // Do NOT re-calculate or re-assign startTimes based on spacing.
+        return updatedEvents.sort((a, b) => a.startTime - b.startTime)
       })
     },
-    [labsTotalDuration], // labsTotalDuration is a dependency for spacing calculation
+    [], // No longer depends on labsTotalDuration for spacing
   )
 
   const playLabsSoundOld = async (src: string) => {
@@ -1468,7 +1455,7 @@ export default function HomePage() {
     const newEvent: TimelineEvent = {
       id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       type: "instruction_sound",
-      startTime: 0, // Temporary, will be re-calculated by addEventToTimeline
+      startTime: 0, // Default to 0, user can drag later
       instructionText: instructionTextToAdd,
       soundCueId: selectedSoundCue.id,
       soundCueName: selectedSoundCue.name, // Store the name directly
@@ -2553,7 +2540,7 @@ export default function HomePage() {
                                   const newEvent: TimelineEvent = {
                                     id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
                                     type: "recorded_voice",
-                                    startTime: 0, // Temporary, will be re-calculated by addEventToTimeline
+                                    startTime: 0, // Default to 0, user can drag later
                                     recordedAudioUrl: recordedAudioUrl,
                                     recordedInstructionLabel: recordingLabel.trim(),
                                     duration: duration,
