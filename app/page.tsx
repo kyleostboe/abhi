@@ -136,7 +136,6 @@ export default function HomePage() {
   const [minSpacingDuration, setMinSpacingDuration] = useState<number>(1.5)
   const [preserveNaturalPacing, setPreserveNaturalPacing] = useState<boolean>(true)
   const [compatibilityMode, setCompatibilityMode] = useState<string>("high")
-
   const [status, setStatus] = useState<{ message: string; type: string } | null>(null)
   const [originalUrl, setOriginalUrl] = useState<string>("")
   const [processedUrl, setProcessedUrl] = useState<string>("")
@@ -144,7 +143,6 @@ export default function HomePage() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
   const [processingProgress, setProcessingProgress] = useState<number>(0)
   const [processingStep, setProcessingStep] = useState<string>("")
-
   const [durationLimits, setDurationLimits] = useState<{ min: number; max: number } | null>(null)
   const [audioAnalysis, setAudioAnalysis] = useState<{
     totalSilence: number
@@ -1544,6 +1542,12 @@ export default function HomePage() {
     toast({ title: "Event Removed" })
   }
 
+  const formatTimeOld = (timeInSeconds: number): string => {
+    const minutes = Math.floor(timeInSeconds / 60)
+    const seconds = Math.floor(timeInSeconds % 60)
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`
+  }
+
   // Safe input handlers with validation
   const handleMeditationTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target?.value
@@ -1769,7 +1773,7 @@ export default function HomePage() {
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                 >
-                  <div className="bg-gradient-to-r from-logo-blue-500 via-logo-rose-500 to-logo-amber-500 py-3 px-6 dark:from-logo-blue-700 dark:via-logo-rose-700 dark:to-logo-amber-700 border-dashed border-0">
+                  <div className="bg-gradient-to-r from-logo-teal via-logo-emerald to-logo-blue py-3 px-6 dark:from-logo-teal dark:via-logo-emerald dark:to-logo-blue border-dashed border-0">
                     <h3 className="text-white flex items-center font-black">
                       <Upload className="h-4 w-4 mr-2" />
                       Upload Audio
@@ -2126,7 +2130,7 @@ export default function HomePage() {
                     className={cn(
                       "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
                       "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none",
-                      "bg-gradient-to-r from-gray-600 to-gray-700 text-white dark:from-gray-700 dark:to-gray-800", // Changed to gray gradient
+                      "bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 text-white dark:from-logo-teal-700 dark:to-logo-purple-700",
                     )}
                     disabled={!originalBuffer || isProcessing || !durationLimits}
                     onClick={processAudio}
@@ -2256,7 +2260,7 @@ export default function HomePage() {
                           >
                             <div className="flex items-center justify-center font-black">
                               <Download className="mr-2 h-5 w-5" />
-                              Download Audio
+                              Download Processed Audio
                             </div>
                           </Button>
                         </div>
@@ -2325,7 +2329,7 @@ export default function HomePage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <motion.div
                     initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
@@ -2623,7 +2627,7 @@ export default function HomePage() {
                               className="opacity-75"
                               fill="currentColor"
                               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291
-                                  A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                             ></path>
                           </svg>
                         </div>
