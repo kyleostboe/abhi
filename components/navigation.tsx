@@ -17,10 +17,7 @@ export function Navigation() {
       <div className="flex justify-center py-4 items-stretch pb-0 text-center">
         {/* Logo/Brand */}
         <div className="flex items-center space-x-2">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
-            <img src="/placeholder-logo.svg" alt="abhī logo" className="h-6 w-6" />
-            <span className="sr-only">abhī</span>
-          </Link>
+          
         </div>
 
         {/* Desktop Navigation */}
