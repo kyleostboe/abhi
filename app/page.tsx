@@ -2488,7 +2488,7 @@ export default function HomePage() {
                         <Button
                           onClick={isRecording ? stopRecording : startRecording}
                           variant={isRecording ? "destructive" : "default"}
-                          className="w-full font-black bg-gradient-to-r from-gray-600 to-gray-700 text-white dark:from-gray-700 dark:to-gray-800" // Changed to gray gradient
+                          className="w-full font-black bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 text-white dark:from-logo-teal-700 dark:to-logo-purple-700"
                         >
                           {isRecording ? (
                             <>
