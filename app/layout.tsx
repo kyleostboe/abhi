@@ -2,7 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import "@/app/globals.css"
 import { Inter } from "next/font/google"
-// Removed: import { ThemeProvider } from "@/components/theme-provider"
+// The ThemeProvider import has been removed.
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -38,9 +38,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" suppressHydrationWarning>
       <head />
       <body className={`${inter.className} transition-colors duration-300 ease-in-out`}>
-        {/* Removed: <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange={false}> */}
+        {/* The ThemeProvider component has been removed. */}
         {children}
-        {/* Removed: </ThemeProvider> */}
       </body>
     </html>
   )
