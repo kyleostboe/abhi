@@ -1542,17 +1542,6 @@ export default function HomePage() {
     toast({ title: "Event Removed" })
   }
 
-  const formatTimeOld = (timeInSeconds: number): string => {
-    const minutes = Math.floor(timeInSeconds / 60)
-    const seconds = Math.floor(timeInSeconds % 60)
-  }
-
-  const formatTimeOld = (timeInSeconds: number): string => {
-    const minutes = Math.floor(timeInSeconds / 60)
-    const seconds = Math.floor(timeInSeconds % 60)
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`
-  }
-
   // Safe input handlers with validation
   const handleMeditationTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target?.value
