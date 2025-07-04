@@ -3,24 +3,13 @@
 import type React from "react"
 import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
+import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
 import { Alert } from "@/components/ui/alert"
-import {
-  Info,
-  Upload,
-  Volume2,
-  Wand2,
-  Download,
-  Settings2,
-  AlertTriangle,
-  ListPlus,
-  Music2,
-  Mic,
-  StopCircle,
-  Play,
-  PlusCircle,
-  CircleDotDashed,
-} from "lucide-react"
+import { Info, Upload, Volume2, Clock, Wand2, Download, Settings2, AlertTriangle, ListPlus, Music2 } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Switch } from "@/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
 import { Input } from "@/components/ui/input"
@@ -37,8 +26,7 @@ import {
   type Instruction,
   type SoundCue,
 } from "@/lib/meditation-data"
-import { VisualTimeline } from "@/components/visual-timeline"
-import { cn } from "@/lib/utils" // Import cn utility
+import { cn } from "@/lib/utils"
 
 // Add this near the top of the file, after the imports
 const NOTE_FREQUENCIES = {
@@ -135,7 +123,7 @@ export default function HomePage() {
   const [originalUrl, setOriginalUrl] = useState<string>("")
   const [processedUrl, setProcessedUrl] = useState<string>("")
   const [pausesAdjusted, setPausesAdjusted] = useState<number>(0)
-  const [isProcessing, setIsProcessing] = useState<boolean>(isProcessing)
+  const [isProcessing, setIsProcessing] = useState<boolean>(false)
   const [processingProgress, setProcessingProgress] = useState<number>(0)
   const [processingStep, setProcessingStep] = useState<string>("")
   const [durationLimits, setDurationLimits] = useState<{ min: number; max: number } | null>(null)
@@ -184,6 +172,563 @@ export default function HomePage() {
   const currentItemStartTimeRef = useRef<number>(0)
 
   const totalDuration = timeline.reduce((sum, item) => sum + item.duration, 0)
+
+  // Utility functions
+  const formatDuration = (timeInSeconds: number) => {
+    const minutes = Math.floor(timeInSeconds / 60)
+    const seconds = Math.floor(timeInSeconds % 60)
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes"
+    const k = 1024
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${["Bytes", "KB", "MB", "GB"][i]}`
+  }
+
+  const formatTime = (timeInSeconds: number): string => {
+    const minutes = Math.floor(timeInSeconds / 60)
+    const seconds = Math.floor(timeInSeconds % 60)
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`
+  }
+
+  // == Effects for Length Adjuster ==
+  useEffect(() => {
+    setIsMobileDevice(isMobile())
+    if (typeof navigator !== "undefined" && (navigator as any).deviceMemory) {
+      const deviceMemory = (navigator as any).deviceMemory
+      if (deviceMemory < 4) {
+        console.warn("Device memory less than 4GB, enabling memory warnings.")
+        setMemoryWarning(true)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      audioContextRef.current.close().catch((err) => console.warn("Error closing previous AudioContext:", err))
+    }
+
+    const AudioContextAPI = window.AudioContext || (window as any).webkitAudioContext
+    if (AudioContextAPI) {
+      const sampleRate = isMobileDevice ? 22050 : 44100
+      try {
+        const ctx = new AudioContextAPI({ sampleRate })
+        audioContextRef.current = ctx
+        if (ctx.state === "suspended") {
+          const resumeContextOnInteraction = async () => {
+            if (audioContextRef.current && audioContextRef.current.state === "suspended") {
+              try {
+                await audioContextRef.current.resume()
+              } catch (e) {
+                console.error("Error resuming AudioContext on user interaction:", e)
+              }
+            }
+            document.removeEventListener("click", resumeContextOnInteraction, true)
+            document.addEventListener("touchend", resumeContextOnInteraction, true)
+            document.addEventListener("keydown", resumeContextOnInteraction, true)
+          }
+          document.addEventListener("click", resumeContextOnInteraction, { once: true, capture: true })
+          document.addEventListener("touchend", resumeContextOnInteraction, { once: true, capture: true })
+          document.addEventListener("keydown", resumeContextOnInteraction, { once: true, capture: true })
+        }
+      } catch (error) {
+        setStatus({
+          message: `Error initializing audio system: ${error instanceof Error ? error.message : "Unknown error"}`,
+          type: "error",
+        })
+      }
+    } else {
+      setStatus({ message: "Your browser does not support the required Audio API.", type: "error" })
+    }
+    return () => {
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        audioContextRef.current
+          .close()
+          .catch((err) => console.warn("Error closing AudioContext in main useEffect cleanup:", err))
+        audioContextRef.current = null
+      }
+    }
+  }, [isMobileDevice])
+
+  const cleanupMemory = useCallback(() => {
+    setOriginalBuffer(null)
+    setProcessedBufferState(null)
+    if (originalUrl) {
+      URL.revokeObjectURL(originalUrl)
+      setOriginalUrl("")
+    }
+    if (processedUrl) {
+      URL.revokeObjectURL(processedUrl)
+      setProcessedUrl("")
+    }
+    forceGarbageCollection()
+    if (isMobileDevice) setTimeout(() => forceGarbageCollection(), 100)
+  }, [originalUrl, processedUrl, isMobileDevice])
+
+  const validateFileSize = (fileToValidate: File): boolean => {
+    const maxSize = isMobileDevice ? 50 * 1024 * 1024 : 500 * 1024 * 1024
+    if (fileToValidate.size > maxSize) {
+      setStatus({ message: `File too large. Max ${isMobileDevice ? "50MB" : "500MB"}.`, type: "error" })
+      return false
+    }
+    if (
+      (isMobileDevice && fileToValidate.size > 20 * 1024 * 1024) ||
+      (!isMobileDevice && fileToValidate.size > 150 * 1024 * 1024)
+    ) {
+      setMemoryWarning(true)
+    } else {
+      setMemoryWarning(false)
+    }
+    return true
+  }
+
+  const handleFile = async (selectedFile: File) => {
+    if (!selectedFile || !selectedFile.type) {
+      setStatus({ message: "Invalid file selected.", type: "error" })
+      return
+    }
+
+    if (!selectedFile.type.startsWith("audio/") && !selectedFile.name.toLowerCase().endsWith(".m4a")) {
+      setStatus({ message: "Please select a valid audio file.", type: "error" })
+      return
+    }
+    if (!validateFileSize(selectedFile)) return
+    if (!audioContextRef.current || audioContextRef.current.state === "closed") {
+      setStatus({ message: "Audio system not ready. Please refresh.", type: "error" })
+      return
+    }
+    cleanupMemory()
+    await sleep(100)
+    setFile(selectedFile)
+    setProcessingProgress(0)
+    setProcessingStep("Initializing...")
+    setDurationLimits(null)
+    setAudioAnalysis(null)
+    setProcessedUrl("")
+    setProcessedBufferState(null)
+    setActualDuration(null)
+    setStatus(null)
+    try {
+      setStatus({ message: "Loading audio file...", type: "info" })
+      await loadAudioFile(selectedFile)
+    } catch (error) {
+      setStatus({
+        message: `Error loading audio: ${error instanceof Error ? error.message : "Unknown"}`,
+        type: "error",
+      })
+      setOriginalBuffer(null)
+    }
+  }
+
+  const detectSilenceRegions = async (
+    buffer: AudioBuffer,
+    threshold: number,
+    minSilenceDur: number,
+  ): Promise<{ start: number; end: number }[]> => {
+    const sampleRate = buffer.sampleRate
+    const channelData = buffer.getChannelData(0)
+    const silenceRegions: { start: number; end: number }[] = []
+    let silenceStart: number | null = null
+    let consecutiveSilentSamples = 0
+    const skipSamples = isMobileDevice ? 20 : 10
+
+    for (let i = 0; i < channelData.length; i += skipSamples) {
+      if (i % (sampleRate * (isMobileDevice ? 2 : 5)) === 0) {
+        await sleep(0)
+        setProcessingProgress(20 + Math.floor((i / channelData.length) * 10))
+      }
+      const amplitude = Math.abs(channelData[i])
+      if (amplitude < threshold) {
+        if (silenceStart === null) silenceStart = i
+        consecutiveSilentSamples++
+      } else {
+        if (silenceStart !== null && (consecutiveSilentSamples * skipSamples) / sampleRate >= minSilenceDur) {
+          silenceRegions.push({ start: silenceStart / sampleRate, end: i / sampleRate })
+        }
+        silenceStart = null
+        consecutiveSilentSamples = 0
+      }
+    }
+    if (silenceStart !== null && (consecutiveSilentSamples * skipSamples) / sampleRate >= minSilenceDur) {
+      silenceRegions.push({ start: silenceStart / sampleRate, end: channelData.length / sampleRate })
+    }
+    return silenceRegions
+  }
+
+  const analyzeAudioForLimits = async (buffer: AudioBuffer, minSpacing: number) => {
+    setProcessingStep("Analyzing audio for limits...")
+    const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
+    const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+    const audioContentDuration = buffer.duration - totalSilenceDuration
+    const minRequiredSpacing = silenceRegions.length > 0 ? silenceRegions.length * minSpacing : 0
+    const minPossibleDuration = Math.max(1, Math.ceil((audioContentDuration + minRequiredSpacing) / 60))
+    const maxPossibleDuration = isMobileDevice ? 60 : 120
+    setDurationLimits({ min: minPossibleDuration, max: maxPossibleDuration })
+    setAudioAnalysis({
+      totalSilence: totalSilenceDuration,
+      contentDuration: audioContentDuration,
+      silenceRegions: silenceRegions.length,
+    })
+    if (targetDuration < minPossibleDuration) setTargetDuration(minPossibleDuration)
+    else if (targetDuration > maxPossibleDuration) setTargetDuration(maxPossibleDuration)
+    setProcessingStep("Analysis complete.")
+  }
+
+  const loadAudioFile = useCallback(
+    async (fileToLoad: File) => {
+      const currentAudioContext = audioContextRef.current
+      if (!currentAudioContext) {
+        setStatus({ message: "Audio context not initialized.", type: "error" })
+        throw new Error("AudioContext not initialized")
+      }
+      let attempts = 0
+      const maxAttempts = 3
+      while (currentAudioContext.state !== "running" && attempts < maxAttempts) {
+        attempts++
+        if (currentAudioContext.state === "suspended") {
+          try {
+            await currentAudioContext.resume()
+            if (currentAudioContext.state !== "running") await sleep(50 * attempts)
+          } catch (err) {
+            break
+          }
+        } else if (currentAudioContext.state === "closed") {
+          setStatus({ message: "Audio system closed.", type: "error" })
+          throw new Error("AudioContext closed")
+        }
+        if (currentAudioContext.state !== "running" && currentAudioContext.state !== "closed" && attempts < maxAttempts)
+          await sleep(100 * attempts)
+      }
+      if (currentAudioContext.state !== "running") {
+        setStatus({ message: "Failed to start audio system.", type: "error" })
+        throw new Error(`AudioContext not running: ${currentAudioContext.state}`)
+      }
+      setProcessingStep("Reading file data...")
+      setProcessingProgress(10)
+      const arrayBuffer = await fileToLoad.arrayBuffer()
+      setProcessingStep("Decoding audio data...")
+      setProcessingProgress(50)
+      try {
+        const decodePromise = currentAudioContext.decodeAudioData(arrayBuffer.slice(0))
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Audio decoding timeout (30s)")), 30000),
+        )
+        const buffer = await Promise.race([decodePromise, timeoutPromise])
+        setProcessingStep("Analyzing audio...")
+        setProcessingProgress(80)
+        await sleep(50)
+        setOriginalBuffer(buffer)
+        setProcessingStep("Creating audio player...")
+        setProcessingProgress(95)
+        if (originalUrl) URL.revokeObjectURL(originalUrl)
+        const blob = new Blob([fileToLoad], { type: fileToLoad.type })
+        const url = URL.createObjectURL(blob)
+        setOriginalUrl(url)
+        setProcessingProgress(100)
+        setProcessingStep("Load complete!")
+        setStatus({
+          message: `Audio loaded. Duration: ${formatDuration(buffer.duration)}.`,
+          type: "success",
+        })
+      } catch (decodeError) {
+        setStatus({
+          message: `Error decoding: ${decodeError instanceof Error ? decodeError.message : "Unknown"}`,
+          type: "error",
+        })
+        throw decodeError
+      }
+    },
+    [originalUrl, isMobileDevice],
+  )
+
+  useEffect(() => {
+    if (originalBuffer) analyzeAudioForLimits(originalBuffer, minSpacingDuration)
+  }, [originalBuffer, silenceThreshold, minSilenceDuration, minSpacingDuration])
+
+  const processAudio = async () => {
+    const currentAudioContext = audioContextRef.current
+    if (!originalBuffer || !currentAudioContext) {
+      setStatus({ message: "Original audio or audio system not ready.", type: "error" })
+      return
+    }
+    setIsProcessing(true)
+    setProcessingProgress(0)
+    setProcessingStep("Starting processing...")
+    if (currentAudioContext.state === "suspended") {
+      try {
+        await currentAudioContext.resume()
+        if (currentAudioContext.state !== "running") throw new Error("Failed to resume for processing.")
+      } catch (err) {
+        setStatus({ message: `Audio system error: ${err instanceof Error ? err.message : "Unknown"}`, type: "error" })
+        setIsProcessing(false)
+        return
+      }
+    } else if (currentAudioContext.state === "closed") {
+      setStatus({ message: "Audio system closed.", type: "error" })
+      setIsProcessing(false)
+      return
+    }
+    if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
+    processingTimeoutRef.current = setTimeout(
+      () => {
+        setIsProcessing(false)
+        setStatus({ message: "Processing timed out.", type: "error" })
+      },
+      isMobileDevice ? 120000 : 600000,
+    )
+
+    try {
+      setStatus({ message: "Processing audio...", type: "info" })
+      const targetDurationSeconds = targetDuration * 60
+      setProcessingStep("Detecting silence regions (step 1/4)...")
+      setProcessingProgress(10)
+      await sleep(10)
+      const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
+      setProcessingStep("Calculating adjustments (step 2/4)...")
+      setProcessingProgress(30)
+      await sleep(10)
+      const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+      const audioContentDuration = originalBuffer.duration - totalSilenceDuration
+      const availableSilenceDuration = Math.max(
+        targetDurationSeconds - audioContentDuration,
+        silenceRegions.length * minSpacingDuration,
+      )
+      const scaleFactor = totalSilenceDuration > 0 ? availableSilenceDuration / totalSilenceDuration : 1
+      setProcessingStep("Rebuilding audio (step 3/4)...")
+      setProcessingProgress(50)
+      await sleep(10)
+
+      const processedAudioBuffer = await rebuildAudioWithScaledPauses(
+        originalBuffer,
+        silenceRegions,
+        scaleFactor,
+        minSpacingDuration,
+        preserveNaturalPacing,
+        availableSilenceDuration,
+        (p) => setProcessingProgress(50 + Math.floor(p * 0.4)),
+      )
+      setPausesAdjusted(silenceRegions.length)
+      setProcessingStep("Creating download file (step 4/4)...")
+      setProcessingProgress(90)
+      await sleep(10)
+      const wavBlob = await bufferToWav(processedAudioBuffer, compatibilityMode === "high", (p) =>
+        setProcessingProgress(90 + Math.floor(p * 0.1)),
+      )
+      if (processedUrl) URL.revokeObjectURL(processedUrl)
+      const url = URL.createObjectURL(wavBlob)
+      setProcessedUrl(url)
+      setActualDuration(processedAudioBuffer.duration)
+      setProcessedBufferState(processedAudioBuffer)
+      setProcessingProgress(100)
+      setProcessingStep("Complete!")
+      setStatus({ message: "Audio processing completed successfully!", type: "success" })
+      setIsProcessingComplete(true)
+    } catch (error) {
+      console.error("Error during audio processing:", error)
+      setStatus({ message: `Processing error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
+    } finally {
+      setIsProcessing(false)
+      if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
+      if (currentAudioContext && currentAudioContext.state === "running") {
+        currentAudioContext.suspend().catch((err) => console.warn("Error suspending AudioContext post-process:", err))
+      }
+    }
+  }
+
+  const rebuildAudioWithScaledPauses = useCallback(
+    async (
+      buffer: AudioBuffer,
+      regions: { start: number; end: number }[],
+      scaleFactorVal: number,
+      minSpacingVal: number,
+      preservePacing: boolean,
+      targetTotalSilence: number,
+      onProgress: (progress: number) => void,
+    ): Promise<AudioBuffer> => {
+      const currentAudioContext = audioContextRef.current
+      if (!currentAudioContext) throw new Error("Audio context not available for rebuild")
+      onProgress(0)
+      let dynamicScale = scaleFactorVal
+      if (!preservePacing && regions.length > 0) {
+        const currentTotalSilence = regions.reduce((sum, r) => sum + (r.end - r.start), 0)
+        dynamicScale = currentTotalSilence > 0 ? targetTotalSilence / currentTotalSilence : 1
+        if (!isFinite(dynamicScale) || dynamicScale <= 0) dynamicScale = 1
+      }
+      const processedRegions = regions.map((region) => {
+        const duration = region.end - region.start
+        const newDuration = preservePacing
+          ? Math.max(duration * dynamicScale, minSpacingVal)
+          : regions.length > 0
+            ? Math.max(minSpacingVal, targetTotalSilence / regions.length)
+            : minSpacingVal
+        return { ...region, newDuration }
+      })
+      const audioContentDur = buffer.duration - regions.reduce((sum, r) => sum + (r.end - r.start), 0)
+      const newSilenceDur = processedRegions.reduce((sum, r) => sum + r.newDuration, 0)
+      const newTotalDur = audioContentDur + newSilenceDur
+      if (newTotalDur <= 0) throw new Error("Calculated new total duration is zero or negative.")
+      if (isMobileDevice && newTotalDur > 45 * 60) {
+        console.warn(`Mobile device: Output duration ${formatDuration(newTotalDur)} may cause issues.`)
+        setMemoryWarning(true)
+      }
+      let newBuffer: AudioBuffer
+      try {
+        newBuffer = currentAudioContext.createBuffer(
+          buffer.numberOfChannels,
+          Math.max(1, Math.floor(newTotalDur * buffer.sampleRate)),
+          buffer.sampleRate,
+        )
+      } catch (e) {
+        forceGarbageCollection()
+        throw new Error(
+          `Failed to create output buffer (duration: ${newTotalDur.toFixed(2)}s). Memory limit likely exceeded. Try a shorter target duration.`,
+        )
+      }
+      onProgress(10)
+      for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+        const originalData = buffer.getChannelData(channel)
+        const newData = newBuffer.getChannelData(channel)
+        let writeIndex = 0
+        let readIndex = 0
+        const totalSamples = originalData.length
+        if (regions.length > 0 && regions[0].start > 0) {
+          const samplesToCopy = Math.floor(regions[0].start * buffer.sampleRate)
+          for (let i = 0; i < samplesToCopy; i++) newData[writeIndex++] = originalData[readIndex++]
+        }
+        for (let i = 0; i < regions.length; i++) {
+          if (i % (isMobileDevice ? 5 : 10) === 0) {
+            await sleep(0)
+            onProgress(10 + Math.floor((i / regions.length) * 80))
+          }
+          const region = regions[i]
+          const processedReg = processedRegions[i]
+          readIndex = Math.floor(region.end * buffer.sampleRate)
+          const newSilenceLength = Math.floor(processedReg.newDuration * buffer.sampleRate)
+          for (let j = 0; j < newSilenceLength; j++) {
+            if (writeIndex < newData.length) newData[writeIndex++] = 0
+          }
+          const nextRegionStart =
+            i < regions.length - 1 ? Math.floor(regions[i + 1].start * buffer.sampleRate) : totalSamples
+          const segmentLength = nextRegionStart - readIndex
+          for (let j = 0; j < segmentLength; j++) {
+            if (writeIndex < newData.length && readIndex + j < totalSamples) {
+              newData[writeIndex++] = originalData[readIndex + j]
+            }
+          }
+          readIndex = nextRegionStart
+        }
+        if (readIndex < totalSamples && regions.length === 0) {
+          for (let i = readIndex; i < totalSamples; i++)
+            if (writeIndex < newData.length) newData[writeIndex++] = originalData[i]
+        }
+      }
+      onProgress(100)
+      return newBuffer
+    },
+    [isMobileDevice],
+  )
+
+  const bufferToWav = useCallback(
+    async (buffer: AudioBuffer, highCompatibility = true, onProgress: (progress: number) => void): Promise<Blob> => {
+      const currentAudioContext = audioContextRef.current
+      if (!currentAudioContext) throw new Error("Audio context not available for WAV conversion")
+      onProgress(0)
+      let targetSampleRate = highCompatibility ? 44100 : buffer.sampleRate
+      if (isMobileDevice && highCompatibility && buffer.duration > 15 * 60) {
+        targetSampleRate = Math.min(targetSampleRate, 22050)
+      }
+      let resampledBuffer = buffer
+      if (buffer.sampleRate !== targetSampleRate) {
+        const ratio = targetSampleRate / buffer.sampleRate
+        const newLength = Math.floor(buffer.length * ratio)
+        try {
+          resampledBuffer = currentAudioContext.createBuffer(buffer.numberOfChannels, newLength, targetSampleRate)
+        } catch (e) {
+          forceGarbageCollection()
+          throw new Error(
+            `Failed to create resample buffer (target SR: ${targetSampleRate}Hz). Memory limit likely exceeded.`,
+          )
+        }
+        onProgress(10)
+        for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+          const oldData = buffer.getChannelData(channel)
+          const newData = resampledBuffer.getChannelData(channel)
+          for (let i = 0; i < newLength; i++) {
+            if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
+              await sleep(0)
+              onProgress(
+                10 +
+                  Math.floor(
+                    ((channel * (newLength / buffer.numberOfChannels) + i) / (newLength * buffer.numberOfChannels)) *
+                      40,
+                  ),
+              )
+            }
+            const oldIndex = i / ratio
+            const index = Math.floor(oldIndex)
+            const frac = oldIndex - index
+            const samp1 = oldData[Math.min(index, oldData.length - 1)]
+            const samp2 = oldData[Math.min(index + 1, oldData.length - 1)]
+            newData[i] = samp1 + (samp2 - samp1) * frac
+          }
+        }
+      } else {
+        onProgress(50)
+      }
+      const numSamples = resampledBuffer.length
+      const numberOfChannels = resampledBuffer.numberOfChannels
+      const bytesPerSample = 2
+      const dataSize = numSamples * numberOfChannels * bytesPerSample
+      const fileSize = 44 + dataSize
+      if (isMobileDevice && fileSize > 40 * 1024 * 1024) {
+        setMemoryWarning(true)
+      }
+      let finalArrayBuffer: ArrayBuffer
+      try {
+        finalArrayBuffer = new ArrayBuffer(fileSize)
+      } catch (e) {
+        throw new Error(
+          `Failed to create WAV data buffer (size: ${formatFileSize(fileSize)}). Memory limit likely exceeded.`,
+        )
+      }
+      const view = new DataView(finalArrayBuffer)
+      const writeString = (offset: number, string: string) => {
+        for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i))
+      }
+      writeString(0, "RIFF")
+      view.setUint32(4, 36 + dataSize, true)
+      writeString(8, "WAVE")
+      writeString(12, "fmt ")
+      view.setUint32(16, 16, true)
+      view.setUint16(20, 1, true)
+      view.setUint16(22, numberOfChannels, true)
+      view.setUint32(24, targetSampleRate, true)
+      view.setUint32(28, targetSampleRate * numberOfChannels * bytesPerSample, true)
+      view.setUint16(32, numberOfChannels * bytesPerSample, true)
+      view.setUint16(34, 16, true)
+      writeString(36, "data")
+      view.setUint32(40, dataSize, true)
+      let offset = 44
+      for (let i = 0; i < numSamples; i++) {
+        if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
+          await sleep(0)
+          onProgress(50 + Math.floor((i / numSamples) * 50))
+        }
+        for (let channel = 0; channel < numberOfChannels; channel++) {
+          const sample = Math.max(-1, Math.min(1, resampledBuffer.getChannelData(channel)[i]))
+          view.setInt16(offset, sample * 0x7fff, true)
+          offset += bytesPerSample
+        }
+      }
+      onProgress(100)
+      return new Blob([finalArrayBuffer], { type: "audio/wav" })
+    },
+    [isMobileDevice],
+  )
 
   const addTimelineItem = useCallback((item: Instruction | SoundCue, type: "instruction" | "sound") => {
     const newItem: TimelineItem = {
@@ -784,19 +1329,6 @@ export default function HomePage() {
     document.body.removeChild(a)
   }
 
-  const formatDuration = (timeInSeconds: number) => {
-    const minutes = Math.floor(timeInSeconds / 60)
-    const seconds = Math.floor(timeInSeconds % 60)
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`
-  }
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes"
-    const k = 1024
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${["Bytes", "KB", "MB", "GB"][i]}`
-  }
-
   useEffect(() => {
     if (isProcessingComplete) setIsProcessingComplete(false)
   }, [
@@ -845,44 +1377,6 @@ export default function HomePage() {
       return updatedEvents.sort((a, b) => a.startTime - b.startTime)
     })
   }, [])
-
-  const playLabsSoundOld = async (src: string) => {
-    try {
-      // Find the sound cue by src
-      const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.src === src)
-
-      if (soundCue && soundCue.src.startsWith("synthetic:")) {
-        // Generate and play synthetic sound
-        await generateSyntheticSound(soundCue)
-
-        toast({
-          title: "Playing Sound",
-          description: `Now playing: ${soundCue.name}`,
-          variant: "default",
-        })
-      } else {
-        // Handle actual audio files
-        if (labsAudioRef.current) {
-          labsAudioRef.current.src = src
-          await labsAudioRef.current.play().catch((e) => console.error("Error playing audio:", e))
-          toast({
-            title: "Playing Sound",
-            description: `Now playing: ${soundCue?.name || "Audio file"}`,
-            variant: "default",
-          })
-        } else {
-          throw new Error("Audio player not initialized.")
-        }
-      }
-    } catch (error) {
-      console.error("Labs Audio playback failed:", error)
-      toast({
-        title: "Audio Playback Failed",
-        description: `Could not play sound. Error: ${error instanceof Error ? error.message : "Unknown"}`,
-        variant: "destructive",
-      })
-    }
-  }
 
   const handleAddInstructionSoundEvent = () => {
     let instructionTextToAdd = ""
@@ -994,12 +1488,6 @@ export default function HomePage() {
     toast({ title: "Event Removed" })
   }
 
-  const formatTimeOld = (timeInSeconds: number): string => {
-    const minutes = Math.floor(timeInSeconds / 60)
-    const seconds = Math.floor(timeInSeconds % 60)
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`
-  }
-
   // Safe input handlers with validation
   const handleMeditationTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target?.value
@@ -1096,7 +1584,7 @@ export default function HomePage() {
               {/* Mode Switch */}
               <div className="flex justify-center items-center mb-4 space-y-4 flex-row my-[33px]">
                 <div className="grid mx-auto grid-cols-2 bg-gray-100/70 p-1 dark:bg-gray-800/70 font-serif text-gray-600 w-64 h-auto shadow-inner rounded-md">
-                  <Button
+                  <button
                     onClick={() => setActiveMode("adjuster")}
                     className={cn(
                       "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-sm py-3 tracking-tight",
@@ -1106,8 +1594,8 @@ export default function HomePage() {
                     )}
                   >
                     Adjuster
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     onClick={() => setActiveMode("labs")}
                     className={cn(
                       "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-sm text-gray-600 tracking-tight",
@@ -1117,7 +1605,7 @@ export default function HomePage() {
                     )}
                   >
                     Encoder
-                  </Button>
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -1221,14 +1709,8 @@ export default function HomePage() {
                   ref={uploadAreaRef}
                   className="overflow-hidden border-none bg-white dark:bg-gray-900 rounded-2xl mb-8 cursor-pointer transition-all duration-300 shadow-none hover:shadow-lg dark:shadow-white/10 dark:hover:shadow-white/20"
                   onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(e) => {
-                    e.preventDefault()
-                    if (uploadAreaRef.current) uploadAreaRef.current.classList.add("border-primary")
-                  }}
-                  onDragLeave={(e) => {
-                    e.preventDefault()
-                    if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
-                  }}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                 >
                   <div className="bg-gradient-to-r from-logo-teal via-logo-emerald to-logo-blue py-3 px-6 dark:from-logo-teal dark:via-logo-emerald dark:to-logo-blue border-dashed border-0">
@@ -1362,7 +1844,7 @@ export default function HomePage() {
                               <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-purple-300">
                                 Silence
                               </div>
-                              <div className="dark:text-gray-200 font-black text-logo-purple-300">
+                              <div className="dark:text-gray-200 font-black rounded-xl text-logo-purple-300">
                                 {formatDuration(audioAnalysis.totalSilence)}
                               </div>
                             </div>
@@ -1388,6 +1870,190 @@ export default function HomePage() {
                     </motion.div>
                   )}
                 </AnimatePresence>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="mb-8"
+                >
+                  <Tabs defaultValue="basic" className="w-full font-serif font-black">
+                    <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100/70 p-1 rounded-md dark:bg-gray-800/70">
+                      <TabsTrigger
+                        value="basic"
+                        className="data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-sm dark:data-[state=active]:shadow-white/20 rounded-sm dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-logo-teal-300 dark:text-gray-300"
+                      >
+                        Basic Settings
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="advanced"
+                        className="data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-sm dark:data-[state=active]:shadow-white/20 rounded-sm dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-logo-teal-300 dark:text-gray-300"
+                      >
+                        Advanced Settings
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="basic" className="mt-0 space-y-6">
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+                          <div className="bg-gradient-to-r from-logo-amber-500 to-indigo-500 py-3 px-6 dark:from-logo-amber-700 dark:to-indigo-700">
+                            <h3 className="text-white flex items-center font-black">
+                              <Clock className="h-4 w-4 mr-2" />
+                              Target Duration
+                            </h3>
+                          </div>
+                          <div className="p-6">
+                            <div className="mb-4">
+                              <Slider
+                                value={[targetDuration]}
+                                min={durationLimits?.min || 5}
+                                max={durationLimits?.max || (isMobileDevice ? 60 : 120)}
+                                step={1}
+                                onValueChange={(value) => setTargetDuration(value[0])}
+                                disabled={!durationLimits}
+                                className="py-4"
+                              />
+                            </div>
+                            <div className="text-center font-serif font-black">
+                              <span className="text-logo-amber-700 dark:text-logo-amber-300 text-2xl font-black">
+                                {targetDuration}
+                              </span>
+                              <span className="text-lg text-logo-amber-600 ml-1 dark:text-logo-amber-400">minutes</span>
+                            </div>
+                            {durationLimits && (
+                              <div className="text-center text-xs text-logo-amber-500/70 mt-2 dark:text-logo-amber-400/70">
+                                Range: {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
+                              </div>
+                            )}
+                          </div>
+                        </Card>
+                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+                          <div className="bg-gradient-to-r from-indigo-500 to-logo-amber-500 py-3 px-6 dark:from-indigo-700 dark:to-logo-amber-700">
+                            <h3 className="text-white flex items-center font-black">
+                              <Volume2 className="h-4 w-4 mr-2" />
+                              Silence Threshold
+                            </h3>
+                          </div>
+                          <div className="p-6">
+                            <div className="mb-4">
+                              <Slider
+                                value={[silenceThreshold]}
+                                min={0.001}
+                                max={0.05}
+                                step={0.001}
+                                onValueChange={(value) => setSilenceThreshold(value[0])}
+                                className="py-4"
+                              />
+                            </div>
+                            <div className="text-center">
+                              <span className="text-indigo-700 dark:text-indigo-300 font-serif font-black text-2xl">
+                                {silenceThreshold.toFixed(3)}
+                              </span>
+                            </div>
+                            <div className="text-center text-indigo-500/70 dark:text-indigo-400/70 font-black font-serif mt-0 text-sm">
+                              Lower = more sensitive
+                            </div>
+                          </div>
+                        </Card>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="advanced" className="mt-0 space-y-6">
+                      <div className="grid md:grid-cols-2 gap-6 font-serif font-black">
+                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+                          <div className="bg-gradient-to-r from-logo-amber-500 to-logo-rose-500 py-3 px-6 dark:from-logo-amber-700 dark:to-logo-rose-700">
+                            <h3 className="text-white font-black">Min Silence Duration</h3>
+                          </div>
+                          <div className="p-6 font-serif font-black">
+                            <div className="mb-4">
+                              <Slider
+                                value={[minSilenceDuration]}
+                                min={1}
+                                max={15}
+                                step={0.5}
+                                onValueChange={(value) => setMinSilenceDuration(value[0])}
+                                className="py-4"
+                              />
+                            </div>
+                            <div className="text-center">
+                              <span className="dark:text-logo-amber-300 text-2xl font-black text-logo-rose-600">
+                                {minSilenceDuration}
+                              </span>
+                              <span className="text-lg text-logo-rose-600 ml-1 dark:text-logo-rose-400">seconds</span>
+                            </div>
+                            <div className="text-center text-logo-amber-500/70 mt-2 dark:text-logo-amber-400/70 text-sm">
+                              Shorter = detect more pauses
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+                          <div className="bg-gradient-to-r from-logo-purple-500 to-logo-teal-500 py-3 px-6 dark:from-logo-purple-700 dark:to-logo-teal-700">
+                            <h3 className="text-white font-black">Min Spacing Between Content</h3>
+                          </div>
+                          <div className="p-6">
+                            <div className="mb-4">
+                              <Slider
+                                value={[minSpacingDuration]}
+                                min={0.0}
+                                max={5}
+                                step={0.1}
+                                onValueChange={(value) => setMinSpacingDuration(value[0])}
+                                className="py-4"
+                              />
+                            </div>
+                            <div className="text-center">
+                              <span className="dark:text-logo-purple-300 font-black text-2xl text-logo-teal-600">
+                                {minSpacingDuration.toFixed(1)}
+                              </span>
+                              <span className="text-lg text-logo-teal-600 ml-1 dark:text-logo-teal-400">seconds</span>
+                            </div>
+                            <div className="text-center text-logo-purple-500/70 mt-2 dark:text-logo-purple-400/70 text-sm">
+                              Minimum pause between speaking parts
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+                          <div className="bg-gradient-to-r from-logo-rose-500 to-logo-purple-500 py-3 px-6 dark:from-logo-rose-700 dark:to-logo-purple-700">
+                            <h3 className="text-white font-black">Preserve Natural Pacing</h3>
+                          </div>
+                          <div className="p-6">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm text-logo-rose-700 mb-1 dark:text-logo-rose-300">
+                                  Maintain the relative length of pauses
+                                </p>
+                              </div>
+                              <Switch
+                                checked={preserveNaturalPacing}
+                                onCheckedChange={setPreserveNaturalPacing}
+                              />
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+                          <div className="bg-gradient-to-r from-logo-teal-500 to-logo-amber-500 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-amber-700">
+                            <h3 className="text-white font-black">Compatibility Mode</h3>
+                          </div>
+                          <div className="p-6">
+                            <Select value={compatibilityMode} onValueChange={(value) => setCompatibilityMode(value)}>
+                              <SelectTrigger className="w-full mb-2 border-logo-teal-200 focus:ring-logo-teal-500 dark:border-logo-teal-700 dark:bg-gray-800 dark:text-gray-200">
+                                <SelectValue placeholder="Select compatibility mode" />
+                              </SelectTrigger>
+                              <SelectContent className="dark:bg-gray-800 dark:text-gray-200">
+                                <SelectItem value="standard">Standard Quality (Original SR)</SelectItem>
+                                <SelectItem value="high">
+                                  High Compatibility (44.1kHz or 22.05kHz for Mobile Long Audio)
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <div className="text-xs text-logo-teal-500/70 dark:text-logo-teal-400/70 mt-3.5">
+                              High Compatibility for better playback on mobile/AirPods. May reduce sample rate for long
+                              audio on mobile.
+                            </div>
+                          </div>
+                        </Card>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </motion.div>
 
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -1539,6 +2205,7 @@ export default function HomePage() {
                 </div>
               </>
             ) : (
+              // == Labs UI ==
               <motion.div
                 key="labs-content"
                 initial={{ opacity: 0, y: 20 }}
@@ -1572,7 +2239,7 @@ export default function HomePage() {
                             value={meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
-                            className="mt-1 text-xs font-black text-logo-rose-600 shadow-inner border border-gray-600 focus:ring-logo-rose-600 focus:border-logo-rose-600" // Changed border to gray-600
+                            className="mt-1 text-xs font-black text-logo-rose-600 shadow-inner border border-gray-600 focus:ring-logo-rose-600 focus:border-logo-rose-600"
                           />
                         </div>
                         <div className="text-center">
@@ -1585,7 +2252,7 @@ export default function HomePage() {
                             value={labsTotalDuration / 60}
                             onChange={handleDurationChange}
                             min="1"
-                            className="mt-1 text-xs font-black text-logo-rose-600 shadow-inner border border-gray-600 focus:ring-logo-rose-600 focus:border-logo-rose-600" // Changed border to gray-600
+                            className="mt-1 text-xs font-black text-logo-rose-600 shadow-inner border border-gray-600 focus:ring-logo-rose-600 focus:border-logo-rose-600"
                           />
                         </div>
                       </div>
@@ -1703,281 +2370,4 @@ export default function HomePage() {
                                         size="sm"
                                         onClick={() => playNote(note.note, note.octave)}
                                         className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
-                                        title={`Preview ${note.name}`}
-                                      >
-                                        <Play className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  ))}
-                                </div>
-                              </AccordionContent>
-                            </AccordionItem>
-                          ))}
-                        </Accordion>
-                        <Button
-                          className="w-full bg-white text-logo-emerald-700 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-emerald-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black" // Changed border to gray-600
-                          onClick={handleAddInstructionSoundEvent}
-                          disabled={(!selectedLibraryInstruction && !customInstructionText.trim()) || !selectedSoundCue}
-                        >
-                          <PlusCircle className="mr-2 h-4 w-4" />
-                          <span className="font-black">Add to Timeline</span>
-                        </Button>
-                      </div>
-                    </Card>
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                      <div className="bg-gradient-to-r from-logo-rose-500 to-logo-amber-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
-                        <h3 className="text-white flex items-center font-black">
-                          <Mic className="h-4 w-4 mr-2" />
-                          Voice Recording
-                        </h3>
-                      </div>
-                      <div className="p-6 space-y-4">
-                        <div className="text-center">
-                          <Label
-                            htmlFor="recording-label"
-                            className="text-logo-rose-600 dark:text-logo-rose-400 font-black"
-                          >
-                            Recording Label
-                          </Label>
-                          <Input
-                            id="recording-label"
-                            value={recordingLabel}
-                            onChange={handleRecordingLabelChange}
-                            placeholder="Describe this recording..."
-                            className="mt-1 text-sm font-black"
-                          />
-                        </div>
-                        <Button
-                          onClick={isRecording ? stopRecording : startRecording}
-                          variant={isRecording ? "destructive" : "default"}
-                          className="w-full font-black bg-gradient-to-r from-gray-600 to-gray-700 text-white dark:from-gray-700 dark:to-gray-800" // Changed to gray gradient
-                        >
-                          {isRecording ? (
-                            <>
-                              <StopCircle className="mr-2 h-4 w-4" />
-                              Stop Recording
-                            </>
-                          ) : (
-                            <>
-                              <Mic className="mr-2 h-4 w-4" />
-                              Start Recording
-                            </>
-                          )}
-                        </Button>
-                        <AnimatePresence>
-                          {recordedAudioUrl && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              className="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-4"
-                            >
-                              <div className="space-y-2">
-                                <audio controls src={recordedAudioUrl} className="w-full" preload="metadata" />
-                              </div>
-                              <Button
-                                onClick={async () => {
-                                  if (!recordingLabel.trim()) {
-                                    toast({
-                                      title: "Missing Label",
-                                      description: "Please provide a label for the recording.",
-                                      variant: "destructive",
-                                    })
-                                    return
-                                  }
-
-                                  if (!recordedAudioUrl) return
-
-                                  // Get duration from audio element if available, otherwise use 0
-                                  let duration = 0
-                                  const audioElements = document.querySelectorAll(
-                                    'audio[src="' + recordedAudioUrl + '"]',
-                                  )
-                                  if (audioElements.length > 0) {
-                                    const audio = audioElements[0] as HTMLAudioElement
-                                    if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
-                                      duration = audio.duration
-                                    }
-                                  }
-
-                                  // Calculate new startTime based on existing events
-                                  const maxExistingTime =
-                                    timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
-                                  const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 33 : 0
-
-                                  const newEvent: TimelineEvent = {
-                                    id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-                                    type: "recorded_voice",
-                                    startTime: newStartTime, // Now calculated
-                                    recordedAudioUrl: recordedAudioUrl,
-                                    recordedInstructionLabel: recordingLabel.trim(),
-                                    duration: duration,
-                                  }
-
-                                  addEventToTimeline(newEvent) // Use the new helper function
-
-                                  // Clean up
-                                  setRecordedAudioUrl(null)
-                                  setRecordedBlobs([])
-                                  setRecordingLabel("")
-
-                                  toast({
-                                    title: "Recording Added",
-                                    description: `"${recordingLabel.trim()}" added to timeline.`,
-                                  })
-                                }}
-                                className="w-full bg-white text-logo-rose-600 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black" // Changed border to gray-600
-                              >
-                                <PlusCircle className="mr-2 h-4 w-4" />
-                                Add to Timeline
-                              </Button>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </Card>
-                  </motion.div>
-                </div>
-                {/* Timeline Editor for Labs */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                  <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                    <div className="bg-gradient-to-r from-gray-700 to-gray-800 py-4 px-6 dark:from-gray-800 dark:to-gray-900">
-                      <h3 className="text-white text-lg flex items-center font-black">
-                        <CircleDotDashed className="h-5 w-5 mr-2" />
-                        Timeline Editor
-                      </h3>
-                    </div>
-                    <div className="p-6 pb-6">
-                      <VisualTimeline
-                        events={timelineEvents}
-                        totalDuration={labsTotalDuration}
-                        onUpdateEvent={updateEventStartTime}
-                        onRemoveEvent={removeTimelineEvent}
-                      />
-                    </div>
-                  </Card>
-                </motion.div>
-                {/* Generate Audio Button for Labs */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-                  <Button
-                    onClick={handleExportAudio}
-                    disabled={isGeneratingAudio || timelineEvents.length === 0}
-                    className={cn(
-                      "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
-                      "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none",
-                      "bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 text-white dark:from-logo-teal-700 dark:to-logo-purple-700",
-                    )}
-                  >
-                    <div className="flex items-center justify-center font-black">
-                      {isGeneratingAudio && (
-                        <div className="mr-3 h-5 w-5">
-                          <svg
-                            className="animate-spin h-5 w-5 text-white"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291
-                                A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                        </div>
-                      )}
-                      <Wand2 className="mr-2 h-5 w-5" />
-                      <span className="text-base">{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
-                    </div>
-                  </Button>
-                </motion.div>
-                {/* Generated Audio Section for Labs */}
-                {generatedAudioUrl && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                  >
-                    <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-logo-teal-50 to-logo-emerald-50 dark:from-logo-teal-950 dark:to-logo-emerald-950">
-                      <div className="bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
-                        <h3 className="text-white font-black">Generated Audio</h3>
-                      </div>
-                      <div className="p-6">
-                        <h4 className="mb-2 dark:text-gray-300 font-black text-sm text-gray-600">{meditationTitle}</h4>
-                        <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
-                          <audio controls className="w-full" src={generatedAudioUrl}></audio>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                          <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                            <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
-                              Total Events
-                            </div>
-                            <div className="dark:text-black font-black text-gray-600">{timelineEvents.length}</div>
-                          </div>
-                          <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                            <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
-                              Total Duration
-                            </div>
-                            <div className="dark:text-black font-black text-gray-600">
-                              {formatTime(labsTotalDuration)}
-                            </div>
-                          </div>
-                        </div>
-                        <Button
-                          onClick={() => {
-                            const a = document.createElement("a")
-                            a.href = generatedAudioUrl
-                            a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
-                            document.body.appendChild(a)
-                            a.click()
-                            document.body.removeChild(a)
-                          }}
-                          className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
-                        >
-                          <div className="flex items-center justify-center font-black">
-                            <Download className="mr-2 h-5 w-5" />
-                            Download Audio
-                          </div>
-                        </Button>
-                      </div>
-                    </Card>
-                  </motion.div>
-                )}
-              </motion.div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  )
-}
-
-function processAudio() {
-  throw new Error("Function not implemented.")
-}
-
-function handleFile(selectedFile: File) {
-  throw new Error("Function not implemented.")
-}
-
-const isProcessing = false
-
-const formatTime = (timeInSeconds: number): string => {
-  const minutes = Math.floor(timeInSeconds / 60)
-  const seconds = Math.floor(timeInSeconds % 60)
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`
-}
+                                        title={`Preview ${note.name}`}\
