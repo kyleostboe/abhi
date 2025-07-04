@@ -5,9 +5,10 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import { Alert } from "@/components/ui/alert"
 import {
   Info,
+  Upload,
   Volume2,
   Clock,
   Wand2,
@@ -16,12 +17,13 @@ import {
   AlertTriangle,
   ListPlus,
   Music2,
-  Play,
-  PlusCircle,
   Mic,
   StopCircle,
+  Play,
+  PlusCircle,
   CircleDotDashed,
 } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { motion, AnimatePresence } from "framer-motion"
@@ -41,8 +43,7 @@ import {
   type SoundCue,
 } from "@/lib/meditation-data"
 import { VisualTimeline } from "@/components/visual-timeline"
-import { cn } from "@/lib/utils"
-import { FileUpload } from "@/components/file-upload"
+import { cn } from "@/lib/utils" // Import cn utility
 
 // Add this near the top of the file, after the imports
 const NOTE_FREQUENCIES = {
@@ -153,7 +154,7 @@ export default function HomePage() {
   const [isMobileDevice, setIsMobileDevice] = useState<boolean>(false)
   const [memoryWarning, setMemoryWarning] = useState<boolean>(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const uploadAreaRef = useRef<HTMLDivElement | null>(null)
+  const uploadAreaRef = useRef<HTMLDivElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // == States for Labs ==
@@ -189,24 +190,573 @@ export default function HomePage() {
 
   const totalDuration = timeline.reduce((sum, item) => sum + item.duration, 0)
 
-  // Utility functions
-  const formatDuration = (timeInSeconds: number) => {
-    const minutes = Math.floor(timeInSeconds / 60)
-    const seconds = Math.floor(timeInSeconds % 60)
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`
+  const addTimelineItem = useCallback((item: Instruction | SoundCue, type: "instruction" | "sound") => {
+    const newItem: TimelineItem = {
+      id: `${type}-${Date.now()}`,
+      type,
+      duration: type === "instruction" ? 60 : 5, // Default duration: 60s for instruction, 5s for sound
+      content: item,
+    }
+    setTimeline((prev) => [...prev, newItem])
+  }, [])
+
+  const updateTimelineItemDuration = useCallback((index: number, newDuration: number) => {
+    setTimeline((prev) => prev.map((item, i) => (i === index ? { ...item, duration: Math.max(1, newDuration) } : item)))
+  }, [])
+
+  const removeTimelineItem = useCallback(
+    (index: number) => {
+      setTimeline((prev) => prev.filter((_, i) => i !== index))
+      if (activeItemIndex === index) {
+        setActiveItemIndex(null)
+      } else if (activeItemIndex !== null && activeItemIndex > index) {
+        setActiveItemIndex((prev) => (prev !== null ? prev - 1 : null))
+      }
+    },
+    [activeItemIndex],
+  )
+
+  const playLabsSound = useCallback(
+    async (src: string) => {
+      const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.src === src)
+
+      // Defensive check: Ensure soundCue exists and its src property is a string
+      if (!soundCue || typeof soundCue.src !== "string") {
+        console.error("Invalid sound cue or src property for src:", src, "Found soundCue:", soundCue)
+        toast({
+          title: "Sound Playback Error",
+          description: "The selected sound cue is malformed or not found.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      try {
+        if (soundCue.src.startsWith("synthetic:")) {
+          // Generate and play synthetic sound
+          await generateSyntheticSound(soundCue)
+
+          toast({
+            title: "Playing Sound",
+            description: `Now playing: ${soundCue.name}`,
+            variant: "default",
+          })
+        } else {
+          // Handle actual audio files
+          if (labsAudioRef.current) {
+            labsAudioRef.current.src = soundCue.src
+            labsAudioRef.current.volume = volume / 100
+            await labsAudioRef.current.play().catch((e) => console.error("Error playing audio:", e))
+            toast({
+              title: "Playing Sound",
+              description: `Now playing: ${soundCue.name || "Audio file"}`,
+              variant: "default",
+            })
+          } else {
+            throw new Error("Audio player not initialized.")
+          }
+        }
+      } catch (error) {
+        console.error("Labs Audio playback failed:", error)
+        toast({
+          title: "Audio Playback Failed",
+          description: `Could not play sound. Error: ${error instanceof Error ? error.message : "Unknown"}`,
+          variant: "destructive",
+        })
+      }
+    },
+    [volume],
+  )
+
+  const startPlayback = useCallback(() => {
+    if (timeline.length === 0) return
+
+    setIsPlaying(true)
+    currentItemStartTimeRef.current = currentPlaybackTime // Store start time of current item
+
+    playbackIntervalRef.current = setInterval(() => {
+      setCurrentPlaybackTime((prevTime) => {
+        const newTime = prevTime + 0.1 // Increment by 100ms
+
+        let accumulatedDuration = 0
+        let foundActiveItem = false
+        for (let i = 0; i < timeline.length; i++) {
+          const item = timeline[i]
+          if (newTime >= accumulatedDuration && newTime < accumulatedDuration + item.duration) {
+            if (activeItemIndex !== i) {
+              setActiveItemIndex(i)
+              // Play sound cue when it becomes active
+              if (item.type === "sound") {
+                playLabsSound(item.content.src) // Pass src string to playLabsSound
+              }
+            }
+            foundActiveItem = true
+            break
+          }
+          accumulatedDuration += item.duration
+        }
+
+        if (!foundActiveItem) {
+          setActiveItemIndex(null)
+        }
+
+        if (newTime >= totalDuration) {
+          // End of timeline
+          clearInterval(playbackIntervalRef.current!)
+          setIsPlaying(false)
+          setCurrentPlaybackTime(0)
+          setActiveItemIndex(null)
+          return 0
+        }
+        return newTime
+      })
+    }, 100) // Update every 100ms
+  }, [timeline, currentPlaybackTime, totalDuration, activeItemIndex, playLabsSound])
+
+  const pausePlayback = useCallback(() => {
+    if (playbackIntervalRef.current) {
+      clearInterval(playbackIntervalRef.current)
+      playbackIntervalRef.current = null
+    }
+    setIsPlaying(false)
+  }, [])
+
+  const resetPlayback = useCallback(() => {
+    pausePlayback()
+    setCurrentPlaybackTime(0)
+    setActiveItemIndex(null)
+  }, [pausePlayback])
+
+  useEffect(() => {
+    // Cleanup interval on component unmount
+    return () => {
+      if (playbackIntervalRef.current) {
+        clearInterval(playbackIntervalRef.current)
+      }
+    }
+  }, [])
+
+  // Update audio volume if audioRef exists
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume / 100
+    }
+  }, [volume])
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = Math.floor(seconds % 60)
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
   }
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes"
-    const k = 1024
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${["Bytes", "KB", "MB", "GB"][i]}`
+  const handleSaveTimeline = () => {
+    // Placeholder for save functionality
+    console.log("Saving timeline:", timeline)
+    alert("Save functionality not yet implemented.")
   }
 
-  const formatTime = (timeInSeconds: number): string => {
-    const minutes = Math.floor(timeInSeconds / 60)
-    const seconds = Math.floor(timeInSeconds % 60)
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`
+  const handleLoadTimeline = () => {
+    // Placeholder for load functionality
+    console.log("Loading timeline...")
+    alert("Load functionality not yet implemented.")
+  }
+
+  const bufferToWavOld = async (buffer: AudioBuffer): Promise<Blob> => {
+    const numberOfChannels = buffer.numberOfChannels
+    const numSamples = buffer.length
+    const sampleRate = buffer.sampleRate
+    const bytesPerSample = 2 // Assuming 16-bit PCM
+    const blockAlign = numberOfChannels * bytesPerSample
+    const byteRate = sampleRate * blockAlign
+    const dataSize = numSamples * blockAlign
+    const fileSize = 44 + dataSize
+
+    const arrayBuffer = new ArrayBuffer(fileSize)
+    const dataView = new DataView(arrayBuffer)
+
+    // RIFF identifier
+    dataView.setUint32(0, 0x52494646, false) // "RIFF"
+    // File size
+    dataView.setUint32(4, fileSize - 8, true)
+    // RIFF type
+    dataView.setUint32(8, 0x57415645, false) // "WAVE"
+    // Format chunk identifier
+    dataView.setUint32(12, 0x666d7420, false) // "fmt "
+    // Format chunk size
+    dataView.setUint32(16, 16, true)
+    // Audio format (PCM = 1)
+    dataView.setUint16(20, 1, true)
+    // Number of channels
+    dataView.setUint16(22, numberOfChannels, true)
+    // Sample rate
+    dataView.setUint32(24, sampleRate, true)
+    // Byte rate (Sample Rate * Block Align)
+    dataView.setUint32(28, byteRate, true)
+    // Block align (Number of Channels * Bytes per Sample)
+    dataView.setUint16(32, blockAlign, true)
+    // Bits per sample
+    dataView.setUint16(34, bytesPerSample * 8, true)
+    // Data chunk identifier
+    dataView.setUint32(36, 0x64617461, false) // "data"
+    // Data chunk size
+    dataView.setUint32(40, dataSize, true)
+
+    // Write the samples to the data chunk
+    let offset = 44
+    for (let i = 0; i < numSamples; i++) {
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        const sample = buffer.getChannelData(channel)[i]
+        const amplitude = Math.max(-1, Math.min(1, sample))
+        dataView.setInt16(offset, amplitude * 0x7fff, true)
+        offset += bytesPerSample
+      }
+    }
+
+    return new Blob([arrayBuffer], { type: "audio/wav" })
+  }
+
+  const addSyntheticToContext = (ctx: OfflineAudioContext, cue: SoundCue, start: number, duration: number) => {
+    const gainNode = ctx.createGain()
+    gainNode.gain.setValueAtTime(0.3, start) // Reduced gain for synthetic sounds
+    gainNode.connect(ctx.destination)
+
+    if (cue.src === "synthetic:sine440") {
+      const osc = ctx.createOscillator()
+      osc.type = "sine"
+      osc.frequency.setValueAtTime(440, start)
+      osc.connect(gainNode)
+      osc.start(start)
+      osc.stop(start + duration)
+    } else if (cue.src === "synthetic:triangle880") {
+      const osc = ctx.createOscillator()
+      osc.type = "triangle"
+      osc.frequency.setValueAtTime(880, start)
+      osc.connect(gainNode)
+      osc.start(start)
+      osc.stop(start + duration)
+    } else if (cue.src === "synthetic:square220") {
+      const osc = ctx.createOscillator()
+      osc.type = "square"
+      osc.frequency.setValueAtTime(220, start)
+      osc.connect(gainNode)
+      osc.start(start)
+      osc.stop(start + duration)
+    } else if (cue.src === "synthetic:sawtooth660") {
+      const osc = ctx.createOscillator()
+      osc.type = "sawtooth"
+      osc.frequency.setValueAtTime(660, start)
+      osc.connect(gainNode)
+      osc.start(start)
+      osc.stop(start + duration)
+    } else {
+      console.warn("Unknown synthetic sound:", cue.src)
+    }
+  }
+
+  const handleExportAudio = async () => {
+    setIsGeneratingAudio(true)
+    setGenerationProgress(0)
+    setGenerationStep("Initializing...")
+
+    try {
+      console.log("Starting audio export with events:", timelineEvents)
+
+      // Calculate the maximum end time needed for the OfflineAudioContext
+      const maxAudioDuration = labsTotalDuration // Start with the user-defined total duration
+
+      const ctx = new OfflineAudioContext({
+        numberOfChannels: 1,
+        sampleRate: 44100,
+        length: Math.ceil(maxAudioDuration * 44100), // Ensure length is an integer
+      })
+
+      let processedEventsCount = 0
+      const totalEvents = timelineEvents.length
+
+      for (const event of timelineEvents) {
+        const eventStartTime = event.startTime
+        console.log(`Processing event ${event.id} at time ${eventStartTime}:`, event)
+
+        if (event.type === "instruction_sound") {
+          // Handle instruction_sound events - these should include sound cues
+          let soundProcessed = false
+
+          // First try using the stored soundCueSrc
+          if (event.soundCueSrc) {
+            setGenerationStep(`Adding sound: ${event.soundCueName || "Sound Cue"}`)
+            console.log(`Processing sound cue from soundCueSrc: ${event.soundCueSrc}`)
+
+            if (event.soundCueSrc.startsWith("synthetic:")) {
+              // Find the sound cue from the library to get full parameters
+              const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
+              if (soundCue) {
+                console.log(`Found synthetic sound cue:`, soundCue)
+
+                // Generate synthetic sound using Web Audio API
+                const oscillator = ctx.createOscillator()
+                const gainNode = ctx.createGain()
+
+                oscillator.connect(gainNode)
+                gainNode.connect(ctx.destination)
+
+                // Set oscillator properties from sound cue
+                oscillator.type = soundCue.waveform || "sine"
+                oscillator.frequency.setValueAtTime(soundCue.frequency || 440, eventStartTime)
+
+                // Create envelope
+                const attackDuration = soundCue.attackDuration || 0.01
+                const releaseDuration = soundCue.releaseDuration || 0.5
+                const eventDuration = (soundCue.duration || 1000) / 1000 // Convert ms to seconds
+                const peakVolume = 0.5 // Increased volume for better audibility
+
+                gainNode.gain.setValueAtTime(0, eventStartTime)
+                gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + attackDuration)
+
+                if (eventDuration > attackDuration + releaseDuration) {
+                  gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
+                }
+                gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
+
+                oscillator.start(eventStartTime)
+                oscillator.stop(eventStartTime + eventDuration)
+
+                // Add harmonics if specified
+                if (soundCue.harmonics) {
+                  soundCue.harmonics.forEach((harmonic, index) => {
+                    const harmonicOsc = ctx.createOscillator()
+                    const harmonicGain = ctx.createGain()
+
+                    harmonicOsc.connect(harmonicGain)
+                    harmonicGain.connect(ctx.destination)
+
+                    harmonicOsc.type = soundCue.waveform || "sine"
+                    harmonicOsc.frequency.setValueAtTime(harmonic, eventStartTime)
+
+                    const harmonicVolume = (peakVolume * 0.3) / (index + 1)
+
+                    harmonicGain.gain.setValueAtTime(0, eventStartTime)
+                    harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + attackDuration)
+
+                    if (eventDuration > attackDuration + releaseDuration) {
+                      harmonicGain.gain.linearRampToValueAtTime(
+                        harmonicVolume,
+                        eventStartTime + eventDuration - releaseDuration,
+                      )
+                    }
+                    harmonicGain.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
+
+                    harmonicOsc.start(eventStartTime)
+                    harmonicOsc.stop(eventStartTime + eventDuration)
+                  })
+                }
+
+                soundProcessed = true
+                console.log(`Successfully added synthetic sound at ${eventStartTime}`)
+              }
+            } else if (event.soundCueSrc.startsWith("musical:")) {
+              // Handle musical notes
+              const noteMatch = event.soundCueSrc.match(/musical:([A-G])(\d)/)
+              if (noteMatch) {
+                const note = noteMatch[1]
+                const octave = Number.parseInt(noteMatch[2])
+                console.log(`Processing musical note: ${note}${octave}`)
+
+                // Get frequency from NOTE_FREQUENCIES
+                const noteKey = `${note}${octave}` as keyof typeof NOTE_FREQUENCIES
+                const frequency = NOTE_FREQUENCIES[noteKey]
+
+                if (frequency) {
+                  const oscillator = ctx.createOscillator()
+                  const gainNode = ctx.createGain()
+
+                  oscillator.connect(gainNode)
+                  gainNode.connect(ctx.destination)
+
+                  oscillator.type = "sine"
+                  oscillator.frequency.setValueAtTime(frequency, eventStartTime)
+
+                  const eventDuration = 0.8 // Default duration for musical notes
+                  const peakVolume = 0.4 // Good volume for musical notes
+
+                  // Gentle envelope for musical notes
+                  gainNode.gain.setValueAtTime(0, eventStartTime)
+                  gainNode.gain.exponentialRampToValueAtTime(peakVolume, eventStartTime + 0.05)
+                  gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
+
+                  oscillator.start(eventStartTime)
+                  oscillator.stop(eventStartTime + eventDuration)
+
+                  soundProcessed = true
+                  console.log(`Successfully added musical note ${note}${octave} at ${eventStartTime}`)
+                }
+              }
+            } else {
+              // Handle pre-recorded audio files
+              try {
+                console.log(`Loading pre-recorded audio: ${event.soundCueSrc}`)
+                const response = await fetch(event.soundCueSrc)
+                const arrayBuffer = await response.arrayBuffer()
+                const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+                const source = ctx.createBufferSource()
+                const gainNode = ctx.createGain()
+
+                source.buffer = audioBuffer
+                source.connect(gainNode)
+                gainNode.connect(ctx.destination)
+                gainNode.gain.setValueAtTime(0.4, eventStartTime) // Good volume for pre-recorded sounds
+                source.start(eventStartTime)
+
+                soundProcessed = true
+                console.log(`Successfully added pre-recorded audio at ${eventStartTime}`)
+              } catch (error) {
+                console.warn(`Could not load recorded audio: ${event.soundCueSrc}`, error)
+              }
+            }
+          }
+
+          // Fallback: try to find sound cue by ID if soundCueSrc didn't work
+          if (!soundProcessed && event.soundCueId) {
+            console.log(`Fallback: trying to find sound cue by ID: ${event.soundCueId}`)
+            const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
+            if (soundCue) {
+              setGenerationStep(`Adding sound: ${soundCue.name}`)
+              console.log(`Found sound cue by ID:`, soundCue)
+
+              if (soundCue.src.startsWith("synthetic:")) {
+                // Generate synthetic sound using Web Audio API
+                const oscillator = ctx.createOscillator()
+                const gainNode = ctx.createGain()
+
+                oscillator.connect(gainNode)
+                gainNode.connect(ctx.destination)
+
+                // Set oscillator properties from sound cue
+                oscillator.type = soundCue.waveform || "sine"
+                oscillator.frequency.setValueAtTime(soundCue.frequency || 440, eventStartTime)
+
+                // Create envelope
+                const attackDuration = soundCue.attackDuration || 0.01
+                const releaseDuration = soundCue.releaseDuration || 0.5
+                const eventDuration = (soundCue.duration || 1000) / 1000 // Convert ms to seconds
+                const peakVolume = 0.5 // Increased volume
+
+                gainNode.gain.setValueAtTime(0, eventStartTime)
+                gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + attackDuration)
+
+                if (eventDuration > attackDuration + releaseDuration) {
+                  gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
+                }
+                gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
+
+                oscillator.start(eventStartTime)
+                oscillator.stop(eventStartTime + eventDuration)
+
+                // Add harmonics if specified
+                if (soundCue.harmonics) {
+                  soundCue.harmonics.forEach((harmonic, index) => {
+                    const harmonicOsc = ctx.createOscillator()
+                    const harmonicGain = ctx.createGain()
+
+                    harmonicOsc.connect(harmonicGain)
+                    harmonicGain.connect(ctx.destination)
+
+                    harmonicOsc.type = soundCue.waveform || "sine"
+                    harmonicOsc.frequency.setValueAtTime(harmonic, eventStartTime)
+
+                    const harmonicVolume = (peakVolume * 0.3) / (index + 1)
+
+                    harmonicGain.gain.setValueAtTime(0, eventStartTime)
+                    harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + attackDuration)
+
+                    if (eventDuration > attackDuration + releaseDuration) {
+                      harmonicGain.gain.linearRampToValueAtTime(
+                        harmonicVolume,
+                        eventStartTime + eventDuration - releaseDuration,
+                      )
+                    }
+                    harmonicGain.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
+
+                    harmonicOsc.start(eventStartTime)
+                    harmonicOsc.stop(eventStartTime + eventDuration)
+                  })
+                }
+
+                soundProcessed = true
+                console.log(`Successfully added synthetic sound from ID at ${eventStartTime}`)
+              }
+            }
+          }
+
+          if (!soundProcessed) {
+            console.warn(`Could not process sound for event ${event.id}`)
+          }
+        } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
+          setGenerationStep(`Adding recorded voice: ${event.recordedInstructionLabel || "Untitled"}`)
+          console.log(`Processing recorded voice: ${event.recordedAudioUrl}`)
+
+          try {
+            const response = await fetch(event.recordedAudioUrl)
+            const arrayBuffer = await response.arrayBuffer()
+            const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+            const source = ctx.createBufferSource()
+            const gainNode = ctx.createGain()
+
+            source.buffer = audioBuffer
+            source.connect(gainNode)
+            gainNode.connect(ctx.destination)
+            gainNode.gain.setValueAtTime(0.8, eventStartTime) // Higher volume for voice
+            source.start(eventStartTime)
+
+            console.log(`Successfully added recorded voice at ${eventStartTime}`)
+          } catch (error) {
+            console.warn(`Could not load recorded audio: ${event.recordedAudioUrl}`, error)
+          }
+        }
+
+        processedEventsCount++
+        setGenerationProgress(Math.floor((processedEventsCount / totalEvents) * 80)) // Progress up to 80% for event processing
+      }
+
+      setGenerationStep("Rendering audio...")
+      setGenerationProgress(80) // Set to 80% before rendering
+      console.log("Starting audio rendering...")
+
+      const rendered = await ctx.startRendering()
+      console.log("Audio rendering complete, creating WAV blob...")
+
+      if (rendered.length === 0) {
+        throw new Error("Rendered audio buffer is empty. No audio content was generated.")
+      }
+
+      const wavBlob = await bufferToWavOld(rendered)
+      if (wavBlob.size === 0) {
+        throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
+      }
+      const url = URL.createObjectURL(wavBlob)
+      setGeneratedAudioUrl(url)
+
+      // Directly assign to the audio element for immediate playback readiness
+      if (labsAudioRef.current) {
+        labsAudioRef.current.src = url
+        labsAudioRef.current.volume = volume / 100
+      }
+
+      setIsGeneratingAudio(false)
+      setGenerationProgress(100)
+      setGenerationStep("Export Complete")
+
+      console.log("Audio export completed successfully!")
+      toast({ title: "Export Complete", description: "Timeline audio exported with sound cues included!" })
+    } catch (error) {
+      console.error("Audio export failed:", error)
+      toast({
+        title: "Audio Export Failed",
+        description: `Could not export audio. Error: ${error instanceof Error ? error.message : "Unknown"}`,
+        variant: "destructive",
+      })
+    } finally {
+      setIsGeneratingAudio(false)
+    }
   }
 
   // == Effects for Length Adjuster ==
@@ -249,7 +799,7 @@ export default function HomePage() {
           }
           document.addEventListener("click", resumeContextOnInteraction, { once: true, capture: true })
           document.addEventListener("touchend", resumeContextOnInteraction, { once: true, capture: true })
-          document.addEventListener("keydown", resumeContextOnInteraction, true)
+          document.addEventListener("keydown", resumeContextOnInteraction, { once: true, capture: true })
         }
       } catch (error) {
         setStatus({
@@ -746,569 +1296,6 @@ export default function HomePage() {
     [isMobileDevice],
   )
 
-  const addTimelineItem = useCallback((item: Instruction | SoundCue, type: "instruction" | "sound") => {
-    const newItem: TimelineItem = {
-      id: `${type}-${Date.now()}`,
-      type,
-      duration: type === "instruction" ? 60 : 5, // Default duration: 60s for instruction, 5s for sound
-      content: item,
-    }
-    setTimeline((prev) => [...prev, newItem])
-  }, [])
-
-  const updateTimelineItemDuration = useCallback((index: number, newDuration: number) => {
-    setTimeline((prev) => prev.map((item, i) => (i === index ? { ...item, duration: Math.max(1, newDuration) } : item)))
-  }, [])
-
-  const removeTimelineItem = useCallback(
-    (index: number) => {
-      setTimeline((prev) => prev.filter((_, i) => i !== index))
-      if (activeItemIndex === index) {
-        setActiveItemIndex(null)
-      } else if (activeItemIndex !== null && activeItemIndex > index) {
-        setActiveItemIndex((prev) => (prev !== null ? prev - 1 : null))
-      }
-    },
-    [activeItemIndex],
-  )
-
-  const playLabsSound = useCallback(
-    async (src: string) => {
-      const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.src === src)
-
-      // Defensive check: Ensure soundCue exists and its src property is a string
-      if (!soundCue || typeof soundCue.src !== "string") {
-        console.error("Invalid sound cue or src property for src:", src, "Found soundCue:", soundCue)
-        toast({
-          title: "Sound Playback Error",
-          description: "The selected sound cue is malformed or not found.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      try {
-        if (soundCue.src.startsWith("synthetic:")) {
-          // Generate and play synthetic sound
-          await generateSyntheticSound(soundCue)
-
-          toast({
-            title: "Playing Sound",
-            description: `Now playing: ${soundCue.name}`,
-            variant: "default",
-          })
-        } else {
-          // Handle actual audio files
-          if (labsAudioRef.current) {
-            labsAudioRef.current.src = soundCue.src
-            labsAudioRef.current.volume = volume / 100
-            await labsAudioRef.current.play().catch((e) => console.error("Error playing audio:", e))
-            toast({
-              title: "Playing Sound",
-              description: `Now playing: ${soundCue.name || "Audio file"}`,
-              variant: "default",
-            })
-          } else {
-            throw new Error("Audio player not initialized.")
-          }
-        }
-      } catch (error) {
-        console.error("Labs Audio playback failed:", error)
-        toast({
-          title: "Audio Playback Failed",
-          description: `Could not play sound. Error: ${error instanceof Error ? error.message : "Unknown"}`,
-          variant: "destructive",
-        })
-      }
-    },
-    [volume],
-  )
-
-  const startPlayback = useCallback(() => {
-    if (timeline.length === 0) return
-
-    setIsPlaying(true)
-    currentItemStartTimeRef.current = currentPlaybackTime // Store start time of current item
-
-    playbackIntervalRef.current = setInterval(() => {
-      setCurrentPlaybackTime((prevTime) => {
-        const newTime = prevTime + 0.1 // Increment by 100ms
-
-        let accumulatedDuration = 0
-        let foundActiveItem = false
-        for (let i = 0; i < timeline.length; i++) {
-          const item = timeline[i]
-          if (newTime >= accumulatedDuration && newTime < accumulatedDuration + item.duration) {
-            if (activeItemIndex !== i) {
-              setActiveItemIndex(i)
-              // Play sound cue when it becomes active
-              if (item.type === "sound") {
-                playLabsSound(item.content.src) // Pass src string to playLabsSound
-              }
-            }
-            foundActiveItem = true
-            break
-          }
-          accumulatedDuration += item.duration
-        }
-
-        if (!foundActiveItem) {
-          setActiveItemIndex(null)
-        }
-
-        if (newTime >= totalDuration) {
-          // End of timeline
-          clearInterval(playbackIntervalRef.current!)
-          setIsPlaying(false)
-          setCurrentPlaybackTime(0)
-          setActiveItemIndex(null)
-          return 0
-        }
-        return newTime
-      })
-    }, 100) // Update every 100ms
-  }, [timeline, currentPlaybackTime, totalDuration, activeItemIndex, playLabsSound])
-
-  const pausePlayback = useCallback(() => {
-    if (playbackIntervalRef.current) {
-      clearInterval(playbackIntervalRef.current)
-      playbackIntervalRef.current = null
-    }
-    setIsPlaying(false)
-  }, [])
-
-  const resetPlayback = useCallback(() => {
-    pausePlayback()
-    setCurrentPlaybackTime(0)
-    setActiveItemIndex(null)
-  }, [pausePlayback])
-
-  useEffect(() => {
-    // Cleanup interval on component unmount
-    return () => {
-      if (playbackIntervalRef.current) {
-        clearInterval(playbackIntervalRef.current)
-      }
-    }
-  }, [])
-
-  // Update audio volume if audioRef exists
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume / 100
-    }
-  }, [volume])
-
-  const handleSaveTimeline = () => {
-    // Placeholder for save functionality
-    console.log("Saving timeline:", timeline)
-    alert("Save functionality not yet implemented.")
-  }
-
-  const handleLoadTimeline = () => {
-    // Placeholder for load functionality
-    console.log("Loading timeline...")
-    alert("Load functionality not yet implemented.")
-  }
-
-  const bufferToWavOld = async (buffer: AudioBuffer): Promise<Blob> => {
-    const numberOfChannels = buffer.numberOfChannels
-    const numSamples = buffer.length
-    const sampleRate = buffer.sampleRate
-    const bytesPerSample = 2 // Assuming 16-bit PCM
-    const blockAlign = numberOfChannels * bytesPerSample
-    const byteRate = sampleRate * blockAlign
-    const dataSize = numSamples * blockAlign
-    const fileSize = 44 + dataSize
-
-    const arrayBuffer = new ArrayBuffer(fileSize)
-    const dataView = new DataView(arrayBuffer)
-
-    // RIFF identifier
-    dataView.setUint32(0, 0x52494646, false) // "RIFF"
-    // File size
-    dataView.setUint32(4, fileSize - 8, true)
-    // RIFF type
-    dataView.setUint32(8, 0x57415645, false) // "WAVE"
-    // Format chunk identifier
-    dataView.setUint32(12, 0x666d7420, false) // "fmt "
-    // Format chunk size
-    dataView.setUint32(16, 16, true)
-    // Audio format (PCM = 1)
-    dataView.setUint16(20, 1, true)
-    // Number of channels
-    dataView.setUint16(22, numberOfChannels, true)
-    // Sample rate
-    dataView.setUint32(24, sampleRate, true)
-    // Byte rate (Sample Rate * Block Align)
-    dataView.setUint32(28, byteRate, true)
-    // Block align (Number of Channels * Bytes per Sample)
-    dataView.setUint16(32, blockAlign, true)
-    // Bits per sample
-    dataView.setUint16(34, bytesPerSample * 8, true)
-    // Data chunk identifier
-    dataView.setUint32(36, 0x64617461, false) // "data"
-    // Data chunk size
-    dataView.setUint32(40, dataSize, true)
-
-    // Write the samples to the data chunk
-    let offset = 44
-    for (let i = 0; i < numSamples; i++) {
-      for (let channel = 0; channel < numberOfChannels; channel++) {
-        const sample = buffer.getChannelData(channel)[i]
-        const amplitude = Math.max(-1, Math.min(1, sample))
-        dataView.setInt16(offset, amplitude * 0x7fff, true)
-        offset += bytesPerSample
-      }
-    }
-
-    return new Blob([arrayBuffer], { type: "audio/wav" })
-  }
-
-  const addSyntheticToContext = (ctx: OfflineAudioContext, cue: SoundCue, start: number, duration: number) => {
-    const gainNode = ctx.createGain()
-    gainNode.gain.setValueAtTime(0.3, start) // Reduced gain for synthetic sounds
-    gainNode.connect(ctx.destination)
-
-    if (cue.src === "synthetic:sine440") {
-      const osc = ctx.createOscillator()
-      osc.type = "sine"
-      osc.frequency.setValueAtTime(440, start)
-      osc.connect(gainNode)
-      osc.start(start)
-      osc.stop(start + duration)
-    } else if (cue.src === "synthetic:triangle880") {
-      const osc = ctx.createOscillator()
-      osc.type = "triangle"
-      osc.frequency.setValueAtTime(880, start)
-      osc.connect(gainNode)
-      osc.start(start)
-      osc.stop(start + duration)
-    } else if (cue.src === "synthetic:square220") {
-      const osc = ctx.createOscillator()
-      osc.type = "square"
-      osc.frequency.setValueAtTime(220, start)
-      osc.connect(gainNode)
-      osc.start(start)
-      osc.stop(start + duration)
-    } else if (cue.src === "synthetic:sawtooth660") {
-      const osc = ctx.createOscillator()
-      osc.type = "sawtooth"
-      osc.frequency.setValueAtTime(660, start)
-      osc.connect(gainNode)
-      osc.start(start)
-      osc.stop(start + duration)
-    } else {
-      console.warn("Unknown synthetic sound:", cue.src)
-    }
-  }
-
-  const handleExportAudio = async () => {
-    setIsGeneratingAudio(true)
-    setGenerationProgress(0)
-    setGenerationStep("Initializing...")
-
-    try {
-      console.log("Starting audio export with events:", timelineEvents)
-
-      // Calculate the maximum end time needed for the OfflineAudioContext
-      const maxAudioDuration = labsTotalDuration // Start with the user-defined total duration
-
-      const ctx = new OfflineAudioContext({
-        numberOfChannels: 1,
-        sampleRate: 44100,
-        length: Math.ceil(maxAudioDuration * 44100), // Ensure length is an integer
-      })
-
-      let processedEventsCount = 0
-      const totalEvents = timelineEvents.length
-
-      for (const event of timelineEvents) {
-        const eventStartTime = event.startTime
-        console.log(`Processing event ${event.id} at time ${eventStartTime}:`, event)
-
-        if (event.type === "instruction_sound") {
-          // Handle instruction_sound events - these should include sound cues
-          let soundProcessed = false
-
-          // First try using the stored soundCueSrc
-          if (event.soundCueSrc) {
-            setGenerationStep(`Adding sound: ${event.soundCueName || "Sound Cue"}`)
-            console.log(`Processing sound cue from soundCueSrc: ${event.soundCueSrc}`)
-
-            if (event.soundCueSrc.startsWith("synthetic:")) {
-              // Find the sound cue from the library to get full parameters
-              const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
-              if (soundCue) {
-                console.log(`Found synthetic sound cue:`, soundCue)
-
-                // Generate synthetic sound using Web Audio API
-                const oscillator = ctx.createOscillator()
-                const gainNode = ctx.createGain()
-
-                oscillator.connect(gainNode)
-                gainNode.connect(ctx.destination)
-
-                // Set oscillator properties from sound cue
-                oscillator.type = soundCue.waveform || "sine"
-                oscillator.frequency.setValueAtTime(soundCue.frequency || 440, eventStartTime)
-
-                // Create envelope
-                const attackDuration = soundCue.attackDuration || 0.01
-                const releaseDuration = soundCue.releaseDuration || 0.5
-                const eventDuration = (soundCue.duration || 1000) / 1000 // Convert ms to seconds
-                const peakVolume = 0.5 // Increased volume for better audibility
-
-                gainNode.gain.setValueAtTime(0, eventStartTime)
-                gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + attackDuration)
-
-                if (eventDuration > attackDuration + releaseDuration) {
-                  gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
-                }
-                gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
-
-                oscillator.start(eventStartTime)
-                oscillator.stop(eventStartTime + eventDuration)
-
-                // Add harmonics if specified
-                if (soundCue.harmonics) {
-                  soundCue.harmonics.forEach((harmonic, index) => {
-                    const harmonicOsc = ctx.createOscillator()
-                    const harmonicGain = ctx.createGain()
-
-                    harmonicOsc.connect(harmonicGain)
-                    harmonicGain.connect(ctx.destination)
-
-                    harmonicOsc.type = soundCue.waveform || "sine"
-                    harmonicOsc.frequency.setValueAtTime(harmonic, eventStartTime)
-
-                    const harmonicVolume = (peakVolume * 0.3) / (index + 1)
-
-                    harmonicGain.gain.setValueAtTime(0, eventStartTime)
-                    harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + attackDuration)
-
-                    if (eventDuration > attackDuration + releaseDuration) {
-                      harmonicGain.gain.linearRampToValueAtTime(
-                        harmonicVolume,
-                        eventStartTime + eventDuration - releaseDuration,
-                      )
-                    }
-                    harmonicGain.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
-
-                    harmonicOsc.start(eventStartTime)
-                    harmonicOsc.stop(eventStartTime + eventDuration)
-                  })
-                }
-
-                soundProcessed = true
-                console.log(`Successfully added synthetic sound at ${eventStartTime}`)
-              }
-            } else if (event.soundCueSrc.startsWith("musical:")) {
-              // Handle musical notes
-              const noteMatch = event.soundCueSrc.match(/musical:([A-G])(\d)/)
-              if (noteMatch) {
-                const note = noteMatch[1]
-                const octave = Number.parseInt(noteMatch[2])
-                console.log(`Processing musical note: ${note}${octave}`)
-
-                // Get frequency from NOTE_FREQUENCIES
-                const noteKey = `${note}${octave}` as keyof typeof NOTE_FREQUENCIES
-                const frequency = NOTE_FREQUENCIES[noteKey]
-
-                if (frequency) {
-                  const oscillator = ctx.createOscillator()
-                  const gainNode = ctx.createGain()
-
-                  oscillator.connect(gainNode)
-                  gainNode.connect(ctx.destination)
-
-                  oscillator.type = "sine"
-                  oscillator.frequency.setValueAtTime(frequency, eventStartTime)
-
-                  const eventDuration = 0.8 // Default duration for musical notes
-                  const peakVolume = 0.4 // Good volume for musical notes
-
-                  // Gentle envelope for musical notes
-                  gainNode.gain.setValueAtTime(0, eventStartTime)
-                  gainNode.gain.exponentialRampToValueAtTime(peakVolume, eventStartTime + 0.05)
-                  gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
-
-                  oscillator.start(eventStartTime)
-                  oscillator.stop(eventStartTime + eventDuration)
-
-                  soundProcessed = true
-                  console.log(`Successfully added musical note ${note}${octave} at ${eventStartTime}`)
-                }
-              }
-            } else {
-              // Handle pre-recorded audio files
-              try {
-                console.log(`Loading pre-recorded audio: ${event.soundCueSrc}`)
-                const response = await fetch(event.soundCueSrc)
-                const arrayBuffer = await response.arrayBuffer()
-                const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
-                const source = ctx.createBufferSource()
-                const gainNode = ctx.createGain()
-
-                source.buffer = audioBuffer
-                source.connect(gainNode)
-                gainNode.connect(ctx.destination)
-                gainNode.gain.setValueAtTime(0.4, eventStartTime) // Good volume for pre-recorded sounds
-                source.start(eventStartTime)
-
-                soundProcessed = true
-                console.log(`Successfully added pre-recorded audio at ${eventStartTime}`)
-              } catch (error) {
-                console.warn(`Could not load recorded audio: ${event.soundCueSrc}`, error)
-              }
-            }
-          }
-
-          // Fallback: try to find sound cue by ID if soundCueSrc didn't work
-          if (!soundProcessed && event.soundCueId) {
-            console.log(`Fallback: trying to find sound cue by ID: ${event.soundCueId}`)
-            const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
-            if (soundCue) {
-              setGenerationStep(`Adding sound: ${soundCue.name}`)
-              console.log(`Found sound cue by ID:`, soundCue)
-
-              if (soundCue.src.startsWith("synthetic:")) {
-                // Generate synthetic sound using Web Audio API
-                const oscillator = ctx.createOscillator()
-                const gainNode = ctx.createGain()
-
-                oscillator.connect(gainNode)
-                gainNode.connect(ctx.destination)
-
-                // Set oscillator properties from sound cue
-                oscillator.type = soundCue.waveform || "sine"
-                oscillator.frequency.setValueAtTime(soundCue.frequency || 440, eventStartTime)
-
-                // Create envelope
-                const attackDuration = soundCue.attackDuration || 0.01
-                const releaseDuration = soundCue.releaseDuration || 0.5
-                const eventDuration = (soundCue.duration || 1000) / 1000 // Convert ms to seconds
-                const peakVolume = 0.5 // Increased volume
-
-                gainNode.gain.setValueAtTime(0, eventStartTime)
-                gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + attackDuration)
-
-                if (eventDuration > attackDuration + releaseDuration) {
-                  gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
-                }
-                gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
-
-                oscillator.start(eventStartTime)
-                oscillator.stop(eventStartTime + eventDuration)
-
-                // Add harmonics if specified
-                if (soundCue.harmonics) {
-                  soundCue.harmonics.forEach((harmonic, index) => {
-                    const harmonicOsc = ctx.createOscillator()
-                    const harmonicGain = ctx.createGain()
-
-                    harmonicOsc.connect(harmonicGain)
-                    harmonicGain.connect(ctx.destination)
-
-                    harmonicOsc.type = soundCue.waveform || "sine"
-                    harmonicOsc.frequency.setValueAtTime(harmonic, eventStartTime)
-
-                    const harmonicVolume = (peakVolume * 0.3) / (index + 1)
-
-                    harmonicGain.gain.setValueAtTime(0, eventStartTime)
-                    harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + attackDuration)
-
-                    if (eventDuration > attackDuration + releaseDuration) {
-                      harmonicGain.gain.linearRampToValueAtTime(
-                        harmonicVolume,
-                        eventStartTime + eventDuration - releaseDuration,
-                      )
-                    }
-                    harmonicGain.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
-
-                    harmonicOsc.start(eventStartTime)
-                    harmonicOsc.stop(eventStartTime + eventDuration)
-                  })
-                }
-
-                soundProcessed = true
-                console.log(`Successfully added synthetic sound from ID at ${eventStartTime}`)
-              }
-            }
-          }
-
-          if (!soundProcessed) {
-            console.warn(`Could not process sound for event ${event.id}`)
-          }
-        } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
-          setGenerationStep(`Adding recorded voice: ${event.recordedInstructionLabel || "Untitled"}`)
-          console.log(`Processing recorded voice: ${event.recordedAudioUrl}`)
-
-          try {
-            const response = await fetch(event.recordedAudioUrl)
-            const arrayBuffer = await response.arrayBuffer()
-            const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
-            const source = ctx.createBufferSource()
-            const gainNode = ctx.createGain()
-
-            source.buffer = audioBuffer
-            source.connect(gainNode)
-            gainNode.connect(ctx.destination)
-            gainNode.gain.setValueAtTime(0.8, eventStartTime) // Higher volume for voice
-            source.start(eventStartTime)
-
-            console.log(`Successfully added recorded voice at ${eventStartTime}`)
-          } catch (error) {
-            console.warn(`Could not load recorded audio: ${event.recordedAudioUrl}`, error)
-          }
-        }
-
-        processedEventsCount++
-        setGenerationProgress(Math.floor((processedEventsCount / totalEvents) * 80)) // Progress up to 80% for event processing
-      }
-
-      setGenerationStep("Rendering audio...")
-      setGenerationProgress(80) // Set to 80% before rendering
-      console.log("Starting audio rendering...")
-
-      const rendered = await ctx.startRendering()
-      console.log("Audio rendering complete, creating WAV blob...")
-
-      if (rendered.length === 0) {
-        throw new Error("Rendered audio buffer is empty. No audio content was generated.")
-      }
-
-      const wavBlob = await bufferToWavOld(rendered)
-      if (wavBlob.size === 0) {
-        throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
-      }
-      const url = URL.createObjectURL(wavBlob)
-      setGeneratedAudioUrl(url)
-
-      // Directly assign to the audio element for immediate playback readiness
-      if (labsAudioRef.current) {
-        labsAudioRef.current.src = url
-        labsAudioRef.current.volume = volume / 100
-      }
-
-      setIsGeneratingAudio(false)
-      setGenerationProgress(100)
-      setGenerationStep("Export Complete")
-
-      console.log("Audio export completed successfully!")
-      toast({ title: "Export Complete", description: "Timeline audio exported with sound cues included!" })
-    } catch (error) {
-      console.error("Audio export failed:", error)
-      toast({
-        title: "Audio Export Failed",
-        description: `Could not export audio. Error: ${error instanceof Error ? error.message : "Unknown"}`,
-        variant: "destructive",
-      })
-    } finally {
-      setIsGeneratingAudio(false)
-    }
-  }
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (selectedFile) handleFile(selectedFile)
@@ -1343,6 +1330,19 @@ export default function HomePage() {
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
+  }
+
+  const formatDuration = (timeInSeconds: number) => {
+    const minutes = Math.floor(timeInSeconds / 60)
+    const seconds = Math.floor(timeInSeconds % 60)
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes"
+    const k = 1024
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${["Bytes", "KB", "MB", "GB"][i]}`
   }
 
   useEffect(() => {
@@ -1540,6 +1540,12 @@ export default function HomePage() {
   const removeTimelineEvent = (eventId: string) => {
     setTimelineEvents((prev) => prev.filter((event) => event.id !== eventId))
     toast({ title: "Event Removed" })
+  }
+
+  const formatTimeOld = (timeInSeconds: number): string => {
+    const minutes = Math.floor(timeInSeconds / 60)
+    const seconds = Math.floor(timeInSeconds % 60)
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`
   }
 
   // Safe input handlers with validation
@@ -1756,17 +1762,45 @@ export default function HomePage() {
                 </div>
 
                 {/* Upload Area */}
-                <FileUpload
-                  file={file}
-                  setFile={setFile}
-                  handleFileChange={handleFileSelect}
-                  handleDragOver={handleDragOver}
-                  handleDragLeave={handleDragLeave}
-                  handleDrop={handleDrop}
-                  fileInputRef={fileInputRef}
-                  uploadAreaRef={uploadAreaRef}
-                  isMobileDevice={isMobileDevice}
-                />
+                <motion.div
+                  whileHover={{ scale: 1.005 }}
+                  whileTap={{ scale: 0.995 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                  ref={uploadAreaRef}
+                  className="overflow-hidden border-none bg-white dark:bg-gray-900 rounded-2xl mb-8 cursor-pointer transition-all duration-300 shadow-none hover:shadow-lg dark:shadow-white/10 dark:hover:shadow-white/20"
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
+                  <div className="bg-gradient-to-r from-logo-teal via-logo-emerald to-logo-blue py-3 px-6 dark:from-logo-teal dark:via-logo-emerald dark:to-logo-blue border-dashed border-0">
+                    <h3 className="text-white flex items-center font-black">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Audio
+                    </h3>
+                  </div>
+                  <div className="p-10 md:p-16 text-center md:py-14 border-dashed border-stone-300 border-2 rounded-b-2xl border-t-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <div className="dark:text-gray-200 font-serif mb-2.5 font-black text-base text-gray-600">
+                        Drop your audio file here or click to browse
+                      </div>
+                      <div className="dark:text-gray-400/70 text-stone-400 font-serif text-xs">
+                        Supports MP3, WAV, OGG, and M4A files (Max: {isMobileDevice ? "50MB" : "500MB"})
+                      </div>
+                    </motion.div>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept=".mp3,.wav,.ogg,.m4a,audio/*"
+                    onChange={handleFileSelect}
+                  />
+                </motion.div>
 
                 <AnimatePresence>
                   {file && (
@@ -1838,112 +1872,235 @@ export default function HomePage() {
                   )}
                 </AnimatePresence>
 
-                {status && (
-                  <Alert variant={status.type === "error" ? "destructive" : status.type === "warning" ? "warning" : "default"}>
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>{status.type.charAt(0).toUpperCase() + status.type.slice(1)}</AlertTitle>
-                    <AlertDescription>{status.message}</AlertDescription>
-                  </Alert>
-                )}
+                <AnimatePresence>
+                  {audioAnalysis && durationLimits && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ delay: 0.1 }}
+                      className="mb-10 mt-8"
+                    >
+                      <Alert className="bg-white dark:bg-gray-900 shadow-lg dark:shadow-white/10 p-1 border border-logo-teal-500 shadow-inner">
+                        <div className="p-4">
+                          <div className="flex items-center mb-4">
+                            <div className="p-2 rounded-lg mr-3 dark:bg-gray-700 bg-transparent">
+                              <Info className="h-4 w-4 dark:text-gray-300 text-logo-teal-500" />
+                            </div>
+                            <div className="text-lg dark:text-gray-200 font-black text-logo-purple-300">
+                              Audio Analysis
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-logo-teal">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-purple-300">
+                                Content
+                              </div>
+                              <div className="dark:text-black font-black text-logo-purple-300">
+                                {formatDuration(audioAnalysis.contentDuration)}
+                              </div>
+                            </div>
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-logo-teal">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-purple-300">
+                                Silence
+                              </div>
+                              <div className="dark:text-gray-200 font-black rounded-xl text-logo-purple-300">
+                                {formatDuration(audioAnalysis.totalSilence)}
+                              </div>
+                            </div>
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-logo-teal">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-purple-300">
+                                Pauses
+                              </div>
+                              <div className="dark:text-gray-200 font-black text-logo-purple-300">
+                                {audioAnalysis.silenceRegions}
+                              </div>
+                            </div>
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-logo-teal">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-purple-300">
+                                Range
+                              </div>
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-purple-300">
+                                {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Alert>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-                {originalBuffer && (
-                  <Accordion type="single" collapsible className="mb-6">
-                    <AccordionItem value="item-1">
-                      <AccordionTrigger className="font-black text-logo-rose-600 dark:text-logo-rose-300">
-                        <Settings2 className="h-4 w-4 mr-2" />
-                        Adjust Settings
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="grid gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="targetDuration" className="text-logo-rose-600 dark:text-logo-rose-300">
-                              Target Duration (minutes):
-                            </Label>
-                            <Input
-                              id="targetDuration"
-                              type="number"
-                              min={durationLimits?.min || 1}
-                              max={durationLimits?.max || 120}
-                              value={targetDuration}
-                              onChange={(e) => setTargetDuration(Number(e.target.value))}
-                              className="font-black text-logo-rose-600 dark:text-logo-rose-300"
-                            />
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="mb-8"
+                >
+                  <Tabs defaultValue="basic" className="w-full font-serif font-black">
+                    <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100/70 p-1 rounded-md dark:bg-gray-800/70">
+                      <TabsTrigger
+                        value="basic"
+                        className="data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-sm dark:data-[state=active]:shadow-white/20 rounded-sm dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-logo-teal-300 dark:text-gray-300"
+                      >
+                        Basic Settings
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="advanced"
+                        className="data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-sm dark:data-[state=active]:shadow-white/20 rounded-sm dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-logo-teal-300 dark:text-gray-300"
+                      >
+                        Advanced Settings
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="basic" className="mt-0 space-y-6">
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+                          <div className="bg-gradient-to-r from-logo-amber-500 to-indigo-500 py-3 px-6 dark:from-logo-amber-700 dark:to-indigo-700">
+                            <h3 className="text-white flex items-center font-black">
+                              <Clock className="h-4 w-4 mr-2" />
+                              Target Duration
+                            </h3>
+                          </div>
+                          <div className="p-6">
+                            <div className="mb-4">
+                              <Slider
+                                value={[targetDuration]}
+                                min={durationLimits?.min || 5}
+                                max={durationLimits?.max || (isMobileDevice ? 60 : 120)}
+                                step={1}
+                                onValueChange={(value) => setTargetDuration(value[0])}
+                                disabled={!durationLimits}
+                                className="py-4"
+                                rangeClassName="bg-gradient-to-r from-logo-amber-500 to-indigo-500"
+                              />
+                            </div>
+                            <div className="text-center font-serif font-black">
+                              <span className="text-logo-amber-700 dark:text-logo-amber-300 text-2xl font-black">
+                                {targetDuration}
+                              </span>
+                              <span className="text-lg text-logo-amber-600 ml-1 dark:text-logo-amber-400">minutes</span>
+                            </div>
                             {durationLimits && (
-                              <p className="text-xs text-logo-rose-500 dark:text-logo-rose-400">
-                                Min: {durationLimits.min} • Max: {durationLimits.max}
-                              </p>
+                              <div className="text-center text-xs text-logo-amber-500/70 mt-2 dark:text-logo-amber-400/70">
+                                Range: {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
+                              </div>
                             )}
                           </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="silenceThreshold" className="text-logo-rose-600 dark:text-logo-rose-300">
-                              Silence Threshold:
-                            </Label>
-                            <Slider
-                              id="silenceThreshold"
-                              defaultValue={[silenceThreshold * 100]}
-                              onValueChange={(value) => setSilenceThreshold(value[0] / 100)}
-                              className="font-black text-logo-rose-600 dark:text-logo-rose-300"
-                            />
-                            <p className="text-xs text-logo-rose-500 dark:text-logo-rose-400">
-                              {silenceThreshold.toFixed(3)}
-                            </p>
+                        </Card>
+                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+                          <div className="bg-gradient-to-r from-indigo-500 to-logo-amber-500 py-3 px-6 dark:from-indigo-700 dark:to-logo-amber-700">
+                            <h3 className="text-white flex items-center font-black">
+                              <Volume2 className="h-4 w-4 mr-2" />
+                              Silence Threshold
+                            </h3>
                           </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="minSilenceDuration" className="text-logo-rose-600 dark:text-logo-rose-300">
-                              Min Silence Duration (seconds):
-                            </Label>
-                            <Slider
-                              id="minSilenceDuration"
-                              defaultValue={[minSilenceDuration]}
-                              min={0.5}
-                              max={10}
-                              step={0.1}
-                              onValueChange={(value) => setMinSilenceDuration(value[0])}
-                              className="font-black text-logo-rose-600 dark:text-logo-rose-300"
-                            />
-                            <p className="text-xs text-logo-rose-500 dark:text-logo-rose-400">
-                              {minSilenceDuration.toFixed(1)}
-                            </p>
+                          <div className="p-6">
+                            <div className="mb-4">
+                              <Slider
+                                value={[silenceThreshold]}
+                                min={0.001}
+                                max={0.05}
+                                step={0.001}
+                                onValueChange={(value) => setSilenceThreshold(value[0])}
+                                className="py-4"
+                                rangeClassName="bg-gradient-to-r from-indigo-500 to-logo-amber-500"
+                              />
+                            </div>
+                            <div className="text-center">
+                              <span className="text-indigo-700 dark:text-indigo-300 font-serif font-black text-2xl">
+                                {silenceThreshold.toFixed(3)}
+                              </span>
+                            </div>
+                            <div className="text-center text-indigo-500/70 dark:text-indigo-400/70 font-black font-serif mt-0 text-sm">
+                              Lower = more sensitive
+                            </div>
                           </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="minSpacingDuration" className="text-logo-rose-600 dark:text-logo-rose-300">
-                              Min Spacing Duration (seconds):
-                            </Label>
-                            <Slider
-                              id="minSpacingDuration"
-                              defaultValue={[minSpacingDuration]}
-                              min={0.1}
-                              max={5}
-                              step={0.1}
-                              onValueChange={(value) => setMinSpacingDuration(value[0])}
-                              className="font-black text-logo-rose-600 dark:text-logo-rose-300"
-                            />
-                            <p className="text-xs text-logo-rose-500 dark:text-logo-rose-400">
-                              {minSpacingDuration.toFixed(1)}
-                            </p>
+                        </Card>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="advanced" className="mt-0 space-y-6">
+                      <div className="grid md:grid-cols-2 gap-6 font-serif font-black">
+                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+                          <div className="bg-gradient-to-r from-logo-amber-500 to-logo-rose-500 py-3 px-6 dark:from-logo-amber-700 dark:to-logo-rose-700">
+                            <h3 className="text-white font-black">Min Silence Duration</h3>
                           </div>
-
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id="preserveNaturalPacing"
-                              checked={preserveNaturalPacing}
-                              onCheckedChange={(checked) => setPreserveNaturalPacing(checked)}
-                            />
-                            <Label htmlFor="preserveNaturalPacing" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-logo-rose-600 dark:text-logo-rose-300">
-                              Preserve Natural Pacing
-                            </Label>
+                          <div className="p-6 font-serif font-black">
+                            <div className="mb-4">
+                              <Slider
+                                value={[minSilenceDuration]}
+                                min={1}
+                                max={15}
+                                step={0.5}
+                                onValueChange={(value) => setMinSilenceDuration(value[0])}
+                                className="py-4"
+                                rangeClassName="bg-gradient-to-r from-logo-amber-500 to-logo-rose-500"
+                              />
+                            </div>
+                            <div className="text-center">
+                              <span className="dark:text-logo-amber-300 text-2xl font-black text-logo-rose-600">
+                                {minSilenceDuration}
+                              </span>
+                              <span className="text-lg text-logo-rose-600 ml-1 dark:text-logo-rose-400">seconds</span>
+                            </div>
+                            <div className="text-center text-logo-amber-500/70 mt-2 dark:text-logo-amber-400/70 text-sm">
+                              Shorter = detect more pauses
+                            </div>
                           </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="compatibilityMode" className="text-logo-rose-600 dark:text-logo-rose-300">
-                              Compatibility Mode:
-                            </Label>
+                        </Card>
+                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+                          <div className="bg-gradient-to-r from-logo-purple-500 to-logo-teal-500 py-3 px-6 dark:from-logo-purple-700 dark:to-logo-teal-700">
+                            <h3 className="text-white font-black">Min Spacing Between Content</h3>
+                          </div>
+                          <div className="p-6">
+                            <div className="mb-4">
+                              <Slider
+                                value={[minSpacingDuration]}
+                                min={0.0}
+                                max={5}
+                                step={0.1}
+                                onValueChange={(value) => setMinSpacingDuration(value[0])}
+                                className="py-4"
+                                rangeClassName="bg-gradient-to-r from-logo-purple-500 to-logo-teal-500"
+                              />
+                            </div>
+                            <div className="text-center">
+                              <span className="dark:text-logo-purple-300 font-black text-2xl text-logo-teal-600">
+                                {minSpacingDuration.toFixed(1)}
+                              </span>
+                              <span className="text-lg text-logo-teal-600 ml-1 dark:text-logo-teal-400">seconds</span>
+                            </div>
+                            <div className="text-center text-logo-purple-500/70 mt-2 dark:text-logo-purple-400/70 text-sm">
+                              Minimum pause between speaking parts
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+                          <div className="bg-gradient-to-r from-logo-rose-500 to-logo-purple-500 py-3 px-6 dark:from-logo-rose-700 dark:to-logo-purple-700">
+                            <h3 className="text-white font-black">Preserve Natural Pacing</h3>
+                          </div>
+                          <div className="p-6">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm text-logo-rose-700 mb-1 dark:text-logo-rose-300">
+                                  Maintain the relative length of pauses
+                                </p>
+                              </div>
+                              <Switch
+                                checked={preserveNaturalPacing}
+                                onCheckedChange={setPreserveNaturalPacing}
+                                className="data-[state=checked]:bg-logo-rose-500 dark:data-[state=checked]:bg-logo-rose-700"
+                              />
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+                          <div className="bg-gradient-to-r from-logo-teal-500 to-logo-amber-500 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-amber-700">
+                            <h3 className="text-white font-black">Compatibility Mode</h3>
+                          </div>
+                          <div className="p-6">
                             <Select value={compatibilityMode} onValueChange={(value) => setCompatibilityMode(value)}>
-                              <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Select" />
+                              <SelectTrigger className="w-full mb-2 border-logo-teal-200 focus:ring-logo-teal-500 dark:border-logo-teal-700 dark:bg-gray-800 dark:text-gray-200">
+                                <SelectValue placeholder="Select compatibility mode" />
                               </SelectTrigger>
                               <SelectContent className="dark:bg-gray-800 dark:text-gray-200">
                                 <SelectItem value="standard">Standard Quality (Original SR)</SelectItem>
@@ -1952,94 +2109,165 @@ export default function HomePage() {
                                 </SelectItem>
                               </SelectContent>
                             </Select>
+                            <div className="text-xs text-logo-teal-500/70 dark:text-logo-teal-400/70 mt-3.5">
+                              High Compatibility for better playback on mobile/AirPods. May reduce sample rate for long
+                              audio on mobile.
+                            </div>
+                          </div>
+                        </Card>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="mb-4 text-center font-serif font-black text-base"
+                >
+                  <Button
+                    className={cn(
+                      "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
+                      "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none",
+                      "bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 text-white dark:from-logo-teal-700 dark:to-logo-purple-700",
+                    )}
+                    disabled={!originalBuffer || isProcessing || !durationLimits}
+                    onClick={processAudio}
+                  >
+                    <div className="flex items-center justify-center">
+                      <Wand2 className="mr-2 h-6 w-6" />
+                      <span className="font-black">Process Audio</span>
+                    </div>
+                  </Button>
+                </motion.div>
+
+                {isProcessing && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="mb-4 text-center"
+                  >
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => window.location.reload()}
+                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-black"
+                      aria-label="Cancel processing and reload page"
+                    >
+                      Cancel
+                    </Button>
+                  </motion.div>
+                )}
+
+                <AnimatePresence>
+                  {status && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: "auto" }}
+                      exit={{ opacity: 0, y: -10, height: 0 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      className={`p-4 rounded-xl mb-8 text-center dark:shadow-white/10 overflow-hidden bg-white dark:bg-gray-900 shadow-none border border-logo-blue-300 ${status.type === "info" ? "text-logo-teal-700 border border-logo-teal-400 dark:text-logo-teal-300 dark:border-logo-teal-600" : status.type === "success" ? "text-logo-emerald-700 border border-logo-emerald-400 dark:text-logo-emerald-300 dark:border-logo-emerald-600" : "text-red-700 border border-red-400 dark:text-red-300 dark:border-red-600"}`}
+                    >
+                      <motion.div
+                        className="text-sm text-logo-teal"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        {status.message}
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="space-y-6">
+                  {originalUrl && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                    >
+                      <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+                        <div className="bg-gradient-to-r from-gray-700 to-gray-800 py-3 px-6 dark:from-gray-800 dark:to-gray-900">
+                          <h3 className="text-white font-black">Original Audio</h3>
+                        </div>
+                        <div className="p-6">
+                          <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
+                            <audio controls className="w-full" src={originalUrl}></audio>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                              <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
+                                Duration
+                              </div>
+                              <div className="dark:text-black font-black text-black">
+                                {originalBuffer ? formatDuration(originalBuffer.duration) : "--"}
+                              </div>
+                            </div>
+                            <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                              <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
+                                File Size
+                              </div>
+                              <div className="dark:text-gray-200 font-black text-black">
+                                {formatFileSize(file?.size || 0)}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                )}
-
-                {originalBuffer && (
-                  <div className="flex justify-center space-x-4 mb-6">
-                    <audio controls src={originalUrl} preload="metadata" className="w-full max-w-md"></audio>
-                  </div>
-                )}
-
-                {audioAnalysis && (
-                  <Card className="p-6 mb-6 bg-gradient-to-r from-logo-teal-50 to-logo-blue-50 border-logo-teal-200 shadow-sm dark:shadow-white/10 dark:from-logo-teal-950 dark:to-logo-blue-950">
-                    <h3 className="text-lg font-medium text-logo-teal-700 dark:text-logo-teal-300 mb-4">
-                      Audio Analysis
-                    </h3>
-                    <div className="space-y-2">
-                      <p className="text-sm text-logo-teal-600 dark:text-logo-teal-400">
-                        Total Silence: {formatDuration(audioAnalysis.totalSilence)}
-                      </p>
-                      <p className="text-sm text-logo-teal-600 dark:text-logo-teal-400">
-                        Content Duration:
-                      </p>
-                      <p className="text-sm text-logo-teal-600 dark:text-logo-teal-400">
-                        Silence Regions: {audioAnalysis.silenceRegions}
-                      </p>
-                    </div>
-                  </Card>
-                )}
-
-                {originalBuffer && (
-                  <Button
-                    variant="secondary"
-                    className="w-full mb-6 font-black text-logo-purple-300 dark:text-logo-purple-300"
-                    onClick={processAudio}
-                    disabled={isProcessing}
-                  >
-                    {isProcessing ? (
-                      <>
-                        Processing...
-                        <Clock className="h-4 w-4 ml-2 animate-spin" />
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="h-4 w-4 mr-2" />
-                        Process Audio
-                      </>
-                    )}
-                  </Button>
-                )}
-
-                {processedUrl && (
-                  <div className="flex justify-center space-x-4 mb-6">
-                    <audio controls src={processedUrl} preload="metadata" className="w-full max-w-md"></audio>
-                  </div>
-                )}
-
-                {actualDuration && (
-                  <Card className="p-6 mb-6 bg-gradient-to-r from-logo-purple-50 to-logo-rose-50 border-logo-purple-200 shadow-sm dark:shadow-white/10 dark:from-logo-purple-950 dark:to-logo-rose-950">
-                    <h3 className="text-lg font-medium text-logo-purple-700 dark:text-logo-purple-300 mb-4">
-                      Processed Audio Details
-                    </h3>
-                    <div className="space-y-2">
-                      <p className="text-sm text-logo-purple-600 dark:text-logo-purple-400">
-                        Target Duration: {targetDuration} minutes
-                      </p>
-                      <p className="text-sm text-logo-purple-600 dark:text-logo-purple-400">
-                        Actual Duration: {formatDuration(actualDuration)}
-                      </p>
-                      <p className="text-sm text-logo-purple-600 dark:text-logo-purple-400">
-                        Pauses Adjusted: {pausesAdjusted}
-                      </p>
-                    </div>
-                  </Card>
-                )}
-
-                {processedUrl && (
-                  <Button
-                    variant="secondary"
-                    className="w-full font-black text-logo-teal-300 dark:text-logo-teal-300"
-                    onClick={downloadProcessedAudio}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download Processed Audio
-                  </Button>
-                )}
+                      </Card>
+                    </motion.div>
+                  )}
+                  {processedUrl && processedBufferState && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                    >
+                      <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-logo-teal-50 to-logo-emerald-50 dark:from-logo-teal-950 dark:to-logo-emerald-950">
+                        <div className="bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
+                          <h3 className="text-white font-black">Processed Audio</h3>
+                        </div>
+                        <div className="p-6">
+                          <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
+                            <audio controls className="w-full" src={processedUrl}></audio>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 mb-6">
+                            <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                              <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
+                                Duration
+                              </div>
+                              <div className="dark:text-black font-black text-black">
+                                {formatDuration(actualDuration || 0)}
+                                {actualDuration && targetDuration && (
+                                  <div className="text-xs text-logo-teal-600 mt-1 dark:text-gray-900">
+                                    {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                              <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
+                                Pauses Adjusted
+                              </div>
+                              <div className="dark:text-logo-teal-200 font-black text-black">{pausesAdjusted}</div>
+                            </div>
+                          </div>
+                          <Button
+                            className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                            onClick={downloadProcessedAudio}
+                          >
+                            <div className="flex items-center justify-center font-black">
+                              <Download className="mr-2 h-5 w-5" />
+                              Download Processed Audio
+                            </div>
+                          </Button>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  )}
+                </div>
               </>
             ) : (
               // == Labs UI ==
@@ -2219,7 +2447,7 @@ export default function HomePage() {
                           ))}
                         </Accordion>
                         <Button
-                          className="w-full bg-white text-logo-emerald-700 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-emerald-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black" // Changed border to gray-600
+                          className="w-full bg-white text-logo-emerald-700 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-emerald-400 dark:border-gray-600 dark:hover:bg-gray-800" // Changed border to gray-600
                           onClick={handleAddInstructionSoundEvent}
                           disabled={(!selectedLibraryInstruction && !customInstructionText.trim()) || !selectedSoundCue}
                         >
@@ -2318,7 +2546,7 @@ export default function HomePage() {
                                   const newEvent: TimelineEvent = {
                                     id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
                                     type: "recorded_voice",
-                                    startTime: newStartTime,
+                                    startTime: newStartTime, // Now calculated
                                     recordedAudioUrl: recordedAudioUrl,
                                     recordedInstructionLabel: recordingLabel.trim(),
                                     duration: duration,
@@ -2400,66 +2628,67 @@ export default function HomePage() {
                               fill="currentColor"
                               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291
                                 A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                      </div>
-                    )}
-                    <Wand2 className="mr-2 h-5 w-5" />
-                    <span className="text-base">{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
-                  </div>
-                </Button>
-              </motion.div>
-              {/* Generated Audio Section for Labs */}
-              {generatedAudioUrl && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-logo-teal-50 to-logo-emerald-50 dark:from-logo-teal-950 dark:to-logo-emerald-950">
-                    <div className="bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
-                      <h3 className="text-white font-black">Generated Audio</h3>
+                            ></path>
+                          </svg>
+                        </div>
+                      )}
+                      <Wand2 className="mr-2 h-5 w-5" />
+                      <span className="text-base">{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
                     </div>
-                    <div className="p-6">
-                      <h4 className="mb-2 dark:text-gray-300 font-black text-sm text-gray-600">{meditationTitle}</h4>
-                      <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
-                        <audio controls className="w-full" src={generatedAudioUrl}></audio>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                          <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
-                            Total Events
-                          </div>
-                          <div className="dark:text-black font-black text-gray-600">{timelineEvents.length}</div>
-                        </div>
-                        <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                          <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
-                            Total Duration
-                          </div>
-                          <div className="dark:text-black font-black text-gray-600">
-                            {formatTime(labsTotalDuration)}
-                          </div>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={() => {
-                          const a = document.createElement("a")
-                          a.href = generatedAudioUrl
-                          a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
-                          document.body.appendChild(a)
-                          a.click()
-                          document.body.removeChild(a)
-                        }}
-                        className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
-                      >
-                        <div className="flex items-center justify-center font-black">
-                          <Download className="mr-2 h-5 w-5" />
-                          Download Audio
-                        </div>
-                      </Button>
-                    </div>
-                  </Card>
+                  </Button>
                 </motion.div>
+                {/* Generated Audio Section for Labs */}
+                {generatedAudioUrl && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-logo-teal-50 to-logo-emerald-50 dark:from-logo-teal-950 dark:to-logo-emerald-950">
+                      <div className="bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
+                        <h3 className="text-white font-black">Generated Audio</h3>
+                      </div>
+                      <div className="p-6">
+                        <h4 className="mb-2 dark:text-gray-300 font-black text-sm text-gray-600">{meditationTitle}</h4>
+                        <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
+                          <audio controls className="w-full" src={generatedAudioUrl}></audio>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                          <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                            <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
+                              Total Events
+                            </div>
+                            <div className="dark:text-black font-black text-gray-600">{timelineEvents.length}</div>
+                          </div>
+                          <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                            <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
+                              Total Duration
+                            </div>
+                            <div className="dark:text-black font-black text-gray-600">
+                              {formatTime(labsTotalDuration)}
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={() => {
+                            const a = document.createElement("a")
+                            a.href = generatedAudioUrl
+                            a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
+                            document.body.appendChild(a)
+                            a.click()
+                            document.body.removeChild(a)
+                          }}
+                          className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                        >
+                          <div className="flex items-center justify-center font-black">
+                            <Download className="mr-2 h-5 w-5" />
+                            Download Audio
+                          </div>
+                        </Button>
+                      </div>
+                    </Card>
+                  </motion.div>
+                )}
               </motion.div>
             )}
           </div>
