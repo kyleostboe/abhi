@@ -2037,7 +2037,7 @@ export default function HomePage() {
                               />
                             </div>
                             <div className="text-center">
-                              <span className="text-logo-amber-700 dark:text-logo-amber-300 text-2xl font-black">
+                              <span className="dark:text-logo-amber-300 text-2xl font-black text-logo-rose-600">
                                 {minSilenceDuration}
                               </span>
                               <span className="text-lg text-logo-rose-600 ml-1 dark:text-logo-rose-400">seconds</span>
@@ -2064,7 +2064,7 @@ export default function HomePage() {
                               />
                             </div>
                             <div className="text-center">
-                              <span className="text-logo-purple-700 dark:text-logo-purple-300 font-black text-2xl">
+                              <span className="dark:text-logo-purple-300 font-black text-2xl text-logo-teal-600">
                                 {minSpacingDuration.toFixed(1)}
                               </span>
                               <span className="text-lg text-logo-teal-600 ml-1 dark:text-logo-teal-400">seconds</span>
