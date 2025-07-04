@@ -3,7 +3,33 @@
 import type React from "react"
 import { useState, useRef, useEffect, useCallback, useReducer } from "react"
 import { Button } from "@/components/ui/button"
+import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import {
+  Info,
+  Upload,
+  Volume2,
+  Clock,
+  Wand2,
+  Download,
+  Settings2,
+  AlertTriangle,
+  ListPlus,
+  Music2,
+  Mic,
+  StopCircle,
+  Play,
+  PlusCircle,
+  CircleDotDashed,
+} from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Switch } from "@/components/ui/switch"
+import { Navigation } from "@/components/navigation"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { toast } from "@/components/ui/use-toast"
 import {
   INSTRUCTIONS_LIBRARY,
@@ -12,6 +38,7 @@ import {
   type Instruction,
   type SoundCue,
 } from "@/lib/meditation-data"
+import { VisualTimeline } from "@/components/visual-timeline"
 import { cn } from "@/lib/utils"
 
 // Constants
@@ -287,7 +314,7 @@ const ActionButton = ({ onClick, disabled, gradient, icon: Icon, children, loadi
 export default function HomePage() {
   // Initialize state first
   const [state, dispatch] = useReducer(appReducer, initialState)
-  
+
   // Refs
   const audioContextRef = useRef<AudioContext | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -1373,4 +1400,907 @@ export default function HomePage() {
   const bufferToWav = useCallback(
     async (buffer: AudioBuffer, highCompatibility = true, onProgress: (progress: number) => void): Promise<Blob> => {
       const currentAudioContext = audioContextRef.current
-      if (!currentAudioContext)\
+      if (!currentAudioContext)
+        throw new Error("Audio context not available for WAV conversion. Please refresh and try again.")
+      onProgress(0)
+      const numberOfChannels = buffer.numberOfChannels
+      const numSamples = buffer.length
+      const sampleRate = buffer.sampleRate
+      const bytesPerSample = 2
+      const blockAlign = numberOfChannels * bytesPerSample
+      const byteRate = sampleRate * blockAlign
+      const dataSize = numSamples * blockAlign
+      const fileSize = 44 + dataSize
+      if (fileSize > 2 ** 31 - 1) throw new Error("Output file too large for WAV format (>2GB).")
+      const arrayBuffer = new ArrayBuffer(fileSize)
+      const dataView = new DataView(arrayBuffer)
+      dataView.setUint32(0, 0x52494646, false)
+      dataView.setUint32(4, fileSize - 8, true)
+      dataView.setUint32(8, 0x57415645, false)
+      dataView.setUint32(12, 0x666d7420, false)
+      dataView.setUint32(16, 16, true)
+      dataView.setUint16(20, 1, true)
+      dataView.setUint16(22, numberOfChannels, true)
+      dataView.setUint32(24, sampleRate, true)
+      dataView.setUint32(28, byteRate, true)
+      dataView.setUint16(32, blockAlign, true)
+      dataView.setUint16(34, bytesPerSample * 8, true)
+      dataView.setUint32(36, 0x64617461, false)
+      dataView.setUint32(40, dataSize, true)
+      let offset = 44
+      const chunkSize = state.isMobileDevice ? 8192 : 16384
+      for (let i = 0; i < numSamples; i += chunkSize) {
+        if (i % (chunkSize * 10) === 0) {
+          await sleep(0)
+          onProgress(Math.floor((i / numSamples) * 100))
+        }
+        const endIndex = Math.min(i + chunkSize, numSamples)
+        for (let j = i; j < endIndex; j++) {
+          for (let channel = 0; channel < numberOfChannels; channel++) {
+            const sample = buffer.getChannelData(channel)[j]
+            const amplitude = Math.max(-1, Math.min(1, sample))
+            dataView.setInt16(offset, amplitude * 0x7fff, true)
+            offset += bytesPerSample
+          }
+        }
+      }
+      onProgress(100)
+      return new Blob([arrayBuffer], { type: "audio/wav" })
+    },
+    [state.isMobileDevice],
+  )
+
+  const downloadFile = (url: string, filename: string) => {
+    const a = document.createElement("a")
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
+  const addEventToTimeline = (event: TimelineEvent) => {
+    dispatch({ type: "SET_TIMELINE_EVENTS", payload: [...state.timelineEvents, event] })
+  }
+
+  const removeEventFromTimeline = (eventId: string) => {
+    dispatch({ type: "SET_TIMELINE_EVENTS", payload: state.timelineEvents.filter((e) => e.id !== eventId) })
+  }
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = mediaRecorder
+      const blobs: Blob[] = []
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) blobs.push(event.data)
+      }
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(blobs, { type: "audio/wav" })
+        const url = URL.createObjectURL(audioBlob)
+        dispatch({ type: "UPDATE_LABS", payload: { recordedAudioUrl: url, recordedBlobs: blobs } })
+        stream.getTracks().forEach((track) => track.stop())
+      }
+      mediaRecorder.start()
+      dispatch({ type: "UPDATE_LABS", payload: { isRecording: true } })
+    } catch (error) {
+      console.error("Error starting recording:", error)
+      toast({
+        title: "Recording Error",
+        description: "Could not access microphone. Please check permissions.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && state.isRecording) {
+      mediaRecorderRef.current.stop()
+      dispatch({ type: "UPDATE_LABS", payload: { isRecording: false } })
+    }
+  }
+
+  const addRecordedVoiceToTimeline = () => {
+    if (!state.recordedAudioUrl) {
+      toast({ title: "No Recording", description: "Please record audio first.", variant: "destructive" })
+      return
+    }
+    if (!state.recordingLabel.trim()) {
+      toast({ title: "Missing Label", description: "Please enter a label for the recording.", variant: "destructive" })
+      return
+    }
+    const maxExistingTime =
+      state.timelineEvents.length > 0 ? Math.max(...state.timelineEvents.map((e) => e.startTime)) : 0
+    const newStartTime = state.timelineEvents.length > 0 ? maxExistingTime + 33 : 0
+    const newEvent: TimelineEvent = {
+      id: `recorded_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      type: "recorded_voice",
+      startTime: newStartTime,
+      recordedAudioUrl: state.recordedAudioUrl,
+      recordedInstructionLabel: state.recordingLabel.trim(),
+    }
+    addEventToTimeline(newEvent)
+    dispatch({ type: "UPDATE_LABS", payload: { recordedAudioUrl: null, recordingLabel: "" } })
+    toast({ title: "Recording Added", description: `"${state.recordingLabel}" added to timeline.` })
+  }
+
+  const saveTimeline = () => {
+    const timelineData = {
+      title: state.meditationTitle,
+      totalDuration: state.labsTotalDuration,
+      events: state.timelineEvents,
+      createdAt: new Date().toISOString(),
+    }
+    const blob = new Blob([JSON.stringify(timelineData, null, 2)], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    downloadFile(url, `${state.meditationTitle.replace(/[^a-z0-9]/gi, "_")}_timeline.json`)
+    URL.revokeObjectURL(url)
+    toast({ title: "Timeline Saved", description: "Timeline exported as JSON file." })
+  }
+
+  const loadTimeline = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const timelineData = JSON.parse(e.target?.result as string)
+        if (timelineData.events && Array.isArray(timelineData.events)) {
+          dispatch({
+            type: "UPDATE_LABS",
+            payload: {
+              meditationTitle: timelineData.title || "Loaded Meditation",
+              labsTotalDuration: timelineData.totalDuration || 600,
+              timelineEvents: timelineData.events,
+            },
+          })
+          toast({ title: "Timeline Loaded", description: "Timeline loaded successfully." })
+        } else {
+          throw new Error("Invalid timeline format")
+        }
+      } catch (error) {
+        toast({ title: "Load Error", description: "Could not load timeline file.", variant: "destructive" })
+      }
+    }
+    reader.readAsText(file)
+    event.target.value = ""
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <Navigation />
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Meditation Audio Tools</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-300">
+            Adjust meditation timing or create custom guided meditations
+          </p>
+        </div>
+
+        <Tabs value={state.activeMode} onValueChange={(value) => dispatch({ type: "SET_MODE", payload: value })}>
+          <TabsList className="grid w-full grid-cols-2 mb-8">
+            <TabsTrigger value="adjuster">Pause Adjuster</TabsTrigger>
+            <TabsTrigger value="labs">Labs</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="adjuster" className="space-y-6">
+            {state.memoryWarning && (
+              <Alert className="border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Memory Warning</AlertTitle>
+                <AlertDescription>
+                  Large file detected. Processing may be slower on this device. Consider using a smaller file or shorter
+                  target duration.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <GradientCard
+              title="Upload Audio"
+              icon={Upload}
+              gradient="from-gray-400 to-gray-600"
+              className="cursor-pointer"
+            >
+              <div className="p-6">
+                <div
+                  ref={uploadAreaRef}
+                  className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-primary transition-colors"
+                  onDrop={handlers.file.drop}
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    if (uploadAreaRef.current) uploadAreaRef.current.classList.add("border-primary")
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault()
+                    if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
+                  }}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    Drop your meditation audio here
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    or click to browse (MP3, WAV, M4A supported)
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                    Max: {state.isMobileDevice ? "50MB" : "500MB"}
+                  </p>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="audio/*,.m4a"
+                  onChange={handlers.file.select}
+                  className="hidden"
+                />
+                {state.file && (
+                  <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <p className="font-medium text-gray-900 dark:text-white">{state.file.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{formatFileSize(state.file.size)}</p>
+                  </div>
+                )}
+              </div>
+            </GradientCard>
+
+            {state.originalBuffer && (
+              <>
+                <GradientCard title="Settings" icon={Settings2} gradient="from-blue-500 to-purple-600">
+                  <div className="p-6 space-y-6">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                        Target Duration: {state.targetDuration} minutes
+                      </Label>
+                      <Slider
+                        value={[state.targetDuration]}
+                        onValueChange={(value) =>
+                          dispatch({ type: "UPDATE_PROCESSING", payload: { targetDuration: value[0] } })
+                        }
+                        min={state.durationLimits?.min || 1}
+                        max={state.durationLimits?.max || (state.isMobileDevice ? 60 : 120)}
+                        step={1}
+                        className="w-full"
+                      />
+                      {state.durationLimits && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Range: {state.durationLimits.min}-{state.durationLimits.max} minutes
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Silence Threshold: {(state.silenceThreshold * 100).toFixed(1)}%
+                        </Label>
+                        <Slider
+                          value={[state.silenceThreshold * 100]}
+                          onValueChange={(value) =>
+                            dispatch({ type: "UPDATE_PROCESSING", payload: { silenceThreshold: value[0] / 100 } })
+                          }
+                          min={0.1}
+                          max={5}
+                          step={0.1}
+                          className="w-full"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Min Silence: {state.minSilenceDuration}s
+                        </Label>
+                        <Slider
+                          value={[state.minSilenceDuration]}
+                          onValueChange={(value) =>
+                            dispatch({ type: "UPDATE_PROCESSING", payload: { minSilenceDuration: value[0] } })
+                          }
+                          min={1}
+                          max={10}
+                          step={0.5}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="preserve-pacing"
+                        checked={state.preserveNaturalPacing}
+                        onCheckedChange={(checked) =>
+                          dispatch({ type: "UPDATE_PROCESSING", payload: { preserveNaturalPacing: checked } })
+                        }
+                      />
+                      <Label htmlFor="preserve-pacing" className="text-sm text-gray-700 dark:text-gray-300">
+                        Preserve natural pacing
+                      </Label>
+                    </div>
+                  </div>
+                </GradientCard>
+
+                {state.audioAnalysis && (
+                  <Card className="p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                      <Info className="h-5 w-5 mr-2" />
+                      Audio Analysis
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400">Content Duration</p>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {formatTime(state.audioAnalysis.contentDuration)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400">Total Silence</p>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {formatTime(state.audioAnalysis.totalSilence)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400">Silence Regions</p>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {state.audioAnalysis.silenceRegions}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                )}
+
+                {state.isProcessing && (
+                  <ProgressCard
+                    title="Processing Audio"
+                    progress={state.processingProgress}
+                    step={state.processingStep}
+                    gradient="from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20"
+                  />
+                )}
+
+                <ActionButton
+                  onClick={processAudio}
+                  disabled={state.isProcessing}
+                  gradient="from-gray-400 to-gray-600"
+                  icon={Wand2}
+                  loading={state.isProcessing}
+                >
+                  {state.isProcessing ? "Processing..." : "Process Audio"}
+                </ActionButton>
+              </>
+            )}
+
+            {state.originalUrl && (
+              <GradientCard title="Original Audio" icon={Volume2} gradient="from-green-500 to-teal-600">
+                <div className="p-6">
+                  <audio ref={audioRef} controls className="w-full" src={state.originalUrl} />
+                  <div className="mt-4 flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Volume: {state.volume}%</span>
+                    <Slider
+                      value={[state.volume]}
+                      onValueChange={(value) => dispatch({ type: "UPDATE_PROCESSING", payload: { volume: value[0] } })}
+                      min={0}
+                      max={100}
+                      step={1}
+                      className="w-32"
+                    />
+                  </div>
+                </div>
+              </GradientCard>
+            )}
+
+            {state.processedUrl && (
+              <GradientCard title="Processed Audio" icon={Volume2} gradient="from-purple-500 to-pink-600">
+                <div className="p-6">
+                  <audio controls className="w-full" src={state.processedUrl} />
+                  <div className="mt-4 flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1 text-sm text-gray-600 dark:text-gray-400">
+                      <p>Duration: {state.actualDuration ? formatTime(state.actualDuration) : "Unknown"}</p>
+                      <p>Pauses adjusted: {state.pausesAdjusted}</p>
+                    </div>
+                    <ActionButton
+                      onClick={() =>
+                        downloadFile(
+                          state.processedUrl,
+                          `${state.file?.name.replace(/\.[^/.]+$/, "") || "meditation"}_${state.targetDuration}min.wav`,
+                        )
+                      }
+                      gradient="from-green-500 to-teal-600"
+                      icon={Download}
+                    >
+                      Download
+                    </ActionButton>
+                  </div>
+                </div>
+              </GradientCard>
+            )}
+
+            {state.status && (
+              <Alert
+                className={
+                  state.status.type === "error"
+                    ? "border-red-200 bg-red-50 dark:bg-red-900/20"
+                    : state.status.type === "success"
+                      ? "border-green-200 bg-green-50 dark:bg-green-900/20"
+                      : "border-blue-200 bg-blue-50 dark:bg-blue-900/20"
+                }
+              >
+                <Info className="h-4 w-4" />
+                <AlertDescription>{state.status.message}</AlertDescription>
+              </Alert>
+            )}
+          </TabsContent>
+
+          <TabsContent value="labs" className="space-y-6">
+            <GradientCard title="Meditation Settings" icon={Settings2} gradient="from-purple-500 to-pink-600">
+              <div className="p-6 space-y-4">
+                <div>
+                  <Label htmlFor="meditation-title" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Meditation Title
+                  </Label>
+                  <Input
+                    id="meditation-title"
+                    value={state.meditationTitle}
+                    onChange={(e) => dispatch({ type: "UPDATE_LABS", payload: { meditationTitle: e.target.value } })}
+                    placeholder="Enter meditation title"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                    Total Duration: {Math.floor(state.labsTotalDuration / 60)} minutes
+                  </Label>
+                  <Slider
+                    value={[state.labsTotalDuration]}
+                    onValueChange={(value) =>
+                      dispatch({ type: "UPDATE_LABS", payload: { labsTotalDuration: value[0] } })
+                    }
+                    min={60}
+                    max={3600}
+                    step={60}
+                    className="w-full"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={saveTimeline} variant="outline" size="sm">
+                    Save Timeline
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => document.getElementById("load-timeline")?.click()}>
+                    Load Timeline
+                  </Button>
+                  <input id="load-timeline" type="file" accept=".json" onChange={loadTimeline} className="hidden" />
+                </div>
+              </div>
+            </GradientCard>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <GradientCard title="Add Instructions & Sounds" icon={ListPlus} gradient="from-blue-500 to-purple-600">
+                <div className="p-6">
+                  <Tabs value={currentTab} onValueChange={setCurrentTab}>
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="instructions">Instructions</TabsTrigger>
+                      <TabsTrigger value="sounds">Sounds</TabsTrigger>
+                      <TabsTrigger value="record">Record</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="instructions" className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Library Instructions
+                        </Label>
+                        <Accordion type="single" collapsible className="w-full">
+                          {instructionCategories.map((category) => (
+                            <AccordionItem key={category} value={category}>
+                              <AccordionTrigger className="text-sm">{category}</AccordionTrigger>
+                              <AccordionContent>
+                                <div className="space-y-2">
+                                  {INSTRUCTIONS_LIBRARY.filter((instr) => instr.category === category).map(
+                                    (instruction) => (
+                                      <div
+                                        key={instruction.id}
+                                        className={cn(
+                                          "p-3 rounded-lg border cursor-pointer transition-colors",
+                                          state.selectedLibraryInstruction?.id === instruction.id
+                                            ? "bg-white border-gray-600 dark:bg-gray-800 dark:border-gray-400"
+                                            : "bg-gray-50 border-gray-200 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600",
+                                        )}
+                                        onClick={() =>
+                                          dispatch({
+                                            type: "UPDATE_LABS",
+                                            payload: { selectedLibraryInstruction: instruction },
+                                          })
+                                        }
+                                      >
+                                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                          {instruction.title}
+                                        </p>
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                          {instruction.text.substring(0, 100)}...
+                                        </p>
+                                      </div>
+                                    ),
+                                  )}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          ))}
+                        </Accordion>
+                      </div>
+
+                      <div>
+                        <Label
+                          htmlFor="custom-instruction"
+                          className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                        >
+                          Custom Instruction
+                        </Label>
+                        <Textarea
+                          id="custom-instruction"
+                          value={state.customInstructionText}
+                          onChange={(e) =>
+                            dispatch({ type: "UPDATE_LABS", payload: { customInstructionText: e.target.value } })
+                          }
+                          placeholder="Enter your custom meditation instruction..."
+                          className="mt-1"
+                          rows={4}
+                        />
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="sounds" className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Sound Cues
+                        </Label>
+                        <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto">
+                          {SOUND_CUES_LIBRARY.map((soundCue) => (
+                            <div
+                              key={soundCue.id}
+                              className={cn(
+                                "p-3 rounded-lg border cursor-pointer transition-colors flex items-center justify-between",
+                                state.selectedSoundCue?.id === soundCue.id
+                                  ? "bg-white border-gray-600 dark:bg-gray-800 dark:border-gray-400"
+                                  : "bg-gray-50 border-gray-200 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600",
+                              )}
+                              onClick={() => dispatch({ type: "UPDATE_LABS", payload: { selectedSoundCue: soundCue } })}
+                            >
+                              <div>
+                                <p className="text-sm font-medium text-gray-900 dark:text-white">{soundCue.name}</p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">{soundCue.description}</p>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  playLabsSound(soundCue.src)
+                                }}
+                              >
+                                <Play className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="record" className="space-y-4">
+                      <div>
+                        <Label
+                          htmlFor="recording-label"
+                          className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                        >
+                          Recording Label
+                        </Label>
+                        <Input
+                          id="recording-label"
+                          value={state.recordingLabel}
+                          onChange={(e) =>
+                            dispatch({ type: "UPDATE_LABS", payload: { recordingLabel: e.target.value } })
+                          }
+                          placeholder="Enter label for this recording"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        {!state.isRecording ? (
+                          <Button onClick={startRecording} className="flex-1">
+                            <Mic className="h-4 w-4 mr-2" />
+                            Start Recording
+                          </Button>
+                        ) : (
+                          <Button onClick={stopRecording} variant="destructive" className="flex-1">
+                            <StopCircle className="h-4 w-4 mr-2" />
+                            Stop Recording
+                          </Button>
+                        )}
+                      </div>
+
+                      {state.recordedAudioUrl && (
+                        <div className="space-y-2">
+                          <audio controls className="w-full" src={state.recordedAudioUrl} />
+                          <Button onClick={addRecordedVoiceToTimeline} className="w-full">
+                            <PlusCircle className="h-4 w-4 mr-2" />
+                            Add to Timeline
+                          </Button>
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
+
+                  <div className="mt-6">
+                    <ActionButton
+                      onClick={handlers.labs.addEvent}
+                      disabled={
+                        (!state.selectedLibraryInstruction && !state.customInstructionText.trim()) ||
+                        !state.selectedSoundCue
+                      }
+                      gradient="from-blue-500 to-purple-600"
+                      icon={PlusCircle}
+                    >
+                      Add to Timeline
+                    </ActionButton>
+                  </div>
+                </div>
+              </GradientCard>
+
+              <GradientCard title="Timeline" icon={Clock} gradient="from-green-500 to-teal-600">
+                <div className="p-6">
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Events: {state.timelineEvents.length} | Duration: {Math.floor(state.labsTotalDuration / 60)} min
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {state.timelineEvents.length === 0 ? (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+                        No events added yet. Add instructions and sounds to build your meditation.
+                      </p>
+                    ) : (
+                      state.timelineEvents.map((event) => (
+                        <div
+                          key={event.id}
+                          className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                {formatTime(event.startTime)}
+                              </p>
+                              {event.type === "instruction_sound" && (
+                                <>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                    {event.instructionText?.substring(0, 50)}...
+                                  </p>
+                                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                                    Sound: {event.soundCueName}
+                                  </p>
+                                </>
+                              )}
+                              {event.type === "recorded_voice" && (
+                                <p className="text-xs text-green-600 dark:text-green-400">
+                                  Recording: {event.recordedInstructionLabel}
+                                </p>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => removeEventFromTimeline(event.id)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {state.timelineEvents.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Volume: {state.volume}%</span>
+                        <Slider
+                          value={[state.volume]}
+                          onValueChange={(value) => dispatch({ type: "UPDATE_LABS", payload: { volume: value[0] } })}
+                          min={0}
+                          max={100}
+                          step={1}
+                          className="w-32"
+                        />
+                      </div>
+                      <ActionButton
+                        onClick={handleExportAudio}
+                        disabled={state.isGeneratingAudio}
+                        gradient="from-green-500 to-teal-600"
+                        icon={Download}
+                        loading={state.isGeneratingAudio}
+                      >
+                        {state.isGeneratingAudio ? "Exporting..." : "Export Audio"}
+                      </ActionButton>
+                    </div>
+                  )}
+                </div>
+              </GradientCard>
+            </div>
+
+            {state.isGeneratingAudio && (
+              <ProgressCard
+                title="Generating Audio"
+                progress={state.generationProgress}
+                step={state.generationStep}
+                gradient="from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20"
+              />
+            )}
+
+            {state.generatedAudioUrl && (
+              <GradientCard title="Generated Meditation" icon={Music2} gradient="from-purple-500 to-pink-600">
+                <div className="p-6">
+                  <audio ref={labsAudioRef} controls className="w-full" src={state.generatedAudioUrl} />
+                  <div className="mt-4">
+                    <ActionButton
+                      onClick={() =>
+                        downloadFile(
+                          state.generatedAudioUrl!,
+                          `${state.meditationTitle.replace(/[^a-z0-9]/gi, "_")}_meditation.wav`,
+                        )
+                      }
+                      gradient="from-purple-500 to-pink-600"
+                      icon={Download}
+                    >
+                      Download Meditation
+                    </ActionButton>
+                  </div>
+                </div>
+              </GradientCard>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <GradientCard title="Timeline Builder" icon={CircleDotDashed} gradient="from-orange-500 to-red-600">
+                <div className="p-6">
+                  <Tabs value={currentTab} onValueChange={setCurrentTab}>
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="instructions">Instructions</TabsTrigger>
+                      <TabsTrigger value="sounds">Sounds</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="instructions" className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Available Instructions
+                        </Label>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {INSTRUCTIONS_LIBRARY.map((instruction) => (
+                            <div
+                              key={instruction.id}
+                              className="p-2 bg-gray-50 dark:bg-gray-700 rounded border cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                              onClick={() => addTimelineItem(instruction, "instruction")}
+                            >
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">{instruction.title}</p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">{instruction.category}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="sounds" className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Available Sounds
+                        </Label>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {SOUND_CUES_LIBRARY.map((sound) => (
+                            <div
+                              key={sound.id}
+                              className="p-2 bg-gray-50 dark:bg-gray-700 rounded border cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center justify-between"
+                              onClick={() => addTimelineItem(sound, "sound")}
+                            >
+                              <div>
+                                <p className="text-sm font-medium text-gray-900 dark:text-white">{sound.name}</p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">{sound.description}</p>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  playLabsSound(sound.src)
+                                }}
+                              >
+                                <Play className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              </GradientCard>
+
+              <GradientCard title="Timeline Preview" icon={Clock} gradient="from-indigo-500 to-purple-600">
+                <div className="p-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Total: {formatTime(totalDuration)}</span>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={isPlaying ? pausePlayback : startPlayback}
+                        disabled={timeline.length === 0}
+                      >
+                        {isPlaying ? <StopCircle className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                      </Button>
+                      <Button size="sm" onClick={resetPlayback} variant="outline">
+                        Reset
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {timeline.length === 0 ? (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+                        Add items to build your timeline
+                      </p>
+                    ) : (
+                      timeline.map((item, index) => (
+                        <div
+                          key={item.id}
+                          className={cn(
+                            "p-3 rounded border transition-colors",
+                            activeItemIndex === index
+                              ? "bg-blue-100 border-blue-300 dark:bg-blue-900/30 dark:border-blue-600"
+                              : "bg-gray-50 border-gray-200 dark:bg-gray-700 dark:border-gray-600",
+                          )}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                {item.type === "instruction" ? item.content.title : item.content.name}
+                              </p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                Duration: {formatTime(item.duration)}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                value={item.duration}
+                                onChange={(e) => updateTimelineItemDuration(index, Number(e.target.value))}
+                                className="w-16 h-8 text-xs"
+                                min="1"
+                              />
+                              <Button size="sm" variant="ghost" onClick={() => removeTimelineItem(index)}>
+                                ×
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {isPlaying && (
+                    <div className="mt-4">
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-100"
+                          style={{ width: `${totalDuration > 0 ? (currentPlaybackTime / totalDuration) * 100 : 0}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-center">
+                        {formatTime(currentPlaybackTime)} / {formatTime(totalDuration)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </GradientCard>
+            </div>
+
+            <VisualTimeline events={state.timelineEvents} totalDuration={state.labsTotalDuration} />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  )
+}
