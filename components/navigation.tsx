@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MenuIcon } from "lucide-react"
-// Removed: import { ThemeToggle } from "@/components/theme-toggle"
 
 export function Navigation() {
   const pathname = usePathname()
@@ -16,8 +15,8 @@ export function Navigation() {
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 font-semibold">
-            <img src="/placeholder-logo.svg" alt="abhī logo" className="h-6 w-6" />
-            <span className="sr-only">abhī</span>
+            <img src="/placeholder-logo.svg" alt="Acme Inc. logo" className="h-6 w-6" />
+            <span className="text-lg font-bold">Acme Inc.</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm">
             <Link
@@ -68,7 +67,6 @@ export function Navigation() {
           </nav>
         </div>
         <div className="flex items-center gap-2">
-          {/* Removed: <ThemeToggle /> */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden">
