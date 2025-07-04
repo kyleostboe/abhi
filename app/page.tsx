@@ -1452,7 +1452,7 @@ export default function HomePage() {
 
     // Calculate new startTime based on existing events
     const maxExistingTime = timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
-    const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 15 : 0
+    const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 33 : 0
 
     const newEvent: TimelineEvent = {
       id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
@@ -2542,7 +2542,7 @@ export default function HomePage() {
                                   // Calculate new startTime based on existing events
                                   const maxExistingTime =
                                     timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
-                                  const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 15 : 0
+                                  const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 33 : 0
 
                                   const newEvent: TimelineEvent = {
                                     id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
