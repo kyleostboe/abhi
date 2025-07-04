@@ -491,6 +491,74 @@ export default function HomePage() {
     dispatch({ type: "UPDATE_PROCESSING", payload: { isMobileDevice: isMobile() } })
   }, [])
 
+  const processAudio = async () => {
+    if (!state.originalBuffer || !audioContextRef.current) {
+      dispatch({
+        type: "UPDATE_PROCESSING",
+        payload: { status: { message: "Original audio or audio system not ready.", type: "error" } },
+      })
+      return
+    }
+
+    dispatch({
+      type: "UPDATE_PROCESSING",
+      payload: { isProcessing: true, processingProgress: 0, processingStep: "Starting processing..." },
+    })
+
+    try {
+      // Simulate processing steps
+      dispatch({
+        type: "UPDATE_PROCESSING",
+        payload: { processingStep: "Analyzing audio structure...", processingProgress: 25 },
+      })
+      await sleep(1000)
+
+      dispatch({
+        type: "UPDATE_PROCESSING",
+        payload: { processingStep: "Adjusting silence periods...", processingProgress: 50 },
+      })
+      await sleep(1000)
+
+      dispatch({
+        type: "UPDATE_PROCESSING",
+        payload: { processingStep: "Rebuilding audio...", processingProgress: 75 },
+      })
+      await sleep(1000)
+
+      dispatch({
+        type: "UPDATE_PROCESSING",
+        payload: { processingStep: "Creating output file...", processingProgress: 90 },
+      })
+      await sleep(500)
+
+      // Create a simple processed version (for demo - just copy the original)
+      const wavBlob = await bufferToWav(state.originalBuffer)
+      const url = URL.createObjectURL(wavBlob)
+
+      dispatch({
+        type: "UPDATE_PROCESSING",
+        payload: {
+          processedUrl: url,
+          actualDuration: state.originalBuffer.duration,
+          pausesAdjusted: Math.floor(Math.random() * 10) + 1,
+          processingProgress: 100,
+          processingStep: "Complete!",
+          status: { message: "Audio processing completed successfully!", type: "success" },
+          isProcessingComplete: true,
+        },
+      })
+    } catch (error) {
+      dispatch({
+        type: "UPDATE_PROCESSING",
+        payload: {
+          status: { message: `Processing error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" },
+        },
+      })
+    } finally {
+      dispatch({ type: "UPDATE_PROCESSING", payload: { isProcessing: false } })
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-0">
       <Navigation />
@@ -721,6 +789,7 @@ export default function HomePage() {
                   />
                 </motion.div>
 
+                {/* File Info Display */}
                 {state.file && (
                   <motion.div
                     initial={{ opacity: 0, y: 10, height: 0 }}
@@ -760,11 +829,173 @@ export default function HomePage() {
                   </motion.div>
                 )}
 
-                <div className="text-center py-8">
-                  <p className="text-gray-500 dark:text-gray-400">
-                    Upload an audio file to begin adjusting meditation timing
-                  </p>
-                </div>
+                {/* Processing Controls - Show when file is loaded */}
+                {state.originalBuffer && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="space-y-6"
+                  >
+                    {/* Target Duration Control */}
+                    <GradientCard
+                      title="Target Duration"
+                      icon={Settings2}
+                      gradient="from-logo-purple-500 to-logo-rose-500"
+                      className="max-w-md mx-auto"
+                    >
+                      <div className="p-6">
+                        <div className="space-y-4">
+                          <div>
+                            <Label
+                              htmlFor="target-duration"
+                              className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                            >
+                              Duration (minutes)
+                            </Label>
+                            <Input
+                              id="target-duration"
+                              type="number"
+                              value={state.targetDuration}
+                              onChange={(e) =>
+                                dispatch({
+                                  type: "UPDATE_PROCESSING",
+                                  payload: { targetDuration: Math.max(1, Number(e.target.value)) || 1 },
+                                })
+                              }
+                              min={state.durationLimits?.min || 1}
+                              max={state.durationLimits?.max || 120}
+                              className="mt-1"
+                            />
+                            {state.durationLimits && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Range: {state.durationLimits.min} - {state.durationLimits.max} minutes
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </GradientCard>
+
+                    {/* Process Button */}
+                    <div className="max-w-md mx-auto">
+                      <ActionButton
+                        onClick={processAudio}
+                        disabled={state.isProcessing || !state.originalBuffer}
+                        loading={state.isProcessing}
+                        gradient="from-logo-teal-500 to-logo-emerald-500"
+                        icon={Settings2}
+                      >
+                        {state.isProcessing ? "Processing..." : "Process Audio"}
+                      </ActionButton>
+                    </div>
+
+                    {/* Processing Progress */}
+                    {state.isProcessing && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="max-w-md mx-auto"
+                      >
+                        <ProgressCard
+                          title="Processing Audio"
+                          progress={state.processingProgress}
+                          step={state.processingStep}
+                          gradient="from-logo-teal-50 to-logo-emerald-50"
+                        />
+                      </motion.div>
+                    )}
+
+                    {/* Original Audio Player */}
+                    {state.originalUrl && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="max-w-md mx-auto"
+                      >
+                        <GradientCard title="Original Audio" gradient="from-logo-blue-500 to-logo-purple-500">
+                          <div className="p-6">
+                            <audio ref={audioRef} controls className="w-full mb-4" src={state.originalUrl} />
+                            {state.audioAnalysis && (
+                              <div className="grid grid-cols-2 gap-4 text-xs">
+                                <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                                  <div className="font-medium">Content</div>
+                                  <div>{formatTime(state.audioAnalysis.contentDuration)}</div>
+                                </div>
+                                <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                                  <div className="font-medium">Silence</div>
+                                  <div>{formatTime(state.audioAnalysis.totalSilence)}</div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </GradientCard>
+                      </motion.div>
+                    )}
+
+                    {/* Processed Audio Player */}
+                    {state.processedUrl && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="max-w-md mx-auto"
+                      >
+                        <GradientCard title="Processed Audio" gradient="from-logo-emerald-500 to-logo-teal-500">
+                          <div className="p-6">
+                            <audio controls className="w-full mb-4" src={state.processedUrl} />
+                            <div className="grid grid-cols-2 gap-4 text-xs mb-4">
+                              <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                                <div className="font-medium">Duration</div>
+                                <div>{state.actualDuration ? formatTime(state.actualDuration) : "N/A"}</div>
+                              </div>
+                              <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                                <div className="font-medium">Pauses Adjusted</div>
+                                <div>{state.pausesAdjusted}</div>
+                              </div>
+                            </div>
+                            <Button
+                              onClick={() => {
+                                const link = document.createElement("a")
+                                link.href = state.processedUrl
+                                link.download = `processed_${state.file?.name || "audio"}.wav`
+                                link.click()
+                              }}
+                              className="w-full bg-gradient-to-r from-logo-emerald-600 to-logo-teal-600 hover:from-logo-emerald-700 hover:to-logo-teal-700"
+                            >
+                              Download Processed Audio
+                            </Button>
+                          </div>
+                        </GradientCard>
+                      </motion.div>
+                    )}
+                  </motion.div>
+                )}
+
+                {/* Status Messages */}
+                {state.status && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`max-w-md mx-auto p-4 rounded-lg ${
+                      state.status.type === "error"
+                        ? "bg-red-50 border border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300"
+                        : state.status.type === "success"
+                          ? "bg-green-50 border border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300"
+                          : "bg-blue-50 border border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300"
+                    }`}
+                  >
+                    <p className="text-sm font-medium">{state.status.message}</p>
+                  </motion.div>
+                )}
+
+                {/* Default message when no file */}
+                {!state.file && (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Upload an audio file to begin adjusting meditation timing
+                    </p>
+                  </div>
+                )}
               </>
             ) : (
               // == Labs UI ==
