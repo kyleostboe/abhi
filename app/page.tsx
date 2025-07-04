@@ -1386,17 +1386,14 @@ export default function HomePage() {
   }, [])
 
   // Helper function to add events to timelineEvents without automatic spacing
-  const addEventToTimeline = useCallback(
-    (newEvent: TimelineEvent) => {
-      setTimelineEvents((prevEvents) => {
-        const updatedEvents = [...prevEvents, newEvent]
-        // Sort by current startTime to maintain chronological order for display
-        // Do NOT re-calculate or re-assign startTimes based on spacing.
-        return updatedEvents.sort((a, b) => a.startTime - b.startTime)
-      })
-    },
-    [], // No longer depends on labsTotalDuration for spacing
-  )
+  const addEventToTimeline = useCallback((newEvent: TimelineEvent) => {
+    setTimelineEvents((prevEvents) => {
+      const updatedEvents = [...prevEvents, newEvent]
+      // Sort by current startTime to maintain chronological order for display
+      // Do NOT re-calculate or re-assign startTimes based on spacing.
+      return updatedEvents.sort((a, b) => a.startTime - b.startTime)
+    })
+  }, [])
 
   const playLabsSoundOld = async (src: string) => {
     try {
@@ -1452,10 +1449,15 @@ export default function HomePage() {
       toast({ title: "Missing Sound Cue", description: "Please select a sound cue.", variant: "destructive" })
       return
     }
+
+    // Calculate new startTime based on existing events
+    const maxExistingTime = timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
+    const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 15 : 0
+
     const newEvent: TimelineEvent = {
       id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       type: "instruction_sound",
-      startTime: 0, // Default to 0, user can drag later
+      startTime: newStartTime, // Now calculated
       instructionText: instructionTextToAdd,
       soundCueId: selectedSoundCue.id,
       soundCueName: selectedSoundCue.name, // Store the name directly
@@ -2537,10 +2539,15 @@ export default function HomePage() {
                                     }
                                   }
 
+                                  // Calculate new startTime based on existing events
+                                  const maxExistingTime =
+                                    timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
+                                  const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 15 : 0
+
                                   const newEvent: TimelineEvent = {
                                     id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
                                     type: "recorded_voice",
-                                    startTime: 0, // Default to 0, user can drag later
+                                    startTime: newStartTime, // Now calculated
                                     recordedAudioUrl: recordedAudioUrl,
                                     recordedInstructionLabel: recordingLabel.trim(),
                                     duration: duration,
