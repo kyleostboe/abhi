@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 // Removed: import { ThemeToggle } from "@/components/theme-toggle"
-import { Home, Mail, HeartIcon, Info } from "lucide-react"
+import { Home, Mail, HeartIcon, Info } from "lucide-react/dist/lucide-react.mjs"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -16,9 +16,7 @@ export function Navigation() {
     <nav className="max-w-4xl mx-auto mb-8 px-0 w-64">
       <div className="flex justify-center py-4 items-stretch pb-0 text-center">
         {/* Logo/Brand */}
-        <div className="flex items-center space-x-2">
-          
-        </div>
+        <div className="flex items-center space-x-2"></div>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-6 flex-grow justify-center pt-3.5">
