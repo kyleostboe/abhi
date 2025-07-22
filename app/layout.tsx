@@ -1,45 +1,36 @@
 import type React from "react"
 import type { Metadata } from "next"
-import "@/app/globals.css"
 import { Inter } from "next/font/google"
-// The ThemeProvider import has been removed.
+import "./globals.css"
+import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "abhī - Meditation Length Adjuster",
-  description: "Adjust the length of pauses in meditation audio files to match a target duration",
-  generator: "v0.dev",
+  title: "abhī - Meditation Tool",
+  description: "Adjust meditation length and create custom meditation timelines.",
+  icons: {
+    icon: "/favicon.ico",
+  },
   openGraph: {
-    title: "abhī - Meditation Length Adjuster",
-    description: "Adjust the length of pauses in meditation audio files to match a target duration",
-    url: "https://v0-abhi-ten.vercel.app/",
-    images: [
-      {
-        url: "/og-image-v2.png?v=4",
-        width: 1200,
-        height: 630,
-        alt: "abhī meditation app interface showing pause adjustment features",
-      },
-    ],
-    type: "website",
+    images: "/og-image-v2.png",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "abhī - Meditation Length Adjuster",
-    description: "Adjust the length of pauses in meditation audio files to match a target duration",
-    images: ["/og-image-v2.png?v=4"],
-  },
+    generator: 'v0.dev'
 }
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  console.log("RootLayout is rendering.")
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode
+}>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
-      <body className={`${inter.className} transition-colors duration-300 ease-in-out`}>
-        {/* The ThemeProvider component has been removed. */}
-        {children}
+      <body className={inter.className}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   )

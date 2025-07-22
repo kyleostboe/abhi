@@ -6,28 +6,12 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Progress } from "@/components/ui/progress"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
-import {
-  Upload,
-  FileText,
-  Music,
-  Wand2,
-  PlayCircle,
-  Download,
-  AlertTriangle,
-  Info,
-  RefreshCcw,
-  Plus,
-  Trash2,
-  Volume2,
-} from "lucide-react"
+import { AlertTitle } from "@/components/ui/alert"
 import type { SpeechRecognition } from "web-speech-api"
+
+import Link from "next/link"
+import { CardDescription } from "@/components/ui/card"
+import { Code, Lightbulb, Zap } from "lucide-react/dist/lucide-react.mjs" // Corrected import path
 
 interface Instruction {
   id: string
@@ -684,437 +668,110 @@ export default function EncoderPage() {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
             >
+              {/*
               <h1 className="text-4xl md:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out tracking-wide mb-2 font-black">
                 Meditation Encoder
               </h1>
               <p className="text-gray-600 dark:text-gray-300 text-lg mb-8">
                 Transform guided meditations by replacing speech with sound cues
               </p>
+              */}
+              <div className="max-w-4xl mx-auto">
+                <div className="relative text-center px-[69px] py-16">
+                  <h1
+                    className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter text-center"
+                    style={{
+                      fontFamily: 'Georgia, "Times New Roman", serif',
+                      textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
+                    }}
+                  >
+                    Encoder (Coming Soon)
+                  </h1>
+                  <p className="text-lg text-gray-600 dark:text-gray-300 mt-4 mb-8">
+                    The Encoder tool is under active development. Get ready to create your own custom meditation
+                    experiences!
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <Card className="bg-white dark:bg-gray-800 shadow-lg dark:shadow-white/10 border-none">
+                      <CardHeader>
+                        <Lightbulb className="h-12 w-12 text-logo-teal-500 mx-auto mb-4" />
+                        <CardTitle className="text-logo-teal-600 dark:text-logo-teal-400">
+                          Innovative Features
+                        </CardTitle>
+                        <CardDescription className="text-gray-500 dark:text-gray-400">
+                          Design unique meditation flows with custom instructions and soundscapes.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="list-disc list-inside text-left text-gray-700 dark:text-gray-300 space-y-2">
+                          <li>Intuitive timeline editor</li>
+                          <li>Extensive sound cue library</li>
+                          <li>Personalized voice recording</li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-white dark:bg-gray-800 shadow-lg dark:shadow-white/10 border-none">
+                      <CardHeader>
+                        <Code className="h-12 w-12 text-logo-purple-500 mx-auto mb-4" />
+                        <CardTitle className="text-logo-purple-600 dark:text-logo-purple-400">
+                          Advanced Customization
+                        </CardTitle>
+                        <CardDescription className="text-gray-500 dark:text-gray-400">
+                          Fine-tune every aspect of your meditation session.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="list-disc list-inside text-left text-gray-700 dark:text-gray-300 space-y-2">
+                          <li>Precise timing controls</li>
+                          <li>Layer ambient sounds</li>
+                          <li>Exportable audio files</li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-white dark:bg-gray-800 shadow-lg dark:shadow-white/10 border-none">
+                      <CardHeader>
+                        <Zap className="h-12 w-12 text-logo-amber-500 mx-auto mb-4" />
+                        <CardTitle className="text-logo-amber-600 dark:text-logo-amber-400">
+                          Empower Your Practice
+                        </CardTitle>
+                        <CardDescription className="text-gray-500 dark:text-gray-400">
+                          Bridge the gap between guided and self-directed meditation.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="list-disc list-inside text-left text-gray-700 dark:text-gray-300 space-y-2">
+                          <li>Tailor sessions to your needs</li>
+                          <li>Enhance focus and presence</li>
+                          <li>Share your creations</li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="mt-12">
+                    <Link href="/" passHref>
+                      <Button
+                        variant="outline"
+                        className="border-gray-400 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 bg-transparent"
+                      >
+                        Back to Home
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
             </motion.div>
           </div>
         </div>
 
         <div className="px-6 md:px-10 pb-10">
+          {/*
           <Tabs defaultValue="upload" className="w-full">
             <TabsList className="grid w-full grid-cols-4 mb-6 bg-gray-100/70 p-1 rounded-lg dark:bg-gray-800/70">
-              <TabsTrigger value="upload" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                <Upload className="h-4 w-4 mr-2" />
-                Upload
-              </TabsTrigger>
-              <TabsTrigger value="transcribe" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                <FileText className="h-4 w-4 mr-2" />
-                Transcribe
-              </TabsTrigger>
-              <TabsTrigger value="map" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                <Music className="h-4 w-4 mr-2" />
-                Map Sounds
-              </TabsTrigger>
-              <TabsTrigger value="encode" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                <Wand2 className="h-4 w-4 mr-2" />
-                Encode
-              </TabsTrigger>
-            </TabsList>
-
-            {/* Upload Tab */}
-            <TabsContent value="upload" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Upload className="h-5 w-5 mr-2" />
-                    Upload Audio File
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <motion.div
-                    ref={uploadAreaRef}
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer transition-colors hover:border-primary"
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                    <p className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Drop your audio file here or click to browse
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Supports MP3, WAV, OGG, and M4A files</p>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      className="hidden"
-                      accept=".mp3,.wav,.ogg,.m4a,audio/*"
-                      onChange={handleFileChange}
-                    />
-                  </motion.div>
-
-                  {file && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800"
-                    >
-                      <div className="flex items-center">
-                        <Volume2 className="h-5 w-5 text-green-600 dark:text-green-400 mr-3" />
-                        <div>
-                          <p className="font-medium text-green-800 dark:text-green-200">{file.name}</p>
-                          <p className="text-sm text-green-600 dark:text-green-400">
-                            Size: {(file.size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {originalAudioUrl && (
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
-                      <h3 className="text-lg font-medium mb-3">Original Audio</h3>
-                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                        <audio
-                          ref={audioRef}
-                          controls
-                          className="w-full mb-3"
-                          src={originalAudioUrl}
-                          onTimeUpdate={(e) => setCurrentTime((e.target as HTMLAudioElement).currentTime)}
-                          onLoadedMetadata={(e) => setAudioDuration((e.target as HTMLAudioElement).duration)}
-                        />
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          Current time: {formatTime(currentTime)} / {formatTime(audioDuration)}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Transcribe Tab */}
-            <TabsContent value="transcribe" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <FileText className="h-5 w-5 mr-2" />
-                    Transcription Method
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${transcriptionMethod === "browser" ? "border-primary bg-primary/5" : "border-gray-200 dark:border-gray-700"}`}
-                      onClick={() => setTranscriptionMethod("browser")}
-                    >
-                      <h3 className="font-medium mb-2">Browser Speech Recognition</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Automatic transcription using your browser's speech recognition
-                      </p>
-                    </div>
-                    <div
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${transcriptionMethod === "manual" ? "border-primary bg-primary/5" : "border-gray-200 dark:border-gray-700"}`}
-                      onClick={() => setTranscriptionMethod("manual")}
-                    >
-                      <h3 className="font-medium mb-2">Manual Marking</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Manually mark instruction points while listening
-                      </p>
-                    </div>
-                  </div>
-
-                  <Button onClick={handleTranscription} disabled={!file || isTranscribing} className="w-full" size="lg">
-                    {isTranscribing ? (
-                      <>
-                        <RefreshCcw className="h-4 w-4 mr-2 animate-spin" />
-                        Transcribing...
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="h-4 w-4 mr-2" />
-                        Start Transcription
-                      </>
-                    )}
-                  </Button>
-
-                  {isTranscribing && (
-                    <div className="space-y-2">
-                      <Progress value={transcriptionProgress} className="w-full" />
-                      <p className="text-sm text-center text-gray-600 dark:text-gray-400">
-                        {transcriptionProgress}% complete
-                      </p>
-                    </div>
-                  )}
-
-                  {transcriptionMethod === "manual" && originalAudioUrl && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-6 space-y-4"
-                    >
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-medium">Manual Instruction Marking</h3>
-                        <Button onClick={addManualInstruction} size="sm">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Instruction
-                        </Button>
-                      </div>
-
-                      {instructions.length > 0 && (
-                        <div className="space-y-2">
-                          {instructions.map((instruction) => (
-                            <div
-                              key={instruction.id}
-                              className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
-                            >
-                              <input
-                                type="text"
-                                value={instruction.text}
-                                onChange={(e) => updateInstruction(instruction.id, { text: e.target.value })}
-                                className="flex-1 px-2 py-1 border rounded text-xs font-black text-gray-600 shadow-inner"
-                                placeholder="Instruction text..."
-                              />
-                              <span className="text-xs text-gray-500 whitespace-nowrap">
-                                {formatTime(instruction.startTime)}
-                              </span>
-                              <Button
-                                onClick={() => removeInstruction(instruction.id)}
-                                size="sm"
-                                variant="ghost"
-                                className="text-red-500 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-
-                  {fullTranscript && (
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
-                      <h3 className="text-lg font-medium mb-3">Full Transcript</h3>
-                      <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg max-h-40 overflow-y-auto">
-                        <p className="text-sm">{fullTranscript}</p>
-                      </div>
-                    </motion.div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Map Sounds Tab */}
-            <TabsContent value="map" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Music className="h-5 w-5 mr-2" />
-                    Sound Mapping
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {mappedInstructions.length === 0 ? (
-                    <Alert>
-                      <Info className="h-4 w-4" />
-                      <AlertTitle>No Instructions Found</AlertTitle>
-                      <AlertDescription>
-                        Please complete the transcription step first to map sounds to instructions.
-                      </AlertDescription>
-                    </Alert>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
-                        <h3 className="col-span-full text-lg font-medium mb-2">Available Sounds</h3>
-                        {availableSounds.map((sound) => (
-                          <Button
-                            key={sound.id}
-                            variant="outline"
-                            size="sm"
-                            onClick={() => playSoundPreview(sound.id)}
-                            className="flex items-center justify-between"
-                          >
-                            <span className="text-xs">{sound.name}</span>
-                            <PlayCircle className="h-3 w-3" />
-                          </Button>
-                        ))}
-                      </div>
-
-                      <div className="space-y-4">
-                        {mappedInstructions.map((instruction) => (
-                          <motion.div
-                            key={instruction.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg space-y-3"
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <input
-                                  type="text"
-                                  value={instruction.text}
-                                  onChange={(e) => updateInstruction(instruction.id, { text: e.target.value })}
-                                  className="w-full px-2 py-1 border rounded text-xs font-black text-gray-600 shadow-inner mb-2"
-                                  placeholder="Instruction text..."
-                                />
-                                <p className="text-xs text-gray-500">
-                                  Time: {formatTime(instruction.startTime)} - {formatTime(instruction.endTime)}
-                                </p>
-                              </div>
-                              <Button
-                                onClick={() => removeInstruction(instruction.id)}
-                                size="sm"
-                                variant="ghost"
-                                className="text-red-500 hover:text-red-700 ml-2"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <Label className="text-sm font-medium">Sound Cue</Label>
-                                <Select
-                                  value={instruction.soundId}
-                                  onValueChange={(value) => handleSoundMappingChange(instruction.id, value)}
-                                >
-                                  <SelectTrigger className="w-full mt-1">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {availableSounds.map((sound) => (
-                                      <SelectItem key={sound.id} value={sound.id}>
-                                        {sound.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-
-                              <div className="space-y-2">
-                                <div className="flex items-center space-x-2">
-                                  <Switch
-                                    checked={instruction.keepOriginal}
-                                    onCheckedChange={(checked) =>
-                                      updateInstruction(instruction.id, { keepOriginal: checked })
-                                    }
-                                  />
-                                  <Label className="text-sm">Keep Original Speech</Label>
-                                </div>
-
-                                {instruction.keepOriginal && (
-                                  <div>
-                                    <Label className="text-xs">Original Volume: {instruction.originalVolume}%</Label>
-                                    <Slider
-                                      value={[instruction.originalVolume]}
-                                      onValueChange={([value]) =>
-                                        updateInstruction(instruction.id, { originalVolume: value })
-                                      }
-                                      max={100}
-                                      step={5}
-                                      className="mt-1"
-                                    />
-                                  </div>
-                                )}
-
-                                <div>
-                                  <Label className="text-xs">Sound Volume: {instruction.soundVolume}%</Label>
-                                  <Slider
-                                    value={[instruction.soundVolume]}
-                                    onValueChange={([value]) =>
-                                      updateInstruction(instruction.id, { soundVolume: value })
-                                    }
-                                    max={100}
-                                    step={5}
-                                    className="mt-1"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Encode Tab */}
-            <TabsContent value="encode" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Wand2 className="h-5 w-5 mr-2" />
-                    Audio Encoding
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {mappedInstructions.length === 0 ? (
-                    <Alert>
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertTitle>No Instructions Mapped</AlertTitle>
-                      <AlertDescription>Please complete the sound mapping step before encoding.</AlertDescription>
-                    </Alert>
-                  ) : (
-                    <>
-                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <h3 className="font-medium text-blue-800 dark:text-blue-200 mb-2">Encoding Summary</h3>
-                        <p className="text-sm text-blue-600 dark:text-blue-400">
-                          Ready to encode {mappedInstructions.length} instructions with sound cues.
-                        </p>
-                        <ul className="text-xs text-blue-600 dark:text-blue-400 mt-2 space-y-1">
-                          <li>
-                            • Original speech will be{" "}
-                            {mappedInstructions.filter((i) => i.keepOriginal).length > 0
-                              ? "partially preserved"
-                              : "completely replaced"}
-                          </li>
-                          <li>• Sound cues will be added at instruction points</li>
-                          <li>• Output format: WAV (uncompressed)</li>
-                        </ul>
-                      </div>
-
-                      <Button onClick={handleEncoding} disabled={isEncoding} className="w-full" size="lg">
-                        {isEncoding ? (
-                          <>
-                            <RefreshCcw className="h-4 w-4 mr-2 animate-spin" />
-                            Encoding Audio...
-                          </>
-                        ) : (
-                          <>
-                            <Wand2 className="h-4 w-4 mr-2" />
-                            Start Encoding
-                          </>
-                        )}
-                      </Button>
-
-                      {isEncoding && (
-                        <div className="space-y-2">
-                          <Progress value={encodingProgress} className="w-full" />
-                          <p className="text-sm text-center text-gray-600 dark:text-gray-400">
-                            {encodingProgress}% complete
-                          </p>
-                        </div>
-                      )}
-
-                      {encodedAudioUrl && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800"
-                        >
-                          <h3 className="font-medium text-green-800 dark:text-green-200 mb-3">Encoded Audio</h3>
-                          <audio controls className="w-full mb-4" src={encodedAudioUrl} />
-                          <Button onClick={downloadEncodedAudio} className="w-full">
-                            <Download className="h-4 w-4 mr-2" />
-                            Download Encoded Audio
-                          </Button>
-                        </motion.div>
-                      )}
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+             */}
 
           {/* Status Messages */}
           <AnimatePresence>
@@ -1131,7 +788,7 @@ export default function EncoderPage() {
                       : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800"
                 }`}
               >
-                {status.message}
+                <AlertTitle>{status.message}</AlertTitle>
               </motion.div>
             )}
           </AnimatePresence>

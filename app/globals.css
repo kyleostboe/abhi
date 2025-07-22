@@ -5,16 +5,16 @@
 @layer base {
   :root {
     --background: 0 0% 100%; /* White */
-    --foreground: 222.2 47.4% 11.2%; /* Near black */
+    --foreground: 222.2 84% 4.9%; /* Updated color */
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 47.4% 11.2%;
+    --popover-foreground: 222.2 84% 4.9%; /* Updated color */
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 47.4% 11.2%;
+    --card-foreground: 222.2 84% 4.9%; /* Updated color */
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
@@ -27,10 +27,10 @@
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
-    --destructive: 0 90% 50%;
+    --destructive: 0 84.2% 60.2%; /* Updated color */
     --destructive-foreground: 210 40% 98%;
 
-    --ring: 215.4 16.3% 46.9%;
+    --ring: 222.2 84% 4.9%; /* Updated color */
 
     --radius: 0.5rem;
 
@@ -54,6 +54,36 @@
     --neutral-800: 38 38 38;
     --neutral-900: 23 23 23;
     --neutral-950: 10 10 10;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%; /* Dark mode background */
+    --foreground: 210 40% 98%; /* Dark mode foreground */
+
+    --card: 222.2 84% 4.9%; /* Dark mode card */
+    --card-foreground: 210 40% 98%; /* Dark mode card foreground */
+
+    --popover: 222.2 84% 4.9%; /* Dark mode popover */
+    --popover-foreground: 210 40% 98%; /* Dark mode popover foreground */
+
+    --primary: 210 40% 98%; /* Dark mode primary */
+    --primary-foreground: 222.2 47.4% 11.2%; /* Dark mode primary foreground */
+
+    --secondary: 217.2 32.6% 17.5%; /* Dark mode secondary */
+    --secondary-foreground: 210 40% 98%; /* Dark mode secondary foreground */
+
+    --muted: 217.2 32.6% 17.5%; /* Dark mode muted */
+    --muted-foreground: 215 20.2% 65.1%; /* Dark mode muted foreground */
+
+    --accent: 217.2 32.6% 17.5%; /* Dark mode accent */
+    --accent-foreground: 210 40% 98%; /* Dark mode accent foreground */
+
+    --destructive: 0 62.8% 30.6%; /* Dark mode destructive */
+    --destructive-foreground: 210 40% 98%; /* Dark mode destructive foreground */
+
+    --border: 217.2 32.6% 17.5%; /* Dark mode border */
+    --input: 217.2 32.6% 17.5%; /* Dark mode input */
+    --ring: 212.7 26.8% 83.9%; /* Dark mode ring */
   }
 }
 

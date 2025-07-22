@@ -403,6 +403,107 @@ export const INSTRUCTIONS_LIBRARY: Instruction[] = [
     text: "Carrying this peace forward",
     category: "Transitions",
   },
+  // New Instructions
+  {
+    id: "instr-1",
+    text: "Bring your attention to your breath.",
+    category: "Focus",
+  },
+  {
+    id: "instr-2",
+    text: "Notice the sensation of the air entering and leaving your nostrils.",
+    category: "Focus",
+  },
+  {
+    id: "instr-3",
+    text: "Expand your awareness to include sounds around you.",
+    category: "Awareness",
+  },
+  {
+    id: "instr-4",
+    text: "Feel the weight of your body on the cushion or chair.",
+    category: "Body Scan",
+  },
+  {
+    id: "instr-5",
+    text: "Observe any thoughts that arise without judgment.",
+    category: "Thoughts",
+  },
+  {
+    id: "instr-6",
+    text: "Gently return your attention to your breath.",
+    category: "Return",
+  },
+  {
+    id: "instr-7",
+    text: "Allow your mind to settle into a state of open awareness.",
+    category: "Awareness",
+  },
+  {
+    id: "instr-8",
+    text: "Notice the rise and fall of your abdomen with each breath.",
+    category: "Body Scan",
+  },
+  {
+    id: "instr-9",
+    text: "Cultivate a feeling of kindness towards yourself.",
+    category: "Metta",
+  },
+  {
+    id: "instr-10",
+    text: "Let go of any tension you might be holding in your shoulders.",
+    category: "Body Scan",
+  },
+  {
+    id: "instr-11",
+    text: "Rest in the present moment, just as it is.",
+    category: "Presence",
+  },
+  {
+    id: "instr-12",
+    text: "If your mind wanders, simply acknowledge it and redirect.",
+    category: "Thoughts",
+  },
+  {
+    id: "instr-13",
+    text: "Feel the ground beneath you, supporting you.",
+    category: "Body Scan",
+  },
+  {
+    id: "instr-14",
+    text: "Notice the space between thoughts.",
+    category: "Thoughts",
+  },
+  {
+    id: "instr-15",
+    text: "Breathe in peace, breathe out tension.",
+    category: "Breath",
+  },
+  {
+    id: "instr-16",
+    text: "Open to whatever arises, pleasant or unpleasant.",
+    category: "Awareness",
+  },
+  {
+    id: "instr-17",
+    text: "Send well-wishes to a loved one.",
+    category: "Metta",
+  },
+  {
+    id: "instr-18",
+    text: "Feel the warmth in your hands.",
+    category: "Body Scan",
+  },
+  {
+    id: "instr-19",
+    text: "Let your awareness expand to fill the room.",
+    category: "Awareness",
+  },
+  {
+    id: "instr-20",
+    text: "Simply be.",
+    category: "Presence",
+  },
 ]
 
 export const SOUND_CUES_LIBRARY: SoundCue[] = [
@@ -458,6 +559,15 @@ export const SOUND_CUES_LIBRARY: SoundCue[] = [
     attackDuration: 0.05, // 50ms attack
     releaseDuration: 1.0, // 1000ms release
   },
+  // New Sound Cues
+  { id: "bell-1", name: "Single Bell", src: "/sounds/bell-single.mp3" },
+  { id: "bell-3", name: "Triple Bell", src: "/sounds/bell-triple.mp3" },
+  { id: "gong-1", name: "Gong", src: "/sounds/gong.mp3" },
+  { id: "chime-1", name: "Wind Chime", src: "/sounds/wind-chime.mp3" },
+  { id: "water-drop", name: "Water Drop", src: "/sounds/water-drop.mp3" },
+  { id: "synth-rise", name: "Synth Rise", src: "synthetic:rise" },
+  { id: "synth-fall", name: "Synth Fall", src: "synthetic:fall" },
+  { id: "synth-pulse", name: "Synth Pulse", src: "synthetic:pulse" },
 ]
 
 export const AMBIENT_SOUNDS_LIBRARY: AmbientSound[] = [
@@ -501,6 +611,14 @@ export const AMBIENT_SOUNDS_LIBRARY: AmbientSound[] = [
     lfoFrequency: 0.1,
     volume: 0.2,
   },
+  // New Ambient Sounds
+  { id: "rain", name: "Rain", src: "/sounds/rain.mp3" },
+  { id: "forest", name: "Forest Birds", src: "/sounds/forest.mp3" },
+  { id: "ocean", name: "Ocean Waves", src: "/sounds/ocean.mp3" },
+  { id: "river", name: "Gentle River", src: "/sounds/river.mp3" },
+  { id: "white-noise", name: "White Noise", src: "synthetic:white-noise", noiseType: "white" },
+  { id: "pink-noise", name: "Pink Noise", src: "synthetic:pink-noise", noiseType: "pink" },
+  { id: "brown-noise", name: "Brown Noise", src: "synthetic:brown-noise", noiseType: "brown" },
 ]
 
 export const NOTE_FREQUENCIES = {
@@ -525,6 +643,7 @@ export const NOTE_FREQUENCIES = {
   G5: 783.99,
   A5: 880.0,
   B5: 987.77,
+  C6: 1046.5,
 }
 
 // Musical meditation notes organized by category
@@ -555,6 +674,21 @@ export const MUSICAL_NOTES = {
     { id: "body-b4", name: "B4", note: "B", octave: 4 },
     { id: "body-a4", name: "A4", note: "A", octave: 4 },
   ],
+  // New Musical Notes
+  "C Major Scale": [
+    { id: "c4", name: "C4", note: "C", octave: 4 },
+    { id: "d4", name: "D4", note: "D", octave: 4 },
+    { id: "e4", name: "E4", note: "E", octave: 4 },
+    { id: "f4", name: "F4", note: "F", octave: 4 },
+    { id: "g4", name: "G4", note: "G", octave: 4 },
+    { id: "a4", name: "A4", note: "A", octave: 4 },
+    { id: "b4", name: "B4", note: "B", octave: 4 },
+    { id: "c5", name: "C5", note: "C", octave: 5 },
+  ],
+  Chords: [
+    { id: "c-major", name: "C Major Chord", note: "C", octave: 4, chord: ["E4", "G4"] },
+    { id: "g-major", name: "G Major Chord", note: "G", octave: 4, chord: ["B4", "D5"] },
+  ],
 }
 
 // Function to generate synthetic sounds using Web Audio API
@@ -568,102 +702,39 @@ export async function generateSyntheticSound(
       await audioContext.resume()
     }
 
-    const totalSoundDurationSeconds = (soundCue.duration || 1000) / 1000 // Convert to seconds
-    const frequency = soundCue.frequency || 440
+    const duration = soundCue.duration || 1 // Default to 1 second if not specified
+    const frequency = soundCue.frequency || 440 // Default to A4 if not specified
     const waveform = soundCue.waveform || "sine"
-    const attackDuration = soundCue.attackDuration || 0.01 // Default 10ms
-    const releaseDuration = soundCue.releaseDuration || 0.5 // Default 500ms
+    const attackDuration = soundCue.attackDuration || 0.05
+    const releaseDuration = soundCue.releaseDuration || 0.5
 
-    // Create oscillator
     const oscillator = audioContext.createOscillator()
     const gainNode = audioContext.createGain()
 
-    // Connect nodes
     oscillator.connect(gainNode)
     gainNode.connect(audioContext.destination)
 
-    // Set oscillator properties
     oscillator.type = waveform
     oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime)
 
-    // Create envelope (Attack, Sustain, Release)
-    const now = audioContext.currentTime
-    const peakVolume = 0.5 // Max volume
-    const endVolume = 0.001 // Near silence
+    // ADSR envelope (simplified)
+    gainNode.gain.setValueAtTime(0, audioContext.currentTime)
+    gainNode.gain.linearRampToValueAtTime(0.5, audioContext.currentTime + attackDuration) // Attack
+    gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + duration - releaseDuration) // Decay/Sustain (hold until release starts)
+    gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + duration) // Release
 
-    // Attack phase
-    gainNode.gain.setValueAtTime(0, now)
-    gainNode.gain.linearRampToValueAtTime(peakVolume, now + attackDuration)
+    oscillator.start(audioContext.currentTime)
+    oscillator.stop(audioContext.currentTime + duration)
 
-    // Sustain phase (hold peak volume until release starts)
-    const sustainStart = now + attackDuration
-    const releaseStart = now + totalSoundDurationSeconds - releaseDuration
-
-    if (releaseStart > sustainStart) {
-      // If there's a distinct sustain phase
-      gainNode.gain.linearRampToValueAtTime(peakVolume, releaseStart)
-    } else {
-      // If attack + release is longer than or equal to total duration,
-      // start release immediately after attack (or even during attack if attackDuration is long)
-      gainNode.gain.linearRampToValueAtTime(
-        peakVolume,
-        Math.max(now + attackDuration, now + totalSoundDurationSeconds - releaseDuration),
-      )
-    }
-
-    // Release phase
-    gainNode.gain.exponentialRampToValueAtTime(endVolume, now + totalSoundDurationSeconds)
-
-    // Add harmonics if specified
-    if (soundCue.harmonics) {
-      soundCue.harmonics.forEach((harmonic, index) => {
-        const harmonicOsc = audioContext.createOscillator()
-        const harmonicGain = audioContext.createGain()
-
-        harmonicOsc.connect(harmonicGain)
-        harmonicGain.connect(audioContext.destination)
-
-        harmonicOsc.type = waveform
-        harmonicOsc.frequency.setValueAtTime(harmonic, audioContext.currentTime)
-
-        // Harmonics are quieter and follow a similar envelope
-        const harmonicVolume = (peakVolume * 0.2) / (index + 1) // Reduce volume for higher harmonics
-
-        harmonicGain.gain.setValueAtTime(0, now)
-        harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, now + attackDuration)
-
-        if (releaseStart > sustainStart) {
-          harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, releaseStart)
-        } else {
-          harmonicGain.gain.linearRampToValueAtTime(
-            harmonicVolume,
-            Math.max(now + attackDuration, now + totalSoundDurationSeconds - releaseDuration),
-          )
-        }
-        harmonicGain.gain.exponentialRampToValueAtTime(endVolume, now + totalSoundDurationSeconds)
-
-        harmonicOsc.start(now)
-        harmonicOsc.stop(now + totalSoundDurationSeconds)
-      })
-    }
-
-    // Start and stop the oscillator
-    oscillator.start(now)
-    oscillator.stop(now + totalSoundDurationSeconds)
-
-    // Clean up (only for AudioContext, not OfflineAudioContext as it's managed by render)
-    if (audioContext instanceof AudioContext) {
-      setTimeout(
-        () => {
-          try {
-            audioContext.close()
-          } catch (e) {
-            console.warn("Error closing audio context:", e)
-          }
-        },
-        totalSoundDurationSeconds * 1000 + 100,
-      )
-    }
+    return new Promise<void>((resolve) => {
+      // For OfflineAudioContext, we don't need to wait for the sound to finish playing
+      // as rendering handles it. For regular AudioContext, this is a simple delay.
+      if (audioContext instanceof OfflineAudioContext) {
+        resolve()
+      } else {
+        setTimeout(resolve, duration * 1000)
+      }
+    })
   } catch (error) {
     console.error("Error generating synthetic sound:", error)
     throw error
@@ -672,58 +743,61 @@ export async function generateSyntheticSound(
 
 // Generate looping ambient noise using Web Audio API
 export async function generateAmbientSound(
-  ambient: AmbientSound,
+  ambientSound: AmbientSound,
   audioContext: AudioContext | OfflineAudioContext,
-  duration: number,
-  volumeOverride?: number,
+  totalDuration: number,
+  volume = 0.5,
 ): Promise<void> {
   try {
     if (audioContext instanceof AudioContext && audioContext.state === "suspended") {
       await audioContext.resume()
     }
 
-    const bufferSize = Math.floor(duration * audioContext.sampleRate)
+    const bufferSize = audioContext.sampleRate * totalDuration
     const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate)
-    const data = buffer.getChannelData(0)
+    const output = buffer.getChannelData(0)
 
-    // Simple white noise
+    // Generate noise
     for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1
+      let value = Math.random() * 2 - 1 // White noise
+      if (ambientSound.noiseType === "pink") {
+        // Simplified pink noise (more complex algorithms exist)
+        value = (value + (Math.random() * 2 - 1) * 0.5 + (Math.random() * 2 - 1) * 0.25) / 1.75
+      } else if (ambientSound.noiseType === "brown") {
+        // Simplified brownian noise
+        value = (output[i - 1] || 0) + (Math.random() * 2 - 1) * 0.1
+        if (value > 1) value = 1
+        if (value < -1) value = -1
+      }
+      output[i] = value * volume
     }
 
     const source = audioContext.createBufferSource()
     source.buffer = buffer
-    source.loop = true
-
-    let lastNode: AudioNode = source
-
-    if (ambient.filterType) {
-      const filter = audioContext.createBiquadFilter()
-      filter.type = ambient.filterType
-      filter.frequency.setValueAtTime(ambient.filterFrequency || 1000, 0)
-      lastNode.connect(filter)
-      lastNode = filter
-    }
-
-    const gainNode = audioContext.createGain()
-    const targetVolume = volumeOverride ?? ambient.volume ?? 0.2
-    gainNode.gain.setValueAtTime(targetVolume, 0)
-    lastNode.connect(gainNode)
-    gainNode.connect(audioContext.destination)
-
-    if (ambient.lfoFrequency) {
-      const lfo = audioContext.createOscillator()
-      const lfoGain = audioContext.createGain()
-      lfo.frequency.setValueAtTime(ambient.lfoFrequency, 0)
-      lfoGain.gain.setValueAtTime(targetVolume, 0)
-      lfo.connect(lfoGain)
-      lfoGain.connect(gainNode.gain)
-      lfo.start(0)
-      lfo.stop(duration)
-    }
-
+    source.loop = true // Ambient sounds should loop
     source.start(0)
-    source.stop(duration)
+    source.stop(totalDuration) // Stop at the end of the total duration
+
+    // Apply filter if specified
+    if (ambientSound.filterType && ambientSound.filterFrequency) {
+      const filter = audioContext.createBiquadFilter()
+      filter.type = ambientSound.filterType
+      filter.frequency.setValueAtTime(ambientSound.filterFrequency, audioContext.currentTime)
+      source.connect(filter)
+      filter.connect(audioContext.destination)
+    } else {
+      source.connect(audioContext.destination)
+    }
+
+    return new Promise<void>((resolve) => {
+      if (audioContext instanceof OfflineAudioContext) {
+        resolve()
+      } else {
+        // For real-time context, the sound will play in the background.
+        // We resolve immediately as the sound is "generated" and playing.
+        resolve()
+      }
+    })
   } catch (error) {
     console.error("Error generating ambient sound:", error)
     throw error

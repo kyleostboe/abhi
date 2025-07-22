@@ -7,18 +7,25 @@ export function useMobile() {
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
+      // Check for screen width (common for mobile detection)
+      const isSmallScreen = typeof window !== "undefined" && window.innerWidth < 768
+
+      // Check for common mobile user agent strings
+      const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : ""
+      const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent)
+
+      setIsMobile(isSmallScreen || isMobileUserAgent)
     }
 
-    // Set initial value
+    // Initial check
     checkMobile()
 
     // Add event listener for window resize
-    window.addEventListener("resize", checkMobile)
-
-    // Clean up event listener on component unmount
-    return () => {
-      window.removeEventListener("resize", checkMobile)
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", checkMobile)
+      return () => {
+        window.removeEventListener("resize", checkMobile)
+      }
     }
   }, [])
 

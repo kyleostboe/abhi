@@ -1,3 +1,5 @@
+import type { BiquadFilterType } from "some-audio-library"
+
 export interface Instruction {
   id: string
   text: string
