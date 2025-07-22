@@ -1,4 +1,5 @@
 import type { Instruction as ImportedInstruction, SoundCue as ImportedSoundCue } from "./types"
+import type { AmbientSound } from "./types"
 
 export interface Instruction extends ImportedInstruction {
   // Additional properties can be added here if needed
@@ -459,6 +460,49 @@ export const SOUND_CUES_LIBRARY: SoundCue[] = [
   },
 ]
 
+export const AMBIENT_SOUNDS_LIBRARY: AmbientSound[] = [
+  {
+    id: "rain",
+    name: "Rain",
+    src: "synthetic:rain",
+    noiseType: "white",
+    filterType: "highpass",
+    filterFrequency: 1000,
+    lfoFrequency: 20,
+    volume: 0.2,
+  },
+  {
+    id: "waves",
+    name: "Ocean Waves",
+    src: "synthetic:waves",
+    noiseType: "white",
+    filterType: "lowpass",
+    filterFrequency: 500,
+    lfoFrequency: 0.2,
+    volume: 0.25,
+  },
+  {
+    id: "forest",
+    name: "Forest",
+    src: "synthetic:forest",
+    noiseType: "brown",
+    filterType: "lowpass",
+    filterFrequency: 800,
+    lfoFrequency: 0.5,
+    volume: 0.2,
+  },
+  {
+    id: "wind",
+    name: "Wind",
+    src: "synthetic:wind",
+    noiseType: "white",
+    filterType: "lowpass",
+    filterFrequency: 400,
+    lfoFrequency: 0.1,
+    volume: 0.2,
+  },
+]
+
 export const NOTE_FREQUENCIES = {
   C3: 130.81,
   D3: 146.83,
@@ -622,6 +666,66 @@ export async function generateSyntheticSound(
     }
   } catch (error) {
     console.error("Error generating synthetic sound:", error)
+    throw error
+  }
+}
+
+// Generate looping ambient noise using Web Audio API
+export async function generateAmbientSound(
+  ambient: AmbientSound,
+  audioContext: AudioContext | OfflineAudioContext,
+  duration: number,
+  volumeOverride?: number,
+): Promise<void> {
+  try {
+    if (audioContext instanceof AudioContext && audioContext.state === "suspended") {
+      await audioContext.resume()
+    }
+
+    const bufferSize = Math.floor(duration * audioContext.sampleRate)
+    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate)
+    const data = buffer.getChannelData(0)
+
+    // Simple white noise
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1
+    }
+
+    const source = audioContext.createBufferSource()
+    source.buffer = buffer
+    source.loop = true
+
+    let lastNode: AudioNode = source
+
+    if (ambient.filterType) {
+      const filter = audioContext.createBiquadFilter()
+      filter.type = ambient.filterType
+      filter.frequency.setValueAtTime(ambient.filterFrequency || 1000, 0)
+      lastNode.connect(filter)
+      lastNode = filter
+    }
+
+    const gainNode = audioContext.createGain()
+    const targetVolume = volumeOverride ?? ambient.volume ?? 0.2
+    gainNode.gain.setValueAtTime(targetVolume, 0)
+    lastNode.connect(gainNode)
+    gainNode.connect(audioContext.destination)
+
+    if (ambient.lfoFrequency) {
+      const lfo = audioContext.createOscillator()
+      const lfoGain = audioContext.createGain()
+      lfo.frequency.setValueAtTime(ambient.lfoFrequency, 0)
+      lfoGain.gain.setValueAtTime(targetVolume, 0)
+      lfo.connect(lfoGain)
+      lfoGain.connect(gainNode.gain)
+      lfo.start(0)
+      lfo.stop(duration)
+    }
+
+    source.start(0)
+    source.stop(duration)
+  } catch (error) {
+    console.error("Error generating ambient sound:", error)
     throw error
   }
 }
