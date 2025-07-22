@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Play, Pause, RotateCcw, Trash2, Music2, Mic, MessageSquareText } from "lucide-react/dist/lucide-react.mjs" // Updated import path
+import { Play, Pause, RotateCcw, Trash2, Music2, Mic, MessageSquareText } from "lucide-react/dist/lucide-react.mjs" // Corrected import path
 import { cn, formatTime } from "@/lib/utils"
 import type { TimelineEvent } from "@/lib/types"
+import type { HTMLDivElement } from "react"
 
 interface VisualTimelineProps {
   events: TimelineEvent[]
