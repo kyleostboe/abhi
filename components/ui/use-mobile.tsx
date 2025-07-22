@@ -1,5 +1,3 @@
-"use client"
-
 import * as React from "react"
 
 const MOBILE_BREAKPOINT = 768
@@ -19,7 +17,3 @@ export function useIsMobile() {
 
   return !!isMobile
 }
-
-// This file is a placeholder for the use-mobile hook.
-// The actual implementation is in `hooks/use-mobile.tsx`.
-// This file is kept for shadcn/ui's default structure.

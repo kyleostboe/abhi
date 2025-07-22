@@ -2,16 +2,10 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertTitle } from "@/components/ui/alert"
+import { Card } from "@/components/ui/card"
+import { Wand2 } from "lucide-react"
 import type { SpeechRecognition } from "web-speech-api"
-
-import Link from "next/link"
-import { CardDescription } from "@/components/ui/card"
-import { Code, Lightbulb, Zap } from "lucide-react/dist/lucide-react.mjs" // Corrected import path
 
 interface Instruction {
   id: string
@@ -648,152 +642,39 @@ export default function EncoderPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-0">
       <Navigation />
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="relative max-w-6xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl dark:shadow-2xl dark:shadow-white/40 overflow-hidden dark:bg-gray-900/80 transition-colors duration-300 ease-in-out"
-        style={{
-          borderRadius: "3rem 2.5rem 3rem 2.5rem",
-        }}
-      >
-        {/* Header */}
+      <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl dark:shadow-2xl dark:shadow-white/40 overflow-hidden dark:bg-gray-900/80 transition-colors duration-300 ease-in-out">
         <div className="relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
             <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 dark:from-amber-600/20 dark:via-rose-500/15 dark:via-purple-600/10 dark:to-teal-500/20"></div>
           </div>
-          <div className="relative px-8 text-center pb-2 pt-16">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
+          <div className="relative text-center px-[69px] pt-16 pb-8">
+            <h1
+              className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter text-center"
+              style={{
+                fontFamily: 'Georgia, "Times New Roman", serif',
+                textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
+              }}
             >
-              {/*
-              <h1 className="text-4xl md:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out tracking-wide mb-2 font-black">
-                Meditation Encoder
-              </h1>
-              <p className="text-gray-600 dark:text-gray-300 text-lg mb-8">
-                Transform guided meditations by replacing speech with sound cues
-              </p>
-              */}
-              <div className="max-w-4xl mx-auto">
-                <div className="relative text-center px-[69px] py-16">
-                  <h1
-                    className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter text-center"
-                    style={{
-                      fontFamily: 'Georgia, "Times New Roman", serif',
-                      textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
-                    }}
-                  >
-                    Encoder (Coming Soon)
-                  </h1>
-                  <p className="text-lg text-gray-600 dark:text-gray-300 mt-4 mb-8">
-                    The Encoder tool is under active development. Get ready to create your own custom meditation
-                    experiences!
-                  </p>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <Card className="bg-white dark:bg-gray-800 shadow-lg dark:shadow-white/10 border-none">
-                      <CardHeader>
-                        <Lightbulb className="h-12 w-12 text-logo-teal-500 mx-auto mb-4" />
-                        <CardTitle className="text-logo-teal-600 dark:text-logo-teal-400">
-                          Innovative Features
-                        </CardTitle>
-                        <CardDescription className="text-gray-500 dark:text-gray-400">
-                          Design unique meditation flows with custom instructions and soundscapes.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <ul className="list-disc list-inside text-left text-gray-700 dark:text-gray-300 space-y-2">
-                          <li>Intuitive timeline editor</li>
-                          <li>Extensive sound cue library</li>
-                          <li>Personalized voice recording</li>
-                        </ul>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="bg-white dark:bg-gray-800 shadow-lg dark:shadow-white/10 border-none">
-                      <CardHeader>
-                        <Code className="h-12 w-12 text-logo-purple-500 mx-auto mb-4" />
-                        <CardTitle className="text-logo-purple-600 dark:text-logo-purple-400">
-                          Advanced Customization
-                        </CardTitle>
-                        <CardDescription className="text-gray-500 dark:text-gray-400">
-                          Fine-tune every aspect of your meditation session.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <ul className="list-disc list-inside text-left text-gray-700 dark:text-gray-300 space-y-2">
-                          <li>Precise timing controls</li>
-                          <li>Layer ambient sounds</li>
-                          <li>Exportable audio files</li>
-                        </ul>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="bg-white dark:bg-gray-800 shadow-lg dark:shadow-white/10 border-none">
-                      <CardHeader>
-                        <Zap className="h-12 w-12 text-logo-amber-500 mx-auto mb-4" />
-                        <CardTitle className="text-logo-amber-600 dark:text-logo-amber-400">
-                          Empower Your Practice
-                        </CardTitle>
-                        <CardDescription className="text-gray-500 dark:text-gray-400">
-                          Bridge the gap between guided and self-directed meditation.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <ul className="list-disc list-inside text-left text-gray-700 dark:text-gray-300 space-y-2">
-                          <li>Tailor sessions to your needs</li>
-                          <li>Enhance focus and presence</li>
-                          <li>Share your creations</li>
-                        </ul>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div className="mt-12">
-                    <Link href="/" passHref>
-                      <Button
-                        variant="outline"
-                        className="border-gray-400 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 bg-transparent"
-                      >
-                        Back to Home
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+              Encoder (Labs)
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-gray-300 mt-4">
+              Create custom meditations by associating instructions with sound cues.
+            </p>
           </div>
         </div>
 
-        <div className="px-6 md:px-10 pb-10">
-          {/*
-          <Tabs defaultValue="upload" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-6 bg-gray-100/70 p-1 rounded-lg dark:bg-gray-800/70">
-             */}
-
-          {/* Status Messages */}
-          <AnimatePresence>
-            {status && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className={`p-4 rounded-lg text-center ${
-                  status.type === "info"
-                    ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
-                    : status.type === "success"
-                      ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800"
-                      : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800"
-                }`}
-              >
-                <AlertTitle>{status.message}</AlertTitle>
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <div className="px-6 md:px-10 pb-10 font-serif font-black">
+          <Card className="p-8 space-y-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="text-center space-y-4">
+              <Wand2 className="h-12 w-12 mx-auto text-logo-teal-600 dark:text-logo-teal-400" />
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Coming Soon!</h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                The full Encoder functionality is under active development. Please check back later for updates!
+              </p>
+            </div>
+          </Card>
         </div>
-      </motion.div>
+      </div>
     </div>
   )
 }

@@ -1,33 +1,22 @@
 import type React from "react"
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
 import "./globals.css"
+import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 
-export const metadata: Metadata = {
+export const metadata = {
   title: "abhī - Meditation Tool",
-  description: "Adjust meditation length and create custom meditation timelines.",
-  icons: {
-    icon: "/favicon.ico",
-  },
-  openGraph: {
-    images: "/og-image-v2.png",
-  },
+  description: "Adjust meditation length or create custom meditation timelines.",
     generator: 'v0.dev'
 }
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
           <Toaster />
         </ThemeProvider>

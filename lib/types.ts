@@ -1,5 +1,3 @@
-import type { BiquadFilterType } from "some-audio-library"
-
 export interface Instruction {
   id: string
   text: string
@@ -21,6 +19,7 @@ export interface SoundCue {
 export interface AmbientSound {
   id: string
   name: string
+  src: string // Path to audio file or synthetic: prefix
   noiseType?: "white" | "pink" | "brown"
   filterType?: BiquadFilterType
   filterFrequency?: number
