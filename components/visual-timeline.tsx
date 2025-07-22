@@ -9,23 +9,11 @@ import { Badge } from "@/components/ui/badge"
 import { Trash2, Music2Icon, MicIcon, Check, X, Play } from "lucide-react"
 import { SOUND_CUES_LIBRARY, generateSyntheticSound } from "../lib/meditation-data"
 import { motion, AnimatePresence } from "framer-motion"
-import { cn } from "@/lib/utils"
+import { cn, formatTime } from "@/lib/utils" // Import formatTime
 import { Input } from "@/components/ui/input"
-import { playNote } from "../lib/audio-utils" // Corrected import path
-
-interface TimelineEvent {
-  id: string
-  type: "instruction_sound" | "recorded_voice"
-  startTime: number
-  instructionText?: string
-  soundCueId?: string
-  // Add these new properties to match the updated interface in app/page.tsx
-  soundCueName?: string
-  soundCueSrc?: string
-  recordedAudioUrl?: string
-  recordedInstructionLabel?: string
-  duration?: number
-}
+import { getAudioContext, playNote } from "../lib/audio-utils" // Corrected import path and added getAudioContext
+import type { TimelineEvent } from "@/lib/types" // Import TimelineEvent from types
+import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 
 interface VisualTimelineProps {
   events: TimelineEvent[]
@@ -63,24 +51,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
   const isDragging = useRef(false)
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
   const [editingTime, setEditingTime] = useState<string>("")
-  const [isMobile, setIsMobile] = useState(false)
-
-  // Check for mobile on mount and resize
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-    return () => window.removeEventListener("resize", checkMobile)
-  }, [])
-
-  const formatTime = (seconds: number): string => {
-    const min = Math.floor(seconds / 60)
-    const sec = Math.floor(seconds % 60)
-    return `${min.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`
-  }
+  const isMobile = useMobile() // Use the useMobile hook
 
   const getTimeFromPosition = useCallback(
     (clientX: number): number => {
@@ -214,14 +185,16 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
         if (event.soundCueSrc.startsWith("synthetic:")) {
           const soundCue = SOUND_CUES_LIBRARY.find((s) => s.id === event.soundCueId)
           if (soundCue) {
-            await generateSyntheticSound(soundCue)
+            // Pass the live AudioContext to generateSyntheticSound
+            const audioContext = getAudioContext()
+            await generateSyntheticSound(soundCue, audioContext)
           }
         } else if (event.soundCueSrc.startsWith("musical:")) {
           const noteMatch = event.soundCueSrc.match(/musical:([A-G])(\d)/)
           if (noteMatch) {
             const note = noteMatch[1]
             const octave = Number.parseInt(noteMatch[2])
-            playNote(note, octave) // Use the declared playNote function
+            await playNote(note, octave) // Await playNote
           }
         } else {
           const audio = new Audio(event.soundCueSrc)
@@ -351,7 +324,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
 
       {/* Event List */}
       <div className="space-y-3 text-left">
-        <h4 className="text-lg font-black dark:text-gray-200 text-gray-600">Timeline Events</h4>
+        <h4 className="font-black dark:text-gray-200 text-gray-600 text-base">Timeline Events</h4>
         <AnimatePresence>
           {events.length === 0 ? (
             <motion.div
@@ -360,7 +333,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
               exit={{ opacity: 0 }}
               className="text-center py-8 text-gray-500 dark:text-gray-400"
             >
-              <div className="text-lg mb-2">No events added yet</div>
+              <div className="mb-2 text-base">No events added yet</div>
               <div className="text-sm">Add instructions and sound cues to build your meditation timeline</div>
             </motion.div>
           ) : (
@@ -437,7 +410,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                           className="hover:bg-gray-100 dark:hover:bg-gray-800"
                           title="Preview audio"
                         >
-                          <Play className="h-4 w-4 text-gray-600" />
+                          <Play className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"

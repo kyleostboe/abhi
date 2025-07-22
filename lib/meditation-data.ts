@@ -1,20 +1,11 @@
-// Moved from app/labs/lib/meditation-data.ts
-export interface Instruction {
-  id: string
-  text: string
-  category: string
+import type { Instruction as ImportedInstruction, SoundCue as ImportedSoundCue } from "./types"
+
+export interface Instruction extends ImportedInstruction {
+  // Additional properties can be added here if needed
 }
 
-export interface SoundCue {
-  id: string
-  name: string
-  src: string // Path to audio file or synthetic: prefix
-  frequency?: number
-  duration?: number // in milliseconds (total sound length)
-  waveform?: OscillatorType
-  harmonics?: number[]
-  attackDuration?: number // in seconds
-  releaseDuration?: number // in seconds
+export interface SoundCue extends ImportedSoundCue {
+  // Additional properties can be added here if needed
 }
 
 export const INSTRUCTIONS_LIBRARY: Instruction[] = [
@@ -468,18 +459,7 @@ export const SOUND_CUES_LIBRARY: SoundCue[] = [
   },
 ]
 
-// Musical Meditation System - Instructions encoded as memorable melodies
-export interface MusicalInstruction {
-  id: string
-  text: string
-  category: string
-  note: string // Musical note (A, B, C, D, E, F, G)
-  octave: number // 3, 4, 5 for different ranges
-  duration: number // Quarter note = 1, half note = 2, etc.
-}
-
-// Musical note frequencies (simplified to just pure tones)
-const NOTE_FREQUENCIES = {
+export const NOTE_FREQUENCIES = {
   C3: 130.81,
   D3: 146.83,
   E3: 164.81,
@@ -533,64 +513,14 @@ export const MUSICAL_NOTES = {
   ],
 }
 
-// Play a single musical note
-export async function playNote(note: string, octave: number): Promise<void> {
-  const noteKey = `${note}${octave}` as keyof typeof NOTE_FREQUENCIES
-  const frequency = NOTE_FREQUENCIES[noteKey]
-
-  if (!frequency) {
-    console.warn(`Unknown note: ${noteKey}`)
-    return
-  }
-  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-
-  if (audioContext.state === "suspended") {
-    await audioContext.resume()
-  }
-  const oscillator = audioContext.createOscillator()
-  const gainNode = audioContext.createGain()
-
-  // Pure sine wave for clean, beautiful tones
-  oscillator.type = "sine"
-  oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime)
-
-  // Connect: oscillator -> gain -> destination
-  oscillator.connect(gainNode)
-  gainNode.connect(audioContext.destination)
-
-  // Note duration in seconds
-  const noteDurationSeconds = 0.8
-  const now = audioContext.currentTime
-
-  // Gentle envelope for smooth, meditation-friendly tones
-  gainNode.gain.setValueAtTime(0, now)
-  gainNode.gain.exponentialRampToValueAtTime(0.2, now + 0.05) // Gentle attack
-  gainNode.gain.exponentialRampToValueAtTime(0.001, now + noteDurationSeconds) // Smooth release
-
-  oscillator.start(now)
-  oscillator.stop(now + noteDurationSeconds)
-
-  // Clean up
-  setTimeout(
-    () => {
-      try {
-        audioContext.close()
-      } catch (e) {
-        console.warn("Error closing audio context:", e)
-      }
-    },
-    noteDurationSeconds * 1000 + 100,
-  )
-}
-
 // Function to generate synthetic sounds using Web Audio API
-export async function generateSyntheticSound(soundCue: SoundCue): Promise<void> {
+export async function generateSyntheticSound(
+  soundCue: SoundCue,
+  audioContext: AudioContext | OfflineAudioContext,
+): Promise<void> {
   try {
-    // Create audio context
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-
-    // Resume context if suspended
-    if (audioContext.state === "suspended") {
+    // Resume context if suspended (only for AudioContext, not OfflineAudioContext)
+    if (audioContext instanceof AudioContext && audioContext.state === "suspended") {
       await audioContext.resume()
     }
 
@@ -677,17 +607,19 @@ export async function generateSyntheticSound(soundCue: SoundCue): Promise<void> 
     oscillator.start(now)
     oscillator.stop(now + totalSoundDurationSeconds)
 
-    // Clean up after sound finishes
-    setTimeout(
-      () => {
-        try {
-          audioContext.close()
-        } catch (e) {
-          console.warn("Error closing audio context:", e)
-        }
-      },
-      totalSoundDurationSeconds * 1000 + 100, // Add a small buffer
-    )
+    // Clean up (only for AudioContext, not OfflineAudioContext as it's managed by render)
+    if (audioContext instanceof AudioContext) {
+      setTimeout(
+        () => {
+          try {
+            audioContext.close()
+          } catch (e) {
+            console.warn("Error closing audio context:", e)
+          }
+        },
+        totalSoundDurationSeconds * 1000 + 100,
+      )
+    }
   } catch (error) {
     console.error("Error generating synthetic sound:", error)
     throw error

@@ -8,7 +8,6 @@ import { Card } from "@/components/ui/card"
 import { Alert } from "@/components/ui/alert"
 import {
   Info,
-  Upload,
   Volume2,
   Clock,
   Wand2,
@@ -22,6 +21,7 @@ import {
   Play,
   PlusCircle,
   CircleDotDashed,
+  Trash2,
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
@@ -38,43 +38,13 @@ import {
   SOUND_CUES_LIBRARY,
   MUSICAL_NOTES,
   generateSyntheticSound,
-  playNote,
-  type Instruction,
-  type SoundCue,
+  NOTE_FREQUENCIES, // Keep NOTE_FREQUENCIES here as it's used by MUSICAL_NOTES
 } from "@/lib/meditation-data"
 import { VisualTimeline } from "@/components/visual-timeline"
-import { cn } from "@/lib/utils" // Import cn utility
-
-// Add this near the top of the file, after the imports
-const NOTE_FREQUENCIES = {
-  C3: 130.81,
-  D3: 146.83,
-  E3: 164.81,
-  F3: 174.61,
-  G3: 196.0,
-  A3: 220.0,
-  B3: 246.94,
-  C4: 261.63,
-  D4: 293.66,
-  E4: 329.63,
-  F4: 349.23,
-  G4: 392.0,
-  A4: 440.0,
-  B4: 493.88,
-  C5: 523.25,
-  D5: 587.33,
-  E5: 659.25,
-  F5: 698.46,
-  G5: 783.99,
-  A5: 880.0,
-  B5: 987.77,
-}
-
-// Mobile detection
-const isMobile = () => {
-  if (typeof window === "undefined") return false
-  return /Android|webOS|iPhone|iPad|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768
-}
+import { cn, formatTime, sleep } from "@/lib/utils" // Import formatTime and sleep
+import { getAudioContext, playNote, bufferToWav } from "@/lib/audio-utils" // Import from audio-utils
+import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
+import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 
 // Memory management utilities
 const forceGarbageCollection = () => {
@@ -83,8 +53,6 @@ const forceGarbageCollection = () => {
     ;(window as any).gc()
   }
 }
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const monitorMemory = () => {
   if (typeof performance !== "undefined" && (performance as any).memory) {
@@ -101,25 +69,30 @@ const monitorMemory = () => {
   return false
 }
 
-interface TimelineEvent {
-  id: string
-  type: "instruction_sound" | "recorded_voice"
-  startTime: number
-  instructionText?: string
-  soundCueId?: string
-  soundCueName?: string // Added for direct storage
-  soundCueSrc?: string // Added for direct storage
-  recordedAudioUrl?: string
-  recordedInstructionLabel?: string
-  duration?: number
-}
-
 interface TimelineItem {
   id: string
   type: "instruction" | "sound"
   duration: number // in seconds
   content: Instruction | SoundCue
 }
+
+// Define ambient sounds with both public path and blob URL
+const AMBIENT_SOUNDS = [
+  { id: "rain", name: "Rain", publicSrc: "/sounds/rain.mp3", blobSrc: "https://blob.v0.dev/placeholder-rain.mp3" },
+  {
+    id: "waves",
+    name: "Ocean Waves",
+    publicSrc: "/sounds/waves.mp3",
+    blobSrc: "https://blob.v0.dev/placeholder-waves.mp3",
+  },
+  {
+    id: "forest",
+    name: "Forest",
+    publicSrc: "/sounds/forest.mp3",
+    blobSrc: "https://blob.v0.dev/placeholder-forest.mp3",
+  },
+  { id: "wind", name: "Wind", publicSrc: "/sounds/wind.mp3", blobSrc: "https://blob.v0.dev/placeholder-wind.mp3" },
+]
 
 export default function HomePage() {
   // State for mode toggle (Length Adjuster vs Labs)
@@ -129,7 +102,7 @@ export default function HomePage() {
   const [file, setFile] = useState<File | null>(null)
   const [originalBuffer, setOriginalBuffer] = useState<AudioBuffer | null>(null)
   const [processedBufferState, setProcessedBufferState] = useState<AudioBuffer | null>(null)
-  const audioContextRef = useRef<AudioContext | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null) // Still needed for Adjuster's specific context management
   const [targetDuration, setTargetDuration] = useState<number>(20)
   const [silenceThreshold, setSilenceThreshold] = useState<number>(0.01)
   const [minSilenceDuration, setMinSilenceDuration] = useState<number>(3)
@@ -140,7 +113,7 @@ export default function HomePage() {
   const [originalUrl, setOriginalUrl] = useState<string>("")
   const [processedUrl, setProcessedUrl] = useState<string>("")
   const [pausesAdjusted, setPausesAdjusted] = useState<number>(0)
-  const [isProcessing, setIsProcessing] = useState<boolean>(false)
+  const [isProcessing, setIsProcessing] = useState<boolean>("")
   const [processingProgress, setProcessingProgress] = useState<number>(0)
   const [processingStep, setProcessingStep] = useState<string>("")
   const [durationLimits, setDurationLimits] = useState<{ min: number; max: number } | null>(null)
@@ -151,11 +124,15 @@ export default function HomePage() {
   } | null>(null)
   const [actualDuration, setActualDuration] = useState<number | null>(null)
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
-  const [isMobileDevice, setIsMobileDevice] = useState<boolean>(false)
+  const isMobileDevice = useMobile() // Use the useMobile hook
   const [memoryWarning, setMemoryWarning] = useState<boolean>(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadAreaRef = useRef<HTMLDivElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Add these new state variables and ref at the top of the HomePage component, near other state declarations:
+  const backgroundAudioRef = useRef<HTMLAudioElement | null>(null)
+  const [currentPlayingBackgroundSoundId, setCurrentPlayingBackgroundSoundId] = useState<string | null>(null)
 
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
@@ -165,7 +142,12 @@ export default function HomePage() {
   const [customInstructionText, setCustomInstructionText] = useState<string>("")
   const [selectedSoundCue, setSelectedSoundCue] = useState<SoundCue | null>(null)
   const [isRecording, setIsRecording] = useState<boolean>(false)
-  const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null)
+  // State to hold the recorded audio data ready for adding to timeline
+  const [readyToAddToTimelineRecording, setReadyToAddToTimelineRecording] = useState<{
+    url: string
+    duration: number
+    label: string
+  } | null>(null)
   const [recordedBlobs, setRecordedBlobs] = useState<Blob[]>([])
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const labsAudioRef = useRef<HTMLAudioElement | null>(null)
@@ -177,6 +159,17 @@ export default function HomePage() {
   const [generationProgress, setGenerationProgress] = useState<number>(0)
   const [generationStep, setGenerationStep] = useState<string>("")
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
+
+  // Update the type definition for backgroundSounds to remove the redundant 'enabled' property:
+  const [backgroundSounds, setBackgroundSounds] = useState<
+    Array<{
+      id: string
+      name: string
+      src: string // This src will be the publicSrc for export
+      volume: number
+    }>
+  >([])
+  const [masterBackgroundVolume, setMasterBackgroundVolume] = useState<number>(0.5)
 
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
   const [currentTab, setCurrentTab] = useState<string>("instructions")
@@ -234,7 +227,8 @@ export default function HomePage() {
       try {
         if (soundCue.src.startsWith("synthetic:")) {
           // Generate and play synthetic sound
-          await generateSyntheticSound(soundCue)
+          const audioContext = getAudioContext() // Use centralized AudioContext
+          await generateSyntheticSound(soundCue, audioContext) // Await the synthetic sound generation
 
           toast({
             title: "Playing Sound",
@@ -343,12 +337,6 @@ export default function HomePage() {
     }
   }, [volume])
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = Math.floor(seconds % 60)
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
-  }
-
   const handleSaveTimeline = () => {
     // Placeholder for save functionality
     console.log("Saving timeline:", timeline)
@@ -359,98 +347,6 @@ export default function HomePage() {
     // Placeholder for load functionality
     console.log("Loading timeline...")
     alert("Load functionality not yet implemented.")
-  }
-
-  const bufferToWavOld = async (buffer: AudioBuffer): Promise<Blob> => {
-    const numberOfChannels = buffer.numberOfChannels
-    const numSamples = buffer.length
-    const sampleRate = buffer.sampleRate
-    const bytesPerSample = 2 // Assuming 16-bit PCM
-    const blockAlign = numberOfChannels * bytesPerSample
-    const byteRate = sampleRate * blockAlign
-    const dataSize = numSamples * blockAlign
-    const fileSize = 44 + dataSize
-
-    const arrayBuffer = new ArrayBuffer(fileSize)
-    const dataView = new DataView(arrayBuffer)
-
-    // RIFF identifier
-    dataView.setUint32(0, 0x52494646, false) // "RIFF"
-    // File size
-    dataView.setUint32(4, fileSize - 8, true)
-    // RIFF type
-    dataView.setUint32(8, 0x57415645, false) // "WAVE"
-    // Format chunk identifier
-    dataView.setUint32(12, 0x666d7420, false) // "fmt "
-    // Format chunk size
-    dataView.setUint32(16, 16, true)
-    // Audio format (PCM = 1)
-    dataView.setUint16(20, 1, true)
-    // Number of channels
-    dataView.setUint16(22, numberOfChannels, true)
-    // Sample rate
-    dataView.setUint32(24, sampleRate, true)
-    // Byte rate (Sample Rate * Block Align)
-    dataView.setUint32(28, byteRate, true)
-    // Block align (Number of Channels * Bytes per Sample)
-    dataView.setUint16(32, blockAlign, true)
-    // Bits per sample
-    dataView.setUint16(34, bytesPerSample * 8, true)
-    // Data chunk identifier
-    dataView.setUint32(36, 0x64617461, false) // "data"
-    // Data chunk size
-    dataView.setUint32(40, dataSize, true)
-
-    // Write the samples to the data chunk
-    let offset = 44
-    for (let i = 0; i < numSamples; i++) {
-      for (let channel = 0; channel < numberOfChannels; channel++) {
-        const sample = buffer.getChannelData(channel)[i]
-        const amplitude = Math.max(-1, Math.min(1, sample))
-        dataView.setInt16(offset, amplitude * 0x7fff, true)
-        offset += bytesPerSample
-      }
-    }
-
-    return new Blob([arrayBuffer], { type: "audio/wav" })
-  }
-
-  const addSyntheticToContext = (ctx: OfflineAudioContext, cue: SoundCue, start: number, duration: number) => {
-    const gainNode = ctx.createGain()
-    gainNode.gain.setValueAtTime(0.3, start) // Reduced gain for synthetic sounds
-    gainNode.connect(ctx.destination)
-
-    if (cue.src === "synthetic:sine440") {
-      const osc = ctx.createOscillator()
-      osc.type = "sine"
-      osc.frequency.setValueAtTime(440, start)
-      osc.connect(gainNode)
-      osc.start(start)
-      osc.stop(start + duration)
-    } else if (cue.src === "synthetic:triangle880") {
-      const osc = ctx.createOscillator()
-      osc.type = "triangle"
-      osc.frequency.setValueAtTime(880, start)
-      osc.connect(gainNode)
-      osc.start(start)
-      osc.stop(start + duration)
-    } else if (cue.src === "synthetic:square220") {
-      const osc = ctx.createOscillator()
-      osc.type = "square"
-      osc.frequency.setValueAtTime(220, start)
-      osc.connect(gainNode)
-      osc.start(start)
-      osc.stop(start + duration)
-    } else if (cue.src === "synthetic:sawtooth660") {
-      const osc = ctx.createOscillator()
-      osc.type = "sawtooth"
-      osc.frequency.setValueAtTime(660, start)
-      osc.connect(gainNode)
-      osc.start(start)
-      osc.stop(start + duration)
-    } else {
-      console.warn("Unknown synthetic sound:", cue.src)
-    }
   }
 
   const handleExportAudio = async () => {
@@ -478,217 +374,64 @@ export default function HomePage() {
         console.log(`Processing event ${event.id} at time ${eventStartTime}:`, event)
 
         if (event.type === "instruction_sound") {
-          // Handle instruction_sound events - these should include sound cues
-          let soundProcessed = false
+          setGenerationStep(`Adding sound: ${event.soundCueName || "Sound Cue"}`)
+          console.log(`Processing sound cue from soundCueSrc: ${event.soundCueSrc}`)
 
-          // First try using the stored soundCueSrc
-          if (event.soundCueSrc) {
-            setGenerationStep(`Adding sound: ${event.soundCueName || "Sound Cue"}`)
-            console.log(`Processing sound cue from soundCueSrc: ${event.soundCueSrc}`)
-
-            if (event.soundCueSrc.startsWith("synthetic:")) {
-              // Find the sound cue from the library to get full parameters
-              const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
-              if (soundCue) {
-                console.log(`Found synthetic sound cue:`, soundCue)
-
-                // Generate synthetic sound using Web Audio API
-                const oscillator = ctx.createOscillator()
-                const gainNode = ctx.createGain()
-
-                oscillator.connect(gainNode)
-                gainNode.connect(ctx.destination)
-
-                // Set oscillator properties from sound cue
-                oscillator.type = soundCue.waveform || "sine"
-                oscillator.frequency.setValueAtTime(soundCue.frequency || 440, eventStartTime)
-
-                // Create envelope
-                const attackDuration = soundCue.attackDuration || 0.01
-                const releaseDuration = soundCue.releaseDuration || 0.5
-                const eventDuration = (soundCue.duration || 1000) / 1000 // Convert ms to seconds
-                const peakVolume = 0.5 // Increased volume for better audibility
-
-                gainNode.gain.setValueAtTime(0, eventStartTime)
-                gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + attackDuration)
-
-                if (eventDuration > attackDuration + releaseDuration) {
-                  gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
-                }
-                gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
-
-                oscillator.start(eventStartTime)
-                oscillator.stop(eventStartTime + eventDuration)
-
-                // Add harmonics if specified
-                if (soundCue.harmonics) {
-                  soundCue.harmonics.forEach((harmonic, index) => {
-                    const harmonicOsc = ctx.createOscillator()
-                    const harmonicGain = ctx.createGain()
-
-                    harmonicOsc.connect(harmonicGain)
-                    harmonicGain.connect(ctx.destination)
-
-                    harmonicOsc.type = soundCue.waveform || "sine"
-                    harmonicOsc.frequency.setValueAtTime(harmonic, eventStartTime)
-
-                    const harmonicVolume = (peakVolume * 0.3) / (index + 1)
-
-                    harmonicGain.gain.setValueAtTime(0, eventStartTime)
-                    harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + attackDuration)
-
-                    if (eventDuration > attackDuration + releaseDuration) {
-                      harmonicGain.gain.linearRampToValueAtTime(
-                        harmonicVolume,
-                        eventStartTime + eventDuration - releaseDuration,
-                      )
-                    }
-                    harmonicGain.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
-
-                    harmonicOsc.start(eventStartTime)
-                    harmonicOsc.stop(eventStartTime + eventDuration)
-                  })
-                }
-
-                soundProcessed = true
-                console.log(`Successfully added synthetic sound at ${eventStartTime}`)
-              }
-            } else if (event.soundCueSrc.startsWith("musical:")) {
-              // Handle musical notes
-              const noteMatch = event.soundCueSrc.match(/musical:([A-G])(\d)/)
-              if (noteMatch) {
-                const note = noteMatch[1]
-                const octave = Number.parseInt(noteMatch[2])
-                console.log(`Processing musical note: ${note}${octave}`)
-
-                // Get frequency from NOTE_FREQUENCIES
-                const noteKey = `${note}${octave}` as keyof typeof NOTE_FREQUENCIES
-                const frequency = NOTE_FREQUENCIES[noteKey]
-
-                if (frequency) {
-                  const oscillator = ctx.createOscillator()
-                  const gainNode = ctx.createGain()
-
-                  oscillator.connect(gainNode)
-                  gainNode.connect(ctx.destination)
-
-                  oscillator.type = "sine"
-                  oscillator.frequency.setValueAtTime(frequency, eventStartTime)
-
-                  const eventDuration = 0.8 // Default duration for musical notes
-                  const peakVolume = 0.4 // Good volume for musical notes
-
-                  // Gentle envelope for musical notes
-                  gainNode.gain.setValueAtTime(0, eventStartTime)
-                  gainNode.gain.exponentialRampToValueAtTime(peakVolume, eventStartTime + 0.05)
-                  gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
-
-                  oscillator.start(eventStartTime)
-                  oscillator.stop(eventStartTime + eventDuration)
-
-                  soundProcessed = true
-                  console.log(`Successfully added musical note ${note}${octave} at ${eventStartTime}`)
-                }
-              }
-            } else {
-              // Handle pre-recorded audio files
-              try {
-                console.log(`Loading pre-recorded audio: ${event.soundCueSrc}`)
-                const response = await fetch(event.soundCueSrc)
-                const arrayBuffer = await response.arrayBuffer()
-                const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
-                const source = ctx.createBufferSource()
-                const gainNode = ctx.createGain()
-
-                source.buffer = audioBuffer
-                source.connect(gainNode)
-                gainNode.connect(ctx.destination)
-                gainNode.gain.setValueAtTime(0.4, eventStartTime) // Good volume for pre-recorded sounds
-                source.start(eventStartTime)
-
-                soundProcessed = true
-                console.log(`Successfully added pre-recorded audio at ${eventStartTime}`)
-              } catch (error) {
-                console.warn(`Could not load recorded audio: ${event.soundCueSrc}`, error)
-              }
-            }
-          }
-
-          // Fallback: try to find sound cue by ID if soundCueSrc didn't work
-          if (!soundProcessed && event.soundCueId) {
-            console.log(`Fallback: trying to find sound cue by ID: ${event.soundCueId}`)
+          if (event.soundCueSrc?.startsWith("synthetic:")) {
             const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
             if (soundCue) {
-              setGenerationStep(`Adding sound: ${soundCue.name}`)
-              console.log(`Found sound cue by ID:`, soundCue)
+              await generateSyntheticSound(soundCue, ctx) // Pass OfflineAudioContext
+              console.log(`Successfully added synthetic sound at ${eventStartTime}`)
+            }
+          } else if (event.soundCueSrc?.startsWith("musical:")) {
+            const noteMatch = event.soundCueSrc.match(/musical:([A-G])(\d)/)
+            if (noteMatch) {
+              const note = noteMatch[1]
+              const octave = Number.parseInt(noteMatch[2])
+              console.log(`Processing musical note: ${note}${octave}`)
 
-              if (soundCue.src.startsWith("synthetic:")) {
-                // Generate synthetic sound using Web Audio API
+              const frequency = NOTE_FREQUENCIES[`${note}${octave}` as keyof typeof NOTE_FREQUENCIES]
+              if (frequency) {
                 const oscillator = ctx.createOscillator()
                 const gainNode = ctx.createGain()
 
                 oscillator.connect(gainNode)
                 gainNode.connect(ctx.destination)
 
-                // Set oscillator properties from sound cue
-                oscillator.type = soundCue.waveform || "sine"
-                oscillator.frequency.setValueAtTime(soundCue.frequency || 440, eventStartTime)
+                oscillator.type = "sine"
+                oscillator.frequency.setValueAtTime(frequency, eventStartTime)
 
-                // Create envelope
-                const attackDuration = soundCue.attackDuration || 0.01
-                const releaseDuration = soundCue.releaseDuration || 0.5
-                const eventDuration = (soundCue.duration || 1000) / 1000 // Convert ms to seconds
-                const peakVolume = 0.5 // Increased volume
+                const eventDuration = 0.8 // Default duration for musical notes
+                const peakVolume = 0.4 // Good volume for musical notes
 
                 gainNode.gain.setValueAtTime(0, eventStartTime)
-                gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + attackDuration)
-
-                if (eventDuration > attackDuration + releaseDuration) {
-                  gainNode.gain.linearRampToValueAtTime(peakVolume, eventStartTime + eventDuration - releaseDuration)
-                }
+                gainNode.gain.exponentialRampToValueAtTime(peakVolume, eventStartTime + 0.05)
                 gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
 
                 oscillator.start(eventStartTime)
                 oscillator.stop(eventStartTime + eventDuration)
-
-                // Add harmonics if specified
-                if (soundCue.harmonics) {
-                  soundCue.harmonics.forEach((harmonic, index) => {
-                    const harmonicOsc = ctx.createOscillator()
-                    const harmonicGain = ctx.createGain()
-
-                    harmonicOsc.connect(harmonicGain)
-                    harmonicGain.connect(ctx.destination)
-
-                    harmonicOsc.type = soundCue.waveform || "sine"
-                    harmonicOsc.frequency.setValueAtTime(harmonic, eventStartTime)
-
-                    const harmonicVolume = (peakVolume * 0.3) / (index + 1)
-
-                    harmonicGain.gain.setValueAtTime(0, eventStartTime)
-                    harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, eventStartTime + attackDuration)
-
-                    if (eventDuration > attackDuration + releaseDuration) {
-                      harmonicGain.gain.linearRampToValueAtTime(
-                        harmonicVolume,
-                        eventStartTime + eventDuration - releaseDuration,
-                      )
-                    }
-                    harmonicGain.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
-
-                    harmonicOsc.start(eventStartTime)
-                    harmonicOsc.stop(eventStartTime + eventDuration)
-                  })
-                }
-
-                soundProcessed = true
-                console.log(`Successfully added synthetic sound from ID at ${eventStartTime}`)
+                console.log(`Successfully added musical note ${note}${octave} at ${eventStartTime}`)
               }
             }
-          }
+          } else if (event.soundCueSrc) {
+            try {
+              console.log(`Loading pre-recorded audio: ${event.soundCueSrc}`)
+              const response = await fetch(event.soundCueSrc)
+              const arrayBuffer = await response.arrayBuffer()
+              const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+              const source = ctx.createBufferSource()
+              const gainNode = ctx.createGain()
 
-          if (!soundProcessed) {
-            console.warn(`Could not process sound for event ${event.id}`)
+              source.buffer = audioBuffer
+              source.connect(gainNode)
+              gainNode.connect(ctx.destination)
+              gainNode.gain.setValueAtTime(0.4, eventStartTime) // Good volume for pre-recorded sounds
+              source.start(eventStartTime)
+
+              console.log(`Successfully added pre-recorded audio at ${eventStartTime}`)
+            } catch (error) {
+              console.warn(`Could not load recorded audio: ${event.soundCueSrc}`, error)
+            }
           }
         } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
           setGenerationStep(`Adding recorded voice: ${event.recordedInstructionLabel || "Untitled"}`)
@@ -717,6 +460,39 @@ export default function HomePage() {
         setGenerationProgress(Math.floor((processedEventsCount / totalEvents) * 80)) // Progress up to 80% for event processing
       }
 
+      // Add background sounds to the audio context
+      for (const bgSound of backgroundSounds) {
+        if (bgSound.volume > 0) {
+          try {
+            console.log(`Adding background sound: ${bgSound.name} from src: ${bgSound.src}`)
+            const response = await fetch(bgSound.src) // Use bgSound.src (public path) for export
+            const arrayBuffer = await response.arrayBuffer()
+            const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+
+            // Create a looped background sound for the entire duration
+            const source = ctx.createBufferSource()
+            const gainNode = ctx.createGain()
+
+            source.buffer = audioBuffer
+            source.connect(gainNode)
+            gainNode.connect(ctx.destination)
+
+            // Set volume (background volume * master background volume * 0.3 for mixing)
+            const finalVolume = bgSound.volume * masterBackgroundVolume * 0.3
+            gainNode.gain.setValueAtTime(finalVolume, 0)
+
+            // Loop the background sound
+            source.loop = true
+            source.start(0)
+            source.stop(maxAudioDuration)
+
+            console.log(`Successfully added background sound ${bgSound.name} at volume ${finalVolume}`)
+          } catch (error) {
+            console.warn(`Could not load background sound: ${bgSound.src}`, error)
+          }
+        }
+      }
+
       setGenerationStep("Rendering audio...")
       setGenerationProgress(80) // Set to 80% before rendering
       console.log("Starting audio rendering...")
@@ -728,7 +504,12 @@ export default function HomePage() {
         throw new Error("Rendered audio buffer is empty. No audio content was generated.")
       }
 
-      const wavBlob = await bufferToWavOld(rendered)
+      const wavBlob = await bufferToWav(
+        rendered,
+        compatibilityMode === "high",
+        (p) => setProcessingProgress(90 + Math.floor(p * 0.1)),
+        isMobileDevice,
+      )
       if (wavBlob.size === 0) {
         throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
       }
@@ -761,7 +542,9 @@ export default function HomePage() {
 
   // == Effects for Length Adjuster ==
   useEffect(() => {
-    setIsMobileDevice(isMobile())
+    // Use the useMobile hook for initial detection
+    // The useMobile hook already handles window.innerWidth and user agent.
+    // No need for manual check here.
     if (typeof navigator !== "undefined" && (navigator as any).deviceMemory) {
       const deviceMemory = (navigator as any).deviceMemory
       if (deviceMemory < 4) {
@@ -769,47 +552,22 @@ export default function HomePage() {
         setMemoryWarning(true)
       }
     }
-  }, [])
+  }, []) // isMobileDevice is now a hook, no longer a dependency here
 
   useEffect(() => {
     if (typeof window === "undefined") return
 
-    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-      audioContextRef.current.close().catch((err) => console.warn("Error closing previous AudioContext:", err))
+    // Use getAudioContext for consistent initialization
+    try {
+      const ctx = getAudioContext()
+      audioContextRef.current = ctx
+    } catch (error) {
+      setStatus({
+        message: `Error initializing audio system: ${error instanceof Error ? error.message : "Unknown error"}`,
+        type: "error",
+      })
     }
 
-    const AudioContextAPI = window.AudioContext || (window as any).webkitAudioContext
-    if (AudioContextAPI) {
-      const sampleRate = isMobileDevice ? 22050 : 44100
-      try {
-        const ctx = new AudioContextAPI({ sampleRate })
-        audioContextRef.current = ctx
-        if (ctx.state === "suspended") {
-          const resumeContextOnInteraction = async () => {
-            if (audioContextRef.current && audioContextRef.current.state === "suspended") {
-              try {
-                await audioContextRef.current.resume()
-              } catch (e) {
-                console.error("Error resuming AudioContext on user interaction:", e)
-              }
-            }
-            document.removeEventListener("click", resumeContextOnInteraction, true)
-            document.addEventListener("touchend", resumeContextOnInteraction, true)
-            document.addEventListener("keydown", resumeContextOnInteraction, true)
-          }
-          document.addEventListener("click", resumeContextOnInteraction, { once: true, capture: true })
-          document.addEventListener("touchend", resumeContextOnInteraction, { once: true, capture: true })
-          document.addEventListener("keydown", resumeContextOnInteraction, { once: true, capture: true })
-        }
-      } catch (error) {
-        setStatus({
-          message: `Error initializing audio system: ${error instanceof Error ? error.message : "Unknown error"}`,
-          type: "error",
-        })
-      }
-    } else {
-      setStatus({ message: "Your browser does not support the required Audio API.", type: "error" })
-    }
     return () => {
       if (audioContextRef.current && audioContextRef.current.state !== "closed") {
         audioContextRef.current
@@ -818,7 +576,7 @@ export default function HomePage() {
         audioContextRef.current = null
       }
     }
-  }, [isMobileDevice])
+  }, []) // isMobileDevice removed from dependency array as it's handled by useMobile hook
 
   const cleanupMemory = useCallback(() => {
     setOriginalBuffer(null)
@@ -997,7 +755,7 @@ export default function HomePage() {
         setProcessingProgress(100)
         setProcessingStep("Load complete!")
         setStatus({
-          message: `Audio loaded. Duration: ${formatDuration(buffer.duration)}.`,
+          message: `Audio loaded. Duration: ${formatTime(buffer.duration)}.`,
           type: "success",
         })
       } catch (decodeError) {
@@ -1055,13 +813,16 @@ export default function HomePage() {
       await sleep(10)
       const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
       setProcessingStep("Calculating adjustments (step 2/4)...")
-      setProcessingProgress(30)
       await sleep(10)
-      const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+      await sleep(10)
+      const silenceRegions2 = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
+      setProcessingStep("Calculating adjustments (step 2/4)...")
+      await sleep(10)
+      const totalSilenceDuration = silenceRegions2.reduce((sum, region) => sum + (region.end - region.start), 0)
       const audioContentDuration = originalBuffer.duration - totalSilenceDuration
       const availableSilenceDuration = Math.max(
         targetDurationSeconds - audioContentDuration,
-        silenceRegions.length * minSpacingDuration,
+        silenceRegions2.length * minSpacingDuration,
       )
       const scaleFactor = totalSilenceDuration > 0 ? availableSilenceDuration / totalSilenceDuration : 1
       setProcessingStep("Rebuilding audio (step 3/4)...")
@@ -1070,21 +831,26 @@ export default function HomePage() {
 
       const processedAudioBuffer = await rebuildAudioWithScaledPauses(
         originalBuffer,
-        silenceRegions,
+        silenceRegions2,
         scaleFactor,
         minSpacingDuration,
         preserveNaturalPacing,
         availableSilenceDuration,
         (p) => setProcessingProgress(50 + Math.floor(p * 0.4)),
       )
-      setPausesAdjusted(silenceRegions.length)
+      setPausesAdjusted(silenceRegions2.length)
       setProcessingStep("Creating download file (step 4/4)...")
       setProcessingProgress(90)
       await sleep(10)
-      const wavBlob = await bufferToWav(processedAudioBuffer, compatibilityMode === "high", (p) =>
-        setProcessingProgress(90 + Math.floor(p * 0.1)),
+      const wavBlob = await bufferToWav(
+        processedAudioBuffer,
+        compatibilityMode === "high",
+        (p) => setProcessingProgress(90 + Math.floor(p * 0.1)),
+        isMobileDevice,
       )
-      if (processedUrl) URL.revokeObjectURL(processedUrl)
+      if (wavBlob.size === 0) {
+        throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
+      }
       const url = URL.createObjectURL(wavBlob)
       setProcessedUrl(url)
       setActualDuration(processedAudioBuffer.duration)
@@ -1138,7 +904,7 @@ export default function HomePage() {
       const newTotalDur = audioContentDur + newSilenceDur
       if (newTotalDur <= 0) throw new Error("Calculated new total duration is zero or negative.")
       if (isMobileDevice && newTotalDur > 45 * 60) {
-        console.warn(`Mobile device: Output duration ${formatDuration(newTotalDur)} may cause issues.`)
+        console.warn(`Mobile device: Output duration ${formatTime(newTotalDur)} may cause issues.`)
         setMemoryWarning(true)
       }
       let newBuffer: AudioBuffer
@@ -1198,104 +964,6 @@ export default function HomePage() {
     [isMobileDevice],
   )
 
-  const bufferToWav = useCallback(
-    async (buffer: AudioBuffer, highCompatibility = true, onProgress: (progress: number) => void): Promise<Blob> => {
-      const currentAudioContext = audioContextRef.current
-      if (!currentAudioContext) throw new Error("Audio context not available for WAV conversion")
-      onProgress(0)
-      let targetSampleRate = highCompatibility ? 44100 : buffer.sampleRate
-      if (isMobileDevice && highCompatibility && buffer.duration > 15 * 60) {
-        targetSampleRate = Math.min(targetSampleRate, 22050)
-      }
-      let resampledBuffer = buffer
-      if (buffer.sampleRate !== targetSampleRate) {
-        const ratio = targetSampleRate / buffer.sampleRate
-        const newLength = Math.floor(buffer.length * ratio)
-        try {
-          resampledBuffer = currentAudioContext.createBuffer(buffer.numberOfChannels, newLength, targetSampleRate)
-        } catch (e) {
-          forceGarbageCollection()
-          throw new Error(
-            `Failed to create resample buffer (target SR: ${targetSampleRate}Hz). Memory limit likely exceeded.`,
-          )
-        }
-        onProgress(10)
-        for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-          const oldData = buffer.getChannelData(channel)
-          const newData = resampledBuffer.getChannelData(channel)
-          for (let i = 0; i < newLength; i++) {
-            if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
-              await sleep(0)
-              onProgress(
-                10 +
-                  Math.floor(
-                    ((channel * (newLength / buffer.numberOfChannels) + i) / (newLength * buffer.numberOfChannels)) *
-                      40,
-                  ),
-              )
-            }
-            const oldIndex = i / ratio
-            const index = Math.floor(oldIndex)
-            const frac = oldIndex - index
-            const samp1 = oldData[Math.min(index, oldData.length - 1)]
-            const samp2 = oldData[Math.min(index + 1, oldData.length - 1)]
-            newData[i] = samp1 + (samp2 - samp1) * frac
-          }
-        }
-      } else {
-        onProgress(50)
-      }
-      const numSamples = resampledBuffer.length
-      const numberOfChannels = resampledBuffer.numberOfChannels
-      const bytesPerSample = 2
-      const dataSize = numSamples * numberOfChannels * bytesPerSample
-      const fileSize = 44 + dataSize
-      if (isMobileDevice && fileSize > 40 * 1024 * 1024) {
-        setMemoryWarning(true)
-      }
-      let finalArrayBuffer: ArrayBuffer
-      try {
-        finalArrayBuffer = new ArrayBuffer(fileSize)
-      } catch (e) {
-        throw new Error(
-          `Failed to create WAV data buffer (size: ${formatFileSize(fileSize)}). Memory limit likely exceeded.`,
-        )
-      }
-      const view = new DataView(finalArrayBuffer)
-      const writeString = (offset: number, string: string) => {
-        for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i))
-      }
-      writeString(0, "RIFF")
-      view.setUint32(4, 36 + dataSize, true)
-      writeString(8, "WAVE")
-      writeString(12, "fmt ")
-      view.setUint32(16, 16, true)
-      view.setUint16(20, 1, true)
-      view.setUint16(22, numberOfChannels, true)
-      view.setUint32(24, targetSampleRate, true)
-      view.setUint32(28, targetSampleRate * numberOfChannels * bytesPerSample, true)
-      view.setUint16(32, numberOfChannels * bytesPerSample, true)
-      view.setUint16(34, 16, true)
-      writeString(36, "data")
-      view.setUint32(40, dataSize, true)
-      let offset = 44
-      for (let i = 0; i < numSamples; i++) {
-        if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
-          await sleep(0)
-          onProgress(50 + Math.floor((i / numSamples) * 50))
-        }
-        for (let channel = 0; channel < numberOfChannels; channel++) {
-          const sample = Math.max(-1, Math.min(1, resampledBuffer.getChannelData(channel)[i]))
-          view.setInt16(offset, sample * 0x7fff, true)
-          offset += bytesPerSample
-        }
-      }
-      onProgress(100)
-      return new Blob([finalArrayBuffer], { type: "audio/wav" })
-    },
-    [isMobileDevice],
-  )
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (selectedFile) handleFile(selectedFile)
@@ -1330,12 +998,6 @@ export default function HomePage() {
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
-  }
-
-  const formatDuration = (timeInSeconds: number) => {
-    const minutes = Math.floor(timeInSeconds / 60)
-    const seconds = Math.floor(timeInSeconds % 60)
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`
   }
 
   const formatFileSize = (bytes: number) => {
@@ -1394,44 +1056,6 @@ export default function HomePage() {
     })
   }, [])
 
-  const playLabsSoundOld = async (src: string) => {
-    try {
-      // Find the sound cue by src
-      const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.src === src)
-
-      if (soundCue && soundCue.src.startsWith("synthetic:")) {
-        // Generate and play synthetic sound
-        await generateSyntheticSound(soundCue)
-
-        toast({
-          title: "Playing Sound",
-          description: `Now playing: ${soundCue.name}`,
-          variant: "default",
-        })
-      } else {
-        // Handle actual audio files
-        if (labsAudioRef.current) {
-          labsAudioRef.current.src = src
-          await labsAudioRef.current.play().catch((e) => console.error("Error playing audio:", e))
-          toast({
-            title: "Playing Sound",
-            description: `Now playing: ${soundCue?.name || "Audio file"}`,
-            variant: "default",
-          })
-        } else {
-          throw new Error("Audio player not initialized.")
-        }
-      }
-    } catch (error) {
-      console.error("Labs Audio playback failed:", error)
-      toast({
-        title: "Audio Playback Failed",
-        description: `Could not play sound. Error: ${error instanceof Error ? error.message : "Unknown"}`,
-        variant: "destructive",
-      })
-    }
-  }
-
   const handleAddInstructionSoundEvent = () => {
     let instructionTextToAdd = ""
     if (selectedLibraryInstruction) instructionTextToAdd = selectedLibraryInstruction.text
@@ -1477,7 +1101,22 @@ export default function HomePage() {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-        mediaRecorderRef.current = new MediaRecorder(stream)
+        const mimeType = MediaRecorder.isTypeSupported("audio/mp4;codecs=aac")
+          ? "audio/mp4;codecs=aac"
+          : MediaRecorder.isTypeSupported("audio/webm")
+            ? "audio/webm"
+            : ""
+
+        if (!mimeType) {
+          toast({
+            title: "Unsupported Audio Format",
+            description: "Your browser does not support a compatible audio recording format.",
+            variant: "destructive",
+          })
+          return
+        }
+
+        mediaRecorderRef.current = new MediaRecorder(stream, { mimeType })
         const blobs: Blob[] = []
 
         mediaRecorderRef.current.ondataavailable = (event) => {
@@ -1486,22 +1125,60 @@ export default function HomePage() {
           }
         }
 
-        mediaRecorderRef.current.onstop = () => {
-          const blob = new Blob(blobs, { type: "audio/webm" })
+        mediaRecorderRef.current.onstop = async () => {
+          const blob = new Blob(blobs, { type: mimeType })
           const url = URL.createObjectURL(blob)
-          setRecordedAudioUrl(url)
-          setRecordedBlobs([blob])
+
+          // Create a temporary audio element to load metadata and get duration
+          const tempAudio = new Audio()
+          tempAudio.preload = "metadata"
+          tempAudio.src = url
+
+          tempAudio.onloadedmetadata = () => {
+            const duration =
+              tempAudio.duration && !isNaN(tempAudio.duration) && isFinite(tempAudio.duration) ? tempAudio.duration : 0
+
+            setReadyToAddToTimelineRecording({
+              url,
+              duration,
+              label: recordingLabel.trim(),
+            })
+            setRecordedBlobs([blob]) // Keep the blob for potential future use if needed
+            URL.revokeObjectURL(url) // Revoke the temporary URL after duration is captured
+            toast({ title: "Recording Stopped", description: `Duration: ${formatTime(duration)}` })
+          }
+
+          tempAudio.onerror = (e) => {
+            console.error("Error loading recorded audio metadata:", e)
+            toast({
+              title: "Recording Error",
+              description: "Could not load recorded audio metadata. Try again.",
+              variant: "destructive",
+            })
+            URL.revokeObjectURL(url)
+            setReadyToAddToTimelineRecording(null)
+          }
+
+          // Stop all tracks to release microphone
+          if (mediaRecorderRef.current?.stream) {
+            mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop())
+          }
         }
 
         mediaRecorderRef.current.start()
         setIsRecording(true)
-        setRecordedAudioUrl(null)
+        setReadyToAddToTimelineRecording(null) // Clear previous recording
+        setRecordedBlobs([])
         toast({ title: "Recording Started" })
       } catch (err) {
         toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" })
       }
     } else {
-      toast({ title: "Unsupported", description: "Audio recording not supported.", variant: "destructive" })
+      toast({
+        title: "Unsupported",
+        description: "Audio recording not supported by your browser.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -1509,13 +1186,6 @@ export default function HomePage() {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.stop()
       setIsRecording(false)
-
-      // Stop all tracks to release microphone
-      if (mediaRecorderRef.current.stream) {
-        mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop())
-      }
-
-      toast({ title: "Recording Stopped" })
     }
   }
 
@@ -1540,12 +1210,6 @@ export default function HomePage() {
   const removeTimelineEvent = (eventId: string) => {
     setTimelineEvents((prev) => prev.filter((event) => event.id !== eventId))
     toast({ title: "Event Removed" })
-  }
-
-  const formatTimeOld = (timeInSeconds: number): string => {
-    const minutes = Math.floor(timeInSeconds / 60)
-    const seconds = Math.floor(timeInSeconds % 60)
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`
   }
 
   // Safe input handlers with validation
@@ -1577,6 +1241,109 @@ export default function HomePage() {
       setLabsTotalDuration(Math.max(60, Number(value) * 60) || 60)
     }
   }
+
+  // Add this useCallback function for toggling background sound previews, after other useCallback functions:
+  const toggleBackgroundSoundPreview = useCallback(
+    (sound: { id: string; name: string; publicSrc: string; blobSrc: string }) => {
+      const audioEl = backgroundAudioRef.current
+      if (!audioEl) {
+        console.error("Background audio element not ready.")
+        toast({ title: "Error", description: "Audio player not initialized.", variant: "destructive" })
+        return
+      }
+
+      const isCurrentlyPlaying = currentPlayingBackgroundSoundId === sound.id && !audioEl.paused
+      const isCurrentlyPaused = audioEl.src.includes(sound.blobSrc) && audioEl.paused
+
+      // If this sound is playing, pause it.
+      if (isCurrentlyPlaying) {
+        audioEl.pause()
+        setCurrentPlayingBackgroundSoundId(null) // Indicate nothing is actively playing
+        toast({ title: "Preview Paused", description: `${sound.name} preview paused.` })
+        return
+      }
+
+      // If this sound is paused, resume it.
+      if (isCurrentlyPaused) {
+        audioEl
+          .play()
+          .then(() => {
+            setCurrentPlayingBackgroundSoundId(sound.id)
+            toast({ title: "Preview Resumed" })
+          })
+          .catch((err) => console.error("Error resuming playback:", err))
+        return
+      }
+
+      // Otherwise, switch to this new sound.
+      audioEl.pause()
+
+      const handleCanPlay = async () => {
+        try {
+          await audioEl.play()
+          setCurrentPlayingBackgroundSoundId(sound.id)
+          // Add to background sounds list if not already present
+          setBackgroundSounds((prev) => {
+            if (!prev.some((s) => s.id === sound.id)) {
+              return [...prev, { id: sound.id, name: sound.name, src: sound.publicSrc, volume: 0.3 }]
+            }
+            return prev
+          })
+          toast({ title: "Playing Preview", description: `Now playing: ${sound.name}` })
+        } catch (playError) {
+          console.error(`Error playing ${sound.name}:`, playError)
+          toast({ title: "Playback Error", variant: "destructive" })
+          setCurrentPlayingBackgroundSoundId(null)
+        }
+        audioEl.removeEventListener("canplaythrough", handleCanPlay)
+        audioEl.removeEventListener("error", handleError)
+      }
+
+      const handleError = () => {
+        console.error(`Error loading audio source: ${audioEl.src}`, audioEl.error)
+        toast({ title: "Audio Load Error", description: `Failed to load ${sound.name}.`, variant: "destructive" })
+        setCurrentPlayingBackgroundSoundId(null)
+        audioEl.removeEventListener("canplaythrough", handleCanPlay)
+        audioEl.removeEventListener("error", handleError)
+      }
+
+      // NOTE: We are not cleaning up previous listeners here to avoid complexity.
+      // The { once: true } option ensures they only fire once per attempt,
+      // which is sufficient for this use case.
+
+      audioEl.addEventListener("canplaythrough", handleCanPlay, { once: true })
+      audioEl.addEventListener("error", handleError, { once: true })
+
+      audioEl.src = sound.blobSrc
+      audioEl.volume = masterBackgroundVolume * 0.5
+      audioEl.loop = true
+      audioEl.load()
+    },
+    [currentPlayingBackgroundSoundId, masterBackgroundVolume],
+  )
+
+  // Add this useEffect hook to update background audio volume when masterBackgroundVolume changes:
+  useEffect(() => {
+    if (backgroundAudioRef.current && currentPlayingBackgroundSoundId) {
+      backgroundAudioRef.current.volume = masterBackgroundVolume * 0.5
+    }
+  }, [masterBackgroundVolume, currentPlayingBackgroundSoundId])
+
+  // Add this useEffect hook for background audio initialization and cleanup, after other useEffects:
+  useEffect(() => {
+    backgroundAudioRef.current = new Audio()
+    backgroundAudioRef.current.loop = true // Background sounds should loop for preview
+    backgroundAudioRef.current.volume = 0.5 // Default preview volume
+    backgroundAudioRef.current.onerror = (e) => console.warn("Background Audio error:", e)
+
+    return () => {
+      if (backgroundAudioRef.current) {
+        backgroundAudioRef.current.pause()
+        backgroundAudioRef.current.src = ""
+        backgroundAudioRef.current = null
+      }
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-0">
@@ -1615,14 +1382,14 @@ export default function HomePage() {
             <div className="absolute top-1 left-1/3 w-12 h-16 bg-gradient-to-tr from-amber-300/20 to-orange-400/15 rounded-full transform rotate-45 dark:from-amber-500/20 dark:to-orange-600/15"></div>
             <div className="absolute top-8 right-1/4 w-14 h-10 bg-gradient-to-tl from-blue-300/25 to-indigo-400/20 rounded-full transform -rotate-12 dark:from-blue-500/25 dark:to-indigo-600/20"></div>
           </div>
-          <div className="relative text-center px-6 pt-[69px]">
+          <div className="relative text-center px-[69px]">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
             >
               <h1
-                className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter text-center"
+                className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter text-center mt-16"
                 style={{
                   fontFamily: 'Georgia, "Times New Roman", serif',
                   textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
@@ -1642,7 +1409,7 @@ export default function HomePage() {
               </div>
 
               {/* Mode Switch */}
-              <div className="flex justify-center items-center mb-4 space-y-4 flex-row my-[33px]">
+              <div className="flex justify-center items-center space-y-4 flex-row my-[33px] mb-6">
                 <div className="grid mx-auto grid-cols-2 bg-gray-100/70 p-1 dark:bg-gray-800/70 font-serif text-gray-600 w-64 h-auto shadow-inner rounded-md">
                   <button
                     onClick={() => setActiveMode("adjuster")}
@@ -1672,6 +1439,41 @@ export default function HomePage() {
           </div>
 
           <div className="px-6 md:px-10 pb-10 font-serif font-black">
+            {/* Mode Description Notes */}
+            <AnimatePresence mode="wait">
+              {activeMode === "adjuster" && (
+                <motion.div
+                  key="adjuster-note"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="p-4 mb-6 border border-gray-600 rounded-md text-gray-600 font-serif font-black text-sm dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto shadow-inner"
+                >
+                  <p className="text-center">
+                    The <strong className="text-gray-700 dark:text-gray-200">Adjuster</strong> can change the duration
+                    of guided meditations by intelligently adjusting silence periods. Upload an audio file, set your
+                    target duration, and this tool will re-space content to fit your schedule.
+                  </p>
+                </motion.div>
+              )}
+              {activeMode === "labs" && (
+                <motion.div
+                  key="encoder-note"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="p-4 mb-6 border border-gray-600 rounded-md text-gray-600 font-serif font-black text-sm dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto text-center shadow-inner"
+                >
+                  <p>
+                    The <strong className="text-gray-700 dark:text-gray-200">Encoder</strong> lets you create custom
+                    meditations by associating instructions with sound cues and placing them along a timeline. This tool
+                    aims to help bridge the gap between guided and self-directed meditation.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
             {/* Conditional Rendering based on activeMode */}
             {activeMode === "adjuster" ? (
               // == Length Adjuster UI ==
@@ -1681,22 +1483,22 @@ export default function HomePage() {
                   <div className="p-4 max-w-2xl dark:border-logo-rose-700 border-solid border text-center border-logo-rose-600 mx-auto rounded-md shadow-inner">
                     <p className="text-logo-rose-600 leading-relaxed dark:text-logo-rose-300 font-serif font-black text-xs">
                       <strong className="pr-1.5 font-black font-serif text-center text-sm text-logo-amber-600">
-                        Note:{" "}
-                      </strong>{" "}
-                      The meditations below are sourced from publicly available, free content. The length adjuster only
-                      alters silence periods to fit user schedules. Teachers, please feel free to{" "}
+                        Note:
+                      </strong>
+                      This tool is designed to help you adjust the length of existing guided meditations to fit your
+                      schedules. Teachers, please feel free to
                       <a
                         href="/contact"
                         className="hover:text-logo-rose-600 underline px-1 rounded transition-colors transition-shadow dark:hover:text-logo-rose-300 font-black text-sm text-logo-purple-300"
                       >
                         contact me
-                      </a>{" "}
+                      </a>
                       to opt out. Depending on the audio, users may need to tweak the advanced settings for optimal
-                      results. Any guided meditation, talk, podcast, or audiobook (under{" "}
-                      {isMobileDevice ? "50MB" : "500MB"}) should be compatible. Enjoy:){" "}
+                      results. Any guided meditation, talk, podcast, or audiobook (under
+                      {isMobileDevice ? "50MB" : "500MB"}) should be compatible. Enjoy:)
                     </p>
                   </div>
-                  <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto dark:border-logo-rose-700 backdrop-blur-sm dark:bg-gray-900/60 border-0 py-4 px-0 bg-transparent pb-5 pt-0">
+                  <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto dark:border-logo-rose-700 backdrop-blur-sm dark:bg-gray-900/60 border-0 py-4 px-0 bg-transparent pt-0 pb-3">
                     <h3 className="mb-2 dark:text-white text-center font-black px-0 pb-1.5 rounded text-base text-logo-rose-600">
                       Resources
                     </h3>
@@ -1773,8 +1575,7 @@ export default function HomePage() {
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                 >
-                  
-                  <div className="p-10 md:p-16 text-center md:py-14 border-2 rounded-b-2xl border-t-2 border-dashed border-gray-300">
+                  <div className="p-10 md:p-16 text-center md:py-14 border-2 rounded-2xl border-dashed border-gray-600">
                     <motion.div
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -1804,7 +1605,7 @@ export default function HomePage() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="bg-white p-5 mb-6 border dark:shadow-white/20 overflow-hidden dark:bg-gray-900 dark:border-gray-800 rounded-xl border-logo-teal shadow-inner"
+                      className="bg-white p-5 mb-6 border dark:shadow-white/20 overflow-hidden dark:bg-gray-900 dark:border-gray-800 rounded-xl shadow-inner border-gray-600"
                     >
                       <div className="flex items-center">
                         <motion.div
@@ -1813,14 +1614,14 @@ export default function HomePage() {
                           transition={{ type: "spring", stiffness: 500, damping: 30, delay: 0.1 }}
                           className="p-2 rounded-lg mr-4 dark:bg-gray-800 bg-transparent"
                         >
-                          <Volume2 className="h-5 w-5 dark:text-gray-300 text-logo-purple-300" />
+                          <Volume2 className="h-5 w-5 dark:text-gray-300 text-gray-600" />
                         </motion.div>
                         <div>
                           <motion.div
                             initial={{ opacity: 0, x: -5 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.2 }}
-                            className="mb-1 dark:text-gray-200 font-black text-sm text-logo-purple-300"
+                            className="mb-1 dark:text-gray-200 font-black text-sm text-gray-600"
                           >
                             {file.name}
                           </motion.div>
@@ -1828,9 +1629,11 @@ export default function HomePage() {
                             initial={{ opacity: 0, x: -5 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.3 }}
-                            className="dark:text-gray-400/70 font-black text-xs text-logo-purple-300"
+                            className="dark:text-gray-400/70 font-black text-xs text-gray-500"
                           >
-                            Size: {formatFileSize(file.size)} • Type: {file.type || "Unknown"}
+                            Size: {formatFileSize(file.size)}
+                            {" • Type: "}
+                            {file.type || "Unknown"}
                           </motion.div>
                         </div>
                       </div>
@@ -1876,46 +1679,44 @@ export default function HomePage() {
                       transition={{ delay: 0.1 }}
                       className="mb-10 mt-8"
                     >
-                      <Alert className="bg-white dark:bg-gray-900 shadow-lg dark:shadow-white/10 p-1 border border-logo-teal-500 shadow-inner">
+                      <Alert className="bg-white dark:bg-gray-900 shadow-lg dark:shadow-white/10 p-1 border border-indigo-400 shadow-inner">
                         <div className="p-4">
                           <div className="flex items-center mb-4">
                             <div className="p-2 rounded-lg mr-3 dark:bg-gray-700 bg-transparent">
-                              <Info className="h-4 w-4 dark:text-gray-300 text-logo-teal-500" />
+                              <Info className="h-4 w-4 dark:text-gray-300 text-indigo-400" />
                             </div>
-                            <div className="text-lg dark:text-gray-200 font-black text-logo-purple-300">
-                              Audio Analysis
-                            </div>
+                            <div className="text-lg dark:text-gray-200 font-black text-indigo-400">Audio Analysis</div>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-logo-teal">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-purple-300">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-indigo-400">
                                 Content
                               </div>
-                              <div className="dark:text-black font-black text-logo-purple-300">
-                                {formatDuration(audioAnalysis.contentDuration)}
+                              <div className="dark:text-black font-black text-indigo-400">
+                                {formatTime(audioAnalysis.contentDuration)}
                               </div>
                             </div>
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-logo-teal">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-purple-300">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-indigo-400">
                                 Silence
                               </div>
-                              <div className="dark:text-gray-200 font-black rounded-xl text-logo-purple-300">
-                                {formatDuration(audioAnalysis.totalSilence)}
+                              <div className="dark:text-gray-200 font-black rounded-xl text-indigo-400">
+                                {formatTime(audioAnalysis.totalSilence)}
                               </div>
                             </div>
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-logo-teal">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-purple-300">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-indigo-400">
                                 Pauses
                               </div>
-                              <div className="dark:text-gray-200 font-black text-logo-purple-300">
+                              <div className="dark:text-gray-200 font-black text-indigo-400">
                                 {audioAnalysis.silenceRegions}
                               </div>
                             </div>
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-logo-teal">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-purple-300">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-indigo-400">
                                 Range
                               </div>
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-logo-purple-300">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-indigo-400">
                                 {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
                               </div>
                             </div>
@@ -1950,7 +1751,7 @@ export default function HomePage() {
                     <TabsContent value="basic" className="mt-0 space-y-6">
                       <div className="grid md:grid-cols-2 gap-6">
                         <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div className="bg-gradient-to-r from-logo-amber-500 to-indigo-500 py-3 px-6 dark:from-logo-amber-700 dark:to-indigo-700">
+                          <div className="bg-gradient-to-r from-logo-teal-500 to-indigo-500 py-3 px-6 dark:from-logo-teal-700 dark:to-indigo-700">
                             <h3 className="text-white flex items-center font-black">
                               <Clock className="h-4 w-4 mr-2" />
                               Target Duration
@@ -1966,17 +1767,17 @@ export default function HomePage() {
                                 onValueChange={(value) => setTargetDuration(value[0])}
                                 disabled={!durationLimits}
                                 className="py-4"
-                                rangeClassName="bg-gradient-to-r from-logo-amber-500 to-indigo-500"
+                                rangeClassName="bg-gradient-to-r from-logo-teal-500 to-indigo-500 dark:from-logo-teal-700 dark:to-indigo-700"
                               />
                             </div>
                             <div className="text-center font-serif font-black">
-                              <span className="text-logo-amber-700 dark:text-logo-amber-300 text-2xl font-black">
+                              <span className="dark:text-logo-amber-300 text-2xl font-black text-logo-teal-600">
                                 {targetDuration}
                               </span>
-                              <span className="text-lg text-logo-amber-600 ml-1 dark:text-logo-amber-400">minutes</span>
+                              <span className="text-lg ml-1 dark:text-logo-amber-400 text-logo-teal">minutes</span>
                             </div>
                             {durationLimits && (
-                              <div className="text-center text-xs text-logo-amber-500/70 mt-2 dark:text-logo-amber-400/70">
+                              <div className="text-center text-xs mt-2 dark:text-logo-amber-400/70 text-logo-teal">
                                 Range: {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
                               </div>
                             )}
@@ -1998,7 +1799,7 @@ export default function HomePage() {
                                 step={0.001}
                                 onValueChange={(value) => setSilenceThreshold(value[0])}
                                 className="py-4"
-                                rangeClassName="bg-gradient-to-r from-indigo-500 to-logo-amber-500"
+                                rangeClassName="bg-gradient-to-r from-indigo-500 to-logo-amber-500 dark:from-indigo-700 dark:to-logo-amber-700"
                               />
                             </div>
                             <div className="text-center">
@@ -2028,14 +1829,14 @@ export default function HomePage() {
                                 step={0.5}
                                 onValueChange={(value) => setMinSilenceDuration(value[0])}
                                 className="py-4"
-                                rangeClassName="bg-gradient-to-r from-logo-amber-500 to-logo-rose-500"
+                                rangeClassName="bg-gradient-to-r from-logo-amber-500 to-logo-rose-500 dark:from-logo-amber-700 dark:to-logo-rose-700"
                               />
                             </div>
                             <div className="text-center">
                               <span className="dark:text-logo-amber-300 text-2xl font-black text-logo-rose-600">
                                 {minSilenceDuration}
                               </span>
-                              <span className="text-lg text-logo-rose-600 ml-1 dark:text-logo-rose-400">seconds</span>
+                              <span className="text-lg ml-1 dark:text-logo-rose-400 text-logo-rose-500">seconds</span>
                             </div>
                             <div className="text-center text-logo-amber-500/70 mt-2 dark:text-logo-amber-400/70 text-sm">
                               Shorter = detect more pauses
@@ -2055,14 +1856,14 @@ export default function HomePage() {
                                 step={0.1}
                                 onValueChange={(value) => setMinSpacingDuration(value[0])}
                                 className="py-4"
-                                rangeClassName="bg-gradient-to-r from-logo-purple-500 to-logo-teal-500"
+                                rangeClassName="bg-gradient-to-r from-logo-purple-500 to-logo-teal-500 dark:from-logo-purple-700 dark:to-logo-teal-700"
                               />
                             </div>
                             <div className="text-center">
                               <span className="dark:text-logo-purple-300 font-black text-2xl text-logo-teal-600">
                                 {minSpacingDuration.toFixed(1)}
                               </span>
-                              <span className="text-lg text-logo-teal-600 ml-1 dark:text-logo-teal-400">seconds</span>
+                              <span className="text-lg ml-1 dark:text-logo-teal-400 text-logo-teal">seconds</span>
                             </div>
                             <div className="text-center text-logo-purple-500/70 mt-2 dark:text-logo-purple-400/70 text-sm">
                               Minimum pause between speaking parts
@@ -2076,7 +1877,7 @@ export default function HomePage() {
                           <div className="p-6">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="text-sm text-logo-rose-700 mb-1 dark:text-logo-rose-300">
+                                <p className="text-sm mb-1 dark:text-logo-rose-300 text-logo-rose-500">
                                   Maintain the relative length of pauses
                                 </p>
                               </div>
@@ -2104,7 +1905,7 @@ export default function HomePage() {
                                 </SelectItem>
                               </SelectContent>
                             </Select>
-                            <div className="text-xs text-logo-teal-500/70 dark:text-logo-teal-400/70 mt-3.5">
+                            <div className="text-xs dark:text-logo-teal-400/70 mt-3.5 text-gray-500">
                               High Compatibility for better playback on mobile/AirPods. May reduce sample rate for long
                               audio on mobile.
                             </div>
@@ -2163,10 +1964,10 @@ export default function HomePage() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className={`p-4 rounded-xl mb-8 text-center dark:shadow-white/10 overflow-hidden bg-white dark:bg-gray-900 shadow-none border border-logo-blue-300 ${status.type === "info" ? "text-logo-teal-700 border border-logo-teal-400 dark:text-logo-teal-300 dark:border-logo-teal-600" : status.type === "success" ? "text-logo-emerald-700 border border-logo-emerald-400 dark:text-logo-emerald-300 dark:border-logo-emerald-600" : "text-red-700 border border-red-400 dark:text-red-300 dark:border-red-600"}`}
+                      className={`p-4 rounded-xl mb-8 text-center dark:shadow-white/10 overflow-hidden bg-white dark:bg-gray-900 shadow-none border border-indigo-400 ${status.type === "info" ? "text-logo-teal-700 dark:text-logo-teal-300" : status.type === "success" ? "text-logo-emerald-700 dark:text-logo-emerald-300" : "text-red-700 dark:text-red-300"}`}
                     >
                       <motion.div
-                        className="text-sm text-logo-teal"
+                        className="text-sm text-indigo-400"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.2 }}
@@ -2198,7 +1999,7 @@ export default function HomePage() {
                                 Duration
                               </div>
                               <div className="dark:text-black font-black text-black">
-                                {originalBuffer ? formatDuration(originalBuffer.duration) : "--"}
+                                {originalBuffer ? formatTime(originalBuffer.duration) : "--"}
                               </div>
                             </div>
                             <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
@@ -2234,7 +2035,7 @@ export default function HomePage() {
                                 Duration
                               </div>
                               <div className="dark:text-black font-black text-black">
-                                {formatDuration(actualDuration || 0)}
+                                {formatTime(actualDuration || 0)}
                                 {actualDuration && targetDuration && (
                                   <div className="text-xs text-logo-teal-600 mt-1 dark:text-gray-900">
                                     {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
@@ -2270,7 +2071,6 @@ export default function HomePage() {
                 key="labs-content"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
                 className="space-y-6"
               >
@@ -2304,7 +2104,7 @@ export default function HomePage() {
                         </div>
                         <div className="text-center">
                           <Label htmlFor="labs-duration" className="text-logo-rose-600 font-black">
-                            Duration (minutes)
+                            Meditation Duration (minutes)
                           </Label>
                           <Input
                             id="labs-duration"
@@ -2321,7 +2121,12 @@ export default function HomePage() {
                 </motion.div>
 
                 {/* Main Content Grid for Labs */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <motion.div
+                  className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
                   <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -2342,9 +2147,7 @@ export default function HomePage() {
                               key={category}
                               className="border-b border-gray-100 dark:border-gray-800"
                             >
-                              <AccordionTrigger className="text-logo-purple-600 dark:text-logo-purple-400 hover:no-underline py-3">
-                                {category}
-                              </AccordionTrigger>
+                              <AccordionTrigger className="hover:no-underline py-3">{category}</AccordionTrigger>
                               <AccordionContent className="pb-4">
                                 <div className="space-y-2">
                                   {INSTRUCTIONS_LIBRARY.filter((instr) => instr.category === category).map((instr) => (
@@ -2369,7 +2172,7 @@ export default function HomePage() {
                           ))}
                         </Accordion>
                         <div className="border-gray-100 dark:border-gray-800 pt-4 border-t-0 text-center">
-                          <Label htmlFor="custom" className="text-logo-purple-600 dark:text-logo-purple-400 font-black">
+                          <Label htmlFor="custom" className="text-indigo-400 font-black">
                             Custom Instruction
                           </Label>
                           <Textarea
@@ -2390,7 +2193,7 @@ export default function HomePage() {
                     transition={{ delay: 0.3 }}
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                      <div className="bg-gradient-to-r from-logo-emerald-500 to-logo-teal-500 py-3 px-6 dark:from-logo-emerald-600 dark:to-logo-teal-600 text-center">
+                      <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
                         <h3 className="text-white flex items-center font-black text-center">
                           <Music2 className="h-4 w-4 mr-2" />
                           Musical Notes
@@ -2404,7 +2207,7 @@ export default function HomePage() {
                               key={category}
                               className="border-b border-gray-100 dark:border-gray-800"
                             >
-                              <AccordionTrigger className="text-logo-emerald-700 dark:text-logo-emerald-500 hover:no-underline py-3">
+                              <AccordionTrigger className="text-logo-teal-500 dark:text-logo-teal-500 hover:no-underline py-3">
                                 {category}
                               </AccordionTrigger>
                               <AccordionContent className="pb-4">
@@ -2415,20 +2218,21 @@ export default function HomePage() {
                                         variant={selectedSoundCue?.id === note.id ? "default" : "ghost"}
                                         size="sm"
                                         className={`flex-1 justify-start font-black ${selectedSoundCue?.id === note.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
-                                        onClick={() =>
+                                        onClick={async () => {
                                           setSelectedSoundCue({
                                             id: note.id,
                                             name: note.name,
                                             src: `musical:${note.note}${note.octave}`,
                                           })
-                                        }
+                                          await playNote(note.note, note.octave) // Await playNote here
+                                        }}
                                       >
                                         {note.name}
                                       </Button>
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => playNote(note.note, note.octave)}
+                                        onClick={async () => await playNote(note.note, note.octave)} // Await playNote here
                                         className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
                                         title={`Preview ${note.name}`}
                                       >
@@ -2442,7 +2246,7 @@ export default function HomePage() {
                           ))}
                         </Accordion>
                         <Button
-                          className="w-full bg-white text-logo-emerald-700 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-emerald-400 dark:border-gray-600 dark:hover:bg-gray-800" // Changed border to gray-600
+                          className="w-full bg-white text-logo-teal-500 border border-logo-teal-500 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-teal-500 dark:border-logo-teal-500 dark:hover:bg-gray-800"
                           onClick={handleAddInstructionSoundEvent}
                           disabled={(!selectedLibraryInstruction && !customInstructionText.trim()) || !selectedSoundCue}
                         >
@@ -2465,12 +2269,12 @@ export default function HomePage() {
                         </h3>
                       </div>
                       <div className="p-6 space-y-4">
-                        <div className="text-center">
+                        <div className="text-left">
                           <Label
                             htmlFor="recording-label"
                             className="text-logo-rose-600 dark:text-logo-rose-400 font-black"
                           >
-                            Recording Label
+                            Label
                           </Label>
                           <Input
                             id="recording-label"
@@ -2483,7 +2287,12 @@ export default function HomePage() {
                         <Button
                           onClick={isRecording ? stopRecording : startRecording}
                           variant={isRecording ? "destructive" : "default"}
-                          className="w-full font-black bg-gradient-to-r from-gray-600 to-gray-700 text-white dark:from-gray-700 dark:to-gray-800" // Changed to gray gradient
+                          className={cn(
+                            "w-full font-black",
+                            isRecording
+                              ? "bg-gradient-to-r from-gray-600 to-gray-700 text-white dark:from-gray-700 dark:to-gray-800"
+                              : "bg-transparent text-logo-rose-600 border border-logo-rose-600 dark:text-logo-rose-400 dark:border-logo-rose-400 hover:bg-logo-rose-50 dark:hover:bg-gray-800",
+                          )}
                         >
                           {isRecording ? (
                             <>
@@ -2498,7 +2307,7 @@ export default function HomePage() {
                           )}
                         </Button>
                         <AnimatePresence>
-                          {recordedAudioUrl && (
+                          {readyToAddToTimelineRecording && (
                             <motion.div
                               initial={{ opacity: 0, height: 0 }}
                               animate={{ opacity: 1, height: "auto" }}
@@ -2506,31 +2315,25 @@ export default function HomePage() {
                               className="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-4"
                             >
                               <div className="space-y-2">
-                                <audio controls src={recordedAudioUrl} className="w-full" preload="metadata" />
+                                <audio
+                                  controls
+                                  src={readyToAddToTimelineRecording.url}
+                                  className="w-full"
+                                  preload="metadata"
+                                />
+                                <p className="text-xs text-gray-500 text-center">
+                                  Duration: {formatTime(readyToAddToTimelineRecording.duration)}
+                                </p>
                               </div>
                               <Button
-                                onClick={async () => {
-                                  if (!recordingLabel.trim()) {
+                                onClick={() => {
+                                  if (!readyToAddToTimelineRecording?.label.trim()) {
                                     toast({
                                       title: "Missing Label",
                                       description: "Please provide a label for the recording.",
                                       variant: "destructive",
                                     })
                                     return
-                                  }
-
-                                  if (!recordedAudioUrl) return
-
-                                  // Get duration from audio element if available, otherwise use 0
-                                  let duration = 0
-                                  const audioElements = document.querySelectorAll(
-                                    'audio[src="' + recordedAudioUrl + '"]',
-                                  )
-                                  if (audioElements.length > 0) {
-                                    const audio = audioElements[0] as HTMLAudioElement
-                                    if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
-                                      duration = audio.duration
-                                    }
                                   }
 
                                   // Calculate new startTime based on existing events
@@ -2542,21 +2345,21 @@ export default function HomePage() {
                                     id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
                                     type: "recorded_voice",
                                     startTime: newStartTime, // Now calculated
-                                    recordedAudioUrl: recordedAudioUrl,
-                                    recordedInstructionLabel: recordingLabel.trim(),
-                                    duration: duration,
+                                    recordedAudioUrl: readyToAddToTimelineRecording.url,
+                                    recordedInstructionLabel: readyToAddToTimelineRecording.label.trim(),
+                                    duration: readyToAddToTimelineRecording.duration,
                                   }
 
                                   addEventToTimeline(newEvent) // Use the new helper function
 
                                   // Clean up
-                                  setRecordedAudioUrl(null)
+                                  setReadyToAddToTimelineRecording(null)
                                   setRecordedBlobs([])
                                   setRecordingLabel("")
 
                                   toast({
                                     title: "Recording Added",
-                                    description: `"${recordingLabel.trim()}" added to timeline.`,
+                                    description: `"${readyToAddToTimelineRecording.label.trim()}" added to timeline.`,
                                   })
                                 }}
                                 className="w-full bg-white text-logo-rose-600 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black" // Changed border to gray-600
@@ -2570,12 +2373,12 @@ export default function HomePage() {
                       </div>
                     </Card>
                   </motion.div>
-                </div>
+                </motion.div>
                 {/* Timeline Editor for Labs */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
                   <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
                     <div className="bg-gradient-to-r from-gray-700 to-gray-800 py-4 px-6 dark:from-gray-800 dark:to-gray-900">
-                      <h3 className="text-white text-lg flex items-center font-black">
+                      <h3 className="text-white flex items-center font-black text-base">
                         <CircleDotDashed className="h-5 w-5 mr-2" />
                         Timeline Editor
                       </h3>
@@ -2587,6 +2390,163 @@ export default function HomePage() {
                         onUpdateEvent={updateEventStartTime}
                         onRemoveEvent={removeTimelineEvent}
                       />
+                      {/* Background Sound Mixer */}
+                      <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
+                        <h4 className="font-black dark:text-gray-200 text-gray-600 mb-4 text-base">
+                          Background Sound Mixer
+                        </h4>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Ambient Sounds */}
+                          <div className="space-y-3">
+                            <h5 className="text-sm font-black text-gray-600 dark:text-gray-300">Ambient Sounds</h5>
+                            <div className="space-y-2">
+                              {AMBIENT_SOUNDS.map((sound) => (
+                                <div
+                                  key={sound.id}
+                                  className="flex items-center space-x-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 shadow-inner"
+                                >
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => toggleBackgroundSoundPreview(sound)}
+                                    className={`${currentPlayingBackgroundSoundId === sound.id ? "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" : ""}`}
+                                  >
+                                    <Play className="h-3 w-3 mr-1" />
+                                    <span className="font-black text-gray-600 dark:text-gray-300">{sound.name}</span>
+                                  </Button>
+
+                                  {backgroundSounds.some((s) => s.id === sound.id) && (
+                                    <div className="flex-1 flex items-center space-x-2">
+                                      <Volume2 className="h-3 w-3 text-gray-500" />
+                                      <Slider
+                                        value={[backgroundSounds.find((s) => s.id === sound.id)?.volume || 0.3]}
+                                        min={0}
+                                        max={1}
+                                        step={0.1}
+                                        onValueChange={(value) => {
+                                          setBackgroundSounds((prev) =>
+                                            prev.map((s) => (s.id === sound.id ? { ...s, volume: value[0] } : s)),
+                                          )
+                                        }}
+                                        className="flex-1"
+                                        rangeClassName="bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900"
+                                      />
+                                      <span className="text-xs text-gray-500 w-8">
+                                        {Math.round(
+                                          (backgroundSounds.find((s) => s.id === sound.id)?.volume || 0) * 100,
+                                        )}
+                                        %
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Custom Audio Upload */}
+                          <div className="space-y-3">
+                            <h5 className="text-sm font-black text-gray-600 dark:text-gray-300">
+                              Custom Background Audio
+                            </h5>
+                            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center">
+                              <input
+                                type="file"
+                                accept="audio/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) {
+                                    const url = URL.createObjectURL(file)
+                                    const customSound = {
+                                      id: `custom_${Date.now()}`,
+                                      name: file.name.replace(/\.[^/.]+$/, ""),
+                                      src: url, // For custom uploads, the URL.createObjectURL is the direct source
+                                      volume: 0.3,
+                                    }
+                                    setBackgroundSounds((prev) => [...prev, customSound])
+                                  }
+                                }}
+                                className="hidden"
+                                id="custom-background-upload"
+                              />
+                              <label htmlFor="custom-background-upload" className="cursor-pointer">
+                                <div className="text-gray-500 dark:text-gray-400 text-sm">
+                                  <PlusCircle className="h-6 w-6 mx-auto mb-2" />
+                                  Upload Custom Audio
+                                </div>
+                              </label>
+                            </div>
+
+                            {/* Custom Audio Controls */}
+                            {backgroundSounds
+                              .filter((s) => s.id.startsWith("custom_"))
+                              .map((sound) => (
+                                <div
+                                  key={sound.id}
+                                  className="flex items-center space-x-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 shadow-inner"
+                                >
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      setBackgroundSounds((prev) => prev.filter((s) => s.id !== sound.id))
+                                    }}
+                                    className="text-red-500 hover:text-red-700"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                  <span className="text-sm font-black text-gray-700 dark:text-gray-300 flex-1 truncate">
+                                    {sound.name}
+                                  </span>
+                                  <div className="flex items-center space-x-2">
+                                    <Volume2 className="h-3 w-3 text-gray-500" />
+                                    <Slider
+                                      value={[sound.volume]}
+                                      min={0}
+                                      max={1}
+                                      step={0.1}
+                                      onValueChange={(value) => {
+                                        setBackgroundSounds((prev) =>
+                                          prev.map((s) => (s.id === sound.id ? { ...s, volume: value[0] } : s)),
+                                        )
+                                      }}
+                                      className="w-20"
+                                      rangeClassName="bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900"
+                                    />
+                                    <span className="text-xs text-gray-500 w-8">{Math.round(sound.volume * 100)}%</span>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+
+                        {/* Master Background Volume */}
+                        {backgroundSounds.length > 0 && (
+                          <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg shadow-inner">
+                            <div className="flex items-center space-x-3">
+                              <span className="text-sm font-black text-gray-600 dark:text-gray-300">
+                                Master Background Volume:
+                              </span>
+                              <div className="flex-1 flex items-center space-x-2">
+                                <Volume2 className="h-4 w-4 text-gray-500" />
+                                <Slider
+                                  value={[masterBackgroundVolume]}
+                                  min={0}
+                                  max={1}
+                                  step={0.1}
+                                  onValueChange={(value) => setMasterBackgroundVolume(value[0])}
+                                  className="flex-1"
+                                  rangeClassName="bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900"
+                                />
+                                <span className="text-sm text-gray-500 w-12">
+                                  {Math.round(masterBackgroundVolume * 100)}%
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </Card>
                 </motion.div>
