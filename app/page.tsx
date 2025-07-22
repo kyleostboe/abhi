@@ -1229,7 +1229,16 @@ export default function HomePage() {
 
   // Add this useCallback function for toggling background sound previews, after other useCallback functions:
   const toggleBackgroundSoundPreview = useCallback(
-    (sound: { id: string; name: string; src: string }) => {
+    (sound: {
+      id: string
+      name: string
+      src: string
+      noiseType?: string
+      filterType?: string
+      filterFrequency?: number
+      lfoFrequency?: number
+      volume?: number
+    }) => {
       const audioEl = backgroundAudioRef.current
       if (!audioEl) {
         console.error("Background audio element not ready.")
@@ -1237,81 +1246,39 @@ export default function HomePage() {
         return
       }
 
-      const isSynthetic = sound.src.startsWith("synthetic:")
       const isCurrentlyPlaying = currentPlayingBackgroundSoundId === sound.id && !audioEl.paused
-      const isCurrentlyPaused = audioEl.src.includes(sound.src) && audioEl.paused
 
       // If this sound is playing, pause it.
       if (isCurrentlyPlaying) {
         audioEl.pause()
-        setCurrentPlayingBackgroundSoundId(null)
+        setCurrentPlayingBackgroundSoundId(null) // Indicate nothing is actively playing
         toast({ title: "Preview Paused", description: `${sound.name} preview paused.` })
-        return
-      }
-
-      // If this sound is paused, resume it.
-      if (!isSynthetic && isCurrentlyPaused) {
-        audioEl
-          .play()
-          .then(() => {
-            setCurrentPlayingBackgroundSoundId(sound.id)
-            toast({ title: "Preview Resumed" })
-          })
-          .catch((err) => console.error("Error resuming playback:", err))
         return
       }
 
       // Otherwise, switch to this new sound.
       audioEl.pause()
 
-      if (isSynthetic) {
-        const ctx = getAudioContext()
-        generateAmbientSound(sound as any, ctx, 5)
-        setBackgroundSounds((prev) => {
-          if (!prev.some((s) => s.id === sound.id)) {
-            return [...prev, { id: sound.id, name: sound.name, src: sound.src, volume: 0.3 }]
-          }
-          return prev
-        })
-        toast({ title: "Playing Preview", description: `Now playing: ${sound.name}` })
-        setCurrentPlayingBackgroundSoundId(sound.id)
-      } else {
-        const handleCanPlay = async () => {
-          try {
-            await audioEl.play()
-            setCurrentPlayingBackgroundSoundId(sound.id)
-            setBackgroundSounds((prev) => {
-              if (!prev.some((s) => s.id === sound.id)) {
-                return [...prev, { id: sound.id, name: sound.name, src: sound.src, volume: 0.3 }]
-              }
-              return prev
-            })
-            toast({ title: "Playing Preview", description: `Now playing: ${sound.name}` })
-          } catch (playError) {
-            console.error(`Error playing ${sound.name}:`, playError)
-            toast({ title: "Playback Error", variant: "destructive" })
-            setCurrentPlayingBackgroundSoundId(null)
-          }
-          audioEl.removeEventListener("canplaythrough", handleCanPlay)
-          audioEl.removeEventListener("error", handleError)
-        }
-
-        const handleError = () => {
-          console.error(`Error loading audio source: ${audioEl.src}`, audioEl.error)
-          toast({ title: "Audio Load Error", description: `Failed to load ${sound.name}.`, variant: "destructive" })
+      const playSyntheticSound = async () => {
+        try {
+          const audioContext = getAudioContext()
+          await generateAmbientSound(sound as any, audioContext, 5)
+          setBackgroundSounds((prev) => {
+            if (!prev.some((s) => s.id === sound.id)) {
+              return [...prev, { id: sound.id, name: sound.name, src: sound.src, volume: 0.3 }]
+            }
+            return prev
+          })
+          toast({ title: "Playing Preview", description: `Now playing: ${sound.name}` })
+          setCurrentPlayingBackgroundSoundId(sound.id)
+        } catch (playError) {
+          console.error(`Error playing ${sound.name}:`, playError)
+          toast({ title: "Playback Error", variant: "destructive" })
           setCurrentPlayingBackgroundSoundId(null)
-          audioEl.removeEventListener("canplaythrough", handleCanPlay)
-          audioEl.removeEventListener("error", handleError)
         }
-
-        audioEl.addEventListener("canplaythrough", handleCanPlay, { once: true })
-        audioEl.addEventListener("error", handleError, { once: true })
-
-        audioEl.src = sound.src
-        audioEl.volume = masterBackgroundVolume * 0.5
-        audioEl.loop = true
-        audioEl.load()
       }
+
+      playSyntheticSound()
     },
     [currentPlayingBackgroundSoundId, masterBackgroundVolume],
   )
