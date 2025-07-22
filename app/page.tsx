@@ -38,6 +38,8 @@ import {
   SOUND_CUES_LIBRARY,
   MUSICAL_NOTES,
   generateSyntheticSound,
+  generateAmbientSound,
+  AMBIENT_SOUNDS_LIBRARY,
   NOTE_FREQUENCIES, // Keep NOTE_FREQUENCIES here as it's used by MUSICAL_NOTES
 } from "@/lib/meditation-data"
 import { VisualTimeline } from "@/components/visual-timeline"
@@ -75,24 +77,6 @@ interface TimelineItem {
   duration: number // in seconds
   content: Instruction | SoundCue
 }
-
-// Define ambient sounds with both public path and blob URL
-const AMBIENT_SOUNDS = [
-  { id: "rain", name: "Rain", publicSrc: "/sounds/rain.mp3", blobSrc: "https://blob.v0.dev/placeholder-rain.mp3" },
-  {
-    id: "waves",
-    name: "Ocean Waves",
-    publicSrc: "/sounds/waves.mp3",
-    blobSrc: "https://blob.v0.dev/placeholder-waves.mp3",
-  },
-  {
-    id: "forest",
-    name: "Forest",
-    publicSrc: "/sounds/forest.mp3",
-    blobSrc: "https://blob.v0.dev/placeholder-forest.mp3",
-  },
-  { id: "wind", name: "Wind", publicSrc: "/sounds/wind.mp3", blobSrc: "https://blob.v0.dev/placeholder-wind.mp3" },
-]
 
 export default function HomePage() {
   // State for mode toggle (Length Adjuster vs Labs)
@@ -165,7 +149,7 @@ export default function HomePage() {
     Array<{
       id: string
       name: string
-      src: string // This src will be the publicSrc for export
+      src: string // File path or synthetic: prefix for export
       volume: number
     }>
   >([])
@@ -465,28 +449,29 @@ export default function HomePage() {
         if (bgSound.volume > 0) {
           try {
             console.log(`Adding background sound: ${bgSound.name} from src: ${bgSound.src}`)
-            const response = await fetch(bgSound.src) // Use bgSound.src (public path) for export
-            const arrayBuffer = await response.arrayBuffer()
-            const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
-
-            // Create a looped background sound for the entire duration
-            const source = ctx.createBufferSource()
-            const gainNode = ctx.createGain()
-
-            source.buffer = audioBuffer
-            source.connect(gainNode)
-            gainNode.connect(ctx.destination)
-
-            // Set volume (background volume * master background volume * 0.3 for mixing)
-            const finalVolume = bgSound.volume * masterBackgroundVolume * 0.3
-            gainNode.gain.setValueAtTime(finalVolume, 0)
-
-            // Loop the background sound
-            source.loop = true
-            source.start(0)
-            source.stop(maxAudioDuration)
-
-            console.log(`Successfully added background sound ${bgSound.name} at volume ${finalVolume}`)
+            if (bgSound.src.startsWith("synthetic:")) {
+              await generateAmbientSound(
+                bgSound as any,
+                ctx,
+                maxAudioDuration,
+                bgSound.volume * masterBackgroundVolume * 0.3,
+              )
+            } else {
+              const response = await fetch(bgSound.src)
+              const arrayBuffer = await response.arrayBuffer()
+              const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+              const source = ctx.createBufferSource()
+              const gainNode = ctx.createGain()
+              source.buffer = audioBuffer
+              source.connect(gainNode)
+              gainNode.connect(ctx.destination)
+              const finalVolume = bgSound.volume * masterBackgroundVolume * 0.3
+              gainNode.gain.setValueAtTime(finalVolume, 0)
+              source.loop = true
+              source.start(0)
+              source.stop(maxAudioDuration)
+              console.log(`Successfully added background sound ${bgSound.name} at volume ${finalVolume}`)
+            }
           } catch (error) {
             console.warn(`Could not load background sound: ${bgSound.src}`, error)
           }
@@ -1244,7 +1229,7 @@ export default function HomePage() {
 
   // Add this useCallback function for toggling background sound previews, after other useCallback functions:
   const toggleBackgroundSoundPreview = useCallback(
-    (sound: { id: string; name: string; publicSrc: string; blobSrc: string }) => {
+    (sound: { id: string; name: string; src: string }) => {
       const audioEl = backgroundAudioRef.current
       if (!audioEl) {
         console.error("Background audio element not ready.")
@@ -1252,19 +1237,20 @@ export default function HomePage() {
         return
       }
 
+      const isSynthetic = sound.src.startsWith("synthetic:")
       const isCurrentlyPlaying = currentPlayingBackgroundSoundId === sound.id && !audioEl.paused
-      const isCurrentlyPaused = audioEl.src.includes(sound.blobSrc) && audioEl.paused
+      const isCurrentlyPaused = audioEl.src.includes(sound.src) && audioEl.paused
 
       // If this sound is playing, pause it.
       if (isCurrentlyPlaying) {
         audioEl.pause()
-        setCurrentPlayingBackgroundSoundId(null) // Indicate nothing is actively playing
+        setCurrentPlayingBackgroundSoundId(null)
         toast({ title: "Preview Paused", description: `${sound.name} preview paused.` })
         return
       }
 
       // If this sound is paused, resume it.
-      if (isCurrentlyPaused) {
+      if (!isSynthetic && isCurrentlyPaused) {
         audioEl
           .play()
           .then(() => {
@@ -1278,46 +1264,54 @@ export default function HomePage() {
       // Otherwise, switch to this new sound.
       audioEl.pause()
 
-      const handleCanPlay = async () => {
-        try {
-          await audioEl.play()
-          setCurrentPlayingBackgroundSoundId(sound.id)
-          // Add to background sounds list if not already present
-          setBackgroundSounds((prev) => {
-            if (!prev.some((s) => s.id === sound.id)) {
-              return [...prev, { id: sound.id, name: sound.name, src: sound.publicSrc, volume: 0.3 }]
-            }
-            return prev
-          })
-          toast({ title: "Playing Preview", description: `Now playing: ${sound.name}` })
-        } catch (playError) {
-          console.error(`Error playing ${sound.name}:`, playError)
-          toast({ title: "Playback Error", variant: "destructive" })
-          setCurrentPlayingBackgroundSoundId(null)
+      if (isSynthetic) {
+        const ctx = getAudioContext()
+        generateAmbientSound(sound as any, ctx, 5)
+        setBackgroundSounds((prev) => {
+          if (!prev.some((s) => s.id === sound.id)) {
+            return [...prev, { id: sound.id, name: sound.name, src: sound.src, volume: 0.3 }]
+          }
+          return prev
+        })
+        toast({ title: "Playing Preview", description: `Now playing: ${sound.name}` })
+        setCurrentPlayingBackgroundSoundId(sound.id)
+      } else {
+        const handleCanPlay = async () => {
+          try {
+            await audioEl.play()
+            setCurrentPlayingBackgroundSoundId(sound.id)
+            setBackgroundSounds((prev) => {
+              if (!prev.some((s) => s.id === sound.id)) {
+                return [...prev, { id: sound.id, name: sound.name, src: sound.src, volume: 0.3 }]
+              }
+              return prev
+            })
+            toast({ title: "Playing Preview", description: `Now playing: ${sound.name}` })
+          } catch (playError) {
+            console.error(`Error playing ${sound.name}:`, playError)
+            toast({ title: "Playback Error", variant: "destructive" })
+            setCurrentPlayingBackgroundSoundId(null)
+          }
+          audioEl.removeEventListener("canplaythrough", handleCanPlay)
+          audioEl.removeEventListener("error", handleError)
         }
-        audioEl.removeEventListener("canplaythrough", handleCanPlay)
-        audioEl.removeEventListener("error", handleError)
+
+        const handleError = () => {
+          console.error(`Error loading audio source: ${audioEl.src}`, audioEl.error)
+          toast({ title: "Audio Load Error", description: `Failed to load ${sound.name}.`, variant: "destructive" })
+          setCurrentPlayingBackgroundSoundId(null)
+          audioEl.removeEventListener("canplaythrough", handleCanPlay)
+          audioEl.removeEventListener("error", handleError)
+        }
+
+        audioEl.addEventListener("canplaythrough", handleCanPlay, { once: true })
+        audioEl.addEventListener("error", handleError, { once: true })
+
+        audioEl.src = sound.src
+        audioEl.volume = masterBackgroundVolume * 0.5
+        audioEl.loop = true
+        audioEl.load()
       }
-
-      const handleError = () => {
-        console.error(`Error loading audio source: ${audioEl.src}`, audioEl.error)
-        toast({ title: "Audio Load Error", description: `Failed to load ${sound.name}.`, variant: "destructive" })
-        setCurrentPlayingBackgroundSoundId(null)
-        audioEl.removeEventListener("canplaythrough", handleCanPlay)
-        audioEl.removeEventListener("error", handleError)
-      }
-
-      // NOTE: We are not cleaning up previous listeners here to avoid complexity.
-      // The { once: true } option ensures they only fire once per attempt,
-      // which is sufficient for this use case.
-
-      audioEl.addEventListener("canplaythrough", handleCanPlay, { once: true })
-      audioEl.addEventListener("error", handleError, { once: true })
-
-      audioEl.src = sound.blobSrc
-      audioEl.volume = masterBackgroundVolume * 0.5
-      audioEl.loop = true
-      audioEl.load()
     },
     [currentPlayingBackgroundSoundId, masterBackgroundVolume],
   )
@@ -2401,7 +2395,7 @@ export default function HomePage() {
                           <div className="space-y-3">
                             <h5 className="text-sm font-black text-gray-600 dark:text-gray-300">Ambient Sounds</h5>
                             <div className="space-y-2">
-                              {AMBIENT_SOUNDS.map((sound) => (
+                              {AMBIENT_SOUNDS_LIBRARY.map((sound) => (
                                 <div
                                   key={sound.id}
                                   className="flex items-center space-x-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 shadow-inner"

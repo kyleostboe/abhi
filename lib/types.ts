@@ -16,6 +16,17 @@ export interface SoundCue {
   releaseDuration?: number // in seconds
 }
 
+export interface AmbientSound {
+  id: string
+  name: string
+  src: string // Path to audio file or synthetic: prefix
+  noiseType?: "white" | "pink" | "brown"
+  filterType?: BiquadFilterType
+  filterFrequency?: number
+  lfoFrequency?: number
+  volume?: number
+}
+
 export interface TimelineEvent {
   id: string
   type: "instruction_sound" | "recorded_voice"
