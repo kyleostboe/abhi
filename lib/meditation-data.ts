@@ -688,29 +688,34 @@ export async function generateAmbientSound(
   const masterGain = audioContext.createGain()
   masterGain.gain.setValueAtTime(targetVolume, audioContext.currentTime)
 
-  const panner = new StereoPannerNode(audioContext, { pan: 0 })
-  masterGain.connect(panner)
+  const hasStereo = audioContext.destination.channelCount > 1
+  if (hasStereo) {
+    const panner = new StereoPannerNode(audioContext, { pan: 0 })
+    masterGain.connect(panner)
 
-  const panLfo = audioContext.createOscillator()
-  const panLfoGain = audioContext.createGain()
-  panLfo.type = "sine"
-  panLfo.frequency.value = 0.03 + Math.random() * 0.02
-  panLfoGain.gain.value = 0.5
-  panLfo.connect(panLfoGain).connect(panner.pan)
-  panLfo.start(0)
-  panLfo.stop(duration)
+    const panLfo = audioContext.createOscillator()
+    const panLfoGain = audioContext.createGain()
+    panLfo.type = "sine"
+    panLfo.frequency.value = 0.03 + Math.random() * 0.02
+    panLfoGain.gain.value = 0.5
+    panLfo.connect(panLfoGain).connect(panner.pan)
+    panLfo.start(0)
+    panLfo.stop(duration)
 
-  const dryGain = audioContext.createGain()
-  dryGain.gain.value = 0.7
+    const dryGain = audioContext.createGain()
+    dryGain.gain.value = 0.7
 
-  const wetGain = audioContext.createGain()
-  wetGain.gain.value = 0.3
+    const wetGain = audioContext.createGain()
+    wetGain.gain.value = 0.3
 
-  const reverb = audioContext.createConvolver()
-  reverb.buffer = createSimpleReverbBuffer(audioContext, 2.5, 2)
+    const reverb = audioContext.createConvolver()
+    reverb.buffer = createSimpleReverbBuffer(audioContext, 2.5, 2)
 
-  panner.connect(dryGain).connect(audioContext.destination)
-  panner.connect(reverb).connect(wetGain).connect(audioContext.destination)
+    panner.connect(dryGain).connect(audioContext.destination)
+    panner.connect(reverb).connect(wetGain).connect(audioContext.destination)
+  } else {
+    masterGain.connect(audioContext.destination)
+  }
 
     switch (ambient.id) {
       case "rain":
