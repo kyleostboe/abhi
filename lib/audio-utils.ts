@@ -181,4 +181,3 @@ export const bufferToWav = async (
   onProgress(100)
   return new Blob([finalArrayBuffer], { type: "audio/wav" })
 }
-

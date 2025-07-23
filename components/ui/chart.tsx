@@ -1,111 +1,48 @@
 "use client"
 
 import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { cva, type VariantProps } from "class-variance-authority"
+import { VictoryPie, VictoryLabel, VictoryContainer } from "victory"
 
 import { cn } from "@/lib/utils"
 
-const ChartContext = React.createContext<
-  | {
-      config: Record<string, { label?: string; color?: string; icon?: React.ElementType }>
-    }
-  | undefined
->(undefined)
+const ChartContext = React.createContext(null)
 
-function useChart() {
-  const context = React.useContext(ChartContext)
-
-  if (!context) {
-    throw new Error("useChart must be used within <Chart>")
-  }
-
-  return context
-}
-
-const chartVariants = cva("flex aspect-video items-center justify-center text-foreground", {
-  variants: {
-    size: {
-      xs: "h-[200px] w-[200px]",
-      sm: "h-[250px] w-[250px]",
-      md: "h-[300px] w-[300px]",
-      lg: "h-[350px] w-[350px]",
-      xl: "h-[400px] w-[400px]",
-    },
-  },
-})
-
-const ChartContainer = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentPropsWithoutRef<"div"> &
-    VariantProps<typeof chartVariants> & {
-      config: Record<string, { label?: string; color?: string; icon?: React.ElementType }>
-    }
->(({ config, className, children, ...props }, ref) => {
+function Chart({ className, children, ...props }: React.ComponentProps<"div">) {
+  const id = React.useId()
   return (
-    <ChartContext.Provider value={{ config }}>
-      <div ref={ref} className={cn(chartVariants({ size: "md" }), "w-full", className)} {...props}>
+    <ChartContext.Provider value={{ id }}>
+      <div data-chart={id} className={cn("w-full h-full", className)} {...props}>
         {children}
       </div>
     </ChartContext.Provider>
   )
-})
-ChartContainer.displayName = "ChartContainer"
+}
 
-const ChartTooltip = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentPropsWithoutRef<"div"> & {
-    hideIndicator?: boolean
-    indicator?: string
-  }
->(({ hideIndicator = false, indicator = "bottom", className, children, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "z-50 flex cursor-default items-center rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm shadow-md dark:border-slate-800 dark:bg-slate-950",
-      className,
-    )}
-    {...props}
-  >
-    {!hideIndicator && (
-      <div
-        className={cn(
-          "mr-2 h-2 w-2 rounded-full",
-          indicator === "top" && "absolute -top-1 left-1/2 -translate-x-1/2",
-          indicator === "right" && "absolute -right-1 top-1/2 -translate-y-1/2",
-          indicator === "bottom" && "absolute -bottom-1 left-1/2 -translate-x-1/2",
-          indicator === "left" && "absolute -left-1 top-1/2 -translate-y-1/2",
-        )}
-        style={{
-          backgroundColor: "var(--color)",
-        }}
-      />
-    )}
-    {children}
-  </div>
-))
-ChartTooltip.displayName = "ChartTooltip"
+const ChartTooltip = ({ data, x, y, datum, ...props }: any) => {
+  return (
+    <g transform={`translate(${x}, ${y})`}>
+      <rect x={-50} y={-30} width={100} height={20} fill="black" rx="5" ry="5" />
+      <text x={0} y={-18} textAnchor="middle" fill="white" fontSize={10} fontWeight="bold">
+        {datum.x}: {datum.y}
+      </text>
+    </g>
+  )
+}
 
-const ChartTooltipContent = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentPropsWithoutRef<"div"> & {
-    hideIndicator?: boolean
-    indicator?: string
-  }
->(({ className, children, ...props }, ref) => (
-  <div ref={ref} className={cn("flex flex-col space-y-1", className)} {...props}>
-    {children}
-  </div>
-))
-ChartTooltipContent.displayName = "ChartTooltipContent"
+const ChartPie = ({ data, ...props }: any) => {
+  return (
+    <VictoryPie
+      data={data}
+      labels={({ datum }) => `${datum.x}: ${datum.y}`}
+      labelComponent={<ChartTooltip />}
+      containerComponent={<VictoryContainer />}
+      {...props}
+    />
+  )
+}
 
-const ChartTooltipTrigger = React.forwardRef<HTMLButtonElement, React.ComponentPropsWithoutRef<typeof Slot>>(
-  ({ children, className, ...props }, ref) => (
-    <Slot ref={ref} className={cn("z-10 block", className)} {...props}>
-      {children}
-    </Slot>
-  ),
-)
-ChartTooltipTrigger.displayName = "ChartTooltipTrigger"
+const ChartLabel = ({ text, x, y, ...props }: any) => {
+  return <VictoryLabel text={text} x={x} y={y} textAnchor="middle" verticalAnchor="middle" {...props} />
+}
 
-export { ChartContainer, ChartTooltip, ChartTooltipContent, ChartTooltipTrigger, useChart }
+export { Chart, ChartPie, ChartLabel }
