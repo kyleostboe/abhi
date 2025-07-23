@@ -12,3 +12,32 @@ export function formatTime(seconds: number): string {
 }
 
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+export const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return "0 Bytes"
+  const k = 1024
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${["Bytes", "KB", "MB", "GB"][i]}`
+}
+
+export const forceGarbageCollection = () => {
+  if (typeof window !== "undefined" && (window as any).gc) {
+    console.log("Attempting to force garbage collection.")
+    ;(window as any).gc()
+  }
+}
+
+export const monitorMemory = () => {
+  if (typeof performance !== "undefined" && (performance as any).memory) {
+    const memory = (performance as any).memory
+    const usedMB = memory.usedJSHeapSize / 1048576
+    const limitMB = memory.jsHeapSizeLimit / 1048576
+    console.log(`Memory usage: ${usedMB.toFixed(2)}MB / ${limitMB.toFixed(2)}MB`)
+    if (usedMB > limitMB * 0.75) {
+      console.warn("High memory usage detected, forcing GC.")
+      forceGarbageCollection()
+      return true
+    }
+  }
+  return false
+}

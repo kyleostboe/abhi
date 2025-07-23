@@ -1,5 +1,5 @@
 import { NOTE_FREQUENCIES } from "./meditation-data"
-import { sleep } from "./utils"
+import { sleep, formatFileSize } from "./utils"
 
 let audioContext: AudioContext | null = null
 
@@ -182,9 +182,3 @@ export const bufferToWav = async (
   return new Blob([finalArrayBuffer], { type: "audio/wav" })
 }
 
-const formatFileSize = (bytes: number) => {
-  if (bytes === 0) return "0 Bytes"
-  const k = 1024
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${["Bytes", "KB", "MB", "GB"][i]}`
-}
