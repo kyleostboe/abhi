@@ -685,9 +685,32 @@ export async function generateAmbientSound(
     const targetVolume = volumeOverride ?? ambient.volume ?? 0.2
 
     // Master gain node for overall volume control
-    const masterGain = audioContext.createGain()
-    masterGain.gain.setValueAtTime(targetVolume, audioContext.currentTime)
-    masterGain.connect(audioContext.destination)
+  const masterGain = audioContext.createGain()
+  masterGain.gain.setValueAtTime(targetVolume, audioContext.currentTime)
+
+  const panner = new StereoPannerNode(audioContext, { pan: 0 })
+  masterGain.connect(panner)
+
+  const panLfo = audioContext.createOscillator()
+  const panLfoGain = audioContext.createGain()
+  panLfo.type = "sine"
+  panLfo.frequency.value = 0.03 + Math.random() * 0.02
+  panLfoGain.gain.value = 0.5
+  panLfo.connect(panLfoGain).connect(panner.pan)
+  panLfo.start(0)
+  panLfo.stop(duration)
+
+  const dryGain = audioContext.createGain()
+  dryGain.gain.value = 0.7
+
+  const wetGain = audioContext.createGain()
+  wetGain.gain.value = 0.3
+
+  const reverb = audioContext.createConvolver()
+  reverb.buffer = createSimpleReverbBuffer(audioContext, 2.5, 2)
+
+  panner.connect(dryGain).connect(audioContext.destination)
+  panner.connect(reverb).connect(wetGain).connect(audioContext.destination)
 
     switch (ambient.id) {
       case "rain":
@@ -1244,4 +1267,21 @@ async function generateSimpleNoise(
 
   source.start(0)
   source.stop(duration)
+}
+
+function createSimpleReverbBuffer(
+  audioContext: AudioContext | OfflineAudioContext,
+  duration = 2,
+  decay = 2,
+): AudioBuffer {
+  const sampleRate = audioContext.sampleRate
+  const length = sampleRate * duration
+  const impulse = audioContext.createBuffer(2, length, sampleRate)
+  for (let channel = 0; channel < impulse.numberOfChannels; channel++) {
+    const data = impulse.getChannelData(channel)
+    for (let i = 0; i < length; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay)
+    }
+  }
+  return impulse
 }
