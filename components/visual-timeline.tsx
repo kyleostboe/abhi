@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -33,13 +33,7 @@ const EVENT_COLORS = [
   "bg-gradient-to-br from-orange-500 to-orange-600",
 ]
 
-const getEventColor = (eventId: string, events: TimelineEvent[]) => {
-  // Create a stable mapping based on event IDs sorted alphabetically
-  // This ensures colors stay consistent regardless of timeline reordering
-  const sortedEventIds = [...events].map((e) => e.id).sort()
-  const index = sortedEventIds.indexOf(eventId)
-  return EVENT_COLORS[index % EVENT_COLORS.length]
-}
+
 
 // Removed getInitialPosition as it was causing instability.
 // Events at the same startTime will now overlap.
@@ -52,6 +46,20 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
   const [editingTime, setEditingTime] = useState<string>("")
   const isMobile = useMobile() // Use the useMobile hook
+
+  const colorMap = useMemo(() => {
+    const sortedIds = [...events].map((e) => e.id).sort()
+    const map = new Map<string, string>()
+    sortedIds.forEach((id, index) => {
+      map.set(id, EVENT_COLORS[index % EVENT_COLORS.length])
+    })
+    return map
+  }, [events])
+
+  const getEventColor = useCallback(
+    (eventId: string) => colorMap.get(eventId) ?? EVENT_COLORS[0],
+    [colorMap],
+  )
 
   const getTimeFromPosition = useCallback(
     (clientX: number): number => {
@@ -270,7 +278,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                   className={cn(
                     "absolute top-1/2 -translate-y-1/2 w-10 h-10 rounded-full shadow-md dark:shadow-white/20 cursor-grab active:cursor-grabbing flex items-center justify-center text-white",
                     draggedEvent === event.id ? "z-30 shadow-lg dark:shadow-white/30 ring-2 ring-white/50" : "z-10",
-                    getEventColor(event.id, events),
+                    getEventColor(event.id),
                   )}
                   style={{
                     left: `calc(${getPositionFromTime(displayTime)} - 20px)`,
@@ -353,7 +361,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                         <div
                           className={cn(
                             "w-8 h-8 rounded-full flex items-center justify-center text-white shadow-sm",
-                            getEventColor(event.id, events),
+                            getEventColor(event.id),
                           )}
                         >
                           {displayInfo.icon}

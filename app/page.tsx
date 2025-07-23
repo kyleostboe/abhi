@@ -43,33 +43,10 @@ import {
   NOTE_FREQUENCIES, // Keep NOTE_FREQUENCIES here as it's used by MUSICAL_NOTES
 } from "@/lib/meditation-data"
 import { VisualTimeline } from "@/components/visual-timeline"
-import { cn, formatTime, sleep } from "@/lib/utils" // Import formatTime and sleep
+import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFileSize } from "@/lib/utils"
 import { getAudioContext, playNote, bufferToWav } from "@/lib/audio-utils" // Import from audio-utils
 import type { Instruction, SoundCue, TimelineEvent, AmbientSound as AmbientSoundType } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
-
-// Memory management utilities
-const forceGarbageCollection = () => {
-  if (typeof window !== "undefined" && (window as any).gc) {
-    console.log("Attempting to force garbage collection.")
-    ;(window as any).gc()
-  }
-}
-
-const monitorMemory = () => {
-  if (typeof performance !== "undefined" && (performance as any).memory) {
-    const memory = (performance as any).memory
-    const usedMB = memory.usedJSHeapSize / 1048576
-    const limitMB = memory.jsHeapSizeLimit / 1048576
-    console.log(`Memory usage: ${usedMB.toFixed(2)}MB / ${limitMB.toFixed(2)}MB`)
-    if (usedMB > limitMB * 0.75) {
-      console.warn("High memory usage detected, forcing GC.")
-      forceGarbageCollection()
-      return true
-    }
-  }
-  return false
-}
 
 interface TimelineItem {
   id: string
@@ -988,12 +965,6 @@ export default function HomePage() {
     document.body.removeChild(a)
   }
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes"
-    const k = 1024
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${["Bytes", "KB", "MB", "GB"][i]}`
-  }
 
   useEffect(() => {
     if (isProcessingComplete) setIsProcessingComplete(false)
