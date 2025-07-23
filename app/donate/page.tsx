@@ -1,124 +1,62 @@
+import { Navigation } from "@/components/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircleIcon } from "lucide-react"
-import Link from "next/link"
+import { Card } from "@/components/ui/card"
+import { Heart, DollarSign, Gift } from "lucide-react"
 
 export default function DonatePage() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 p-4">
-      <div className="w-full max-w-4xl space-y-8 text-center">
-        <div className="space-y-4">
-          <h1 className="text-5xl font-extrabold text-gray-900 dark:text-gray-50 leading-tight">Support Our Mission</h1>
-          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Your generous contributions help us continue to provide free meditation tools and resources to everyone.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Card className="flex flex-col items-center p-6 bg-white dark:bg-gray-800 shadow-lg rounded-lg transition-transform transform hover:scale-105">
-            <CardHeader>
-              <CardTitle className="text-3xl font-bold text-gray-900 dark:text-gray-50">One-time</CardTitle>
-              <CardDescription className="text-gray-500 dark:text-gray-400">Make a single contribution</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center space-y-4">
-              <div className="text-5xl font-extrabold text-blue-600 dark:text-blue-400">$25</div>
-              <ul className="text-left text-gray-700 dark:text-gray-300 space-y-2">
-                <li className="flex items-center">
-                  <CheckCircleIcon className="w-5 h-5 text-green-500 mr-2" />
-                  Support development
-                </li>
-                <li className="flex items-center">
-                  <CheckCircleIcon className="w-5 h-5 text-green-500 mr-2" />
-                  Maintain infrastructure
-                </li>
-                <li className="flex items-center">
-                  <CheckCircleIcon className="w-5 h-5 text-green-500 mr-2" />
-                  Expand content library
-                </li>
-              </ul>
-              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md transition-colors">
-                Donate Now
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="flex flex-col items-center p-6 bg-white dark:bg-gray-800 shadow-lg rounded-lg transition-transform transform hover:scale-105 border-2 border-blue-500">
-            <CardHeader>
-              <CardTitle className="text-3xl font-bold text-gray-900 dark:text-gray-50">Monthly</CardTitle>
-              <CardDescription className="text-gray-500 dark:text-gray-400">
-                Become a recurring supporter
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center space-y-4">
-              <div className="text-5xl font-extrabold text-blue-600 dark:text-blue-400">$10/month</div>
-              <ul className="text-left text-gray-700 dark:text-gray-300 space-y-2">
-                <li className="flex items-center">
-                  <CheckCircleIcon className="w-5 h-5 text-green-500 mr-2" />
-                  Sustainable growth
-                </li>
-                <li className="flex items-center">
-                  <CheckCircleIcon className="w-5 h-5 text-green-500 mr-2" />
-                  Priority feature requests
-                </li>
-                <li className="flex items-center">
-                  <CheckCircleIcon className="w-5 h-5 text-green-500 mr-2" />
-                  Exclusive content access
-                </li>
-              </ul>
-              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md transition-colors">
-                Subscribe
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="flex flex-col items-center p-6 bg-white dark:bg-gray-800 shadow-lg rounded-lg transition-transform transform hover:scale-105">
-            <CardHeader>
-              <CardTitle className="text-3xl font-bold text-gray-900 dark:text-gray-50">Custom</CardTitle>
-              <CardDescription className="text-gray-500 dark:text-gray-400">Choose your own amount</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center space-y-4">
-              <div className="text-5xl font-extrabold text-blue-600 dark:text-blue-400">Any Amount</div>
-              <ul className="text-left text-gray-700 dark:text-gray-300 space-y-2">
-                <li className="flex items-center">
-                  <CheckCircleIcon className="w-5 h-5 text-green-500 mr-2" />
-                  Flexible giving
-                </li>
-                <li className="flex items-center">
-                  <CheckCircleIcon className="w-5 h-5 text-green-500 mr-2" />
-                  Direct impact
-                </li>
-                <li className="flex items-center">
-                  <CheckCircleIcon className="w-5 h-5 text-green-500 mr-2" />
-                  Tax-deductible (where applicable)
-                </li>
-              </ul>
-              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md transition-colors">
-                Enter Amount
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="text-gray-600 dark:text-gray-400 mt-8">
-          <p>
-            Your support helps us reach more people and continue our mission of promoting mindfulness and well-being.
-          </p>
-          <p className="mt-2">Thank you for being a part of the abhī community.</p>
-          <Link
-            href="/"
-            className="inline-flex items-center mt-4 text-blue-600 hover:text-blue-700 font-medium transition-colors"
-          >
-            Back to Home
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 ml-1"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-0">
+      <Navigation />
+      <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl dark:shadow-2xl dark:shadow-white/40 overflow-hidden dark:bg-gray-900/80 transition-colors duration-300 ease-in-out">
+        <div className="relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 dark:from-amber-600/20 dark:via-rose-500/15 dark:via-purple-600/10 dark:to-teal-500/20"></div>
+          </div>
+          <div className="relative text-center px-[69px] pt-16 pb-8">
+            <h1
+              className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter text-center"
+              style={{
+                fontFamily: 'Georgia, "Times New Roman", serif',
+                textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
+              }}
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
+              Support abhī
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-gray-300 mt-4">
+              Your generosity helps us keep this tool free and accessible.
+            </p>
+          </div>
+        </div>
+
+        <div className="px-6 md:px-10 pb-10 font-serif font-black">
+          <Card className="p-8 space-y-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="text-center space-y-4">
+              <Heart className="h-12 w-12 mx-auto text-logo-rose-600 dark:text-logo-rose-400" />
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Make a Donation</h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                Every contribution, no matter how small, makes a difference.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Button className="h-auto py-4 text-lg bg-logo-teal-500 hover:bg-logo-teal-600 dark:bg-logo-teal-700 dark:hover:bg-logo-teal-800">
+                <DollarSign className="h-5 w-5 mr-2" />
+                Donate $5
+              </Button>
+              <Button className="h-auto py-4 text-lg bg-logo-purple-500 hover:bg-logo-purple-600 dark:bg-logo-purple-700 dark:hover:bg-logo-purple-800">
+                <DollarSign className="h-5 w-5 mr-2" />
+                Donate $10
+              </Button>
+              <Button className="h-auto py-4 text-lg bg-logo-amber-500 hover:bg-logo-amber-600 dark:bg-logo-amber-700 dark:hover:bg-logo-amber-800">
+                <Gift className="h-5 w-5 mr-2" />
+                Custom Amount
+              </Button>
+            </div>
+
+            <div className="text-center text-sm text-gray-500 dark:text-gray-400 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <p>Thank you for supporting our mission to make meditation accessible to everyone.</p>
+            </div>
+          </Card>
         </div>
       </div>
     </div>
