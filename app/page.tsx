@@ -2028,8 +2028,10 @@ export default function HomePage() {
                           <Button
                             onClick={() => {
                               const a = document.createElement("a")
-                              a.href = generatedAudioUrl
-                              a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
+                              a.href = processedUrl
+                              a.download = file
+                                ? `processed_${file.name.replace(/\.[^/.]+$/, "")}.wav`
+                                : "processed_audio.wav"
                               document.body.appendChild(a)
                               a.click()
                               document.body.removeChild(a)
