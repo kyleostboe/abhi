@@ -21,7 +21,6 @@ import {
   Play,
   PlusCircle,
   CircleDotDashed,
-  Trash2,
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
@@ -38,15 +37,13 @@ import {
   SOUND_CUES_LIBRARY,
   MUSICAL_NOTES,
   generateSyntheticSound,
-  generateAmbientSound,
-  AMBIENT_SOUNDS_LIBRARY,
-  NOTE_FREQUENCIES,
-} from "@/app/labs/lib/meditation-data"
+  NOTE_FREQUENCIES, // Keep NOTE_FREQUENCIES here as it's used by MUSICAL_NOTES
+} from "@/lib/meditation-data"
 import { VisualTimeline } from "@/components/visual-timeline"
 import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFileSize } from "@/lib/utils"
-import { getAudioContext, playNote, bufferToWav } from "@/lib/audio-utils"
-import type { Instruction, SoundCue, TimelineEvent, AmbientSound as AmbientSoundType } from "@/lib/types"
-import { useMobile } from "@/hooks/use-mobile"
+import { getAudioContext, playNote, bufferToWav } from "@/lib/audio-utils" // Import from audio-utils
+import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
+import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 
 interface TimelineItem {
   id: string
@@ -63,7 +60,7 @@ export default function HomePage() {
   const [file, setFile] = useState<File | null>(null)
   const [originalBuffer, setOriginalBuffer] = useState<AudioBuffer | null>(null)
   const [processedBufferState, setProcessedBufferState] = useState<AudioBuffer | null>(null)
-  const audioContextRef = useRef<AudioContext | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null) // Still needed for Adjuster's specific context management
   const [targetDuration, setTargetDuration] = useState<number>(20)
   const [silenceThreshold, setSilenceThreshold] = useState<number>(0.01)
   const [minSilenceDuration, setMinSilenceDuration] = useState<number>(3)
@@ -74,7 +71,7 @@ export default function HomePage() {
   const [originalUrl, setOriginalUrl] = useState<string>("")
   const [processedUrl, setProcessedUrl] = useState<string>("")
   const [pausesAdjusted, setPausesAdjusted] = useState<number>(0)
-  const [isProcessing, setIsProcessing] = useState<boolean>(false)
+  const [isProcessing, setIsProcessing] = useState<boolean>(false) // Corrected type to boolean
   const [processingProgress, setProcessingProgress] = useState<number>(0)
   const [processingStep, setProcessingStep] = useState<string>("")
   const [durationLimits, setDurationLimits] = useState<{ min: number; max: number } | null>(null)
@@ -85,15 +82,15 @@ export default function HomePage() {
   } | null>(null)
   const [actualDuration, setActualDuration] = useState<number | null>(null)
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
-  const isMobileDevice = useMobile()
+  const isMobileDevice = useMobile() // Use the useMobile hook
   const [memoryWarning, setMemoryWarning] = useState<boolean>(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadAreaRef = useRef<HTMLDivElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Add these new state variables and ref at the top of the HomePage component, near other state declarations:
-  const backgroundAudioRef = useRef<HTMLAudioElement | AudioBufferSourceNode | null>(null)
-  const [currentPlayingBackgroundSoundId, setCurrentPlayingBackgroundSoundId] = useState<string | null>(null)
+  // const backgroundAudioRef = useRef<HTMLAudioElement | AudioBufferSourceNode | null>(null) // Can be HTMLAudioElement or AudioBufferSourceNode
+  // const [currentPlayingBackgroundSoundId, setCurrentPlayingBackgroundSoundId] = useState<string | null>(null)
 
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
@@ -110,7 +107,7 @@ export default function HomePage() {
     label: string
   } | null>(null)
   const [recordedBlobs, setRecordedBlobs] = useState<Blob[]>([])
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const [mediaRecorderRef, setMediaRecorderRef] = useState<MediaRecorder | null>(null)
   const labsAudioRef = useRef<HTMLAudioElement | null>(null)
   const instructionCategories = Array.from(new Set(INSTRUCTIONS_LIBRARY.map((instr) => instr.category)))
   const [recordingLabel, setRecordingLabel] = useState<string>("")
@@ -122,15 +119,15 @@ export default function HomePage() {
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
 
   // Update the type definition for backgroundSounds to remove the redundant 'enabled' property:
-  const [backgroundSounds, setBackgroundSounds] = useState<
-    Array<{
-      id: string
-      name: string
-      src: string // File path or synthetic: prefix for export
-      volume: number
-    }>
-  >([])
-  const [masterBackgroundVolume, setMasterBackgroundVolume] = useState<number>(0.5)
+  // const [backgroundSounds, setBackgroundSounds] = useState<
+  //   Array<{
+  //     id: string
+  //     name: string
+  //     src: string // File path or synthetic: prefix for export
+  //     volume: number
+  //   }>
+  // >([])
+  // const [masterBackgroundVolume, setMasterBackgroundVolume] = useState<number>(0.5)
 
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
   const [currentTab, setCurrentTab] = useState<string>("instructions")
@@ -138,12 +135,12 @@ export default function HomePage() {
   const [currentPlaybackTime, setCurrentPlaybackTime] = useState<number>(0) // in seconds
   const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null)
   const [volume, setVolume] = useState<number>(75) // Default volume 75%
-  // audioRef is already declared above for Length Adjuster, no need to redeclare
-  // const audioRef = useRef<HTMLAudioElement | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const currentItemStartTimeRef = useRef<number>(0)
 
   const totalDuration = timeline.reduce((sum, item) => sum + item.duration, 0)
+
   const addTimelineItem = useCallback((item: Instruction | SoundCue, type: "instruction" | "sound") => {
     const newItem: TimelineItem = {
       id: `${type}-${Date.now()}`,
@@ -176,7 +173,14 @@ export default function HomePage() {
 
       // Defensive check: Ensure soundCue exists and its src property is a string
       if (!soundCue || typeof soundCue.src !== "string") {
-        console.error("Invalid sound cue or src property for src:", src, "Found soundCue:", soundCue)
+        console.error(
+          "Invalid sound cue or src property for src:",
+          src,
+          "Found soundCue:",
+          src,
+          "Found soundCue:",
+          soundCue,
+        )
         toast({
           title: "Sound Playback Error",
           description: "The selected sound cue is malformed or not found.",
@@ -196,18 +200,20 @@ export default function HomePage() {
             description: `Now playing: ${soundCue.name}`,
             variant: "default",
           })
-        } else if (labsAudioRef.current) {
-          // Handle actual audio files
-          labsAudioRef.current.src = soundCue.src
-          labsAudioRef.current.volume = volume / 100
-          await labsAudioRef.current.play().catch((e) => console.error("Error playing audio:", e))
-          toast({
-            title: "Playing Sound",
-            description: `Now playing: ${soundCue.name || "Audio file"}`,
-            variant: "default",
-          })
         } else {
-          throw new Error("Audio player not initialized.")
+          // Handle actual audio files
+          if (labsAudioRef.current) {
+            labsAudioRef.current.src = soundCue.src
+            labsAudioRef.current.volume = volume / 100
+            await labsAudioRef.current.play().catch((e) => console.error("Error playing audio:", e))
+            toast({
+              title: "Playing Sound",
+              description: `Now playing: ${soundCue.name || "Audio file"}`,
+              variant: "default",
+            })
+          } else {
+            throw new Error("Audio player not initialized.")
+          }
         }
       } catch (error) {
         console.error("Labs Audio playback failed:", error)
@@ -238,10 +244,10 @@ export default function HomePage() {
           if (newTime >= accumulatedDuration && newTime < accumulatedDuration + item.duration) {
             if (activeItemIndex !== i) {
               setActiveItemIndex(i)
-            }
-            // Play sound cue when it becomes active
-            if (item.type === "sound") {
-              playLabsSound(item.content.src) // Pass src string to playLabsSound
+              // Play sound cue when it becomes active
+              if (item.type === "sound") {
+                playLabsSound(item.content.src) // Pass src string to playLabsSound
+              }
             }
             foundActiveItem = true
             break
@@ -291,8 +297,8 @@ export default function HomePage() {
 
   // Update audio volume if audioRef exists
   useEffect(() => {
-    if (labsAudioRef.current) {
-      labsAudioRef.current.volume = volume / 100
+    if (audioRef.current) {
+      audioRef.current.volume = volume / 100
     }
   }, [volume])
 
@@ -419,34 +425,6 @@ export default function HomePage() {
         setGenerationProgress(Math.floor((processedEventsCount / totalEvents) * 80)) // Progress up to 80% for event processing
       }
 
-      // Add background sounds to the audio context
-      for (const bgSound of backgroundSounds) {
-        if (bgSound.volume > 0) {
-          try {
-            console.log(`Adding background sound: ${bgSound.name} from src: ${bgSound.src}`)
-            if (bgSound.src.startsWith("synthetic:")) {
-              const ambientSoundDef = AMBIENT_SOUNDS_LIBRARY.find((s) => s.id === bgSound.id) as AmbientSoundType
-              if (ambientSoundDef) {
-                await generateAmbientSound(
-                  ambientSoundDef,
-                  ctx,
-                  maxAudioDuration,
-                  bgSound.volume * masterBackgroundVolume * 0.3,
-                )
-              }
-            } else {
-              // This branch will be for Supabase Storage URLs in the future
-              // For now, it will not load any file-based background sounds
-              console.warn(
-                `Skipping non-synthetic background sound: ${bgSound.src}. Supabase Storage integration pending.`,
-              )
-            }
-          } catch (error) {
-            console.warn(`Could not load background sound: ${bgSound.src}`, error)
-          }
-        }
-      }
-
       setGenerationStep("Rendering audio...")
       setGenerationProgress(80) // Set to 80% before rendering
       console.log("Starting audio rendering...")
@@ -506,7 +484,7 @@ export default function HomePage() {
         setMemoryWarning(true)
       }
     }
-  }, [])
+  }, []) // isMobileDevice is now a hook, no longer a dependency here
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -530,7 +508,7 @@ export default function HomePage() {
         audioContextRef.current = null
       }
     }
-  }, [])
+  }, []) // isMobileDevice removed from dependency array as it's handled by useMobile hook
 
   const cleanupMemory = useCallback(() => {
     setOriginalBuffer(null)
@@ -1063,7 +1041,7 @@ export default function HomePage() {
           return
         }
 
-        mediaRecorderRef.current = new MediaRecorder(stream, { mimeType })
+        setMediaRecorderRef(new MediaRecorder(stream, { mimeType }))
         const blobs: Blob[] = []
 
         mediaRecorderRef.current.ondataavailable = (event) => {
@@ -1189,114 +1167,6 @@ export default function HomePage() {
     }
   }
 
-  // Add this useCallback function for toggling background sound previews, after other useCallback functions:
-  const toggleBackgroundSoundPreview = useCallback(
-    async (sound: AmbientSoundType) => {
-      const audioEl = backgroundAudioRef.current
-      const isSynthetic = sound.src.startsWith("synthetic:")
-      const isCurrentlyPlaying = currentPlayingBackgroundSoundId === sound.id && audioEl && !audioEl.paused
-
-      // If this sound is playing, pause it.
-      if (isCurrentlyPlaying) {
-        if (audioEl instanceof AudioBufferSourceNode) {
-          audioEl.stop()
-        } else if (audioEl instanceof HTMLAudioElement) {
-          audioEl.pause()
-        }
-        setCurrentPlayingBackgroundSoundId(null)
-        toast({ title: "Preview Paused", description: `${sound.name} preview paused.` })
-        return
-      }
-
-      // Stop any currently playing sound before starting a new one
-      if (audioEl) {
-        if (audioEl instanceof AudioBufferSourceNode) {
-          audioEl.stop()
-        } else if (audioEl instanceof HTMLAudioElement) {
-          audioEl.pause()
-          audioEl.src = "" // Clear src to ensure new sound loads
-        }
-        backgroundAudioRef.current = null
-      }
-
-      try {
-        const audioContext = getAudioContext()
-        if (audioContext.state === "suspended") {
-          await audioContext.resume()
-        }
-
-        if (isSynthetic) {
-          // For synthetic sounds, generate into a buffer and play via AudioBufferSourceNode
-          const tempCtx = new OfflineAudioContext(1, audioContext.sampleRate * 5, audioContext.sampleRate) // 5s buffer for preview
-          await generateAmbientSound(sound, tempCtx, 5, sound.volume || 0.5) // Use sound's volume or default
-          const renderedBuffer = await tempCtx.startRendering()
-
-          const source = audioContext.createBufferSource()
-          source.buffer = renderedBuffer
-          source.loop = true
-          const gainNode = audioContext.createGain()
-          source.connect(gainNode)
-          gainNode.connect(audioContext.destination)
-          gainNode.gain.value = (sound.volume || 0.5) * masterBackgroundVolume * 0.5 // Apply master volume
-          source.start(0)
-
-          backgroundAudioRef.current = source
-        } else {
-          // This branch will be for Supabase Storage URLs in the future
-          // For now, it will not play any file-based background sounds
-          toast({
-            title: "Feature Not Yet Available",
-            description: "Playing file-based background sounds from Supabase Storage is not yet implemented.",
-            variant: "info",
-          })
-          return // Exit early if not synthetic
-        }
-
-        setCurrentPlayingBackgroundSoundId(sound.id)
-        toast({ title: "Playing Preview", description: `Now playing: ${sound.name}` })
-      } catch (error) {
-        console.error("Failed to play background sound:", error)
-        toast({
-          title: "Background Sound Error",
-          description: `Could not play ${sound.name}. Error: ${error instanceof Error ? error.message : "Unknown"}`,
-          variant: "destructive",
-        })
-        setCurrentPlayingBackgroundSoundId(null)
-      }
-    },
-    [currentPlayingBackgroundSoundId, masterBackgroundVolume],
-  )
-
-  const stopBackgroundSound = useCallback(() => {
-    if (backgroundAudioRef.current) {
-      if (backgroundAudioRef.current instanceof AudioBufferSourceNode) {
-        backgroundAudioRef.current.stop()
-      } else if (backgroundAudioRef.current instanceof HTMLAudioElement) {
-        backgroundAudioRef.current.pause()
-        backgroundAudioRef.current.src = "" // Clear src to ensure it stops loading/playing
-      }
-      backgroundAudioRef.current = null
-      setCurrentPlayingBackgroundSoundId(null)
-      toast({ title: "Preview Stopped", description: "Background sound preview stopped." })
-    }
-  }, [])
-
-  // Add this useEffect hook to update background audio volume when masterBackgroundVolume changes:
-  useEffect(() => {
-    if (backgroundAudioRef.current) {
-      // If it's an AudioBufferSourceNode, its gain is set at creation.
-      // For HTMLAudioElement, we can update volume directly.
-      if (backgroundAudioRef.current instanceof HTMLAudioElement) {
-        const currentSound = AMBIENT_SOUNDS_LIBRARY.find((s) => s.id === currentPlayingBackgroundSoundId)
-        if (currentSound) {
-          backgroundAudioRef.current.volume = (currentSound.volume || 0.5) * masterBackgroundVolume * 0.5
-        }
-      }
-      // For AudioBufferSourceNode, the gain node would need to be exposed or recreated,
-      // which is more complex for a simple preview. For now, it's set once.
-    }
-  }, [masterBackgroundVolume, currentPlayingBackgroundSoundId])
-
   // Add this useEffect hook for background audio initialization and cleanup, after other useEffects:
   useEffect(() => {
     // Initialize a dummy Audio element for file-based previews
@@ -1316,9 +1186,8 @@ export default function HomePage() {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
         mediaRecorderRef.current.stop()
       }
-      stopBackgroundSound() // Ensure background preview is stopped on unmount
     }
-  }, [stopBackgroundSound])
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-0">
@@ -1384,7 +1253,7 @@ export default function HomePage() {
               </div>
 
               {/* Mode Switch */}
-              <div className="flex justify-center items-center mb-4 space-y-4 flex-row my-[33px] mb-6">
+              <div className="flex justify-center items-center space-y-4 flex-row my-[33px] mb-6">
                 <div className="grid mx-auto grid-cols-2 bg-gray-100/70 p-1 dark:bg-gray-800/70 font-serif text-gray-600 w-64 h-auto shadow-inner rounded-md">
                   <button
                     onClick={() => setActiveMode("adjuster")}
@@ -2026,17 +1895,8 @@ export default function HomePage() {
                             </div>
                           </div>
                           <Button
-                            onClick={() => {
-                              const a = document.createElement("a")
-                              a.href = processedUrl
-                              a.download = file
-                                ? `processed_${file.name.replace(/\.[^/.]+$/, "")}.wav`
-                                : "processed_audio.wav"
-                              document.body.appendChild(a)
-                              a.click()
-                              document.body.removeChild(a)
-                            }}
                             className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                            onClick={downloadProcessedAudio}
                           >
                             <div className="flex items-center justify-center font-black">
                               <Download className="mr-2 h-5 w-5" />
@@ -2083,7 +1943,7 @@ export default function HomePage() {
                             value={meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
-                            className="mt-1 text-xs font-black text-logo-rose-600 shadow-inner border border-gray-600 focus:ring-logo-rose-600 focus:border-logo-rose-600"
+                            className="mt-1 text-xs font-black text-logo-rose-600 shadow-inner border border-gray-600 focus:ring-logo-rose-600 focus:border-logo-rose-600" // Changed border to gray-600
                           />
                         </div>
                         <div className="text-center">
@@ -2096,7 +1956,7 @@ export default function HomePage() {
                             value={labsTotalDuration / 60}
                             onChange={handleDurationChange}
                             min="1"
-                            className="mt-1 text-xs font-black text-logo-rose-600 shadow-inner border border-gray-600 focus:ring-logo-rose-600 focus:border-logo-rose-600"
+                            className="mt-1 text-xs font-black text-logo-rose-600 shadow-inner border border-gray-600 focus:ring-logo-rose-600 focus:border-logo-rose-600" // Changed border to gray-600
                           />
                         </div>
                       </div>
@@ -2111,507 +1971,363 @@ export default function HomePage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                      <div className="bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 py-3 px-6 dark:from-logo-purple-600 dark:to-logo-blue-600 text-center">
-                        <h3 className="text-white flex items-center font-black text-center">
-                          <ListPlus className="h-4 w-4 mr-2" />
-                          Instructions Library
-                        </h3>
-                      </div>
-                      <div className="p-6 space-y-4">
-                        <Accordion type="single" collapsible className="w-full">
-                          {instructionCategories.map((category) => (
-                            <AccordionItem
-                              value={category}
-                              key={category}
-                              className="border-b border-gray-100 dark:border-gray-800"
-                            >
-                              <AccordionTrigger className="hover:no-underline py-3">{category}</AccordionTrigger>
-                              <AccordionContent className="pb-4">
-                                <div className="space-y-2">
-                                  {INSTRUCTIONS_LIBRARY.filter((instr) => instr.category === category).map((instr) => (
-                                    <Button
-                                      key={instr.id}
-                                      variant={selectedLibraryInstruction?.id === instr.id ? "default" : "ghost"}
-                                      size="sm"
-                                      className={`w-full text-left justify-start h-auto py-3 px-3 text-sm ${selectedLibraryInstruction?.id === instr.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
-                                      onClick={() => {
-                                        setSelectedLibraryInstruction(instr)
-                                        setCustomInstructionText("")
-                                      }}
-                                    >
-                                      <span className="text-wrap leading-relaxed font-black text-sm text-gray-600">
-                                        {instr.text}
-                                      </span>
-                                    </Button>
-                                  ))}
-                                </div>
-                              </AccordionContent>
-                            </AccordionItem>
-                          ))}
-                        </Accordion>
-                        <div className="border-gray-100 dark:border-gray-800 pt-4 border-t-0 text-center">
-                          <Label htmlFor="custom" className="text-indigo-400 font-black">
-                            Custom Instruction
-                          </Label>
-                          <Textarea
-                            id="custom"
-                            value={customInstructionText}
-                            onChange={handleCustomInstructionChange}
-                            placeholder="Enter your own instruction..."
-                            rows={3}
-                            className="mt-2 text-sm font-black"
-                          />
-                        </div>
-                      </div>
-                    </Card>
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                      <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
-                        <h3 className="text-white flex items-center font-black text-center">
-                          <Music2 className="h-4 w-4 mr-2" />
-                          Musical Notes
-                        </h3>
-                      </div>
-                      <div className="p-6 space-y-4 font-black">
-                        <Accordion type="single" collapsible className="w-full">
-                          {Object.entries(MUSICAL_NOTES).map(([category, notes]) => (
-                            <AccordionItem
-                              value={category}
-                              key={category}
-                              className="border-b border-gray-100 dark:border-gray-800"
-                            >
-                              <AccordionTrigger className="text-logo-teal-500 dark:text-logo-teal-500 hover:no-underline py-3">
-                                {category}
-                              </AccordionTrigger>
-                              <AccordionContent className="pb-4">
-                                <div className="space-y-2 text-gray-600">
-                                  {notes.map((note) => (
-                                    <div key={note.id} className="flex items-center gap-2 font-black">
-                                      <Button
-                                        variant={selectedSoundCue?.id === note.id ? "default" : "ghost"}
-                                        size="sm"
-                                        className={`flex-1 justify-start font-black ${selectedSoundCue?.id === note.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
-                                        onClick={async () => {
-                                          setSelectedSoundCue({
-                                            id: note.id,
-                                            name: note.name,
-                                            src: `musical:${note.note}${note.octave}`,
-                                          })
-                                          await playNote(note.note, note.octave)
-                                        }}
-                                      >
-                                        {note.name}
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={async () => await playNote(note.note, note.octave)}
-                                        className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
-                                        title={`Preview ${note.name}`}
-                                      >
-                                        <Play className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  ))}
-                                </div>
-                              </AccordionContent>
-                            </AccordionItem>
-                          ))}
-                        </Accordion>
-                        <Button
-                          className="w-full bg-white text-logo-teal-500 border border-logo-teal-500 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-teal-500 dark:border-logo-teal-500 dark:hover:bg-gray-800"
-                          onClick={handleAddInstructionSoundEvent}
-                          disabled={(!selectedLibraryInstruction && !customInstructionText.trim()) || !selectedSoundCue}
-                        >
-                          <PlusCircle className="mr-2 h-4 w-4" />
-                          <span className="font-black">Add to Timeline</span>
-                        </Button>
-                      </div>
-                    </Card>
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                      <div className="bg-gradient-to-r from-logo-rose-500 to-logo-amber-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
-                        <h3 className="text-white flex items-center font-black">
-                          <Mic className="h-4 w-4 mr-2" />
-                          Voice Recording
-                        </h3>
-                      </div>
-                      <div className="p-6 space-y-4">
-                        <div className="text-left">
-                          <Label
-                            htmlFor="recording-label"
-                            className="text-logo-rose-600 dark:text-logo-rose-400 font-black"
-                          >
-                            Label
-                          </Label>
-                          <Input
-                            id="recording-label"
-                            value={recordingLabel}
-                            onChange={handleRecordingLabelChange}
-                            placeholder="Describe this recording..."
-                            className="mt-1 text-sm font-black"
-                          />
-                        </div>
-                        <Button
-                          onClick={isRecording ? stopRecording : startRecording}
-                          variant={isRecording ? "destructive" : "default"}
-                          className={cn(
-                            "w-full font-black",
-                            isRecording
-                              ? "bg-gradient-to-r from-gray-600 to-gray-700 text-white dark:from-gray-700 dark:to-gray-800"
-                              : "bg-transparent text-logo-rose-600 border border-logo-rose-600 dark:text-logo-rose-400 dark:border-logo-rose-400 hover:bg-logo-rose-50 dark:hover:bg-gray-800",
-                          )}
-                        >
-                          {isRecording ? (
-                            <>
-                              <StopCircle className="mr-2 h-4 w-4" />
-                              Stop Recording
-                            </>
-                          ) : (
-                            <>
-                              <Mic className="mr-2 h-4 w-4" />
-                              Start Recording
-                            </>
-                          )}
-                        </Button>
-                        <AnimatePresence>
-                          {readyToAddToTimelineRecording && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              className="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-4"
-                            >
-                              <div className="space-y-2">
-                                <audio
-                                  controls
-                                  src={readyToAddToTimelineRecording.url}
-                                  className="w-full"
-                                  preload="metadata"
-                                />
-                                <p className="text-xs text-gray-500 text-center">
-                                  Duration: {formatTime(readyToAddToTimelineRecording.duration)}
-                                </p>
-                              </div>
-                              <Button
-                                onClick={() => {
-                                  if (!readyToAddToTimelineRecording?.label.trim()) {
-                                    toast({
-                                      title: "Missing Label",
-                                      description: "Please provide a label for the recording.",
-                                      variant: "destructive",
-                                    })
-                                    return
-                                  }
-
-                                  // Calculate new startTime based on existing events
-                                  const maxExistingTime =
-                                    timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
-                                  const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 33 : 0
-
-                                  const newEvent: TimelineEvent = {
-                                    id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-                                    type: "recorded_voice",
-                                    startTime: newStartTime, // Now calculated
-                                    recordedAudioUrl: readyToAddToTimelineRecording.url,
-                                    recordedInstructionLabel: readyToAddToTimelineRecording.label.trim(),
-                                    duration: readyToAddToTimelineRecording.duration,
-                                  }
-
-                                  addEventToTimeline(newEvent)
-
-                                  // Clean up
-                                  setReadyToAddToTimelineRecording(null)
-                                  setRecordedBlobs([])
-                                  setRecordingLabel("")
-
-                                  toast({
-                                    title: "Recording Added",
-                                    description: `"${readyToAddToTimelineRecording.label.trim()}" added to timeline.`,
-                                  })
-                                }}
-                                className="w-full bg-white text-logo-rose-600 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black"
-                              >
-                                <PlusCircle className="mr-2 h-4 w-4" />
-                                Add to Timeline
-                              </Button>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </Card>
-                  </motion.div>
-                </motion.div>
-                {/* Timeline Editor for Labs */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                  <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                    <div className="bg-gradient-to-r from-gray-700 to-gray-800 py-4 px-6 dark:from-gray-800 dark:to-gray-900">
-                      <h3 className="text-white flex items-center font-black text-base">
-                        <CircleDotDashed className="h-5 w-5 mr-2" />
-                        Timeline Editor
+                  <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
+                    <div className="bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 py-3 px-6 dark:from-logo-purple-600 dark:to-logo-blue-600 text-center">
+                      <h3 className="text-white flex items-center font-black text-center">
+                        <ListPlus className="h-4 w-4 mr-2" />
+                        Instructions Library
                       </h3>
                     </div>
-                    <div className="p-6 pb-6">
-                      <VisualTimeline
-                        events={timelineEvents}
-                        totalDuration={labsTotalDuration}
-                        onUpdateEvent={updateEventStartTime}
-                        onRemoveEvent={removeTimelineEvent}
-                      />
-                      {/* Background Sound Mixer */}
-                      <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
-                        <h4 className="font-black dark:text-gray-200 text-gray-600 mb-4 text-base">
-                          Background Sound Mixer
-                        </h4>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* Ambient Sounds */}
-                          <div className="space-y-3">
-                            <h5 className="text-sm font-black text-gray-600 dark:text-gray-300">Ambient Sounds</h5>
-                            <div className="space-y-2">
-                              {AMBIENT_SOUNDS_LIBRARY.map((sound) => (
-                                <div
-                                  key={sound.id}
-                                  className="flex items-center space-x-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 shadow-inner"
-                                >
+                    <div className="p-6 space-y-4">
+                      <Accordion type="single" collapsible className="w-full">
+                        {instructionCategories.map((category) => (
+                          <AccordionItem
+                            value={category}
+                            key={category}
+                            className="border-b border-gray-100 dark:border-gray-800"
+                          >
+                            <AccordionTrigger className="hover:no-underline py-3">{category}</AccordionTrigger>
+                            <AccordionContent className="pb-4">
+                              <div className="space-y-2">
+                                {INSTRUCTIONS_LIBRARY.filter((instr) => instr.category === category).map((instr) => (
                                   <Button
+                                    key={instr.id}
+                                    variant={selectedLibraryInstruction?.id === instr.id ? "default" : "ghost"}
                                     size="sm"
-                                    variant="ghost"
-                                    onClick={() => toggleBackgroundSoundPreview(sound)}
-                                    className={`${currentPlayingBackgroundSoundId === sound.id ? "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" : ""}`}
-                                  >
-                                    <Play className="h-3 w-3 mr-1" />
-                                    <span className="font-black text-gray-600 dark:text-gray-300">{sound.name}</span>
-                                  </Button>
-
-                                  {backgroundSounds.some((s) => s.id === sound.id) && (
-                                    <div className="flex-1 flex items-center space-x-2">
-                                      <Volume2 className="h-3 w-3 text-gray-500" />
-                                      <Slider
-                                        value={[backgroundSounds.find((s) => s.id === sound.id)?.volume || 0.3]}
-                                        min={0}
-                                        max={1}
-                                        step={0.1}
-                                        onValueChange={(value) => {
-                                          setBackgroundSounds((prev) =>
-                                            prev.map((s) => (s.id === sound.id ? { ...s, volume: value[0] } : s)),
-                                          )
-                                        }}
-                                        className="flex-1"
-                                        rangeClassName="bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900"
-                                      />
-                                      <span className="text-xs text-gray-500 w-8">
-                                        {Math.round(
-                                          (backgroundSounds.find((s) => s.id === sound.id)?.volume || 0) * 100,
-                                        )}
-                                        %
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Placeholder for Custom Audio Upload (will be Supabase Storage) */}
-                          <div className="space-y-3">
-                            <h5 className="text-sm font-black text-gray-600 dark:text-gray-300">
-                              Your Custom Background Audio
-                            </h5>
-                            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center">
-                              <div className="text-gray-500 dark:text-gray-400 text-sm">
-                                <PlusCircle className="h-6 w-6 mx-auto mb-2" />
-                                Upload and manage your custom audio files here (Coming Soon!)
-                              </div>
-                            </div>
-
-                            {/* Custom Audio Controls (filtered to only show existing ones, not new uploads) */}
-                            {backgroundSounds
-                              .filter((s) => s.id.startsWith("custom_"))
-                              .map((sound) => (
-                                <div
-                                  key={sound.id}
-                                  className="flex items-center space-x-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 shadow-inner"
-                                >
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
+                                    className={`w-full text-left justify-start h-auto py-3 px-3 text-sm ${selectedLibraryInstruction?.id === instr.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
                                     onClick={() => {
-                                      setBackgroundSounds((prev) => prev.filter((s) => s.id !== sound.id))
+                                      setSelectedLibraryInstruction(instr)
+                                      setCustomInstructionText("")
                                     }}
-                                    className="text-red-500 hover:text-red-700"
                                   >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                  <span className="text-sm font-black text-gray-700 dark:text-gray-300 flex-1 truncate">
-                                    {sound.name}
-                                  </span>
-                                  <div className="flex items-center space-x-2">
-                                    <Volume2 className="h-3 w-3 text-gray-500" />
-                                    <Slider
-                                      value={[sound.volume]}
-                                      min={0}
-                                      max={1}
-                                      step={0.1}
-                                      onValueChange={(value) => {
-                                        setBackgroundSounds((prev) =>
-                                          prev.map((s) => (s.id === sound.id ? { ...s, volume: value[0] } : s)),
-                                        )
-                                      }}
-                                      className="w-20"
-                                      rangeClassName="bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900"
-                                    />
-                                    <span className="text-xs text-gray-500 w-12">
-                                      {Math.round(sound.volume * 100)}%
+                                    <span className="text-wrap leading-relaxed font-black text-sm text-gray-600">
+                                      {instr.text}
                                     </span>
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-                        </div>
-
-                        {/* Master Background Volume */}
-                        {backgroundSounds.length > 0 && (
-                          <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg shadow-inner">
-                            <div className="flex items-center space-x-3">
-                              <span className="text-sm font-black text-gray-600 dark:text-gray-300">
-                                Master Background Volume:
-                              </span>
-                              <div className="flex-1 flex items-center space-x-2">
-                                <Volume2 className="h-4 w-4 text-gray-500" />
-                                <Slider
-                                  value={[masterBackgroundVolume]}
-                                  min={0}
-                                  max={1}
-                                  step={0.1}
-                                  onValueChange={(value) => setMasterBackgroundVolume(value[0])}
-                                  className="flex-1"
-                                  rangeClassName="bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900"
-                                />
-                                <span className="text-sm text-gray-500 w-12">
-                                  {Math.round(masterBackgroundVolume * 100)}%
-                                </span>
+                                  </Button>
+                                ))}
                               </div>
-                            </div>
-                          </div>
-                        )}
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
+                      <div className="border-gray-100 dark:border-gray-800 pt-4 border-t-0 text-center">
+                        <Label htmlFor="custom" className="text-indigo-400 font-black">
+                          Custom Instruction
+                        </Label>
+                        <Textarea
+                          id="custom"
+                          value={customInstructionText}
+                          onChange={handleCustomInstructionChange}
+                          placeholder="Enter your own instruction..."
+                          rows={3}
+                          className="mt-2 text-sm font-black"
+                        />
                       </div>
                     </div>
                   </Card>
                 </motion.div>
-                {/* Generate Audio Button for Labs */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-                  <Button
-                    onClick={handleExportAudio}
-                    disabled={isGeneratingAudio || timelineEvents.length === 0}
-                    className={cn(
-                      "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
-                      "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none",
-                      "bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 text-white dark:from-logo-teal-700 dark:to-logo-purple-700",
-                    )}
-                  >
-                    <div className="flex items-center justify-center font-black">
-                      {isGeneratingAudio && (
-                        <div className="mr-3 h-5 w-5">
-                          <svg
-                            className="animate-spin h-5 w-5 text-white"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291
-                                A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                        </div>
-                      )}
-                      <Wand2 className="mr-2 h-5 w-5" />
-                      <span className="text-base">{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
+                    <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
+                      <h3 className="text-white flex items-center font-black text-center">
+                        <Music2 className="h-4 w-4 mr-2" />
+                        Musical Notes
+                      </h3>
                     </div>
-                  </Button>
+                    <div className="p-6 space-y-4 font-black">
+                      <Accordion type="single" collapsible className="w-full">
+                        {Object.entries(MUSICAL_NOTES).map(([category, notes]) => (
+                          <AccordionItem
+                            value={category}
+                            key={category}
+                            className="border-b border-gray-100 dark:border-gray-800"
+                          >
+                            <AccordionTrigger className="text-logo-teal-500 dark:text-logo-teal-500 hover:no-underline py-3">
+                              {category}
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-4">
+                              <div className="space-y-2 text-gray-600">
+                                {notes.map((note) => (
+                                  <div key={note.id} className="flex items-center gap-2 font-black">
+                                    <Button
+                                      variant={selectedSoundCue?.id === note.id ? "default" : "ghost"}
+                                      size="sm"
+                                      className={`flex-1 justify-start font-black ${selectedSoundCue?.id === note.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                                      onClick={async () => {
+                                        setSelectedSoundCue({
+                                          id: note.id,
+                                          name: note.name,
+                                          src: `musical:${note.note}${note.octave}`,
+                                        })
+                                        await playNote(note.note, note.octave) // Await playNote here
+                                      }}
+                                    >
+                                      {note.name}
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={async () => await playNote(note.note, note.octave)} // Await playNote here
+                                      className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
+                                      title={`Preview ${note.name}`}
+                                    >
+                                      <Play className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
+                      <Button
+                        className="w-full bg-white text-logo-teal-500 border border-logo-teal-500 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-teal-500 dark:border-logo-teal-500 dark:hover:bg-gray-800"
+                        onClick={handleAddInstructionSoundEvent}
+                        disabled={(!selectedLibraryInstruction && !customInstructionText.trim()) || !selectedSoundCue}
+                      >
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        <span className="font-black">Add to Timeline</span>
+                      </Button>
+                    </div>
+                  </Card>
                 </motion.div>
-                {/* Generated Audio Section for Labs */}
-                {generatedAudioUrl && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                  >
-                    <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-logo-teal-50 to-logo-emerald-50 dark:from-logo-teal-950 dark:to-logo-emerald-950">
-                      <div className="bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
-                        <h3 className="text-white font-black">Generated Audio</h3>
-                      </div>
-                      <div className="p-6">
-                        <h4 className="mb-2 dark:text-gray-300 font-black text-sm text-gray-600">{meditationTitle}</h4>
-                        <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
-                          <audio controls className="w-full" src={generatedAudioUrl}></audio>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                          <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                            <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
-                              Total Events
-                            </div>
-                            <div className="dark:text-black font-black text-gray-600">{timelineEvents.length}</div>
-                          </div>
-                          <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                            <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
-                              Total Duration
-                            </div>
-                            <div className="dark:text-black font-black text-gray-600">
-                              {formatTime(labsTotalDuration)}
-                            </div>
-                          </div>
-                        </div>
-                        <Button
-                          onClick={() => {
-                            const a = document.createElement("a")
-                            a.href = generatedAudioUrl
-                            a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
-                            document.body.appendChild(a)
-                            a.click()
-                            document.body.removeChild(a)
-                          }}
-                          className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
+                    <div className="bg-gradient-to-r from-logo-rose-500 to-logo-amber-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
+                      <h3 className="text-white flex items-center font-black">
+                        <Mic className="h-4 w-4 mr-2" />
+                        Voice Recording
+                      </h3>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div className="text-left">
+                        <Label
+                          htmlFor="recording-label"
+                          className="text-logo-rose-600 dark:text-logo-rose-400 font-black"
                         >
-                          <div className="flex items-center justify-center font-black">
-                            <Download className="mr-2 h-5 w-5" />
-                            Download Audio
-                          </div>
-                        </Button>
+                          Label
+                        </Label>
+                        <Input
+                          id="recording-label"
+                          value={recordingLabel}
+                          onChange={handleRecordingLabelChange}
+                          placeholder="Describe this recording..."
+                          className="mt-1 text-sm font-black"
+                        />
                       </div>
-                    </Card>
-                  </motion.div>
-                )}
+                      <Button
+                        onClick={isRecording ? stopRecording : startRecording}
+                        variant={isRecording ? "destructive" : "default"}
+                        className={cn(
+                          "w-full font-black",
+                          isRecording
+                            ? "bg-gradient-to-r from-gray-600 to-gray-700 text-white dark:from-gray-700 dark:to-gray-800"
+                            : "bg-transparent text-logo-rose-600 border border-logo-rose-600 dark:text-logo-rose-400 dark:border-logo-rose-400 hover:bg-logo-rose-50 dark:hover:bg-gray-800",
+                        )}
+                      >
+                        {isRecording ? (
+                          <>
+                            <StopCircle className="mr-2 h-4 w-4" />
+                            Stop Recording
+                          </>
+                        ) : (
+                          <>
+                            <Mic className="mr-2 h-4 w-4" />
+                            Start Recording
+                          </>
+                        )}
+                      </Button>
+                      <AnimatePresence>
+                        {readyToAddToTimelineRecording && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-4"
+                          >
+                            <div className="space-y-2">
+                              <audio
+                                controls
+                                src={readyToAddToTimelineRecording.url}
+                                className="w-full"
+                                preload="metadata"
+                              />
+                              <p className="text-xs text-gray-500 text-center">
+                                Duration: {formatTime(readyToAddToTimelineRecording.duration)}
+                              </p>
+                            </div>
+                            <Button
+                              onClick={() => {
+                                if (!readyToAddToTimelineRecording?.label.trim()) {
+                                  toast({
+                                    title: "Missing Label",
+                                    description: "Please provide a label for the recording.",
+                                    variant: "destructive",
+                                  })
+                                  return
+                                }
+
+                                // Calculate new startTime based on existing events
+                                const maxExistingTime =
+                                  timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
+                                const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 33 : 0
+
+                                const newEvent: TimelineEvent = {
+                                  id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+                                  type: "recorded_voice",
+                                  startTime: newStartTime, // Now calculated
+                                  recordedAudioUrl: readyToAddToTimelineRecording.url,
+                                  recordedInstructionLabel: readyToAddToTimelineRecording.label.trim(),
+                                  duration: readyToAddToTimelineRecording.duration,
+                                }
+
+                                addEventToTimeline(newEvent) // Use the new helper function
+
+                                // Clean up
+                                setReadyToAddToTimelineRecording(null)
+                                setRecordedBlobs([])
+                                setRecordingLabel("")
+
+                                toast({
+                                  title: "Recording Added",
+                                  description: `"${readyToAddToTimelineRecording.label.trim()}" added to timeline.`,
+                                })
+                              }}
+                              className="w-full bg-white text-logo-rose-600 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black" // Changed border to gray-600
+                            >
+                              <PlusCircle className="mr-2 h-4 w-4" />
+                              Add to Timeline
+                            </Button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </Card>
+                </motion.div>
+              </motion.div>\
+              {/* Timeline Editor for Labs */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+                <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+                  <div className="bg-gradient-to-r from-gray-700 to-gray-800 py-4 px-6 dark:from-gray-800 dark:to-gray-900">
+                    <h3 className="text-white flex items-center font-black text-base">
+                      <CircleDotDashed className="h-5 w-5 mr-2" />
+                      Timeline Editor
+                    </h3>
+                  </div>
+                  <div className="p-6 pb-6">
+                    <VisualTimeline
+                      events={timelineEvents}
+                      totalDuration={labsTotalDuration}
+                      onUpdateEvent={updateEventStartTime}
+                      onRemoveEvent={removeTimelineEvent}
+                    />
+                  </div>
+                </Card>
               </motion.div>
-            )}
-          </div>
+              {/* Generate Audio Button for Labs */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+                <Button
+                  onClick={handleExportAudio}
+                  disabled={isGeneratingAudio || timelineEvents.length === 0}
+                  className={cn(
+                    "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
+                    "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none",
+                    "bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 text-white dark:from-logo-teal-700 dark:to-logo-purple-700",
+                  )}
+                >
+                  <div className="flex items-center justify-center font-black">
+                    {isGeneratingAudio && (
+                      <div className="mr-3 h-5 w-5">
+                        <svg
+                          className="animate-spin h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291
+                              A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                      </div>
+                    )}
+                    <Wand2 className="mr-2 h-5 w-5" />
+                    <span className="text-base">{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
+                  </div>
+                </Button>
+              </motion.div>
+              {/* Generated Audio Section for Labs */}
+              {generatedAudioUrl && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-logo-teal-50 to-logo-emerald-50 dark:from-logo-teal-950 dark:to-logo-emerald-950">
+                    <div className="bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
+                      <h3 className="text-white font-black">Generated Audio</h3>
+                    </div>
+                    <div className="p-6">
+                      <h4 className="mb-2 dark:text-gray-300 font-black text-sm text-gray-600">{meditationTitle}</h4>
+                      <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
+                        <audio controls className="w-full" src={generatedAudioUrl}></audio>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                          <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
+                            Total Events
+                          </div>
+                          <div className="dark:text-black font-black text-gray-600">{timelineEvents.length}</div>
+                        </div>
+                        <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                          <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
+                            Total Duration
+                          </div>
+                          <div className="dark:text-black font-black text-gray-600">
+                            {formatTime(labsTotalDuration)}
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => {
+                          const a = document.createElement("a")
+                          a.href = generatedAudioUrl
+                          a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
+                          document.body.appendChild(a)
+                          a.click()
+                          document.body.removeChild(a)
+                        }}
+                        className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                      >
+                        <div className="flex items-center justify-center font-black">
+                          <Download className="mr-2 h-5 w-5" />
+                          Download Audio
+                        </div>
+                      </Button>
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
         </div>
       </motion.div>
     </div>
