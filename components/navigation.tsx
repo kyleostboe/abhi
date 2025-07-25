@@ -9,12 +9,12 @@ export function Navigation() {
 
   return (
     <nav className="flex justify-center py-4 mb-8">
-      <ul className="flex space-x-4 bg-white/70 backdrop-blur-md rounded-full px-6 py-3 shadow-lg dark:bg-gray-800/70 dark:shadow-white/10">
+      <ul className="flex space-x-4 bg-white/70 backdrop-blur-md px-6 py-3 dark:bg-gray-800/70 dark:shadow-white/10 rounded-md shadow-2xl">
         <li>
           <Link
             href="/"
             className={cn(
-              "px-4 py-2 rounded-full text-sm font-medium transition-colors",
+              "px-4 py-2 text-sm font-medium transition-colors rounded-md shadow-inner",
               pathname === "/"
                 ? "bg-logo-teal-500 text-white shadow-md dark:bg-logo-teal-700"
                 : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",

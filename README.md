@@ -60,10 +60,10 @@ A meditation tool that allows users to adjust the length of guided meditations b
 
 Create a `.env` file or configure your deployment with the following variables:
 
-```
+\`\`\`
 NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
-```
+\`\`\`
 
 ## Project Structure
 
