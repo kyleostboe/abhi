@@ -2026,8 +2026,15 @@ export default function HomePage() {
                             </div>
                           </div>
                           <Button
+                            onClick={() => {
+                              const a = document.createElement("a")
+                              a.href = generatedAudioUrl
+                              a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
+                              document.body.appendChild(a)
+                              a.click()
+                              document.body.removeChild(a)
+                            }}
                             className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
-                            onClick={downloadProcessedAudio}
                           >
                             <div className="flex items-center justify-center font-black">
                               <Download className="mr-2 h-5 w-5" />
