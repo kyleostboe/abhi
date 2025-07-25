@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation"
-import { getServerSupabase } from "@/lib/supabase/server"
 import AuthForm from "@/components/auth-form"
+import { getServerSupabase } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 
 export default async function LoginPage() {
   const supabase = getServerSupabase()
@@ -10,7 +10,7 @@ export default async function LoginPage() {
   } = await supabase.auth.getUser()
 
   if (user) {
-    redirect("/") // Redirect to home if already logged in
+    redirect("/")
   }
 
   return (
