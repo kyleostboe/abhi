@@ -12,6 +12,7 @@ import {
   Clock,
   Wand2,
   Download,
+  Save,
   Settings2,
   AlertTriangle,
   ListPlus,
@@ -32,6 +33,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { toast } from "@/components/ui/use-toast"
+import { supabase } from "@/lib/supabase"
+import { useAuth } from "@/hooks/use-auth"
 import {
   INSTRUCTIONS_LIBRARY,
   SOUND_CUES_LIBRARY,
@@ -55,6 +58,7 @@ interface TimelineItem {
 export default function HomePage() {
   // State for mode toggle (Length Adjuster vs Labs)
   const [activeMode, setActiveMode] = useState<"adjuster" | "labs">("adjuster")
+  const { session } = useAuth()
 
   // == States for Length Adjuster ==
   const [file, setFile] = useState<File | null>(null)
@@ -92,6 +96,26 @@ export default function HomePage() {
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
   const [labsTotalDuration, setLabsTotalDuration] = useState<number>(600)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
+  const handleSaveMeditation = async () => {
+    if (!session) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to save meditations",
+        variant: "destructive",
+      })
+      return
+    }
+    const { error } = await supabase.from("meditations").insert({
+      user_id: session.user.id,
+      title: meditationTitle,
+      timeline: timelineEvents,
+    })
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" })
+    } else {
+      toast({ title: "Saved", description: "Meditation saved to your profile" })
+    }
+  }
   const [selectedLibraryInstruction, setSelectedLibraryInstruction] = useState<Instruction | null>(null)
   const [customInstructionText, setCustomInstructionText] = useState<string>("")
   const [selectedSoundCue, setSelectedSoundCue] = useState<SoundCue | null>(null)
@@ -1859,6 +1883,15 @@ export default function HomePage() {
                               Download Audio
                             </div>
                           </Button>
+                          <Button
+                            className="w-full mt-2 py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-purple-600 hover:from-logo-teal-700 hover:to-logo-purple-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-purple-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-purple-800"
+                            onClick={handleSaveMeditation}
+                          >
+                            <div className="flex items-center justify-center font-black">
+                              <Save className="mr-2 h-5 w-5" />
+                              Save Meditation
+                            </div>
+                          </Button>
                         </div>
                       </Card>
                     </motion.div>
@@ -2281,6 +2314,15 @@ export default function HomePage() {
                           <div className="flex items-center justify-center font-black">
                             <Download className="mr-2 h-5 w-5" />
                             Download Audio
+                          </div>
+                        </Button>
+                        <Button
+                          onClick={handleSaveMeditation}
+                          className="w-full mt-2 py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-purple-600 hover:from-logo-teal-700 hover:to-logo-purple-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-purple-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-purple-800"
+                        >
+                          <div className="flex items-center justify-center font-black">
+                            <Save className="mr-2 h-5 w-5" />
+                            Save Meditation
                           </div>
                         </Button>
                       </div>
