@@ -5,7 +5,6 @@ import { useState, useRef, useEffect } from "react"
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Wand2 } from "lucide-react"
-import type { SpeechRecognition } from "web-speech-api"
 
 interface Instruction {
   id: string
