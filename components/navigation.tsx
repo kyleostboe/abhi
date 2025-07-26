@@ -3,24 +3,21 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { HomeIcon, FlaskConicalIcon, BookOpenIcon, HandHeartIcon, UserIcon } from "lucide-react"
-import { useAuth } from "@/hooks/use-auth"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { HomeIcon, FlaskConicalIcon, UserIcon, DollarSignIcon, MailIcon, LogInIcon, LogOutIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/use-auth"
+import { supabase } from "@/lib/supabase"
 import { toast } from "@/components/ui/use-toast"
 
 export function Navigation() {
   const pathname = usePathname()
-  const { user, signOut } = useAuth()
-  const router = useRouter()
+  const { session } = useAuth()
 
   const handleSignOut = async () => {
-    const { error } = await signOut()
+    const { error } = await supabase.auth.signOut()
     if (error) {
-      console.error("Error signing out:", error.message)
       toast({
-        title: "Sign Out Failed",
+        title: "Sign Out Error",
         description: error.message,
         variant: "destructive",
       })
@@ -29,77 +26,80 @@ export function Navigation() {
         title: "Signed Out",
         description: "You have been successfully signed out.",
       })
-      router.push("/login")
     }
   }
 
   const navItems = [
-    { href: "/", icon: HomeIcon, label: "Home" },
-    { href: "/labs", icon: FlaskConicalIcon, label: "Labs" },
-    { href: "/contact", icon: BookOpenIcon, label: "Contact" },
-    { href: "/donate", icon: HandHeartIcon, label: "Donate" },
+    { href: "/", label: "Home", icon: HomeIcon },
+    { href: "/labs", label: "Labs", icon: FlaskConicalIcon },
+    { href: "/donate", label: "Donate", icon: DollarSignIcon },
+    { href: "/contact", label: "Contact", icon: MailIcon },
   ]
 
   return (
-    <nav className="flex flex-col items-center space-y-2 p-4 bg-gray-100 dark:bg-gray-800 h-full border-r border-gray-200 dark:border-gray-700">
-      {navItems.map((item) => {
-        const isActive = pathname === item.href
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex items-center justify-center w-full p-3 rounded-lg transition-colors",
-              isActive
-                ? "bg-gray-600 text-white"
-                : "text-gray-700 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700",
-            )}
-          >
-            <item.icon className="h-6 w-6" />
-            <span className="sr-only">{item.label}</span>
+    <nav className="fixed left-0 top-0 h-full w-20 bg-white/70 backdrop-blur-md p-4 flex flex-col items-center justify-between dark:bg-gray-800/70 dark:shadow-white/10 shadow-2xl z-50">
+      <div className="flex flex-col items-center space-y-6">
+        {navItems.map((item) => {
+          const isActive = pathname === item.href
+          return (
+            <Link key={item.href} href={item.href} passHref>
+              <Button
+                variant="ghost"
+                className={cn(
+                  "flex flex-col items-center justify-center p-2 h-auto w-auto text-gray-600 dark:text-gray-400",
+                  isActive && "text-gray-900 dark:text-gray-50 bg-gray-100 dark:bg-gray-600/50 rounded-md",
+                  "hover:bg-gray-200 dark:hover:bg-gray-700/50 transition-colors duration-200",
+                )}
+              >
+                <item.icon className="h-6 w-6 mb-1" />
+                <span className="text-xs font-medium">{item.label}</span>
+              </Button>
+            </Link>
+          )
+        })}
+      </div>
+      <div className="flex flex-col items-center space-y-6">
+        {session ? (
+          <>
+            <Link href="/profile" passHref>
+              <Button
+                variant="ghost"
+                className={cn(
+                  "flex flex-col items-center justify-center p-2 h-auto w-auto text-gray-600 dark:text-gray-400",
+                  pathname === "/profile" &&
+                    "text-gray-900 dark:text-gray-50 bg-gray-100 dark:bg-gray-600/50 rounded-md",
+                  "hover:bg-gray-200 dark:hover:bg-gray-700/50 transition-colors duration-200",
+                )}
+              >
+                <UserIcon className="h-6 w-6 mb-1" />
+                <span className="text-xs font-medium">Profile</span>
+              </Button>
+            </Link>
+            <Button
+              variant="ghost"
+              onClick={handleSignOut}
+              className="flex flex-col items-center justify-center p-2 h-auto w-auto text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700/50 transition-colors duration-200"
+            >
+              <LogOutIcon className="h-6 w-6 mb-1" />
+              <span className="text-xs font-medium">Sign Out</span>
+            </Button>
+          </>
+        ) : (
+          <Link href="/login" passHref>
+            <Button
+              variant="ghost"
+              className={cn(
+                "flex flex-col items-center justify-center p-2 h-auto w-auto text-gray-600 dark:text-gray-400",
+                pathname === "/login" && "text-gray-900 dark:text-gray-50 bg-gray-100 dark:bg-gray-600/50 rounded-md",
+                "hover:bg-gray-200 dark:hover:bg-gray-700/50 transition-colors duration-200",
+              )}
+            >
+              <LogInIcon className="h-6 w-6 mb-1" />
+              <span className="text-xs font-medium">Sign In</span>
+            </Button>
           </Link>
-        )
-      })}
-      {user ? (
-        <>
-          <Link
-            href="/profile"
-            className={cn(
-              "flex items-center justify-center w-full p-3 rounded-lg transition-colors",
-              pathname === "/profile"
-                ? "bg-gray-600 text-white"
-                : "text-gray-700 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700",
-            )}
-          >
-            <Avatar className="h-6 w-6">
-              <AvatarImage src="/placeholder-user.jpg" alt="User Avatar" />
-              <AvatarFallback>{user.email?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
-            </Avatar>
-            <span className="sr-only">Profile</span>
-          </Link>
-          <Button
-            onClick={handleSignOut}
-            variant="ghost"
-            className="flex items-center justify-center w-full p-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700"
-          >
-            <UserIcon className="h-6 w-6" />
-            <span className="sr-only">Sign Out</span>
-          </Button>
-        </>
-      ) : (
-        <Link
-          href="/login"
-          className={cn(
-            "flex items-center justify-center w-full p-3 rounded-lg transition-colors",
-            pathname === "/login"
-              ? "bg-gray-600 text-white"
-              : "text-gray-700 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700",
-          )}
-        >
-          <UserIcon className="h-6 w-6" />
-          <span className="sr-only">Login</span>
-        </Link>
-      )}
+        )}
+      </div>
     </nav>
   )
 }

@@ -1,62 +1,32 @@
 "use client"
 
-import type React from "react"
+import { useState, useEffect } from "react"
+import { supabase } from "@/lib/supabase"
+import type { Session, User } from "@supabase/supabase-js"
 
-import { useState, useEffect, createContext, useContext, useCallback } from "react"
-import { getSupabaseClient } from "@/lib/supabase"
-import type { User } from "@supabase/supabase-js"
-
-interface AuthContextType {
-  user: User | null
-  loading: boolean
-  signIn: (email: string) => Promise<{ error: Error | null }>
-  signOut: () => Promise<{ error: Error | null }>
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function useAuth() {
+  const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = getSupabaseClient()
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user || null)
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      setSession(currentSession)
+      setUser(currentSession?.user || null)
       setLoading(false)
     })
 
-    // Initial check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user || null)
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      setSession(initialSession)
+      setUser(initialSession?.user || null)
       setLoading(false)
     })
 
     return () => {
-      authListener.unsubscribe()
+      authListener.subscription.unsubscribe()
     }
-  }, [supabase])
+  }, [])
 
-  const signIn = useCallback(
-    async (email: string) => {
-      const { error } = await supabase.auth.signInWithOtp({ email })
-      return { error }
-    },
-    [supabase],
-  )
-
-  const signOut = useCallback(async () => {
-    const { error } = await supabase.auth.signOut()
-    return { error }
-  }, [supabase])
-
-  return <AuthContext.Provider value={{ user, loading, signIn, signOut }}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
-  }
-  return context
+  return { session, user, loading }
 }

@@ -240,7 +240,14 @@ export default function HomePage() {
   const handleSimulateEncoding = async () => {
     toast({ title: "Simulating Encoding", description: "Generating dummy encoded audio..." })
     try {
-      const dummyAudioBlob = await generateEncodedAudio(timelineEvents) // Use timelineEvents
+      // Pass empty arrays for soundCues and ambientSounds as they are not managed by this part of the UI
+      const dummyAudioBlob = await generateEncodedAudio(
+        timelineEvents
+          .filter((e) => e.type === "instruction" && e.text)
+          .map((e) => ({ timestamp: e.time, text: e.text! })),
+        [],
+        [],
+      )
       const url = URL.createObjectURL(dummyAudioBlob)
       const a = document.createElement("a")
       a.href = url
@@ -1090,87 +1097,81 @@ export default function HomePage() {
   }
 
   const startRecordingLabs = async () => {
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-        const mimeType = MediaRecorder.isTypeSupported("audio/mp4;codecs=aac")
-          ? "audio/mp4;codecs=aac"
-          : MediaRecorder.isTypeSupported("audio/webm")
-            ? "audio/webm"
-            : ""
+    if (typeof window === "undefined") return
 
-        if (!mimeType) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mimeType = MediaRecorder.isTypeSupported("audio/mp4;codecs=aac")
+        ? "audio/mp4;codecs=aac"
+        : MediaRecorder.isTypeSupported("audio/webm")
+          ? "audio/webm"
+          : ""
+
+      if (!mimeType) {
+        toast({
+          title: "Unsupported Audio Format",
+          description: "Your browser does not support a compatible audio recording format.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      mediaRecorderRefLabs.current = new MediaRecorder(stream, { mimeType })
+      const blobs: Blob[] = []
+
+      mediaRecorderRefLabs.current.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          blobs.push(event.data)
+        }
+      }
+
+      mediaRecorderRefLabs.current.onstop = async () => {
+        const blob = new Blob(blobs, { type: mimeType })
+        const url = URL.createObjectURL(blob)
+
+        // Create a temporary audio element to load metadata and get duration
+        const tempAudio = new Audio()
+        tempAudio.preload = "metadata"
+        tempAudio.src = url
+
+        tempAudio.onloadedmetadata = () => {
+          const duration =
+            tempAudio.duration && !isNaN(tempAudio.duration) && isFinite(tempAudio.duration) ? tempAudio.duration : 0
+
+          setReadyToAddToTimelineRecording({
+            url,
+            duration,
+            label: recordingLabel.trim(),
+          })
+          setRecordedBlobs([blob]) // Keep the blob for potential future use if needed
+          URL.revokeObjectURL(url) // Revoke the temporary URL after duration is captured
+          toast({ title: "Recording Stopped", description: `Duration: ${formatTime(duration)}` })
+        }
+
+        tempAudio.onerror = (e) => {
+          console.error("Error loading recorded audio metadata:", e)
           toast({
-            title: "Unsupported Audio Format",
-            description: "Your browser does not support a compatible audio recording format.",
+            title: "Recording Error",
+            description: "Could not load recorded audio metadata. Try again.",
             variant: "destructive",
           })
-          return
+          URL.revokeObjectURL(url)
+          setReadyToAddToTimelineRecording(null)
         }
 
-        mediaRecorderRefLabs.current = new MediaRecorder(stream, { mimeType })
-        const blobs: Blob[] = []
-
-        mediaRecorderRefLabs.current.ondataavailable = (event) => {
-          if (event.data && event.data.size > 0) {
-            blobs.push(event.data)
-          }
+        // Stop all tracks to release microphone
+        if (mediaRecorderRefLabs.current?.stream) {
+          mediaRecorderRefLabs.current.stream.getTracks().forEach((track) => track.stop())
         }
-
-        mediaRecorderRefLabs.current.onstop = async () => {
-          const blob = new Blob(blobs, { type: mimeType })
-          const url = URL.createObjectURL(blob)
-
-          // Create a temporary audio element to load metadata and get duration
-          const tempAudio = new Audio()
-          tempAudio.preload = "metadata"
-          tempAudio.src = url
-
-          tempAudio.onloadedmetadata = () => {
-            const duration =
-              tempAudio.duration && !isNaN(tempAudio.duration) && isFinite(tempAudio.duration) ? tempAudio.duration : 0
-
-            setReadyToAddToTimelineRecording({
-              url,
-              duration,
-              label: recordingLabel.trim(),
-            })
-            setRecordedBlobs([blob]) // Keep the blob for potential future use if needed
-            URL.revokeObjectURL(url) // Revoke the temporary URL after duration is captured
-            toast({ title: "Recording Stopped", description: `Duration: ${formatTime(duration)}` })
-          }
-
-          tempAudio.onerror = (e) => {
-            console.error("Error loading recorded audio metadata:", e)
-            toast({
-              title: "Recording Error",
-              description: "Could not load recorded audio metadata. Try again.",
-              variant: "destructive",
-            })
-            URL.revokeObjectURL(url)
-            setReadyToAddToTimelineRecording(null)
-          }
-
-          // Stop all tracks to release microphone
-          if (mediaRecorderRefLabs.current?.stream) {
-            mediaRecorderRefLabs.current.stream.getTracks().forEach((track) => track.stop())
-          }
-        }
-
-        mediaRecorderRefLabs.current.start()
-        setIsRecording(true)
-        setReadyToAddToTimelineRecording(null) // Clear previous recording
-        setRecordedBlobs([])
-        toast({ title: "Recording Started" })
-      } catch (err) {
-        toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" })
       }
-    } else {
-      toast({
-        title: "Unsupported",
-        description: "Audio recording not supported by your browser.",
-        variant: "destructive",
-      })
+
+      mediaRecorderRefLabs.current.start()
+      setIsRecording(true)
+      setReadyToAddToTimelineRecording(null) // Clear previous recording
+      setRecordedBlobs([])
+      toast({ title: "Recording Started" })
+    } catch (err) {
+      toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" })
     }
   }
 
