@@ -1,111 +1,104 @@
 "use client"
 
 import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { cva, type VariantProps } from "class-variance-authority"
-
+import {
+  Bar,
+  BarChart,
+  Line,
+  Pie,
+  PieChart,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  type BarProps,
+  type LineProps,
+  type PieProps,
+} from "recharts"
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+} from "@/components/ui/chart"
 import { cn } from "@/lib/utils"
 
-const ChartContext = React.createContext<
-  | {
-      config: Record<string, { label?: string; color?: string; icon?: React.ElementType }>
-    }
-  | undefined
->(undefined)
+// Define types for chart components
+type ChartComponent =
+  | React.ForwardRefExoticComponent<BarProps & React.RefAttributes<SVGElement>>
+  | React.ForwardRefExoticComponent<LineProps & React.RefAttributes<SVGElement>>
+  | React.ForwardRefExoticComponent<PieProps & React.RefAttributes<SVGElement>>
 
-function useChart() {
-  const context = React.useContext(ChartContext)
-
-  if (!context) {
-    throw new Error("useChart must be used within <Chart>")
-  }
-
-  return context
+// Map of chart types to their respective components
+const chartComponents: Record<string, ChartComponent> = {
+  bar: Bar,
+  line: Line,
+  pie: Pie,
 }
 
-const chartVariants = cva("flex aspect-video items-center justify-center text-foreground", {
-  variants: {
-    size: {
-      xs: "h-[200px] w-[200px]",
-      sm: "h-[250px] w-[250px]",
-      md: "h-[300px] w-[300px]",
-      lg: "h-[350px] w-[350px]",
-      xl: "h-[400px] w-[400px]",
-    },
-  },
-})
+interface ChartProps extends React.HTMLAttributes<HTMLDivElement> {
+  config: ChartConfig
+  data: Record<string, any>[]
+  chartType?: "bar" | "line" | "pie"
+  className?: string
+  children?: React.ReactNode
+}
 
-const ChartContainer = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentPropsWithoutRef<"div"> &
-    VariantProps<typeof chartVariants> & {
-      config: Record<string, { label?: string; color?: string; icon?: React.ElementType }>
-    }
->(({ config, className, children, ...props }, ref) => {
-  return (
-    <ChartContext.Provider value={{ config }}>
-      <div ref={ref} className={cn(chartVariants({ size: "md" }), "w-full", className)} {...props}>
-        {children}
-      </div>
-    </ChartContext.Provider>
-  )
-})
-ChartContainer.displayName = "ChartContainer"
-
-const ChartTooltip = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentPropsWithoutRef<"div"> & {
-    hideIndicator?: boolean
-    indicator?: string
-  }
->(({ hideIndicator = false, indicator = "bottom", className, children, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "z-50 flex cursor-default items-center rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm shadow-md dark:border-slate-800 dark:bg-slate-950",
+const Chart = React.forwardRef<HTMLDivElement, ChartProps>(
+  (
+    {
+      config,
+      data,
+      chartType = "bar", // Default to bar chart
       className,
-    )}
-    {...props}
-  >
-    {!hideIndicator && (
-      <div
-        className={cn(
-          "mr-2 h-2 w-2 rounded-full",
-          indicator === "top" && "absolute -top-1 left-1/2 -translate-x-1/2",
-          indicator === "right" && "absolute -right-1 top-1/2 -translate-y-1/2",
-          indicator === "bottom" && "absolute -bottom-1 left-1/2 -translate-x-1/2",
-          indicator === "left" && "absolute -left-1 top-1/2 -translate-y-1/2",
-        )}
-        style={{
-          backgroundColor: "var(--color)",
-        }}
-      />
-    )}
-    {children}
-  </div>
-))
-ChartTooltip.displayName = "ChartTooltip"
+      children,
+      ...props
+    },
+    ref,
+  ) => {
+    const ChartComponent = chartComponents[chartType]
+    const is = chartType === "pie" ? PieChart : BarChart // Default to BarChart if not pie
 
-const ChartTooltipContent = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentPropsWithoutRef<"div"> & {
-    hideIndicator?: boolean
-    indicator?: string
-  }
->(({ className, children, ...props }, ref) => (
-  <div ref={ref} className={cn("flex flex-col space-y-1", className)} {...props}>
-    {children}
-  </div>
-))
-ChartTooltipContent.displayName = "ChartTooltipContent"
+    if (!ChartComponent) {
+      console.warn(`Unknown chart type: ${chartType}. Defaulting to BarChart.`)
+      return null
+    }
 
-const ChartTooltipTrigger = React.forwardRef<HTMLButtonElement, React.ComponentPropsWithoutRef<typeof Slot>>(
-  ({ children, className, ...props }, ref) => (
-    <Slot ref={ref} className={cn("z-10 block", className)} {...props}>
-      {children}
-    </Slot>
-  ),
+    return (
+      <ChartContainer ref={ref} config={config} className={cn("min-h-[200px] w-full", className)} {...props}>
+        <ResponsiveContainer>
+          <is data={data}>
+            <XAxis
+              dataKey={Object.keys(config)[0]} // Use the first key in config as dataKey for XAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickFormatter={(value) => value.slice(0, 3)}
+            />
+            <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+            <ChartLegend content={<ChartLegendContent />} />
+            {Object.entries(config).map(([key, item]) => {
+              if (key === Object.keys(config)[0]) return null // Skip the dataKey for XAxis
+              return (
+                <ChartComponent
+                  key={key}
+                  dataKey={key}
+                  fill={`var(--color-${key})`}
+                  radius={chartType === "pie" ? 80 : undefined} // Apply radius for pie chart
+                  {...item.props} // Spread any additional props from config
+                />
+              )
+            })}
+            {children}
+          </is>
+        </ResponsiveContainer>
+      </ChartContainer>
+    )
+  },
 )
-ChartTooltipTrigger.displayName = "ChartTooltipTrigger"
 
-export { ChartContainer, ChartTooltip, ChartTooltipContent, ChartTooltipTrigger, useChart }
+Chart.displayName = "Chart"
+
+export { Chart }

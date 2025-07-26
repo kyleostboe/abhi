@@ -1,5 +1,6 @@
 import type { Instruction as ImportedInstruction, SoundCue as ImportedSoundCue } from "./types"
 import type { AmbientSound } from "./types"
+import type { Meditation } from "@/lib/types"
 
 export interface Instruction extends ImportedInstruction {
   // Additional properties can be added here if needed
@@ -685,32 +686,32 @@ export async function generateAmbientSound(
     const targetVolume = volumeOverride ?? ambient.volume ?? 0.2
 
     // Master gain node for overall volume control
-  const masterGain = audioContext.createGain()
-  masterGain.gain.setValueAtTime(targetVolume, audioContext.currentTime)
+    const masterGain = audioContext.createGain()
+    masterGain.gain.setValueAtTime(targetVolume, audioContext.currentTime)
 
-  const panner = new StereoPannerNode(audioContext, { pan: 0 })
-  masterGain.connect(panner)
+    const panner = new StereoPannerNode(audioContext, { pan: 0 })
+    masterGain.connect(panner)
 
-  const panLfo = audioContext.createOscillator()
-  const panLfoGain = audioContext.createGain()
-  panLfo.type = "sine"
-  panLfo.frequency.value = 0.03 + Math.random() * 0.02
-  panLfoGain.gain.value = 0.5
-  panLfo.connect(panLfoGain).connect(panner.pan)
-  panLfo.start(0)
-  panLfo.stop(duration)
+    const panLfo = audioContext.createOscillator()
+    const panLfoGain = audioContext.createGain()
+    panLfo.type = "sine"
+    panLfo.frequency.value = 0.03 + Math.random() * 0.02
+    panLfoGain.gain.value = 0.5
+    panLfo.connect(panLfoGain).connect(panner.pan)
+    panLfo.start(0)
+    panLfo.stop(duration)
 
-  const dryGain = audioContext.createGain()
-  dryGain.gain.value = 0.7
+    const dryGain = audioContext.createGain()
+    dryGain.gain.value = 0.7
 
-  const wetGain = audioContext.createGain()
-  wetGain.gain.value = 0.3
+    const wetGain = audioContext.createGain()
+    wetGain.gain.value = 0.3
 
-  const reverb = audioContext.createConvolver()
-  reverb.buffer = createSimpleReverbBuffer(audioContext, 2.5, 2)
+    const reverb = audioContext.createConvolver()
+    reverb.buffer = createSimpleReverbBuffer(audioContext, 2.5, 2)
 
-  panner.connect(dryGain).connect(audioContext.destination)
-  panner.connect(reverb).connect(wetGain).connect(audioContext.destination)
+    panner.connect(dryGain).connect(audioContext.destination)
+    panner.connect(reverb).connect(wetGain).connect(audioContext.destination)
 
     switch (ambient.id) {
       case "rain":
@@ -804,6 +805,13 @@ async function generateHyperrealisticRain(
 
   const rumbleGain = audioContext.createGain()
   rumbleGain.gain.value = 0.4
+
+  const rumbleLfo = audioContext.createOscillator()
+  rumbleLfo.type = "sine"
+  rumbleLfo.frequency.value = 0.1
+  const rumbleLfoGain = audioContext.createGain()
+  rumbleLfoGain.gain.value = 0.2
+  rumbleLfo.connect(rumbleLfoGain).connect(rumbleGain.gain)
 
   rumbleSource.connect(rumbleFilter).connect(rumbleGain).connect(destination)
 
@@ -1284,4 +1292,72 @@ function createSimpleReverbBuffer(
     }
   }
   return impulse
+}
+
+export const defaultMeditation: Meditation = {
+  id: "default-meditation-1",
+  title: "Default Focus Meditation",
+  timeline: [
+    {
+      id: "event-1",
+      type: "sound_cue",
+      duration: 5000,
+      soundCueName: "Bell",
+      soundCueSrc: "/sounds/bell.mp3",
+      volume: 0.8,
+      startOffset: 0,
+    },
+    {
+      id: "event-2",
+      type: "ambient_sound",
+      duration: 60000,
+      ambientSoundName: "Forest Rain",
+      ambientSoundSrc: "/sounds/forest-rain.mp3",
+      volume: 0.5,
+      startOffset: 0,
+    },
+    {
+      id: "event-3",
+      type: "guided_meditation",
+      duration: 120000,
+      script: "Focus on your breath. Inhale deeply, exhale slowly.",
+      voice: "standard",
+      startOffset: 0,
+    },
+    {
+      id: "event-4",
+      type: "sound_cue",
+      duration: 5000,
+      soundCueName: "Gong",
+      soundCueSrc: "/sounds/gong.mp3",
+      volume: 0.7,
+      startOffset: 0,
+    },
+    {
+      id: "event-5",
+      type: "ambient_sound",
+      duration: 30000,
+      ambientSoundName: "Ocean Waves",
+      ambientSoundSrc: "/sounds/ocean-waves.mp3",
+      volume: 0.6,
+      startOffset: 0,
+    },
+    {
+      id: "event-6",
+      type: "guided_meditation",
+      duration: 90000,
+      script: "Feel your body relax. Let go of any tension.",
+      voice: "standard",
+      startOffset: 0,
+    },
+    {
+      id: "event-7",
+      type: "sound_cue",
+      duration: 5000,
+      soundCueName: "Chimes",
+      soundCueSrc: "/sounds/chimes.mp3",
+      volume: 0.9,
+      startOffset: 0,
+    },
+  ],
 }

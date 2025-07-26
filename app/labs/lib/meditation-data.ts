@@ -1,4 +1,5 @@
 import type { Instruction as ImportedInstruction, SoundCue as ImportedSoundCue } from "./types"
+import type { Meditation } from "@/lib/types"
 
 export interface Instruction extends ImportedInstruction {
   // Additional properties can be added here if needed
@@ -654,4 +655,72 @@ export async function generateSyntheticSound(
     console.error("Error generating synthetic sound:", error)
     throw error
   }
+}
+
+export const defaultMeditation: Meditation = {
+  id: "default-meditation-1",
+  title: "Default Focus Meditation",
+  timeline: [
+    {
+      id: "event-1",
+      type: "sound_cue",
+      duration: 5000,
+      soundCueName: "Bell",
+      soundCueSrc: "/sounds/bell.mp3",
+      volume: 0.8,
+      startOffset: 0,
+    },
+    {
+      id: "event-2",
+      type: "ambient_sound",
+      duration: 60000,
+      ambientSoundName: "Forest Rain",
+      ambientSoundSrc: "/sounds/forest-rain.mp3",
+      volume: 0.5,
+      startOffset: 0,
+    },
+    {
+      id: "event-3",
+      type: "guided_meditation",
+      duration: 120000,
+      script: "Focus on your breath. Inhale deeply, exhale slowly.",
+      voice: "standard",
+      startOffset: 0,
+    },
+    {
+      id: "event-4",
+      type: "sound_cue",
+      duration: 5000,
+      soundCueName: "Gong",
+      soundCueSrc: "/sounds/gong.mp3",
+      volume: 0.7,
+      startOffset: 0,
+    },
+    {
+      id: "event-5",
+      type: "ambient_sound",
+      duration: 30000,
+      ambientSoundName: "Ocean Waves",
+      ambientSoundSrc: "/sounds/ocean-waves.mp3",
+      volume: 0.6,
+      startOffset: 0,
+    },
+    {
+      id: "event-6",
+      type: "guided_meditation",
+      duration: 90000,
+      script: "Feel your body relax. Let go of any tension.",
+      voice: "standard",
+      startOffset: 0,
+    },
+    {
+      id: "event-7",
+      type: "sound_cue",
+      duration: 5000,
+      soundCueName: "Chimes",
+      soundCueSrc: "/sounds/chimes.mp3",
+      volume: 0.9,
+      startOffset: 0,
+    },
+  ],
 }
