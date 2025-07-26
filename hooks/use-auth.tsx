@@ -1,83 +1,43 @@
 "use client"
 
-import { useState, useEffect, createContext, useContext, type ReactNode } from "react"
-import type { Session } from "@supabase/supabase-js"
-import { supabase } from "@/lib/supabase"
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { supabase } from "@/lib/supabase" // Correct import for supabase client
+import type { User } from "@supabase/supabase-js"
 
 interface AuthContextType {
-  session: Session | null
-  user: any | null
-  isLoading: boolean
-  signOut: () => Promise<void>
+  user: User | null
+  loading: boolean
 }
 
-const AuthContext = createContext<AuthContextType>({
-  session: null,
-  user: null,
-  isLoading: true,
-  signOut: async () => console.warn("signOut function not ready yet, check if AuthProvider is properly initialized"),
-})
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function useAuth(): AuthContextType {
-  return useContext(AuthContext)
-}
-
-interface AuthProviderProps {
-  children: ReactNode
-}
-
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [session, setSession] = useState<Session | null>(null)
-  const [user, setUser] = useState<any | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const getInitialSession = async () => {
-      setIsLoading(true)
-      try {
-        const {
-          data: { session: initialSession },
-        } = await supabase.auth.getSession()
-
-        setSession(initialSession)
-        setUser(initialSession?.user || null)
-      } catch (error) {
-        console.error("Error getting initial session:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    getInitialSession()
-
-    // Set up listener for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      console.log("Auth state change event:", event)
-      setSession(currentSession)
-      setUser(currentSession?.user || null)
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null)
+      setLoading(false)
     })
 
-    // Clean up subscription
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null)
+      setLoading(false)
+    })
+
     return () => {
-      authListener?.subscription.unsubscribe()
+      authListener.subscription.unsubscribe()
     }
   }, [])
 
-  const signOut = async () => {
-    try {
-      await supabase.auth.signOut()
-      console.log("Signed out successfully")
-    } catch (error) {
-      console.error("Error signing out:", error)
-    }
-  }
+  return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>
+}
 
-  const value: AuthContextType = {
-    session,
-    user,
-    isLoading,
-    signOut,
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider")
   }
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return context
 }

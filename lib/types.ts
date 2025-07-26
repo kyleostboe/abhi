@@ -18,13 +18,10 @@ export interface SoundCue {
 
 export interface TimelineEvent {
   id: string
-  type: "instruction_sound" | "recorded_voice"
-  startTime: number
-  instructionText?: string
-  soundCueId?: string
-  soundCueName?: string
-  soundCueSrc?: string
-  recordedAudioUrl?: string
-  recordedInstructionLabel?: string
-  duration?: number // Duration of the recorded audio in seconds
+  type: "instruction" | "sound" | "ambient"
+  time: number // Time in milliseconds
+  text?: string // For instruction events
+  soundCueName?: string // For sound and ambient events
+  soundCueSrc?: string // For sound and ambient events
+  audioSrc?: string // For recorded instruction audio
 }

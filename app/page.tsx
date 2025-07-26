@@ -1,7 +1,7 @@
 "use client"
 
+import { useState, useEffect, useCallback, useRef } from "react"
 import type React from "react"
-import { useState, useRef, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
@@ -21,8 +21,8 @@ import {
   MicIcon,
   DownloadIcon,
 } from "lucide-react"
-import type { MeditationTimeline, TimelineEvent, SoundCue } from "@/lib/types"
-import { generateEncodedAudio } from "@/lib/audio-utils"
+import type { TimelineEvent as LegacyTimelineEvent, SoundCue } from "@/lib/types"
+import { generateEncodedAudio as generateLegacyEncodedAudio } from "@/lib/audio-utils"
 import { ambientSounds as predefinedAmbientSounds } from "@/app/labs/lib/meditation-data"
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
@@ -35,8 +35,10 @@ import { useAuth } from "@/hooks/use-auth"
 import { INSTRUCTIONS_LIBRARY, SOUND_CUES_LIBRARY, generateSyntheticSound } from "@/lib/meditation-data"
 import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFileSize } from "@/lib/utils"
 import { getAudioContext, bufferToWav } from "@/lib/audio-utils" // Import from audio-utils
-import type { Instruction, SoundCue as LegacySoundCue } from "@/lib/types" // Import types
+import type { Instruction, SoundCue as LegacySoundCue, TimelineEvent } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
+import { generateEncodedAudio, transcribeAudio } from "@/lib/audio-utils"
+import { ambientSounds } from "@/app/labs/lib/meditation-data" // Corrected import path
 
 interface TimelineItem {
   id: string
@@ -50,7 +52,7 @@ export default function HomePage() {
   const [activeMode, setActiveMode] = useState<"adjuster" | "labs">("adjuster")
   const { session, user } = useAuth()
   const [meditationLength, setMeditationLength] = useState<number[]>([10])
-  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
+  const [timelineEvents, setTimelineEvents] = useState<LegacyTimelineEvent[]>([])
   const [isRecording, setIsRecording] = useState(false)
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
   const [audioChunks, setAudioChunks] = useState<Blob[]>([])
@@ -66,7 +68,7 @@ export default function HomePage() {
   const [selectedAmbientSound, setSelectedAmbientSound] = useState<string | null>(null)
   const [ambientVolume, setAmbientVolume] = useState<number[]>([50])
 
-  const ambientSounds: SoundCue[] = predefinedAmbientSounds.map((sound) => ({
+  const ambientSoundsList: SoundCue[] = predefinedAmbientSounds.map((sound) => ({
     name: sound.name,
     src: sound.src,
   }))
@@ -107,10 +109,207 @@ export default function HomePage() {
     setSelectedAmbientSound(null)
   }
 
-  const [timeline, setTimeline] = useState<MeditationTimeline>({ events: [] })
+  const [timeline, setTimeline] = useState<TimelineEvent[]>([])
+  const [newInstructionText, setNewInstructionText] = useState('')
+  const [newInstructionTime, setNewInstructionTime] = useState(0)
+  const [newSoundCueName, setNewSoundCueName] = useState('')
+  const [newSoundCueSrc, setNewSoundCueSrc] = useState('')
+  const [newSoundCueTime, setNewSoundCueTime] = useState(0)
+  const [encodedAudioUrl, setEncodedAudioUrl] = useState<string | null>(null)
+  const [recordedAudioBlob, setRecordedAudioBlob] = useState<Blob | null>(null)
+  const [transcribedText, setTranscribedText] = useState('')
+  const [editingEventIdNew, setEditingEventIdNew] = useState<string | null>(null)
+  const [editInstructionText, setEditInstructionText] = useState('')
+  const [editInstructionTime, setEditInstructionTime] = useState(0)
+  const [editSoundCueName, setEditSoundCueName] = useState('')
+  const [editSoundCueSrc, setEditSoundCueSrc] = useState('')
+  const [editSoundCueTime, setEditSoundCueTime] = useState(0)
+  const [editAmbientSoundName, setEditAmbientSoundName] = useState('')
+  const [editAmbientSoundSrc, setEditAmbientSoundSrc] = useState('')
+  const [editAmbientSoundTime, setEditAmbientSoundTime] = useState(0)
+  const [ambientSoundTime, setAmbientSoundTime] = useState(0)
+
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const mediaRecorderRefNew = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<BlobPart[]>([])
+
+  const addInstruction = useCallback(() => {
+    if (newInstructionText && newInstructionTime >= 0) {
+      setTimeline((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          type: 'instruction',
+          time: newInstructionTime,
+          text: newInstructionText,
+        },
+      ].sort((a, b) => a.time - b.time))
+      setNewInstructionText('')
+      setNewInstructionTime(0)
+    }
+  }, [newInstructionText, newInstructionTime])
+
+  const addSoundCue = useCallback(() => {
+    if (newSoundCueName && newSoundCueSrc && newSoundCueTime >= 0) {
+      setTimeline((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          type: 'sound',
+          time: newSoundCueTime,
+          soundCueName: newSoundCueName,
+          soundCueSrc: newSoundCueSrc,
+        },
+      ].sort((a, b) => a.time - b.time))
+      setNewSoundCueName('')
+      setNewSoundCueSrc('')
+      setNewSoundCueTime(0)
+    }
+  }, [newSoundCueName, newSoundCueSrc, newSoundCueTime])
+
+  const addAmbientSound = useCallback(() => {
+    if (selectedAmbientSound && ambientSoundTime >= 0) {
+      const ambient = ambientSounds.find(s => s.name === selectedAmbientSound)
+      if (ambient) {
+        setTimeline((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            type: 'ambient',
+            time: ambientSoundTime,
+            soundCueName: ambient.name,
+            soundCueSrc: ambient.src,
+          },
+        ].sort((a, b) => a.time - b.time))
+        setSelectedAmbientSound(null)
+        setAmbientSoundTime(0)
+      }
+    }
+  }, [selectedAmbientSound, ambientSoundTime])
+
+  const removeEvent = useCallback((id: string) => {
+    setTimeline((prev) => prev.filter((event) => event.id !== id))
+  }, [])
+
+  const startEditing = useCallback((event: TimelineEvent) => {
+    setEditingEventIdNew(event.id)
+    if (event.type === 'instruction') {
+      setEditInstructionText(event.text || '')
+      setEditInstructionTime(event.time)
+    } else if (event.type === 'sound') {
+      setEditSoundCueName(event.soundCueName || '')
+      setEditSoundCueSrc(event.soundCueSrc || '')
+      setEditSoundCueTime(event.time)
+    } else if (event.type === 'ambient') {
+      setEditAmbientSoundName(event.soundCueName || '')
+      setEditAmbientSoundSrc(event.soundCueSrc || '')
+      setEditAmbientSoundTime(event.time)
+    }
+  }, [])
+
+  const saveEditing = useCallback(() => {
+    setTimeline((prev) =>
+      prev.map((event) => {
+        if (event.id === editingEventIdNew) {
+          if (event.type === 'instruction') {
+            return { ...event, text: editInstructionText, time: editInstructionTime }
+          } else if (event.type === 'sound') {
+            return { ...event, soundCueName: editSoundCueName, soundCueSrc: editSoundCueSrc, time: editSoundCueTime }
+          } else if (event.type === 'ambient') {
+            return { ...event, soundCueName: editAmbientSoundName, soundCueSrc: editAmbientSoundSrc, time: editAmbientSoundTime }
+          }
+        }
+        return event
+      }).sort((a, b) => a.time - b.time)
+    )
+    setEditingEventIdNew(null)
+  }, [editingEventIdNew, editInstructionText, editInstructionTime, editSoundCueName, editSoundCueSrc, editSoundCueTime, editAmbientSoundName, editAmbientSoundSrc, editAmbientSoundTime])
+
+  const cancelEditing = useCallback(() => {
+    setEditingEventIdNew(null)
+  }, [])
+
+  const handleGenerateAudio = useCallback(async () => {
+    try {
+      const blob = await generateEncodedAudio(timeline)
+      const url = URL.createObjectURL(blob)
+      setEncodedAudioUrl(url)
+      if (audioRef.current) {
+        audioRef.current.src = url
+      }
+    } catch (error) {
+      console.error('Error generating audio:', error)
+    }
+  }, [timeline])
+
+  const handleDownloadAudio = useCallback(() => {
+    if (encodedAudioUrl) {
+      const a = document.createElement('a')
+      a.href = encodedAudioUrl
+      a.download = 'meditation_audio.mp3'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    }
+  }, [encodedAudioUrl])
+
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      mediaRecorderRefNew.current = new MediaRecorder(stream)
+      audioChunksRef.current = []
+
+      mediaRecorderRefNew.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data)
+      }
+
+      mediaRecorderRefNew.current.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        setRecordedAudioBlob(audioBlob)
+        setIsRecording(false)
+      }
+
+      mediaRecorderRefNew.current.start()
+      setIsRecording(true)
+    } catch (err) {
+      console.error('Error accessing microphone:', err)
+      alert('Could not access microphone. Please ensure it is connected and permissions are granted.')
+    }
+  }, [])
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRefNew.current && mediaRecorderRefNew.current.state === 'recording') {
+      mediaRecorderRefNew.current.stop()
+    }
+  }, [])
+
+  const handleTranscribe = useCallback(async () => {
+    if (recordedAudioBlob) {
+      const text = await transcribeAudio(recordedAudioBlob)
+      setTranscribedText(text)
+    }
+  }, [recordedAudioBlob])
+
+  const addRecordedInstructionToTimeline = useCallback(() => {
+    if (transcribedText && recordedAudioBlob) {
+      setTimeline((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          type: 'instruction',
+          time: newInstructionTime, // Use the current newInstructionTime for placement
+          text: transcribedText,
+          audioSrc: URL.createObjectURL(recordedAudioBlob), // Store the recorded audio blob URL
+        },
+      ].sort((a, b) => a.time - b.time))
+      setTranscribedText('')
+      setRecordedAudioBlob(null)
+      setNewInstructionTime(0) // Reset time after adding
+    }
+  }, [transcribedText, recordedAudioBlob, newInstructionTime])
 
   const addInstructionToTimeline = (instruction: string, audioSrc: string | null = null) => {
-    const newEvent: TimelineEvent = {
+    const newEvent: LegacyTimelineEvent = {
       id: Date.now().toString(),
       time: 0, // Will be set by user later
       instruction,
@@ -118,7 +317,7 @@ export default function HomePage() {
       soundCueName: null,
       soundCueSrc: null,
     }
-    setTimeline((prev) => ({
+    setTimelineEvents((prev) => ({
       ...prev,
       events: [...prev.events, newEvent].sort((a, b) => a.time - b.time),
     }))
@@ -198,7 +397,7 @@ export default function HomePage() {
     }
   }
 
-  const handleEditEvent = (event: TimelineEvent) => {
+  const handleEditEvent = (event: LegacyTimelineEvent) => {
     setEditingEventId(event.id)
     setEditingInstructionText(event.instruction)
     setEditingSoundCue(event.soundCueName || "")
@@ -206,7 +405,7 @@ export default function HomePage() {
   }
 
   const handleSaveEdit = () => {
-    setTimeline((prev) => ({
+    setTimelineEvents((prev) => ({
       ...prev,
       events: prev.events
         .map((event) =>
@@ -217,7 +416,7 @@ export default function HomePage() {
                 time: editingTime,
                 soundCueName: editingSoundCue || null,
                 soundCueSrc: editingSoundCue
-                  ? ambientSounds.find((s) => s.name === editingSoundCue)?.src || null
+                  ? ambientSoundsList.find((s) => s.name === editingSoundCue)?.src || null
                   : null,
               }
             : event,
@@ -232,7 +431,7 @@ export default function HomePage() {
   }
 
   const handleRemoveEvent = (id: string) => {
-    setTimeline((prev) => ({
+    setTimelineEvents((prev) => ({
       ...prev,
       events: prev.events.filter((event) => event.id !== id),
     }))
@@ -242,7 +441,7 @@ export default function HomePage() {
   const handleSimulateEncoding = async () => {
     toast({ title: "Simulating Encoding", description: "Generating dummy encoded audio..." })
     try {
-      const dummyAudioBlob = await generateEncodedAudio(timeline)
+      const dummyAudioBlob = await generateLegacyEncodedAudio(timeline)
       const url = URL.createObjectURL(dummyAudioBlob)
       const a = document.createElement("a")
       a.href = url
@@ -398,12 +597,12 @@ export default function HomePage() {
   const [generationStep, setGenerationStep] = useState<string>("")
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
 
-  const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null)
+  const [audioRefLabs, setAudioRefLabs] = useState<HTMLAudioElement | null>(null)
   const [playbackIntervalRef, setPlaybackIntervalRef] = useState<NodeJS.Timeout | null>(null)
   const [currentItemStartTimeRef, setCurrentItemStartTimeRef] = useState<number>(0)
   const [volume, setVolume] = useState<number>(70)
 
-  const totalDuration = timeline.events.reduce((sum, item) => sum + item.time, 0)
+  const totalDuration = timeline.reduce((sum, item) => sum + item.time, 0)
 
   const addTimelineItem = useCallback((item: Instruction | LegacySoundCue, type: "instruction" | "sound") => {
     const newItem: TimelineItem = {
@@ -454,7 +653,7 @@ export default function HomePage() {
           })
         } else {
           // Handle actual audio files
-          if (audioRef) {
+          if (audioRefLabs) {
             const labsAudioRef = new Audio(soundCue.src)
             labsAudioRef.volume = volume / 100
             await labsAudioRef.play().catch((e) => console.error("Error playing audio:", e))
@@ -476,7 +675,7 @@ export default function HomePage() {
         })
       }
     },
-    [volume, audioRef],
+    [volume, audioRefLabs],
   )
 
   const startPlayback = useCallback(() => {
@@ -511,10 +710,10 @@ export default function HomePage() {
 
   // Update audio volume if audioRef exists
   useEffect(() => {
-    if (audioRef) {
-      audioRef.volume = volume / 100
+    if (audioRefLabs) {
+      audioRefLabs.volume = volume / 100
     }
-  }, [volume, audioRef])
+  }, [volume, audioRefLabs])
 
   const handleSaveTimeline = () => {
     // Placeholder for save functionality
@@ -1014,7 +1213,7 @@ export default function HomePage() {
     label: string
   } | null>(null)
   const [recordedBlobs, setRecordedBlobs] = useState<Blob[]>([])
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const mediaRecorderRefLabs = useRef<MediaRecorder | null>(null)
   const labsAudioRef = useRef<HTMLAudioElement | null>(null)
   const instructionCategories = Array.from(new Set(INSTRUCTIONS_LIBRARY.map((instr) => instr.category)))
   useEffect(() => {
@@ -1030,14 +1229,14 @@ export default function HomePage() {
         labsAudioRef.current.src = ""
         labsAudioRef.current = null
       }
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-        mediaRecorderRef.current.stop()
+      if (mediaRecorderRefLabs.current && mediaRecorderRefLabs.current.state === "recording") {
+        mediaRecorderRefLabs.current.stop()
       }
     }
   }, [])
 
   // Helper function to add events to timelineEvents without automatic spacing
-  const addEventToTimeline = useCallback((newEvent: TimelineEvent) => {
+  const addEventToTimeline = useCallback((newEvent: LegacyTimelineEvent) => {
     setTimelineEvents((prevEvents) => {
       const updatedEvents = [...prevEvents, newEvent]
       // Sort by current startTime to maintain chronological order for display
@@ -1067,7 +1266,7 @@ export default function HomePage() {
     const maxExistingTime = timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.time)) : 0
     const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 33 : 0
 
-    const newEvent: TimelineEvent = {
+    const newEvent: LegacyTimelineEvent = {
       id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       time: newStartTime, // Now calculated
       instruction: instructionTextToAdd,
@@ -1084,7 +1283,7 @@ export default function HomePage() {
     })
   }
 
-  const startRecording = async () => {
+  const startRecordingLabs = async () => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -1103,16 +1302,16 @@ export default function HomePage() {
           return
         }
 
-        mediaRecorderRef.current = new MediaRecorder(stream, { mimeType })
+        mediaRecorderRefLabs.current = new MediaRecorder(stream, { mimeType })
         const blobs: Blob[] = []
 
-        mediaRecorderRef.current.ondataavailable = (event) => {
+        mediaRecorderRefLabs.current.ondataavailable = (event) => {
           if (event.data && event.data.size > 0) {
             blobs.push(event.data)
           }
         }
 
-        mediaRecorderRef.current.onstop = async () => {
+        mediaRecorderRefLabs.current.onstop = async () => {
           const blob = new Blob(blobs, { type: mimeType })
           const url = URL.createObjectURL(blob)
 
@@ -1147,12 +1346,12 @@ export default function HomePage() {
           }
 
           // Stop all tracks to release microphone
-          if (mediaRecorderRef.current?.stream) {
-            mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop())
+          if (mediaRecorderRefLabs.current?.stream) {
+            mediaRecorderRefLabs.current.stream.getTracks().forEach((track) => track.stop())
           }
         }
 
-        mediaRecorderRef.current.start()
+        mediaRecorderRefLabs.current.start()
         setIsRecording(true)
         setReadyToAddToTimelineRecording(null) // Clear previous recording
         setRecordedBlobs([])
@@ -1169,9 +1368,9 @@ export default function HomePage() {
     }
   }
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop()
+  const stopRecordingLabs = () => {
+    if (mediaRecorderRefLabs.current && mediaRecorderRefLabs.current.state === "recording") {
+      mediaRecorderRefLabs.current.stop()
       setIsRecording(false)
     }
   }
@@ -2000,7 +2199,7 @@ export default function HomePage() {
                           <SelectValue placeholder="Select an ambient sound" />
                         </SelectTrigger>
                         <SelectContent>
-                          {ambientSounds.map((sound) => (
+                          {ambientSoundsList.map((sound) => (
                             <SelectItem key={sound.name} value={sound.src}>
                               {sound.name}
                             </SelectItem>
@@ -2020,14 +2219,14 @@ export default function HomePage() {
                     <CardContent className="space-y-4">
                       <div className="flex gap-2">
                         <Button
-                          onClick={startRecording}
+                          onClick={startRecordingLabs}
                           disabled={isRecording}
                           className="flex-1"
                           variant={isRecording ? "destructive" : "default"}
                         >
                           <MicIcon className="mr-2 h-4 w-4" /> {isRecording ? "Recording..." : "Start Recording"}
                         </Button>
-                        <Button onClick={stopRecording} disabled={!isRecording} className="flex-1">
+                        <Button onClick={stopRecordingLabs} disabled={!isRecording} className="flex-1">
                           <StopIcon className="mr-2 h-4 w-4" /> Stop Recording
                         </Button>
                       </div>
@@ -2113,7 +2312,7 @@ export default function HomePage() {
                                         <SelectValue placeholder="Select sound cue (optional)" />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        {ambientSounds.map((sound) => (
+                                        {ambientSoundsList.map((sound) => (
                                           <SelectItem key={sound.name} value={sound.name}>
                                             {sound.name}
                                           </SelectItem>
@@ -2160,10 +2359,5 @@ export default function HomePage() {
                   </Card>
                 </div>
               </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  )
+            )\
 }

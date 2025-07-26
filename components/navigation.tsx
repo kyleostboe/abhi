@@ -2,80 +2,42 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useAuth } from "@/hooks/use-auth"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { HomeIcon, FlaskConicalIcon, BookOpenIcon, HandHeartIcon, UserIcon } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth" // Ensure this import is correct
 
 export function Navigation() {
   const pathname = usePathname()
-  const { session, signOut } = useAuth()
+  const { user } = useAuth() // Use the useAuth hook
+
+  const navItems = [
+    { href: "/", icon: HomeIcon, label: "Home" },
+    { href: "/labs", icon: FlaskConicalIcon, label: "Labs" },
+    { href: "/contact", icon: BookOpenIcon, label: "Contact" },
+    { href: "/donate", icon: HandHeartIcon, label: "Donate" },
+    { href: user ? "/profile" : "/login", icon: UserIcon, label: user ? "Profile" : "Login" }, // Dynamic link based on auth
+  ]
 
   return (
-    <nav className="flex justify-center py-4 mb-8">
-      <ul className="flex space-x-4 bg-white/70 backdrop-blur-md px-6 py-3 dark:bg-gray-800/70 dark:shadow-white/10 rounded-md shadow-2xl">
-        <li>
+    <nav className="flex flex-col items-center space-y-2 p-4 bg-gray-100 dark:bg-gray-800 h-full border-r border-gray-200 dark:border-gray-700">
+      {navItems.map((item) => {
+        const isActive = pathname === item.href
+        return (
           <Link
-            href="/"
-            className={`font-medium hover:underline ${pathname === "/" ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "flex items-center justify-center w-full p-3 rounded-lg transition-colors",
+              isActive
+                ? "bg-gray-600 text-white" // Changed from green-600 to gray-600
+                : "text-gray-700 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700",
+            )}
           >
-            Home
+            <item.icon className="h-6 w-6" />
+            <span className="sr-only">{item.label}</span>
           </Link>
-        </li>
-        <li>
-          <Link
-            href="/labs"
-            className={`font-medium hover:underline ${pathname === "/labs" ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}
-          >
-            Labs
-          </Link>
-        </li>
-        <li>
-          <Link
-            href="/contact"
-            className={`font-medium hover:underline ${pathname === "/contact" ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}
-          >
-            Contact
-          </Link>
-        </li>
-        <li>
-          <Link
-            href="/donate"
-            className={`font-medium hover:underline ${pathname === "/donate" ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}
-          >
-            Donate
-          </Link>
-        </li>
-        {session ? (
-          <>
-            <li>
-              <Link
-                href="/profile"
-                className={`flex items-center font-medium hover:underline ${pathname === "/profile" ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}
-              >
-                <Avatar className="mr-2 h-6 w-6">
-                  <AvatarImage src="/placeholder-user.jpg" alt="User Avatar" />
-                  <AvatarFallback>{session.user.email?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
-                </Avatar>
-                Profile
-              </Link>
-            </li>
-            <li>
-              <Button variant="outline" size="sm" onClick={() => signOut()}>
-                Sign Out
-              </Button>
-            </li>
-          </>
-        ) : (
-          <li>
-            <Link
-              href="/login"
-              className={`font-medium hover:underline ${pathname === "/login" ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}
-            >
-              Sign In
-            </Link>
-          </li>
-        )}
-      </ul>
+        )
+      })}
     </nav>
   )
 }

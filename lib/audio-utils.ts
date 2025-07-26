@@ -1,6 +1,6 @@
 import { NOTE_FREQUENCIES } from "./meditation-data"
 import { sleep, formatFileSize } from "./utils"
-import type { MeditationTimeline } from "@/lib/types"
+import type { TimelineEvent } from "@/lib/types"
 
 let audioContext: AudioContext | null = null
 
@@ -190,8 +190,54 @@ export function formatTime(milliseconds: number): string {
   return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
 }
 
-// Placeholder function for generateEncodedAudio
-export const generateEncodedAudio = async (timeline: MeditationTimeline): Promise<Blob> => {
-  console.warn("generateEncodedAudio is a placeholder function.")
-  return new Blob(["dummy audio data"], { type: "audio/mp3" })
+export function generateEncodedAudio(timeline: TimelineEvent[]): Promise<Blob> {
+  console.log("Simulating audio encoding for timeline:", timeline)
+  // In a real application, this would involve complex audio processing,
+  // e.g., using Web Audio API or a server-side audio library.
+  // For now, we return a dummy blob.
+  const dummyAudioData = new Uint8Array([0x49, 0x44, 0x33, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]) // A very small, invalid MP3 header
+  const dummyBlob = new Blob([dummyAudioData], { type: "audio/mpeg" })
+  return Promise.resolve(dummyBlob)
+}
+
+export async function transcribeAudio(audioBlob: Blob): Promise<string> {
+  // This is a placeholder for actual transcription logic.
+  // In a real app, you'd send this blob to a speech-to-text API (e.g., Google Cloud Speech-to-Text, OpenAI Whisper).
+  console.log("Simulating audio transcription...")
+  await new Promise((resolve) => setTimeout(resolve, 2000)) // Simulate network delay
+  return `[Transcription of ${audioBlob.size} bytes of audio]`
+}
+
+export async function recordAudio(): Promise<Blob | null> {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    console.error("getUserMedia not supported on your browser!")
+    return null
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    const mediaRecorder = new MediaRecorder(stream)
+    const audioChunks: BlobPart[] = []
+
+    mediaRecorder.ondataavailable = (event) => {
+      audioChunks.push(event.data)
+    }
+
+    return new Promise((resolve) => {
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: "audio/webm" })
+        resolve(audioBlob)
+      }
+      mediaRecorder.start()
+      // Stop recording after a short period for demonstration
+      setTimeout(() => {
+        if (mediaRecorder.state === "recording") {
+          mediaRecorder.stop()
+        }
+      }, 5000) // Record for 5 seconds
+    })
+  } catch (err) {
+    console.error("Error accessing microphone:", err)
+    return null
+  }
 }

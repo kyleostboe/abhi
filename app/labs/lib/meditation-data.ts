@@ -655,3 +655,27 @@ export async function generateSyntheticSound(
     throw error
   }
 }
+
+export const ambientSounds = [
+  { name: "Rain", src: "/sounds/rain.mp3" },
+  { name: "Forest", src: "/sounds/forest.mp3" },
+  { name: "Ocean Waves", src: "/sounds/ocean-waves.mp3" },
+  { name: "Thunderstorm", src: "/sounds/thunderstorm.mp3" },
+  { name: "Mountain Stream", src: "/sounds/mountain-stream.mp3" },
+]
+
+// Placeholder for other meditation data if any
+export const meditations = [
+  {
+    id: "1",
+    title: "Morning Calm",
+    description: "A short meditation to start your day with peace.",
+    duration: 600000, // 10 minutes
+    timeline: [
+      { type: "instruction", time: 0, text: "Welcome to your morning meditation." },
+      { type: "sound", time: 5000, soundCueName: "Bell", soundCueSrc: "/sounds/bell.mp3" },
+      { type: "instruction", time: 10000, text: "Focus on your breath." },
+      { type: "ambient", time: 0, soundCueName: "Rain", soundCueSrc: "/sounds/rain.mp3" },
+    ],
+  },
+]
