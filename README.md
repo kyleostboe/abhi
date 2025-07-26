@@ -65,6 +65,10 @@ NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
 \`\`\`
 
+If deploying on Vercel, add these variables under **Project Settings → Environment Variables**. Authentication and saving meditations will not work until they are configured.
+
+The `scripts/` directory contains SQL files that set up the Supabase tables used by the app. Execute them in the Supabase SQL editor or CLI before running the application.
+
 ## Project Structure
 
 -   `app/`: Next.js App Router pages and layouts.
