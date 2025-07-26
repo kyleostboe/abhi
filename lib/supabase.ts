@@ -1,37 +1,28 @@
-import { createClient as createSupabaseClient } from "@supabase/supabase-js"
+import { createClient } from "@supabase/supabase-js"
 
-let supabaseInstance: ReturnType<typeof createSupabaseClient> | null = null
+// Ensure these environment variables are set in your Vercel project settings
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-export function createClient() {
-  if (supabaseInstance) {
-    return supabaseInstance
-  }
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error("Supabase URL or Anon Key is missing. Please check your environment variables.")
-    // Return a mock client to prevent crashes during development if env vars are missing.
-    // In a production environment, you might want to throw an error or handle this more gracefully.
-    return {
-      auth: {
-        getSession: async () => ({ data: { session: null }, error: new Error("Supabase client not configured") }),
-        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-        signInWithPassword: async () => ({ error: new Error("Supabase client not configured") }),
-        signUp: async () => ({ error: new Error("Supabase client not configured") }),
-        signOut: async () => ({ error: new Error("Supabase client not configured") }),
-      },
-      from: () => ({
-        insert: () => ({ select: () => ({ data: null, error: new Error("Supabase client not configured") }) }),
-        select: () => ({ eq: () => ({ data: null, error: new Error("Supabase client not configured") }) }),
-      }),
-    } as any // Cast to any to satisfy type checking for the mock
-  }
-
-  supabaseInstance = createSupabaseClient(supabaseUrl, supabaseAnonKey)
-  return supabaseInstance
+if (!supabaseUrl) {
+  throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL environment variable.")
 }
 
-// Export the client instance directly for convenience, ensuring it's always the singleton.
-export const supabase = createClient()
+if (!supabaseAnonKey) {
+  throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable.")
+}
+
+// Client-side Supabase client (singleton pattern)
+let supabaseClient: ReturnType<typeof createClient> | null = null
+
+export function getSupabaseClient() {
+  if (!supabaseClient) {
+    supabaseClient = createClient(supabaseUrl!, supabaseAnonKey!)
+  }
+  return supabaseClient
+}
+
+// Server-side Supabase client (can be created per request if needed, or also a singleton for server actions)
+// For server actions, it's often better to create a new client per request to avoid state issues,
+// but for simplicity in a basic setup, a singleton can also work if managed carefully.
+// For this project, we'll stick to a simple client-side singleton for now.

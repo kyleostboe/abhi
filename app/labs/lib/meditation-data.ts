@@ -517,11 +517,21 @@ export const SOUND_CUES_LIBRARY: SoundCue[] = [
     releaseDuration: 1.0, // 1000ms release
   },
   // Additional Sound Cues from updates
-  { name: "Bell", src: "/sounds/bell.mp3" },
-  { name: "Chime", src: "/sounds/chime.mp3" },
-  { name: "Gong", src: "/sounds/gong.mp3" },
-  { name: "Singing Bowl", src: "/sounds/singing-bowl.mp3" },
-  { name: "Synthetic Tone", src: "synthetic:sine" }, // Example of a synthetic sound
+  {
+    name: "Bell",
+    src: "/sounds/bell.mp3",
+    description: "A gentle bell chime",
+  },
+  {
+    name: "Chime",
+    src: "/sounds/chime.mp3",
+    description: "A soft, resonant chime",
+  },
+  {
+    name: "Gong",
+    src: "/sounds/gong.mp3",
+    description: "A deep, resonating gong",
+  },
 ]
 
 export const NOTE_FREQUENCIES = {
@@ -692,25 +702,135 @@ export async function generateSyntheticSound(
 }
 
 export const ambientSounds = [
-  { name: "Rain", src: "/sounds/rain.mp3" },
-  { name: "Forest", src: "/sounds/forest.mp3" },
-  { name: "Ocean Waves", src: "/sounds/ocean-waves.mp3" },
-  { name: "Thunderstorm", src: "/sounds/thunderstorm.mp3" },
-  { name: "Mountain Stream", src: "/sounds/mountain-stream.mp3" },
-]
-
-// Placeholder for other meditation data if any
-export const meditations = [
   {
-    id: "1",
-    title: "Morning Calm",
-    description: "A short meditation to start your day with peace.",
-    duration: 600000, // 10 minutes
-    timeline: [
-      { type: "instruction", time: 0, text: "Welcome to your morning meditation." },
-      { type: "sound", time: 5000, soundCueName: "Bell", soundCueSrc: "/sounds/bell.mp3" },
-      { type: "instruction", time: 10000, text: "Focus on your breath." },
-      { type: "ambient", time: 0, soundCueName: "Rain", soundCueSrc: "/sounds/rain.mp3" },
-    ],
+    name: "Rain",
+    src: "/sounds/rain.mp3",
+    description: "Gentle rain falling",
+  },
+  {
+    name: "Forest",
+    src: "/sounds/forest.mp3",
+    description: "Sounds of a peaceful forest",
+  },
+  {
+    name: "Ocean",
+    src: "/sounds/ocean.mp3",
+    description: "Calming ocean waves",
+  },
+  {
+    name: "River",
+    src: "/sounds/river.mp3",
+    description: "Flowing river sounds",
+  },
+  {
+    name: "Wind",
+    src: "/sounds/wind.mp3",
+    description: "Soft wind blowing",
+  },
+  {
+    name: "Birds",
+    src: "/sounds/birds.mp3",
+    description: "Chirping birds in nature",
+  },
+  {
+    name: "Fireplace",
+    src: "/sounds/fireplace.mp3",
+    description: "Crackling fireplace",
+  },
+  {
+    name: "Thunderstorm",
+    src: "/sounds/thunderstorm.mp3",
+    description: "Distant thunder and rain",
+  },
+  {
+    name: "Mountain Stream",
+    src: "/sounds/mountain-stream.mp3",
+    description: "Clear mountain stream",
   },
 ]
+
+export interface TimelineEvent {
+  id: string
+  type: "instruction" | "sound_cue" | "ambient_sound"
+  timestamp: number // in milliseconds
+  text?: string // For instruction
+  soundCueName?: string // For sound_cue
+  soundCueSrc?: string // For sound_cue
+  ambientSoundName?: string // For ambient_sound
+  ambientSoundSrc?: string // For ambient_sound
+  ambientSoundVolume?: number // For ambient_sound
+}
+
+export interface MeditationData {
+  id: string
+  title: string
+  description: string
+  timeline: TimelineEvent[]
+}
+
+export const defaultMeditation: MeditationData = {
+  id: "default-meditation",
+  title: "Default Meditation",
+  description: "A simple meditation to get started.",
+  timeline: [
+    {
+      id: "instruction-1",
+      type: "instruction",
+      timestamp: 0,
+      text: "Welcome to your meditation. Find a comfortable position.",
+    },
+    {
+      id: "sound-cue-1",
+      type: "sound_cue",
+      timestamp: 5000,
+      soundCueName: "Bell",
+      soundCueSrc: "/sounds/bell.mp3",
+    },
+    {
+      id: "instruction-2",
+      type: "instruction",
+      timestamp: 10000,
+      text: "Close your eyes gently and take a deep breath.",
+    },
+    {
+      id: "ambient-sound-1",
+      type: "ambient_sound",
+      timestamp: 15000,
+      ambientSoundName: "Rain",
+      ambientSoundSrc: "/sounds/rain.mp3",
+      ambientSoundVolume: 0.5,
+    },
+    {
+      id: "instruction-3",
+      type: "instruction",
+      timestamp: 20000,
+      text: "Focus on your breath, feeling it enter and leave your body.",
+    },
+    {
+      id: "sound-cue-2",
+      type: "sound_cue",
+      timestamp: 30000,
+      soundCueName: "Chime",
+      soundCueSrc: "/sounds/chime.mp3",
+    },
+    {
+      id: "instruction-4",
+      type: "instruction",
+      timestamp: 40000,
+      text: "Let go of any tension in your body.",
+    },
+    {
+      id: "instruction-5",
+      type: "instruction",
+      timestamp: 50000,
+      text: "When you are ready, slowly open your eyes.",
+    },
+    {
+      id: "sound-cue-3",
+      type: "sound_cue",
+      timestamp: 55000,
+      soundCueName: "Gong",
+      soundCueSrc: "/sounds/gong.mp3",
+    },
+  ],
+}

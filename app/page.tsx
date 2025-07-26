@@ -10,17 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/components/ui/use-toast"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  PlusIcon,
-  TrashIcon,
-  EditIcon,
-  PlayIcon,
-  PauseIcon,
-  MonitorStopIcon as StopIcon,
-  MicIcon,
-  DownloadIcon,
-} from "lucide-react"
 import type { TimelineEvent } from "@/lib/types"
 import { generateEncodedAudio, getAudioContext, bufferToWav, transcribeAudio } from "@/lib/audio-utils"
 import {
@@ -39,6 +28,29 @@ import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/hooks/use-auth"
 import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFileSize } from "@/lib/utils"
 import { useMobile } from "@/hooks/use-mobile"
+import {
+  Loader2,
+  Play,
+  PauseIcon as PauseIconLabs,
+  StopCircle,
+  DownloadIcon as DownloadIconLabs,
+  Plus,
+  Mic,
+  Trash2,
+  VolumeX,
+} from "lucide-react"
+import { ambientSounds, soundCues, defaultMeditation } from "@/app/labs/lib/meditation-data"
+import { VisualTimeline } from "@/components/visual-timeline"
+
+// Define the SpeechRecognition types
+declare global {
+  interface Window {
+    SpeechRecognition: any
+    webkitSpeechRecognition: any
+    SpeechRecognitionEvent: any
+    SpeechRecognitionErrorEvent: any
+  }
+}
 
 export default function HomePage() {
   // State for mode toggle (Length Adjuster vs Labs)
@@ -1222,6 +1234,330 @@ export default function HomePage() {
     }
   }
 
+  // Labs Page State
+  const [labsMeditationTimeline, setLabsMeditationTimeline] = useState<TimelineEvent[]>(defaultMeditation.timeline)
+  const [labsCurrentInstruction, setLabsCurrentInstruction] = useState("")
+  const [labsCurrentTimestamp, setLabsCurrentTimestamp] = useState(0)
+  const [labsSelectedSoundCue, setLabsSelectedSoundCue] = useState<string | null>(null)
+  const [labsSelectedAmbientSound, setLabsSelectedAmbientSound] = useState<string | null>(null)
+  const [labsAmbientVolume, setLabsAmbientVolume] = useState<number[]>([0.5])
+  const [labsIsEncoding, setLabsIsEncoding] = useState(false)
+  const [labsIsRecording, setLabsIsRecording] = useState(false)
+  const [labsMediaRecorder, setLabsMediaRecorder] = useState<MediaRecorder | null>(null)
+  const [labsAudioChunks, setLabsAudioChunks] = useState<Blob[]>([])
+  const [labsTranscriptionMethod, setLabsTranscriptionMethod] = useState<"browser" | "manual">("manual")
+  const [labsTranscribedText, setLabsTranscribedText] = useState<string>("")
+  const [labsIsTranscribing, setLabsIsTranscribing] = useState(false)
+
+  const labsAudioRefs = useRef<{ [key: string]: HTMLAudioElement | null }>({})
+  const labsAmbientAudioRef = useRef<HTMLAudioElement | null>(null)
+  const labsRecognitionRef = useRef<SpeechRecognition | null>(null)
+
+  useEffect(() => {
+    // Initialize ambient sound audio element
+    if (!labsAmbientAudioRef.current) {
+      labsAmbientAudioRef.current = new Audio()
+      labsAmbientAudioRef.current.loop = true
+    }
+  }, [])
+
+  const labsPlaySound = useCallback((src: string, volume = 1) => {
+    const audio = new Audio(src)
+    audio.volume = volume
+    audio.play().catch((e) => console.error("Error playing sound:", e))
+  }, [])
+
+  const labsPlayAmbientSound = useCallback((src: string, volume: number) => {
+    if (labsAmbientAudioRef.current) {
+      labsAmbientAudioRef.current.src = src
+      labsAmbientAudioRef.current.volume = volume
+      labsAmbientAudioRef.current.play().catch((e) => console.error("Error playing ambient sound:", e))
+    }
+  }, [])
+
+  const labsStopAmbientSound = useCallback(() => {
+    if (labsAmbientAudioRef.current) {
+      labsAmbientAudioRef.current.pause()
+      labsAmbientAudioRef.current.currentTime = 0
+    }
+  }, [])
+
+  const labsUpdateTimelineEvent = useCallback((updatedEvent: TimelineEvent) => {
+    setLabsMeditationTimeline((prev) => prev.map((event) => (event.id === updatedEvent.id ? updatedEvent : event)))
+  }, [])
+
+  const labsAddInstruction = useCallback(() => {
+    if (labsCurrentInstruction.trim() === "") {
+      toast({
+        title: "Input Required",
+        description: "Please enter instruction text.",
+        variant: "destructive",
+      })
+      return
+    }
+    const newInstruction: TimelineEvent = {
+      id: `instruction-${Date.now()}`,
+      type: "instruction",
+      timestamp: labsCurrentTimestamp,
+      text: labsCurrentInstruction,
+    }
+    setLabsMeditationTimeline((prev) => [...prev, newInstruction].sort((a, b) => a.timestamp - b.timestamp))
+    setLabsCurrentInstruction("")
+    setLabsCurrentTimestamp(0)
+    toast({
+      title: "Instruction Added",
+      description: "Your instruction has been added to the timeline.",
+    })
+  }, [labsCurrentInstruction, labsCurrentTimestamp])
+
+  const labsAddSoundCue = useCallback(() => {
+    if (!labsSelectedSoundCue) {
+      toast({
+        title: "Selection Required",
+        description: "Please select a sound cue.",
+        variant: "destructive",
+      })
+      return
+    }
+    const sound = soundCues.find((s) => s.name === labsSelectedSoundCue)
+    if (sound) {
+      const newSoundCue: TimelineEvent = {
+        id: `sound-cue-${Date.now()}`,
+        type: "sound_cue",
+        timestamp: labsCurrentTimestamp,
+        soundCueName: sound.name,
+        soundCueSrc: sound.src,
+      }
+      setLabsMeditationTimeline((prev) => [...prev, newSoundCue].sort((a, b) => a.timestamp - b.timestamp))
+      setLabsSelectedSoundCue(null)
+      setLabsCurrentTimestamp(0)
+      toast({
+        title: "Sound Cue Added",
+        description: `${sound.name} has been added to the timeline.`,
+      })
+    }
+  }, [labsSelectedSoundCue, labsCurrentTimestamp])
+
+  const labsAddAmbientSound = useCallback(() => {
+    if (!labsSelectedAmbientSound) {
+      toast({
+        title: "Selection Required",
+        description: "Please select an ambient sound.",
+        variant: "destructive",
+      })
+      return
+    }
+    const sound = ambientSounds.find((s) => s.name === labsSelectedAmbientSound)
+    if (sound) {
+      const newAmbientSound: TimelineEvent = {
+        id: `ambient-sound-${Date.now()}`,
+        type: "ambient_sound",
+        timestamp: labsCurrentTimestamp,
+        ambientSoundName: sound.name,
+        ambientSoundSrc: sound.src,
+        ambientSoundVolume: labsAmbientVolume[0],
+      }
+      setLabsMeditationTimeline((prev) => [...prev, newAmbientSound].sort((a, b) => a.timestamp - b.timestamp))
+      setLabsSelectedAmbientSound(null)
+      setLabsCurrentTimestamp(0)
+      setLabsAmbientVolume([0.5])
+      toast({
+        title: "Ambient Sound Added",
+        description: `${sound.name} has been added to the timeline.`,
+      })
+    }
+  }, [labsSelectedAmbientSound, labsCurrentTimestamp, labsAmbientVolume])
+
+  const labsRemoveTimelineEvent = useCallback((id: string) => {
+    setLabsMeditationTimeline((prev) => prev.filter((event) => event.id !== id))
+    toast({
+      title: "Event Removed",
+      description: "The selected event has been removed from the timeline.",
+    })
+  }, [])
+
+  const labsHandleGenerateAudio = async () => {
+    setLabsIsEncoding(true)
+    try {
+      const instructions = labsMeditationTimeline
+        .filter((e) => e.type === "instruction" && e.text)
+        .map((e) => ({ timestamp: e.timestamp, text: e.text! }))
+      const cues = labsMeditationTimeline
+        .filter((e) => e.type === "sound_cue" && e.soundCueSrc)
+        .map((e) => ({ timestamp: e.timestamp, src: e.soundCueSrc! }))
+      const ambients = labsMeditationTimeline
+        .filter((e) => e.type === "ambient_sound" && e.ambientSoundSrc)
+        .map((e) => ({ timestamp: e.timestamp, src: e.ambientSoundSrc!, volume: e.ambientSoundVolume || 0.5 }))
+
+      const encodedAudioBlob = await generateEncodedAudio(instructions, cues, ambients)
+      const url = URL.createObjectURL(encodedAudioBlob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = "meditation_audio.mp3"
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast({
+        title: "Audio Generated",
+        description: "Your meditation audio has been successfully generated and downloaded.",
+      })
+    } catch (error) {
+      console.error("Error generating audio:", error)
+      toast({
+        title: "Audio Generation Failed",
+        description: "There was an error generating the audio. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLabsIsEncoding(false)
+    }
+  }
+
+  const labsStartRecording = async () => {
+    if (typeof window === "undefined") return
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream)
+      setLabsMediaRecorder(recorder)
+      setLabsAudioChunks([])
+      setLabsIsRecording(true)
+      setLabsTranscribedText("")
+      setLabsIsTranscribing(false)
+
+      recorder.ondataavailable = (event) => {
+        setLabsAudioChunks((prev) => [...prev, event.data])
+      }
+
+      recorder.onstop = async () => {
+        setLabsIsRecording(false)
+        const audioBlob = new Blob(labsAudioChunks, { type: "audio/webm" })
+        const audioUrl = URL.createObjectURL(audioBlob)
+
+        if (labsTranscriptionMethod === "browser") {
+          setLabsIsTranscribing(true)
+          try {
+            const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+            if (!SpeechRecognition) {
+              toast({
+                title: "Browser Transcription Not Supported",
+                description: "Your browser does not support the Web Speech API.",
+                variant: "destructive",
+              })
+              setLabsIsTranscribing(false)
+              return
+            }
+
+            const recognition = new SpeechRecognition()
+            recognition.continuous = false
+            recognition.interimResults = false
+            recognition.lang = "en-US"
+
+            recognition.onresult = (event: SpeechRecognitionEvent) => {
+              const transcript = Array.from(event.results)
+                .map((result) => result[0])
+                .map((result) => result.transcript)
+                .join("")
+              setLabsTranscribedText(transcript)
+              setLabsCurrentInstruction(transcript) // Set instruction text from transcription
+              toast({
+                title: "Transcription Complete",
+                description: "Voice instruction transcribed successfully.",
+              })
+            }
+
+            recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+              console.error("Speech recognition error:", event.error)
+              toast({
+                title: "Transcription Error",
+                description: `Error during transcription: ${event.error}`,
+                variant: "destructive",
+              })
+              setLabsIsTranscribing(false)
+            }
+
+            recognition.onend = () => {
+              setLabsIsTranscribing(false)
+            }
+
+            // Play audio and then start recognition
+            const audio = new Audio(audioUrl)
+            audio.onended = () => {
+              recognition.start()
+            }
+            audio.play()
+          } catch (error) {
+            console.error("Error during browser transcription setup:", error)
+            toast({
+              title: "Transcription Error",
+              description: "Could not start browser transcription.",
+              variant: "destructive",
+            })
+            setLabsIsTranscribing(false)
+          }
+        } else {
+          // Manual transcription method selected, just provide the audio URL
+          toast({
+            title: "Recording Complete",
+            description: "Voice recording finished. You can now manually add instructions.",
+          })
+        }
+        URL.revokeObjectURL(audioUrl)
+      }
+
+      recorder.start()
+      toast({
+        title: "Recording Started",
+        description: "Voice recording is now active.",
+      })
+    } catch (err) {
+      console.error("Error accessing microphone:", err)
+      toast({
+        title: "Microphone Access Denied",
+        description: "Please allow microphone access to record voice instructions.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const labsStopRecording = () => {
+    if (labsMediaRecorder && labsMediaRecorder.state !== "inactive") {
+      labsMediaRecorder.stop()
+      if (labsRecognitionRef.current) {
+        labsRecognitionRef.current.stop()
+      }
+      toast({
+        title: "Recording Stopped",
+        description: "Voice recording has ended.",
+      })
+    }
+  }
+
+  const labsAddRecordedInstructionToTimeline = useCallback(() => {
+    if (labsTranscribedText.trim() === "") {
+      toast({
+        title: "No Text to Add",
+        description: "Please record or manually enter text before adding.",
+        variant: "destructive",
+      })
+      return
+    }
+    const newInstruction: TimelineEvent = {
+      id: `recorded-instruction-${Date.now()}`,
+      type: "instruction",
+      timestamp: labsCurrentTimestamp,
+      text: labsTranscribedText,
+    }
+    setLabsMeditationTimeline((prev) => [...prev, newInstruction].sort((a, b) => a.timestamp - b.timestamp))
+    setLabsTranscribedText("")
+    setLabsCurrentTimestamp(0)
+    toast({
+      title: "Recorded Instruction Added",
+      description: "Your recorded voice instruction has been added to the timeline.",
+    })
+  }, [labsTranscribedText, labsCurrentTimestamp])
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-0">
       <Navigation />
@@ -1956,100 +2292,186 @@ export default function HomePage() {
                 <div className="lg:col-span-1 space-y-6">
                   <Card className="bg-white/70 backdrop-blur-md dark:bg-gray-800/70 dark:shadow-white/10 shadow-2xl">
                     <CardHeader>
-                      <CardTitle>Meditation Length</CardTitle>
+                      <CardTitle>Abhī Labs</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <Label htmlFor="meditation-length">Length: {meditationLength[0]} minutes</Label>
-                      <Slider
-                        id="meditation-length"
-                        min={1}
-                        max={60}
-                        step={1}
-                        value={meditationLength}
-                        onValueChange={setMeditationLength}
-                        className="w-full"
-                      />
-                      <Button className="w-full">Generate Timeline (Placeholder)</Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-white/70 backdrop-blur-md dark:bg-gray-800/70 dark:shadow-white/10 shadow-2xl">
-                    <CardHeader>
-                      <CardTitle>Ambient Sounds</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <Label htmlFor="ambient-volume">Volume: {ambientVolume[0]}%</Label>
-                      <Slider
-                        id="ambient-volume"
-                        min={0}
-                        max={100}
-                        step={1}
-                        value={ambientVolume}
-                        onValueChange={setAmbientVolume}
-                        className="w-full"
-                      />
-                      <Select onValueChange={handlePlayAmbientSound} value={selectedAmbientSound || ""}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an ambient sound" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ambientSoundsList.map((sound) => (
-                            <SelectItem key={sound.name} value={sound.name}>
-                              {sound.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button onClick={handleStopAmbientSound} disabled={!selectedAmbientSound} className="w-full">
-                        Stop Ambient Sound
+                      <div className="space-y-2">
+                        <Label htmlFor="instruction-text">Instruction Text</Label>
+                        <Textarea
+                          id="instruction-text"
+                          placeholder="Enter instruction text"
+                          value={labsCurrentInstruction}
+                          onChange={(e) => setLabsCurrentInstruction(e.target.value)}
+                          rows={3}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="timestamp-instruction">Timestamp (ms)</Label>
+                        <Input
+                          id="timestamp-instruction"
+                          type="number"
+                          value={labsCurrentTimestamp}
+                          onChange={(e) => setLabsCurrentTimestamp(Number(e.target.value))}
+                          min="0"
+                        />
+                      </div>
+                      <Button onClick={labsAddInstruction} className="w-full">
+                        <Plus className="mr-2 h-4 w-4" /> Add Instruction
                       </Button>
                     </CardContent>
                   </Card>
 
                   <Card className="bg-white/70 backdrop-blur-md dark:bg-gray-800/70 dark:shadow-white/10 shadow-2xl">
                     <CardHeader>
-                      <CardTitle>Record Voice Instructions</CardTitle>
+                      <CardTitle>Add Sound Cue</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={handleStartRecording}
-                          disabled={isRecording}
-                          className="flex-1"
-                          variant={isRecording ? "destructive" : "default"}
+                      <div className="space-y-2">
+                        <Label htmlFor="sound-cue-select">Sound Cue</Label>
+                        <Select onValueChange={setLabsSelectedSoundCue} value={labsSelectedSoundCue || ""}>
+                          <SelectTrigger id="sound-cue-select">
+                            <SelectValue placeholder="Select a sound cue" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {soundCues.map((sound) => (
+                              <SelectItem key={sound.name} value={sound.name}>
+                                {sound.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="timestamp-cue">Timestamp (ms)</Label>
+                        <Input
+                          id="timestamp-cue"
+                          type="number"
+                          value={labsCurrentTimestamp}
+                          onChange={(e) => setLabsCurrentTimestamp(Number(e.target.value))}
+                          min="0"
+                        />
+                      </div>
+                      <Button onClick={labsAddSoundCue} className="w-full" disabled={!labsSelectedSoundCue}>
+                        <Plus className="mr-2 h-4 w-4" /> Add Sound Cue
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-white/70 backdrop-blur-md dark:bg-gray-800/70 dark:shadow-white/10 shadow-2xl">
+                    <CardHeader>
+                      <CardTitle>Add Ambient Sound</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="ambient-sound-select">Ambient Sound</Label>
+                        <Select onValueChange={setLabsSelectedAmbientSound} value={labsSelectedAmbientSound || ""}>
+                          <SelectTrigger id="ambient-sound-select">
+                            <SelectValue placeholder="Select an ambient sound" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ambientSounds.map((sound) => (
+                              <SelectItem key={sound.name} value={sound.name}>
+                                {sound.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="ambient-volume">Volume</Label>
+                        <Slider
+                          id="ambient-volume"
+                          min={0}
+                          max={1}
+                          step={0.01}
+                          value={labsAmbientVolume}
+                          onValueChange={setLabsAmbientVolume}
+                        />
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          {(labsAmbientVolume[0] * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="timestamp-ambient">Timestamp (ms)</Label>
+                        <Input
+                          id="timestamp-ambient"
+                          type="number"
+                          value={labsCurrentTimestamp}
+                          onChange={(e) => setLabsCurrentTimestamp(Number(e.target.value))}
+                          min="0"
+                        />
+                      </div>
+                      <Button onClick={labsAddAmbientSound} className="w-full" disabled={!labsSelectedAmbientSound}>
+                        <Plus className="mr-2 h-4 w-4" /> Add Ambient Sound
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-white/70 backdrop-blur-md dark:bg-gray-800/70 dark:shadow-white/10 shadow-2xl">
+                    <CardHeader>
+                      <CardTitle>Record Voice Instruction</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="transcription-method">Transcription Method</Label>
+                        <Select
+                          onValueChange={(value: "browser" | "manual") => setLabsTranscriptionMethod(value)}
+                          value={labsTranscriptionMethod}
                         >
-                          <MicIcon className="mr-2 h-4 w-4" /> {isRecording ? "Recording..." : "Start Recording"}
-                        </Button>
-                        <Button onClick={handleStopRecording} disabled={!isRecording} className="flex-1">
-                          <StopIcon className="mr-2 h-4 w-4" /> Stop Recording
+                          <SelectTrigger id="transcription-method">
+                            <SelectValue placeholder="Select method" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="browser">Browser (Web Speech API)</SelectItem>
+                            <SelectItem value="manual">Manual (Record Only)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={labsIsRecording ? labsStopRecording : labsStartRecording} className="flex-1">
+                          {labsIsRecording ? (
+                            <>
+                              <StopCircle className="mr-2 h-4 w-4" /> Stop Recording
+                            </>
+                          ) : (
+                            <>
+                              <Mic className="mr-2 h-4 w-4" /> Start Recording
+                            </>
+                          )}
                         </Button>
                       </div>
-                      <Select
-                        onValueChange={(value: "browser" | "manual") => setTranscriptionMethod(value)}
-                        value={transcriptionMethod}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select transcription method" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="browser">Browser Transcription (Placeholder)</SelectItem>
-                          <SelectItem value="manual">Manual Transcription</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {transcriptionMethod === "manual" && (
-                        <div className="space-y-2">
-                          <Label htmlFor="manual-instruction">Manual Instruction Text</Label>
-                          <Textarea
-                            id="manual-instruction"
-                            placeholder="Enter instruction text here..."
-                            value={manualInstructionText}
-                            onChange={(e) => setManualInstructionText(e.target.value)}
-                          />
-                          <Button onClick={handleAddManualInstruction} className="w-full">
-                            <PlusIcon className="mr-2 h-4 w-4" /> Add Manual Instruction
-                          </Button>
+                      {labsIsTranscribing && (
+                        <div className="flex items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Transcribing...
                         </div>
                       )}
+                      {labsTranscribedText && (
+                        <div className="space-y-2">
+                          <Label>Transcribed Text</Label>
+                          <Textarea
+                            value={labsTranscribedText}
+                            onChange={(e) => setLabsTranscribedText(e.target.value)}
+                            rows={3}
+                          />
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <Label htmlFor="timestamp-recorded">Timestamp (ms)</Label>
+                        <Input
+                          id="timestamp-recorded"
+                          type="number"
+                          value={labsCurrentTimestamp}
+                          onChange={(e) => setLabsCurrentTimestamp(Number(e.target.value))}
+                          min="0"
+                        />
+                      </div>
+                      <Button
+                        onClick={labsAddRecordedInstructionToTimeline}
+                        className="w-full"
+                        disabled={!labsTranscribedText}
+                      >
+                        <Plus className="mr-2 h-4 w-4" /> Add Recorded Instruction
+                      </Button>
                     </CardContent>
                   </Card>
                 </div>
@@ -2057,98 +2479,111 @@ export default function HomePage() {
                 <div className="lg:col-span-2 space-y-6">
                   <Card className="bg-white/70 backdrop-blur-md dark:bg-gray-800/70 dark:shadow-white/10 shadow-2xl">
                     <CardHeader>
-                      <CardTitle>Meditation Timeline</CardTitle>
+                      <CardTitle>Meditation Timeline Editor</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex justify-center gap-2">
-                        <Button onClick={handlePlayTimeline} disabled={isPlaying || timelineEvents.length === 0}>
-                          <PlayIcon className="mr-2 h-4 w-4" /> Play
-                        </Button>
-                        <Button onClick={handlePauseTimeline} disabled={!isPlaying}>
-                          <PauseIcon className="mr-2 h-4 w-4" /> Pause
-                        </Button>
-                        <Button onClick={handleStopTimeline} disabled={!isPlaying && !currentAudio}>
-                          <StopIcon className="mr-2 h-4 w-4" /> Stop
-                        </Button>
-                        <Button onClick={handleSimulateEncoding}>
-                          <DownloadIcon className="mr-2 h-4 w-4" /> Simulate Encode & Download
-                        </Button>
-                      </div>
-                      <ScrollArea className="h-[400px] w-full rounded-md border p-4 bg-gray-50 dark:bg-gray-900">
-                        {timelineEvents.length === 0 ? (
-                          <p className="text-center text-gray-500 dark:text-gray-400">
-                            No events in timeline. Add instructions!
-                          </p>
+                    <CardContent>
+                      <VisualTimeline
+                        timeline={labsMeditationTimeline}
+                        onRemove={labsRemoveTimelineEvent}
+                        onUpdate={labsUpdateTimelineEvent}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-white/70 backdrop-blur-md dark:bg-gray-800/70 dark:shadow-white/10 shadow-2xl">
+                    <CardHeader>
+                      <CardTitle>Playback Controls</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-wrap gap-4 justify-center">
+                      <Button onClick={() => {}} disabled>
+                        <Play className="mr-2 h-4 w-4" /> Play Timeline
+                      </Button>
+                      <Button onClick={() => {}} disabled>
+                        <PauseIconLabs className="mr-2 h-4 w-4" /> Pause
+                      </Button>
+                      <Button onClick={() => {}} disabled>
+                        <StopCircle className="mr-2 h-4 w-4" /> Stop
+                      </Button>
+                      <Button onClick={labsHandleGenerateAudio} disabled={labsIsEncoding}>
+                        {labsIsEncoding ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
-                          <div className="space-y-4">
-                            {timelineEvents.map((event) => (
-                              <div
-                                key={event.id}
-                                className="flex items-center justify-between p-3 border rounded-md bg-white dark:bg-gray-800 shadow-sm"
-                              >
-                                {editingEventId === event.id ? (
-                                  <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
-                                    <Input
-                                      type="number"
-                                      value={editingTime}
-                                      onChange={(e) => setEditingTime(Number(e.target.value))}
-                                      placeholder="Time (ms)"
-                                      className="col-span-1"
-                                    />
-                                    <Input
-                                      value={editingInstructionText}
-                                      onChange={(e) => setEditingInstructionText(e.target.value)}
-                                      placeholder="Instruction text"
-                                      className="col-span-2"
-                                    />
-                                    <Select onValueChange={setEditingSoundCue} value={editingSoundCue}>
-                                      <SelectTrigger className="col-span-3">
-                                        <SelectValue placeholder="Select sound cue (optional)" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {ambientSoundsList.map((sound) => (
-                                          <SelectItem key={sound.name} value={sound.name}>
-                                            {sound.name}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                    <Button onClick={handleSaveEdit} size="sm" className="col-span-3">
-                                      Save
-                                    </Button>
-                                  </div>
-                                ) : (
+                          <DownloadIconLabs className="mr-2 h-4 w-4" />
+                        )}
+                        {labsIsEncoding ? "Generating..." : "Generate & Download Audio"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-white/70 backdrop-blur-md dark:bg-gray-800/70 dark:shadow-white/10 shadow-2xl">
+                    <CardHeader>
+                      <CardTitle>Current Timeline Events</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {labsMeditationTimeline.length === 0 ? (
+                        <p className="text-center text-gray-500 dark:text-gray-400">No events added yet.</p>
+                      ) : (
+                        <ul className="space-y-4">
+                          {labsMeditationTimeline.map((event) => (
+                            <li
+                              key={event.id}
+                              className="flex items-center justify-between bg-gray-100 dark:bg-gray-800 p-3 rounded-md shadow-sm"
+                            >
+                              <div className="flex-1">
+                                <p className="font-medium">
+                                  {event.type === "instruction" && `Instruction: "${event.text}"`}
+                                  {event.type === "sound_cue" && `Sound Cue: ${event.soundCueName}`}
+                                  {event.type === "ambient_sound" &&
+                                    `Ambient: ${event.ambientSoundName} (Vol: ${(event.ambientSoundVolume || 0) * 100}%)`}
+                                </p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">@{event.timestamp}ms</p>
+                              </div>
+                              <div className="flex gap-2">
+                                {event.type === "sound_cue" && event.soundCueSrc && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => labsPlaySound(event.soundCueSrc!)}
+                                    aria-label={`Play ${event.soundCueName}`}
+                                  >
+                                    <Play className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {event.type === "ambient_sound" && event.ambientSoundSrc && (
                                   <>
-                                    <div className="flex-1 space-y-1">
-                                      <p className="font-medium text-gray-900 dark:text-gray-100">
-                                        {event.time}ms: {event.instruction}
-                                      </p>
-                                      {event.soundCueName && (
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                                          Sound: {event.soundCueName}
-                                        </p>
-                                      )}
-                                      {event.audioSrc && (
-                                        <audio controls src={event.audioSrc} className="w-full mt-2" />
-                                      )}
-                                    </div>
-                                    <div className="flex gap-2 ml-4">
-                                      <Button variant="ghost" size="icon" onClick={() => handleEditEvent(event)}>
-                                        <EditIcon className="h-4 w-4" />
-                                        <span className="sr-only">Edit</span>
-                                      </Button>
-                                      <Button variant="ghost" size="icon" onClick={() => handleRemoveEvent(event.id)}>
-                                        <TrashIcon className="h-4 w-4" />
-                                        <span className="sr-only">Remove</span>
-                                      </Button>
-                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() =>
+                                        labsPlayAmbientSound(event.ambientSoundSrc!, event.ambientSoundVolume || 0.5)
+                                      }
+                                      aria-label={`Play ambient sound ${event.ambientSoundName}`}
+                                    >
+                                      <Volume2 className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={labsStopAmbientSound}
+                                      aria-label="Stop ambient sound"
+                                    >
+                                      <VolumeX className="h-4 w-4" />
+                                    </Button>
                                   </>
                                 )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => labsRemoveTimelineEvent(event.id)}
+                                  aria-label={`Remove ${event.type}`}
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                </Button>
                               </div>
-                            ))}
-                          </div>
-                        )}
-                      </ScrollArea>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </CardContent>
                   </Card>
                 </div>
