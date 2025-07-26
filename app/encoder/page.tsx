@@ -3,10 +3,8 @@
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { Navigation } from "@/components/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import type { SpeechRecognition } from "web-speech-api"
+import { Card } from "@/components/ui/card"
+import { Wand2 } from "lucide-react"
 
 interface Instruction {
   id: string
@@ -53,9 +51,6 @@ export default function EncoderPage() {
   const [isListening, setIsListening] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [audioDuration, setAudioDuration] = useState(0)
-  const [inputText, setInputText] = useState("")
-  const [encodedText, setEncodedText] = useState("")
-  const [decodedText, setDecodedText] = useState("")
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -642,65 +637,42 @@ export default function EncoderPage() {
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
-  const encodeBase64 = () => {
-    setEncodedText(btoa(inputText))
-  }
-
-  const decodeBase64 = () => {
-    try {
-      setDecodedText(atob(inputText))
-    } catch (e) {
-      setDecodedText("Invalid Base64 string")
-    }
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-0">
       <Navigation />
-      <div className="max-w-3xl mx-auto mt-10 space-y-8">
-        <h1 className="text-4xl font-extrabold text-center text-gray-900 dark:text-gray-100 mb-8">
-          Text Encoder/Decoder
-        </h1>
 
-        <Card className="p-6 space-y-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold dark:text-gray-200">Input Text</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Textarea
-              placeholder="Enter text here..."
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              rows={6}
-            />
-            <div className="flex gap-4">
-              <Button onClick={encodeBase64} className="flex-1">
-                Encode (Base64)
-              </Button>
-              <Button onClick={decodeBase64} className="flex-1 bg-transparent" variant="outline">
-                Decode (Base64)
-              </Button>
+      <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl dark:shadow-2xl dark:shadow-white/40 overflow-hidden dark:bg-gray-900/80 transition-colors duration-300 ease-in-out">
+        <div className="relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 dark:from-amber-600/20 dark:via-rose-500/15 dark:via-purple-600/10 dark:to-teal-500/20"></div>
+          </div>
+          <div className="relative text-center px-[69px] pt-16 pb-8">
+            <h1
+              className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter text-center"
+              style={{
+                fontFamily: 'Georgia, "Times New Roman", serif',
+                textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
+              }}
+            >
+              Encoder (Labs)
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-gray-300 mt-4">
+              Create custom meditations by associating instructions with sound cues.
+            </p>
+          </div>
+        </div>
+
+        <div className="px-6 md:px-10 pb-10 font-serif font-black">
+          <Card className="p-8 space-y-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="text-center space-y-4">
+              <Wand2 className="h-12 w-12 mx-auto text-logo-teal-600 dark:text-logo-teal-400" />
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Coming Soon!</h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                The full Encoder functionality is under active development. Please check back later for updates!
+              </p>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="p-6 space-y-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold dark:text-gray-200">Encoded Text (Base64)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea value={encodedText} readOnly rows={4} className="font-mono bg-gray-50 dark:bg-gray-800" />
-          </CardContent>
-        </Card>
-
-        <Card className="p-6 space-y-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold dark:text-gray-200">Decoded Text</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea value={decodedText} readOnly rows={4} className="bg-gray-50 dark:bg-gray-800" />
-          </CardContent>
-        </Card>
+          </Card>
+        </div>
       </div>
     </div>
   )

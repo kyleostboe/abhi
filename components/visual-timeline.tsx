@@ -1,609 +1,443 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect, useCallback } from "react"
-import { Play, Pause, StopCircle, Plus, Volume2, VolumeX, Trash2, Edit, GripVertical } from "lucide-react"
+
+import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { Slider } from "@/components/ui/slider"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Trash2, Music2Icon, MicIcon, Check, X, Play } from "lucide-react"
+import { SOUND_CUES_LIBRARY, generateSyntheticSound } from "../lib/meditation-data"
+import { motion, AnimatePresence } from "framer-motion"
+import { cn, formatTime } from "@/lib/utils" // Import formatTime
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { toast } from "@/components/ui/use-toast"
-import type {
-  AmbientSound,
-  Meditation,
-  MeditationEvent,
-  SoundCueEvent,
-  AmbientSoundEvent,
-  GuidedMeditationEvent,
-} from "@/lib/types"
-import { formatTime } from "@/lib/audio-utils"
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core"
-import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
+import { getAudioContext, playNote } from "../lib/audio-utils" // Corrected import path and added getAudioContext
+import type { TimelineEvent } from "@/lib/types" // Import TimelineEvent from types
+import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 
 interface VisualTimelineProps {
-  initialMeditation?: Meditation
-  ambientSounds: AmbientSound[]
-  onSaveMeditation?: (meditation: Meditation) => void
+  events: TimelineEvent[]
+  totalDuration: number
+  onUpdateEvent: (eventId: string, newStartTime: number) => void
+  onRemoveEvent: (eventId: string) => void
 }
 
-const EventCard: React.FC<{
-  event: MeditationEvent
-  onEdit: (event: MeditationEvent) => void
-  onDelete: (id: string) => void
-}> = ({ event, onEdit, onDelete }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: event.id })
+const EVENT_COLORS = [
+  "bg-gradient-to-br from-logo-amber-500 to-logo-amber-600",
+  "bg-gradient-to-br from-logo-rose-500 to-logo-rose-600",
+  "bg-gradient-to-br from-logo-purple-500 to-logo-purple-600",
+  "bg-gradient-to-br from-logo-blue-500 to-logo-blue-600",
+  "bg-gradient-to-br from-logo-teal-500 to-logo-teal-600",
+  "bg-gradient-to-br from-logo-emerald-500 to-logo-emerald-600",
+  "bg-gradient-to-br from-pink-500 to-pink-600",
+  "bg-gradient-to-br from-orange-500 to-orange-600",
+]
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
 
-  const renderEventDetails = () => {
-    switch (event.type) {
-      case "sound_cue":
-        return (
-          <>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Cue: {(event as SoundCueEvent).soundCueName}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Volume: {(event as SoundCueEvent).volume * 100}%</p>
-          </>
-        )
-      case "ambient_sound":
-        return (
-          <>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Sound: {(event as AmbientSoundEvent).ambientSoundName}
-            </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Volume: {(event as AmbientSoundEvent).volume * 100}%
-            </p>
-          </>
-        )
-      case "guided_meditation":
-        return (
-          <>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Script: {(event as GuidedMeditationEvent).script.substring(0, 50)}...
-            </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Voice: {(event as GuidedMeditationEvent).voice}</p>
-          </>
-        )
-      default:
-        return null
-    }
-  }
 
-  return (
-    <Card
-      ref={setNodeRef}
-      style={style}
-      className="mb-4 bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700"
-    >
-      <CardContent className="p-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" {...listeners} {...attributes}>
-            <GripVertical className="h-5 w-5 text-gray-500" />
-          </Button>
-          <div>
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100">
-              {event.type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-            </h4>
-            <p className="text-sm text-gray-700 dark:text-gray-300">Duration: {formatTime(event.duration)}</p>
-            {renderEventDetails()}
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={() => onEdit(event)}>
-            <Edit className="h-5 w-5 text-blue-500" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => onDelete(event.id)}>
-            <Trash2 className="h-5 w-5 text-red-500" />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+// Removed getInitialPosition as it was causing instability.
+// Events at the same startTime will now overlap.
+
+export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveEvent }: VisualTimelineProps) {
+  const [draggedEvent, setDraggedEvent] = useState<string | null>(null)
+  const [dragOffset, setDragOffset] = useState(0)
+  const timelineRef = useRef<HTMLDivElement>(null)
+  const isDragging = useRef(false)
+  const [editingEventId, setEditingEventId] = useState<string | null>(null)
+  const [editingTime, setEditingTime] = useState<string>("")
+  const isMobile = useMobile() // Use the useMobile hook
+
+  const colorMap = useMemo(() => {
+    const sortedIds = [...events].map((e) => e.id).sort()
+    const map = new Map<string, string>()
+    sortedIds.forEach((id, index) => {
+      map.set(id, EVENT_COLORS[index % EVENT_COLORS.length])
+    })
+    return map
+  }, [events])
+
+  const getEventColor = useCallback(
+    (eventId: string) => colorMap.get(eventId) ?? EVENT_COLORS[0],
+    [colorMap],
   )
-}
 
-export function VisualTimeline({ initialMeditation, ambientSounds, onSaveMeditation }: VisualTimelineProps) {
-  const [meditation, setMeditation] = useState<Meditation>(
-    initialMeditation || { id: "new-meditation", title: "New Meditation", timeline: [] },
-  )
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [volume, setVolume] = useState(0.5)
-  const [isMuted, setIsMuted] = useState(false)
-  const [editEvent, setEditEvent] = useState<MeditationEvent | null>(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [newEventType, setNewEventType] = useState<MeditationEvent["type"]>("sound_cue")
-
-  const audioRefs = useRef<HTMLAudioElement[]>([])
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
-  const currentEventIndexRef = useRef(0)
-  const currentEventStartTimeRef = useRef(0)
-
-  const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor))
-
-  const totalDuration = meditation.timeline.reduce((sum, event) => sum + event.duration, 0)
-
-  const playEvent = useCallback(
-    (event: MeditationEvent) => {
-      if (event.type === "sound_cue" || event.type === "ambient_sound") {
-        const audio = new Audio((event as SoundCueEvent | AmbientSoundEvent).soundCueSrc)
-        audio.volume = isMuted ? 0 : volume * (event.volume || 1)
-        audio.play().catch((e) => console.error("Audio play failed:", e))
-        audioRefs.current.push(audio)
-      } else if (event.type === "guided_meditation") {
-        // Implement text-to-speech for guided meditations
-        const utterance = new SpeechSynthesisUtterance((event as GuidedMeditationEvent).script)
-        utterance.volume = isMuted ? 0 : volume
-        speechSynthesis.speak(utterance)
-      }
+  const getTimeFromPosition = useCallback(
+    (clientX: number): number => {
+      if (!timelineRef.current) return 0
+      const rect = timelineRef.current.getBoundingClientRect()
+      const relativeX = clientX - rect.left
+      const percentage = Math.max(0, Math.min(1, relativeX / rect.width))
+      return Math.round(percentage * totalDuration)
     },
-    [volume, isMuted],
+    [totalDuration],
   )
 
-  const startTimeline = useCallback(() => {
-    if (isPlaying) return
+  const getPositionFromTime = useCallback(
+    (time: number): string => {
+      const percentage = (time / totalDuration) * 100
+      return `${percentage}%`
+    },
+    [totalDuration],
+  )
 
-    setIsPlaying(true)
-    currentEventIndexRef.current = 0
-    currentEventStartTimeRef.current = currentTime
+  // Handle mouse events
+  const handleMouseDown = (eventId: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    setDraggedEvent(eventId)
+    isDragging.current = true
 
-    intervalRef.current = setInterval(() => {
-      setCurrentTime((prevTime) => {
-        const newTime = prevTime + 1000 // Update every second
-
-        // Check if current event is finished
-        const elapsedInCurrentEvent = newTime - currentEventStartTimeRef.current
-        let currentEvent = meditation.timeline[currentEventIndexRef.current]
-
-        while (currentEvent && elapsedInCurrentEvent >= currentEvent.duration) {
-          // Move to next event
-          currentEventIndexRef.current++
-          currentEventStartTimeRef.current = newTime // Reset start time for next event
-          currentEvent = meditation.timeline[currentEventIndexRef.current]
-
-          if (currentEvent) {
-            playEvent(currentEvent)
-          }
-        }
-
-        if (newTime >= totalDuration) {
-          clearInterval(intervalRef.current!)
-          setIsPlaying(false)
-          setCurrentTime(0)
-          currentEventIndexRef.current = 0
-          currentEventStartTimeRef.current = 0
-          audioRefs.current.forEach((audio) => audio.pause())
-          audioRefs.current = []
-          speechSynthesis.cancel()
-          return totalDuration // Cap at total duration
-        }
-        return newTime
-      })
-    }, 1000) // Update every second
-  }, [isPlaying, meditation.timeline, totalDuration, currentTime, playEvent])
-
-  const pauseTimeline = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
+    if (timelineRef.current) {
+      const rect = timelineRef.current.getBoundingClientRect()
+      const eventElement = e.currentTarget as HTMLElement
+      const eventRect = eventElement.getBoundingClientRect()
+      setDragOffset(e.clientX - (eventRect.left + eventRect.width / 2))
     }
-    setIsPlaying(false)
-    audioRefs.current.forEach((audio) => audio.pause())
-    speechSynthesis.cancel()
-  }, [])
+  }
 
-  const resetTimeline = useCallback(() => {
-    pauseTimeline()
-    setCurrentTime(0)
-    currentEventIndexRef.current = 0
-    currentEventStartTimeRef.current = 0
-    audioRefs.current.forEach((audio) => audio.pause())
-    audioRefs.current = []
-    speechSynthesis.cancel()
-  }, [pauseTimeline])
+  // Handle touch events
+  const handleTouchStart = (eventId: string, e: React.TouchEvent) => {
+    e.preventDefault()
+    setDraggedEvent(eventId)
+    isDragging.current = true
 
+    if (timelineRef.current && e.touches[0]) {
+      const rect = timelineRef.current.getBoundingClientRect()
+      const eventElement = e.currentTarget as HTMLElement
+      const eventRect = eventElement.getBoundingClientRect()
+      setDragOffset(e.touches[0].clientX - (eventRect.left + eventRect.width / 2))
+    }
+  }
+
+  // Global mouse move handler
   useEffect(() => {
-    // Clean up on unmount
+    const handleMouseMove = (e: MouseEvent) => {
+      if (draggedEvent && isDragging.current) {
+        const newTime = getTimeFromPosition(e.clientX - dragOffset)
+        onUpdateEvent(draggedEvent, newTime)
+      }
+    }
+
+    const handleMouseUp = () => {
+      setDraggedEvent(null)
+      isDragging.current = false
+      setDragOffset(0)
+    }
+
+    if (draggedEvent) {
+      document.addEventListener("mousemove", handleMouseMove)
+      document.addEventListener("mouseup", handleMouseUp)
+    }
+
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-      }
-      audioRefs.current.forEach((audio) => audio.pause())
-      speechSynthesis.cancel()
+      document.removeEventListener("mousemove", handleMouseMove)
+      document.removeEventListener("mouseup", handleMouseUp)
     }
-  }, [])
+  }, [draggedEvent, getTimeFromPosition, onUpdateEvent, dragOffset])
 
+  // Global touch move handler
   useEffect(() => {
-    audioRefs.current.forEach((audio) => {
-      audio.volume = isMuted
-        ? 0
-        : volume * (audio.dataset.originalVolume ? Number.parseFloat(audio.dataset.originalVolume) : 1)
-    })
-    if (speechSynthesis.speaking) {
-      // This is a bit tricky as SpeechSynthesisUtterance volume is set once.
-      // For ongoing speech, you might need to stop and restart with new volume.
-      // For simplicity, we'll just mute/unmute.
-      if (isMuted) {
-        speechSynthesis.pause()
-      } else {
-        speechSynthesis.resume()
+    const handleTouchMove = (e: TouchEvent) => {
+      if (draggedEvent && isDragging.current && e.touches[0]) {
+        e.preventDefault()
+        const newTime = getTimeFromPosition(e.touches[0].clientX - dragOffset)
+        onUpdateEvent(draggedEvent, newTime)
       }
     }
-  }, [volume, isMuted])
 
-  const handleAddEvent = () => {
-    let newEvent: MeditationEvent
-    const baseEvent = {
-      id: `event-${Date.now()}`,
-      duration: 30000, // Default 30 seconds
-      startOffset: 0, // Default start offset
+    const handleTouchEnd = () => {
+      setDraggedEvent(null)
+      isDragging.current = false
+      setDragOffset(0)
     }
 
-    switch (newEventType) {
-      case "sound_cue":
-        newEvent = {
-          ...baseEvent,
-          type: "sound_cue",
-          soundCueName: "Bell", // Default
-          soundCueSrc: "/sounds/bell.mp3", // Default
-          volume: 0.8,
-        } as SoundCueEvent
-        break
-      case "ambient_sound":
-        newEvent = {
-          ...baseEvent,
-          type: "ambient_sound",
-          ambientSoundName: ambientSounds[0]?.name || "Forest Rain", // Default to first available
-          ambientSoundSrc: ambientSounds[0]?.file_url || "/sounds/forest-rain.mp3", // Default
-          volume: 0.5,
-        } as AmbientSoundEvent
-        break
-      case "guided_meditation":
-        newEvent = {
-          ...baseEvent,
-          type: "guided_meditation",
-          script: "Take a deep breath...",
-          voice: "standard",
-        } as GuidedMeditationEvent
-        break
-      default:
-        return
+    if (draggedEvent) {
+      document.addEventListener("touchmove", handleTouchMove, { passive: false })
+      document.addEventListener("touchend", handleTouchEnd)
     }
-    setMeditation((prev) => ({
-      ...prev,
-      timeline: [...prev.timeline, newEvent],
-    }))
-    setIsDialogOpen(false)
+
+    return () => {
+      document.removeEventListener("touchmove", handleTouchMove)
+      document.removeEventListener("touchend", handleTouchEnd)
+    }
+  }, [draggedEvent, getTimeFromPosition, onUpdateEvent, dragOffset])
+
+  // Responsive time markers - fewer on mobile
+  const timeMarkersCount = isMobile
+    ? Math.max(3, Math.min(Math.floor(totalDuration / 120), 5)) // 3-5 markers on mobile
+    : Math.max(5, Math.min(Math.floor(totalDuration / 60), 10)) // 5-10 markers on desktop
+
+  const timeMarkers = Array.from({ length: timeMarkersCount + 1 }, (_, i) => (i / timeMarkersCount) * totalDuration)
+
+  const handleTimeEdit = (eventId: string, currentTime: number) => {
+    setEditingEventId(eventId)
+    setEditingTime(formatTime(currentTime))
   }
 
-  const handleEditEvent = (event: MeditationEvent) => {
-    setEditEvent({ ...event }) // Create a copy to edit
-    setIsDialogOpen(true)
+  const handleTimeSave = (eventId: string) => {
+    const [minutes, seconds] = editingTime.split(":").map(Number)
+    const newTime = minutes * 60 + seconds
+    onUpdateEvent(eventId, newTime)
+    setEditingEventId(null)
+    setEditingTime("")
   }
 
-  const handleSaveEditedEvent = () => {
-    if (editEvent) {
-      setMeditation((prev) => ({
-        ...prev,
-        timeline: prev.timeline.map((e) => (e.id === editEvent.id ? editEvent : e)),
-      }))
-      setEditEvent(null)
-      setIsDialogOpen(false)
+  const handleTimeCancel = () => {
+    setEditingEventId(null)
+    setEditingTime("")
+  }
+
+  const playEventAudio = async (event: TimelineEvent) => {
+    try {
+      if (event.type === "instruction_sound" && event.soundCueSrc) {
+        // Use soundCueSrc directly for playback
+        if (event.soundCueSrc.startsWith("synthetic:")) {
+          const soundCue = SOUND_CUES_LIBRARY.find((s) => s.id === event.soundCueId)
+          if (soundCue) {
+            // Pass the live AudioContext to generateSyntheticSound
+            const audioContext = getAudioContext()
+            await generateSyntheticSound(soundCue, audioContext)
+          }
+        } else if (event.soundCueSrc.startsWith("musical:")) {
+          const noteMatch = event.soundCueSrc.match(/musical:([A-G])(\d)/)
+          if (noteMatch) {
+            const note = noteMatch[1]
+            const octave = Number.parseInt(noteMatch[2])
+            await playNote(note, octave) // Await playNote
+          }
+        } else {
+          const audio = new Audio(event.soundCueSrc)
+          audio.volume = 0.7
+          await audio.play()
+        }
+      } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
+        // Play recorded audio
+        const audio = new Audio(event.recordedAudioUrl)
+        audio.volume = 0.7
+        await audio.play()
+      }
+    } catch (error) {
+      console.warn("Audio playback failed:", error)
     }
   }
 
-  const handleDeleteEvent = (id: string) => {
-    setMeditation((prev) => ({
-      ...prev,
-      timeline: prev.timeline.filter((event) => event.id !== id),
-    }))
-    toast({
-      title: "Event Deleted",
-      description: "The event has been removed from the timeline.",
-    })
-  }
-
-  const handleSaveMeditation = async () => {
-    if (onSaveMeditation) {
-      onSaveMeditation(meditation)
+  const getEventDuration = (event: TimelineEvent): number => {
+    if (event.type === "recorded_voice" && event.recordedAudioUrl) {
+      return event.duration || 0
     }
-    toast({
-      title: "Meditation Saved",
-      description: "Your meditation timeline has been saved.",
-    })
+    return 0
   }
 
-  const onDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-
-    if (active.id !== over?.id) {
-      setMeditation((prev) => {
-        const oldIndex = prev.timeline.findIndex((e) => e.id === active.id)
-        const newIndex = prev.timeline.findIndex((e) => e.id === over?.id)
-        const newTimeline = Array.from(prev.timeline)
-        const [movedItem] = newTimeline.splice(oldIndex, 1)
-        newTimeline.splice(newIndex, 0, movedItem)
-        return { ...prev, timeline: newTimeline }
-      })
+  const getEventDisplayInfo = (event: TimelineEvent) => {
+    if (event.type === "instruction_sound") {
+      // Prioritize using the directly stored soundCueName
+      const soundName = event.soundCueName || SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)?.name
+      return {
+        title: event.instructionText || "Untitled Instruction",
+        subtitle: soundName ? `+ ${soundName}` : "Unknown Sound",
+        icon: <Music2Icon className="h-4 w-4" />,
+      }
+    } else {
+      return {
+        title: event.recordedInstructionLabel || "Untitled Recording",
+        subtitle: "Voice Recording",
+        icon: <MicIcon className="h-4 w-4" />,
+      }
     }
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 border-b border-gray-200 dark:border-gray-700">
-        <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">{meditation.title}</CardTitle>
-        <div className="flex items-center gap-2">
-          <Button onClick={handleSaveMeditation} variant="outline">
-            Save Meditation
-          </Button>
-          <Button
-            onClick={() => {
-              setEditEvent(null)
-              setIsDialogOpen(true)
-              setNewEventType("sound_cue")
-            }}
-          >
-            <Plus className="h-4 w-4 mr-2" /> Add Event
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-xl font-mono text-gray-800 dark:text-gray-200">
-            {formatTime(currentTime)} / {formatTime(totalDuration)}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button onClick={isPlaying ? pauseTimeline : startTimeline} size="icon" variant="ghost">
-              {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
-            </Button>
-            <Button onClick={resetTimeline} size="icon" variant="ghost">
-              <StopCircle className="h-6 w-6" />
-            </Button>
-            <Button onClick={() => setIsMuted(!isMuted)} size="icon" variant="ghost">
-              {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
-            </Button>
-            <Slider
-              value={[volume * 100]}
-              onValueChange={([val]) => setVolume(val / 100)}
-              max={100}
-              step={1}
-              className="w-24"
-              aria-label="Volume"
+    <div className="space-y-6 select-none">
+      {/* Time Markers */}
+      <div className="relative">
+        {/* Timeline Bar */}
+        <div
+          ref={timelineRef}
+          className="relative h-20 bg-gradient-to-r from-gray-100/70 to-gray-200/70 dark:from-gray-800/70 dark:to-gray-900/70 rounded-2xl dark:border-gray-700 cursor-pointer overflow-visible dark:shadow-white/30 shadow-inner border-gray-700 border-0"
+        >
+          {/* Background Grid Lines - excluding first and last */}
+          {timeMarkers.slice(1, -1).map((time, index) => (
+            <div
+              key={`grid-${index}`}
+              className="absolute top-0 bottom-0 w-px bg-logo-teal-200/50 dark:bg-logo-teal-700/50"
+              style={{ left: getPositionFromTime(time) }}
             />
-          </div>
-        </div>
+          ))}
 
-        <div className="space-y-3">
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-            <SortableContext items={meditation.timeline.map((e) => e.id)} strategy={verticalListSortingStrategy}>
-              {meditation.timeline.length === 0 ? (
-                <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-                  No events added yet. Click "Add Event" to start building your timeline.
-                </p>
-              ) : (
-                meditation.timeline.map((event) => (
-                  <EventCard key={event.id} event={event} onEdit={handleEditEvent} onDelete={handleDeleteEvent} />
-                ))
-              )}
-            </SortableContext>
-          </DndContext>
-        </div>
+          {/* Events on Timeline */}
+          <AnimatePresence>
+            {events.map((event) => {
+              // Always use the actual start time for positioning to prevent jumping
+              const displayTime = event.startTime
 
-        {/* Add/Edit Event Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>{editEvent ? "Edit Event" : "Add New Event"}</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              {!editEvent && (
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="eventType" className="text-right">
-                    Type
-                  </Label>
-                  <Select
-                    value={newEventType}
-                    onValueChange={(value: MeditationEvent["type"]) => setNewEventType(value)}
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select event type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sound_cue">Sound Cue</SelectItem>
-                      <SelectItem value="ambient_sound">Ambient Sound</SelectItem>
-                      <SelectItem value="guided_meditation">Guided Meditation</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="duration" className="text-right">
-                  Duration (ms)
-                </Label>
-                <Input
-                  id="duration"
-                  type="number"
-                  value={editEvent?.duration || 0}
-                  onChange={(e) =>
-                    setEditEvent((prev) => (prev ? { ...prev, duration: Number.parseInt(e.target.value) } : null))
+              return (
+                <motion.div
+                  key={event.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className={cn(
+                    "absolute top-1/2 -translate-y-1/2 w-10 h-10 rounded-full shadow-md dark:shadow-white/20 cursor-grab active:cursor-grabbing flex items-center justify-center text-white",
+                    draggedEvent === event.id ? "z-30 shadow-lg dark:shadow-white/30 ring-2 ring-white/50" : "z-10",
+                    getEventColor(event.id),
+                  )}
+                  style={{
+                    left: `calc(${getPositionFromTime(displayTime)} - 20px)`,
+                    transform: "translateY(-50%)",
+                  }}
+                  onMouseDown={(e) => handleMouseDown(event.id, e)}
+                  onTouchStart={(e) => handleTouchStart(event.id, e)}
+                  title={
+                    event.type === "instruction_sound"
+                      ? event.instructionText
+                      : event.recordedInstructionLabel || "Recorded Voice"
                   }
-                  className="col-span-3"
-                />
-              </div>
+                >
+                  {event.type === "instruction_sound" ? (
+                    <Music2Icon className="h-4 w-4" />
+                  ) : (
+                    <MicIcon className="h-4 w-4" />
+                  )}
+                </motion.div>
+              )
+            })}
+          </AnimatePresence>
+        </div>
 
-              {(editEvent?.type === "sound_cue" || newEventType === "sound_cue") && (
-                <>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="soundCueName" className="text-right">
-                      Cue Name
-                    </Label>
-                    <Input
-                      id="soundCueName"
-                      value={(editEvent as SoundCueEvent)?.soundCueName || ""}
-                      onChange={(e) =>
-                        setEditEvent((prev) =>
-                          prev ? ({ ...prev, soundCueName: e.target.value } as SoundCueEvent) : null,
-                        )
-                      }
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="soundCueSrc" className="text-right">
-                      Cue Source
-                    </Label>
-                    <Input
-                      id="soundCueSrc"
-                      value={(editEvent as SoundCueEvent)?.soundCueSrc || ""}
-                      onChange={(e) =>
-                        setEditEvent((prev) =>
-                          prev ? ({ ...prev, soundCueSrc: e.target.value } as SoundCueEvent) : null,
-                        )
-                      }
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="volume" className="text-right">
-                      Volume (0-1)
-                    </Label>
-                    <Input
-                      id="volume"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="1"
-                      value={(editEvent as SoundCueEvent)?.volume || 0}
-                      onChange={(e) =>
-                        setEditEvent((prev) =>
-                          prev ? ({ ...prev, volume: Number.parseFloat(e.target.value) } as SoundCueEvent) : null,
-                        )
-                      }
-                      className="col-span-3"
-                    />
-                  </div>
-                </>
-              )}
-
-              {(editEvent?.type === "ambient_sound" || newEventType === "ambient_sound") && (
-                <>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="ambientSound" className="text-right">
-                      Ambient Sound
-                    </Label>
-                    <Select
-                      value={(editEvent as AmbientSoundEvent)?.ambientSoundName || ""}
-                      onValueChange={(name) => {
-                        const selectedSound = ambientSounds.find((s) => s.name === name)
-                        setEditEvent((prev) =>
-                          prev
-                            ? ({
-                                ...prev,
-                                ambientSoundName: name,
-                                ambientSoundSrc: selectedSound?.file_url || "",
-                              } as AmbientSoundEvent)
-                            : null,
-                        )
-                      }}
-                    >
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Select an ambient sound" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ambientSounds.map((sound) => (
-                          <SelectItem key={sound.id} value={sound.name}>
-                            {sound.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="volume" className="text-right">
-                      Volume (0-1)
-                    </Label>
-                    <Input
-                      id="volume"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="1"
-                      value={(editEvent as AmbientSoundEvent)?.volume || 0}
-                      onChange={(e) =>
-                        setEditEvent((prev) =>
-                          prev ? ({ ...prev, volume: Number.parseFloat(e.target.value) } as AmbientSoundEvent) : null,
-                        )
-                      }
-                      className="col-span-3"
-                    />
-                  </div>
-                </>
-              )}
-
-              {(editEvent?.type === "guided_meditation" || newEventType === "guided_meditation") && (
-                <>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="script" className="text-right">
-                      Script
-                    </Label>
-                    <Textarea
-                      id="script"
-                      value={(editEvent as GuidedMeditationEvent)?.script || ""}
-                      onChange={(e) =>
-                        setEditEvent((prev) =>
-                          prev ? ({ ...prev, script: e.target.value } as GuidedMeditationEvent) : null,
-                        )
-                      }
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="voice" className="text-right">
-                      Voice
-                    </Label>
-                    <Select
-                      value={(editEvent as GuidedMeditationEvent)?.voice || "standard"}
-                      onValueChange={(voice) =>
-                        setEditEvent((prev) => (prev ? ({ ...prev, voice: voice } as GuidedMeditationEvent) : null))
-                      }
-                    >
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Select a voice" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="standard">Standard</SelectItem>
-                        <SelectItem value="calm">Calm</SelectItem>
-                        <SelectItem value="deep">Deep</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
+        {/* Responsive Time Labels */}
+        <div
+          className={cn(
+            "flex justify-between text-gray-500 dark:text-gray-400 px-2 mt-2 font-black",
+            isMobile ? "text-xs" : "text-sm",
+          )}
+        >
+          {timeMarkers.map((time, index) => (
+            <div key={`time-${index}`} className="text-center flex flex-col">
+              <span
+                className={cn(
+                  "leading-tight",
+                  isMobile && index > 0 && index < timeMarkers.length - 1 ? "hidden sm:block" : "",
+                )}
+              >
+                {isMobile ? Math.floor(time / 60) : formatTime(time)}
+              </span>
+              {isMobile && (
+                <span className="text-xs opacity-60">
+                  {index === 0 ? "0m" : index === timeMarkers.length - 1 ? `${Math.floor(totalDuration / 60)}m` : ""}
+                </span>
               )}
             </div>
-            <DialogFooter>
-              <Button onClick={editEvent ? handleSaveEditedEvent : handleAddEvent}>
-                {editEvent ? "Save Changes" : "Add Event"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Event List */}
+      <div className="space-y-3 text-left">
+        <h4 className="font-black dark:text-gray-200 text-gray-600 text-base">Timeline Events</h4>
+        <AnimatePresence>
+          {events.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center py-8 text-gray-500 dark:text-gray-400"
+            >
+              <div className="mb-2 text-base">No events added yet</div>
+              <div className="text-sm">Add instructions and sound cues to build your meditation timeline</div>
+            </motion.div>
+          ) : (
+            events.map((event, index) => {
+              const displayInfo = getEventDisplayInfo(event)
+              return (
+                <motion.div
+                  key={event.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Card className="p-4 bg-white dark:bg-gray-900 shadow-sm dark:shadow-white/10 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3 flex-1">
+                        <div
+                          className={cn(
+                            "w-8 h-8 rounded-full flex items-center justify-center text-white shadow-sm",
+                            getEventColor(event.id),
+                          )}
+                        >
+                          {displayInfo.icon}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-1 flex-wrap">
+                            <Badge
+                              variant="secondary"
+                              className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                            >
+                              {event.type === "instruction_sound" ? "Instruction + Sound" : "Voice Recording"}
+                            </Badge>
+                            {editingEventId === event.id ? (
+                              <div className="flex items-center space-x-2">
+                                <Input
+                                  value={editingTime}
+                                  onChange={(e) => setEditingTime(e.target.value)}
+                                  placeholder="MM:SS"
+                                  className="w-20 h-6 text-xs"
+                                  pattern="[0-9]{1,2}:[0-9]{2}"
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleTimeSave(event.id)}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Check className="h-3 w-3" />
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={handleTimeCancel} className="h-6 w-6 p-0">
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => handleTimeEdit(event.id, event.startTime)}
+                                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-serif text-xs whitespace-nowrap"
+                              >
+                                {formatTime(event.startTime)}
+                              </button>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-700 dark:text-gray-300 font-black">
+                            <span className="font-black">{displayInfo.title}</span>
+                          </div>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 font-black">{displayInfo.subtitle}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => playEventAudio(event)}
+                          className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                          title="Preview audio"
+                        >
+                          <Play className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => onRemoveEvent(event.id)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          title="Remove event"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              )
+            })
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   )
 }
