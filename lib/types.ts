@@ -1,27 +1,22 @@
-export interface Instruction {
+export interface TimelineEvent {
   id: string
-  text: string
+  time: number // Time in milliseconds
+  instruction: string
+  audioSrc: string | null // URL for recorded audio instruction
+  soundCueName: string | null // Name of the sound cue
+  soundCueSrc: string | null // Source URL of the sound cue
+}
+
+export interface Instruction {
   category: string
+  text: string
 }
 
 export interface SoundCue {
-  id: string
   name: string
-  src: string // Path to audio file or synthetic: prefix
-  frequency?: number
-  duration?: number // in milliseconds (total sound length)
-  waveform?: OscillatorType
-  harmonics?: number[]
-  attackDuration?: number // in seconds
-  releaseDuration?: number // in seconds
+  src: string
 }
 
-export interface TimelineEvent {
-  id: string
-  type: "instruction" | "sound" | "ambient"
-  time: number // Time in milliseconds
-  text?: string // For instruction events
-  soundCueName?: string // For sound and ambient events
-  soundCueSrc?: string // For sound and ambient events
-  audioSrc?: string // For recorded instruction audio
+export interface MeditationTimeline {
+  events: TimelineEvent[]
 }

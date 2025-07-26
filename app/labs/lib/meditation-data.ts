@@ -407,6 +407,35 @@ export const INSTRUCTIONS_LIBRARY: Instruction[] = [
     text: "Carrying this peace forward",
     category: "Transitions",
   },
+  // Additional Instructions from updates
+  {
+    category: "Mindfulness",
+    text: "Bring your attention to your breath.",
+  },
+  {
+    category: "Mindfulness",
+    text: "Notice the sensations in your body.",
+  },
+  {
+    category: "Mindfulness",
+    text: "Observe your thoughts without judgment.",
+  },
+  {
+    category: "Compassion",
+    text: "May I be happy. May I be peaceful.",
+  },
+  {
+    category: "Compassion",
+    text: "May all beings be free from suffering.",
+  },
+  {
+    category: "Body Scan",
+    text: "Feel your feet on the ground.",
+  },
+  {
+    category: "Body Scan",
+    text: "Relax your shoulders.",
+  },
 ]
 
 export const SOUND_CUES_LIBRARY: SoundCue[] = [
@@ -487,6 +516,12 @@ export const SOUND_CUES_LIBRARY: SoundCue[] = [
     attackDuration: 0.05, // 50ms attack
     releaseDuration: 1.0, // 1000ms release
   },
+  // Additional Sound Cues from updates
+  { name: "Bell", src: "/sounds/bell.mp3" },
+  { name: "Chime", src: "/sounds/chime.mp3" },
+  { name: "Gong", src: "/sounds/gong.mp3" },
+  { name: "Singing Bowl", src: "/sounds/singing-bowl.mp3" },
+  { name: "Synthetic Tone", src: "synthetic:sine" }, // Example of a synthetic sound
 ]
 
 export const NOTE_FREQUENCIES = {
