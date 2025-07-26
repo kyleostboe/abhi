@@ -1,5 +1,6 @@
 import { NOTE_FREQUENCIES } from "./meditation-data"
 import { sleep, formatFileSize } from "./utils"
+import type { MeditationTimeline } from "@/lib/types"
 
 let audioContext: AudioContext | null = null
 
@@ -180,4 +181,17 @@ export const bufferToWav = async (
   }
   onProgress(100)
   return new Blob([finalArrayBuffer], { type: "audio/wav" })
+}
+
+export function formatTime(milliseconds: number): string {
+  const totalSeconds = Math.floor(milliseconds / 1000)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+}
+
+// Placeholder function for generateEncodedAudio
+export const generateEncodedAudio = async (timeline: MeditationTimeline): Promise<Blob> => {
+  console.warn("generateEncodedAudio is a placeholder function.")
+  return new Blob(["dummy audio data"], { type: "audio/mp3" })
 }

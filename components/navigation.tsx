@@ -2,34 +2,13 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
 import { useAuth } from "@/hooks/use-auth"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { useRouter } from "next/navigation"
-import { toast } from "@/components/ui/use-toast"
 
 export function Navigation() {
   const pathname = usePathname()
-  const { user, signOut } = useAuth()
-  const router = useRouter()
-
-  const handleSignOut = async () => {
-    const { error } = await signOut()
-    if (error) {
-      console.error("Error signing out:", error.message)
-      toast({
-        title: "Sign Out Failed",
-        description: error.message,
-        variant: "destructive",
-      })
-    } else {
-      toast({
-        title: "Signed Out",
-        description: "You have been successfully signed out.",
-      })
-      router.push("/login")
-    }
-  }
+  const { session, signOut } = useAuth()
 
   return (
     <nav className="flex justify-center py-4 mb-8">
@@ -37,12 +16,7 @@ export function Navigation() {
         <li>
           <Link
             href="/"
-            className={cn(
-              "px-3 py-2 rounded-md text-sm font-medium transition-colors",
-              pathname === "/"
-                ? "bg-gray-600 text-white dark:bg-gray-600"
-                : "text-gray-700 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700",
-            )}
+            className={`font-medium hover:underline ${pathname === "/" ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}
           >
             Home
           </Link>
@@ -50,63 +24,43 @@ export function Navigation() {
         <li>
           <Link
             href="/labs"
-            className={cn(
-              "px-3 py-2 rounded-md text-sm font-medium transition-colors",
-              pathname === "/labs"
-                ? "bg-gray-600 text-white dark:bg-gray-600"
-                : "text-gray-700 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700",
-            )}
+            className={`font-medium hover:underline ${pathname === "/labs" ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}
           >
             Labs
           </Link>
         </li>
         <li>
           <Link
-            href="/donate"
-            className={cn(
-              "px-3 py-2 rounded-md text-sm font-medium transition-colors",
-              pathname === "/donate"
-                ? "bg-gray-600 text-white dark:bg-gray-600"
-                : "text-gray-700 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700",
-            )}
-          >
-            Donate
-          </Link>
-        </li>
-        <li>
-          <Link
             href="/contact"
-            className={cn(
-              "px-3 py-2 rounded-md text-sm font-medium transition-colors",
-              pathname === "/contact"
-                ? "bg-gray-600 text-white dark:bg-gray-600"
-                : "text-gray-700 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700",
-            )}
+            className={`font-medium hover:underline ${pathname === "/contact" ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}
           >
             Contact
           </Link>
         </li>
-        {user ? (
+        <li>
+          <Link
+            href="/donate"
+            className={`font-medium hover:underline ${pathname === "/donate" ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}
+          >
+            Donate
+          </Link>
+        </li>
+        {session ? (
           <>
             <li>
               <Link
                 href="/profile"
-                className={cn(
-                  "px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                  pathname === "/profile"
-                    ? "bg-gray-600 text-white dark:bg-gray-600"
-                    : "text-gray-700 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700",
-                )}
+                className={`flex items-center font-medium hover:underline ${pathname === "/profile" ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}
               >
+                <Avatar className="mr-2 h-6 w-6">
+                  <AvatarImage src="/placeholder-user.jpg" alt="User Avatar" />
+                  <AvatarFallback>{session.user.email?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
+                </Avatar>
                 Profile
               </Link>
             </li>
             <li>
-              <Button
-                onClick={handleSignOut}
-                variant="ghost"
-                className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700"
-              >
+              <Button variant="outline" size="sm" onClick={() => signOut()}>
                 Sign Out
               </Button>
             </li>
@@ -115,14 +69,9 @@ export function Navigation() {
           <li>
             <Link
               href="/login"
-              className={cn(
-                "px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                pathname === "/login"
-                  ? "bg-gray-600 text-white dark:bg-gray-600"
-                  : "text-gray-700 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700",
-              )}
+              className={`font-medium hover:underline ${pathname === "/login" ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}
             >
-              Login
+              Sign In
             </Link>
           </li>
         )}
