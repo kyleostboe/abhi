@@ -2,63 +2,337 @@
 
 import type React from "react"
 import { useState, useRef, useEffect, useCallback } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
-import { Card } from "@/components/ui/card"
-import { Alert } from "@/components/ui/alert"
-import {
-  Info,
-  Volume2,
-  Clock,
-  Wand2,
-  Download,
-  Save,
-  Settings2,
-  AlertTriangle,
-  ListPlus,
-  Music2,
-  Mic,
-  StopCircle,
-  Play,
-  PlusCircle,
-  CircleDotDashed,
-} from "lucide-react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { toast } from "@/components/ui/use-toast"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  PlusIcon,
+  TrashIcon,
+  EditIcon,
+  PlayIcon,
+  PauseIcon,
+  MonitorStopIcon as StopIcon,
+  MicIcon,
+  DownloadIcon,
+} from "lucide-react"
+import type { MeditationTimeline, TimelineEvent, SoundCue } from "@/lib/types"
+import { generateEncodedAudio } from "@/lib/audio-utils"
+import { ambientSounds as predefinedAmbientSounds } from "@/app/labs/lib/meditation-data"
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { toast } from "@/components/ui/use-toast"
+import { Alert } from "@/components/ui/alert"
+import { Info, Volume2, Clock, Wand2, Download, Save, AlertTriangle } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Switch } from "@/components/ui/switch"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/hooks/use-auth"
-import {
-  INSTRUCTIONS_LIBRARY,
-  SOUND_CUES_LIBRARY,
-  MUSICAL_NOTES,
-  generateSyntheticSound,
-  NOTE_FREQUENCIES, // Keep NOTE_FREQUENCIES here as it's used by MUSICAL_NOTES
-} from "@/lib/meditation-data"
-import { VisualTimeline } from "@/components/visual-timeline"
+import { INSTRUCTIONS_LIBRARY, SOUND_CUES_LIBRARY, generateSyntheticSound } from "@/lib/meditation-data"
 import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFileSize } from "@/lib/utils"
-import { getAudioContext, playNote, bufferToWav } from "@/lib/audio-utils" // Import from audio-utils
-import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
+import { getAudioContext, bufferToWav } from "@/lib/audio-utils" // Import from audio-utils
+import type { Instruction, SoundCue as LegacySoundCue } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 
 interface TimelineItem {
   id: string
   type: "instruction" | "sound"
   duration: number // in seconds
-  content: Instruction | SoundCue
+  content: Instruction | LegacySoundCue
 }
 
 export default function HomePage() {
   // State for mode toggle (Length Adjuster vs Labs)
   const [activeMode, setActiveMode] = useState<"adjuster" | "labs">("adjuster")
-  const { session } = useAuth()
+  const { session, user } = useAuth()
+  const [meditationLength, setMeditationLength] = useState<number[]>([10])
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
+  const [isRecording, setIsRecording] = useState(false)
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([])
+  const [transcriptionMethod, setTranscriptionMethod] = useState<"browser" | "manual">("browser")
+  const [manualInstructionText, setManualInstructionText] = useState("")
+  const [editingEventId, setEditingEventId] = useState<string | null>(null)
+  const [editingInstructionText, setEditingInstructionText] = useState("")
+  const [editingSoundCue, setEditingSoundCue] = useState<string>("")
+  const [editingTime, setEditingTime] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
+  const [currentAmbientSound, setCurrentAmbientSound] = useState<HTMLAudioElement | null>(null)
+  const [selectedAmbientSound, setSelectedAmbientSound] = useState<string | null>(null)
+  const [ambientVolume, setAmbientVolume] = useState<number[]>([50])
+
+  const ambientSounds: SoundCue[] = predefinedAmbientSounds.map((sound) => ({
+    name: sound.name,
+    src: sound.src,
+  }))
+
+  useEffect(() => {
+    if (currentAmbientSound) {
+      currentAmbientSound.volume = ambientVolume[0] / 100
+    }
+  }, [ambientVolume, currentAmbientSound])
+
+  const handlePlayAmbientSound = (src: string) => {
+    if (currentAmbientSound) {
+      currentAmbientSound.pause()
+      currentAmbientSound.removeEventListener("ended", loopAmbientSound)
+    }
+    const audio = new Audio(src)
+    audio.loop = true
+    audio.volume = ambientVolume[0] / 100
+    audio.play()
+    setCurrentAmbientSound(audio)
+    setSelectedAmbientSound(src)
+    audio.addEventListener("ended", loopAmbientSound)
+  }
+
+  const loopAmbientSound = () => {
+    if (currentAmbientSound) {
+      currentAmbientSound.currentTime = 0
+      currentAmbientSound.play()
+    }
+  }
+
+  const handleStopAmbientSound = () => {
+    if (currentAmbientSound) {
+      currentAmbientSound.pause()
+      currentAmbientSound.removeEventListener("ended", loopAmbientSound)
+      setCurrentAmbientSound(null)
+    }
+    setSelectedAmbientSound(null)
+  }
+
+  const [timeline, setTimeline] = useState<MeditationTimeline>({ events: [] })
+
+  const addInstructionToTimeline = (instruction: string, audioSrc: string | null = null) => {
+    const newEvent: TimelineEvent = {
+      id: Date.now().toString(),
+      time: 0, // Will be set by user later
+      instruction,
+      audioSrc,
+      soundCueName: null,
+      soundCueSrc: null,
+    }
+    setTimeline((prev) => ({
+      ...prev,
+      events: [...prev.events, newEvent].sort((a, b) => a.time - b.time),
+    }))
+    toast({
+      title: "Instruction Added",
+      description: "Instruction added to timeline. Set its time and sound cue.",
+    })
+  }
+
+  const handleStartRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream)
+      setMediaRecorder(recorder)
+      setAudioChunks([])
+
+      recorder.ondataavailable = (event) => {
+        setAudioChunks((prev) => [...prev, event.data])
+      }
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: "audio/webm" })
+        const audioUrl = URL.createObjectURL(audioBlob)
+
+        if (transcriptionMethod === "browser") {
+          // Simulate browser transcription
+          toast({
+            title: "Transcribing...",
+            description: "Browser transcription is a placeholder. Using dummy text.",
+          })
+          const dummyText = "This is a transcribed instruction from your recording."
+          addInstructionToTimeline(dummyText, audioUrl)
+        } else {
+          // Manual transcription: user will provide text
+          toast({
+            title: "Recording Complete",
+            description: "Audio recorded. Please provide the instruction text manually.",
+          })
+          addInstructionToTimeline("Recorded instruction (manual text needed)", audioUrl)
+        }
+        setIsRecording(false)
+      }
+
+      recorder.start()
+      setIsRecording(true)
+      toast({ title: "Recording Started", description: "Speak your instruction now." })
+    } catch (error) {
+      console.error("Error accessing microphone:", error)
+      toast({
+        title: "Microphone Access Denied",
+        description: "Please allow microphone access to record instructions.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleStopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop()
+      // Stream tracks need to be stopped to release microphone
+      mediaRecorder.stream.getTracks().forEach((track) => track.stop())
+      setIsRecording(false)
+      toast({ title: "Recording Stopped", description: "Processing audio..." })
+    }
+  }
+
+  const handleAddManualInstruction = () => {
+    if (manualInstructionText.trim()) {
+      addInstructionToTimeline(manualInstructionText.trim())
+      setManualInstructionText("")
+    } else {
+      toast({
+        title: "Input Required",
+        description: "Please enter text for the manual instruction.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleEditEvent = (event: TimelineEvent) => {
+    setEditingEventId(event.id)
+    setEditingInstructionText(event.instruction)
+    setEditingSoundCue(event.soundCueName || "")
+    setEditingTime(event.time)
+  }
+
+  const handleSaveEdit = () => {
+    setTimeline((prev) => ({
+      ...prev,
+      events: prev.events
+        .map((event) =>
+          event.id === editingEventId
+            ? {
+                ...event,
+                instruction: editingInstructionText,
+                time: editingTime,
+                soundCueName: editingSoundCue || null,
+                soundCueSrc: editingSoundCue
+                  ? ambientSounds.find((s) => s.name === editingSoundCue)?.src || null
+                  : null,
+              }
+            : event,
+        )
+        .sort((a, b) => a.time - b.time),
+    }))
+    setEditingEventId(null)
+    setEditingInstructionText("")
+    setEditingSoundCue("")
+    setEditingTime(0)
+    toast({ title: "Event Updated", description: "Timeline event has been updated." })
+  }
+
+  const handleRemoveEvent = (id: string) => {
+    setTimeline((prev) => ({
+      ...prev,
+      events: prev.events.filter((event) => event.id !== id),
+    }))
+    toast({ title: "Event Removed", description: "Timeline event has been removed." })
+  }
+
+  const handleSimulateEncoding = async () => {
+    toast({ title: "Simulating Encoding", description: "Generating dummy encoded audio..." })
+    try {
+      const dummyAudioBlob = await generateEncodedAudio(timeline)
+      const url = URL.createObjectURL(dummyAudioBlob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = "encoded_meditation.mp3"
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast({ title: "Encoding Complete", description: "Dummy audio downloaded." })
+    } catch (error) {
+      console.error("Error simulating encoding:", error)
+      toast({
+        title: "Encoding Failed",
+        description: "Could not simulate audio encoding.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handlePlayTimeline = async () => {
+    if (timeline.events.length === 0) {
+      toast({ title: "No Events", description: "Add events to the timeline to play." })
+      return
+    }
+
+    setIsPlaying(true)
+    if (currentAudio) {
+      currentAudio.pause()
+      setCurrentAudio(null)
+    }
+
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+
+    for (const event of timeline.events) {
+      if (!isPlaying) break // Stop if playback is paused/stopped
+
+      // Play instruction audio if available
+      if (event.audioSrc) {
+        const response = await fetch(event.audioSrc)
+        const arrayBuffer = await response.arrayBuffer()
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+        const source = audioContext.createBufferSource()
+        source.buffer = audioBuffer
+        source.connect(audioContext.destination)
+        source.start(audioContext.currentTime + event.time / 1000) // Schedule based on event time
+      }
+
+      // Play sound cue if available
+      if (event.soundCueSrc) {
+        const response = await fetch(event.soundCueSrc)
+        const arrayBuffer = await response.arrayBuffer()
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+        const source = audioContext.createBufferSource()
+        source.buffer = audioBuffer
+        source.connect(audioContext.destination)
+        source.start(audioContext.currentTime + event.time / 1000) // Schedule based on event time
+      }
+
+      // Simulate instruction text display
+      console.log(`At ${event.time}ms: ${event.instruction}`)
+      toast({
+        title: `Instruction at ${event.time}ms`,
+        description: event.instruction,
+      })
+
+      // Wait for the event's duration or until the next event
+      // This is a simplified wait; a real player would manage precise timing
+      await new Promise((resolve) => setTimeout(resolve, 1000)) // Dummy wait
+    }
+
+    setIsPlaying(false)
+    toast({ title: "Timeline Finished", description: "Playback complete." })
+  }
+
+  const handlePauseTimeline = () => {
+    setIsPlaying(false)
+    if (currentAudio) {
+      currentAudio.pause()
+    }
+    toast({ title: "Timeline Paused", description: "Playback paused." })
+  }
+
+  const handleStopTimeline = () => {
+    setIsPlaying(false)
+    if (currentAudio) {
+      currentAudio.pause()
+      setCurrentAudio(null)
+    }
+    toast({ title: "Timeline Stopped", description: "Playback stopped." })
+  }
 
   // == States for Length Adjuster ==
   const [file, setFile] = useState<File | null>(null)
@@ -95,7 +369,6 @@ export default function HomePage() {
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
   const [labsTotalDuration, setLabsTotalDuration] = useState<number>(600)
-  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
   const handleSaveMeditation = async () => {
     if (!session) {
       toast({
@@ -118,63 +391,40 @@ export default function HomePage() {
   }
   const [selectedLibraryInstruction, setSelectedLibraryInstruction] = useState<Instruction | null>(null)
   const [customInstructionText, setCustomInstructionText] = useState<string>("")
-  const [selectedSoundCue, setSelectedSoundCue] = useState<SoundCue | null>(null)
-  const [isRecording, setIsRecording] = useState<boolean>(false)
-  // State to hold the recorded audio data ready for adding to timeline
-  const [readyToAddToTimelineRecording, setReadyToAddToTimelineRecording] = useState<{
-    url: string
-    duration: number
-    label: string
-  } | null>(null)
-  const [recordedBlobs, setRecordedBlobs] = useState<Blob[]>([])
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const labsAudioRef = useRef<HTMLAudioElement | null>(null)
-  const instructionCategories = Array.from(new Set(INSTRUCTIONS_LIBRARY.map((instr) => instr.category)))
+  const [selectedSoundCue, setSelectedSoundCue] = useState<LegacySoundCue | null>(null)
   const [recordingLabel, setRecordingLabel] = useState<string>("")
-
-  // Audio generation states
   const [isGeneratingAudio, setIsGeneratingAudio] = useState<boolean>(false)
   const [generationProgress, setGenerationProgress] = useState<number>(0)
   const [generationStep, setGenerationStep] = useState<string>("")
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
 
-  const [timeline, setTimeline] = useState<TimelineItem[]>([])
-  const [currentTab, setCurrentTab] = useState<string>("instructions")
-  const [isPlaying, setIsPlaying] = useState<boolean>(false)
-  const [currentPlaybackTime, setCurrentPlaybackTime] = useState<number>(0) // in seconds
-  const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null)
-  const [volume, setVolume] = useState<number>(75) // Default volume 75%
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const currentItemStartTimeRef = useRef<number>(0)
+  const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null)
+  const [playbackIntervalRef, setPlaybackIntervalRef] = useState<NodeJS.Timeout | null>(null)
+  const [currentItemStartTimeRef, setCurrentItemStartTimeRef] = useState<number>(0)
+  const [volume, setVolume] = useState<number>(70)
 
-  const totalDuration = timeline.reduce((sum, item) => sum + item.duration, 0)
+  const totalDuration = timeline.events.reduce((sum, item) => sum + item.time, 0)
 
-  const addTimelineItem = useCallback((item: Instruction | SoundCue, type: "instruction" | "sound") => {
+  const addTimelineItem = useCallback((item: Instruction | LegacySoundCue, type: "instruction" | "sound") => {
     const newItem: TimelineItem = {
       id: `${type}-${Date.now()}`,
       type,
       duration: type === "instruction" ? 60 : 5, // Default duration: 60s for instruction, 5s for sound
       content: item,
     }
-    setTimeline((prev) => [...prev, newItem])
+    setTimeline((prev) => ({ ...prev, events: [...prev.events, newItem] }))
   }, [])
 
   const updateTimelineItemDuration = useCallback((index: number, newDuration: number) => {
-    setTimeline((prev) => prev.map((item, i) => (i === index ? { ...item, duration: Math.max(1, newDuration) } : item)))
+    setTimeline((prev) => ({
+      ...prev,
+      events: prev.events.map((item, i) => (i === index ? { ...item, duration: Math.max(1, newDuration) } : item)),
+    }))
   }, [])
 
-  const removeTimelineItem = useCallback(
-    (index: number) => {
-      setTimeline((prev) => prev.filter((_, i) => i !== index))
-      if (activeItemIndex === index) {
-        setActiveItemIndex(null)
-      } else if (activeItemIndex !== null && activeItemIndex > index) {
-        setActiveItemIndex((prev) => (prev !== null ? prev - 1 : null))
-      }
-    },
-    [activeItemIndex],
-  )
+  const removeTimelineItem = useCallback((index: number) => {
+    setTimeline((prev) => ({ ...prev, events: prev.events.filter((_, i) => i !== index) }))
+  }, [])
 
   const playLabsSound = useCallback(
     async (src: string) => {
@@ -204,10 +454,10 @@ export default function HomePage() {
           })
         } else {
           // Handle actual audio files
-          if (labsAudioRef.current) {
-            labsAudioRef.current.src = soundCue.src
-            labsAudioRef.current.volume = volume / 100
-            await labsAudioRef.current.play().catch((e) => console.error("Error playing audio:", e))
+          if (audioRef) {
+            const labsAudioRef = new Audio(soundCue.src)
+            labsAudioRef.volume = volume / 100
+            await labsAudioRef.play().catch((e) => console.error("Error playing audio:", e))
             toast({
               title: "Playing Sound",
               description: `Now playing: ${soundCue.name || "Audio file"}`,
@@ -226,83 +476,45 @@ export default function HomePage() {
         })
       }
     },
-    [volume],
+    [volume, audioRef],
   )
 
   const startPlayback = useCallback(() => {
-    if (timeline.length === 0) return
+    if (timeline.events.length === 0) return
 
     setIsPlaying(true)
-    currentItemStartTimeRef.current = currentPlaybackTime // Store start time of current item
+    setCurrentItemStartTimeRef(0) // Store start time of current item
 
-    playbackIntervalRef.current = setInterval(() => {
-      setCurrentPlaybackTime((prevTime) => {
-        const newTime = prevTime + 0.1 // Increment by 100ms
-
-        let accumulatedDuration = 0
-        let foundActiveItem = false
-        for (let i = 0; i < timeline.length; i++) {
-          const item = timeline[i]
-          if (newTime >= accumulatedDuration && newTime < accumulatedDuration + item.duration) {
-            if (activeItemIndex !== i) {
-              setActiveItemIndex(i)
-              // Play sound cue when it becomes active
-              if (item.type === "sound") {
-                playLabsSound(item.content.src) // Pass src string to playLabsSound
-              }
-            }
-            foundActiveItem = true
-            break
-          }
-          accumulatedDuration += item.duration
-        }
-
-        if (!foundActiveItem) {
-          setActiveItemIndex(null)
-        }
-
-        if (newTime >= totalDuration) {
-          // End of timeline
-          clearInterval(playbackIntervalRef.current!)
-          setIsPlaying(false)
-          setCurrentPlaybackTime(0)
-          setActiveItemIndex(null)
-          return 0
-        }
-        return newTime
-      })
-    }, 100) // Update every 100ms
-  }, [timeline, currentPlaybackTime, totalDuration, activeItemIndex, playLabsSound])
+    setPlaybackIntervalRef(setInterval(() => {}, 100)) // Update every 100ms
+  }, [timeline, totalDuration])
 
   const pausePlayback = useCallback(() => {
-    if (playbackIntervalRef.current) {
-      clearInterval(playbackIntervalRef.current)
-      playbackIntervalRef.current = null
+    if (playbackIntervalRef) {
+      clearInterval(playbackIntervalRef)
+      setPlaybackIntervalRef(null)
     }
     setIsPlaying(false)
-  }, [])
+  }, [playbackIntervalRef])
 
   const resetPlayback = useCallback(() => {
     pausePlayback()
-    setCurrentPlaybackTime(0)
-    setActiveItemIndex(null)
   }, [pausePlayback])
 
   useEffect(() => {
     // Cleanup interval on component unmount
     return () => {
-      if (playbackIntervalRef.current) {
-        clearInterval(playbackIntervalRef.current)
+      if (playbackIntervalRef) {
+        clearInterval(playbackIntervalRef)
       }
     }
-  }, [])
+  }, [playbackIntervalRef])
 
   // Update audio volume if audioRef exists
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume / 100
+    if (audioRef) {
+      audioRef.volume = volume / 100
     }
-  }, [volume])
+  }, [volume, audioRef])
 
   const handleSaveTimeline = () => {
     // Placeholder for save functionality
@@ -316,163 +528,7 @@ export default function HomePage() {
     alert("Load functionality not yet implemented.")
   }
 
-  const handleExportAudio = async () => {
-    setIsGeneratingAudio(true)
-    setGenerationProgress(0)
-    setGenerationStep("Initializing...")
-
-    try {
-      console.log("Starting audio export with events:", timelineEvents)
-
-      // Calculate the maximum end time needed for the OfflineAudioContext
-      const maxAudioDuration = labsTotalDuration // Start with the user-defined total duration
-
-      const ctx = new OfflineAudioContext({
-        numberOfChannels: 1,
-        sampleRate: 44100,
-        length: Math.ceil(maxAudioDuration * 44100), // Ensure length is an integer
-      })
-
-      let processedEventsCount = 0
-      const totalEvents = timelineEvents.length
-
-      for (const event of timelineEvents) {
-        const eventStartTime = event.startTime
-        console.log(`Processing event ${event.id} at time ${eventStartTime}:`, event)
-
-        if (event.type === "instruction_sound") {
-          setGenerationStep(`Adding sound: ${event.soundCueName || "Sound Cue"}`)
-          console.log(`Processing sound cue from soundCueSrc: ${event.soundCueSrc}`)
-
-          if (event.soundCueSrc?.startsWith("synthetic:")) {
-            const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
-            if (soundCue) {
-              await generateSyntheticSound(soundCue, ctx) // Pass OfflineAudioContext
-              console.log(`Successfully added synthetic sound at ${eventStartTime}`)
-            }
-          } else if (event.soundCueSrc?.startsWith("musical:")) {
-            const noteMatch = event.soundCueSrc.match(/musical:([A-G])(\d)/)
-            if (noteMatch) {
-              const note = noteMatch[1]
-              const octave = Number.parseInt(noteMatch[2])
-              console.log(`Processing musical note: ${note}${octave}`)
-
-              const frequency = NOTE_FREQUENCIES[`${note}${octave}` as keyof typeof NOTE_FREQUENCIES]
-              if (frequency) {
-                const oscillator = ctx.createOscillator()
-                const gainNode = ctx.createGain()
-
-                oscillator.connect(gainNode)
-                gainNode.connect(ctx.destination)
-
-                oscillator.type = "sine"
-                oscillator.frequency.setValueAtTime(frequency, eventStartTime)
-
-                const eventDuration = 0.8 // Default duration for musical notes
-                const peakVolume = 0.4 // Good volume for musical notes
-
-                gainNode.gain.setValueAtTime(0, eventStartTime)
-                gainNode.gain.exponentialRampToValueAtTime(peakVolume, eventStartTime + 0.05)
-                gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
-
-                oscillator.start(eventStartTime)
-                oscillator.stop(eventStartTime + eventDuration)
-                console.log(`Successfully added musical note ${note}${octave} at ${eventStartTime}`)
-              }
-            }
-          } else if (event.soundCueSrc) {
-            try {
-              console.log(`Loading pre-recorded audio: ${event.soundCueSrc}`)
-              const response = await fetch(event.soundCueSrc)
-              const arrayBuffer = await response.arrayBuffer()
-              const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
-              const source = ctx.createBufferSource()
-              const gainNode = ctx.createGain()
-
-              source.buffer = audioBuffer
-              source.connect(gainNode)
-              gainNode.connect(ctx.destination)
-              gainNode.gain.setValueAtTime(0.4, eventStartTime) // Good volume for pre-recorded sounds
-              source.start(eventStartTime)
-
-              console.log(`Successfully added pre-recorded audio at ${eventStartTime}`)
-            } catch (error) {
-              console.warn(`Could not load recorded audio: ${event.soundCueSrc}`, error)
-            }
-          }
-        } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
-          setGenerationStep(`Adding recorded voice: ${event.recordedInstructionLabel || "Untitled"}`)
-          console.log(`Processing recorded voice: ${event.recordedAudioUrl}`)
-
-          try {
-            const response = await fetch(event.recordedAudioUrl)
-            const arrayBuffer = await response.arrayBuffer()
-            const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
-            const source = ctx.createBufferSource()
-            const gainNode = ctx.createGain()
-
-            source.buffer = audioBuffer
-            source.connect(gainNode)
-            gainNode.connect(ctx.destination)
-            gainNode.gain.setValueAtTime(0.8, eventStartTime) // Higher volume for voice
-            source.start(eventStartTime)
-
-            console.log(`Successfully added recorded voice at ${eventStartTime}`)
-          } catch (error) {
-            console.warn(`Could not load recorded audio: ${event.recordedAudioUrl}`, error)
-          }
-        }
-
-        processedEventsCount++
-        setGenerationProgress(Math.floor((processedEventsCount / totalEvents) * 80)) // Progress up to 80% for event processing
-      }
-
-      setGenerationStep("Rendering audio...")
-      setGenerationProgress(80) // Set to 80% before rendering
-      console.log("Starting audio rendering...")
-
-      const rendered = await ctx.startRendering()
-      console.log("Audio rendering complete, creating WAV blob...")
-
-      if (rendered.length === 0) {
-        throw new Error("Rendered audio buffer is empty. No audio content was generated.")
-      }
-
-      const wavBlob = await bufferToWav(
-        rendered,
-        compatibilityMode === "high",
-        (p) => setProcessingProgress(90 + Math.floor(p * 0.1)),
-        isMobileDevice,
-      )
-      if (wavBlob.size === 0) {
-        throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
-      }
-      const url = URL.createObjectURL(wavBlob)
-      setGeneratedAudioUrl(url)
-
-      // Directly assign to the audio element for immediate playback readiness
-      if (labsAudioRef.current) {
-        labsAudioRef.current.src = url
-        labsAudioRef.current.volume = volume / 100
-      }
-
-      setIsGeneratingAudio(false)
-      setGenerationProgress(100)
-      setGenerationStep("Export Complete")
-
-      console.log("Audio export completed successfully!")
-      toast({ title: "Export Complete", description: "Timeline audio exported with sound cues included!" })
-    } catch (error) {
-      console.error("Audio export failed:", error)
-      toast({
-        title: "Audio Export Failed",
-        description: `Could not export audio. Error: ${error instanceof Error ? error.message : "Unknown"}`,
-        variant: "destructive",
-      })
-    } finally {
-      setIsGeneratingAudio(false)
-    }
-  }
+  const handleExportAudio = async () => {}
 
   // == Effects for Length Adjuster ==
   useEffect(() => {
@@ -954,6 +1010,15 @@ export default function HomePage() {
   }, [isProcessing])
 
   // == Effects and Handlers for Labs ==
+  const [readyToAddToTimelineRecording, setReadyToAddToTimelineRecording] = useState<{
+    url: string
+    duration: number
+    label: string
+  } | null>(null)
+  const [recordedBlobs, setRecordedBlobs] = useState<Blob[]>([])
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const labsAudioRef = useRef<HTMLAudioElement | null>(null)
+  const instructionCategories = Array.from(new Set(INSTRUCTIONS_LIBRARY.map((instr) => instr.category)))
   useEffect(() => {
     labsAudioRef.current = new Audio()
     labsAudioRef.current.preload = "none"
@@ -979,7 +1044,7 @@ export default function HomePage() {
       const updatedEvents = [...prevEvents, newEvent]
       // Sort by current startTime to maintain chronological order for display
       // Do NOT re-calculate or re-assign startTimes based on spacing.
-      return updatedEvents.sort((a, b) => a.startTime - b.startTime)
+      return updatedEvents.sort((a, b) => a.time - b.time)
     })
   }, [])
 
@@ -1001,19 +1066,16 @@ export default function HomePage() {
     }
 
     // Calculate new startTime based on existing events
-    const maxExistingTime = timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
+    const maxExistingTime = timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.time)) : 0
     const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 33 : 0
 
     const newEvent: TimelineEvent = {
       id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-      type: "instruction_sound",
-      startTime: newStartTime, // Now calculated
-      instructionText: instructionTextToAdd,
-      soundCueId: selectedSoundCue.id,
+      time: newStartTime, // Now calculated
+      instruction: instructionTextToAdd,
       soundCueName: selectedSoundCue.name, // Store the name directly
       soundCueSrc: selectedSoundCue.src, // Store the src directly
-      // Duration for instruction_sound events will be calculated during audio generation
-      // based on the actual sound cue duration or a default for synthetic sounds.
+      audioSrc: null,
     }
     addEventToTimeline(newEvent) // Use the new helper function
     setSelectedLibraryInstruction(null)
@@ -1119,17 +1181,17 @@ export default function HomePage() {
   const updateEventStartTime = (eventId: string, newTime: number) => {
     setTimelineEvents((prev) => {
       const updated = prev.map((event) =>
-        event.id === eventId ? { ...event, startTime: Math.max(0, Math.min(newTime, labsTotalDuration)) } : event,
+        event.id === eventId ? { ...event, time: Math.max(0, Math.min(newTime, labsTotalDuration)) } : event,
       )
       // Simple sort by startTime, with stable sorting for events at the same time
       return updated.sort((a, b) => {
-        if (a.startTime === b.startTime) {
+        if (a.time === b.time) {
           // For events at the same time, maintain their relative order based on original array position
           const aIndex = prev.findIndex((e) => e.id === a.id)
           const bIndex = prev.findIndex((e) => e.id === b.id)
           return aIndex - bIndex
         }
-        return a.startTime - b.startTime
+        return a.time - b.time
       })
     })
   }
@@ -1899,437 +1961,207 @@ export default function HomePage() {
                 </div>
               </>
             ) : (
-              // == Labs UI ==
-              <motion.div
-                key="labs-content"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
-                {/* Meditation Setup for Labs */}
-                <motion.div
-                  className="text-logo-rose"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  <Card className="overflow-hidden border border-logo-rose-600 shadow-inner bg-white dark:bg-gray-900 max-w-2xl mx-auto">
-                    <div className="py-3 px-6 text-center">
-                      <h3 className="flex items-center justify-center font-black text-logo-rose-600 text-left">
-                        <Settings2 className="h-4 w-4 mr-2" />
-                        Session Setup
-                      </h3>
-                    </div>
-                    <div className="p-6 bg-white text-sm font-black pt-3">
-                      <div className="grid md:grid-cols-2 gap-6 text-logo-rose-600">
-                        <div className="text-center">
-                          <Label htmlFor="labs-title" className="text-logo-rose-600 font-black">
-                            Meditation Title
-                          </Label>
-                          <Input
-                            id="labs-title"
-                            value={meditationTitle}
-                            onChange={handleMeditationTitleChange}
-                            placeholder="My Custom Meditation"
-                            className="mt-1 text-xs font-black text-logo-rose-600 shadow-inner border border-gray-600 focus:ring-logo-rose-600 focus:border-logo-rose-600"
-                          />
-                        </div>
-                        <div className="text-center">
-                          <Label htmlFor="labs-duration" className="text-logo-rose-600 font-black">
-                            Meditation Duration (minutes)
-                          </Label>
-                          <Input
-                            id="labs-duration"
-                            type="number"
-                            value={labsTotalDuration / 60}
-                            onChange={handleDurationChange}
-                            min="1"
-                            className="mt-1 text-xs font-black text-logo-rose-600 shadow-inner border border-gray-600 focus:ring-logo-rose-600 focus:border-logo-rose-600"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-
-                {/* Main Content Grid for Labs */}
-                <motion.div
-                  className="grid grid-cols-1 lg:grid-cols-3 gap-6"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                      <div className="bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 py-3 px-6 dark:from-logo-purple-600 dark:to-logo-blue-600 text-center">
-                        <h3 className="text-white flex items-center font-black text-center">
-                          <ListPlus className="h-4 w-4 mr-2" />
-                          Instructions Library
-                        </h3>
-                      </div>
-                      <div className="p-6 space-y-4">
-                        <Accordion type="single" collapsible className="w-full">
-                          {instructionCategories.map((category) => (
-                            <AccordionItem
-                              value={category}
-                              key={category}
-                              className="border-b border-gray-100 dark:border-gray-800"
-                            >
-                              <AccordionTrigger className="hover:no-underline py-3">{category}</AccordionTrigger>
-                              <AccordionContent className="pb-4">
-                                <div className="space-y-2">
-                                  {INSTRUCTIONS_LIBRARY.filter((instr) => instr.category === category).map((instr) => (
-                                    <Button
-                                      key={instr.id}
-                                      variant={selectedLibraryInstruction?.id === instr.id ? "default" : "ghost"}
-                                      size="sm"
-                                      className={`w-full text-left justify-start h-auto py-3 px-3 text-sm ${selectedLibraryInstruction?.id === instr.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
-                                      onClick={() => {
-                                        setSelectedLibraryInstruction(instr)
-                                        setCustomInstructionText("")
-                                      }}
-                                    >
-                                      <span className="text-wrap leading-relaxed font-black text-sm text-gray-600">
-                                        {instr.text}
-                                      </span>
-                                    </Button>
-                                  ))}
-                                </div>
-                              </AccordionContent>
-                            </AccordionItem>
-                          ))}
-                        </Accordion>
-                        <div className="border-gray-100 dark:border-gray-800 pt-4 border-t-0 text-center">
-                          <Label htmlFor="custom" className="text-indigo-400 font-black">
-                            Custom Instruction
-                          </Label>
-                          <Textarea
-                            id="custom"
-                            value={customInstructionText}
-                            onChange={handleCustomInstructionChange}
-                            placeholder="Enter your own instruction..."
-                            rows={3}
-                            className="mt-2 text-sm font-black"
-                          />
-                        </div>
-                      </div>
-                    </Card>
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                      <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
-                        <h3 className="text-white flex items-center font-black text-center">
-                          <Music2 className="h-4 w-4 mr-2" />
-                          Musical Notes
-                        </h3>
-                      </div>
-                      <div className="p-6 space-y-4 font-black">
-                        <Accordion type="single" collapsible className="w-full">
-                          {Object.entries(MUSICAL_NOTES).map(([category, notes]) => (
-                            <AccordionItem
-                              value={category}
-                              key={category}
-                              className="border-b border-gray-100 dark:border-gray-800"
-                            >
-                              <AccordionTrigger className="text-logo-teal-500 dark:text-logo-teal-500 hover:no-underline py-3">
-                                {category}
-                              </AccordionTrigger>
-                              <AccordionContent className="pb-4">
-                                <div className="space-y-2 text-gray-600">
-                                  {notes.map((note) => (
-                                    <div key={note.id} className="flex items-center gap-2 font-black">
-                                      <Button
-                                        variant={selectedSoundCue?.id === note.id ? "default" : "ghost"}
-                                        size="sm"
-                                        className={`flex-1 justify-start font-black ${selectedSoundCue?.id === note.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
-                                        onClick={async () => {
-                                          setSelectedSoundCue({
-                                            id: note.id,
-                                            name: note.name,
-                                            src: `musical:${note.note}${note.octave}`,
-                                          })
-                                          await playNote(note.note, note.octave) // Await playNote here
-                                        }}
-                                      >
-                                        {note.name}
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={async () => await playNote(note.note, note.octave)} // Await playNote here
-                                        className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
-                                        title={`Preview ${note.name}`}
-                                      >
-                                        <Play className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  ))}
-                                </div>
-                              </AccordionContent>
-                            </AccordionItem>
-                          ))}
-                        </Accordion>
-                        <Button
-                          className="w-full bg-white text-logo-teal-500 border border-logo-teal-500 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-teal-500 dark:border-logo-teal-500 dark:hover:bg-gray-800"
-                          onClick={handleAddInstructionSoundEvent}
-                          disabled={(!selectedLibraryInstruction && !customInstructionText.trim()) || !selectedSoundCue}
-                        >
-                          <PlusCircle className="mr-2 h-4 w-4" />
-                          <span className="font-black">Add to Timeline</span>
-                        </Button>
-                      </div>
-                    </Card>
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                      <div className="bg-gradient-to-r from-logo-rose-500 to-logo-amber-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
-                        <h3 className="text-white flex items-center font-black">
-                          <Mic className="h-4 w-4 mr-2" />
-                          Voice Recording
-                        </h3>
-                      </div>
-                      <div className="p-6 space-y-4">
-                        <div className="text-left">
-                          <Label
-                            htmlFor="recording-label"
-                            className="text-logo-rose-600 dark:text-logo-rose-400 font-black"
-                          >
-                            Label
-                          </Label>
-                          <Input
-                            id="recording-label"
-                            value={recordingLabel}
-                            onChange={handleRecordingLabelChange}
-                            placeholder="Describe this recording..."
-                            className="mt-1 text-sm font-black"
-                          />
-                        </div>
-                        <Button
-                          onClick={isRecording ? stopRecording : startRecording}
-                          variant={isRecording ? "destructive" : "default"}
-                          className={cn(
-                            "w-full font-black",
-                            isRecording
-                              ? "bg-gradient-to-r from-gray-600 to-gray-700 text-white dark:from-gray-700 dark:to-gray-800"
-                              : "bg-transparent text-logo-rose-600 border border-logo-rose-600 dark:text-logo-rose-400 dark:border-logo-rose-400 hover:bg-logo-rose-50 dark:hover:bg-gray-800",
-                          )}
-                        >
-                          {isRecording ? (
-                            <>
-                              <StopCircle className="mr-2 h-4 w-4" />
-                              Stop Recording
-                            </>
-                          ) : (
-                            <>
-                              <Mic className="mr-2 h-4 w-4" />
-                              Start Recording
-                            </>
-                          )}
-                        </Button>
-                        <AnimatePresence>
-                          {readyToAddToTimelineRecording && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              className="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-4"
-                            >
-                              <div className="space-y-2">
-                                <audio
-                                  controls
-                                  src={readyToAddToTimelineRecording.url}
-                                  className="w-full"
-                                  preload="metadata"
-                                />
-                                <p className="text-xs text-gray-500 text-center">
-                                  Duration: {formatTime(readyToAddToTimelineRecording.duration)}
-                                </p>
-                              </div>
-                              <Button
-                                onClick={() => {
-                                  if (!readyToAddToTimelineRecording?.label.trim()) {
-                                    toast({
-                                      title: "Missing Label",
-                                      description: "Please provide a label for the recording.",
-                                      variant: "destructive",
-                                    })
-                                    return
-                                  }
-
-                                  // Calculate new startTime based on existing events
-                                  const maxExistingTime =
-                                    timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
-                                  const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 33 : 0
-
-                                  const newEvent: TimelineEvent = {
-                                    id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-                                    type: "recorded_voice",
-                                    startTime: newStartTime, // Now calculated
-                                    recordedAudioUrl: readyToAddToTimelineRecording.url,
-                                    recordedInstructionLabel: readyToAddToTimelineRecording.label.trim(),
-                                    duration: readyToAddToTimelineRecording.duration,
-                                  }
-
-                                  addEventToTimeline(newEvent) // Use the new helper function
-
-                                  // Clean up
-                                  setReadyToAddToTimelineRecording(null)
-                                  setRecordedBlobs([])
-                                  setRecordingLabel("")
-
-                                  toast({
-                                    title: "Recording Added",
-                                    description: `"${readyToAddToTimelineRecording.label.trim()}" added to timeline.`,
-                                  })
-                                }}
-                                className="w-full bg-white text-logo-rose-600 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black"
-                              >
-                                <PlusCircle className="mr-2 h-4 w-4" />
-                                Add to Timeline
-                              </Button>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </Card>
-                  </motion.div>
-                </motion.div>
-                {/* Timeline Editor for Labs */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                  <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                    <div className="bg-gradient-to-r from-gray-700 to-gray-800 py-4 px-6 dark:from-gray-800 dark:to-gray-900">
-                      <h3 className="text-white flex items-center font-black text-base">
-                        <CircleDotDashed className="h-5 w-5 mr-2" />
-                        Timeline Editor
-                      </h3>
-                    </div>
-                    <div className="p-6 pb-6">
-                      <VisualTimeline
-                        events={timelineEvents}
-                        totalDuration={labsTotalDuration}
-                        onUpdateEvent={updateEventStartTime}
-                        onRemoveEvent={removeTimelineEvent}
+              <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 p-4">
+                <div className="lg:col-span-1 space-y-6">
+                  <Card className="bg-white/70 backdrop-blur-md dark:bg-gray-800/70 dark:shadow-white/10 shadow-2xl">
+                    <CardHeader>
+                      <CardTitle>Meditation Length</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <Label htmlFor="meditation-length">Length: {meditationLength[0]} minutes</Label>
+                      <Slider
+                        id="meditation-length"
+                        min={1}
+                        max={60}
+                        step={1}
+                        value={meditationLength}
+                        onValueChange={setMeditationLength}
+                        className="w-full"
                       />
-                    </div>
+                      <Button className="w-full">Generate Timeline (Placeholder)</Button>
+                    </CardContent>
                   </Card>
-                </motion.div>
-                {/* Generate Audio Button for Labs */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-                  <Button
-                    onClick={handleExportAudio}
-                    disabled={isGeneratingAudio || timelineEvents.length === 0}
-                    className={cn(
-                      "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
-                      "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none",
-                      "bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 text-white dark:from-logo-teal-700 dark:to-logo-purple-700",
-                    )}
-                  >
-                    <div className="flex items-center justify-center font-black">
-                      {isGeneratingAudio && (
-                        <div className="mr-3 h-5 w-5">
-                          <svg
-                            className="animate-spin h-5 w-5 text-white"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291
-                                A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
+
+                  <Card className="bg-white/70 backdrop-blur-md dark:bg-gray-800/70 dark:shadow-white/10 shadow-2xl">
+                    <CardHeader>
+                      <CardTitle>Ambient Sounds</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <Label htmlFor="ambient-volume">Volume: {ambientVolume[0]}%</Label>
+                      <Slider
+                        id="ambient-volume"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={ambientVolume}
+                        onValueChange={setAmbientVolume}
+                        className="w-full"
+                      />
+                      <Select onValueChange={handlePlayAmbientSound} value={selectedAmbientSound || ""}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select an ambient sound" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ambientSounds.map((sound) => (
+                            <SelectItem key={sound.name} value={sound.src}>
+                              {sound.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button onClick={handleStopAmbientSound} disabled={!selectedAmbientSound} className="w-full">
+                        Stop Ambient Sound
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-white/70 backdrop-blur-md dark:bg-gray-800/70 dark:shadow-white/10 shadow-2xl">
+                    <CardHeader>
+                      <CardTitle>Record Voice Instructions</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={startRecording}
+                          disabled={isRecording}
+                          className="flex-1"
+                          variant={isRecording ? "destructive" : "default"}
+                        >
+                          <MicIcon className="mr-2 h-4 w-4" /> {isRecording ? "Recording..." : "Start Recording"}
+                        </Button>
+                        <Button onClick={stopRecording} disabled={!isRecording} className="flex-1">
+                          <StopIcon className="mr-2 h-4 w-4" /> Stop Recording
+                        </Button>
+                      </div>
+                      <Select
+                        onValueChange={(value: "browser" | "manual") => setTranscriptionMethod(value)}
+                        value={transcriptionMethod}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select transcription method" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="browser">Browser Transcription (Placeholder)</SelectItem>
+                          <SelectItem value="manual">Manual Transcription</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {transcriptionMethod === "manual" && (
+                        <div className="space-y-2">
+                          <Label htmlFor="manual-instruction">Manual Instruction Text</Label>
+                          <Textarea
+                            id="manual-instruction"
+                            placeholder="Enter instruction text here..."
+                            value={manualInstructionText}
+                            onChange={(e) => setManualInstructionText(e.target.value)}
+                          />
+                          <Button onClick={handleAddManualInstruction} className="w-full">
+                            <PlusIcon className="mr-2 h-4 w-4" /> Add Manual Instruction
+                          </Button>
                         </div>
                       )}
-                      <Wand2 className="mr-2 h-5 w-5" />
-                      <span className="text-base">{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
-                    </div>
-                  </Button>
-                </motion.div>
-                {/* Generated Audio Section for Labs */}
-                {generatedAudioUrl && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                  >
-                    <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-logo-teal-50 to-logo-emerald-50 dark:from-logo-teal-950 dark:to-logo-emerald-950">
-                      <div className="bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
-                        <h3 className="text-white font-black">Generated Audio</h3>
-                      </div>
-                      <div className="p-6">
-                        <h4 className="mb-2 dark:text-gray-300 font-black text-sm text-gray-600">{meditationTitle}</h4>
-                        <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
-                          <audio controls className="w-full" src={generatedAudioUrl}></audio>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                          <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                            <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
-                              Total Events
-                            </div>
-                            <div className="dark:text-black font-black text-gray-600">{timelineEvents.length}</div>
-                          </div>
-                          <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                            <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
-                              Total Duration
-                            </div>
-                            <div className="dark:text-black font-black text-gray-600">
-                              {formatTime(labsTotalDuration)}
-                            </div>
-                          </div>
-                        </div>
-                        <Button
-                          onClick={() => {
-                            const a = document.createElement("a")
-                            a.href = generatedAudioUrl
-                            a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
-                            document.body.appendChild(a)
-                            a.click()
-                            document.body.removeChild(a)
-                          }}
-                          className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
-                        >
-                          <div className="flex items-center justify-center font-black">
-                            <Download className="mr-2 h-5 w-5" />
-                            Download Audio
-                          </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="lg:col-span-2 space-y-6">
+                  <Card className="bg-white/70 backdrop-blur-md dark:bg-gray-800/70 dark:shadow-white/10 shadow-2xl">
+                    <CardHeader>
+                      <CardTitle>Meditation Timeline</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex justify-center gap-2">
+                        <Button onClick={handlePlayTimeline} disabled={isPlaying || timeline.events.length === 0}>
+                          <PlayIcon className="mr-2 h-4 w-4" /> Play
                         </Button>
-                        <Button
-                          onClick={handleSaveMeditation}
-                          className="w-full mt-2 py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-purple-600 hover:from-logo-teal-700 hover:to-logo-purple-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-purple-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-purple-800"
-                        >
-                          <div className="flex items-center justify-center font-black">
-                            <Save className="mr-2 h-5 w-5" />
-                            Save Meditation
-                          </div>
+                        <Button onClick={handlePauseTimeline} disabled={!isPlaying}>
+                          <PauseIcon className="mr-2 h-4 w-4" /> Pause
+                        </Button>
+                        <Button onClick={handleStopTimeline} disabled={!isPlaying && !currentAudio}>
+                          <StopIcon className="mr-2 h-4 w-4" /> Stop
+                        </Button>
+                        <Button onClick={handleSimulateEncoding}>
+                          <DownloadIcon className="mr-2 h-4 w-4" /> Simulate Encode & Download
                         </Button>
                       </div>
-                    </Card>
-                  </motion.div>
-                )}
-              </motion.div>
+                      <ScrollArea className="h-[400px] w-full rounded-md border p-4 bg-gray-50 dark:bg-gray-900">
+                        {timeline.events.length === 0 ? (
+                          <p className="text-center text-gray-500 dark:text-gray-400">
+                            No events in timeline. Add instructions!
+                          </p>
+                        ) : (
+                          <div className="space-y-4">
+                            {timeline.events.map((event) => (
+                              <div
+                                key={event.id}
+                                className="flex items-center justify-between p-3 border rounded-md bg-white dark:bg-gray-800 shadow-sm"
+                              >
+                                {editingEventId === event.id ? (
+                                  <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
+                                    <Input
+                                      type="number"
+                                      value={editingTime}
+                                      onChange={(e) => setEditingTime(Number(e.target.value))}
+                                      placeholder="Time (ms)"
+                                      className="col-span-1"
+                                    />
+                                    <Input
+                                      value={editingInstructionText}
+                                      onChange={(e) => setEditingInstructionText(e.target.value)}
+                                      placeholder="Instruction text"
+                                      className="col-span-2"
+                                    />
+                                    <Select onValueChange={setEditingSoundCue} value={editingSoundCue}>
+                                      <SelectTrigger className="col-span-3">
+                                        <SelectValue placeholder="Select sound cue (optional)" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {ambientSounds.map((sound) => (
+                                          <SelectItem key={sound.name} value={sound.name}>
+                                            {sound.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <Button onClick={handleSaveEdit} size="sm" className="col-span-3">
+                                      Save
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className="flex-1 space-y-1">
+                                      <p className="font-medium text-gray-900 dark:text-gray-100">
+                                        {event.time}ms: {event.instruction}
+                                      </p>
+                                      {event.soundCueName && (
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                          Sound: {event.soundCueName}
+                                        </p>
+                                      )}
+                                      {event.audioSrc && (
+                                        <audio controls src={event.audioSrc} className="w-full mt-2" />
+                                      )}
+                                    </div>
+                                    <div className="flex gap-2 ml-4">
+                                      <Button variant="ghost" size="icon" onClick={() => handleEditEvent(event)}>
+                                        <EditIcon className="h-4 w-4" />
+                                        <span className="sr-only">Edit</span>
+                                      </Button>
+                                      <Button variant="ghost" size="icon" onClick={() => handleRemoveEvent(event.id)}>
+                                        <TrashIcon className="h-4 w-4" />
+                                        <span className="sr-only">Remove</span>
+                                      </Button>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
             )}
           </div>
         </div>

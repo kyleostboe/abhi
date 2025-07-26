@@ -5,11 +5,8 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
-import { createClient } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 import { toast } from "@/components/ui/use-toast"
-
-const supabase = createClient()
 
 export function Navigation() {
   const pathname = usePathname()
