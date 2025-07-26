@@ -24,6 +24,16 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     try {
+      // Check if supabase client is initialized before attempting to use it
+      if (!supabase.auth) {
+        toast({
+          title: "Configuration Error",
+          description: "Supabase client is not initialized. Check environment variables.",
+          variant: "destructive",
+        })
+        return
+      }
+
       if (isSignup) {
         const { error } = await supabase.auth.signUp({ email, password })
         if (error) toast({ title: "Sign up failed", description: error.message, variant: "destructive" })
