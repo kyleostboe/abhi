@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Sparkles, Brain, Leaf } from "lucide-react"
 import { Navigation } from "@/components/navigation"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "@/components/ui/use-toast" // Corrected import
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/hooks/use-auth"
 import {

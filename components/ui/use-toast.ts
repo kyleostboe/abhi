@@ -1,5 +1,7 @@
 "use client"
 
+import type { Toast } from "@/components/ui/toast"
+
 import * as React from "react"
 
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast"
@@ -114,6 +116,38 @@ let state: State = {
   toasts: [],
 }
 
+function toast({ ...props }: Toast) {
+  const id = genId()
+
+  const update = (props: ToasterToast) =>
+    dispatch({
+      type: actionTypes.UPDATE_TOAST,
+      toast: { ...props, id },
+    })
+
+  const dismiss = () => dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id })
+
+  dispatch({
+    type: actionTypes.ADD_TOAST,
+    toast: {
+      ...props,
+      id,
+      open: true,
+      onOpenChange: (open) => {
+        if (!open) {
+          dismiss()
+        }
+      },
+    },
+  })
+
+  return {
+    id: id,
+    update,
+    dismiss,
+  }
+}
+
 function useToast() {
   const [toastState, setToastState] = React.useState(state)
 
@@ -163,4 +197,4 @@ function useToast() {
   }
 }
 
-export { useToast, reducer as toastReducer }
+export { useToast, toast } // Corrected export
