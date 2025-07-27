@@ -9,8 +9,8 @@ import { AuthProvider } from "@/hooks/use-auth" // Import AuthProvider
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Abhī",
-  description: "Abhī: Your personal meditation assistant.",
+  title: "abhī",
+  description: "Meditation tools for a calmer mind.",
     generator: 'v0.dev'
 }
 
@@ -23,11 +23,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <AuthProvider>
-            {" "}
-            {/* Wrap children with AuthProvider */}
-            {children}
-          </AuthProvider>
+          <AuthProvider>{children}</AuthProvider> {/* Wrap children with AuthProvider */}
           <Toaster />
         </ThemeProvider>
       </body>

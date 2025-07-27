@@ -7,6 +7,11 @@ import { Card } from "@/components/ui/card"
 import { Wand2, SaveIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/use-toast"
+import { useAuth } from "@/hooks/use-auth"
+import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 interface Instruction {
   id: string
@@ -38,6 +43,10 @@ const availableSounds: SoundDefinition[] = [
 ]
 
 export default function EncoderPage() {
+  const { user, isLoading: isAuthLoading } = useAuth()
+  const router = useRouter()
+  const supabase = createClient()
+
   const [file, setFile] = useState<File | null>(null)
   const [originalAudioUrl, setOriginalAudioUrl] = useState<string>("")
   const [transcriptionMethod, setTranscriptionMethod] = useState<"browser" | "manual">("browser")
@@ -53,6 +62,8 @@ export default function EncoderPage() {
   const [isListening, setIsListening] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [audioDuration, setAudioDuration] = useState(0)
+  const [meditationTitle, setMeditationTitle] = useState<string>("")
+  const [isSaving, setIsSaving] = useState<boolean>(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -60,6 +71,12 @@ export default function EncoderPage() {
   const audioRef = useRef<HTMLAudioElement>(null)
   const recognitionRef = useRef<any | null>(null)
   const originalAudioBufferRef = useRef<AudioBuffer | null>(null)
+
+  useEffect(() => {
+    if (!isAuthLoading && !user) {
+      router.push("/login")
+    }
+  }, [user, isAuthLoading, router])
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -214,7 +231,7 @@ export default function EncoderPage() {
     let transcript = ""
     const segments: Array<{ text: string; timestamp: number }> = []
 
-    recognition.onresult = (event) => {
+    recognition.onresult = (event: any) => {
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i]
         if (result.isFinal) {
@@ -228,7 +245,7 @@ export default function EncoderPage() {
       }
     }
 
-    recognition.onerror = (event) => {
+    recognition.onerror = (event: any) => {
       console.error("Speech recognition error:", event.error)
       setStatus({ message: "Speech recognition failed. Try the manual method instead.", type: "error" })
       setIsTranscribing(false)
@@ -632,28 +649,84 @@ export default function EncoderPage() {
     document.body.removeChild(a)
   }
 
-  const handleSaveMeditation = () => {
-    if (!encodedAudioUrl) {
+  const handleSaveMeditation = async () => {
+    if (!encodedAudioUrl || !user) {
       toast({
         title: "Save Error",
-        description: "No encoded audio to save. Please encode an audio file first.",
+        description: "Please encode an audio file and be logged in to save.",
         variant: "destructive",
       })
       return
     }
-    toast({
-      title: "Save Meditation",
-      description: "Saving meditations to your library is coming soon!",
-      variant: "default",
-    })
-    // In a real implementation, you would save the processed audio URL and metadata to Supabase
-    // For now, this is a placeholder.
+
+    if (!meditationTitle.trim()) {
+      toast({
+        title: "Title Required",
+        description: "Please enter a title for your meditation.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      // Convert blob URL to actual blob
+      const response = await fetch(encodedAudioUrl)
+      const blob = await response.blob()
+
+      // Upload audio file to Supabase storage
+      const fileName = `${user.id}/${Date.now()}_${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.wav`
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("meditation-audio")
+        .upload(fileName, blob)
+
+      if (uploadError) throw uploadError
+
+      // Save meditation metadata to database
+      const { error: dbError } = await supabase.from("meditations").insert({
+        user_id: user.id,
+        title: meditationTitle.trim(),
+        audio_url: uploadData.path,
+        duration_seconds: Math.round(audioDuration), // Assuming encoded audio has same duration as original for now
+        is_public: false, // Default to private
+        // description and other fields can be added here if needed
+      })
+
+      if (dbError) throw dbError
+
+      toast({
+        title: "Meditation Saved!",
+        description: `"${meditationTitle}" has been saved to your library.`,
+      })
+
+      setMeditationTitle("") // Clear title input
+    } catch (error) {
+      console.error("Error saving meditation:", error)
+      toast({
+        title: "Save Failed",
+        description: `Could not save meditation: ${error instanceof Error ? error.message : "Unknown error"}`,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs.toString().padStart(2, "0")}`
+  }
+
+  if (isAuthLoading || !user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-logo-teal-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -690,9 +763,31 @@ export default function EncoderPage() {
                 The full Encoder functionality is under active development. Please check back later for updates!
               </p>
               {/* Add a placeholder save button */}
-              <Button onClick={handleSaveMeditation} className="mt-4" variant="secondary">
-                <SaveIcon className="h-5 w-5 mr-2" /> Save Encoded Meditation
-              </Button>
+              {encodedAudioUrl && (
+                <div className="space-y-2 mt-4">
+                  <Label htmlFor="meditation-title" className="text-sm font-medium">
+                    Meditation Title
+                  </Label>
+                  <Input
+                    id="meditation-title"
+                    placeholder="Enter title to save"
+                    value={meditationTitle}
+                    onChange={(e) => setMeditationTitle(e.target.value)}
+                  />
+                  <Button
+                    onClick={handleSaveMeditation}
+                    className="w-full"
+                    disabled={isSaving || !meditationTitle.trim()}
+                  >
+                    {isSaving ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    ) : (
+                      <SaveIcon className="h-5 w-5 mr-2" />
+                    )}
+                    Save Encoded Meditation
+                  </Button>
+                </div>
+              )}
             </div>
           </Card>
         </div>

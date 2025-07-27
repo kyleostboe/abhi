@@ -4,42 +4,45 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "@/components/ui/use-toast"
 import { createClient } from "@/lib/supabase/client"
-import { EyeIcon, EyeOffIcon } from "lucide-react"
+import { Eye, EyeOff } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
+  const [isSigningUp, setIsSigningUp] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [passwordVisible, setPasswordVisible] = useState(false)
+
   const router = useRouter()
   const supabase = createClient()
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
+    setLoading(false)
+
     if (error) {
       toast({
-        title: "Sign In Error",
+        title: "Login Error",
         description: error.message,
         variant: "destructive",
       })
     } else {
       toast({
-        title: "Signed In",
-        description: "You have been successfully signed in.",
+        title: "Success",
+        description: "Logged in successfully!",
       })
-      router.push("/") // Redirect to home page
+      router.push("/")
     }
-    setIsLoading(false)
   }
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -52,17 +55,10 @@ export default function LoginPage() {
       })
       return
     }
-    if (password.length < 6) {
-      toast({
-        title: "Sign Up Error",
-        description: "Password must be at least 6 characters long.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsLoading(true)
+    setLoading(true)
     const { error } = await supabase.auth.signUp({ email, password })
+    setLoading(false)
+
     if (error) {
       toast({
         title: "Sign Up Error",
@@ -71,33 +67,53 @@ export default function LoginPage() {
       })
     } else {
       toast({
-        title: "Signed Up",
-        description: "Please check your email to confirm your account.",
+        title: "Success",
+        description: "Account created! Please check your email to confirm.",
       })
-      // Optionally redirect or show a message to check email
+      setIsSigningUp(false) // Switch back to login tab
     }
-    setIsLoading(false)
+  }
+
+  const handleGoogleLogin = async () => {
+    setLoading(true)
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`, // Ensure this matches your Supabase redirect URL
+      },
+    })
+    setLoading(false)
+
+    if (error) {
+      toast({
+        title: "Google Login Error",
+        description: error.message,
+        variant: "destructive",
+      })
+    }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <Card className="w-full max-w-md bg-white/80 backdrop-blur-lg dark:bg-gray-900/80 shadow-xl border border-gray-200 dark:border-gray-700">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold text-gray-800 dark:text-gray-200">Welcome to Abhī</CardTitle>
-          <p className="text-gray-600 dark:text-gray-400">Sign in or create an account</p>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="text-2xl">{isSigningUp ? "Create an account" : "Sign in to your account"}</CardTitle>
+          <CardDescription>
+            {isSigningUp ? "Enter your email below to create your account" : "Enter your email and password below"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
+          <Tabs defaultValue="login" className="w-full" onValueChange={(value) => setIsSigningUp(value === "signup")}>
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
+              <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
             </TabsList>
-            <TabsContent value="signin" className="mt-6">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div>
-                  <Label htmlFor="email-signin">Email</Label>
+            <TabsContent value="login" className="mt-4">
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
                   <Input
-                    id="email-signin"
+                    id="email"
                     type="email"
                     placeholder="m@example.com"
                     value={email}
@@ -105,38 +121,55 @@ export default function LoginPage() {
                     required
                   />
                 </div>
-                <div className="relative">
-                  <Label htmlFor="password-signin">Password</Label>
-                  <Input
-                    id="password-signin"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-7 h-8 px-3 py-2"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
-                    <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
-                  </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={passwordVisible ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-1"
+                      onClick={() => setPasswordVisible(!passwordVisible)}
+                    >
+                      {passwordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      <span className="sr-only">{passwordVisible ? "Hide password" : "Show password"}</span>
+                    </Button>
+                  </div>
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Signing In..." : "Sign In"}
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Logging in..." : "Login"}
                 </Button>
               </form>
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                className="w-full bg-transparent"
+                onClick={handleGoogleLogin}
+                disabled={loading}
+              >
+                Google
+              </Button>
             </TabsContent>
-            <TabsContent value="signup" className="mt-6">
+            <TabsContent value="signup" className="mt-4">
               <form onSubmit={handleSignUp} className="space-y-4">
-                <div>
-                  <Label htmlFor="email-signup">Email</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">Email</Label>
                   <Input
-                    id="email-signup"
+                    id="signup-email"
                     type="email"
                     placeholder="m@example.com"
                     value={email}
@@ -144,50 +177,40 @@ export default function LoginPage() {
                     required
                   />
                 </div>
-                <div className="relative">
-                  <Label htmlFor="password-signup">Password</Label>
-                  <Input
-                    id="password-signup"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-7 h-8 px-3 py-2"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
-                    <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
-                  </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="signup-password"
+                      type={passwordVisible ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-1"
+                      onClick={() => setPasswordVisible(!passwordVisible)}
+                    >
+                      {passwordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      <span className="sr-only">{passwordVisible ? "Hide password" : "Show password"}</span>
+                    </Button>
+                  </div>
                 </div>
-                <div className="relative">
-                  <Label htmlFor="confirm-password-signup">Confirm Password</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm Password</Label>
                   <Input
-                    id="confirm-password-signup"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
+                    id="confirm-password"
+                    type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-7 h-8 px-3 py-2"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
-                    <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
-                  </Button>
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Signing Up..." : "Sign Up"}
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Signing up..." : "Sign Up"}
                 </Button>
               </form>
             </TabsContent>

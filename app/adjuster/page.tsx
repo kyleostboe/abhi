@@ -12,6 +12,10 @@ import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { PlayIcon, PauseIcon, DownloadIcon, SaveIcon } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
+import { useAuth } from "@/hooks/use-auth"
+import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
+import { formatTime } from "@/lib/utils"
 
 interface AudioSegment {
   start: number
@@ -20,6 +24,10 @@ interface AudioSegment {
 }
 
 export default function AdjusterPage() {
+  const { user, isLoading: isAuthLoading } = useAuth()
+  const router = useRouter()
+  const supabase = createClient()
+
   const [file, setFile] = useState<File | null>(null)
   const [audioUrl, setAudioUrl] = useState<string>("")
   const [originalDuration, setOriginalDuration] = useState<number>(0)
@@ -32,6 +40,8 @@ export default function AdjusterPage() {
   const [isPlaying, setIsPlaying] = useState<boolean>(false)
   const [currentTime, setCurrentTime] = useState<number>(0)
   const [status, setStatus] = useState<{ message: string; type: "info" | "success" | "error" } | null>(null)
+  const [meditationTitle, setMeditationTitle] = useState<string>("")
+  const [isSaving, setIsSaving] = useState<boolean>(false)
 
   const audioContextRef = useRef<AudioContext | null>(null)
   const audioBufferRef = useRef<AudioBuffer | null>(null)
@@ -39,6 +49,12 @@ export default function AdjusterPage() {
   const playbackStartTimeRef = useRef<number>(0)
   const currentAudioTimeRef = useRef<number>(0)
   const animationFrameRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (!isAuthLoading && !user) {
+      router.push("/login")
+    }
+  }, [user, isAuthLoading, router])
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -211,8 +227,7 @@ export default function AdjusterPage() {
     writeString(0, "RIFF")
     view.setUint32(4, 36 + length * numberOfChannels * 2, true)
     writeString(8, "WAVE")
-    writeString(12, "fmt ")
-    view.setUint32(16, 16, true)
+    view.setUint32(12, 16, true)
     view.setUint16(20, 1, true)
     view.setUint16(22, numberOfChannels, true)
     view.setUint32(24, sampleRate, true)
@@ -245,28 +260,78 @@ export default function AdjusterPage() {
     document.body.removeChild(a)
   }
 
-  const handleSaveMeditation = () => {
-    if (!processedAudioUrl) {
+  const handleSaveMeditation = async () => {
+    if (!processedAudioUrl || !user) {
       toast({
         title: "Save Error",
-        description: "No processed audio to save. Please process an audio file first.",
+        description: "Please process an audio file and be logged in to save.",
         variant: "destructive",
       })
       return
     }
-    toast({
-      title: "Save Meditation",
-      description: "Saving meditations to your library is coming soon!",
-      variant: "default",
-    })
-    // In a real implementation, you would save the processed audio URL and metadata to Supabase
-    // For now, this is a placeholder.
+
+    if (!meditationTitle.trim()) {
+      toast({
+        title: "Title Required",
+        description: "Please enter a title for your meditation.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      // Convert blob URL to actual blob
+      const response = await fetch(processedAudioUrl)
+      const blob = await response.blob()
+
+      // Upload audio file to Supabase storage
+      const fileName = `${user.id}/${Date.now()}_${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.wav`
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("meditation-audio")
+        .upload(fileName, blob)
+
+      if (uploadError) throw uploadError
+
+      // Save meditation metadata to database
+      const { error: dbError } = await supabase.from("meditations").insert({
+        user_id: user.id,
+        title: meditationTitle.trim(),
+        audio_url: uploadData.path,
+        duration_seconds: Math.round(adjustedDuration),
+        is_public: false, // Default to private
+        // description and other fields can be added here if needed
+      })
+
+      if (dbError) throw dbError
+
+      toast({
+        title: "Meditation Saved!",
+        description: `"${meditationTitle}" has been saved to your library.`,
+      })
+
+      setMeditationTitle("") // Clear title input
+    } catch (error) {
+      console.error("Error saving meditation:", error)
+      toast({
+        title: "Save Failed",
+        description: `Could not save meditation: ${error instanceof Error ? error.message : "Unknown error"}`,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, "0")}`
+  if (isAuthLoading || !user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-logo-teal-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -370,12 +435,32 @@ export default function AdjusterPage() {
                         {formatTime(currentTime)} / {formatTime(adjustedDuration)}
                       </span>
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="meditation-title" className="text-sm font-medium">
+                        Meditation Title
+                      </Label>
+                      <Input
+                        id="meditation-title"
+                        placeholder="Enter title to save"
+                        value={meditationTitle}
+                        onChange={(e) => setMeditationTitle(e.target.value)}
+                      />
+                    </div>
                     <div className="flex gap-2">
                       <Button onClick={downloadProcessedAudio} className="flex-1">
                         <DownloadIcon className="h-5 w-5 mr-2" /> Download
                       </Button>
-                      <Button onClick={handleSaveMeditation} className="flex-1" variant="secondary">
-                        <SaveIcon className="h-5 w-5 mr-2" /> Save Meditation
+                      <Button
+                        onClick={handleSaveMeditation}
+                        className="flex-1"
+                        disabled={isSaving || !meditationTitle.trim()}
+                      >
+                        {isSaving ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        ) : (
+                          <SaveIcon className="h-5 w-5 mr-2" />
+                        )}
+                        Save Meditation
                       </Button>
                     </div>
                   </div>

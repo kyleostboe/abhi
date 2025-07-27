@@ -1,9 +1,24 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import { redirect } from "next/navigation"
 import { createServerSupabaseClient } from "@/lib/supabase/server"
-import { Card } from "@/components/ui/card"
-import { BookOpenIcon } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { BookOpenIcon, Download, Trash2, Clock, Calendar } from "lucide-react"
 import { Navigation } from "@/components/navigation"
+import { formatTime } from "@/lib/utils"
+import { toast } from "@/components/ui/use-toast"
+
+interface Meditation {
+  id: number // bigint from DB
+  user_id: string
+  title: string
+  description: string | null
+  audio_url: string
+  duration_seconds: number | null
+  is_public: boolean
+  created_at: string
+}
 
 export default async function MeditationsPage() {
   const supabase = createServerSupabaseClient()
@@ -13,11 +28,41 @@ export default async function MeditationsPage() {
   } = await supabase.auth.getSession()
 
   if (!session) {
-    redirect("/login") // Redirect to login if not authenticated [^3]
+    redirect("/login") // Redirect to login if not authenticated
   }
 
-  // In a real application, you would fetch meditations for the logged-in user here
-  const userMeditations: any[] = [] // Placeholder for user's meditations
+  let meditations: Meditation[] = []
+  let error: any = null
+
+  try {
+    const { data, error: fetchError } = await supabase
+      .from("meditations")
+      .select("*")
+      .eq("user_id", session.user.id)
+      .order("created_at", { ascending: false })
+
+    if (fetchError) {
+      error = fetchError
+      console.error("Error fetching meditations:", fetchError)
+    } else {
+      meditations = data || []
+    }
+  } catch (e) {
+    error = e
+    console.error("Unexpected error fetching meditations:", e)
+  }
+
+  const getSignedUrl = async (audioPath: string) => {
+    "use server"
+    const { data, error } = await supabase.storage.from("meditation-audio").createSignedUrl(audioPath, 3600) // 1 hour expiry
+    if (error) {
+      console.error("Error creating signed URL:", error)
+      return null
+    }
+    return data?.signedUrl
+  }
+
+  const signedUrls = await Promise.all(meditations.map((meditation) => getSignedUrl(meditation.audio_url)))
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-0">
@@ -43,7 +88,13 @@ export default async function MeditationsPage() {
         </div>
 
         <div className="px-6 md:px-10 pb-10 font-serif font-black">
-          {userMeditations.length === 0 ? (
+          {error && (
+            <div className="p-4 rounded-md bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300 mb-6">
+              Error loading meditations: {error.message || "Unknown error"}
+            </div>
+          )}
+
+          {meditations.length === 0 && !error ? (
             <Card className="p-8 space-y-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
               <div className="text-center space-y-4">
                 <BookOpenIcon className="h-12 w-12 mx-auto text-logo-teal-600 dark:text-logo-teal-400" />
@@ -51,18 +102,98 @@ export default async function MeditationsPage() {
                 <p className="text-gray-600 dark:text-gray-400">
                   Start creating or adjusting meditations to save them to your library!
                 </p>
+                <div className="flex gap-4 justify-center">
+                  <Button onClick={() => redirect("/adjuster")} className="bg-logo-teal-500 hover:bg-logo-teal-600">
+                    Length Adjuster
+                  </Button>
+                  <Button
+                    onClick={() => redirect("/encoder")}
+                    variant="outline"
+                    className="border-logo-teal-500 text-logo-teal-700 hover:bg-logo-teal-50"
+                  >
+                    Encoder
+                  </Button>
+                </div>
               </div>
             </Card>
           ) : (
-            <div className="grid gap-4">
-              {/* Placeholder for listing meditations */}
-              {userMeditations.map((meditation) => (
-                <Card key={meditation.id} className="p-4 flex items-center justify-between">
-                  <div>
-                    <h3 className="font-bold">{meditation.title}</h3>
-                    <p className="text-sm text-gray-500">Duration: {meditation.duration} min</p>
-                  </div>
-                  <Button variant="outline">Play</Button>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {meditations.map((meditation, index) => (
+                <Card
+                  key={meditation.id}
+                  className="p-4 space-y-4 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700"
+                >
+                  <CardHeader className="p-0">
+                    <CardTitle className="text-lg font-semibold">{meditation.title}</CardTitle>
+                    {meditation.description && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{meditation.description}</p>
+                    )}
+                  </CardHeader>
+                  <CardContent className="p-0 space-y-2">
+                    <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                      {meditation.duration_seconds && (
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {formatTime(meditation.duration_seconds)}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {new Date(meditation.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <audio controls className="w-full" src={signedUrls[index] || ""}></audio>
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1"
+                        onClick={async () => {
+                          const url = signedUrls[index]
+                          if (url) {
+                            const a = document.createElement("a")
+                            a.href = url
+                            a.download = `${meditation.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.wav`
+                            document.body.appendChild(a)
+                            a.click()
+                            document.body.removeChild(a)
+                            toast({ title: "Download Started", description: `Downloading "${meditation.title}"` })
+                          } else {
+                            toast({
+                              title: "Download Error",
+                              description: "Could not get audio URL for download.",
+                              variant: "destructive",
+                            })
+                          }
+                        }}
+                      >
+                        <Download className="h-4 w-4 mr-2" /> Download
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={async () => {
+                          if (confirm(`Are you sure you want to delete "${meditation.title}"?`)) {
+                            const { error: deleteError } = await supabase
+                              .from("meditations")
+                              .delete()
+                              .eq("id", meditation.id)
+                            if (deleteError) {
+                              toast({ title: "Delete Error", description: deleteError.message, variant: "destructive" })
+                            } else {
+                              // Also delete from storage
+                              await supabase.storage.from("meditation-audio").remove([meditation.audio_url])
+                              toast({
+                                title: "Meditation Deleted",
+                                description: `"${meditation.title}" has been deleted.`,
+                              })
+                              // Refresh the page to reflect changes
+                              redirect("/meditations")
+                            }
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
                 </Card>
               ))}
             </div>
