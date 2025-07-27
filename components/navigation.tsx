@@ -15,7 +15,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/use-auth"
-import { supabase } from "@/lib/supabase"
+import supabase from "@/lib/supabase/client"
 import { toast } from "@/components/ui/use-toast"
 
 export function Navigation() {
