@@ -3,7 +3,16 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { HomeIcon, FlaskConicalIcon, UserIcon, DollarSignIcon, MailIcon, LogInIcon, LogOutIcon } from "lucide-react"
+import {
+  HomeIcon,
+  FlaskConicalIcon,
+  UserIcon,
+  DollarSignIcon,
+  MailIcon,
+  LogInIcon,
+  LogOutIcon,
+  BookOpenIcon,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/use-auth"
 import { supabase } from "@/lib/supabase"
@@ -73,6 +82,20 @@ export function Navigation() {
               >
                 <UserIcon className="h-6 w-6 mb-1" />
                 <span className="text-xs font-medium">Profile</span>
+              </Button>
+            </Link>
+            <Link href="/meditations" passHref>
+              <Button
+                variant="ghost"
+                className={cn(
+                  "flex flex-col items-center justify-center p-2 h-auto w-auto text-gray-600 dark:text-gray-400",
+                  pathname === "/meditations" &&
+                    "text-gray-900 dark:text-gray-50 bg-gray-100 dark:bg-gray-600/50 rounded-md",
+                  "hover:bg-gray-200 dark:hover:bg-gray-700/50 transition-colors duration-200",
+                )}
+              >
+                <BookOpenIcon className="h-6 w-6 mb-1" />
+                <span className="text-xs font-medium">Meditations</span>
               </Button>
             </Link>
             <Button

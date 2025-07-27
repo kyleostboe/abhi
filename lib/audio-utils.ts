@@ -1,19 +1,17 @@
-// Global AudioContext instance
+import { NOTE_FREQUENCIES } from "./meditation-data"
+import { sleep, formatFileSize } from "./utils"
+
 let audioContext: AudioContext | null = null
 
 // Initialize AudioContext on user interaction
 export const getAudioContext = (): AudioContext => {
-  if (typeof window === "undefined") {
-    throw new Error("AudioContext is only available in a browser environment.")
-  }
-
   if (!audioContext || audioContext.state === "closed") {
+    // Attempt to create a new AudioContext if it's null or closed
     const AudioContextAPI = window.AudioContext || (window as any).webkitAudioContext
     if (!AudioContextAPI) {
       throw new Error("Your browser does not support the Web Audio API.")
     }
     audioContext = new AudioContextAPI({ sampleRate: 44100 }) // Default to 44.1kHz
-
     // Resume context if suspended on user interaction
     if (audioContext.state === "suspended") {
       const resumeContext = async () => {
@@ -34,6 +32,51 @@ export const getAudioContext = (): AudioContext => {
     }
   }
   return audioContext
+}
+
+export const playNote = async (note: string, octave: number, duration = 0.8, volume = 0.7) => {
+  const context = getAudioContext() // Get the shared AudioContext
+  if (!context) {
+    console.warn("AudioContext not available.")
+    return
+  }
+
+  // Ensure context is running before playing
+  if (context.state === "suspended") {
+    try {
+      await context.resume()
+    } catch (e) {
+      console.error("Failed to resume AudioContext before playing note:", e)
+      return
+    }
+  }
+
+  const oscillator = context.createOscillator()
+  const gainNode = context.createGain()
+
+  // Calculate frequency based on note and octave
+  const noteKey = `${note}${octave}` as keyof typeof NOTE_FREQUENCIES
+  const frequency = NOTE_FREQUENCIES[noteKey]
+
+  if (!frequency) {
+    console.warn(`Unknown note: ${noteKey}`)
+    return
+  }
+
+  oscillator.type = "sine" // You can change this to 'square', 'sawtooth', 'triangle'
+  oscillator.frequency.setValueAtTime(frequency, context.currentTime)
+
+  // Gentle envelope for smooth, meditation-friendly tones
+  const now = context.currentTime
+  gainNode.gain.setValueAtTime(0, now)
+  gainNode.gain.exponentialRampToValueAtTime(volume, now + 0.05) // Gentle attack
+  gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration) // Smooth release
+
+  oscillator.connect(gainNode)
+  gainNode.connect(context.destination)
+
+  oscillator.start(now)
+  oscillator.stop(now + duration)
 }
 
 export const bufferToWav = async (
@@ -58,6 +101,7 @@ export const bufferToWav = async (
     try {
       resampledBuffer = currentAudioContext.createBuffer(buffer.numberOfChannels, newLength, targetSampleRate)
     } catch (e) {
+      // forceGarbageCollection() // This should be handled by the caller if needed
       throw new Error(
         `Failed to create resample buffer (target SR: ${targetSampleRate}Hz). Memory limit likely exceeded.`,
       )
@@ -68,8 +112,7 @@ export const bufferToWav = async (
       const newData = resampledBuffer.getChannelData(channel)
       for (let i = 0; i < newLength; i++) {
         if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
-          // Simulate sleep for progress updates
-          await new Promise((resolve) => setTimeout(resolve, 0))
+          await sleep(0)
           onProgress(
             10 +
               Math.floor(
@@ -99,9 +142,9 @@ export const bufferToWav = async (
   try {
     finalArrayBuffer = new ArrayBuffer(fileSize)
   } catch (e) {
-    // Assuming formatFileSize is available globally or imported
-    // import { formatFileSize } from "./utils"
-    throw new Error(`Failed to create WAV data buffer (size: ${fileSize} bytes). Memory limit likely exceeded.`)
+    throw new Error(
+      `Failed to create WAV data buffer (size: ${formatFileSize(fileSize)}). Memory limit likely exceeded.`,
+    )
   }
   const view = new DataView(finalArrayBuffer)
 
@@ -126,8 +169,7 @@ export const bufferToWav = async (
   let offset = 44
   for (let i = 0; i < numSamples; i++) {
     if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
-      // Simulate sleep for progress updates
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      await sleep(0)
       onProgress(50 + Math.floor((i / numSamples) * 50))
     }
     for (let channel = 0; channel < numberOfChannels; channel++) {
@@ -138,33 +180,4 @@ export const bufferToWav = async (
   }
   onProgress(100)
   return new Blob([finalArrayBuffer], { type: "audio/wav" })
-}
-
-export async function generateEncodedAudio(
-  instructions: { timestamp: number; text: string }[],
-  soundCues: { timestamp: number; src: string }[],
-  ambientSounds: { timestamp: number; src: string; volume: number }[],
-): Promise<Blob> {
-  // This is a placeholder for actual audio encoding logic.
-  // In a real application, this would involve complex audio processing
-  // using libraries like Web Audio API or a server-side solution.
-  console.log("Simulating audio encoding...")
-  console.log("Instructions:", instructions)
-  console.log("Sound Cues:", soundCues)
-  console.log("Ambient Sounds:", ambientSounds)
-
-  // Simulate a delay for encoding
-  await new Promise((resolve) => setTimeout(resolve, 2000))
-
-  // Return a dummy Blob for demonstration purposes
-  const dummyAudioContent = "Simulated encoded audio data."
-  return new Blob([dummyAudioContent], { type: "audio/mpeg" })
-}
-
-export async function transcribeAudio(audioBlob: Blob): Promise<string> {
-  // This is a placeholder for actual transcription logic.
-  // In a real app, you'd send this blob to a speech-to-text API (e.g., Google Cloud Speech-to-Text, OpenAI Whisper).
-  console.log("Simulating audio transcription...")
-  await new Promise((resolve) => setTimeout(resolve, 2000)) // Simulate network delay
-  return `[Transcription of ${audioBlob.size} bytes of audio]`
 }

@@ -5,6 +5,9 @@ export interface TimelineEvent {
   audioSrc: string | null // URL for recorded audio instruction
   soundCueName: string | null // Name of the sound cue
   soundCueSrc: string | null // Source URL of the sound cue
+  ambientSoundName?: string | null
+  ambientSoundSrc?: string | null
+  ambientSoundVolume?: number
 }
 
 export interface Instruction {

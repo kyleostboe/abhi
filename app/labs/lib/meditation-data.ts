@@ -1,608 +1,768 @@
+import type { Instruction as ImportedInstruction, SoundCue as ImportedSoundCue } from "./types"
+import type { AmbientSound } from "./types"
+
+export interface Instruction extends ImportedInstruction {
+  // Additional properties can be added here if needed
+}
+
+export interface SoundCue extends ImportedSoundCue {
+  frequency?: number
+  duration?: number
+  waveform?: string
+  harmonics?: number[]
+  attackDuration?: number
+  releaseDuration?: number
+}
+
+export const INSTRUCTIONS_LIBRARY: Instruction[] = [
+  // Metta (Loving Kindness) Instructions
+  {
+    id: "metta-1",
+    text: "May I/you/we be safe",
+    category: "Metta",
+  },
+  {
+    id: "metta-2",
+    text: "May I/you/we be filled with happiness",
+    category: "Metta",
+  },
+  {
+    id: "metta-3",
+    text: "May I/you/we be peaceful",
+    category: "Metta",
+  },
+  {
+    id: "metta-4",
+    text: "May I/you/we live with ease and kindness",
+    category: "Metta",
+  },
+  {
+    id: "metta-5",
+    text: "May I/you/we be healthy",
+    category: "Metta",
+  },
+  {
+    id: "metta-6",
+    text: "May I/you/we be strong",
+    category: "Metta",
+  },
+  {
+    id: "metta-7",
+    text: "May I/you/we be free from suffering",
+    category: "Metta",
+  },
+  {
+    id: "metta-8",
+    text: "May I/you/we be filled with loving kindness",
+    category: "Metta",
+  },
+  {
+    id: "metta-9",
+    text: "May I/you/we accept myself/yourself/ourselves as I am/you are/we are",
+    category: "Metta",
+  },
+  {
+    id: "metta-10",
+    text: "May I/you/we forgive myself/yourself/ourselves",
+    category: "Metta",
+  },
+  // Mindfulness Instructions
+  {
+    id: "mindfulness-1",
+    text: "Breathing in, I know I am breathing in",
+    category: "Mindfulness",
+  },
+  {
+    id: "mindfulness-2",
+    text: "Breathing out, I know I am breathing out",
+    category: "Mindfulness",
+  },
+  {
+    id: "mindfulness-3",
+    text: "Long breath, I know it is long",
+    category: "Mindfulness",
+  },
+  {
+    id: "mindfulness-4",
+    text: "Short breath, I know it is short",
+    category: "Mindfulness",
+  },
+  {
+    id: "mindfulness-5",
+    text: "Breathing in, I calm my body",
+    category: "Mindfulness",
+  },
+  {
+    id: "mindfulness-6",
+    text: "I am aware of my whole body",
+    category: "Mindfulness",
+  },
+  {
+    id: "mindfulness-7",
+    text: "I release tension from my body",
+    category: "Mindfulness",
+  },
+  {
+    id: "mindfulness-8",
+    text: "Thinking, thinking",
+    category: "Mindfulness",
+  },
+  {
+    id: "mindfulness-9",
+    text: "Feeling this emotion",
+    category: "Mindfulness",
+  },
+  {
+    id: "mindfulness-10",
+    text: "Hearing sounds",
+    category: "Mindfulness",
+  },
+  {
+    id: "mindfulness-11",
+    text: "Seeing what appears",
+    category: "Mindfulness",
+  },
+  {
+    id: "mindfulness-12",
+    text: "Noticing bodily sensations",
+    category: "Mindfulness",
+  },
+  {
+    id: "mindfulness-13",
+    text: "This too shall pass",
+    category: "Mindfulness",
+  },
+  {
+    id: "mindfulness-14",
+    text: "Watching thoughts arise",
+    category: "Mindfulness",
+  },
+  {
+    id: "mindfulness-15",
+    text: "Watching thoughts pass away",
+    category: "Mindfulness",
+  },
+  {
+    id: "mindfulness-16",
+    text: "Resting in spacious awareness",
+    category: "Mindfulness",
+  },
+  {
+    id: "mindfulness-17",
+    text: "Here, now, this moment",
+    category: "Mindfulness",
+  },
+  // Nonduality Instructions
+  {
+    id: "nonduality-1",
+    text: "Who is aware of this awareness?",
+    category: "Nonduality",
+  },
+  {
+    id: "nonduality-2",
+    text: "Tat tvam asi - Thou art That",
+    category: "Nonduality",
+  },
+  {
+    id: "nonduality-3",
+    text: "All is Consciousness appearing as the many",
+    category: "Nonduality",
+  },
+  {
+    id: "nonduality-4",
+    text: "The seer, seeing, and seen are one",
+    category: "Nonduality",
+  },
+  {
+    id: "nonduality-5",
+    text: "Pure being-consciousness-bliss (sat-chit-ananda)",
+    category: "Nonduality",
+  },
+  {
+    id: "nonduality-6",
+    text: "I am Shiva - pure consciousness at rest",
+    category: "Nonduality",
+  },
+  {
+    id: "nonduality-7",
+    text: "I am Shakti - consciousness in movement",
+    category: "Nonduality",
+  },
+  {
+    id: "nonduality-8",
+    text: "Everything arises within me as me",
+    category: "Nonduality",
+  },
+  {
+    id: "nonduality-9",
+    text: "No coming, no going - only being",
+    category: "Nonduality",
+  },
+  {
+    id: "nonduality-10",
+    text: "The heart is the supreme abode",
+    category: "Nonduality",
+  },
+  {
+    id: "nonduality-11",
+    text: "Pratyabhijna - recognizing what I already am",
+    category: "Nonduality",
+  },
+  {
+    id: "nonduality-12",
+    text: 'Resting as the source of the "I" thought',
+    category: "Nonduality",
+  },
+  // Body Scan Instructions
+  {
+    id: "body-scan-1",
+    text: "Awareness at the crown of my head",
+    category: "Body Scan",
+  },
+  {
+    id: "body-scan-2",
+    text: "Softening my forehead",
+    category: "Body Scan",
+  },
+  {
+    id: "body-scan-3",
+    text: "Relaxing around my eyes",
+    category: "Body Scan",
+  },
+  {
+    id: "body-scan-4",
+    text: "Unclenching my jaw",
+    category: "Body Scan",
+  },
+  {
+    id: "body-scan-5",
+    text: "Releasing tension from my neck",
+    category: "Body Scan",
+  },
+  {
+    id: "body-scan-6",
+    text: "Dropping my shoulders",
+    category: "Body Scan",
+  },
+  {
+    id: "body-scan-7",
+    text: "Arms heavy and relaxed",
+    category: "Body Scan",
+  },
+  {
+    id: "body-scan-8",
+    text: "Hands soft and open",
+    category: "Body Scan",
+  },
+  {
+    id: "body-scan-9",
+    text: "Heart space open and free",
+    category: "Body Scan",
+  },
+  {
+    id: "body-scan-10",
+    text: "Belly soft and natural",
+    category: "Body Scan",
+  },
+  {
+    id: "body-scan-11",
+    text: "Spine long and supported",
+    category: "Body Scan",
+  },
+  {
+    id: "body-scan-12",
+    text: "Hips heavy and grounded",
+    category: "Body Scan",
+  },
+  {
+    id: "body-scan-13",
+    text: "Legs relaxed and still",
+    category: "Body Scan",
+  },
+  {
+    id: "body-scan-14",
+    text: "Feet connected to earth",
+    category: "Body Scan",
+  },
+  {
+    id: "body-scan-15",
+    text: "Whole body at peace",
+    category: "Body Scan",
+  },
+  // Concentration Instructions
+  {
+    id: "concentration-1",
+    text: "One breath, complete attention",
+    category: "Concentration",
+  },
+  {
+    id: "concentration-2",
+    text: "In breath, counting one",
+    category: "Concentration",
+  },
+  {
+    id: "concentration-3",
+    text: "Out breath, counting two",
+    category: "Concentration",
+  },
+  {
+    id: "concentration-4",
+    text: "Air touching my nostrils",
+    category: "Concentration",
+  },
+  {
+    id: "concentration-5",
+    text: "Belly rising and falling",
+    category: "Concentration",
+  },
+  {
+    id: "concentration-6",
+    text: "Resting in the pause between breaths",
+    category: "Concentration",
+  },
+  {
+    id: "concentration-7",
+    text: "Gently returning to my anchor",
+    category: "Concentration",
+  },
+  // Gratitude Instructions
+  {
+    id: "gratitude-1",
+    text: "Grateful for this breath",
+    category: "Gratitude",
+  },
+  {
+    id: "gratitude-2",
+    text: "Thankful for my body",
+    category: "Gratitude",
+  },
+  {
+    id: "gratitude-3",
+    text: "Grateful for this moment",
+    category: "Gratitude",
+  },
+  {
+    id: "gratitude-4",
+    text: "Thankful to be alive",
+    category: "Gratitude",
+  },
+  {
+    id: "gratitude-5",
+    text: "Grateful for all my teachers",
+    category: "Gratitude",
+  },
+  // Forgiveness Instructions
+  {
+    id: "forgiveness-1",
+    text: "I forgive myself completely",
+    category: "Forgiveness",
+  },
+  {
+    id: "forgiveness-2",
+    text: "I forgive all who have hurt me",
+    category: "Forgiveness",
+  },
+  {
+    id: "forgiveness-3",
+    text: "I release all past mistakes",
+    category: "Forgiveness",
+  },
+  {
+    id: "forgiveness-4",
+    text: "I am free from resentment",
+    category: "Forgiveness",
+  },
+  // Transition Instructions
+  {
+    id: "transitions-1",
+    text: "I am ready to begin",
+    category: "Transitions",
+  },
+  {
+    id: "transitions-2",
+    text: "Settling into stillness",
+    category: "Transitions",
+  },
+  {
+    id: "transitions-3",
+    text: "Going deeper within",
+    category: "Transitions",
+  },
+  {
+    id: "transitions-4",
+    text: "Preparing for the next phase",
+    category: "Transitions",
+  },
+  {
+    id: "transitions-5",
+    text: "Gently returning to awareness",
+    category: "Transitions",
+  },
+  {
+    id: "transitions-6",
+    text: "This meditation is complete",
+    category: "Transitions",
+  },
+  {
+    id: "transitions-7",
+    text: "Carrying this peace forward",
+    category: "Transitions",
+  },
+]
+
+export const SOUND_CUES_LIBRARY: SoundCue[] = [
+  {
+    id: "sound1",
+    name: "Singing Bowl (Short)",
+    src: "/sounds/singing-bowl-short.mp3",
+  },
+  {
+    id: "sound2",
+    name: "Gentle Chime",
+    src: "/sounds/chime-gentle.mp3",
+  },
+  {
+    id: "sound3",
+    name: "Soft Gong",
+    src: "/sounds/soft-gong.mp3",
+  },
+  {
+    id: "sound4",
+    name: "Short Bell",
+    src: "/sounds/short-bell.mp3",
+  },
+  {
+    id: "sound5",
+    name: "Clear Tone",
+    src: "/sounds/clear-tone.mp3",
+  },
+  {
+    id: "singing_bowl",
+    name: "Singing Bowl",
+    src: "synthetic:singing_bowl",
+    frequency: 432,
+    duration: 2500, // Total sound length in ms
+    waveform: "sine",
+    harmonics: [864, 1296, 1728], // More harmonics for richness
+    attackDuration: 0.1, // 100ms attack
+    releaseDuration: 2.0, // 2000ms release
+  },
+  {
+    id: "gentle_chime",
+    name: "Gentle Chime",
+    src: "synthetic:chime_gentle",
+    frequency: 1200, // Higher pitch
+    duration: 700, // Total sound length in ms
+    waveform: "triangle", // Softer than square, sharper than sine
+    attackDuration: 0.01, // 10ms attack
+    releaseDuration: 0.5, // 500ms release
+  },
+  {
+    id: "soft_gong",
+    name: "Soft Gong",
+    src: "synthetic:soft_gong",
+    frequency: 180, // Lower, deeper tone
+    duration: 3000, // Total sound length in ms
+    waveform: "sine",
+    harmonics: [360, 540, 720], // For depth
+    attackDuration: 0.2, // 200ms attack
+    releaseDuration: 2.5, // 2500ms release
+  },
+  {
+    id: "short_bell",
+    name: "Short Bell",
+    src: "synthetic:short_bell",
+    frequency: 1500, // High, clear ring
+    duration: 500, // Total sound length in ms
+    waveform: "square", // Sharper, more metallic
+    attackDuration: 0.005, // 5ms attack
+    releaseDuration: 0.2, // 200ms release
+  },
+  {
+    id: "clear_tone",
+    name: "Clear Tone",
+    src: "synthetic:clear_tone",
+    frequency: 528,
+    duration: 1500, // Total sound length in ms
+    waveform: "sine",
+    attackDuration: 0.05, // 50ms attack
+    releaseDuration: 1.0, // 1000ms release
+  },
+]
+
+export const AMBIENT_SOUNDS_LIBRARY: AmbientSound[] = [
+  {
+    id: "synthetic_rain",
+    name: "Synthetic Rain",
+    src: "synthetic:rain",
+    noiseType: "white",
+    filterType: "highpass",
+    filterFrequency: 1000,
+    lfoFrequency: 20,
+    volume: 0.2,
+  },
+  {
+    id: "synthetic_waves",
+    name: "Synthetic Ocean Waves",
+    src: "synthetic:waves",
+    noiseType: "white",
+    filterType: "lowpass",
+    filterFrequency: 500,
+    lfoFrequency: 0.2,
+    volume: 0.25,
+  },
+  {
+    id: "synthetic_forest",
+    name: "Synthetic Forest",
+    src: "synthetic:forest",
+    noiseType: "brown",
+    filterType: "lowpass",
+    filterFrequency: 800,
+    lfoFrequency: 0.5,
+    volume: 0.2,
+  },
+  {
+    id: "synthetic_wind",
+    name: "Synthetic Wind",
+    src: "synthetic:wind",
+    noiseType: "white",
+    filterType: "lowpass",
+    filterFrequency: 400,
+    lfoFrequency: 0.1,
+    volume: 0.2,
+  },
+  { id: "file_rain", name: "Rain (File)", src: "/sounds/rain.mp3" },
+  { id: "file_forest", name: "Forest Birds (File)", src: "/sounds/forest.mp3" },
+  { id: "file_ocean", name: "Ocean Waves (File)", src: "/sounds/ocean.mp3" },
+  { id: "file_river", name: "Gentle River (File)", src: "/sounds/river.mp3" },
+  { id: "synthetic_white_noise", name: "White Noise (Synthetic)", src: "synthetic:white-noise", noiseType: "white" },
+  { id: "synthetic_pink_noise", name: "Pink Noise (Synthetic)", src: "synthetic:pink-noise", noiseType: "pink" },
+  { id: "synthetic_brown_noise", name: "Brown Noise (Synthetic)", src: "synthetic:brown-noise", noiseType: "brown" },
+]
+
 export const NOTE_FREQUENCIES = {
+  C3: 130.81,
+  D3: 146.83,
+  E3: 164.81,
+  F3: 174.61,
+  G3: 196.0,
+  A3: 220.0,
+  B3: 246.94,
   C4: 261.63,
-  "C#4": 277.18,
   D4: 293.66,
-  "D#4": 311.13,
   E4: 329.63,
   F4: 349.23,
-  "F#4": 369.99,
   G4: 392.0,
-  "G#4": 415.3,
   A4: 440.0,
-  "A#4": 466.16,
   B4: 493.88,
   C5: 523.25,
-  "C#5": 554.37,
   D5: 587.33,
-  "D#5": 622.25,
   E5: 659.25,
   F5: 698.46,
-  "F#5": 739.99,
   G5: 783.99,
-  "G#5": 830.61,
   A5: 880.0,
-  "A#5": 932.33,
   B5: 987.77,
-} as const
+}
 
-export const ambientSounds = [
-  { name: "Ocean Waves", src: "/sounds/ocean-waves.mp3" },
-  { name: "Rainfall", src: "/sounds/rainfall.mp3" },
-  { name: "Forest Birds", src: "/sounds/forest-birds.mp3" },
-  { name: "Gentle Stream", src: "/sounds/gentle-stream.mp3" },
-  { name: "White Noise", src: "/sounds/white-noise.mp3" },
-  { name: "Campfire", src: "/sounds/campfire.mp3" },
-  { name: "Thunderstorm", src: "/sounds/thunderstorm.mp3" },
-  { name: "Mountain Stream", src: "/sounds/mountain-stream.mp3" },
-]
+// Musical meditation notes organized by category
+export const MUSICAL_NOTES = {
+  Metta: [
+    { id: "metta-c4", name: "C4", note: "C", octave: 4 },
+    { id: "metta-e4", name: "E4", note: "E", octave: 4 },
+    { id: "metta-g4", name: "G4", note: "G", octave: 4 },
+    { id: "metta-c5", name: "C5", note: "C", octave: 5 },
+  ],
+  Mindfulness: [
+    { id: "mind-a4", name: "A4", note: "A", octave: 4 },
+    { id: "mind-c5", name: "C5", note: "C", octave: 5 },
+    { id: "mind-d5", name: "D5", note: "D", octave: 5 },
+    { id: "mind-a4-return", name: "A4 (return)", note: "A", octave: 4 },
+  ],
+  Nonduality: [
+    { id: "non-g3", name: "G3", note: "G", octave: 3 },
+    { id: "non-d4", name: "D4", note: "D", octave: 4 },
+    { id: "non-g4", name: "G4", note: "G", octave: 4 },
+  ],
+  "Body Scan": [
+    { id: "body-g5", name: "G5", note: "G", octave: 5 },
+    { id: "body-f5", name: "F5", note: "F", octave: 5 },
+    { id: "body-e5", name: "E5", note: "E", octave: 5 },
+    { id: "body-d5", name: "D5", note: "D", octave: 5 },
+    { id: "body-c5", name: "C5", note: "C", octave: 5 },
+    { id: "body-b4", name: "B4", note: "B", octave: 4 },
+    { id: "body-a4", name: "A4", note: "A", octave: 4 },
+  ],
+}
 
-export const soundCues = [
-  { name: "Bell (Single)", src: "/sounds/bell-single.mp3" },
-  { name: "Chime (Soft)", src: "/sounds/chime-soft.mp3" },
-  { name: "Gong (Deep)", src: "/sounds/gong-deep.mp3" },
-  { name: "Singing Bowl", src: "/sounds/singing-bowl.mp3" },
-  { name: "Zen Drum", src: "/sounds/zen-drum.mp3" },
-  { name: "Synth Pad (Warm)", src: "/sounds/synth-pad-warm.mp3" },
-  { name: "Raindrop Plink", src: "/sounds/raindrop-plink.mp3" },
-  { name: "Wind Chimes", src: "/sounds/wind-chimes.mp3" },
-  { name: "Heartbeat", src: "/sounds/heartbeat.mp3" },
-  { name: "Ocean Wave Crash", src: "/sounds/ocean-wave-crash.mp3" },
-  { name: "Bird Chirp", src: "/sounds/bird-chirp.mp3" },
-  { name: "Gentle Whoosh", src: "/sounds/gentle-whoosh.mp3" },
-  { name: "Soft Hum", src: "/sounds/soft-hum.mp3" },
-  { name: "Synth Pluck", src: "/sounds/synth-pluck.mp3" },
-  { name: "Water Drop", src: "/sounds/water-drop.mp3" },
-  { name: "Forest Ambience", src: "/sounds/forest-ambience.mp3" },
-  { name: "Distant Thunder", src: "/sounds/distant-thunder.mp3" },
-  { name: "Wind Gust", src: "/sounds/wind-gust.mp3" },
-  { name: "Crickets", src: "/sounds/crickets.mp3" },
-  { name: "Owl Hoot", src: "/sounds/owl-hoot.mp3" },
-  { name: "Tibetan Bowl", src: "/sounds/tibetan-bowl.mp3" },
-  { name: "Rain on Window", src: "/sounds/rain-on-window.mp3" },
-  { name: "Fire Crackle", src: "/sounds/fire-crackle.mp3" },
-  { name: "Bubbling Water", src: "/sounds/bubbling-water.mp3" },
-  { name: "Gentle Breeze", src: "/sounds/gentle-breeze.mp3" },
-  { name: "Distant Chimes", src: "/sounds/distant-chimes.mp3" },
-  { name: "Soft Synth Swell", src: "/sounds/soft-synth-swell.mp3" },
-  { name: "Deep Drone", src: "/sounds/deep-drone.mp3" },
-  { name: "Whispering Wind", src: "/sounds/whispering-wind.mp3" },
-  { name: "Calm Ocean", src: "/sounds/calm-ocean.mp3" },
-  { name: "Forest Night", src: "/sounds/forest-night.mp3" },
-  { name: "River Flow", src: "/sounds/river-flow.mp3" },
-  { name: "White Noise (Pink)", src: "/sounds/white-noise-pink.mp3" },
-  { name: "Brown Noise", src: "/sounds/brown-noise.mp3" },
-  { name: "Fan Noise", src: "/sounds/fan-noise.mp3" },
-  { name: "City Rain", src: "/sounds/city-rain.mp3" },
-  { name: "Distant City", src: "/sounds/distant-city.mp3" },
-  { name: "Cafe Ambience", src: "/sounds/cafe-ambience.mp3" },
-  { name: "Library Quiet", src: "/sounds/library-quiet.mp3" },
-  { name: "Train Journey", src: "/sounds/train-journey.mp3" },
-  { name: "Airplane Cabin", src: "/sounds/airplane-cabin.mp3" },
-  { name: "Underwater Bubbles", src: "/sounds/underwater-bubbles.mp3" },
-  { name: "Space Ambience", src: "/sounds/space-ambience.mp3" },
-  { name: "Dolphin Calls", src: "/sounds/dolphin-calls.mp3" },
-  { name: "Whale Song", src: "/sounds/whale-song.mp3" },
-  { name: "Jungle Night", src: "/sounds/jungle-night.mp3" },
-  { name: "Desert Wind", src: "/sounds/desert-wind.mp3" },
-  { name: "Cave Dripping", src: "/sounds/cave-dripping.mp3" },
-  { name: "Volcano Rumble", src: "/sounds/volcano-rumble.mp3" },
-  { name: "Distant Explosion", src: "/sounds/distant-explosion.mp3" },
-  { name: "Clock Ticking", src: "/sounds/clock-ticking.mp3" },
-  { name: "Heart Monitor", src: "/sounds/heart-monitor.mp3" },
-  { name: "Keyboard Typing", src: "/sounds/keyboard-typing.mp3" },
-  { name: "Office Ambience", src: "/sounds/office-ambience.mp3" },
-  { name: "School Hallway", src: "/sounds/school-hallway.mp3" },
-  { name: "Restaurant Chatter", src: "/sounds/restaurant-chatter.mp3" },
-  { name: "Marketplace", src: "/sounds/marketplace.mp3" },
-  { name: "Farm Animals", src: "/sounds/farm-animals.mp3" },
-  { name: "Dog Barking", src: "/sounds/dog-barking.mp3" },
-  { name: "Cat Purring", src: "/sounds/cat-purring.mp3" },
-  { name: "Baby Crying", src: "/sounds/baby-crying.mp3" },
-  { name: "Laughter", src: "/sounds/laughter.mp3" },
-  { name: "Applause", src: "/sounds/applause.mp3" },
-  { name: "Crowd Cheering", src: "/sounds/crowd-cheering.mp3" },
-  { name: "Footsteps", src: "/sounds/footsteps.mp3" },
-  { name: "Door Creak", src: "/sounds/door-creak.mp3" },
-  { name: "Car Horn", src: "/sounds/car-horn.mp3" },
-  { name: "Traffic Noise", src: "/sounds/traffic-noise.mp3" },
-  { name: "Siren", src: "/sounds/siren.mp3" },
-  { name: "Telephone Ring", src: "/sounds/telephone-ring.mp3" },
-  { name: "Alarm Clock", src: "/sounds/alarm-clock.mp3" },
-  { name: "Buzzer", src: "/sounds/buzzer.mp3" },
-  { name: "Camera Click", src: "/sounds/camera-click.mp3" },
-  { name: "Typewriter", src: "/sounds/typewriter.mp3" },
-  { name: "Cash Register", src: "/sounds/cash-register.mp3" },
-  { name: "Coin Drop", src: "/sounds/coin-drop.mp3" },
-  { name: "Paper Rustle", src: "/sounds/paper-rustle.mp3" },
-  { name: "Pen Click", src: "/sounds/pen-click.mp3" },
-  { name: "Zipper", src: "/sounds/zipper.mp3" },
-  { name: "Crinkle", src: "/sounds/crinkle.mp3" },
-  { name: "Squeak", src: "/sounds/squeak.mp3" },
-  { name: "Thud", src: "/sounds/thud.mp3" },
-  { name: "Boing", src: "/sounds/boing.mp3" },
-  { name: "Whistle", src: "/sounds/whistle.mp3" },
-  { name: "Chirp", src: "/sounds/chirp.mp3" },
-  { name: "Click", src: "/sounds/click.mp3" },
-  { name: "Pop", src: "/sounds/pop.mp3" },
-  { name: "Snap", src: "/sounds/snap.mp3" },
-  { name: "Swish", src: "/sounds/swish.mp3" },
-  { name: "Zap", src: "/sounds/zap.mp3" },
-  { name: "Beep", src: "/sounds/beep.mp3" },
-  { name: "Ding", src: "/sounds/ding.mp3" },
-  { name: "Whoop", src: "/sounds/whoop.mp3" },
-  { name: "Synth Arp", src: "/sounds/synth-arp.mp3" },
-  { name: "Digital Glitch", src: "/sounds/digital-glitch.mp3" },
-  { name: "Robot Voice", src: "/sounds/robot-voice.mp3" },
-  { name: "Laser Gun", src: "/sounds/laser-gun.mp3" },
-  { name: "Explosion", src: "/sounds/explosion.mp3" },
-  { name: "Swoosh", src: "/sounds/swoosh.mp3" },
-  { name: "Rumble", src: "/sounds/rumble.mp3" },
-  { name: "Creepy Ambience", src: "/sounds/creepy-ambience.mp3" },
-  { name: "Dungeon Echo", src: "/sounds/dungeon-echo.mp3" },
-  { name: "Dragon Roar", src: "/sounds/dragon-roar.mp3" },
-  { name: "Sword Clash", src: "/sounds/sword-clash.mp3" },
-  { name: "Magic Spell", src: "/sounds/magic-spell.mp3" },
-  { name: "Fairy Dust", src: "/sounds/fairy-dust.mp3" },
-  { name: "Cartoon Boing", src: "/sounds/cartoon-boing.mp3" },
-  { name: "Slide Whistle", src: "/sounds/slide-whistle.mp3" },
-  { name: "Rimshot", src: "/sounds/rimshot.mp3" },
-  { name: "Cymbal Crash", src: "/sounds/cymbal-crash.mp3" },
-  { name: "Drum Roll", src: "/sounds/drum-roll.mp3" },
-  { name: "Trumpet Fanfare", src: "/sounds/trumpet-fanfare.mp3" },
-  { name: "Orchestra Hit", src: "/sounds/orchestra-hit.mp3" },
-  { name: "Choir Swell", src: "/sounds/choir-swell.mp3" },
-  { name: "Piano Chord", src: "/sounds/piano-chord.mp3" },
-  { name: "Guitar Strum", src: "/sounds/guitar-strum.mp3" },
-  { name: "Violin Pizzicato", src: "/sounds/violin-pizzicato.mp3" },
-  { name: "Flute Trill", src: "/sounds/flute-trill.mp3" },
-  { name: "Saxophone Honk", src: "/sounds/saxophone-honk.mp3" },
-  { name: "Clarinet Squeak", src: "/sounds/clarinet-squeak.mp3" },
-  { name: "Trombone Slide", src: "/sounds/trombone-slide.mp3" },
-  { name: "Tuba Oompah", src: "/sounds/tuba-oompah.mp3" },
-  { name: "Harp Glissando", src: "/sounds/harp-glissando.mp3" },
-  { name: "Xylophone", src: "/sounds/xylophone.mp3" },
-  { name: "Marimba", src: "/sounds/marimba.mp3" },
-  { name: "Glockenspiel", src: "/sounds/glockenspiel.mp3" },
-  { name: "Triangle", src: "/sounds/triangle.mp3" },
-  { name: "Cowbell", src: "/sounds/cowbell.mp3" },
-  { name: "Tambourine", src: "/sounds/tambourine.mp3" },
-  { name: "Shaker", src: "/sounds/shaker.mp3" },
-  { name: "Conga", src: "/sounds/conga.mp3" },
-  { name: "Bongo", src: "/sounds/bongo.mp3" },
-  { name: "Tabla", src: "/sounds/tabla.mp3" },
-  { name: "Didgeridoo", src: "/sounds/didgeridoo.mp3" },
-  { name: "Bagpipes", src: "/sounds/bagpipes.mp3" },
-  { name: "Accordion", src: "/sounds/accordion.mp3" },
-  { name: "Harmonica", src: "/sounds/harmonica.mp3" },
-  { name: "Banjo", src: "/sounds/banjo.mp3" },
-  { name: "Ukulele", src: "/sounds/ukulele.mp3" },
-  { name: "Mandolin", src: "/sounds/mandolin.mp3" },
-  { name: "Sitar", src: "/sounds/sitar.mp3" },
-  { name: "Theremin", src: "/sounds/theremin.mp3" },
-  { name: "Synthesizer", src: "/sounds/synthesizer.mp3" },
-  { name: "Electric Guitar", src: "/sounds/electric-guitar.mp3" },
-  { name: "Bass Guitar", src: "/sounds/bass-guitar.mp3" },
-  { name: "Drums", src: "/sounds/drums.mp3" },
-  { name: "Piano", src: "/sounds/piano.mp3" },
-  { name: "Violin", src: "/sounds/violin.mp3" },
-  { name: "Cello", src: "/sounds/cello.mp3" },
-  { name: "Double Bass", src: "/sounds/double-bass.mp3" },
-  { name: "Flute", src: "/sounds/flute.mp3" },
-  { name: "Oboe", src: "/sounds/oboe.mp3" },
-  { name: "Clarinet", src: "/sounds/clarinet.mp3" },
-  { name: "Bassoon", src: "/sounds/bassoon.mp3" },
-  { name: "French Horn", src: "/sounds/french-horn.mp3" },
-  { name: "Trumpet", src: "/sounds/trumpet.mp3" },
-  { name: "Trombone", src: "/sounds/trombone.mp3" },
-  { name: "Tuba", src: "/sounds/tuba.mp3" },
-  { name: "Harp", src: "/sounds/harp.mp3" },
-  { name: "Choir", src: "/sounds/choir.mp3" },
-  { name: "Orchestra", src: "/sounds/orchestra.mp3" },
-  { name: "Synth Bell", src: "synthetic:bell" },
-  { name: "Synth Chime", src: "synthetic:chime" },
-  { name: "Synth Pad", src: "synthetic:pad" },
-  { name: "Synth Pluck", src: "synthetic:pluck" },
-  { name: "Synth Drone", src: "synthetic:drone" },
-]
+// Function to generate synthetic sounds using Web Audio API
+export async function generateSyntheticSound(
+  soundCue: SoundCue,
+  audioContext: AudioContext | OfflineAudioContext,
+): Promise<void> {
+  try {
+    // Resume context if suspended (only for AudioContext, not OfflineAudioContext)
+    if (audioContext instanceof AudioContext && audioContext.state === "suspended") {
+      await audioContext.resume()
+    }
 
-export const INSTRUCTIONS_LIBRARY = [
-  {
-    category: "Introduction",
-    text: "Welcome to your meditation. Find a comfortable posture, whether sitting or lying down.",
-  },
-  {
-    category: "Introduction",
-    text: "Gently close your eyes, or soften your gaze downwards.",
-  },
-  {
-    category: "Breath Awareness",
-    text: "Bring your attention to your breath, noticing the natural rhythm of inhalation and exhalation.",
-  },
-  {
-    category: "Breath Awareness",
-    text: "Feel the sensation of the breath as it enters and leaves your body.",
-  },
-  {
-    category: "Body Scan",
-    text: "Shift your awareness to your body. Notice any points of contact with the surface beneath you.",
-  },
-  {
-    category: "Body Scan",
-    text: "Scan your body from head to toe, noticing any areas of tension or relaxation.",
-  },
-  {
-    category: "Thoughts & Emotions",
-    text: "As thoughts arise, simply observe them without judgment, like clouds passing in the sky.",
-  },
-  {
-    category: "Thoughts & Emotions",
-    text: "Acknowledge any emotions present, allowing them to be without needing to change them.",
-  },
-  {
-    category: "Sounds",
-    text: "Expand your awareness to include the sounds around you. Listen without labeling or reacting.",
-  },
-  {
-    category: "Sounds",
-    text: "Notice the subtle sounds, near and far, as they appear and disappear.",
-  },
-  {
-    category: "Gratitude",
-    text: "Bring to mind something you are grateful for. Allow the feeling of gratitude to fill your heart.",
-  },
-  {
-    category: "Gratitude",
-    text: "Reflect on the simple blessings in your life.",
-  },
-  {
-    category: "Loving-Kindness",
-    text: "Send wishes of well-being to yourself: May I be happy, may I be peaceful, may I be free from suffering.",
-  },
-  {
-    category: "Loving-Kindness",
-    text: "Extend these wishes to a loved one: May they be happy, may they be peaceful, may they be free from suffering.",
-  },
-  {
-    category: "Loving-Kindness",
-    text: "Extend these wishes to all beings: May all beings be happy, may all beings be peaceful, may all beings be free from suffering.",
-  },
-  {
-    category: "Open Awareness",
-    text: "Rest in open awareness, allowing whatever arises in your experience to simply be.",
-  },
-  {
-    category: "Open Awareness",
-    text: "Let your attention be vast and inclusive, encompassing all sensations, thoughts, and sounds.",
-  },
-  {
-    category: "Conclusion",
-    text: "Gently bring your awareness back to your body and the space around you.",
-  },
-  {
-    category: "Conclusion",
-    text: "When you are ready, slowly open your eyes, carrying this sense of peace into your day.",
-  },
-  {
-    category: "Conclusion",
-    text: "Take a moment to appreciate this time you've given to yourself.",
-  },
-  {
-    category: "Focus",
-    text: "Gently direct your attention to the sensations in your hands.",
-  },
-  {
-    category: "Focus",
-    text: "Notice the feeling of your feet on the ground.",
-  },
-  {
-    category: "Focus",
-    text: "Focus on the rise and fall of your abdomen with each breath.",
-  },
-  {
-    category: "Counting Breaths",
-    text: "Count your breaths from one to ten, and if your mind wanders, gently return to one.",
-  },
-  {
-    category: "Counting Breaths",
-    text: "Inhale one, exhale one. Inhale two, exhale two. Continue up to ten.",
-  },
-  {
-    category: "Body Scan (Detailed)",
-    text: "Bring awareness to your scalp, relaxing any tension there.",
-  },
-  {
-    category: "Body Scan (Detailed)",
-    text: "Soften the muscles around your eyes and jaw.",
-  },
-  {
-    category: "Body Scan (Detailed)",
-    text: "Relax your shoulders, letting them drop away from your ears.",
-  },
-  {
-    category: "Body Scan (Detailed)",
-    text: "Feel your arms and hands becoming heavy and relaxed.",
-  },
-  {
-    category: "Body Scan (Detailed)",
-    text: "Notice your chest and abdomen, allowing them to be soft.",
-  },
-  {
-    category: "Body Scan (Detailed)",
-    text: "Relax your hips and glutes, releasing any holding.",
-  },
-  {
-    category: "Body Scan (Detailed)",
-    text: "Feel your legs and feet, sensing the ground beneath them.",
-  },
-  {
-    category: "Visualisation",
-    text: "Imagine a calm, peaceful place. See the details, feel the atmosphere.",
-  },
-  {
-    category: "Visualisation",
-    text: "Visualize a warm, golden light filling your body, bringing comfort and healing.",
-  },
-  {
-    category: "Affirmation",
-    text: "Repeat silently to yourself: I am calm, I am present, I am at peace.",
-  },
-  {
-    category: "Affirmation",
-    text: "Affirm: I am worthy of love and happiness.",
-  },
-  {
-    category: "Movement",
-    text: "Gently stretch your fingers and toes, bringing subtle movement back to your body.",
-  },
-  {
-    category: "Movement",
-    text: "Slowly roll your head from side to side, releasing any stiffness in your neck.",
-  },
-  {
-    category: "Sensory Awareness",
-    text: "Notice any smells in the air, without judgment.",
-  },
-  {
-    category: "Sensory Awareness",
-    text: "Become aware of the temperature of the air on your skin.",
-  },
-  {
-    category: "Mindfulness of Daily Activities",
-    text: "Bring this mindful awareness to your next activity, whether it's drinking water or walking.",
-  },
-  {
-    category: "Mindfulness of Daily Activities",
-    text: "Practice being fully present in simple, everyday tasks.",
-  },
-  {
-    category: "Compassion",
-    text: "Bring to mind someone who is struggling. Send them wishes of ease and peace.",
-  },
-  {
-    category: "Compassion",
-    text: "Cultivate a sense of compassion for yourself and others.",
-  },
-  {
-    category: "Silence",
-    text: "Now, rest in silence for a few moments, simply being with what is.",
-  },
-  {
-    category: "Silence",
-    text: "Allow the silence to deepen your experience.",
-  },
-  {
-    category: "Breath Anchor",
-    text: "Return your attention to the anchor of your breath, a steady point of focus.",
-  },
-  {
-    category: "Breath Anchor",
-    text: "Each inhale and exhale is a gentle reminder to be here, now.",
-  },
-  {
-    category: "Body Scan (Quick)",
-    text: "Quickly scan your body, releasing any obvious areas of tension.",
-  },
-  {
-    category: "Body Scan (Quick)",
-    text: "Notice the overall feeling of your body in this moment.",
-  },
-  {
-    category: "Sounds (Background)",
-    text: "Let sounds be part of the background, not pulling your attention away.",
-  },
-  {
-    category: "Sounds (Background)",
-    text: "Allow sounds to simply pass through your awareness.",
-  },
-  {
-    category: "Thoughts (Clouds)",
-    text: "Imagine thoughts as clouds drifting across the sky of your mind.",
-  },
-  {
-    category: "Thoughts (Clouds)",
-    text: "Observe thoughts without getting caught up in their stories.",
-  },
-  {
-    category: "Emotions (Waves)",
-    text: "Feel emotions like waves, rising and falling, without resistance.",
-  },
-  {
-    category: "Emotions (Waves)",
-    text: "Allow emotions to be felt fully, then let them go.",
-  },
-  {
-    category: "Intention",
-    text: "Set an intention for your day, carrying this mindful awareness forward.",
-  },
-  {
-    category: "Intention",
-    text: "What quality do you wish to cultivate today?",
-  },
-  {
-    category: "Gratitude (Specific)",
-    text: "Think of three specific things you are grateful for right now.",
-  },
-  {
-    category: "Gratitude (Specific)",
-    text: "Feel the warmth of appreciation for these simple things.",
-  },
-  {
-    category: "Loving-Kindness (Difficult Person)",
-    text: "Extend wishes of well-being to someone you find challenging.",
-  },
-  {
-    category: "Loving-Kindness (Difficult Person)",
-    text: "May they be free from suffering, may they find peace.",
-  },
-  {
-    category: "Open Awareness (Spaciousness)",
-    text: "Rest in the spaciousness of your awareness, vast and open.",
-  },
-  {
-    category: "Open Awareness (Spaciousness)",
-    text: "Feel the sense of boundless awareness.",
-  },
-  {
-    category: "Conclusion (Gentle Return)",
-    text: "Gently begin to deepen your breath, preparing to return.",
-  },
-  {
-    category: "Conclusion (Gentle Return)",
-    text: "Wiggle your fingers and toes, slowly re-engaging with your physical body.",
-  },
-  {
-    category: "Conclusion (Carry Forward)",
-    text: "Carry this sense of calm and clarity into the rest of your day.",
-  },
-  {
-    category: "Conclusion (Carry Forward)",
-    text: "May you be well, happy, and peaceful.",
-  },
-]
+    const totalSoundDurationSeconds = (soundCue.duration || 1000) / 1000 // Convert to seconds
+    const frequency = soundCue.frequency || 440
+    const waveform = soundCue.waveform || "sine"
+    const attackDuration = soundCue.attackDuration || 0.01 // Default 10ms
+    const releaseDuration = soundCue.releaseDuration || 0.5 // Default 500ms
 
-export const generateSyntheticSound = async (soundCue: { name: string; src: string }, audioContext: AudioContext) => {
-  const now = audioContext.currentTime
-  const oscillator = audioContext.createOscillator()
-  const gainNode = audioContext.createGain()
+    // Create oscillator
+    const oscillator = audioContext.createOscillator()
+    const gainNode = audioContext.createGain()
 
-  oscillator.connect(gainNode)
-  gainNode.connect(audioContext.destination)
+    // Connect nodes
+    oscillator.connect(gainNode)
+    gainNode.connect(audioContext.destination)
 
-  switch (soundCue.src) {
-    case "synthetic:bell":
-      oscillator.type = "sine"
-      oscillator.frequency.setValueAtTime(880, now) // A5
-      gainNode.gain.setValueAtTime(0, now)
-      gainNode.gain.linearRampToValueAtTime(0.7, now + 0.01)
-      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 1.5)
-      oscillator.start(now)
-      oscillator.stop(now + 1.5)
-      break
-    case "synthetic:chime":
-      oscillator.type = "triangle"
-      oscillator.frequency.setValueAtTime(1320, now) // E6
-      gainNode.gain.setValueAtTime(0, now)
-      gainNode.gain.linearRampToValueAtTime(0.6, now + 0.02)
-      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 1.0)
-      oscillator.start(now)
-      oscillator.stop(now + 1.0)
-      break
-    case "synthetic:pad":
-      oscillator.type = "sawtooth"
-      oscillator.frequency.setValueAtTime(220, now) // A3
-      gainNode.gain.setValueAtTime(0, now)
-      gainNode.gain.linearRampToValueAtTime(0.4, now + 1.0)
-      gainNode.gain.linearRampToValueAtTime(0.4, now + 3.0)
-      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 5.0)
-      oscillator.start(now)
-      oscillator.stop(now + 5.0)
-      break
-    case "synthetic:pluck":
-      oscillator.type = "square"
-      oscillator.frequency.setValueAtTime(440, now) // A4
-      gainNode.gain.setValueAtTime(0, now)
-      gainNode.gain.linearRampToValueAtTime(0.8, now + 0.005)
-      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.5)
-      oscillator.start(now)
-      oscillator.stop(now + 0.5)
-      break
-    case "synthetic:drone":
-      oscillator.type = "sine"
-      oscillator.frequency.setValueAtTime(110, now) // A2
-      gainNode.gain.setValueAtTime(0, now)
-      gainNode.gain.linearRampToValueAtTime(0.3, now + 2.0)
-      gainNode.gain.linearRampToValueAtTime(0.3, now + 10.0)
-      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 12.0)
-      oscillator.start(now)
-      oscillator.stop(now + 12.0)
-      break
-    default:
-      console.warn("Unknown synthetic sound cue:", soundCue.src)
-      break
+    // Set oscillator properties
+    oscillator.type = waveform
+    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime)
+
+    // Create envelope (Attack, Sustain, Release)
+    const now = audioContext.currentTime
+    const peakVolume = 0.5 // Max volume
+    const endVolume = 0.001 // Near silence
+
+    // Attack phase
+    gainNode.gain.setValueAtTime(0, now)
+    gainNode.gain.linearRampToValueAtTime(peakVolume, now + attackDuration)
+
+    // Sustain phase (hold peak volume until release starts)
+    const sustainStart = now + attackDuration
+    const releaseStart = now + totalSoundDurationSeconds - releaseDuration
+
+    if (releaseStart > sustainStart) {
+      // If there's a distinct sustain phase
+      gainNode.gain.linearRampToValueAtTime(peakVolume, releaseStart)
+    } else {
+      // If attack + release is longer than or equal to total duration,
+      // start release immediately after attack (or even during attack if attackDuration is long)
+      gainNode.gain.linearRampToValueAtTime(
+        peakVolume,
+        Math.max(now + attackDuration, now + totalSoundDurationSeconds - releaseDuration),
+      )
+    }
+
+    // Release phase
+    gainNode.gain.exponentialRampToValueAtTime(endVolume, now + totalSoundDurationSeconds)
+
+    // Add harmonics if specified
+    if (soundCue.harmonics) {
+      soundCue.harmonics.forEach((harmonic, index) => {
+        const harmonicOsc = audioContext.createOscillator()
+        const harmonicGain = audioContext.createGain()
+
+        harmonicOsc.connect(harmonicGain)
+        harmonicGain.connect(audioContext.destination)
+
+        harmonicOsc.type = waveform
+        harmonicOsc.frequency.setValueAtTime(harmonic, audioContext.currentTime)
+
+        // Harmonics are quieter and follow a similar envelope
+        const harmonicVolume = (peakVolume * 0.2) / (index + 1) // Reduce volume for higher harmonics
+
+        harmonicGain.gain.setValueAtTime(0, now)
+        harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, now + attackDuration)
+
+        if (releaseStart > sustainStart) {
+          harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, releaseStart)
+        } else {
+          harmonicGain.gain.linearRampToValueAtTime(
+            harmonicVolume,
+            Math.max(now + attackDuration, now + totalSoundDurationSeconds - releaseDuration),
+          )
+        }
+        harmonicGain.gain.exponentialRampToValueAtTime(endVolume, now + totalSoundDurationSeconds)
+
+        harmonicOsc.start(now)
+        harmonicOsc.stop(now + totalSoundDurationSeconds)
+      })
+    }
+
+    // Start and stop the oscillator
+    oscillator.start(now)
+    oscillator.stop(now + totalSoundDurationSeconds)
+
+    // Clean up (only for AudioContext, not OfflineAudioContext as it's managed by render)
+    if (audioContext instanceof AudioContext) {
+      setTimeout(
+        () => {
+          try {
+            audioContext.close()
+          } catch (e) {
+            console.warn("Error closing audio context:", e)
+          }
+        },
+        totalSoundDurationSeconds * 1000 + 100,
+      )
+    }
+  } catch (error) {
+    console.error("Error generating synthetic sound:", error)
+    throw error
   }
 }
 
-export const defaultMeditation = {
-  title: "Default Guided Meditation",
-  timeline: [
-    {
-      id: "intro-1",
-      type: "instruction",
-      timestamp: 0,
-      text: "Welcome to your meditation. Find a comfortable posture.",
-    },
-    {
-      id: "bell-1",
-      type: "sound_cue",
-      timestamp: 1000,
-      soundCueName: "Bell (Single)",
-      soundCueSrc: "/sounds/bell-single.mp3",
-    },
-    {
-      id: "breath-1",
-      type: "instruction",
-      timestamp: 5000,
-      text: "Gently bring your attention to your breath.",
-    },
-    {
-      id: "ambient-1",
-      type: "ambient_sound",
-      timestamp: 7000,
-      ambientSoundName: "Ocean Waves",
-      ambientSoundSrc: "/sounds/ocean-waves.mp3",
-      ambientSoundVolume: 0.3,
-    },
-    {
-      id: "body-1",
-      type: "instruction",
-      timestamp: 15000,
-      text: "Notice the sensations in your body, from head to toe.",
-    },
-    {
-      id: "chime-1",
-      type: "sound_cue",
-      timestamp: 20000,
-      soundCueName: "Chime (Soft)",
-      soundCueSrc: "/sounds/chime-soft.mp3",
-    },
-    {
-      id: "thoughts-1",
-      type: "instruction",
-      timestamp: 25000,
-      text: "Observe any thoughts that arise, letting them pass like clouds.",
-    },
-    {
-      id: "gong-1",
-      type: "sound_cue",
-      timestamp: 35000,
-      soundCueName: "Gong (Deep)",
-      soundCueSrc: "/sounds/gong-deep.mp3",
-    },
-    {
-      id: "return-1",
-      type: "instruction",
-      timestamp: 40000,
-      text: "When you are ready, gently open your eyes.",
-    },
-  ],
+// Generate looping ambient noise using Web Audio API
+export async function generateAmbientSound(
+  ambient: AmbientSound,
+  audioContext: AudioContext | OfflineAudioContext,
+  duration: number,
+  volumeOverride?: number,
+): Promise<void> {
+  try {
+    if (audioContext instanceof AudioContext && audioContext.state === "suspended") {
+      await audioContext.resume()
+    }
+
+    const bufferSize = Math.floor(duration * audioContext.sampleRate)
+    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate)
+    const data = buffer.getChannelData(0)
+
+    // Simple white noise
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1
+    }
+
+    const source = audioContext.createBufferSource()
+    source.buffer = buffer
+    source.loop = true
+
+    let lastNode: AudioNode = source
+
+    if (ambient.filterType) {
+      const filter = audioContext.createBiquadFilter()
+      filter.type = ambient.filterType
+      filter.frequency.setValueAtTime(ambient.filterFrequency || 1000, 0)
+      lastNode.connect(filter)
+      lastNode = filter
+    }
+
+    const gainNode = audioContext.createGain()
+    const targetVolume = volumeOverride ?? ambient.volume ?? 0.2
+    gainNode.gain.setValueAtTime(targetVolume, 0)
+    lastNode.connect(gainNode)
+    gainNode.connect(audioContext.destination)
+
+    if (ambient.lfoFrequency) {
+      const lfo = audioContext.createOscillator()
+      const lfoGain = audioContext.createGain()
+      lfo.frequency.setValueAtTime(ambient.lfoFrequency, 0)
+      lfoGain.gain.setValueAtTime(targetVolume, 0)
+      lfo.connect(lfoGain)
+      lfoGain.connect(gainNode.gain)
+      lfo.start(0)
+      lfo.stop(duration)
+    }
+
+    source.start(0)
+    source.stop(duration)
+  } catch (error) {
+    console.error("Error generating ambient sound:", error)
+    throw error
+  }
 }

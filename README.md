@@ -56,15 +56,6 @@ A meditation tool that allows users to adjust the length of guided meditations b
     \`\`\`
     Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-### Environment Variables
-
-Create a `.env` file or configure your deployment with the following variables:
-
-\`\`\`
-NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
-\`\`\`
-
 ## Project Structure
 
 -   `app/`: Next.js App Router pages and layouts.
