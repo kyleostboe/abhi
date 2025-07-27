@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { cookies } from "next/headers"
 
-export function createSupabaseServerClient() {
+export function createServerSupabaseClient() {
   const cookieStore = cookies()
 
   return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
@@ -13,18 +13,16 @@ export function createSupabaseServerClient() {
         try {
           cookieStore.set({ name, value, ...options })
         } catch (error) {
-          // The `cookies().set()` method can only be called from a Server Component or Route Handler.
-          // This error is typically not a problem if you're only setting cookies in a Server Action or Route Handler.
-          console.warn("Could not set cookie from server client:", error)
+          // The `cookies().set()` method can only be called from a Server Action or Route Handler.
+          // This error is typically caught and handled by the Next.js framework.
         }
       },
       remove(name: string, options: CookieOptions) {
         try {
           cookieStore.set({ name, value: "", ...options })
         } catch (error) {
-          // The `cookies().set()` method can only be called from a Server Component or Route Handler.
-          // This error is typically not a problem if you're only removing cookies in a Server Action or Route Handler.
-          console.warn("Could not remove cookie from server client:", error)
+          // The `cookies().set()` method can only be called from a Server Action or Route Handler.
+          // This error is typically caught and handled by the Next.js framework.
         }
       },
     },

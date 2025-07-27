@@ -1,25 +1,41 @@
-export interface TimelineEvent {
-  id: string
-  time: number // Time in milliseconds
-  instruction: string
-  audioSrc: string | null // URL for recorded audio instruction
-  soundCueName: string | null // Name of the sound cue
-  soundCueSrc: string | null // Source URL of the sound cue
-  ambientSoundName?: string | null
-  ambientSoundSrc?: string | null
-  ambientSoundVolume?: number
-}
-
 export interface Instruction {
-  category: string
+  id: string
   text: string
+  category: string
 }
 
 export interface SoundCue {
+  id: string
   name: string
-  src: string
+  src: string // Path to audio file or synthetic: prefix
+  frequency?: number
+  duration?: number // in milliseconds (total sound length)
+  waveform?: OscillatorType
+  harmonics?: number[]
+  attackDuration?: number // in seconds
+  releaseDuration?: number // in seconds
 }
 
-export interface MeditationTimeline {
-  events: TimelineEvent[]
+export interface AmbientSound {
+  id: string
+  name: string
+  src: string // Path to audio file or synthetic: prefix
+  noiseType?: "white" | "pink" | "brown"
+  filterType?: BiquadFilterType
+  filterFrequency?: number
+  lfoFrequency?: number
+  volume?: number
+}
+
+export interface TimelineEvent {
+  id: string
+  type: "instruction_sound" | "recorded_voice"
+  startTime: number
+  instructionText?: string
+  soundCueId?: string
+  soundCueName?: string
+  soundCueSrc?: string
+  recordedAudioUrl?: string
+  recordedInstructionLabel?: string
+  duration?: number // Duration of the recorded audio in seconds
 }

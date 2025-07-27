@@ -4,8 +4,9 @@ import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
-import { Wand2 } from "lucide-react"
-import type { SpeechRecognition } from "@/lib/web-speech-api"
+import { Wand2, SaveIcon } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { toast } from "@/components/ui/use-toast"
 
 interface Instruction {
   id: string
@@ -57,7 +58,7 @@ export default function EncoderPage() {
   const audioContextRef = useRef<AudioContext | null>(null)
   const uploadAreaRef = useRef<HTMLDivElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
-  const recognitionRef = useRef<SpeechRecognition | null>(null)
+  const recognitionRef = useRef<any | null>(null)
   const originalAudioBufferRef = useRef<AudioBuffer | null>(null)
 
   useEffect(() => {
@@ -539,7 +540,7 @@ export default function EncoderPage() {
         gainNode.connect(offlineCtx.destination)
 
         gainNode.gain.setValueAtTime(baseVolume * 0.8, startTime)
-        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.1)
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.1)
 
         noiseSource.start(startTime)
         break
@@ -566,8 +567,7 @@ export default function EncoderPage() {
     writeString(0, "RIFF")
     view.setUint32(4, 36 + length * numberOfChannels * 2, true)
     writeString(8, "WAVE")
-    writeString(12, "fmt ")
-    view.setUint32(16, 16, true)
+    view.setUint32(12, 16, true)
     view.setUint16(20, 1, true)
     view.setUint16(22, numberOfChannels, true)
     view.setUint32(24, sampleRate, true)
@@ -632,6 +632,24 @@ export default function EncoderPage() {
     document.body.removeChild(a)
   }
 
+  const handleSaveMeditation = () => {
+    if (!encodedAudioUrl) {
+      toast({
+        title: "Save Error",
+        description: "No encoded audio to save. Please encode an audio file first.",
+        variant: "destructive",
+      })
+      return
+    }
+    toast({
+      title: "Save Meditation",
+      description: "Saving meditations to your library is coming soon!",
+      variant: "default",
+    })
+    // In a real implementation, you would save the processed audio URL and metadata to Supabase
+    // For now, this is a placeholder.
+  }
+
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
@@ -671,6 +689,10 @@ export default function EncoderPage() {
               <p className="text-gray-600 dark:text-gray-400">
                 The full Encoder functionality is under active development. Please check back later for updates!
               </p>
+              {/* Add a placeholder save button */}
+              <Button onClick={handleSaveMeditation} className="mt-4" variant="secondary">
+                <SaveIcon className="h-5 w-5 mr-2" /> Save Encoded Meditation
+              </Button>
             </div>
           </Card>
         </div>

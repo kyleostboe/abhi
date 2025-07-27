@@ -20,7 +20,7 @@ import { toast } from "@/components/ui/use-toast"
 
 export function Navigation() {
   const pathname = usePathname()
-  const { session } = useAuth()
+  const { session, isLoading } = useAuth() // Use isLoading from useAuth
 
   const handleSignOut = async () => {
     const supabase = createClient()
@@ -69,7 +69,10 @@ export function Navigation() {
         })}
       </div>
       <div className="flex flex-col items-center space-y-6">
-        {session ? (
+        {isLoading ? (
+          // Show a loading state or nothing while auth is loading
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-t-2 border-gray-300" />
+        ) : session ? (
           <>
             <Link href="/profile" passHref>
               <Button
