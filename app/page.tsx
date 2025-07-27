@@ -545,7 +545,7 @@ useEffect(() => {
     if (audioContextRef.current && audioContextRef.current.state !== "closed") {
       audioContextRef.current
         .close()
-        .catch((err) => console.warn("Error closing AudioContext in main useEffect cleanup:", err))
+        .catch((err) => console.warn("Error suspending AudioContext in main useEffect cleanup:", err))
       audioContextRef.current = null
     }
   }
