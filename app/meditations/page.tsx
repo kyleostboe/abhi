@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { toast } from "@/components/ui/use-toast"
 import { formatTime } from "@/lib/utils"
-import { Play, Download, Trash2, Clock, Calendar, Settings } from "lucide-react"
+import { Play, Download, Trash2, Clock, Calendar, BookOpen } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
 interface Meditation {
@@ -215,7 +215,7 @@ export default function MeditationsPage() {
           >
             <div className="max-w-md mx-auto">
               <div className="w-24 h-24 bg-logo-teal-100 dark:bg-logo-teal-900 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Settings className="w-12 h-12 text-logo-teal-500" />
+                <BookOpen className="w-12 h-12 text-logo-teal-500" />
               </div>
               <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">No meditations yet</h3>
               <p className="text-gray-600 dark:text-gray-300 mb-8">

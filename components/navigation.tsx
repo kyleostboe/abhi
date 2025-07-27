@@ -15,7 +15,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/use-auth"
-import supabase from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { toast } from "@/components/ui/use-toast"
 
 export function Navigation() {
@@ -23,6 +23,7 @@ export function Navigation() {
   const { session } = useAuth()
 
   const handleSignOut = async () => {
+    const supabase = createClient()
     const { error } = await supabase.auth.signOut()
     if (error) {
       toast({
