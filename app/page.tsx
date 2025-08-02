@@ -2000,6 +2000,54 @@ export default function HomePage() {
                       </Card>
                     </motion.div>
                   )}
+                  {processedUrl && processedBufferState && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                    >
+                      <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-logo-teal-50 to-logo-emerald-50 dark:from-logo-teal-950 dark:to-logo-emerald-950">
+                        <div className="bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
+                          <h3 className="text-white font-black">Processed Audio</h3>
+                        </div>
+                        <div className="p-6">
+                          <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
+                            <audio controls className="w-full" src={processedUrl}></audio>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 mb-6">
+                            <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                              <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
+                                Duration
+                              </div>
+                              <div className="dark:text-black font-black text-black">
+                                {formatTime(actualDuration || 0)}
+                                {actualDuration && targetDuration && (
+                                  <div className="text-xs text-logo-teal-600 mt-1 dark:text-gray-900">
+                                    {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                              <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
+                                Pauses Adjusted
+                              </div>
+                              <div className="dark:text-logo-teal-200 font-black text-black">{pausesAdjusted}</div>
+                            </div>
+                          </div>
+                          <Button
+                            className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                            onClick={downloadProcessedAudio}
+                          >
+                            <div className="flex items-center justify-center font-black">
+                              <Download className="mr-2 h-5 w-5" />
+                              Download Audio
+                            </div>
+                          </Button>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  )}
                 </div>
               </>
             ) : (
