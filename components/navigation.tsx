@@ -14,7 +14,7 @@ export function Navigation() {
           <Link
             href="/"
             className={cn(
-              "px-4 py-2 text-sm transition-colors rounded-md font-black font-serif",
+              "px-4 py-2 transition-colors rounded-md font-black font-serif text-sm",
               pathname === "/"
                 ? "bg-logo-teal-500 text-white shadow-md dark:bg-logo-teal-700"
                 : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
