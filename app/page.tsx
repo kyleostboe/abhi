@@ -6,17 +6,46 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
 import { Alert } from "@/components/ui/alert"
-import { Info, Volume2, Clock, Wand2, Download, AlertTriangle } from "lucide-react"
+import {
+  Info,
+  Volume2,
+  Clock,
+  Wand2,
+  Download,
+  Settings2,
+  AlertTriangle,
+  ListPlus,
+  Music2,
+  Mic,
+  StopCircle,
+  Play,
+  PlusCircle,
+  CircleDotDashed,
+  Trash2,
+} from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { toast } from "@/components/ui/use-toast"
-import { INSTRUCTIONS_LIBRARY, SOUND_CUES_LIBRARY, generateSyntheticSound } from "@/lib/meditation-data"
-import { cn, formatTime, formatFileSize } from "@/lib/utils"
-import { getAudioContext } from "@/lib/audio-utils" // Import from audio-utils
-import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
+import {
+  INSTRUCTIONS_LIBRARY,
+  SOUND_CUES_LIBRARY,
+  MUSICAL_NOTES,
+  generateSyntheticSound,
+  generateAmbientSound,
+  AMBIENT_SOUNDS_LIBRARY,
+  NOTE_FREQUENCIES, // Keep NOTE_FREQUENCIES here as it's used by MUSICAL_NOTES
+} from "@/lib/meditation-data"
+import { VisualTimeline } from "@/components/visual-timeline"
+import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFileSize } from "@/lib/utils"
+import { getAudioContext, playNote, bufferToWav } from "@/lib/audio-utils" // Import from audio-utils
+import type { Instruction, SoundCue, TimelineEvent, AmbientSound as AmbientSoundType } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 
 interface TimelineItem {
@@ -281,18 +310,211 @@ export default function HomePage() {
     alert("Load functionality not yet implemented.")
   }
 
-  const handleExportAudio = async () => {}
+  const handleExportAudio = async () => {
+    setIsGeneratingAudio(true)
+    setGenerationProgress(0)
+    setGenerationStep("Initializing...")
+
+    try {
+      console.log("Starting audio export with events:", timelineEvents)
+
+      // Calculate the maximum end time needed for the OfflineAudioContext
+      const maxAudioDuration = labsTotalDuration // Start with the user-defined total duration
+
+      const ctx = new OfflineAudioContext({
+        numberOfChannels: 1,
+        sampleRate: 44100,
+        length: Math.ceil(maxAudioDuration * 44100), // Ensure length is an integer
+      })
+
+      let processedEventsCount = 0
+      const totalEvents = timelineEvents.length
+
+      for (const event of timelineEvents) {
+        const eventStartTime = event.startTime
+        console.log(`Processing event ${event.id} at time ${eventStartTime}:`, event)
+
+        if (event.type === "instruction_sound") {
+          setGenerationStep(`Adding sound: ${event.soundCueName || "Sound Cue"}`)
+          console.log(`Processing sound cue from soundCueSrc: ${event.soundCueSrc}`)
+
+          if (event.soundCueSrc?.startsWith("synthetic:")) {
+            const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
+            if (soundCue) {
+              await generateSyntheticSound(soundCue, ctx) // Pass OfflineAudioContext
+              console.log(`Successfully added synthetic sound at ${eventStartTime}`)
+            }
+          } else if (event.soundCueSrc?.startsWith("musical:")) {
+            const noteMatch = event.soundCueSrc.match(/musical:([A-G])(\d)/)
+            if (noteMatch) {
+              const note = noteMatch[1]
+              const octave = Number.parseInt(noteMatch[2])
+              console.log(`Processing musical note: ${note}${octave}`)
+
+              const frequency = NOTE_FREQUENCIES[`${note}${octave}` as keyof typeof NOTE_FREQUENCIES]
+              if (frequency) {
+                const oscillator = ctx.createOscillator()
+                const gainNode = ctx.createGain()
+
+                oscillator.connect(gainNode)
+                gainNode.connect(ctx.destination)
+
+                oscillator.type = "sine"
+                oscillator.frequency.setValueAtTime(frequency, eventStartTime)
+
+                const eventDuration = 0.8 // Default duration for musical notes
+                const peakVolume = 0.4 // Good volume for musical notes
+
+                gainNode.gain.setValueAtTime(0, eventStartTime)
+                gainNode.gain.exponentialRampToValueAtTime(peakVolume, eventStartTime + 0.05)
+                gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
+
+                oscillator.start(eventStartTime)
+                oscillator.stop(eventStartTime + eventDuration)
+                console.log(`Successfully added musical note ${note}${octave} at ${eventStartTime}`)
+              }
+            }
+          } else if (event.soundCueSrc) {
+            try {
+              console.log(`Loading pre-recorded audio: ${event.soundCueSrc}`)
+              const response = await fetch(event.soundCueSrc)
+              const arrayBuffer = await response.arrayBuffer()
+              const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+              const source = ctx.createBufferSource()
+              const gainNode = ctx.createGain()
+
+              source.buffer = audioBuffer
+              source.connect(gainNode)
+              gainNode.connect(ctx.destination)
+              gainNode.gain.setValueAtTime(0.4, eventStartTime) // Good volume for pre-recorded sounds
+              source.start(eventStartTime)
+
+              console.log(`Successfully added pre-recorded audio at ${eventStartTime}`)
+            } catch (error) {
+              console.warn(`Could not load recorded audio: ${event.soundCueSrc}`, error)
+            }
+          }
+        } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
+          setGenerationStep(`Adding recorded voice: ${event.recordedInstructionLabel || "Untitled"}`)
+          console.log(`Processing recorded voice: ${event.recordedAudioUrl}`)
+
+          try {
+            const response = await fetch(event.recordedAudioUrl)
+            const arrayBuffer = await response.arrayBuffer()
+            const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+            const source = ctx.createBufferSource()
+            const gainNode = ctx.createGain()
+
+            source.buffer = audioBuffer
+            source.connect(gainNode)
+            gainNode.connect(ctx.destination)
+            gainNode.gain.setValueAtTime(0.8, eventStartTime) // Higher volume for voice
+            source.start(eventStartTime)
+
+            console.log(`Successfully added recorded voice at ${eventStartTime}`)
+          } catch (error) {
+            console.warn(`Could not load recorded audio: ${event.recordedAudioUrl}`, error)
+          }
+        }
+
+        processedEventsCount++
+        setGenerationProgress(Math.floor((processedEventsCount / totalEvents) * 80)) // Progress up to 80% for event processing
+      }
+
+      // Add background sounds to the audio context
+      for (const bgSound of backgroundSounds) {
+        if (bgSound.volume > 0) {
+          try {
+            console.log(`Adding background sound: ${bgSound.name} from src: ${bgSound.src}`)
+            if (bgSound.src.startsWith("synthetic:")) {
+              const ambientSoundDef = AMBIENT_SOUNDS_LIBRARY.find((s) => s.id === bgSound.id) as AmbientSoundType
+              if (ambientSoundDef) {
+                await generateAmbientSound(
+                  ambientSoundDef,
+                  ctx,
+                  maxAudioDuration,
+                  bgSound.volume * masterBackgroundVolume * 0.3,
+                )
+              }
+            } else {
+              const response = await fetch(bgSound.src)
+              const arrayBuffer = await response.arrayBuffer()
+              const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+              const source = ctx.createBufferSource()
+              const gainNode = ctx.createGain()
+              source.buffer = audioBuffer
+              source.connect(gainNode)
+              gainNode.connect(ctx.destination)
+              const finalVolume = bgSound.volume * masterBackgroundVolume * 0.3
+              gainNode.gain.setValueAtTime(finalVolume, 0)
+              source.loop = true
+              source.start(0)
+              source.stop(maxAudioDuration)
+              console.log(`Successfully added background sound ${bgSound.name} at volume ${finalVolume}`)
+            }
+          } catch (error) {
+            console.warn(`Could not load background sound: ${bgSound.src}`, error)
+          }
+        }
+      }
+
+      setGenerationStep("Rendering audio...")
+      setGenerationProgress(80) // Set to 80% before rendering
+      console.log("Starting audio rendering...")
+
+      const rendered = await ctx.startRendering()
+      console.log("Audio rendering complete, creating WAV blob...")
+
+      if (rendered.length === 0) {
+        throw new Error("Rendered audio buffer is empty. No audio content was generated.")
+      }
+
+      const wavBlob = await bufferToWav(
+        rendered,
+        compatibilityMode === "high",
+        (p) => setProcessingProgress(90 + Math.floor(p * 0.1)),
+        isMobileDevice,
+      )
+      if (wavBlob.size === 0) {
+        throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
+      }
+      const url = URL.createObjectURL(wavBlob)
+      setGeneratedAudioUrl(url)
+
+      // Directly assign to the audio element for immediate playback readiness
+      if (labsAudioRef.current) {
+        labsAudioRef.current.src = url
+        labsAudioRef.current.volume = volume / 100
+      }
+
+      setIsGeneratingAudio(false)
+      setGenerationProgress(100)
+      setGenerationStep("Export Complete")
+
+      console.log("Audio export completed successfully!")
+      toast({ title: "Export Complete", description: "Timeline audio exported with sound cues included!" })
+    } catch (error) {
+      console.error("Audio export failed:", error)
+      toast({
+        title: "Audio Export Failed",
+        description: `Could not export audio. Error: ${error instanceof Error ? error.message : "Unknown"}`,
+        variant: "destructive",
+      })
+    } finally {
+      setIsGeneratingAudio(false)
+    }
+  }
 
   // Define the missing functions
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOverLocal = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault()
   }
 
-  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+  const handleDragLeaveLocal = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault()
   }
 
-  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+  const handleDropLocal = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault()
     if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
       const droppedFile = event.dataTransfer.files[0]
@@ -300,20 +522,837 @@ export default function HomePage() {
     }
   }
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files.length > 0) {
-      const selectedFile = event.target.files[0]
-      setFile(selectedFile)
+  const processAudioAdjuster = async () => {
+    // Placeholder function
+  }
+
+  const downloadProcessedAudioAdjuster = async () => {
+    // Placeholder function
+  }
+
+  // == Effects for Length Adjuster ==
+  useEffect(() => {
+    // Use the useMobile hook for initial detection
+    // The useMobile hook already handles window.innerWidth and user agent.
+    // No need for manual check here.
+    if (typeof navigator !== "undefined" && (navigator as any).deviceMemory) {
+      const deviceMemory = (navigator as any).deviceMemory
+      if (deviceMemory < 4) {
+        console.warn("Device memory less than 4GB, enabling memory warnings.")
+        setMemoryWarning(true)
+      }
+    }
+  }, []) // isMobileDevice is now a hook, no longer a dependency here
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    // Use getAudioContext for consistent initialization
+    try {
+      const ctx = getAudioContext()
+      audioContextRef.current = ctx
+    } catch (error) {
+      setStatus({
+        message: `Error initializing audio system: ${error instanceof Error ? error.message : "Unknown error"}`,
+        type: "error",
+      })
+    }
+
+    return () => {
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        audioContextRef.current
+          .close()
+          .catch((err) => console.warn("Error closing AudioContext in main useEffect cleanup:", err))
+        audioContextRef.current = null
+      }
+    }
+  }, []) // isMobileDevice removed from dependency array as it's handled by useMobile hook
+
+  const cleanupMemory = useCallback(() => {
+    setOriginalBuffer(null)
+    setProcessedBufferState(null)
+    if (originalUrl) {
+      URL.revokeObjectURL(originalUrl)
+      setOriginalUrl("")
+    }
+    if (processedUrl) {
+      URL.revokeObjectURL(processedUrl)
+      setProcessedUrl("")
+    }
+    forceGarbageCollection()
+    if (isMobileDevice) setTimeout(() => forceGarbageCollection(), 100)
+  }, [originalUrl, processedUrl, isMobileDevice])
+
+  const validateFileSize = (fileToValidate: File): boolean => {
+    const maxSize = isMobileDevice ? 50 * 1024 * 1024 : 500 * 1024 * 1024
+    if (fileToValidate.size > maxSize) {
+      setStatus({ message: `File too large. Max ${isMobileDevice ? "50MB" : "500MB"}.`, type: "error" })
+      return false
+    }
+    if (
+      (isMobileDevice && fileToValidate.size > 20 * 1024 * 1024) ||
+      (!isMobileDevice && fileToValidate.size > 150 * 1024 * 1024)
+    ) {
+      setMemoryWarning(true)
+    } else {
+      setMemoryWarning(false)
+    }
+    return true
+  }
+
+  const handleFile = async (selectedFile: File) => {
+    if (!selectedFile || !selectedFile.type) {
+      setStatus({ message: "Invalid file selected.", type: "error" })
+      return
+    }
+
+    if (!selectedFile.type.startsWith("audio/") && !selectedFile.name.toLowerCase().endsWith(".m4a")) {
+      setStatus({ message: "Please select a valid audio file.", type: "error" })
+      return
+    }
+    if (!validateFileSize(selectedFile)) return
+    if (!audioContextRef.current || audioContextRef.current.state === "closed") {
+      setStatus({ message: "Audio system not ready. Please refresh.", type: "error" })
+      return
+    }
+    cleanupMemory()
+    await sleep(100)
+    setFile(selectedFile)
+    setProcessingProgress(0)
+    setProcessingStep("Initializing...")
+    setDurationLimits(null)
+    setAudioAnalysis(null)
+    setProcessedUrl("")
+    setProcessedBufferState(null)
+    setActualDuration(null)
+    setStatus(null)
+    try {
+      setStatus({ message: "Loading audio file...", type: "info" })
+      await loadAudioFile(selectedFile)
+    } catch (error) {
+      setStatus({
+        message: `Error loading audio: ${error instanceof Error ? error.message : "Unknown"}`,
+        type: "error",
+      })
+      setOriginalBuffer(null)
     }
   }
 
-  const processAudio = async () => {
-    // Placeholder function
+  const detectSilenceRegions = async (
+    buffer: AudioBuffer,
+    threshold: number,
+    minSilenceDur: number,
+  ): Promise<{ start: number; end: number }[]> => {
+    const sampleRate = buffer.sampleRate
+    const channelData = buffer.getChannelData(0)
+    const silenceRegions: { start: number; end: number }[] = []
+    let silenceStart: number | null = null
+    let consecutiveSilentSamples = 0
+    const skipSamples = isMobileDevice ? 20 : 10
+
+    for (let i = 0; i < channelData.length; i += skipSamples) {
+      if (i % (sampleRate * (isMobileDevice ? 2 : 5)) === 0) {
+        await sleep(0)
+        setProcessingProgress(20 + Math.floor((i / channelData.length) * 10))
+      }
+      const amplitude = Math.abs(channelData[i])
+      if (amplitude < threshold) {
+        if (silenceStart === null) silenceStart = i
+        consecutiveSilentSamples++
+      } else {
+        if (silenceStart !== null && (consecutiveSilentSamples * skipSamples) / sampleRate >= minSilenceDur) {
+          silenceRegions.push({ start: silenceStart / sampleRate, end: i / sampleRate })
+        }
+        silenceStart = null
+        consecutiveSilentSamples = 0
+      }
+    }
+    if (silenceStart !== null && (consecutiveSilentSamples * skipSamples) / sampleRate >= minSilenceDur) {
+      silenceRegions.push({ start: silenceStart / sampleRate, end: channelData.length / sampleRate })
+    }
+    return silenceRegions
   }
 
-  const downloadProcessedAudio = async () => {
-    // Placeholder function
+  const analyzeAudioForLimits = async (buffer: AudioBuffer, minSpacing: number) => {
+    setProcessingStep("Analyzing audio for limits...")
+    const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
+    const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+    const audioContentDuration = buffer.duration - totalSilenceDuration
+    const minRequiredSpacing = silenceRegions.length > 0 ? silenceRegions.length * minSpacing : 0
+    const minPossibleDuration = Math.max(1, Math.ceil((audioContentDuration + minRequiredSpacing) / 60))
+    const maxPossibleDuration = isMobileDevice ? 60 : 120
+    setDurationLimits({ min: minPossibleDuration, max: maxPossibleDuration })
+    setAudioAnalysis({
+      totalSilence: totalSilenceDuration,
+      contentDuration: audioContentDuration,
+      silenceRegions: silenceRegions.length,
+    })
+    if (targetDuration < minPossibleDuration) setTargetDuration(minPossibleDuration)
+    else if (targetDuration > maxPossibleDuration) setTargetDuration(maxPossibleDuration)
+    setProcessingStep("Analysis complete.")
   }
+
+  const loadAudioFile = useCallback(
+    async (fileToLoad: File) => {
+      const currentAudioContext = audioContextRef.current
+      if (!currentAudioContext) {
+        setStatus({ message: "Audio context not initialized.", type: "error" })
+        throw new Error("AudioContext not initialized")
+      }
+      let attempts = 0
+      const maxAttempts = 3
+      while (currentAudioContext.state !== "running" && attempts < maxAttempts) {
+        attempts++
+        if (currentAudioContext.state === "suspended") {
+          try {
+            await currentAudioContext.resume()
+            if (currentAudioContext.state !== "running") await sleep(50 * attempts)
+          } catch (err) {
+            break
+          }
+        } else if (currentAudioContext.state === "closed") {
+          setStatus({ message: "Audio system closed.", type: "error" })
+          throw new Error("AudioContext closed")
+        }
+        if (currentAudioContext.state !== "running" && currentAudioContext.state !== "closed" && attempts < maxAttempts)
+          await sleep(100 * attempts)
+      }
+      if (currentAudioContext.state !== "running") {
+        setStatus({ message: "Failed to start audio system.", type: "error" })
+        throw new Error(`AudioContext not running: ${currentAudioContext.state}`)
+      }
+      setProcessingStep("Reading file data...")
+      setProcessingProgress(10)
+      const arrayBuffer = await fileToLoad.arrayBuffer()
+      setProcessingStep("Decoding audio data...")
+      setProcessingProgress(50)
+      try {
+        const decodePromise = currentAudioContext.decodeAudioData(arrayBuffer.slice(0))
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Audio decoding timeout (30s)")), 30000),
+        )
+        const buffer = await Promise.race([decodePromise, timeoutPromise])
+        setProcessingStep("Analyzing audio...")
+        setProcessingProgress(80)
+        await sleep(50)
+        setOriginalBuffer(buffer)
+        setProcessingStep("Creating audio player...")
+        setProcessingProgress(95)
+        if (originalUrl) URL.revokeObjectURL(originalUrl)
+        const blob = new Blob([fileToLoad], { type: fileToLoad.type })
+        const url = URL.createObjectURL(blob)
+        setOriginalUrl(url)
+        setProcessingProgress(100)
+        setProcessingStep("Load complete!")
+        setStatus({
+          message: `Audio loaded. Duration: ${formatTime(buffer.duration)}.`,
+          type: "success",
+        })
+      } catch (decodeError) {
+        setStatus({
+          message: `Error decoding: ${decodeError instanceof Error ? decodeError.message : "Unknown"}`,
+          type: "error",
+        })
+        throw decodeError
+      }
+    },
+    [originalUrl, isMobileDevice],
+  )
+
+  useEffect(() => {
+    if (originalBuffer) analyzeAudioForLimits(originalBuffer, minSpacingDuration)
+  }, [originalBuffer, silenceThreshold, minSilenceDuration, minSpacingDuration])
+
+  const processAudioAdjusterAction = async () => {
+    const currentAudioContext = audioContextRef.current
+    if (!originalBuffer || !currentAudioContext) {
+      setStatus({ message: "Original audio or audio system not ready.", type: "error" })
+      return
+    }
+    setIsProcessing(true)
+    setProcessingProgress(0)
+    setProcessingStep("Starting processing...")
+    if (currentAudioContext.state === "suspended") {
+      try {
+        await currentAudioContext.resume()
+        if (currentAudioContext.state !== "running") throw new Error("Failed to resume for processing.")
+      } catch (err) {
+        setStatus({ message: `Audio system error: ${err instanceof Error ? err.message : "Unknown"}`, type: "error" })
+        setIsProcessing(false)
+        return
+      }
+    } else if (currentAudioContext.state === "closed") {
+      setStatus({ message: "Audio system closed.", type: "error" })
+      setIsProcessing(false)
+      return
+    }
+    if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
+    processingTimeoutRef.current = setTimeout(
+      () => {
+        setIsProcessing(false)
+        setStatus({ message: "Processing timed out.", type: "error" })
+      },
+      isMobileDevice ? 120000 : 600000,
+    )
+
+    try {
+      setStatus({ message: "Processing audio...", type: "info" })
+      const targetDurationSeconds = targetDuration * 60
+      setProcessingStep("Detecting silence regions (step 1/4)...")
+      setProcessingProgress(10)
+      await sleep(10)
+      const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
+      setProcessingStep("Calculating adjustments (step 2/4)...")
+      await sleep(10)
+      await sleep(10)
+      const silenceRegions2 = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
+      setProcessingStep("Calculating adjustments (step 2/4)...")
+      await sleep(10)
+      const totalSilenceDuration = silenceRegions2.reduce((sum, region) => sum + (region.end - region.start), 0)
+      const audioContentDuration = originalBuffer.duration - totalSilenceDuration
+      const availableSilenceDuration = Math.max(
+        targetDurationSeconds - audioContentDuration,
+        silenceRegions2.length * minSpacingDuration,
+      )
+      const scaleFactor = totalSilenceDuration > 0 ? availableSilenceDuration / totalSilenceDuration : 1
+      setProcessingStep("Rebuilding audio (step 3/4)...")
+      setProcessingProgress(50)
+      await sleep(10)
+
+      const processedAudioBuffer = await rebuildAudioWithScaledPauses(
+        originalBuffer,
+        silenceRegions2,
+        scaleFactor,
+        minSpacingDuration,
+        preserveNaturalPacing,
+        availableSilenceDuration,
+        (p) => setProcessingProgress(50 + Math.floor(p * 0.4)),
+      )
+      setPausesAdjusted(silenceRegions2.length)
+      setProcessingStep("Creating download file (step 4/4)...")
+      setProcessingProgress(90)
+      await sleep(10)
+      const wavBlob = await bufferToWav(
+        processedAudioBuffer,
+        compatibilityMode === "high",
+        (p) => setProcessingProgress(90 + Math.floor(p * 0.1)),
+        isMobileDevice,
+      )
+      if (wavBlob.size === 0) {
+        throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
+      }
+      const url = URL.createObjectURL(wavBlob)
+      setProcessedUrl(url)
+      setActualDuration(processedAudioBuffer.duration)
+      setProcessedBufferState(processedAudioBuffer)
+      setProcessingProgress(100)
+      setProcessingStep("Complete!")
+      setStatus({ message: "Audio processing completed successfully!", type: "success" })
+      setIsProcessingComplete(true)
+    } catch (error) {
+      console.error("Error during audio processing:", error)
+      setStatus({ message: `Processing error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
+    } finally {
+      setIsProcessing(false)
+      if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
+      if (currentAudioContext && currentAudioContext.state === "running") {
+        currentAudioContext.suspend().catch((err) => console.warn("Error suspending AudioContext post-process:", err))
+      }
+    }
+  }
+
+  const rebuildAudioWithScaledPauses = useCallback(
+    async (
+      buffer: AudioBuffer,
+      regions: { start: number; end: number }[],
+      scaleFactorVal: number,
+      minSpacingVal: number,
+      preservePacing: boolean,
+      targetTotalSilence: number,
+      onProgress: (progress: number) => void,
+    ): Promise<AudioBuffer> => {
+      const currentAudioContext = audioContextRef.current
+      if (!currentAudioContext) throw new Error("Audio context not available for rebuild")
+      onProgress(0)
+      let dynamicScale = scaleFactorVal
+      if (!preservePacing && regions.length > 0) {
+        const currentTotalSilence = regions.reduce((sum, r) => sum + (r.end - r.start), 0)
+        dynamicScale = currentTotalSilence > 0 ? targetTotalSilence / currentTotalSilence : 1
+        if (!isFinite(dynamicScale) || dynamicScale <= 0) dynamicScale = 1
+      }
+      const processedRegions = regions.map((region) => {
+        const duration = region.end - region.start
+        const newDuration = preservePacing
+          ? Math.max(duration * dynamicScale, minSpacingVal)
+          : regions.length > 0
+            ? Math.max(minSpacingVal, targetTotalSilence / regions.length)
+            : minSpacingVal
+        return { ...region, newDuration }
+      })
+      const audioContentDur = buffer.duration - regions.reduce((sum, r) => sum + (r.end - r.start), 0)
+      const newSilenceDur = processedRegions.reduce((sum, r) => sum + r.newDuration, 0)
+      const newTotalDur = audioContentDur + newSilenceDur
+      if (newTotalDur <= 0) throw new Error("Calculated new total duration is zero or negative.")
+      if (isMobileDevice && newTotalDur > 45 * 60) {
+        console.warn(`Mobile device: Output duration ${formatTime(newTotalDur)} may cause issues.`)
+        setMemoryWarning(true)
+      }
+      let newBuffer: AudioBuffer
+      try {
+        newBuffer = currentAudioContext.createBuffer(
+          buffer.numberOfChannels,
+          Math.max(1, Math.floor(newTotalDur * buffer.sampleRate)),
+          buffer.sampleRate,
+        )
+      } catch (e) {
+        forceGarbageCollection()
+        throw new Error(
+          `Failed to create output buffer (duration: ${newTotalDur.toFixed(2)}s). Memory limit likely exceeded. Try a shorter target duration.`,
+        )
+      }
+      onProgress(10)
+      for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+        const originalData = buffer.getChannelData(channel)
+        const newData = newBuffer.getChannelData(channel)
+        let writeIndex = 0
+        let readIndex = 0
+        const totalSamples = originalData.length
+        if (regions.length > 0 && regions[0].start > 0) {
+          const samplesToCopy = Math.floor(regions[0].start * buffer.sampleRate)
+          for (let i = 0; i < samplesToCopy; i++) newData[writeIndex++] = originalData[readIndex++]
+        }
+        for (let i = 0; i < regions.length; i++) {
+          if (i % (isMobileDevice ? 5 : 10) === 0) {
+            await sleep(0)
+            onProgress(10 + Math.floor((i / regions.length) * 80))
+          }
+          const region = regions[i]
+          const processedReg = processedRegions[i]
+          readIndex = Math.floor(region.end * buffer.sampleRate)
+          const newSilenceLength = Math.floor(processedReg.newDuration * buffer.sampleRate)
+          for (let j = 0; j < newSilenceLength; j++) {
+            if (writeIndex < newData.length) newData[writeIndex++] = 0
+          }
+          const nextRegionStart =
+            i < regions.length - 1 ? Math.floor(regions[i + 1].start * buffer.sampleRate) : totalSamples
+          const segmentLength = nextRegionStart - readIndex
+          for (let j = 0; j < segmentLength; j++) {
+            if (writeIndex < newData.length && readIndex + j < totalSamples) {
+              newData[writeIndex++] = originalData[readIndex + j]
+            }
+          }
+          readIndex = nextRegionStart
+        }
+        if (readIndex < totalSamples && regions.length === 0) {
+          for (let i = readIndex; i < totalSamples; i++)
+            if (writeIndex < newData.length) newData[writeIndex++] = originalData[i]
+        }
+      }
+      onProgress(100)
+      return newBuffer
+    },
+    [isMobileDevice],
+  )
+
+  const handleFileSelectAction = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0]
+    if (selectedFile) handleFile(selectedFile)
+    if (e.target) e.target.value = ""
+  }
+
+  const handleDragOverAction = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (uploadAreaRef.current) uploadAreaRef.current.classList.add("border-primary")
+  }
+
+  const handleDragLeaveAction = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
+  }
+
+  const handleDropAction = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
+    const files = e.dataTransfer.files
+    if (files.length > 0) handleFile(files[0])
+  }
+
+  const downloadProcessedAudioAction = async () => {
+    if (!processedUrl) {
+      setStatus({ message: "No processed audio available to download.", type: "warning" })
+      return
+    }
+    const a = document.createElement("a")
+    a.href = processedUrl
+    a.download = file ? `processed_${file.name.replace(/\.[^/.]+$/, "")}.wav` : "processed_audio.wav"
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
+  useEffect(() => {
+    if (isProcessingComplete) setIsProcessingComplete(false)
+  }, [
+    targetDuration,
+    silenceThreshold,
+    minSilenceDuration,
+    minSpacingDuration,
+    preserveNaturalPacing,
+    isProcessingComplete,
+  ])
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | undefined
+    if (isProcessing) interval = setInterval(monitorMemory, 3000)
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isProcessing])
+
+  // == Effects and Handlers for Labs ==
+  useEffect(() => {
+    labsAudioRef.current = new Audio()
+    labsAudioRef.current.preload = "none"
+    labsAudioRef.current.volume = 0.7
+    if (labsAudioRef.current) {
+      labsAudioRef.current.onerror = (e) => console.warn("Labs Audio error:", e)
+    }
+    return () => {
+      if (labsAudioRef.current) {
+        labsAudioRef.current.pause()
+        labsAudioRef.current.src = ""
+        labsAudioRef.current = null
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+        mediaRecorderRef.current.stop()
+      }
+    }
+  }, [])
+
+  // Helper function to add events to timelineEvents without automatic spacing
+  const addEventToTimeline = useCallback((newEvent: TimelineEvent) => {
+    setTimelineEvents((prevEvents) => {
+      const updatedEvents = [...prevEvents, newEvent]
+      // Sort by current startTime to maintain chronological order for display
+      // Do NOT re-calculate or re-assign startTimes based on spacing.
+      return updatedEvents.sort((a, b) => a.startTime - b.startTime)
+    })
+  }, [])
+
+  const handleAddInstructionSoundEvent = () => {
+    let instructionTextToAdd = ""
+    if (selectedLibraryInstruction) instructionTextToAdd = selectedLibraryInstruction.text
+    else if (customInstructionText.trim() !== "") instructionTextToAdd = customInstructionText.trim()
+    else {
+      toast({
+        title: "Missing Instruction",
+        description: "Please select or enter an instruction.",
+        variant: "destructive",
+      })
+      return
+    }
+    if (!selectedSoundCue) {
+      toast({ title: "Missing Sound Cue", description: "Please select a sound cue.", variant: "destructive" })
+      return
+    }
+
+    // Calculate new startTime based on existing events
+    const maxExistingTime = timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
+    const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 33 : 0
+
+    const newEvent: TimelineEvent = {
+      id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      type: "instruction_sound",
+      startTime: newStartTime, // Now calculated
+      instructionText: instructionTextToAdd,
+      soundCueId: selectedSoundCue.id,
+      soundCueName: selectedSoundCue.name, // Store the name directly
+      soundCueSrc: selectedSoundCue.src, // Store the src directly
+      // Duration for instruction_sound events will be calculated during audio generation
+      // based on the actual sound cue duration or a default for synthetic sounds.
+    }
+    addEventToTimeline(newEvent) // Use the new helper function
+    setSelectedLibraryInstruction(null)
+    setCustomInstructionText("")
+    toast({
+      title: "Event Added",
+      description: `"${instructionTextToAdd.substring(0, 30)}..." with ${selectedSoundCue.name} added.`,
+    })
+  }
+
+  const startRecording = async () => {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        const mimeType = MediaRecorder.isTypeSupported("audio/mp4;codecs=aac")
+          ? "audio/mp4;codecs=aac"
+          : MediaRecorder.isTypeSupported("audio/webm")
+            ? "audio/webm"
+            : ""
+
+        if (!mimeType) {
+          toast({
+            title: "Unsupported Audio Format",
+            description: "Your browser does not support a compatible audio recording format.",
+            variant: "destructive",
+          })
+          return
+        }
+
+        mediaRecorderRef.current = new MediaRecorder(stream, { mimeType })
+        const blobs: Blob[] = []
+
+        mediaRecorderRef.current.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            blobs.push(event.data)
+          }
+        }
+
+        mediaRecorderRef.current.onstop = async () => {
+          const blob = new Blob(blobs, { type: mimeType })
+          const url = URL.createObjectURL(blob)
+
+          // Create a temporary audio element to load metadata and get duration
+          const tempAudio = new Audio()
+          tempAudio.preload = "metadata"
+          tempAudio.src = url
+
+          tempAudio.onloadedmetadata = () => {
+            const duration =
+              tempAudio.duration && !isNaN(tempAudio.duration) && isFinite(tempAudio.duration) ? tempAudio.duration : 0
+
+            setReadyToAddToTimelineRecording({
+              url,
+              duration,
+              label: recordingLabel.trim(),
+            })
+            setRecordedBlobs([blob]) // Keep the blob for potential future use if needed
+            URL.revokeObjectURL(url) // Revoke the temporary URL after duration is captured
+            toast({ title: "Recording Stopped", description: `Duration: ${formatTime(duration)}` })
+          }
+
+          tempAudio.onerror = (e) => {
+            console.error("Error loading recorded audio metadata:", e)
+            toast({
+              title: "Recording Error",
+              description: "Could not load recorded audio metadata. Try again.",
+              variant: "destructive",
+            })
+            URL.revokeObjectURL(url)
+            setReadyToAddToTimelineRecording(null)
+          }
+
+          // Stop all tracks to release microphone
+          if (mediaRecorderRef.current?.stream) {
+            mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop())
+          }
+        }
+
+        mediaRecorderRef.current.start()
+        setIsRecording(true)
+        setReadyToAddToTimelineRecording(null) // Clear previous recording
+        setRecordedBlobs([])
+        toast({ title: "Recording Started" })
+      } catch (err) {
+        toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" })
+      }
+    } else {
+      toast({
+        title: "Unsupported",
+        description: "Audio recording not supported by your browser.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
+    }
+  }
+
+  const updateEventStartTime = (eventId: string, newTime: number) => {
+    setTimelineEvents((prev) => {
+      const updated = prev.map((event) =>
+        event.id === eventId ? { ...event, startTime: Math.max(0, Math.min(newTime, labsTotalDuration)) } : event,
+      )
+      // Simple sort by startTime, with stable sorting for events at the same time
+      return updated.sort((a, b) => {
+        if (a.startTime === b.startTime) {
+          // For events at the same time, maintain their relative order based on original array position
+          const aIndex = prev.findIndex((e) => e.id === a.id)
+          const bIndex = prev.findIndex((e) => e.id === b.id)
+          return aIndex - bIndex
+        }
+        return a.startTime - b.startTime
+      })
+    })
+  }
+
+  const removeTimelineEvent = (eventId: string) => {
+    setTimelineEvents((prev) => prev.filter((event) => event.id !== eventId))
+    toast({ title: "Event Removed" })
+  }
+
+  // Safe input handlers with validation
+  const handleMeditationTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target?.value
+    if (typeof value === "string") {
+      setMeditationTitle(value)
+    }
+  }
+
+  const handleCustomInstructionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target?.value
+    if (typeof value === "string") {
+      setCustomInstructionText(value)
+      setSelectedLibraryInstruction(null)
+    }
+  }
+
+  const handleRecordingLabelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target?.value
+    if (typeof value === "string") {
+      setRecordingLabel(value)
+    }
+  }
+
+  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target?.value
+    if (typeof value === "string" && !isNaN(Number(value))) {
+      setLabsTotalDuration(Math.max(60, Number(value) * 60) || 60)
+    }
+  }
+
+  // Add this useCallback function for toggling background sound previews, after other useCallback functions:
+  const toggleBackgroundSoundPreview = useCallback(
+    async (sound: AmbientSoundType) => {
+      const audioEl = backgroundAudioRef.current
+      const isSynthetic = sound.src.startsWith("synthetic:")
+      const isCurrentlyPlaying = currentPlayingBackgroundSoundId === sound.id && audioEl && !audioEl.paused
+
+      // If this sound is playing, pause it.
+      if (isCurrentlyPlaying) {
+        if (audioEl instanceof AudioBufferSourceNode) {
+          audioEl.stop()
+        } else if (audioEl instanceof HTMLAudioElement) {
+          audioEl.pause()
+        }
+        setCurrentPlayingBackgroundSoundId(null)
+        toast({ title: "Preview Paused", description: `${sound.name} preview paused.` })
+        return
+      }
+
+      // Stop any currently playing sound before starting a new one
+      if (audioEl) {
+        if (audioEl instanceof AudioBufferSourceNode) {
+          audioEl.stop()
+        } else if (audioEl instanceof HTMLAudioElement) {
+          audioEl.pause()
+          audioEl.src = "" // Clear src to ensure new sound loads
+        }
+        backgroundAudioRef.current = null
+      }
+
+      try {
+        const audioContext = getAudioContext()
+        if (audioContext.state === "suspended") {
+          await audioContext.resume()
+        }
+
+        if (isSynthetic) {
+          // For synthetic sounds, generate into a buffer and play via AudioBufferSourceNode
+          const tempCtx = new OfflineAudioContext(1, audioContext.sampleRate * 5, audioContext.sampleRate) // 5s buffer for preview
+          await generateAmbientSound(sound, tempCtx, 5, sound.volume || 0.5) // Use sound's volume or default
+          const renderedBuffer = await tempCtx.startRendering()
+
+          const source = audioContext.createBufferSource()
+          source.buffer = renderedBuffer
+          source.loop = true
+          const gainNode = audioContext.createGain()
+          source.connect(gainNode)
+          gainNode.connect(audioContext.destination)
+          gainNode.gain.value = (sound.volume || 0.5) * masterBackgroundVolume * 0.5 // Apply master volume
+          source.start(0)
+
+          backgroundAudioRef.current = source
+        } else {
+          // For file-based sounds, use HTMLAudioElement
+          const audio = new Audio(sound.src)
+          audio.loop = true
+          audio.volume = (sound.volume || 0.5) * masterBackgroundVolume * 0.5 // Apply master volume
+          await audio.play().catch((e) => console.error("Error playing background audio:", e))
+          backgroundAudioRef.current = audio
+        }
+
+        setCurrentPlayingBackgroundSoundId(sound.id)
+        toast({ title: "Playing Preview", description: `Now playing: ${sound.name}` })
+      } catch (error) {
+        console.error("Failed to play background sound:", error)
+        toast({
+          title: "Background Sound Error",
+          description: `Could not play ${sound.name}. Error: ${error instanceof Error ? error.message : "Unknown"}`,
+          variant: "destructive",
+        })
+        setCurrentPlayingBackgroundSoundId(null)
+      }
+    },
+    [currentPlayingBackgroundSoundId, masterBackgroundVolume],
+  )
+
+  const stopBackgroundSound = useCallback(() => {
+    if (backgroundAudioRef.current) {
+      if (backgroundAudioRef.current instanceof AudioBufferSourceNode) {
+        backgroundAudioRef.current.stop()
+      } else if (backgroundAudioRef.current instanceof HTMLAudioElement) {
+        backgroundAudioRef.current.pause()
+        backgroundAudioRef.current.src = "" // Clear src to ensure it stops loading/playing
+      }
+      backgroundAudioRef.current = null
+      setCurrentPlayingBackgroundSoundId(null)
+      toast({ title: "Preview Stopped", description: "Background sound preview stopped." })
+    }
+  }, [])
+
+  // Add this useEffect hook to update background audio volume when masterBackgroundVolume changes:
+  useEffect(() => {
+    if (backgroundAudioRef.current) {
+      // If it's an AudioBufferSourceNode, its gain is set at creation.
+      // For HTMLAudioElement, we can update volume directly.
+      if (backgroundAudioRef.current instanceof HTMLAudioElement) {
+        const currentSound = AMBIENT_SOUNDS_LIBRARY.find((s) => s.id === currentPlayingBackgroundSoundId)
+        if (currentSound) {
+          backgroundAudioRef.current.volume = (currentSound.volume || 0.5) * masterBackgroundVolume * 0.5
+        }
+      }
+      // For AudioBufferSourceNode, the gain node would need to be exposed or recreated,
+      // which is more complex for a simple preview. For now, it's set once.
+    }
+  }, [masterBackgroundVolume, currentPlayingBackgroundSoundId])
+
+  // Add this useEffect hook for background audio initialization and cleanup, after other useEffects:
+  useEffect(() => {
+    // Initialize a dummy Audio element for file-based previews
+    labsAudioRef.current = new Audio()
+    labsAudioRef.current.preload = "none"
+    labsAudioRef.current.volume = 0.7
+    if (labsAudioRef.current) {
+      labsAudioRef.current.onerror = (e) => console.warn("Labs Audio error:", e)
+    }
+
+    return () => {
+      if (labsAudioRef.current) {
+        labsAudioRef.current.pause()
+        labsAudioRef.current.src = ""
+        labsAudioRef.current = null
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+        mediaRecorderRef.current.stop()
+      }
+      stopBackgroundSound() // Ensure background preview is stopped on unmount
+    }
+  }, [stopBackgroundSound])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-0">
@@ -541,9 +1580,9 @@ export default function HomePage() {
                   ref={uploadAreaRef}
                   className="overflow-hidden border-none bg-white dark:bg-gray-900 rounded-2xl mb-8 cursor-pointer transition-all duration-300 shadow-none hover:shadow-lg dark:shadow-white/10 dark:hover:shadow-white/20"
                   onClick={() => fileInputRef.current?.click()}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
+                  onDragOver={handleDragOverAction}
+                  onDragLeave={handleDragLeaveAction}
+                  onDrop={handleDropAction}
                 >
                   <div className="p-10 md:p-16 text-center md:py-14 border-2 rounded-2xl border-dashed border-gray-600">
                     <motion.div
@@ -564,7 +1603,7 @@ export default function HomePage() {
                     type="file"
                     className="hidden"
                     accept=".mp3,.wav,.ogg,.m4a,audio/*"
-                    onChange={handleFileSelect}
+                    onChange={handleFileSelectAction}
                   />
                 </motion.div>
 
@@ -621,7 +1660,8 @@ export default function HomePage() {
                     >
                       <Card className="p-6 bg-gradient-to-r from-logo-rose-50 to-logo-purple-50 border-logo-rose-200 shadow-sm dark:shadow-white/10 dark:from-logo-rose-950 dark:to-logo-purple-950">
                         <div className="text-center mb-4">
-                          <h3 className="text-lg font-medium text-logo-rose-700 dark:text-logo-rose-300 mb-2">
+                          <h3 className="text-lg font-medium text-logo-rose-700 dark:text-logo-rose-300 mb-2 flex items-center justify-center">
+                            <Wand2 className="mr-2 h-5 w-5 animate-spin" />
                             Processing Audio
                           </h3>
                           <p className="text-sm text-logo-rose-600 dark:text-logo-rose-400">{processingStep}</p>
@@ -899,7 +1939,7 @@ export default function HomePage() {
                       "bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 text-white dark:from-logo-teal-700 dark:to-logo-purple-700",
                     )}
                     disabled={!originalBuffer || isProcessing || !durationLimits}
-                    onClick={processAudio}
+                    onClick={processAudioAdjusterAction}
                   >
                     <div className="flex items-center justify-center">
                       <Wand2 className="mr-2 h-6 w-6" />
@@ -1022,7 +2062,7 @@ export default function HomePage() {
                           </div>
                           <Button
                             className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
-                            onClick={downloadProcessedAudio}
+                            onClick={downloadProcessedAudioAction}
                           >
                             <div className="flex items-center justify-center font-black">
                               <Download className="mr-2 h-5 w-5" />
@@ -1035,7 +2075,587 @@ export default function HomePage() {
                   )}
                 </div>
               </>
-            ) : null}
+            ) : (
+              // == Labs UI ==
+              <motion.div
+                key="labs-content"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6"
+              >
+                {/* Meditation Setup for Labs */}
+                <motion.div
+                  className="text-logo-rose"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  <Card className="overflow-hidden border border-logo-rose-600 shadow-inner bg-white dark:bg-gray-900 max-w-2xl mx-auto">
+                    <div className="py-3 px-6 text-center">
+                      <h3 className="flex items-center justify-center font-black text-logo-rose-600 text-left">
+                        <Settings2 className="h-4 w-4 mr-2" />
+                        Session Setup
+                      </h3>
+                    </div>
+                    <div className="p-6 bg-white text-sm font-black pt-3">
+                      <div className="grid md:grid-cols-2 gap-6 text-logo-rose-600">
+                        <div className="text-center">
+                          <Label htmlFor="labs-title" className="text-logo-rose-600 font-black">
+                            Meditation Title
+                          </Label>
+                          <Input
+                            id="labs-title"
+                            value={meditationTitle}
+                            onChange={handleMeditationTitleChange}
+                            placeholder="My Custom Meditation"
+                            className="mt-1 text-xs font-black text-logo-rose-600 shadow-inner border border-gray-600 focus:ring-logo-rose-600 focus:border-logo-rose-600" // Changed border to gray-600
+                          />
+                        </div>
+                        <div className="text-center">
+                          <Label htmlFor="labs-duration" className="text-logo-rose-600 font-black">
+                            Meditation Duration (minutes)
+                          </Label>
+                          <Input
+                            id="labs-duration"
+                            type="number"
+                            value={labsTotalDuration / 60}
+                            onChange={handleDurationChange}
+                            min="1"
+                            className="mt-1 text-xs font-black text-logo-rose-600 shadow-inner border border-gray-600 focus:ring-logo-rose-600 focus:border-logo-rose-600" // Changed border to gray-600
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+
+                {/* Main Content Grid for Labs */}
+                <motion.div
+                  className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
+                      <div className="bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 py-3 px-6 dark:from-logo-purple-600 dark:to-logo-blue-600 text-center">
+                        <h3 className="text-white flex items-center font-black text-center">
+                          <ListPlus className="h-4 w-4 mr-2" />
+                          Instructions Library
+                        </h3>
+                      </div>
+                      <div className="p-6 space-y-4">
+                        <Accordion type="single" collapsible className="w-full">
+                          {instructionCategories.map((category) => (
+                            <AccordionItem
+                              value={category}
+                              key={category}
+                              className="border-b border-gray-100 dark:border-gray-800"
+                            >
+                              <AccordionTrigger className="hover:no-underline py-3">{category}</AccordionTrigger>
+                              <AccordionContent className="pb-4">
+                                <div className="space-y-2">
+                                  {INSTRUCTIONS_LIBRARY.filter((instr) => instr.category === category).map((instr) => (
+                                    <Button
+                                      key={instr.id}
+                                      variant={selectedLibraryInstruction?.id === instr.id ? "default" : "ghost"}
+                                      size="sm"
+                                      className={`w-full text-left justify-start h-auto py-3 px-3 text-sm ${selectedLibraryInstruction?.id === instr.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                                      onClick={() => {
+                                        setSelectedLibraryInstruction(instr)
+                                        setCustomInstructionText("")
+                                      }}
+                                    >
+                                      <span className="text-wrap leading-relaxed font-black text-sm text-gray-600">
+                                        {instr.text}
+                                      </span>
+                                    </Button>
+                                  ))}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          ))}
+                        </Accordion>
+                        <div className="border-gray-100 dark:border-gray-800 pt-4 border-t-0 text-center">
+                          <Label htmlFor="custom" className="text-indigo-400 font-black">
+                            Custom Instruction
+                          </Label>
+                          <Textarea
+                            id="custom"
+                            value={customInstructionText}
+                            onChange={handleCustomInstructionChange}
+                            placeholder="Enter your own instruction..."
+                            rows={3}
+                            className="mt-2 text-sm font-black"
+                          />
+                        </div>
+                      </div>
+                    </Card>
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
+                      <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
+                        <h3 className="text-white flex items-center font-black text-center">
+                          <Music2 className="h-4 w-4 mr-2" />
+                          Musical Notes
+                        </h3>
+                      </div>
+                      <div className="p-6 space-y-4 font-black">
+                        <Accordion type="single" collapsible className="w-full">
+                          {Object.entries(MUSICAL_NOTES).map(([category, notes]) => (
+                            <AccordionItem
+                              value={category}
+                              key={category}
+                              className="border-b border-gray-100 dark:border-gray-800"
+                            >
+                              <AccordionTrigger className="text-logo-teal-500 dark:text-logo-teal-500 hover:no-underline py-3">
+                                {category}
+                              </AccordionTrigger>
+                              <AccordionContent className="pb-4">
+                                <div className="space-y-2 text-gray-600">
+                                  {notes.map((note) => (
+                                    <div key={note.id} className="flex items-center gap-2 font-black">
+                                      <Button
+                                        variant={selectedSoundCue?.id === note.id ? "default" : "ghost"}
+                                        size="sm"
+                                        className={`flex-1 justify-start font-black ${selectedSoundCue?.id === note.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                                        onClick={async () => {
+                                          setSelectedSoundCue({
+                                            id: note.id,
+                                            name: note.name,
+                                            src: `musical:${note.note}${note.octave}`,
+                                          })
+                                          await playNote(note.note, note.octave) // Await playNote here
+                                        }}
+                                      >
+                                        {note.name}
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={async () => await playNote(note.note, note.octave)} // Await playNote here
+                                        className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
+                                        title={`Preview ${note.name}`}
+                                      >
+                                        <Play className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          ))}
+                        </Accordion>
+                        <Button
+                          className="w-full bg-white text-logo-teal-500 border border-logo-teal-500 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-teal-500 dark:border-logo-teal-500 dark:hover:bg-gray-800"
+                          onClick={handleAddInstructionSoundEvent}
+                          disabled={(!selectedLibraryInstruction && !customInstructionText.trim()) || !selectedSoundCue}
+                        >
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          <span className="font-black">Add to Timeline</span>
+                        </Button>
+                      </div>
+                    </Card>
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
+                      <div className="bg-gradient-to-r from-logo-rose-500 to-logo-amber-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
+                        <h3 className="text-white flex items-center font-black">
+                          <Mic className="h-4 w-4 mr-2" />
+                          Voice Recording
+                        </h3>
+                      </div>
+                      <div className="p-6 space-y-4">
+                        <div className="text-left">
+                          <Label
+                            htmlFor="recording-label"
+                            className="text-logo-rose-600 dark:text-logo-rose-400 font-black"
+                          >
+                            Label
+                          </Label>
+                          <Input
+                            id="recording-label"
+                            value={recordingLabel}
+                            onChange={handleRecordingLabelChange}
+                            placeholder="Describe this recording..."
+                            className="mt-1 text-sm font-black"
+                          />
+                        </div>
+                        <Button
+                          onClick={isRecording ? stopRecording : startRecording}
+                          variant={isRecording ? "destructive" : "default"}
+                          className={cn(
+                            "w-full font-black",
+                            isRecording
+                              ? "bg-gradient-to-r from-gray-600 to-gray-700 text-white dark:from-gray-700 dark:to-gray-800"
+                              : "bg-transparent text-logo-rose-600 border border-logo-rose-600 dark:text-logo-rose-400 dark:border-logo-rose-400 hover:bg-logo-rose-50 dark:hover:bg-gray-800",
+                          )}
+                        >
+                          {isRecording ? (
+                            <>
+                              <StopCircle className="mr-2 h-4 w-4" />
+                              Stop Recording
+                            </>
+                          ) : (
+                            <>
+                              <Mic className="mr-2 h-4 w-4" />
+                              Start Recording
+                            </>
+                          )}
+                        </Button>
+                        <AnimatePresence>
+                          {readyToAddToTimelineRecording && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-4"
+                            >
+                              <div className="space-y-2">
+                                <audio
+                                  controls
+                                  src={readyToAddToTimelineRecording.url}
+                                  className="w-full"
+                                  preload="metadata"
+                                />
+                                <p className="text-xs text-gray-500 text-center">
+                                  Duration: {formatTime(readyToAddToTimelineRecording.duration)}
+                                </p>
+                              </div>
+                              <Button
+                                onClick={() => {
+                                  if (!readyToAddToTimelineRecording?.label.trim()) {
+                                    toast({
+                                      title: "Missing Label",
+                                      description: "Please provide a label for the recording.",
+                                      variant: "destructive",
+                                    })
+                                    return
+                                  }
+
+                                  // Calculate new startTime based on existing events
+                                  const maxExistingTime =
+                                    timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
+                                  const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 33 : 0
+
+                                  const newEvent: TimelineEvent = {
+                                    id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+                                    type: "recorded_voice",
+                                    startTime: newStartTime, // Now calculated
+                                    recordedAudioUrl: readyToAddToTimelineRecording.url,
+                                    recordedInstructionLabel: readyToAddToTimelineRecording.label.trim(),
+                                    duration: readyToAddToTimelineRecording.duration,
+                                  }
+
+                                  addEventToTimeline(newEvent) // Use the new helper function
+
+                                  // Clean up
+                                  setReadyToAddToTimelineRecording(null)
+                                  setRecordedBlobs([])
+                                  setRecordingLabel("")
+
+                                  toast({
+                                    title: "Recording Added",
+                                    description: `"${readyToAddToTimelineRecording.label.trim()}" added to timeline.`,
+                                  })
+                                }}
+                                className="w-full bg-white text-logo-rose-600 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black" // Changed border to gray-600
+                              >
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Add to Timeline
+                              </Button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </Card>
+                  </motion.div>
+                </motion.div>
+                {/* Timeline Editor for Labs */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+                  <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
+                    <div className="bg-gradient-to-r from-gray-700 to-gray-800 py-4 px-6 dark:from-gray-800 dark:to-gray-900">
+                      <h3 className="text-white flex items-center font-black text-base">
+                        <CircleDotDashed className="h-5 w-5 mr-2" />
+                        Timeline Editor
+                      </h3>
+                    </div>
+                    <div className="p-6 pb-6">
+                      <VisualTimeline
+                        events={timelineEvents}
+                        totalDuration={labsTotalDuration}
+                        onUpdateEvent={updateEventStartTime}
+                        onRemoveEvent={removeTimelineEvent}
+                      />
+                      {/* Background Sound Mixer */}
+                      <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
+                        <h4 className="font-black dark:text-gray-200 text-gray-600 mb-4 text-base">
+                          Background Sound Mixer
+                        </h4>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Ambient Sounds */}
+                          <div className="space-y-3">
+                            <h5 className="text-sm font-black text-gray-600 dark:text-gray-300">Ambient Sounds</h5>
+                            <div className="space-y-2">
+                              {AMBIENT_SOUNDS_LIBRARY.map((sound) => (
+                                <div
+                                  key={sound.id}
+                                  className="flex items-center space-x-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 shadow-inner"
+                                >
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => toggleBackgroundSoundPreview(sound)}
+                                    className={`${currentPlayingBackgroundSoundId === sound.id ? "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" : ""}`}
+                                  >
+                                    <Play className="h-3 w-3 mr-1" />
+                                    <span className="font-black text-gray-600 dark:text-gray-300">{sound.name}</span>
+                                  </Button>
+
+                                  {backgroundSounds.some((s) => s.id === sound.id) && (
+                                    <div className="flex-1 flex items-center space-x-2">
+                                      <Volume2 className="h-3 w-3 text-gray-500" />
+                                      <Slider
+                                        value={[backgroundSounds.find((s) => s.id === sound.id)?.volume || 0.3]}
+                                        min={0}
+                                        max={1}
+                                        step={0.1}
+                                        onValueChange={(value) => {
+                                          setBackgroundSounds((prev) =>
+                                            prev.map((s) => (s.id === sound.id ? { ...s, volume: value[0] } : s)),
+                                          )
+                                        }}
+                                        className="flex-1"
+                                        rangeClassName="bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900"
+                                      />
+                                      <span className="text-xs text-gray-500 w-8">
+                                        {Math.round(
+                                          (backgroundSounds.find((s) => s.id === sound.id)?.volume || 0) * 100,
+                                        )}
+                                        %
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Custom Audio Upload */}
+                          <div className="space-y-3">
+                            <h5 className="text-sm font-black text-gray-600 dark:text-gray-300">
+                              Custom Background Audio
+                            </h5>
+                            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center">
+                              <input
+                                type="file"
+                                accept="audio/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) {
+                                    const url = URL.createObjectURL(file)
+                                    const customSound = {
+                                      id: `custom_${Date.now()}`,
+                                      name: file.name.replace(/\.[^/.]+$/, ""),
+                                      src: url, // For custom uploads, the URL.createObjectURL is the direct source
+                                      volume: 0.3,
+                                    }
+                                    setBackgroundSounds((prev) => [...prev, customSound])
+                                  }
+                                }}
+                                className="hidden"
+                                id="custom-background-upload"
+                              />
+                              <label htmlFor="custom-background-upload" className="cursor-pointer">
+                                <div className="text-gray-500 dark:text-gray-400 text-sm">
+                                  <PlusCircle className="h-6 w-6 mx-auto mb-2" />
+                                  Upload Custom Audio
+                                </div>
+                              </label>
+                            </div>
+
+                            {/* Custom Audio Controls */}
+                            {backgroundSounds
+                              .filter((s) => s.id.startsWith("custom_"))
+                              .map((sound) => (
+                                <div
+                                  key={sound.id}
+                                  className="flex items-center space-x-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 shadow-inner"
+                                >
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      setBackgroundSounds((prev) => prev.filter((s) => s.id !== sound.id))
+                                    }}
+                                    className="text-red-500 hover:text-red-700"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                  <span className="text-sm font-black text-gray-700 dark:text-gray-300 flex-1 truncate">
+                                    {sound.name}
+                                  </span>
+                                  <div className="flex items-center space-x-2">
+                                    <Volume2 className="h-3 w-3 text-gray-500" />
+                                    <Slider
+                                      value={[sound.volume]}
+                                      min={0}
+                                      max={1}
+                                      step={0.1}
+                                      onValueChange={(value) => {
+                                        setBackgroundSounds((prev) =>
+                                          prev.map((s) => (s.id === sound.id ? { ...s, volume: value[0] } : s)),
+                                        )
+                                      }}
+                                      className="w-20"
+                                      rangeClassName="bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900"
+                                    />
+                                    <span className="text-xs text-gray-500 w-8">{Math.round(sound.volume * 100)}%</span>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+
+                        {/* Master Background Volume */}
+                        {backgroundSounds.length > 0 && (
+                          <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg shadow-inner">
+                            <div className="flex items-center space-x-3">
+                              <span className="text-sm font-black text-gray-600 dark:text-gray-300">
+                                Master Background Volume:
+                              </span>
+                              <div className="flex-1 flex items-center space-x-2">
+                                <Volume2 className="h-4 w-4 text-gray-500" />
+                                <Slider
+                                  value={[masterBackgroundVolume]}
+                                  min={0}
+                                  max={1}
+                                  step={0.1}
+                                  onValueChange={(value) => setMasterBackgroundVolume(value[0])}
+                                  className="flex-1"
+                                  rangeClassName="bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900"
+                                />
+                                <span className="text-sm text-gray-500 w-12">
+                                  {Math.round(masterBackgroundVolume * 100)}%
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+                {/* Generate Audio Button for Labs */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+                  <Button
+                    onClick={handleExportAudio}
+                    disabled={isGeneratingAudio || timelineEvents.length === 0}
+                    className={cn(
+                      "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
+                      "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none",
+                      "bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 text-white dark:from-logo-teal-700 dark:to-logo-purple-700",
+                    )}
+                  >
+                    <div className="flex items-center justify-center font-black">
+                      {isGeneratingAudio && (
+                        <div className="mr-3 h-5 w-5">
+                          <svg
+                            className="animate-spin h-5 w-5 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291
+                              A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                        </div>
+                      )}
+                      <Wand2 className="mr-2 h-5 w-5" />
+                      <span className="text-base">{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
+                    </div>
+                  </Button>
+                </motion.div>
+                {/* Generated Audio Section for Labs */}
+                {generatedAudioUrl && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-logo-teal-50 to-logo-emerald-50 dark:from-logo-teal-950 dark:to-logo-emerald-950">
+                      <div className="bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
+                        <h3 className="text-white font-black">Generated Audio</h3>
+                      </div>
+                      <div className="p-6">
+                        <h4 className="mb-2 dark:text-gray-300 font-black text-sm text-gray-600">{meditationTitle}</h4>
+                        <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
+                          <audio controls className="w-full" src={generatedAudioUrl}></audio>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                          <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                            <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
+                              Total Events
+                            </div>
+                            <div className="dark:text-black font-black text-gray-600">{timelineEvents.length}</div>
+                          </div>
+                          <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                            <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
+                              Total Duration
+                            </div>
+                            <div className="dark:text-black font-black text-gray-600">
+                              {formatTime(labsTotalDuration)}
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={() => {
+                            const a = document.createElement("a")
+                            a.href = generatedAudioUrl
+                            a.download = `${meditationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_meditation.wav`
+                            document.body.appendChild(a)
+                            a.click()
+                            document.body.removeChild(a)
+                          }}
+                          className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                        >
+                          <div className="flex items-center justify-center font-black">
+                            <Download className="mr-2 h-5 w-5" />
+                            Download Audio
+                          </div>
+                        </Button>
+                      </div>
+                    </Card>
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
           </div>
         </div>
       </motion.div>
