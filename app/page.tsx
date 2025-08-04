@@ -1728,8 +1728,8 @@ export default function HomePage() {
                       <div className="grid md:grid-cols-2 gap-6">
                         <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
                           <div className="bg-gradient-to-r from-logo-teal-500 to-indigo-500 py-3 px-6 dark:from-logo-teal-700 dark:to-indigo-700">
-                            <h3 className="text-white flex items-center font-black">
-                              <Clock className="h-4 w-4 mr-2" />
+                            <h3 className="text-white flex items-center font-black text-base">
+                              <Clock className="mr-2 w-5 h-5" />
                               Target Duration
                             </h3>
                           </div>
@@ -1761,8 +1761,8 @@ export default function HomePage() {
                         </Card>
                         <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
                           <div className="bg-gradient-to-r from-indigo-500 to-logo-amber-500 py-3 px-6 dark:from-indigo-700 dark:to-logo-amber-700">
-                            <h3 className="text-white flex items-center font-black">
-                              <Volume2 className="h-4 w-4 mr-2" />
+                            <h3 className="text-white flex items-center font-black text-base">
+                              <Volume2 className="mr-2 h-5 w-5" />
                               Silence Threshold
                             </h3>
                           </div>
@@ -1950,7 +1950,7 @@ export default function HomePage() {
                             ></div>
                           </div>
                         )}
-                        <div className="text-center text-sm dark:text-logo-teal-300 text-logo-teal">
+                        <div className="text-center dark:text-logo-teal-300 text-logo-teal text-base">
                           {isProcessing ? `${processingProgress}% complete` : "Processing Complete"}
                         </div>
                       </Card>
