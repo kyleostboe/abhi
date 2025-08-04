@@ -1655,44 +1655,44 @@ export default function HomePage() {
                       transition={{ delay: 0.1 }}
                       className="mb-10 mt-8"
                     >
-                      <Alert className="bg-white dark:bg-gray-900 shadow-lg dark:shadow-white/10 p-1 border border-indigo-400 shadow-inner">
+                      <Alert className="bg-white dark:bg-gray-900 shadow-lg dark:shadow-white/10 p-1 border border-purple-300 shadow-inner">
                         <div className="p-4">
                           <div className="flex items-center mb-4">
                             <div className="p-2 rounded-lg mr-3 dark:bg-gray-700 bg-transparent">
-                              <Info className="h-4 w-4 dark:text-gray-300 text-indigo-400" />
+                              <Info className="h-4 w-4 dark:text-gray-300 text-purple-300" />
                             </div>
-                            <div className="text-lg dark:text-gray-200 font-black text-indigo-400">Audio Analysis</div>
+                            <div className="text-lg dark:text-gray-200 font-black text-purple-300">Audio Analysis</div>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-indigo-400">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-purple-300">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-purple-300">
                                 Content
                               </div>
-                              <div className="dark:text-black font-black text-indigo-400">
+                              <div className="dark:text-black font-black text-purple-300">
                                 {formatTime(audioAnalysis.contentDuration)}
                               </div>
                             </div>
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-indigo-400">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-purple-300">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-purple-300">
                                 Silence
                               </div>
-                              <div className="dark:text-gray-200 font-black rounded-xl text-indigo-400">
+                              <div className="dark:text-gray-200 font-black rounded-xl text-purple-300">
                                 {formatTime(audioAnalysis.totalSilence)}
                               </div>
                             </div>
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-indigo-400">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-purple-300">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-purple-300">
                                 Pauses
                               </div>
-                              <div className="dark:text-gray-200 font-black text-indigo-400">
+                              <div className="dark:text-gray-200 font-black text-purple-300">
                                 {audioAnalysis.silenceRegions}
                               </div>
                             </div>
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-indigo-400">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-purple-300">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-purple-300">
                                 Range
                               </div>
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-indigo-400">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-purple-300">
                                 {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
                               </div>
                             </div>
@@ -1941,14 +1941,16 @@ export default function HomePage() {
                       exit={{ opacity: 0, y: -10 }}
                       className="mb-6"
                     >
-                      <Card className="p-6 bg-white dark:bg-gray-900 shadow-lg dark:shadow-white/10 border border-indigo-400 shadow-inner">
-                        <div className="w-full bg-gray-200 rounded-full h-2 mb-2 dark:bg-gray-700">
-                          <div
-                            className="bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 h-2 rounded-full transition-all duration-300 dark:from-logo-teal-700 dark:to-logo-purple-700"
-                            style={{ width: `${processingProgress}%` }}
-                          ></div>
-                        </div>
-                        <div className="text-center text-sm text-indigo-400 dark:text-indigo-300">
+                      <Card className="p-6 bg-white dark:bg-gray-900 shadow-lg dark:shadow-white/10 border border-logo-teal-400 shadow-inner">
+                        {isProcessing && (
+                          <div className="w-full bg-logo-teal-200 rounded-full h-2 mb-2 dark:bg-logo-teal-700">
+                            <div
+                              className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 h-2 rounded-full transition-all duration-300 dark:from-logo-teal-700 dark:to-logo-emerald-700"
+                              style={{ width: `${processingProgress}%` }}
+                            ></div>
+                          </div>
+                        )}
+                        <div className="text-center text-sm text-logo-teal-600 dark:text-logo-teal-300">
                           {isProcessing ? `${processingProgress}% complete` : "Processing Complete"}
                         </div>
                       </Card>
