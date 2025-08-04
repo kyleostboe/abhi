@@ -14,7 +14,7 @@ export function Navigation() {
           <Link
             href="/"
             className={cn(
-              "px-4 py-2 transition-colors rounded-md font-black font-serif text-sm",
+              "px-4 py-2 transition-colors rounded-md font-black font-serif text-sm shadow-none",
               pathname === "/"
                 ? "bg-gray-600 text-white shadow-md dark:bg-gray-700"
                 : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
@@ -27,7 +27,7 @@ export function Navigation() {
           <Link
             href="/contact"
             className={cn(
-              "px-4 py-2 text-sm transition-colors rounded-md font-black font-serif",
+              "px-4 py-2 text-sm transition-colors rounded-md font-black font-serif shadow-none",
               pathname === "/contact"
                 ? "bg-gray-600 text-white shadow-md dark:bg-gray-700"
                 : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
@@ -40,7 +40,7 @@ export function Navigation() {
           <Link
             href="/donate"
             className={cn(
-              "px-4 py-2 text-sm transition-colors rounded-md font-black font-serif",
+              "px-4 py-2 text-sm transition-colors rounded-md font-black font-serif shadow-none",
               pathname === "/donate"
                 ? "bg-gray-600 text-white shadow-md dark:bg-gray-700"
                 : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
