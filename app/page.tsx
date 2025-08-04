@@ -617,6 +617,7 @@ export default function HomePage() {
     }
     cleanupMemory()
     await sleep(100)
+    setIsProcessingComplete(false) // Add this line
     setFile(selectedFile)
     setProcessingProgress(0)
     setProcessingStep("Initializing...")
@@ -764,6 +765,7 @@ export default function HomePage() {
   }, [originalBuffer, silenceThreshold, minSilenceDuration, minSpacingDuration])
 
   const processAudioAdjusterAction = async () => {
+    setIsProcessingComplete(false) // Add this line
     const currentAudioContext = audioContextRef.current
     if (!originalBuffer || !currentAudioContext) {
       setStatus({ message: "Original audio or audio system not ready.", type: "error" })
@@ -991,15 +993,9 @@ export default function HomePage() {
   }
 
   useEffect(() => {
-    if (isProcessingComplete) setIsProcessingComplete(false)
-  }, [
-    targetDuration,
-    silenceThreshold,
-    minSilenceDuration,
-    minSpacingDuration,
-    preserveNaturalPacing,
-    isProcessingComplete,
-  ])
+    // This effect no longer resets isProcessingComplete.
+    // It's now reset at the start of processAudioAdjusterAction or handleFile.
+  }, [targetDuration, silenceThreshold, minSilenceDuration, minSpacingDuration, preserveNaturalPacing])
 
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined
@@ -1918,29 +1914,6 @@ export default function HomePage() {
                   </Button>
                 </motion.div>
 
-                <AnimatePresence>
-                  {isProcessing && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="mb-6"
-                    >
-                      <Card className="p-6 bg-gradient-to-r from-logo-rose-50 to-logo-purple-50 border-logo-rose-200 shadow-sm dark:shadow-white/10 dark:from-logo-rose-950 dark:to-logo-purple-950">
-                        <div className="w-full bg-logo-rose-200 rounded-full h-2 mb-2 dark:bg-logo-rose-800">
-                          <div
-                            className="bg-gradient-to-r from-logo-rose-500 to-logo-purple-500 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${processingProgress}%` }}
-                          ></div>
-                        </div>
-                        <div className="text-center text-sm text-logo-rose-600 dark:text-logo-rose-400">
-                          {processingProgress}% complete
-                        </div>
-                      </Card>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
                 {isProcessing && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -1959,6 +1932,29 @@ export default function HomePage() {
                     </Button>
                   </motion.div>
                 )}
+
+                <AnimatePresence>
+                  {(isProcessing || isProcessingComplete) && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="mb-6"
+                    >
+                      <Card className="p-6 bg-white dark:bg-gray-900 shadow-lg dark:shadow-white/10 border border-indigo-400 shadow-inner">
+                        <div className="w-full bg-gray-200 rounded-full h-2 mb-2 dark:bg-gray-700">
+                          <div
+                            className="bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 h-2 rounded-full transition-all duration-300 dark:from-logo-teal-700 dark:to-logo-purple-700"
+                            style={{ width: `${processingProgress}%` }}
+                          ></div>
+                        </div>
+                        <div className="text-center text-sm text-indigo-400 dark:text-indigo-300">
+                          {isProcessing ? `${processingProgress}% complete` : "Processing Complete"}
+                        </div>
+                      </Card>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 <div className="space-y-6">
                   {originalUrl && (
