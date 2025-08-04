@@ -14,7 +14,7 @@ export function Navigation() {
           <Link
             href="/"
             className={cn(
-              "px-4 py-2 text-sm font-medium transition-colors rounded-md",
+              "px-4 py-2 text-sm transition-colors rounded-md font-black",
               pathname === "/"
                 ? "bg-logo-teal-500 text-white shadow-md dark:bg-logo-teal-700"
                 : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
@@ -27,7 +27,7 @@ export function Navigation() {
           <Link
             href="/contact"
             className={cn(
-              "px-4 py-2 text-sm font-medium transition-colors rounded-md",
+              "px-4 py-2 text-sm transition-colors rounded-md font-black",
               pathname === "/contact"
                 ? "bg-logo-teal-500 text-white shadow-md dark:bg-logo-teal-700"
                 : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
@@ -40,7 +40,7 @@ export function Navigation() {
           <Link
             href="/donate"
             className={cn(
-              "px-4 py-2 text-sm font-medium transition-colors rounded-md",
+              "px-4 py-2 text-sm transition-colors rounded-md font-sans font-black",
               pathname === "/donate"
                 ? "bg-logo-teal-500 text-white shadow-md dark:bg-logo-teal-700"
                 : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
