@@ -1660,11 +1660,8 @@ export default function HomePage() {
                     >
                       <Card className="p-6 bg-gradient-to-r from-logo-rose-50 to-logo-purple-50 border-logo-rose-200 shadow-sm dark:shadow-white/10 dark:from-logo-rose-950 dark:to-logo-purple-950">
                         <div className="text-center mb-4">
-                          <h3 className="text-lg font-medium text-logo-rose-700 dark:text-logo-rose-300 mb-2 flex items-center justify-center">
-                            <Wand2 className="mr-2 h-5 w-5 animate-spin" />
-                            Processing Audio
-                          </h3>
-                          <p className="text-sm text-logo-rose-600 dark:text-logo-rose-400">{processingStep}</p>
+                          
+                          
                         </div>
                         <div className="w-full bg-logo-rose-200 rounded-full h-2 mb-2 dark:bg-logo-rose-800">
                           <div
