@@ -1745,7 +1745,7 @@ export default function HomePage() {
                               />
                             </div>
                             <div className="text-center font-serif font-black">
-                              <span className="dark:text-logo-amber-300 text-2xl font-black text-logo-teal-600">
+                              <span className="dark:text-logo-amber-300 font-black text-logo-teal-600 text-xl">
                                 {targetDuration}
                               </span>
                               <span className="text-lg ml-1 dark:text-logo-amber-400 text-logo-teal">minutes</span>
@@ -1777,7 +1777,7 @@ export default function HomePage() {
                               />
                             </div>
                             <div className="text-center">
-                              <span className="text-indigo-700 dark:text-indigo-300 font-serif font-black text-2xl">
+                              <span className="text-indigo-700 dark:text-indigo-300 font-serif font-black text-xl">
                                 {silenceThreshold.toFixed(3)}
                               </span>
                             </div>
@@ -1807,7 +1807,7 @@ export default function HomePage() {
                               />
                             </div>
                             <div className="text-center">
-                              <span className="dark:text-logo-amber-300 text-2xl font-black text-logo-rose-600">
+                              <span className="dark:text-logo-amber-300 font-black text-logo-rose-600 text-xl">
                                 {minSilenceDuration}
                               </span>
                               <span className="text-lg ml-1 dark:text-logo-rose-400 text-logo-rose-500">seconds</span>
@@ -1834,7 +1834,7 @@ export default function HomePage() {
                               />
                             </div>
                             <div className="text-center">
-                              <span className="dark:text-logo-purple-300 font-black text-2xl text-logo-teal-600">
+                              <span className="dark:text-logo-purple-300 font-black text-logo-teal-600 text-xl">
                                 {minSpacingDuration.toFixed(1)}
                               </span>
                               <span className="text-lg ml-1 dark:text-logo-teal-400 text-logo-teal">seconds</span>
