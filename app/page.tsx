@@ -5,9 +5,7 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
-import { Alert } from "@/components/ui/alert"
 import {
-  Info,
   Volume2,
   Clock,
   Wand2,
@@ -1650,94 +1648,6 @@ export default function HomePage() {
                   )}
                 </AnimatePresence>
 
-                <AnimatePresence>
-                  {isProcessing && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="mb-6"
-                    >
-                      <Card className="p-6 bg-gradient-to-r from-logo-rose-50 to-logo-purple-50 border-logo-rose-200 shadow-sm dark:shadow-white/10 dark:from-logo-rose-950 dark:to-logo-purple-950">
-                        <div className="text-center mb-4">
-                          <div className="flex flex-col items-center justify-center">
-                            <Wand2 className="h-10 w-10 text-logo-rose-500 dark:text-logo-rose-300 animate-spin mb-2" />
-                            <h3 className="text-lg font-medium text-logo-rose-700 dark:text-logo-rose-300 mb-1">
-                              {processingStep || "Processing Audio..."}
-                            </h3>
-                          </div>
-                        </div>
-                        <div className="w-full bg-logo-rose-200 rounded-full h-2 mb-2 dark:bg-logo-rose-800">
-                          <div
-                            className="bg-gradient-to-r from-logo-rose-500 to-logo-purple-500 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${processingProgress}%` }}
-                          ></div>
-                        </div>
-                        <div className="text-center text-sm text-logo-rose-600 dark:text-logo-rose-400">
-                          {processingProgress}% complete
-                        </div>
-                      </Card>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <AnimatePresence>
-                  {audioAnalysis && durationLimits && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ delay: 0.1 }}
-                      className="mb-10 mt-8"
-                    >
-                      <Alert className="bg-white dark:bg-gray-900 shadow-lg dark:shadow-white/10 p-1 border border-indigo-400 shadow-inner">
-                        <div className="p-4">
-                          <div className="flex items-center mb-4">
-                            <div className="p-2 rounded-lg mr-3 dark:bg-gray-700 bg-transparent">
-                              <Info className="h-4 w-4 dark:text-gray-300 text-indigo-400" />
-                            </div>
-                            <div className="text-lg dark:text-gray-200 font-black text-indigo-400">Audio Analysis</div>
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-indigo-400">
-                                Content
-                              </div>
-                              <div className="dark:text-black font-black text-indigo-400">
-                                {formatTime(audioAnalysis.contentDuration)}
-                              </div>
-                            </div>
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-indigo-400">
-                                Silence
-                              </div>
-                              <div className="dark:text-gray-200 font-black rounded-xl text-indigo-400">
-                                {formatTime(audioAnalysis.totalSilence)}
-                              </div>
-                            </div>
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-indigo-400">
-                                Pauses
-                              </div>
-                              <div className="dark:text-gray-200 font-black text-indigo-400">
-                                {audioAnalysis.silenceRegions}
-                              </div>
-                            </div>
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-indigo-400">
-                                Range
-                              </div>
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-indigo-400">
-                                {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </Alert>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1948,6 +1858,37 @@ export default function HomePage() {
                     </div>
                   </Button>
                 </motion.div>
+
+                <AnimatePresence>
+                  {isProcessing && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="mb-6"
+                    >
+                      <Card className="p-6 bg-gradient-to-r from-logo-rose-50 to-logo-purple-50 border-logo-rose-200 shadow-sm dark:shadow-white/10 dark:from-logo-rose-950 dark:to-logo-purple-950">
+                        <div className="text-center mb-4">
+                          <div className="flex flex-col items-center justify-center">
+                            <Wand2 className="h-10 w-10 text-logo-rose-500 dark:text-logo-rose-300 animate-spin mb-2" />
+                            <h3 className="text-lg font-medium text-logo-rose-700 dark:text-logo-rose-300 mb-1">
+                              {processingStep || "Processing Audio..."}
+                            </h3>
+                          </div>
+                        </div>
+                        <div className="w-full bg-logo-rose-200 rounded-full h-2 mb-2 dark:bg-logo-rose-800">
+                          <div
+                            className="bg-gradient-to-r from-logo-rose-500 to-logo-purple-500 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${processingProgress}%` }}
+                          ></div>
+                        </div>
+                        <div className="text-center text-sm text-logo-rose-600 dark:text-logo-rose-400">
+                          {processingProgress}% complete
+                        </div>
+                      </Card>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {isProcessing && (
                   <motion.div
