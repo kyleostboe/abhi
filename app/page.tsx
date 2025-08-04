@@ -1490,17 +1490,16 @@ export default function HomePage() {
                       <strong className="pr-1.5 font-black font-serif text-center text-sm text-logo-amber-600">
                         Note:
                       </strong>
-                      This tool is designed to help you adjust the length of existing guided meditations to fit your
-                      schedules. Teachers, please feel free to
+                      Depending on the audio, users may need to tweak the advanced settings for optimal
+                      results. Any guided meditation, talk, podcast, or audiobook (under
+                      {isMobileDevice ? "50MB" : "500MB"}) should be compatible. Teachers, please feel free to
                       <a
                         href="/contact"
                         className="hover:text-logo-rose-600 underline px-1 rounded transition-colors transition-shadow dark:hover:text-logo-rose-300 font-black text-sm text-logo-purple-300"
                       >
                         contact me
                       </a>
-                      to opt out. Depending on the audio, users may need to tweak the advanced settings for optimal
-                      results. Any guided meditation, talk, podcast, or audiobook (under
-                      {isMobileDevice ? "50MB" : "500MB"}) should be compatible. Enjoy:)
+                      to opt out. Enjoy:)
                     </p>
                   </div>
                   <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto dark:border-logo-rose-700 backdrop-blur-sm dark:bg-gray-900/60 border-0 py-4 px-0 bg-transparent pt-0 pb-3">
