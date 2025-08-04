@@ -1927,14 +1927,6 @@ export default function HomePage() {
                       className="mb-6"
                     >
                       <Card className="p-6 bg-gradient-to-r from-logo-rose-50 to-logo-purple-50 border-logo-rose-200 shadow-sm dark:shadow-white/10 dark:from-logo-rose-950 dark:to-logo-purple-950">
-                        <div className="text-center mb-4">
-                          <div className="flex flex-col items-center justify-center">
-                            <Wand2 className="h-10 w-10 text-logo-rose-500 dark:text-logo-rose-300 animate-spin mb-2" />
-                            <h3 className="text-lg font-medium text-logo-rose-700 dark:text-logo-rose-300 mb-1">
-                              {processingStep || "Processing Audio..."}
-                            </h3>
-                          </div>
-                        </div>
                         <div className="w-full bg-logo-rose-200 rounded-full h-2 mb-2 dark:bg-logo-rose-800">
                           <div
                             className="bg-gradient-to-r from-logo-rose-500 to-logo-purple-500 h-2 rounded-full transition-all duration-300"
@@ -1967,27 +1959,6 @@ export default function HomePage() {
                     </Button>
                   </motion.div>
                 )}
-
-                <AnimatePresence>
-                  {status && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, height: 0 }}
-                      animate={{ opacity: 1, y: 0, height: "auto" }}
-                      exit={{ opacity: 0, y: -10, height: 0 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className={`p-4 rounded-xl mb-8 text-center dark:shadow-white/10 overflow-hidden bg-white dark:bg-gray-900 shadow-none border border-indigo-400 ${status.type === "info" ? "text-logo-teal-700 dark:text-logo-teal-300" : status.type === "success" ? "text-logo-emerald-700 dark:text-logo-emerald-300" : "text-red-700 dark:text-red-300"}`}
-                    >
-                      <motion.div
-                        className="text-sm text-indigo-400"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                      >
-                        {status.message}
-                      </motion.div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
 
                 <div className="space-y-6">
                   {originalUrl && (
