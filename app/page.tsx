@@ -1471,7 +1471,7 @@ export default function HomePage() {
                   className="p-4 mb-6 border border-gray-600 rounded-md text-gray-600 font-serif font-black text-sm dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto text-center shadow-inner"
                 >
                   <p>
-                    The <strong className="text-gray-700 dark:text-gray-200">Encoder</strong> lets you create custom
+                    Create custom
                     meditations by associating instructions with sound cues and placing them along a timeline. This tool
                     aims to help bridge the gap between guided and self-directed meditation.
                   </p>
