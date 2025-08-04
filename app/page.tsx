@@ -1456,8 +1456,7 @@ export default function HomePage() {
                   className="p-4 mb-6 border border-gray-600 rounded-md text-gray-600 font-serif font-black text-sm dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto shadow-inner"
                 >
                   <p className="text-center">
-                    The <strong className="text-gray-700 dark:text-gray-200">Adjuster</strong> can change the duration
-                    of guided meditations by intelligently adjusting silence periods. Upload an audio file, set your
+                    Change the length of guided meditations by intelligently adjusting silence periods. Upload an audio file, set your
                     target duration, and this tool will re-space content to fit your schedule.
                   </p>
                 </motion.div>
