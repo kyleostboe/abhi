@@ -1950,7 +1950,7 @@ export default function HomePage() {
                             ></div>
                           </div>
                         )}
-                        <div className="text-center text-sm text-logo-teal-600 dark:text-logo-teal-300">
+                        <div className="text-center text-sm dark:text-logo-teal-300 text-logo-teal">
                           {isProcessing ? `${processingProgress}% complete` : "Processing Complete"}
                         </div>
                       </Card>
