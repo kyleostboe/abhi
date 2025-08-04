@@ -1455,7 +1455,7 @@ export default function HomePage() {
                   transition={{ duration: 0.2 }}
                   className="p-4 mb-6 border border-gray-600 rounded-md text-gray-600 font-serif font-black text-sm dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto shadow-inner"
                 >
-                  <p className="text-center">
+                  <p className="text-center text-xs">
                     Change the length of guided meditations by intelligently adjusting silence periods. Upload an audio file, set your
                     target duration, and this tool will re-space content to fit your schedule.
                   </p>
@@ -1468,7 +1468,7 @@ export default function HomePage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="p-4 mb-6 border border-gray-600 rounded-md text-gray-600 font-serif font-black text-sm dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto text-center shadow-inner"
+                  className="p-4 mb-6 border border-gray-600 rounded-md text-gray-600 font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto text-center shadow-inner text-xs"
                 >
                   <p>
                     Create custom
