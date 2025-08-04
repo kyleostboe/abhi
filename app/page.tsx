@@ -1659,7 +1659,7 @@ export default function HomePage() {
                         <div className="p-4">
                           <div className="flex items-center mb-4">
                             <div className="p-2 rounded-lg mr-3 dark:bg-gray-700 bg-transparent">
-                              <Info className="h-4 w-4 dark:text-gray-300 text-purple-300" />
+                              <Info className="dark:text-gray-300 text-purple-300 w-5 h-5" />
                             </div>
                             <div className="text-lg dark:text-gray-200 font-black text-purple-300">Audio Analysis</div>
                           </div>
@@ -1729,7 +1729,7 @@ export default function HomePage() {
                         <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
                           <div className="bg-gradient-to-r from-logo-teal-500 to-indigo-500 py-3 px-6 dark:from-logo-teal-700 dark:to-indigo-700">
                             <h3 className="text-white flex items-center font-black text-base">
-                              <Clock className="mr-2 w-5 h-5" />
+                              
                               Target Duration
                             </h3>
                           </div>
@@ -1762,7 +1762,7 @@ export default function HomePage() {
                         <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
                           <div className="bg-gradient-to-r from-indigo-500 to-logo-amber-500 py-3 px-6 dark:from-indigo-700 dark:to-logo-amber-700">
                             <h3 className="text-white flex items-center font-black text-base">
-                              <Volume2 className="mr-2 h-5 w-5" />
+                              
                               Silence Threshold
                             </h3>
                           </div>
