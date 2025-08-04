@@ -16,6 +16,8 @@
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%; /* Updated color */
 
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
     --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
 
@@ -28,11 +30,30 @@
     --destructive: 0 84.2% 60.2%; /* Updated color */
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%; /* Updated color */
 
     --radius: 0.5rem;
+
+    /* Light mode shadow variables */
+    --shadow-light: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+    --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+
+    /* Light mode neutral colors */
+    --neutral-50: 250 250 250;
+    --neutral-100: 245 245 245;
+    --neutral-200: 229 229 229;
+    --neutral-300: 212 212 212;
+    --neutral-400: 163 163 163;
+    --neutral-500: 115 115 115;
+    --neutral-600: 82 82 82;
+    --neutral-700: 64 64 64;
+    --neutral-800: 38 38 38;
+    --neutral-900: 23 23 23;
+    --neutral-950: 10 10 10;
   }
 
   .dark {
@@ -73,300 +94,6 @@
   body {
     @apply bg-background text-foreground;
   }
-}
-
-/* Custom gradient colors for abhī */
-.bg-gradient-to-r.from-logo-amber {
-  --tw-gradient-from: #f59e0b var(--tw-gradient-from-position);
-  --tw-gradient-to: rgb(245 158 11 / 0) var(--tw-gradient-to-position);
-}
-.bg-gradient-to-r.via-logo-rose {
-  --tw-gradient-to: rgb(225 29 72 / 0) var(--tw-gradient-to-position);
-  --tw-gradient-stops: var(--tw-gradient-from), #e11d48 var(--tw-gradient-via-position), var(--tw-gradient-to);
-}
-.bg-gradient-to-r.via-logo-purple {
-  --tw-gradient-to: rgb(168 85 247 / 0) var(--tw-gradient-to-position);
-  --tw-gradient-stops: var(--tw-gradient-from), #a855f7 var(--tw-gradient-via-position), var(--tw-gradient-to);
-}
-.bg-gradient-to-r.to-logo-teal {
-  --tw-gradient-to: #14b8a6 var(--tw-gradient-to-position);
-}
-
-.dark .bg-gradient-to-r.from-logo-amber {
-  --tw-gradient-from: #d97706 var(--tw-gradient-from-position);
-}
-.dark .bg-gradient-to-r.via-logo-rose {
-  --tw-gradient-stops: var(--tw-gradient-from), #be123c var(--tw-gradient-via-position), var(--tw-gradient-to);
-}
-.dark .bg-gradient-to-r.via-logo-purple {
-  --tw-gradient-stops: var(--tw-gradient-from), #9333ea var(--tw-gradient-via-position), var(--tw-gradient-to);
-}
-.dark .bg-gradient-to-r.to-logo-teal {
-  --tw-gradient-to: #0d9488 var(--tw-gradient-to-position);
-}
-
-/* Specific color classes for text and backgrounds */
-.text-logo-amber {
-  color: #f59e0b;
-}
-.dark .text-logo-amber {
-  color: #d97706;
-}
-.text-logo-amber-300 {
-  color: #fcd34d;
-}
-.dark .text-logo-amber-300 {
-  color: #fcd34d;
-}
-.text-logo-amber-400 {
-  color: #fbbf24;
-}
-.dark .text-logo-amber-400 {
-  color: #fbbf24;
-}
-.text-logo-amber-500 {
-  color: #f59e0b;
-}
-.dark .text-logo-amber-500 {
-  color: #d97706;
-}
-.bg-logo-amber-500 {
-  background-color: #f59e0b;
-}
-.dark .bg-logo-amber-500 {
-  background-color: #d97706;
-}
-.bg-logo-amber-700 {
-  background-color: #b45309;
-}
-.dark .bg-logo-amber-700 {
-  background-color: #b45309;
-}
-
-.text-logo-rose {
-  color: #e11d48;
-}
-.dark .text-logo-rose {
-  color: #be123c;
-}
-.text-logo-rose-300 {
-  color: #fda4af;
-}
-.dark .text-logo-rose-300 {
-  color: #fda4af;
-}
-.text-logo-rose-400 {
-  color: #fb7185;
-}
-.dark .text-logo-rose-400 {
-  color: #fb7185;
-}
-.text-logo-rose-500 {
-  color: #f43f5e;
-}
-.dark .text-logo-rose-500 {
-  color: #e11d48;
-}
-.text-logo-rose-600 {
-  color: #e11d48;
-}
-.dark .text-logo-rose-600 {
-  color: #be123c;
-}
-.text-logo-rose-700 {
-  color: #be123c;
-}
-.dark .text-logo-rose-700 {
-  color: #9f1239;
-}
-.bg-logo-rose-50 {
-  background-color: #fff1f2;
-}
-.dark .bg-logo-rose-50 {
-  background-color: #2d0c12;
-}
-.bg-logo-rose-200 {
-  background-color: #fecdd3;
-}
-.dark .bg-logo-rose-200 {
-  background-color: #4c101a;
-}
-.bg-logo-rose-500 {
-  background-color: #f43f5e;
-}
-.dark .bg-logo-rose-500 {
-  background-color: #e11d48;
-}
-.bg-logo-rose-700 {
-  background-color: #be123c;
-}
-.dark .bg-logo-rose-700 {
-  background-color: #9f1239;
-}
-.bg-logo-rose-950 {
-  background-color: #2d0c12;
-}
-.dark .bg-logo-rose-950 {
-  background-color: #1a070b;
-}
-
-.text-logo-purple {
-  color: #a855f7;
-}
-.dark .text-logo-purple {
-  color: #9333ea;
-}
-.text-logo-purple-300 {
-  color: #d8b4fe;
-}
-.dark .text-logo-purple-300 {
-  color: #d8b4fe;
-}
-.text-logo-purple-400 {
-  color: #c084fc;
-}
-.dark .text-logo-purple-400 {
-  color: #c084fc;
-}
-.text-logo-purple-500 {
-  color: #a855f7;
-}
-.dark .text-logo-purple-500 {
-  color: #9333ea;
-}
-.bg-logo-purple-50 {
-  background-color: #faf5ff;
-}
-.dark .bg-logo-purple-50 {
-  background-color: #2a1440;
-}
-.bg-logo-purple-500 {
-  background-color: #a855f7;
-}
-.dark .bg-logo-purple-500 {
-  background-color: #9333ea;
-}
-.bg-logo-purple-700 {
-  background-color: #7e22ce;
-}
-.dark .bg-logo-purple-700 {
-  background-color: #6b21a8;
-}
-.bg-logo-purple-950 {
-  background-color: #2a1440;
-}
-.dark .bg-logo-purple-950 {
-  background-color: #1a0d26;
-}
-
-.text-logo-teal {
-  color: #14b8a6;
-}
-.dark .text-logo-teal {
-  color: #0d9488;
-}
-.text-logo-teal-300 {
-  color: #5eead4;
-}
-.dark .text-logo-teal-300 {
-  color: #5eead4;
-}
-.text-logo-teal-400 {
-  color: #2dd4bf;
-}
-.dark .text-logo-teal-400 {
-  color: #2dd4bf;
-}
-.text-logo-teal-500 {
-  color: #14b8a6;
-}
-.dark .text-logo-teal-500 {
-  color: #0d9488;
-}
-.text-logo-teal-600 {
-  color: #0d9488;
-}
-.dark .text-logo-teal-600 {
-  color: #0f766e;
-}
-.text-logo-teal-700 {
-  color: #0f766e;
-}
-.dark .text-logo-teal-700 {
-  color: #0d645e;
-}
-.bg-logo-teal-50 {
-  background-color: #f0fdfa;
-}
-.dark .bg-logo-teal-50 {
-  background-color: #0a2e2b;
-}
-.bg-logo-teal-100 {
-  background-color: #ccfbf1;
-}
-.dark .bg-logo-teal-100 {
-  background-color: #1a5c55;
-}
-.bg-logo-teal-200 {
-  background-color: #99f6e4;
-}
-.dark .bg-logo-teal-200 {
-  background-color: #2a8a7f;
-}
-.bg-logo-teal-500 {
-  background-color: #14b8a6;
-}
-.dark .bg-logo-teal-500 {
-  background-color: #0d9488;
-}
-.bg-logo-teal-600 {
-  background-color: #0d9488;
-}
-.dark .bg-logo-teal-600 {
-  background-color: #0f766e;
-}
-.bg-logo-teal-700 {
-  background-color: #0f766e;
-}
-.dark .bg-logo-teal-700 {
-  background-color: #0d645e;
-}
-.bg-logo-teal-950 {
-  background-color: #0a2e2b;
-}
-.dark .bg-logo-teal-950 {
-  background-color: #051715;
-}
-
-.text-logo-emerald {
-  color: #059669;
-}
-.dark .text-logo-emerald {
-  color: #047857;
-}
-.bg-logo-emerald-50 {
-  background-color: #ecfdf5;
-}
-.dark .bg-logo-emerald-50 {
-  background-color: #012a1e;
-}
-.bg-logo-emerald-600 {
-  background-color: #059669;
-}
-.dark .bg-logo-emerald-600 {
-  background-color: #047857;
-}
-.bg-logo-emerald-700 {
-  background-color: #047857;
-}
-.dark .bg-logo-emerald-700 {
-  background-color: #065f46;
-}
-.bg-logo-emerald-950 {
-  background-color: #012a1e;
-}
-.dark .bg-logo-emerald-950 {
-  background-color: #001a12;
 }
 
 /* Custom scrollbar styles */

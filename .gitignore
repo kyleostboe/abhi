@@ -1,38 +1,26 @@
-# Next.js
-.next/
-out/
-.vercel/
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Dependencies
-node_modules/
-.pnp/
+# dependencies
+/node_modules
+/.pnp
 .pnp.js
 
-# TypeScript
-*.tsbuildinfo
+# testing
+/coverage
 
-# ESLint
-.eslintcache
+# next.js
+/.next/
+/out/
 
-# npm
-npm-debug.log
-.npm/
-
-# yarn
-yarn-debug.log*
-.yarn/cache
-.yarn/unplugged
-.yarn/build-state
-.yarn/install-state.gz
-.pnp.*
-
-# dotenv
-.env.local
-.env.*.local
+# production
+/build
 
 # misc
 .DS_Store
 *.pem
-
-# v0 generated files
-v0-*.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env*.local
+.vercel/
+*.tgz
