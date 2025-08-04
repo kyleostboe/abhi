@@ -774,12 +774,6 @@ export default function HomePage() {
     } else if (currentAudioContext.state === "closed") {
       setStatus({ message: "Audio system closed.", type: "error" })
       setIsProcessing(false)
-        setIsProcessing(false)
-        return
-      }
-    } else if (currentAudioContext.state === "closed") {
-      setStatus({ message: "Audio system closed.", type: "error" })
-      setIsProcessing(false)
       return
     }
     if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
@@ -2116,9 +2110,9 @@ export default function HomePage() {
                             id="custom-instruction"
                             value={customInstructionText}
                             onChange={handleCustomInstructionChange}
-                            placeholder="Write your own meditation instruction here..."
-                            rows={12}
-                            className="mt-2 text-sm font-serif font-black text-gray-600 min-h-[300px] resize-none"
+                            placeholder="Enter your meditation instruction here... For example: 'Take a deep breath and focus on the sensation of air entering and leaving your nostrils. Allow your mind to settle into this natural rhythm.'"
+                            rows={8}
+                            className="mt-2 text-sm font-serif font-black text-gray-600 resize-none"
                           />
                         </div>
                       </div>
@@ -2138,23 +2132,32 @@ export default function HomePage() {
                       </div>
                       <div className="p-6 space-y-4 font-black">
                         <Accordion type="single" collapsible className="w-full">
-                          {Array.from({ length: 5 }, (_, i) => i + 3).map((octave) => (
+                          {Object.entries(
+                            Object.entries(MUSICAL_NOTES).reduce((acc, [category, notes]) => {
+                              notes.forEach(note => {
+                                const octave = `Octave ${note.octave}`;
+                                if (!acc[octave]) acc[octave] = [];
+                                acc[octave].push(note);
+                              });
+                              return acc;
+                            }, {} as Record<string, any[]>)
+                          ).map(([octave, notes]) => (
                             <AccordionItem
-                              value={`octave-${octave}`}
-                              key={`octave-${octave}`}
+                              value={octave}
+                              key={octave}
                               className="border-b border-gray-100 dark:border-gray-800"
                             >
                               <AccordionTrigger className="text-logo-teal-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black text-gray-600">
-                                Octave {octave}
+                                {octave}
                               </AccordionTrigger>
                               <AccordionContent className="pb-4">
                                 <div className="space-y-2 text-gray-600">
-                                  {Object.values(MUSICAL_NOTES).flat().filter(note => note.octave === octave).map((note) => (
-                                    <div key={note.id} className="flex items-center gap-2 font-black">
+                                  {notes.map((note) => (
+                                    <div key={note.id} className="flex items-center gap-2 font-black font-serif">
                                       <Button
                                         variant={selectedSoundCue?.id === note.id ? "default" : "ghost"}
                                         size="sm"
-                                        className={`flex-1 justify-start font-serif font-black text-gray-600 ${selectedSoundCue?.id === note.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                                        className={`flex-1 justify-start font-black font-serif text-gray-600 ${selectedSoundCue?.id === note.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
                                         onClick={async () => {
                                           setSelectedSoundCue({
                                             id: note.id,
@@ -2188,7 +2191,7 @@ export default function HomePage() {
                           disabled={!customInstructionText.trim() || !selectedSoundCue}
                         >
                           <PlusCircle className="mr-2 h-4 w-4" />
-                          <span className="font-black">Add to Timeline</span>
+                          <span className="font-black font-serif">Add to Timeline</span>
                         </Button>
                       </div>
                     </Card>
@@ -2281,7 +2284,7 @@ export default function HomePage() {
                                   const newEvent: TimelineEvent = {
                                     id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
                                     type: "recorded_voice",
-                                    startTime: newStartTime,
+                                    startTime: newStartTime, // Now calculated
                                     recordedAudioUrl: readyToAddToTimelineRecording.url,
                                     recordedInstructionLabel: readyToAddToTimelineRecording.label.trim(),
                                     duration: readyToAddToTimelineRecording.duration,
