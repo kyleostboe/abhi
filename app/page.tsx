@@ -1908,8 +1908,8 @@ export default function HomePage() {
                     onClick={processAudioAdjusterAction}
                   >
                     <div className="flex items-center justify-center">
-                      <Wand2 className="mr-2 h-6 w-6" />
-                      <span className="font-black">Process Audio</span>
+                      <Wand2 className="mr-2 w-5 h-5" />
+                      <span className="font-black text-base">Process Audio</span>
                     </div>
                   </Button>
                 </motion.div>
