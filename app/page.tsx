@@ -1357,10 +1357,10 @@ export default function HomePage() {
       {memoryWarning && activeMode === "adjuster" && (
         <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-yellow-100 to-amber-50 border border-yellow-300 shadow-sm dark:shadow-white/10 dark:from-yellow-950 dark:to-amber-900 dark:border-yellow-700">
           <div className="flex items-start">
-            <AlertTriangle className="h-6 w-6 text-yellow-500 mr-3 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="text-yellow-500 mr-3 flex-shrink-0 mt-0.5 w-5 h-5" />
             <div>
-              <h3 className="font-medium text-yellow-700 dark:text-yellow-300 mb-1">High Memory Usage Expected</h3>
-              <p className="text-sm text-yellow-600 dark:text-yellow-400">
+              <h3 className="text-yellow-700 dark:text-yellow-300 mb-1 font-serif font-black text-sm">High Memory Usage Expected</h3>
+              <p className="text-yellow-600 dark:text-yellow-400 font-serif font-black text-xs">
                 Large files or long target durations require significant memory. Processing may be slow or unstable on
                 devices with limited RAM.
               </p>
