@@ -2090,16 +2090,16 @@ export default function HomePage() {
                       <BookText className="mr-2 text-indigo-400 w-5 h-5" />
                       <span className="text-indigo-400 font-black text-center text-base">Instructions</span>
                     </div>
-                    <div className="p-0.5 bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 rounded-lg shadow-lg">
+                    <div className="p-0.5 bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 rounded-lg shadow-lg px-[3px] py-[3px]">
                       <div className="bg-white dark:bg-gray-900 rounded-lg p-4">
-                        <div>
+                        <div className="text-center">
                           {/* Removed the previous Label for "Enter Your Meditation Instruction" */}
                           <Textarea
                             id="custom-instruction"
                             value={customInstructionText}
                             onChange={handleCustomInstructionChange}
                             placeholder="Enter your meditation instruction here..."
-                            className="mt-2 text-sm font-serif text-gray-600 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none" // Removed font-black
+                            className="mt-2 text-sm font-serif font-black text-gray-600 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
                           />
                         </div>
                       </div>
