@@ -2090,7 +2090,7 @@ export default function HomePage() {
                       <BookText className="mr-2 text-indigo-400 w-5 h-5" />
                       <span className="text-indigo-400 font-black text-center text-base">Instructions</span>
                     </div>
-                    <div className="p-0.5 bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 rounded-lg shadow-lg px-[3px] py-[3px]">
+                    <div className="p-0.5 bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 rounded-lg shadow-lg px-0.5 py-0.5">
                       <div className="bg-white dark:bg-gray-900 rounded-lg p-4">
                         <div className="text-center">
                           {/* Removed the previous Label for "Enter Your Meditation Instruction" */}
