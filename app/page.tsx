@@ -2092,7 +2092,7 @@ export default function HomePage() {
                     </div>
                     <div className="p-0.5 bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 rounded-lg shadow-lg">
                       <div className="bg-white dark:bg-gray-900 rounded-lg p-4">
-                        <div className="text-center">
+                        <div>
                           {/* Removed the previous Label for "Enter Your Meditation Instruction" */}
                           <Textarea
                             id="custom-instruction"
