@@ -20,6 +20,7 @@ import {
   CircleDotDashed,
   Trash2,
   Info,
+  BookText,
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
@@ -1995,7 +1996,7 @@ export default function HomePage() {
                                 {formatTime(actualDuration || 0)}
                                 {actualDuration && targetDuration && (
                                   <div className="text-xs text-logo-teal-600 mt-1 dark:text-gray-900">
-                                    {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
+                                    {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}%
                                   </div>
                                 )}
                               </div>
@@ -2084,12 +2085,15 @@ export default function HomePage() {
                     transition={{ delay: 0.2 }}
                     className="p-6 bg-transparent" // Add padding and transparent background directly to this div
                   >
+                    {/* New Instructions Label and Icon */}
+                    <div className="flex items-center justify-center mb-2">
+                      <BookText className="h-4 w-4 mr-2 text-indigo-400" />
+                      <span className="text-indigo-400 text-sm font-black text-center">Instructions</span>
+                    </div>
                     <div className="p-0.5 bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 rounded-lg shadow-lg">
                       <div className="bg-white dark:bg-gray-900 rounded-lg p-4">
                         <div className="text-center">
-                          <Label htmlFor="custom-instruction" className="text-gray-600 font-serif font-black">
-                            Enter Your Meditation Instruction
-                          </Label>
+                          {/* Removed the previous Label for "Enter Your Meditation Instruction" */}
                           <Textarea
                             id="custom-instruction"
                             value={customInstructionText}
