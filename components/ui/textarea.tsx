@@ -23,7 +23,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
     return (
       <textarea
         className={cn(
-          "flex w-full border border-input bg-background px-3 py-2 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 border-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm rounded-md text-sm resize-none overflow-hidden pt-0", // Added resize-none and overflow-hidden
+          "flex w-full border border-input bg-background px-3 py-2 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 border-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm rounded-md text-sm resize-none pt-0 min-w-0", // Removed overflow-hidden, added min-w-0
           className,
         )}
         rows={1} // Start with 1 row
