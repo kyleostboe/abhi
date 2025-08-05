@@ -5,12 +5,23 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
+import { Alert } from "@/components/ui/alert" // Import Alert component
 import {
-  Alert,
-  AlertTitle,
-  AlertDescription
-} from "@/components/ui/alert" // Import Alert component
-import { Volume2, Clock, Wand2, Download, Settings2, AlertTriangle, ListPlus, Music2, Mic, StopCircle, Play, PlusCircle, CircleDotDashed, Trash2, Info } from 'lucide-react'
+  Volume2,
+  Wand2,
+  Download,
+  Settings2,
+  AlertTriangle,
+  ListPlus,
+  Music2,
+  Mic,
+  StopCircle,
+  Play,
+  PlusCircle,
+  CircleDotDashed,
+  Trash2,
+  Info,
+} from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -1025,7 +1036,7 @@ export default function HomePage() {
 
   const handleAddInstructionSoundEvent = () => {
     const instructionTextToAdd = customInstructionText.trim()
-    
+
     if (!instructionTextToAdd) {
       toast({
         title: "Missing Instruction",
@@ -1343,7 +1354,9 @@ export default function HomePage() {
           <div className="flex items-start">
             <AlertTriangle className="text-yellow-500 mr-3 flex-shrink-0 mt-0.5 w-5 h-5" />
             <div>
-              <h3 className="text-yellow-700 dark:text-yellow-300 mb-1 font-serif font-black text-sm">High Memory Usage Expected</h3>
+              <h3 className="text-yellow-700 dark:text-yellow-300 mb-1 font-serif font-black text-sm">
+                High Memory Usage Expected
+              </h3>
               <p className="text-yellow-600 dark:text-yellow-400 font-serif font-black text-xs">
                 Large files or long target durations require significant memory. Processing may be slow or unstable on
                 devices with limited RAM.
@@ -1440,8 +1453,8 @@ export default function HomePage() {
                   className="p-4 mb-6 border border-gray-600 rounded-md text-gray-600 font-serif font-black text-sm dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto shadow-inner"
                 >
                   <p className="text-center text-xs">
-                    Change the length of guided meditations by intelligently adjusting silence periods. Upload an audio file, set your
-                    target duration, and this tool will re-space content to fit your schedule.
+                    Change the length of guided meditations by intelligently adjusting silence periods. Upload an audio
+                    file, set your target duration, and this tool will re-space content to fit your schedule.
                   </p>
                 </motion.div>
               )}
@@ -1455,9 +1468,8 @@ export default function HomePage() {
                   className="p-4 mb-6 border border-gray-600 rounded-md text-gray-600 font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto text-center shadow-inner text-xs"
                 >
                   <p>
-                    Create custom
-                    meditations by associating instructions with sound cues and placing them along a timeline. This tool
-                    aims to help bridge the gap between guided and self-directed meditation.
+                    Create custom meditations by associating instructions with sound cues and placing them along a
+                    timeline. This tool aims to help bridge the gap between guided and self-directed meditation.
                   </p>
                 </motion.div>
               )}
@@ -1473,8 +1485,8 @@ export default function HomePage() {
                       <strong className="pr-1.5 font-black font-serif text-center text-sm text-logo-amber-600">
                         Note:
                       </strong>
-                      Depending on the audio, users may need to tweak the advanced settings for optimal
-                      results. Any guided meditation, talk, podcast, or audiobook (under
+                      Depending on the audio, users may need to tweak the advanced settings for optimal results. Any
+                      guided meditation, talk, podcast, or audiobook (under
                       {isMobileDevice ? "50MB" : "500MB"}) should be compatible. Teachers, please feel free to
                       <a
                         href="/contact"
@@ -1647,33 +1659,23 @@ export default function HomePage() {
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
-                              <div className="text-xs uppercase tracking-wide mb-1 text-indigo-400">
-                                Content
-                              </div>
+                              <div className="text-xs uppercase tracking-wide mb-1 text-indigo-400">Content</div>
                               <div className="font-black text-indigo-300">
                                 {formatTime(audioAnalysis.contentDuration)}
                               </div>
                             </div>
                             <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
-                              <div className="text-xs uppercase tracking-wide mb-1 text-indigo-400">
-                                Silence
-                              </div>
+                              <div className="text-xs uppercase tracking-wide mb-1 text-indigo-400">Silence</div>
                               <div className="font-black rounded-xl text-indigo-300">
                                 {formatTime(audioAnalysis.totalSilence)}
                               </div>
                             </div>
                             <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
-                              <div className="text-xs uppercase tracking-wide mb-1 text-indigo-400">
-                                Pauses
-                              </div>
-                              <div className="font-black text-indigo-300">
-                                {audioAnalysis.silenceRegions}
-                              </div>
+                              <div className="text-xs uppercase tracking-wide mb-1 text-indigo-400">Pauses</div>
+                              <div className="font-black text-indigo-300">{audioAnalysis.silenceRegions}</div>
                             </div>
                             <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
-                              <div className="text-xs uppercase tracking-wide mb-1 text-indigo-400">
-                                Range
-                              </div>
+                              <div className="text-xs uppercase tracking-wide mb-1 text-indigo-400">Range</div>
                               <div className="text-xs uppercase tracking-wide mb-1 text-indigo-300">
                                 {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
                               </div>
@@ -1710,10 +1712,7 @@ export default function HomePage() {
                       <div className="grid md:grid-cols-2 gap-6">
                         <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
                           <div className="bg-gradient-to-r from-logo-teal-500 to-indigo-500 py-3 px-6 dark:from-logo-teal-700 dark:to-indigo-700">
-                            <h3 className="text-white flex items-center font-black text-base">
-                              
-                              Target Duration
-                            </h3>
+                            <h3 className="text-white flex items-center font-black text-base">Target Duration</h3>
                           </div>
                           <div className="p-6">
                             <div className="mb-4">
@@ -1743,10 +1742,7 @@ export default function HomePage() {
                         </Card>
                         <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
                           <div className="bg-gradient-to-r from-indigo-500 to-logo-amber-500 py-3 px-6 dark:from-indigo-700 dark:to-logo-amber-700">
-                            <h3 className="text-white flex items-center font-black text-base">
-                              
-                              Silence Threshold
-                            </h3>
+                            <h3 className="text-white flex items-center font-black text-base">Silence Threshold</h3>
                           </div>
                           <div className="p-6">
                             <div className="mb-4">
@@ -2097,8 +2093,8 @@ export default function HomePage() {
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
                       <div className="bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 py-3 px-6 dark:from-logo-purple-600 dark:to-logo-blue-600 text-center">
                         <h3 className="text-white flex items-center font-black text-center justify-center">
-                          <ListPlus className="h-4 w-4 mr-2" />
-                          Custom Instruction
+                          <ListPlus className="h-5 w-5 mr-2" />
+                          Instructions
                         </h3>
                       </div>
                       <div className="p-6 space-y-4">
@@ -2133,14 +2129,17 @@ export default function HomePage() {
                       <div className="p-6 space-y-4 font-black">
                         <Accordion type="single" collapsible className="w-full">
                           {Object.entries(
-                            Object.entries(MUSICAL_NOTES).reduce((acc, [category, notes]) => {
-                              notes.forEach(note => {
-                                const octave = `Octave ${note.octave}`;
-                                if (!acc[octave]) acc[octave] = [];
-                                acc[octave].push(note);
-                              });
-                              return acc;
-                            }, {} as Record<string, any[]>)
+                            Object.entries(MUSICAL_NOTES).reduce(
+                              (acc, [category, notes]) => {
+                                notes.forEach((note) => {
+                                  const octave = `Octave ${note.octave}`
+                                  if (!acc[octave]) acc[octave] = []
+                                  acc[octave].push(note)
+                                })
+                                return acc
+                              },
+                              {} as Record<string, any[]>,
+                            ),
                           ).map(([octave, notes]) => (
                             <AccordionItem
                               value={octave}
