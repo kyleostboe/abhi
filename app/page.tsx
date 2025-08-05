@@ -2098,7 +2098,7 @@ export default function HomePage() {
                             id="custom-instruction"
                             value={customInstructionText}
                             onChange={handleCustomInstructionChange}
-                            placeholder="Enter your meditation instruction here... For example: 'Take a deep breath and focus on the sensation of air entering and leaving your nostrils. Allow your mind to settle into this natural rhythm.'"
+                            placeholder="Enter your meditation instruction here..."
                             rows={8}
                             className="mt-2 text-sm font-serif font-black text-gray-600 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
                           />
@@ -2431,7 +2431,7 @@ export default function HomePage() {
                                     {sound.name}
                                   </span>
                                   <div className="flex items-center space-x-2">
-                                    <Volume2 className="h-3 w-3 text-gray-500" />
+                                    <Volume2 className="h-3 w-3" />
                                     <Slider
                                       value={[sound.volume]}
                                       min={0}
@@ -2460,7 +2460,7 @@ export default function HomePage() {
                                 Master Background Volume:
                               </span>
                               <div className="flex-1 flex items-center space-x-2">
-                                <Volume2 className="h-4 w-4 text-gray-500" />
+                                <Volume2 className="h-4 w-4" />
                                 <Slider
                                   value={[masterBackgroundVolume]}
                                   min={0}
