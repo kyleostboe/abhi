@@ -1911,7 +1911,7 @@ export default function HomePage() {
                           </svg>
                         </div>
                       )}
-                      <Wand2 className="mr-2 h-5 w-5" />
+                      <Wand2 className="mr-2 w-5 h-5" />
                       <span className="font-black text-base">{isProcessing ? "Processing..." : "Process Audio"}</span>
                     </div>
                   </Button>
@@ -2018,9 +2018,8 @@ export default function HomePage() {
                 </div>
               </>
             ) : (
-              (
-                // == Labs UI ==
-                <motion.div
+              // == Labs UI ==
+              <motion.div
                 key="labs-content"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -2084,7 +2083,7 @@ export default function HomePage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="bg-transparent" // Removed p-6
+                    className="p-6 bg-transparent px-0 py-3" // Add padding and transparent background directly to this div
                   >
                     {/* New Instructions Label and Icon */}
                     <div className="flex items-center justify-center mb-2">
@@ -2092,7 +2091,7 @@ export default function HomePage() {
                       <span className="text-indigo-400 font-black text-center text-base">Instructions</span>
                     </div>
                     <div className="p-0.5 bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 rounded-lg shadow-lg">
-                      <div className="bg-white dark:bg-gray-900 rounded-lg p-2"> {/* Changed p-4 to p-2 */}
+                      <div className="bg-white dark:bg-gray-900 rounded-lg p-4">
                         <div className="text-center">
                           {/* Removed the previous Label for "Enter Your Meditation Instruction" */}
                           <Textarea
@@ -2100,7 +2099,7 @@ export default function HomePage() {
                             value={customInstructionText}
                             onChange={handleCustomInstructionChange}
                             placeholder="Enter your meditation instruction here..."
-                            rows={3} {/* Changed rows from 8 to 3 */}\
+                            rows={8}
                             className="mt-2 text-sm font-serif font-black text-gray-600 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
                           />
                         </div>
@@ -2350,7 +2349,7 @@ export default function HomePage() {
 
                                   {backgroundSounds.some((s) => s.id === sound.id) && (
                                     <div className="flex-1 flex items-center space-x-2">
-                                      <Volume2 className="h-3 w-3" />
+                                      <Volume2 className="h-3 w-3 text-gray-500" />
                                       <Slider
                                         value={[backgroundSounds.find((s) => s.id === sound.id)?.volume || 0.3]}
                                         min={0}
@@ -2577,7 +2576,6 @@ export default function HomePage() {
                   </motion.div>
                 )}
               </motion.div>
-              )
             )}
           </div>
         </div>
