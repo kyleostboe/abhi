@@ -2093,13 +2093,13 @@ export default function HomePage() {
                     <div className="p-0.5 bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 rounded-lg shadow-lg px-0.5 py-0.5">
                       <div className="bg-white dark:bg-gray-900 rounded-lg p-4">
                         <div className="text-center">
-                          {/* Removed the previous Label for "Enter Your Meditation Instruction" */}
+                          {/* THIS IS THE CHANGE IN app/page.tsx */}
                           <Textarea
                             id="custom-instruction"
                             value={customInstructionText}
                             onChange={handleCustomInstructionChange}
-                            placeholder="Enter your meditation instruction here..."
-                            className="mt-2 text-sm font-serif font-black text-gray-600 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
+                            placeholder="Enter an instruction..." // Changed this line
+                            className="mt-2 text-sm font-serif text-gray-600 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
                           />
                         </div>
                       </div>
