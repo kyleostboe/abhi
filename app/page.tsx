@@ -2000,12 +2000,6 @@ export default function HomePage() {
                                 )}
                               </div>
                             </div>
-                            <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                              <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
-                                Pauses Adjusted
-                              </div>
-                              <div className="dark:text-logo-teal-200 font-black text-gray-600">{pausesAdjusted}</div>
-                            </div>
                           </div>
                           <Button
                             className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
@@ -2102,7 +2096,7 @@ export default function HomePage() {
                             onChange={handleCustomInstructionChange}
                             placeholder="Enter your meditation instruction here... For example: 'Take a deep breath and focus on the sensation of air entering and leaving your nostrils. Allow your mind to settle into this natural rhythm.'"
                             rows={8}
-                            className="mt-2 text-sm font-serif font-black text-gray-600 resize-none bg-transparent border-none focus:ring-0 focus:border-0"
+                            className="mt-2 text-sm font-serif font-black text-gray-600 resize-none bg-transparent border-none focus:ring-0 focus:outline-none"
                           />
                         </div>
                       </div>
