@@ -9,7 +9,7 @@ export function Navigation() {
 
   return (
     <nav className="flex justify-center py-4 mb-5">
-      <ul className="flex space-x-4 bg-white/70 backdrop-blur-md px-6 py-3 shadow-lg dark:bg-gray-800/70 dark:shadow-white/10 rounded-lg">
+      <ul className="flex space-x-4 bg-white/70 backdrop-blur-md px-6 py-3 dark:bg-gray-800/70 dark:shadow-white/10 rounded-lg shadow-xl">
         <li>
           <Link
             href="/"
