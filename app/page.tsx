@@ -1611,7 +1611,7 @@ export default function HomePage() {
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
                           transition={{ type: "spring", stiffness: 500, damping: 30, delay: 0.1 }}
-                          className="p-2 rounded-lg mr-4 dark:bg-gray-800 bg-transparent"
+                          className="p-2 rounded-lg mr-4 dark:bg-gray-800 bg-transparent text-purple-300"
                         >
                           <Volume2 className="text-purple-400 h-4 w-4" />
                         </motion.div>
@@ -1653,7 +1653,7 @@ export default function HomePage() {
                         <div className="p-4 text-indigo-400">
                           <div className="flex items-center mb-4">
                             <div className="p-2 rounded-lg mr-3 dark:bg-gray-700 bg-transparent">
-                              <Info className="text-indigo-300 h-4 w-4" />
+                              <Info className="h-4 w-4 text-indigo-400" />
                             </div>
                             <div className="text-lg font-black text-indigo-400">Audio Analysis</div>
                           </div>
