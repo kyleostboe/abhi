@@ -564,33 +564,24 @@ export const NOTE_FREQUENCIES = {
   B5: 987.77,
 }
 
-// Musical meditation notes organized by category
+// Musical meditation notes grouped into pleasant octaves
 export const MUSICAL_NOTES = {
-  Metta: [
-    { id: "metta-c4", name: "C4", note: "C", octave: 4 },
-    { id: "metta-e4", name: "E4", note: "E", octave: 4 },
-    { id: "metta-g4", name: "G4", note: "G", octave: 4 },
-    { id: "metta-c5", name: "C5", note: "C", octave: 5 },
-  ],
-  Mindfulness: [
-    { id: "mind-a4", name: "A4", note: "A", octave: 4 },
-    { id: "mind-c5", name: "C5", note: "C", octave: 5 },
-    { id: "mind-d5", name: "D5", note: "D", octave: 5 },
-    { id: "mind-a4-return", name: "A4 (return)", note: "A", octave: 4 },
-  ],
-  Nonduality: [
-    { id: "non-g3", name: "G3", note: "G", octave: 3 },
-    { id: "non-d4", name: "D4", note: "D", octave: 4 },
-    { id: "non-g4", name: "G4", note: "G", octave: 4 },
-  ],
-  "Body Scan": [
-    { id: "body-g5", name: "G5", note: "G", octave: 5 },
-    { id: "body-f5", name: "F5", note: "F", octave: 5 },
-    { id: "body-e5", name: "E5", note: "E", octave: 5 },
-    { id: "body-d5", name: "D5", note: "D", octave: 5 },
-    { id: "body-c5", name: "C5", note: "C", octave: 5 },
-    { id: "body-b4", name: "B4", note: "B", octave: 4 },
-    { id: "body-a4", name: "A4", note: "A", octave: 4 },
+  Beautiful: [
+    { id: "note-c3", name: "C3", note: "C", octave: 3 },
+    { id: "note-d3", name: "D3", note: "D", octave: 3 },
+    { id: "note-e3", name: "E3", note: "E", octave: 3 },
+    { id: "note-g3", name: "G3", note: "G", octave: 3 },
+    { id: "note-a3", name: "A3", note: "A", octave: 3 },
+    { id: "note-c4", name: "C4", note: "C", octave: 4 },
+    { id: "note-d4", name: "D4", note: "D", octave: 4 },
+    { id: "note-e4", name: "E4", note: "E", octave: 4 },
+    { id: "note-g4", name: "G4", note: "G", octave: 4 },
+    { id: "note-a4", name: "A4", note: "A", octave: 4 },
+    { id: "note-c5", name: "C5", note: "C", octave: 5 },
+    { id: "note-d5", name: "D5", note: "D", octave: 5 },
+    { id: "note-e5", name: "E5", note: "E", octave: 5 },
+    { id: "note-g5", name: "G5", note: "G", octave: 5 },
+    { id: "note-a5", name: "A5", note: "A", octave: 5 },
   ],
 }
 

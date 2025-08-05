@@ -2114,57 +2114,100 @@ export default function HomePage() {
                       <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
                         <h3 className="text-white flex items-center font-black text-left">
                           <Music2 className="h-4 w-4 mr-2" />
-                          Musical Notes
+                          Sound Cues
                         </h3>
                       </div>
                       <div className="p-6 space-y-4 font-black">
-                        <Accordion type="single" collapsible className="w-full">
-                          {Object.entries(
-                            Object.entries(MUSICAL_NOTES).reduce(
-                              (acc, [category, notes]) => {
-                                notes.forEach((note) => {
-                                  const octave = `Octave ${note.octave}`
-                                  if (!acc[octave]) acc[octave] = []
-                                  acc[octave].push(note)
-                                })
-                                return acc
-                              },
-                              {} as Record<string, any[]>,
-                            ),
-                          ).map(([octave, notes]) => (
-                            <AccordionItem
-                              value={octave}
-                              key={octave}
-                              className="border-b border-gray-100 dark:border-gray-800"
-                            >
+                          <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="musical-notes">
                               <AccordionTrigger className="text-logo-teal-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black text-gray-600">
-                                {octave}
+                                Musical Notes
+                              </AccordionTrigger>
+                              <AccordionContent className="pb-4">
+                                <Accordion type="single" collapsible className="w-full">
+                                  {Object.entries(
+                                    Object.entries(MUSICAL_NOTES).reduce(
+                                      (acc, [_, notes]) => {
+                                        notes.forEach((note) => {
+                                          const octave = `Octave ${note.octave}`
+                                          if (!acc[octave]) acc[octave] = []
+                                          acc[octave].push(note)
+                                        })
+                                        return acc
+                                      },
+                                      {} as Record<string, any[]>,
+                                    ),
+                                  ).map(([octave, notes]) => (
+                                    <AccordionItem
+                                      value={octave}
+                                      key={octave}
+                                      className="border-b border-gray-100 dark:border-gray-800"
+                                    >
+                                      <AccordionTrigger className="text-logo-teal-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black text-gray-600">
+                                        {octave}
+                                      </AccordionTrigger>
+                                      <AccordionContent className="pb-4">
+                                        <div className="space-y-2 text-gray-600">
+                                          {notes.map((note) => (
+                                            <div key={note.id} className="flex items-center gap-2 font-black font-serif">
+                                              <Button
+                                                variant={selectedSoundCue?.id === note.id ? "default" : "ghost"}
+                                                size="sm"
+                                                className={`flex-1 justify-start font-black font-serif text-gray-600 ${selectedSoundCue?.id === note.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                                                onClick={async () => {
+                                                  setSelectedSoundCue({
+                                                    id: note.id,
+                                                    name: note.name,
+                                                    src: `musical:${note.note}${note.octave}`,
+                                                  })
+                                                  await playNote(note.note, note.octave)
+                                                }}
+                                              >
+                                                {note.name}
+                                              </Button>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={async () => await playNote(note.note, note.octave)}
+                                                className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
+                                                title={`Preview ${note.name}`}
+                                              >
+                                                <Play className="h-4 w-4" />
+                                              </Button>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  ))}
+                                </Accordion>
+                              </AccordionContent>
+                            </AccordionItem>
+                            <AccordionItem value="miscellaneous">
+                              <AccordionTrigger className="text-logo-teal-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black text-gray-600">
+                                Miscellaneous
                               </AccordionTrigger>
                               <AccordionContent className="pb-4">
                                 <div className="space-y-2 text-gray-600">
-                                  {notes.map((note) => (
-                                    <div key={note.id} className="flex items-center gap-2 font-black font-serif">
+                                  {SOUND_CUES_LIBRARY.map((cue) => (
+                                    <div key={cue.id} className="flex items-center gap-2 font-black font-serif">
                                       <Button
-                                        variant={selectedSoundCue?.id === note.id ? "default" : "ghost"}
+                                        variant={selectedSoundCue?.id === cue.id ? "default" : "ghost"}
                                         size="sm"
-                                        className={`flex-1 justify-start font-black font-serif text-gray-600 ${selectedSoundCue?.id === note.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                                        className={`flex-1 justify-start font-black font-serif text-gray-600 ${selectedSoundCue?.id === cue.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
                                         onClick={async () => {
-                                          setSelectedSoundCue({
-                                            id: note.id,
-                                            name: note.name,
-                                            src: `musical:${note.note}${note.octave}`,
-                                          })
-                                          await playNote(note.note, note.octave)
+                                          setSelectedSoundCue({ id: cue.id, name: cue.name, src: cue.src })
+                                          await playLabsSound(cue.src)
                                         }}
                                       >
-                                        {note.name}
+                                        {cue.name}
                                       </Button>
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={async () => await playNote(note.note, note.octave)}
+                                        onClick={async () => await playLabsSound(cue.src)}
                                         className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
-                                        title={`Preview ${note.name}`}
+                                        title={`Preview ${cue.name}`}
                                       >
                                         <Play className="h-4 w-4" />
                                       </Button>
@@ -2173,8 +2216,7 @@ export default function HomePage() {
                                 </div>
                               </AccordionContent>
                             </AccordionItem>
-                          ))}
-                        </Accordion>
+                          </Accordion>
                         <Button
                           className="w-full bg-white text-logo-teal-500 border border-logo-teal-500 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-teal-500 dark:border-logo-teal-500 dark:hover:bg-gray-800 font-serif font-black text-gray-600"
                           onClick={handleAddInstructionSoundEvent}
