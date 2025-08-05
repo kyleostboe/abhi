@@ -1911,7 +1911,7 @@ export default function HomePage() {
                           </svg>
                         </div>
                       )}
-                      <Wand2 className="mr-2 w-5 h-5" />
+                      <Wand2 className="mr-2 h-4 w-4" />
                       <span className="font-black text-base">{isProcessing ? "Processing..." : "Process Audio"}</span>
                     </div>
                   </Button>
@@ -2517,7 +2517,7 @@ export default function HomePage() {
                           </svg>
                         </div>
                       )}
-                      <Wand2 className="mr-2 h-5 w-5" />
+                      <Wand2 className="mr-2 w-4 h-4" />
                       <span className="text-base">{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
                     </div>
                   </Button>
