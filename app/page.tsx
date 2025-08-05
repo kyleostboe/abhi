@@ -1709,7 +1709,7 @@ export default function HomePage() {
                     <TabsContent value="basic" className="mt-0 space-y-6">
                       <div className="grid md:grid-cols-2 gap-6">
                         <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div className="bg-gradient-to-r from-logo-teal-500 via-logo-teal-400 to-indigo-500 py-3 px-6 dark:from-logo-teal-700 dark:via-logo-teal-600 dark:to-indigo-700">
+                          <div className="bg-gradient-to-r from-logo-teal-500 to-indigo-500 py-3 px-6 dark:from-logo-teal-700 dark:to-indigo-700">
                             <h3 className="text-white flex items-center font-black text-base">
                               
                               Target Duration
@@ -1960,7 +1960,7 @@ export default function HomePage() {
                               <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
                                 Duration
                               </div>
-                              <div className="dark:text-black font-black text-black">
+                              <div className="dark:text-black font-black text-gray-600">
                                 {originalBuffer ? formatTime(originalBuffer.duration) : "--"}
                               </div>
                             </div>
@@ -1968,7 +1968,7 @@ export default function HomePage() {
                               <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
                                 File Size
                               </div>
-                              <div className="dark:text-gray-200 font-black text-black">
+                              <div className="dark:text-gray-200 font-black text-gray-600">
                                 {formatFileSize(file?.size || 0)}
                               </div>
                             </div>
@@ -1996,7 +1996,7 @@ export default function HomePage() {
                               <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                                 Duration
                               </div>
-                              <div className="dark:text-black font-black text-black">
+                              <div className="dark:text-black font-black text-gray-600">
                                 {formatTime(actualDuration || 0)}
                                 {actualDuration && targetDuration && (
                                   <div className="text-xs text-logo-teal-600 mt-1 dark:text-gray-900">
@@ -2009,7 +2009,7 @@ export default function HomePage() {
                               <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                                 Pauses Adjusted
                               </div>
-                              <div className="dark:text-logo-teal-200 font-black text-black">{pausesAdjusted}</div>
+                              <div className="dark:text-logo-teal-200 font-black text-gray-600">{pausesAdjusted}</div>
                             </div>
                           </div>
                           <Button
