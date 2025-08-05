@@ -1911,7 +1911,7 @@ export default function HomePage() {
                           </svg>
                         </div>
                       )}
-                      <Wand2 className="mr-2 h-5 w-5" />
+                      <Wand2 className="mr-2 w-5 h-5" />
                       <span className="font-black text-base">{isProcessing ? "Processing..." : "Process Audio"}</span>
                     </div>
                   </Button>
@@ -2090,14 +2090,14 @@ export default function HomePage() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
                   >
-                    <Card className="overflow-hidden border-none shadow-none bg-transparent h-full">
-                      <div className="bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 py-3 px-6 dark:from-logo-purple-600 dark:to-logo-blue-600 text-center">
+                    <Card className="overflow-hidden border-none shadow-none bg-white dark:bg-gray-900 h-full">
+                      <div className="bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 py-3 px-6 dark:from-logo-purple-600 dark:to-logo-blue-600 text-center bg-transparent">
                         <h3 className="text-white flex items-center font-black text-center justify-center">
                           <ListPlus className="h-5 w-5 mr-2" />
                           Instructions
                         </h3>
                       </div>
-                      <div className="p-0">
+                      <div className="p-6 bg-transparent">
                         <div className="p-0.5 bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 rounded-lg">
                           <div className="bg-white dark:bg-gray-900 rounded-lg p-4">
                             <div className="text-center">
