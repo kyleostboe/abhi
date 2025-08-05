@@ -2083,7 +2083,7 @@ export default function HomePage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="p-6 bg-transparent px-0 py-3" // Add padding and transparent background directly to this div
+                    className="p-6 bg-transparent px-0 py-3 pb-0" // Add padding and transparent background directly to this div
                   >
                     {/* New Instructions Label and Icon */}
                     <div className="flex items-center justify-center mb-2">
