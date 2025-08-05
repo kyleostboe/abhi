@@ -1,5 +1,5 @@
-import type { Instruction as ImportedInstruction, SoundCue as ImportedSoundCue, AmbientSound } from "./types"
-import { generateSimpleNoise } from "./noiseGenerators"
+import type { Instruction as ImportedInstruction, SoundCue as ImportedSoundCue } from "./types"
+import type { AmbientSound } from "./types"
 
 export interface Instruction extends ImportedInstruction {
   // Additional properties can be added here if needed
@@ -200,7 +200,7 @@ export const INSTRUCTIONS_LIBRARY: Instruction[] = [
   },
   {
     id: "nonduality-11",
-    text: 'Resting as the source of the "I" thought',
+    text: "Pratyabhijna - recognizing what I already am",
     category: "Nonduality",
   },
   {
@@ -797,20 +797,329 @@ async function generateHyperrealisticRain(
 
   const rumbleFilter = audioContext.createBiquadFilter()
   rumbleFilter.type = "lowpass"
-  rumbleFilter.frequency.value = 250
-  rumbleFilter.Q.value = 2
+  rumbleFilter.frequency.value = 120
 
   const rumbleGain = audioContext.createGain()
-  rumbleGain.gain.value = 0.3
+  rumbleGain.gain.value = 0.4
+
+  rumbleSource.connect(rumbleFilter).connect(rumbleGain).connect(destination)
+
+  hissSource.start(0)
+  rumbleSource.start(0)
+  hissSource.stop(duration)
+  rumbleSource.stop(duration)
+}
+
+function createRaindrop(audioContext: AudioContext | OfflineAudioContext, destination: AudioNode, time: number) {
+  const freq = 1000 + Math.random() * 2000
+  const pan = Math.random() * 2 - 1
+
+  const panner = new StereoPannerNode(audioContext, { pan })
+
+  const osc = audioContext.createOscillator()
+  osc.type = "triangle"
+  osc.frequency.value = freq
+
+  const gain = audioContext.createGain()
+  gain.gain.setValueAtTime(0, time)
+  gain.gain.linearRampToValueAtTime(Math.random() * 0.3 + 0.1, time + 0.01)
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1 + Math.random() * 0.1)
+
+  osc.connect(gain).connect(panner).connect(destination)
+  osc.start(time)
+  osc.stop(time + 0.2)
+}
+
+async function generateHyperrealisticWaves(
+  audioContext: AudioContext | OfflineAudioContext,
+  destination: AudioNode,
+  duration: number,
+): Promise<void> {
+  // Base layer: Pink noise for a more natural ocean roar
+  const bufferSize = audioContext.sampleRate * 4
+  const pinkNoiseBuffer = audioContext.createBuffer(2, bufferSize, audioContext.sampleRate)
+  for (let channel = 0; channel < 2; channel++) {
+    const data = pinkNoiseBuffer.getChannelData(channel)
+    let b0 = 0,
+      b1 = 0,
+      b2 = 0,
+      b3 = 0,
+      b4 = 0,
+      b5 = 0,
+      b6 = 0
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1
+      b0 = 0.99886 * b0 + white * 0.0555179
+      b1 = 0.99332 * b1 + white * 0.0750759
+      b2 = 0.969 * b2 + white * 0.153852
+      b3 = 0.8665 * b3 + white * 0.3104856
+      b4 = 0.55 * b4 + white * 0.5329522
+      b5 = -0.7616 * b5 - white * 0.016898
+      data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362
+      data[i] *= 0.11 // (roughly) compensate for gain
+      b6 = white * 0.115926
+    }
+  }
+
+  const baseSource = audioContext.createBufferSource()
+  baseSource.buffer = pinkNoiseBuffer
+  baseSource.loop = true
+
+  // Main wave modulation (volume)
+  const waveGain = audioContext.createGain()
+  waveGain.gain.value = 0.1 // Start low
+  const lfo1 = audioContext.createOscillator()
+  lfo1.type = "sine"
+  lfo1.frequency.value = 0.1 + Math.random() * 0.05 // ~7-10s period
+  const lfo1Gain = audioContext.createGain()
+  lfo1Gain.gain.value = 0.3
+
+  const lfo2 = audioContext.createOscillator()
+  lfo2.type = "sine"
+  lfo2.frequency.value = 0.18 + Math.random() * 0.05 // ~4-6s period
+  const lfo2Gain = audioContext.createGain()
+  lfo2Gain.gain.value = 0.2
+
+  lfo1.connect(lfo1Gain).connect(waveGain.gain)
+  lfo2.connect(lfo2Gain).connect(waveGain.gain)
+
+  // Filter modulation for "whoosh"
+  const waveFilter = audioContext.createBiquadFilter()
+  waveFilter.type = "lowpass"
+  waveFilter.Q.value = 2
+  waveFilter.frequency.value = 400 // Base frequency
+  const filterLfo = audioContext.createOscillator()
+  filterLfo.type = "sine"
+  filterLfo.frequency.value = 0.15
+  const filterLfoGain = audioContext.createGain()
+  filterLfoGain.gain.value = 800 // Modulate frequency by 800Hz
+
+  filterLfo.connect(filterLfoGain).connect(waveFilter.frequency)
+
+  // Foam layer (high-frequency, triggered by wave peaks)
+  const foamSource = audioContext.createBufferSource()
+  foamSource.buffer = pinkNoiseBuffer
+  foamSource.loop = true
+  const foamFilter = audioContext.createBiquadFilter()
+  foamFilter.type = "highpass"
+  foamFilter.frequency.value = 1000
+  const foamGain = audioContext.createGain()
+  foamGain.gain.value = 0 // Initially silent
+  // Use the same LFOs but with a gain shaper to only activate on peaks
+  const foamShaper = audioContext.createWaveShaper()
+  const curve = new Float32Array(256)
+  for (let i = 0; i < 256; i++) {
+    const x = i / 128 - 1
+    curve[i] = Math.max(0, x * x * x) * 0.8 // Activate on positive curve, sharp attack
+  }
+  foamShaper.curve = curve
+  waveGain.connect(foamShaper).connect(foamGain.gain)
+
+  // Connect graph
+  baseSource.connect(waveGain).connect(waveFilter).connect(destination)
+  foamSource.connect(foamFilter).connect(foamGain).connect(destination)
+
+  // Start everything
+  lfo1.start(0)
+  lfo2.start(0)
+  filterLfo.start(0)
+  baseSource.start(0)
+  foamSource.start(0)
+
+  lfo1.stop(duration)
+  lfo2.stop(duration)
+  filterLfo.stop(duration)
+  baseSource.stop(duration)
+  foamSource.stop(duration)
+}
+
+async function generateHyperrealisticForest(
+  audioContext: AudioContext | OfflineAudioContext,
+  destination: AudioNode,
+  duration: number,
+): Promise<void> {
+  // Layer 1: Gentle wind/leaf rustle
+  const rustleBuffer = audioContext.createBuffer(2, audioContext.sampleRate * 3, audioContext.sampleRate)
+  for (let channel = 0; channel < 2; channel++) {
+    const data = rustleBuffer.getChannelData(channel)
+    let lastOut = 0
+    for (let i = 0; i < data.length; i++) {
+      const white = Math.random() * 2 - 1
+      data[i] = (lastOut + 0.02 * white) / 1.02
+      lastOut = data[i]
+    }
+  }
+  const rustleSource = audioContext.createBufferSource()
+  rustleSource.buffer = rustleBuffer
+  rustleSource.loop = true
+
+  const rustleFilter = audioContext.createBiquadFilter()
+  rustleFilter.type = "bandpass"
+  rustleFilter.frequency.value = 1200
+  rustleFilter.Q.value = 5
+
+  const rustleGain = audioContext.createGain()
+  rustleGain.gain.value = 0.15
+
+  const rustleLfo = audioContext.createOscillator()
+  rustleLfo.type = "sine"
+  rustleLfo.frequency.value = 0.3
+  const rustleLfoGain = audioContext.createGain()
+  rustleLfoGain.gain.value = 0.05
+  rustleLfo.connect(rustleLfoGain).connect(rustleGain.gain)
+
+  rustleSource.connect(rustleFilter).connect(rustleGain).connect(destination)
+
+  // Layer 2: Stochastic bird calls
+  const birdScheduler = () => {
+    const now = audioContext.currentTime
+    if (now > duration) return
+
+    const callTime = now + 2 + Math.random() * 5 // Next call in 2-7 seconds
+    if (callTime < duration) {
+      const pan = Math.random() * 1.6 - 0.8 // Pan between -0.8 and 0.8
+      const freq = 1500 + Math.random() * 2000
+      const type = Math.random()
+      if (type < 0.5) {
+        createBirdChirp(audioContext, destination, callTime, freq, 0.2 + Math.random() * 0.3, pan)
+      } else {
+        createBirdWarble(audioContext, destination, callTime, freq * 0.6, 0.5 + Math.random() * 0.5, pan)
+      }
+    }
+    setTimeout(birdScheduler, (2 + Math.random() * 5) * 1000)
+  }
+  birdScheduler()
+
+  // Layer 3: Insect/cicada drone
+  const insectSource = audioContext.createBufferSource()
+  insectSource.buffer = rustleBuffer // reuse buffer
+  insectSource.loop = true
+
+  const insectFilter = audioContext.createBiquadFilter()
+  insectFilter.type = "bandpass"
+  insectFilter.frequency.value = 4000
+  insectFilter.Q.value = 15
+
+  const insectGain = audioContext.createGain()
+  insectGain.gain.value = 0.1
+
+  const insectLfo = audioContext.createOscillator()
+  insectLfo.type = "triangle"
+  insectLfo.frequency.value = 8 // Fast tremolo
+  const insectLfoGain = audioContext.createGain()
+  insectLfoGain.gain.value = 0.05
+  insectLfo.connect(insectLfoGain).connect(insectGain.gain)
+
+  insectSource.connect(insectFilter).connect(insectGain).connect(destination)
+
+  // Start sources
+  rustleSource.start(0)
+  rustleLfo.start(0)
+  insectSource.start(0)
+  insectLfo.start(0)
+
+  rustleSource.stop(duration)
+  rustleLfo.stop(duration)
+  insectSource.stop(duration)
+  insectLfo.stop(duration)
+}
+
+// Bird call helpers with panning
+function createBirdChirp(
+  audioContext: AudioContext | OfflineAudioContext,
+  destination: AudioNode,
+  time: number,
+  freq: number,
+  dur: number,
+  pan: number,
+) {
+  const panner = new StereoPannerNode(audioContext, { pan })
+  const osc = audioContext.createOscillator()
+  osc.type = "sine"
+  osc.frequency.setValueAtTime(freq, time)
+  osc.frequency.exponentialRampToValueAtTime(freq * 1.2, time + dur * 0.5)
+  osc.frequency.exponentialRampToValueAtTime(freq * 0.8, time + dur)
+
+  const gain = audioContext.createGain()
+  gain.gain.setValueAtTime(0, time)
+  gain.gain.linearRampToValueAtTime(0.2, time + 0.01)
+  gain.gain.exponentialRampToValueAtTime(0.001, time + dur)
+
+  osc.connect(gain).connect(panner).connect(destination)
+  osc.start(time)
+  osc.stop(time + dur)
+}
+
+function createBirdWarble(
+  audioContext: AudioContext | OfflineAudioContext,
+  destination: AudioNode,
+  time: number,
+  freq: number,
+  dur: number,
+  pan: number,
+) {
+  const panner = new StereoPannerNode(audioContext, { pan })
+  const osc = audioContext.createOscillator()
+  osc.type = "triangle"
+  osc.frequency.value = freq
+
+  const gain = audioContext.createGain()
+  gain.gain.setValueAtTime(0, time)
+  gain.gain.linearRampToValueAtTime(0.15, time + 0.02)
+  gain.gain.exponentialRampToValueAtTime(0.001, time + dur)
+
+  const lfo = audioContext.createOscillator()
+  lfo.type = "sine"
+  lfo.frequency.value = 15 + Math.random() * 10
+  const lfoGain = audioContext.createGain()
+  lfoGain.gain.value = freq * 0.1
+
+  lfo.connect(lfoGain).connect(osc.frequency)
+  osc.connect(gain).connect(panner).connect(destination)
+
+  osc.start(time)
+  lfo.start(time)
+  osc.stop(time + dur)
+  lfo.stop(time + dur)
+}
+
+async function generateHyperrealisticWind(
+  audioContext: AudioContext | OfflineAudioContext,
+  destination: AudioNode,
+  duration: number,
+): Promise<void> {
+  // Layer 1: Low-frequency howl (brown noise)
+  const howlBuffer = audioContext.createBuffer(2, audioContext.sampleRate * 3, audioContext.sampleRate)
+  for (let channel = 0; channel < 2; channel++) {
+    const data = howlBuffer.getChannelData(channel)
+    let lastOut = 0
+    for (let i = 0; i < data.length; i++) {
+      const white = Math.random() * 2 - 1
+      data[i] = (lastOut + 0.02 * white) / 1.02
+      lastOut = data[i]
+      data[i] *= 3.5
+    }
+  }
+  const howlSource = audioContext.createBufferSource()
+  howlSource.buffer = howlBuffer
+  howlSource.loop = true
+
+  const howlFilter = audioContext.createBiquadFilter()
+  howlFilter.type = "lowpass"
+  howlFilter.frequency.value = 250
+  howlFilter.Q.value = 2
+
+  const howlGain = audioContext.createGain()
+  howlGain.gain.value = 0.3
 
   const howlLfo = audioContext.createOscillator()
   howlLfo.type = "sine"
   howlLfo.frequency.value = 0.1
   const howlLfoGain = audioContext.createGain()
   howlLfoGain.gain.value = 0.2
-  howlLfo.connect(howlLfoGain).connect(rumbleGain.gain)
+  howlLfo.connect(howlLfoGain).connect(howlGain.gain)
 
-  rumbleSource.connect(rumbleFilter).connect(rumbleGain).connect(destination)
+  howlSource.connect(howlFilter).connect(howlGain).connect(destination)
 
   // Layer 2: Mid-frequency whoosh (pink noise)
   const whooshSource = audioContext.createBufferSource()
@@ -870,7 +1179,7 @@ async function generateHyperrealisticRain(
 
   // Layer 3: High-frequency whistle/hiss
   const whistleSource = audioContext.createBufferSource()
-  whistleSource.buffer = pinkNoiseBuffer // reuse buffer
+  whistleSource.buffer = howlBuffer // reuse buffer
   whistleSource.loop = true
 
   const whistleFilter = audioContext.createBiquadFilter()
@@ -891,12 +1200,16 @@ async function generateHyperrealisticRain(
   whistleSource.connect(whistleFilter).connect(whistleGain).connect(destination)
 
   // Start all
+  howlSource.start(0)
+  howlLfo.start(0)
   whooshSource.start(0)
   whooshLfo.start(0)
   whooshFilterLfo.start(0)
   whistleSource.start(0)
   whistleLfo.start(0)
 
+  howlSource.stop(duration)
+  howlLfo.stop(duration)
   whooshSource.stop(duration)
   whooshLfo.stop(duration)
   whooshFilterLfo.stop(duration)
@@ -904,36 +1217,53 @@ async function generateHyperrealisticRain(
   whistleLfo.stop(duration)
 }
 
-async function generateHyperrealisticWaves(
+// Fallback simple noise generator
+async function generateSimpleNoise(
   audioContext: AudioContext | OfflineAudioContext,
   destination: AudioNode,
   duration: number,
+  ambient: AmbientSound,
 ): Promise<void> {
-  // Implementation for generateHyperrealisticWaves
-}
+  const bufferSize = Math.floor(duration * audioContext.sampleRate)
+  const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate)
+  const data = buffer.getChannelData(0)
 
-async function generateHyperrealisticForest(
-  audioContext: AudioContext | OfflineAudioContext,
-  destination: AudioNode,
-  duration: number,
-): Promise<void> {
-  // Implementation for generateHyperrealisticForest
-}
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = Math.random() * 2 - 1
+  }
 
-async function generateHyperrealisticWind(
-  audioContext: AudioContext | OfflineAudioContext,
-  destination: AudioNode,
-  duration: number,
-): Promise<void> {
-  // Implementation for generateHyperrealisticWind
-}
+  const source = audioContext.createBufferSource()
+  source.buffer = buffer
+  source.loop = true
 
-function createRaindrop(
-  audioContext: AudioContext | OfflineAudioContext,
-  destination: AudioNode,
-  dropTime: number,
-): void {
-  // Implementation for createRaindrop
+  let lastNode: AudioNode = source
+
+  if (ambient.filterType) {
+    const filter = audioContext.createBiquadFilter()
+    filter.type = ambient.filterType
+    filter.frequency.setValueAtTime(ambient.filterFrequency || 1000, 0)
+    lastNode.connect(filter)
+    lastNode = filter
+  }
+
+  const gainNode = audioContext.createGain()
+  gainNode.gain.setValueAtTime(1.0, 0) // Volume is controlled by master gain
+  lastNode.connect(gainNode)
+  gainNode.connect(destination)
+
+  if (ambient.lfoFrequency) {
+    const lfo = audioContext.createOscillator()
+    const lfoGain = audioContext.createGain()
+    lfo.frequency.setValueAtTime(ambient.lfoFrequency, 0)
+    lfoGain.gain.setValueAtTime(0.5, 0) // Modulate by 50%
+    lfo.connect(lfoGain)
+    lfoGain.connect(gainNode.gain)
+    lfo.start(0)
+    lfo.stop(duration)
+  }
+
+  source.start(0)
+  source.stop(duration)
 }
 
 function createSimpleReverbBuffer(
