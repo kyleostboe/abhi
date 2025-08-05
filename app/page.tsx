@@ -2090,8 +2090,8 @@ export default function HomePage() {
                       <BookText className="mr-2 text-indigo-400 h-4 w-4" />
                       <span className="text-indigo-400 font-black text-center text-base">Instructions</span>
                     </div>
-                    <div className="p-0.5 bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 rounded-lg px-0.5 py-0.5 shadow-lg border-indigo-300 border-2">
-                      <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border-rose-300 border-2">
+                    <div className="p-0.5 bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 rounded-lg px-0.5 py-0.5 shadow-lg border-[3px] border-indigo-200">
+                      <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border-2 border-rose-200">
                         <div className="text-center">
                           {/* THIS IS THE CHANGE IN app/page.tsx */}
                           <Textarea
