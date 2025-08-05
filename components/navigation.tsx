@@ -8,7 +8,7 @@ export function Navigation() {
   const pathname = usePathname()
 
   return (
-    <nav className="flex justify-center py-4 mb-8">
+    <nav className="flex justify-center py-4 mb-1.5">
       <ul className="flex space-x-4 bg-white/70 backdrop-blur-md px-6 py-3 shadow-lg dark:bg-gray-800/70 dark:shadow-white/10 rounded-lg">
         <li>
           <Link
