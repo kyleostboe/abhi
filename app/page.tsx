@@ -2099,7 +2099,6 @@ export default function HomePage() {
                             value={customInstructionText}
                             onChange={handleCustomInstructionChange}
                             placeholder="Enter your meditation instruction here..."
-                            rows={8}
                             className="mt-2 text-sm font-serif font-black text-gray-600 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
                           />
                         </div>
