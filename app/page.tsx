@@ -2090,26 +2090,30 @@ export default function HomePage() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
                   >
-                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
+                    <Card className="overflow-hidden border-none shadow-none bg-white dark:bg-gray-900 h-full">
                       <div className="bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 py-3 px-6 dark:from-logo-purple-600 dark:to-logo-blue-600 text-center">
                         <h3 className="text-white flex items-center font-black text-center justify-center">
                           <ListPlus className="h-5 w-5 mr-2" />
                           Instructions
                         </h3>
                       </div>
-                      <div className="p-6 space-y-4">
-                        <div className="text-center">
-                          <Label htmlFor="custom-instruction" className="text-gray-600 font-serif font-black">
-                            Enter Your Meditation Instruction
-                          </Label>
-                          <Textarea
-                            id="custom-instruction"
-                            value={customInstructionText}
-                            onChange={handleCustomInstructionChange}
-                            placeholder="Enter your meditation instruction here... For example: 'Take a deep breath and focus on the sensation of air entering and leaving your nostrils. Allow your mind to settle into this natural rhythm.'"
-                            rows={8}
-                            className="mt-2 text-sm font-serif font-black text-gray-600 resize-none"
-                          />
+                      <div className="p-6">
+                        <div className="p-0.5 bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 rounded-lg">
+                          <div className="bg-white dark:bg-gray-900 rounded-lg p-4">
+                            <div className="text-center">
+                              <Label htmlFor="custom-instruction" className="text-gray-600 font-serif font-black">
+                                Enter Your Meditation Instruction
+                              </Label>
+                              <Textarea
+                                id="custom-instruction"
+                                value={customInstructionText}
+                                onChange={handleCustomInstructionChange}
+                                placeholder="Enter your meditation instruction here... For example: 'Take a deep breath and focus on the sensation of air entering and leaving your nostrils. Allow your mind to settle into this natural rhythm.'"
+                                rows={8}
+                                className="mt-2 text-sm font-serif font-black text-gray-600 resize-none bg-transparent border-none focus:ring-0 focus:border-0"
+                              />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </Card>
