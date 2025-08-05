@@ -28,6 +28,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
         )}
         rows={1} // Start with 1 row
         ref={textareaRef} // Use our internal ref
+        placeholder="Enter an instruction..." // Added/Updated placeholder
         {...props}
       />
     )
