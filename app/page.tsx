@@ -1465,7 +1465,7 @@ export default function HomePage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="p-4 mb-6 border border-gray-600 rounded-md text-gray-600 font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto text-center shadow-inner text-xs"
+                  className="p-4 mb-6 border-gray-600 rounded-md text-gray-600 font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto text-center shadow-inner text-xs border"
                 >
                   <p>
                     Create custom meditations by associating instructions with sound cues and placing them along a
