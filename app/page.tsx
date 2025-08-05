@@ -2098,8 +2098,8 @@ export default function HomePage() {
                             id="custom-instruction"
                             value={customInstructionText}
                             onChange={handleCustomInstructionChange}
-                            placeholder="Enter an instruction..." // Changed this line
-                            className="mt-2 text-sm font-serif font-black text-indigo-400 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
+                            placeholder="Enter an instruction..."
+                            className="mt-2 text-sm font-serif font-black text-indigo-400 placeholder-indigo-400 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
                           />
                         </div>
                       </div>
@@ -2211,7 +2211,7 @@ export default function HomePage() {
                             value={recordingLabel}
                             onChange={handleRecordingLabelChange}
                             placeholder="Describe this recording..."
-                            className="mt-1 text-sm font-black text-logo-rose"
+                            className="mt-1 text-sm font-black text-logo-rose placeholder-logo-rose"
                           />
                         </div>
                         <Button
