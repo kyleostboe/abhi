@@ -6,7 +6,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, Music2Icon, MicIcon, Check, X, Play } from "lucide-react"
+import { Trash2, Music2Icon, MicIcon, Check, X, Play, Copy } from 'lucide-react' // Added Copy icon
 import { SOUND_CUES_LIBRARY, generateSyntheticSound } from "../lib/meditation-data"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn, formatTime } from "@/lib/utils" // Import formatTime
@@ -18,8 +18,9 @@ import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 interface VisualTimelineProps {
   events: TimelineEvent[]
   totalDuration: number
-  onUpdateEvent: (eventId: string, newStartTime: number) => void
+  onUpdateEvent: (eventId: string, updates: Partial<TimelineEvent>) => void // Changed to accept Partial<TimelineEvent>
   onRemoveEvent: (eventId: string) => void
+  onDuplicateEvent: (eventId: string) => void // New prop for duplication
 }
 
 const EVENT_COLORS = [
@@ -38,13 +39,13 @@ const EVENT_COLORS = [
 // Removed getInitialPosition as it was causing instability.
 // Events at the same startTime will now overlap.
 
-export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveEvent }: VisualTimelineProps) {
+export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveEvent, onDuplicateEvent }: VisualTimelineProps) {
   const [draggedEvent, setDraggedEvent] = useState<string | null>(null)
   const [dragOffset, setDragOffset] = useState(0)
   const timelineRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
-  const [editingTime, setEditingTime] = useState<string>("")
+  const [editingTime, setEditingTime] = useState<string>("") // Used for time or divider label
   const isMobile = useMobile() // Use the useMobile hook
 
   const colorMap = useMemo(() => {
@@ -87,7 +88,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
     isDragging.current = true
 
     if (timelineRef.current) {
-      const rect = timelineRef.current.getBoundingClientRect()
+      const rect = timeline.current.getBoundingClientRect()
       const eventElement = e.currentTarget as HTMLElement
       const eventRect = eventElement.getBoundingClientRect()
       setDragOffset(e.clientX - (eventRect.left + eventRect.width / 2))
@@ -113,7 +114,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
     const handleMouseMove = (e: MouseEvent) => {
       if (draggedEvent && isDragging.current) {
         const newTime = getTimeFromPosition(e.clientX - dragOffset)
-        onUpdateEvent(draggedEvent, newTime)
+        onUpdateEvent(draggedEvent, { startTime: newTime }) // Pass object
       }
     }
 
@@ -140,7 +141,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
       if (draggedEvent && isDragging.current && e.touches[0]) {
         e.preventDefault()
         const newTime = getTimeFromPosition(e.touches[0].clientX - dragOffset)
-        onUpdateEvent(draggedEvent, newTime)
+        onUpdateEvent(draggedEvent, { startTime: newTime }) // Pass object
       }
     }
 
@@ -168,17 +169,28 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
 
   const timeMarkers = Array.from({ length: timeMarkersCount + 1 }, (_, i) => (i / timeMarkersCount) * totalDuration)
 
-  const handleTimeEdit = (eventId: string, currentTime: number) => {
-    setEditingEventId(eventId)
-    setEditingTime(formatTime(currentTime))
+  const handleTimeEdit = (event: TimelineEvent) => { // Pass full event object
+    setEditingEventId(event.id)
+    if (event.type === "divider") {
+      setEditingTime(event.dividerLabel || "")
+    } else {
+      setEditingTime(formatTime(event.startTime))
+    }
   }
 
   const handleTimeSave = (eventId: string) => {
-    const [minutes, seconds] = editingTime.split(":").map(Number)
-    const newTime = minutes * 60 + seconds
-    onUpdateEvent(eventId, newTime)
-    setEditingEventId(null)
-    setEditingTime("")
+    const eventToUpdate = events.find(e => e.id === eventId);
+    if (!eventToUpdate) return;
+
+    if (eventToUpdate.type === "divider") {
+      onUpdateEvent(eventId, { dividerLabel: editingTime });
+    } else {
+      const [minutes, seconds] = editingTime.split(":").map(Number);
+      const newTime = minutes * 60 + seconds;
+      onUpdateEvent(eventId, { startTime: newTime });
+    }
+    setEditingEventId(null);
+    setEditingTime("");
   }
 
   const handleTimeCancel = () => {
@@ -236,11 +248,17 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
         subtitle: soundName ? `+ ${soundName}` : "Unknown Sound",
         icon: <Music2Icon className="h-4 w-4" />,
       }
-    } else {
+    } else if (event.type === "recorded_voice") {
       return {
         title: event.recordedInstructionLabel || "Untitled Recording",
         subtitle: "Voice Recording",
         icon: <MicIcon className="h-4 w-4" />,
+      }
+    } else { // divider type
+      return {
+        title: event.dividerLabel || "Untitled Divider",
+        subtitle: "Section Divider",
+        icon: <div className="h-4 w-4 bg-white dark:bg-gray-300 rounded-full" />, // Simple circle for divider icon
       }
     }
   }
@@ -269,36 +287,93 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
               // Always use the actual start time for positioning to prevent jumping
               const displayTime = event.startTime
 
-              return (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className={cn(
-                    "absolute top-1/2 -translate-y-1/2 w-10 h-10 rounded-full shadow-md dark:shadow-white/20 cursor-grab active:cursor-grabbing flex items-center justify-center text-white",
-                    draggedEvent === event.id ? "z-30 shadow-lg dark:shadow-white/30 ring-2 ring-white/50" : "z-10",
-                    getEventColor(event.id),
-                  )}
-                  style={{
-                    left: `calc(${getPositionFromTime(displayTime)} - 20px)`,
-                    transform: "translateY(-50%)",
-                  }}
-                  onMouseDown={(e) => handleMouseDown(event.id, e)}
-                  onTouchStart={(e) => handleTouchStart(event.id, e)}
-                  title={
-                    event.type === "instruction_sound"
-                      ? event.instructionText
-                      : event.recordedInstructionLabel || "Recorded Voice"
-                  }
-                >
-                  {event.type === "instruction_sound" ? (
-                    <Music2Icon className="h-4 w-4" />
-                  ) : (
-                    <MicIcon className="h-4 w-4" />
-                  )}
-                </motion.div>
-              )
+              if (event.type === "divider") {
+                return (
+                  <motion.div
+                    key={event.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className={cn(
+                      "absolute top-1/2 -translate-y-1/2 w-full h-10 flex items-center justify-center text-gray-600 dark:text-gray-300",
+                      "cursor-grab active:cursor-grabbing z-20", // Higher z-index for dividers
+                      draggedEvent === event.id ? "ring-2 ring-gray-400/50" : ""
+                    )}
+                    style={{
+                      left: `calc(${getPositionFromTime(displayTime)} - 50%)`, // Center the divider
+                      width: "100%", // Make it span the width of the timeline
+                      transform: "translateY(-50%)",
+                    }}
+                    onMouseDown={(e) => handleMouseDown(event.id, e)}
+                    onTouchStart={(e) => handleTouchStart(event.id, e)}
+                  >
+                    <div className="relative w-full h-px bg-gray-300 dark:bg-gray-600">
+                      <div className="absolute left-1/2 -translate-x-1/2 -top-4 bg-white dark:bg-gray-900 px-2 py-1 rounded-md shadow-sm text-xs font-black text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                        {editingEventId === event.id ? (
+                          <Input
+                            value={editingTime}
+                            onChange={(e) => setEditingTime(e.target.value)}
+                            placeholder="Label"
+                            className="w-24 h-6 text-xs text-center bg-transparent border-none focus:ring-0"
+                          />
+                        ) : (
+                          <span onClick={() => handleTimeEdit(event)}>{event.dividerLabel || "Divider"}</span>
+                        )}
+                        {editingEventId === event.id && (
+                          <div className="absolute -right-10 top-0 flex space-x-1">
+                            <Button size="sm" variant="ghost" onClick={() => handleTimeSave(event.id)} className="h-6 w-6 p-0">
+                              <Check className="h-3 w-3" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={handleTimeCancel} className="h-6 w-6 p-0">
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => onRemoveEvent(event.id)}
+                        className="absolute -right-8 top-1/2 -translate-y-1/2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        title="Remove divider"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </motion.div>
+                );
+              } else {
+                return (
+                  <motion.div
+                    key={event.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className={cn(
+                      "absolute top-1/2 -translate-y-1/2 w-10 h-10 rounded-full shadow-md dark:shadow-white/20 cursor-grab active:cursor-grabbing flex items-center justify-center text-white",
+                      draggedEvent === event.id ? "z-30 shadow-lg dark:shadow-white/30 ring-2 ring-white/50" : "z-10",
+                      getEventColor(event.id),
+                    )}
+                    style={{
+                      left: `calc(${getPositionFromTime(displayTime)} - 20px)`,
+                      transform: "translateY(-50%)",
+                    }}
+                    onMouseDown={(e) => handleMouseDown(event.id, e)}
+                    onTouchStart={(e) => handleTouchStart(event.id, e)}
+                    title={
+                      event.type === "instruction_sound"
+                        ? event.instructionText
+                        : event.recordedInstructionLabel || "Recorded Voice"
+                    }
+                  >
+                    {event.type === "instruction_sound" ? (
+                      <Music2Icon className="h-4 w-4" />
+                    ) : (
+                      <MicIcon className="h-4 w-4" />
+                    )}
+                  </motion.div>
+                )
+              }
             })}
           </AnimatePresence>
         </div>
@@ -361,7 +436,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                         <div
                           className={cn(
                             "w-8 h-8 rounded-full flex items-center justify-center text-white shadow-sm",
-                            getEventColor(event.id),
+                            event.type === "divider" ? "bg-gray-500 dark:bg-gray-700" : getEventColor(event.id), // Use gray for dividers
                           )}
                         >
                           {displayInfo.icon}
@@ -372,16 +447,15 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                               variant="secondary"
                               className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                             >
-                              {event.type === "instruction_sound" ? "Instruction + Sound" : "Voice Recording"}
+                              {event.type === "instruction_sound" ? "Instruction + Sound" : event.type === "recorded_voice" ? "Voice Recording" : "Divider"}
                             </Badge>
-                            {editingEventId === event.id ? (
+                            {editingEventId === event.id && event.type === "divider" ? (
                               <div className="flex items-center space-x-2">
                                 <Input
                                   value={editingTime}
                                   onChange={(e) => setEditingTime(e.target.value)}
-                                  placeholder="MM:SS"
+                                  placeholder="Label"
                                   className="w-20 h-6 text-xs"
-                                  pattern="[0-9]{1,2}:[0-9]{2}"
                                 />
                                 <Button
                                   size="sm"
@@ -397,7 +471,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                               </div>
                             ) : (
                               <button
-                                onClick={() => handleTimeEdit(event.id, event.startTime)}
+                                onClick={() => handleTimeEdit(event)} // Pass event object
                                 className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-serif text-xs whitespace-nowrap"
                               >
                                 {formatTime(event.startTime)}
@@ -411,14 +485,25 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
+                        {event.type !== "divider" && ( // Only show play button for non-divider events
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => playEventAudio(event)}
+                            className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                            title="Preview audio"
+                          >
+                            <Play className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => playEventAudio(event)}
+                          onClick={() => onDuplicateEvent(event.id)} // Duplicate button
                           className="hover:bg-gray-100 dark:hover:bg-gray-800"
-                          title="Preview audio"
+                          title="Duplicate event"
                         >
-                          <Play className="h-4 w-4" />
+                          <Copy className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"

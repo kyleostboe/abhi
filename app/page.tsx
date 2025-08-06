@@ -10,7 +10,7 @@ Alert,
 AlertTitle,
 AlertDescription
 } from "@/components/ui/alert" // Import Alert component
-import { Volume2, Wand2, Download, Settings2, AlertTriangle, Music2, Mic, StopCircle, Play, PlusCircle, CircleDotDashed, Trash2, Info, BookText } from 'lucide-react'
+import { Volume2, Wand2, Download, Settings2, AlertTriangle, Music2, Mic, StopCircle, Play, PlusCircle, CircleDotDashed, Trash2, Info, BookText, Copy } from 'lucide-react' // Added Copy icon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -319,6 +319,11 @@ try {
   const totalEvents = timelineEvents.length
 
   for (const event of timelineEvents) {
+    if (event.type === "divider") { // Skip divider events for audio generation
+      processedEventsCount++;
+      continue;
+    }
+
     const eventStartTime = event.startTime
     console.log(`Processing event ${event.id} at time ${eventStartTime}:`, event)
 
@@ -1152,21 +1157,19 @@ if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") 
 }
 }
 
-const updateEventStartTime = (eventId: string, newTime: number) => {
+const updateEvent = (eventId: string, updates: Partial<TimelineEvent>) => {
 setTimelineEvents((prev) => {
   const updated = prev.map((event) =>
-    event.id === eventId ? { ...event, startTime: Math.max(0, Math.min(newTime, labsTotalDuration)) } : event,
+    event.id === eventId
+      ? {
+          ...event,
+          ...updates,
+          // Ensure startTime is within bounds if it's being updated
+          ...(updates.startTime !== undefined && { startTime: Math.max(0, Math.min(updates.startTime, labsTotalDuration)) }),
+        }
+      : event,
   )
-  // Simple sort by startTime, with stable sorting for events at the same time
-  return updated.sort((a, b) => {
-    if (a.startTime === b.startTime) {
-      // For events at the same time, maintain their relative order based on original array position
-      const aIndex = prev.findIndex((e) => e.id === a.id)
-      const bIndex = prev.findIndex((e) => e.id === b.id)
-      return aIndex - bBindex
-    }
-    return a.startTime - b.startTime
-  })
+  return updated.sort((a, b) => a.startTime - b.startTime)
 })
 }
 
@@ -1174,6 +1177,54 @@ const removeTimelineEvent = (eventId: string) => {
 setTimelineEvents((prev) => prev.filter((event) => event.id !== eventId))
 toast({ title: "Event Removed" })
 }
+
+const duplicateTimelineEvent = useCallback((eventId: string) => {
+setTimelineEvents((prevEvents) => {
+  const eventToDuplicate = prevEvents.find((e) => e.id === eventId);
+  if (!eventToDuplicate) return prevEvents;
+
+  const newId = `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  const newStartTime = eventToDuplicate.startTime + 5; // Offset by 5 seconds
+
+  const duplicatedEvent: TimelineEvent = {
+    ...eventToDuplicate,
+    id: newId,
+    startTime: newStartTime,
+    // Clear recordedAudioUrl if it's a recorded voice, as the URL is temporary
+    ...(eventToDuplicate.type === "recorded_voice" && { recordedAudioUrl: undefined }),
+    // Adjust label for duplicated recorded voice
+    ...(eventToDuplicate.type === "recorded_voice" && eventToDuplicate.recordedInstructionLabel && {
+      recordedInstructionLabel: `${eventToDuplicate.recordedInstructionLabel} (copy)`
+    }),
+    // Adjust label for duplicated divider
+    ...(eventToDuplicate.type === "divider" && eventToDuplicate.dividerLabel && {
+      dividerLabel: `${eventToDuplicate.dividerLabel} (copy)`
+    }),
+  };
+
+  const updatedEvents = [...prevEvents, duplicatedEvent];
+  return updatedEvents.sort((a, b) => a.startTime - b.startTime);
+});
+toast({ title: "Event Duplicated", description: "Timeline event copied." });
+}, []);
+
+const addDividerEvent = useCallback(() => {
+setTimelineEvents((prevEvents) => {
+  const maxExistingTime = prevEvents.length > 0 ? Math.max(...prevEvents.map((e) => e.startTime)) : 0;
+  const newStartTime = maxExistingTime + 33; // Place it after the last event
+
+  const newEvent: TimelineEvent = {
+    id: `divider_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+    type: "divider",
+    startTime: newStartTime,
+    dividerLabel: "New Section",
+  };
+  const updatedEvents = [...prevEvents, newEvent];
+  return updatedEvents.sort((a, b) => a.startTime - b.startTime);
+});
+toast({ title: "Divider Added", description: "A new section divider has been added." });
+}, []);
+
 
 // Safe input handlers with validation
 const handleMeditationTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1905,8 +1956,6 @@ return (
               </Button>
             </motion.div>
 
-            
-
             <div className="space-y-6">
               {originalUrl && (
                 <motion.div
@@ -2195,6 +2244,13 @@ return (
                       <PlusCircle className="mr-2 h-4 w-4" />
                       <span className="font-black font-serif">Add to Timeline</span>
                     </Button>
+                    <Button
+                      className="w-full bg-white text-indigo-500 border border-indigo-500 hover:bg-gray-50 dark:bg-gray-900 dark:text-indigo-500 dark:border-indigo-500 dark:hover:bg-gray-800 font-serif font-black text-gray-600"
+                      onClick={addDividerEvent}
+                    >
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      <span className="font-black font-serif">Add Divider</span>
+                    </Button>
                   </div>
                 </Card>
               </motion.div>
@@ -2329,8 +2385,9 @@ return (
                   <VisualTimeline
                     events={timelineEvents}
                     totalDuration={labsTotalDuration}
-                    onUpdateEvent={updateEventStartTime}
+                    onUpdateEvent={updateEvent} // Changed to updateEvent
                     onRemoveEvent={removeTimelineEvent}
+                    onDuplicateEvent={duplicateTimelineEvent} // Pass duplicate function
                   />
                   {/* Background Sound Mixer */}
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
