@@ -5,23 +5,12 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
-import { Alert } from "@/components/ui/alert" // Import Alert component
 import {
-  Volume2,
-  Wand2,
-  Download,
-  Settings2,
-  AlertTriangle,
-  Music2,
-  Mic,
-  StopCircle,
-  Play,
-  PlusCircle,
-  CircleDotDashed,
-  Trash2,
-  Info,
-  BookText,
-} from "lucide-react"
+  Alert,
+  AlertTitle,
+  AlertDescription
+} from "@/components/ui/alert" // Import Alert component
+import { Volume2, Wand2, Download, Settings2, AlertTriangle, Music2, Mic, StopCircle, Play, PlusCircle, CircleDotDashed, Trash2, Info, BookText } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -1546,7 +1535,7 @@ export default function HomePage() {
                         href="https://meditofoundation.org/meditations"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border-logo-rose-600 hover:shadow-none shadow-md rounded-xlder-2 rounded-xl border-2"
+                        className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border-logo-rose-600 hover:shadow-none shadow-md rounded-xl border-2"
                       >
                         Medito Foundation
                       </a>
@@ -1930,8 +1919,6 @@ export default function HomePage() {
                       onClick={() => window.location.reload()}
                       className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-black"
                       aria-label="Cancel processing and reload page"
-                    >
-                      Cancel
                     </Button>
                   </motion.div>
                 )}
@@ -2033,7 +2020,7 @@ export default function HomePage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
                 >
-                  <Card className="overflow-hidden border border-logo-rose-600 shadow-inner bg-white dark:bg-gray-900 max-w-2xl mx-auto">
+                  <Card className="overflow-hidden border-2 border-logo-rose-600 shadow-inner bg-white dark:bg-gray-900 max-w-2xl mx-auto rounded-2xl">
                     <div className="py-3 px-6 text-center">
                       <h3 className="flex items-center justify-center font-black text-logo-rose-600 text-left">
                         <Settings2 className="h-4 w-4 mr-2" />
