@@ -58,20 +58,20 @@ export default function HomePage() {
   const [minSpacingDuration, setMinSpacingDuration] = useState<number>(1.5)
   const [preserveNaturalPacing, setPreserveNaturalPacing] = useState<boolean>(true)
   const [compatibilityMode, setCompatibilityMode] = useState<string>("high")
-  const [status, setStatus] = useState<{ message: string; type: string } | null>(null)
+  const [status, setStatus<{ message: string; type: string } | null>(null)
   const [originalUrl, setOriginalUrl] = useState<string>("")
   const [processedUrl, setProcessedUrl] = useState<string>("")
   const [pausesAdjusted, setPausesAdjusted] = useState<number>(0)
   const [isProcessing, setIsProcessing] = useState<boolean>(false) // Corrected type to boolean
   const [processingProgress, setProcessingProgress] = useState<number>(0)
   const [processingStep, setProcessingStep] = useState<string>("")
-  const [durationLimits, setDurationLimits] = useState<{ min: number; max: number } | null>(null)
-  const [audioAnalysis, setAudioAnalysis] = useState<{
+  const [durationLimits, setDurationLimits<{ min: number; max: number } | null>(null)
+  const [audioAnalysis, setAudioAnalysis<{
     totalSilence: number
     contentDuration: number
     silenceRegions: number
   } | null>(null)
-  const [actualDuration, setActualDuration] = useState<number | null>(null)
+  const [actualDuration, setActualDuration: React.Dispatch<React.SetStateAction<number | null>>>(null)
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
   const isMobileDevice = useMobile() // Use the useMobile hook
   const [memoryWarning, setMemoryWarning] = useState<boolean>("")
@@ -1475,8 +1475,7 @@ export default function HomePage() {
                         Note:
                       </strong>
                       Depending on the audio, users may need to tweak the advanced settings for optimal results. Any
-                      guided meditation, talk, podcast, or audiobook (under
-                      {isMobileDevice ? "50MB" : "500MB"}) should be compatible. Teachers, please feel free to
+                      guided meditation, talk, podcast, or audiobook {'(under ' + (isMobileDevice ? "50MB" : "500MB") + ')'} should be compatible. Teachers, please feel free to
                       <a
                         href="/contact"
                         className="hover:text-logo-rose-600 underline px-1 rounded transition-colors transition-shadow dark:hover:text-logo-rose-300 font-black text-sm text-logo-purple-300"
@@ -1573,7 +1572,7 @@ export default function HomePage() {
                         Drop your audio file here or click to browse
                       </div>
                       <div className="dark:text-gray-400/70 text-stone-400 font-serif text-xs">
-                        Supports MP3, WAV, OGG, and M4A files (Max: {isMobileDevice ? "50MB" : "500MB"})
+                        Supports MP3, WAV, OGG, and M4A files {'(Max: ' + (isMobileDevice ? "50MB" : "500MB") + ')'}
                       </div>
                     </motion.div>
                   </div>
