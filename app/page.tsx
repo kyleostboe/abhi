@@ -1465,7 +1465,7 @@ export default function HomePage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="p-4 mb-6 border-gray-600 rounded-md text-gray-600 font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto text-center shadow-inner text-xs border"
+                  className="p-4 mb-6 border-gray-600 rounded-md text-gray-600 font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto text-center shadow-inner text-xs border-solid border-2"
                 >
                   <p>
                     Create custom meditations by associating instructions with sound cues and placing them along a
@@ -1480,7 +1480,7 @@ export default function HomePage() {
               <>
                 {/* Note and Resources sections - moved to proper position */}
                 <div className="space-y-4 mb-[27px]">
-                  <div className="p-4 max-w-2xl dark:border-logo-rose-700 border-solid border text-center border-logo-rose-600 mx-auto rounded-md shadow-inner">
+                  <div className="p-4 max-w-2xl dark:border-logo-rose-700 border-solid border text-center border-logo-rose-600 mx-auto rounded-md shadow">
                     <p className="text-logo-rose-600 leading-relaxed dark:text-logo-rose-300 font-serif font-black text-xs">
                       <strong className="pr-1.5 font-black font-serif text-center text-sm text-logo-amber-600">
                         Note:
