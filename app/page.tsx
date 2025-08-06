@@ -1480,7 +1480,7 @@ export default function HomePage() {
               <>
                 {/* Note and Resources sections - moved to proper position */}
                 <div className="space-y-4 mb-[27px]">
-                  <div className="p-4 max-w-2xl dark:border-logo-rose-700 border-solid border text-center border-logo-rose-600 mx-auto rounded-md shadow-inner">
+                  <div className="p-4 max-w-2xl dark:border-logo-rose-700 text-center border-logo-rose-600 mx-auto rounded-md shadow-inner border-2">
                     <p className="text-logo-rose-600 leading-relaxed dark:text-logo-rose-300 font-serif font-black text-xs">
                       <strong className="pr-1.5 font-black font-serif text-center text-sm text-logo-amber-600">
                         Note:
@@ -1506,7 +1506,7 @@ export default function HomePage() {
                         href="https://dharmaseed.org/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="dark:text-gray-200 font-black text-logo-rose-600 px-5 py-1 border-logo-rose-600 border transition-all duration-200 ease-out hover:shadow-none shadow-md rounded"
+                        className="dark:text-gray-200 font-black text-logo-rose-600 px-5 py-1 border-logo-rose-600 transition-all duration-200 ease-out hover:shadow-none shadow-md rounded-xl border-2"
                       >
                         Dharma Seed
                       </a>
@@ -1514,7 +1514,7 @@ export default function HomePage() {
                         href="https://dharmaseed.org/teacher/210/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-black font-serif border border-logo-rose-600 hover:shadow-none shadow-md rounded"
+                        className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-black font-serif border-logo-rose-600 hover:shadow-none shadow-md rounded-xl border-2"
                       >
                         Rob Burbea's talks & retreats
                       </a>
@@ -1522,7 +1522,7 @@ export default function HomePage() {
                         href="https://tasshin.com/guided-meditations/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-black font-serif border border-logo-rose-600 hover:shadow-none shadow-md rounded"
+                        className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-black font-serif border-logo-rose-600 hover:shadow-none shadow-md rounded-xl border-2"
                       >
                         Tasshin & friend's meditations
                       </a>
@@ -1530,7 +1530,7 @@ export default function HomePage() {
                         href="https://www.tarabrach.com/guided-meditations/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border border-logo-rose-600 hover:shadow-none shadow-md rounded"
+                        className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border-logo-rose-600 hover:shadow-none shadow-md rounded-xl border-2"
                       >
                         Tara Brach's meditations
                       </a>
@@ -1538,7 +1538,7 @@ export default function HomePage() {
                         href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDaDo3?usp=drive_link"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border border-logo-rose-600 hover:shadow-none shadow-md rounded"
+                        className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border-logo-rose-600 hover:shadow-none shadow-md rounded-xl border-2"
                       >
                         Toby Sola's meditations
                       </a>
@@ -1546,7 +1546,7 @@ export default function HomePage() {
                         href="https://meditofoundation.org/meditations"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border border-logo-rose-600 hover:shadow-none shadow-md rounded"
+                        className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border-logo-rose-600 hover:shadow-none shadow-md rounded-xlder-2 rounded-xl border-2"
                       >
                         Medito Foundation
                       </a>
@@ -1554,7 +1554,7 @@ export default function HomePage() {
                         href="https://www.freebuddhistaudio.com"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="dark:text-gray-200 font-black text-logo-rose-600 px-5 py-1 border-logo-rose-600 border transition-all duration-200 ease-out hover:shadow-none shadow-md rounded"
+                        className="dark:text-gray-200 font-black text-logo-rose-600 px-5 py-1 border-logo-rose-600 transition-all duration-200 ease-out hover:shadow-none shadow-md rounded-xl border-2"
                       >
                         freebuddhistaudio
                       </a>
@@ -1574,7 +1574,7 @@ export default function HomePage() {
                   onDragLeave={handleDragLeaveAction}
                   onDrop={handleDropAction}
                 >
-                  <div className="p-10 md:p-16 text-center md:py-14 border-2 rounded-2xl border-dashed border-gray-600">
+                  <div className="p-10 md:p-16 text-center md:py-14 rounded-2xl border-dashed border-gray-600 border-[3px]">
                     <motion.div
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
