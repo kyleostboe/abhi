@@ -58,23 +58,23 @@ export default function HomePage() {
   const [minSpacingDuration, setMinSpacingDuration] = useState<number>(1.5)
   const [preserveNaturalPacing, setPreserveNaturalPacing] = useState<boolean>(true)
   const [compatibilityMode, setCompatibilityMode] = useState<string>("high")
-  const [status, setStatus<{ message: string; type: string } | null>(null)
+  const [status, setStatus] = useState<{ message: string; type: string } | null>(null)
   const [originalUrl, setOriginalUrl] = useState<string>("")
   const [processedUrl, setProcessedUrl] = useState<string>("")
   const [pausesAdjusted, setPausesAdjusted] = useState<number>(0)
   const [isProcessing, setIsProcessing] = useState<boolean>(false) // Corrected type to boolean
   const [processingProgress, setProcessingProgress] = useState<number>(0)
   const [processingStep, setProcessingStep] = useState<string>("")
-  const [durationLimits, setDurationLimits<{ min: number; max: number } | null>(null)
-  const [audioAnalysis, setAudioAnalysis<{
+  const [durationLimits, setDurationLimits] = useState<{ min: number; max: number } | null>(null)
+  const [audioAnalysis, setAudioAnalysis] = useState<{
     totalSilence: number
     contentDuration: number
     silenceRegions: number
   } | null>(null)
-  const [actualDuration, setActualDuration: React.Dispatch<React.SetStateAction<number | null>>>(null)
+  const [actualDuration, setActualDuration] = useState<number | null>(null)
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
   const isMobileDevice = useMobile() // Use the useMobile hook
-  const [memoryWarning, setMemoryWarning] = useState<boolean>("")
+  const [memoryWarning, setMemoryWarning] = useState<boolean>(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadAreaRef = useRef<HTMLDivElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -1534,7 +1534,7 @@ export default function HomePage() {
                         href="https://meditofoundation.org/meditations"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border-logo-rose-600 hover:shadow-none shadow-md rounded-xl border-2"
+                        className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border-logo-rose-600 hover:shadow-none shadow-md rounded-xlder-2 rounded-xl border-2"
                       >
                         Medito Foundation
                       </a>
@@ -1918,6 +1918,8 @@ export default function HomePage() {
                       onClick={() => window.location.reload()}
                       className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-black"
                       aria-label="Cancel processing and reload page"
+                    >
+                      Cancel
                     </Button>
                   </motion.div>
                 )}
