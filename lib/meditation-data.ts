@@ -647,9 +647,7 @@ export async function generateSyntheticSound(
       setTimeout(
         () => {
           try {
-            if (audioContext.state !== "closed") {
-              audioContext.close()
-            }
+            audioContext.close()
           } catch (e) {
             console.warn("Error closing audio context:", e)
           }
@@ -678,32 +676,32 @@ export async function generateAmbientSound(
     const targetVolume = volumeOverride ?? ambient.volume ?? 0.2
 
     // Master gain node for overall volume control
-    const masterGain = audioContext.createGain()
-    masterGain.gain.setValueAtTime(targetVolume, audioContext.currentTime)
+  const masterGain = audioContext.createGain()
+  masterGain.gain.setValueAtTime(targetVolume, audioContext.currentTime)
 
-    const panner = new StereoPannerNode(audioContext, { pan: 0 })
-    masterGain.connect(panner)
+  const panner = new StereoPannerNode(audioContext, { pan: 0 })
+  masterGain.connect(panner)
 
-    const panLfo = audioContext.createOscillator()
-    const panLfoGain = audioContext.createGain()
-    panLfo.type = "sine"
-    panLfo.frequency.value = 0.03 + Math.random() * 0.02
-    panLfoGain.gain.value = 0.5
-    panLfo.connect(panLfoGain).connect(panner.pan)
-    panLfo.start(0)
-    panLfo.stop(duration)
+  const panLfo = audioContext.createOscillator()
+  const panLfoGain = audioContext.createGain()
+  panLfo.type = "sine"
+  panLfo.frequency.value = 0.03 + Math.random() * 0.02
+  panLfoGain.gain.value = 0.5
+  panLfo.connect(panLfoGain).connect(panner.pan)
+  panLfo.start(0)
+  panLfo.stop(duration)
 
-    const dryGain = audioContext.createGain()
-    dryGain.gain.value = 0.7
+  const dryGain = audioContext.createGain()
+  dryGain.gain.value = 0.7
 
-    const wetGain = audioContext.createGain()
-    wetGain.gain.value = 0.3
+  const wetGain = audioContext.createGain()
+  wetGain.gain.value = 0.3
 
-    const reverb = audioContext.createConvolver()
-    reverb.buffer = createSimpleReverbBuffer(audioContext, 2.5, 2)
+  const reverb = audioContext.createConvolver()
+  reverb.buffer = createSimpleReverbBuffer(audioContext, 2.5, 2)
 
-    panner.connect(dryGain).connect(audioContext.destination)
-    panner.connect(reverb).connect(wetGain).connect(audioContext.destination)
+  panner.connect(dryGain).connect(audioContext.destination)
+  panner.connect(reverb).connect(wetGain).connect(audioContext.destination)
 
     switch (ambient.id) {
       case "rain":
@@ -726,10 +724,6 @@ export async function generateAmbientSound(
   } catch (error) {
     console.error(`Error generating ambient sound for ${ambient.id}:`, error)
     throw error
-  } finally {
-    if (audioContext instanceof AudioContext && audioContext.state !== "closed") {
-      audioContext.close()
-    }
   }
 }
 

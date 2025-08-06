@@ -1,6 +1,5 @@
 import { NOTE_FREQUENCIES } from "./meditation-data"
 import { sleep, formatFileSize } from "./utils"
-import { audioContextRef } from "./some-module" // Declare or import audioContextRef
 
 let audioContext: AudioContext | null = null
 
@@ -86,7 +85,7 @@ export const bufferToWav = async (
   onProgress: (progress: number) => void,
   isMobileDevice: boolean,
 ): Promise<Blob> => {
-  const currentAudioContext = audioContextRef.current
+  const currentAudioContext = getAudioContext() // Use the centralized AudioContext
   if (!currentAudioContext) throw new Error("Audio context not available for WAV conversion")
   onProgress(0)
 
@@ -156,7 +155,7 @@ export const bufferToWav = async (
   writeString(0, "RIFF")
   view.setUint32(4, 36 + dataSize, true)
   writeString(8, "WAVE")
-  view.setUint32(12, "fmt ")
+  writeString(12, "fmt ")
   view.setUint32(16, 16, true)
   view.setUint16(20, 1, true)
   view.setUint16(22, numberOfChannels, true)
