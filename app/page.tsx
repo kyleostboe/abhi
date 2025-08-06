@@ -1592,7 +1592,7 @@ export default function HomePage() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="bg-white p-5 mb-6 border dark:shadow-white/20 overflow-hidden dark:bg-gray-900 dark:border-purple-300 rounded-xl shadow-inner text-purple-400 border-purple-400"
+                      className="bg-white p-5 mb-6 dark:shadow-white/20 overflow-hidden dark:bg-gray-900 dark:border-purple-300 rounded-xl shadow-inner text-purple-400 border-purple-400 border-2"
                     >
                       <div className="flex items-center">
                         <motion.div
@@ -1646,23 +1646,23 @@ export default function HomePage() {
                             <div className="text-lg font-black text-indigo-400">Audio Analysis</div>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 rounded-md shadow-md border-indigo-400 border-2">
                               <div className="text-xs uppercase tracking-wide mb-1 text-indigo-400">Content</div>
                               <div className="font-black text-indigo-300">
                                 {formatTime(audioAnalysis.contentDuration)}
                               </div>
                             </div>
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 rounded-md shadow-md border-indigo-400 border-2">
                               <div className="text-xs uppercase tracking-wide mb-1 text-indigo-400">Silence</div>
                               <div className="font-black rounded-xl text-indigo-300">
                                 {formatTime(audioAnalysis.totalSilence)}
                               </div>
                             </div>
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 rounded-md shadow-md border-indigo-400 border-2">
                               <div className="text-xs uppercase tracking-wide mb-1 text-indigo-400">Pauses</div>
                               <div className="font-black text-indigo-300">{audioAnalysis.silenceRegions}</div>
                             </div>
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 border rounded-md shadow-md border-indigo-400">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 dark:shadow-white/10 rounded-md shadow-md border-indigo-400 border-2">
                               <div className="text-xs uppercase tracking-wide mb-1 text-indigo-400">Range</div>
                               <div className="text-xs uppercase tracking-wide mb-1 text-indigo-300">
                                 {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
