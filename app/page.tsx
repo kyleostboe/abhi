@@ -2081,7 +2081,6 @@ return (
                   <div className="p-0.5 bg-gradient-to-r from-logo-purple-500 to-logo-blue-500 px-0.5 py-0.5 border-indigo-200 border-2 rounded-2xl shadow-md">
                     <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border-rose-200 border">
                       <div className="text-center">
-                        {/* THIS IS THE CHANGE IN app/page.tsx */}
                         <Textarea
                           id="custom-instruction"
                           value={customInstructionText}
@@ -2106,105 +2105,105 @@ return (
                       </h3>
                     </div>
                     <div className="p-6 space-y-4 font-black">
-                        <Accordion type="single" collapsible className="w-full">
-                          <AccordionItem value="musical-notes">
-                            <AccordionTrigger className="text-logo-teal-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black text-gray-600">
-                              Musical Notes
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-4">
-                              <Accordion type="single" collapsible className="w-full">
-                                {Object.entries(
-                                  Object.entries(MUSICAL_NOTES).reduce(
-                                    (acc, [_, notes]) => {
-                                      notes.forEach((note) => {
-                                        const octave = `Octave ${note.octave}`
-                                        if (!acc[octave]) acc[octave] = []
-                                        acc[octave].push(note)
-                                      })
-                                      return acc
-                                    },
-                                    {} as Record<string, any[]>,
-                                  ),
-                                ).map(([octave, notes]) => (
-                                  <AccordionItem
-                                    value={octave}
-                                    key={octave}
-                                    className="border-b border-gray-100 dark:border-gray-800"
+                      <Accordion type="single" collapsible className="w-full">
+                        <AccordionItem value="musical-notes">
+                          <AccordionTrigger className="text-logo-teal-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black text-gray-600">
+                            Musical Notes
+                          </AccordionTrigger>
+                          <AccordionContent className="pb-4">
+                            <Accordion type="single" collapsible className="w-full">
+                              {Object.entries(
+                                Object.entries(MUSICAL_NOTES).reduce(
+                                  (acc, [_, notes]) => {
+                                    notes.forEach((note) => {
+                                      const octave = `Octave ${note.octave}`
+                                      if (!acc[octave]) acc[octave] = []
+                                      acc[octave].push(note)
+                                    })
+                                    return acc
+                                  },
+                                  {} as Record<string, any[]>,
+                                ),
+                              ).map(([octave, notes]) => (
+                                <AccordionItem
+                                  value={octave}
+                                  key={octave}
+                                  className="border-b border-gray-100 dark:border-gray-800"
+                                >
+                                  <AccordionTrigger className="text-logo-teal-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black text-gray-600">
+                                    {octave}
+                                  </AccordionTrigger>
+                                  <AccordionContent className="pb-4">
+                                    <div className="space-y-2 text-gray-600">
+                                      {notes.map((note) => (
+                                        <div key={note.id} className="flex items-center gap-2 font-black font-serif">
+                                          <Button
+                                            variant={selectedSoundCue?.id === note.id ? "default" : "ghost"}
+                                            size="sm"
+                                            className={`flex-1 justify-start font-black font-serif text-gray-600 ${selectedSoundCue?.id === note.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                                            onClick={async () => {
+                                              setSelectedSoundCue({
+                                                id: note.id,
+                                                name: note.name,
+                                                src: `musical:${note.note}${note.octave}`,
+                                              })
+                                              await playNote(note.note, note.octave)
+                                            }}
+                                          >
+                                            {note.name}
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={async () => await playNote(note.note, note.octave)}
+                                            className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
+                                            title={`Preview ${note.name}`}
+                                          >
+                                            <Play className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </AccordionContent>
+                                </AccordionItem>
+                              ))}
+                            </Accordion>
+                          </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="miscellaneous">
+                          <AccordionTrigger className="text-logo-teal-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black text-gray-600">
+                            Miscellaneous
+                          </AccordionTrigger>
+                          <AccordionContent className="pb-4">
+                            <div className="space-y-2 text-gray-600">
+                              {SOUND_CUES_LIBRARY.map((cue) => (
+                                <div key={cue.id} className="flex items-center gap-2 font-black font-serif">
+                                  <Button
+                                    variant={selectedSoundCue?.id === cue.id ? "default" : "ghost"}
+                                    size="sm"
+                                    className={`flex-1 justify-start font-black font-serif text-gray-600 ${selectedSoundCue?.id === cue.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                                    onClick={async () => {
+                                      setSelectedSoundCue({ id: cue.id, name: cue.name, src: cue.src })
+                                      await playLabsSound(cue.src)
+                                    }}
                                   >
-                                    <AccordionTrigger className="text-logo-teal-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black text-gray-600">
-                                      {octave}
-                                    </AccordionTrigger>
-                                    <AccordionContent className="pb-4">
-                                      <div className="space-y-2 text-gray-600">
-                                        {notes.map((note) => (
-                                          <div key={note.id} className="flex items-center gap-2 font-black font-serif">
-                                            <Button
-                                              variant={selectedSoundCue?.id === note.id ? "default" : "ghost"}
-                                              size="sm"
-                                              className={`flex-1 justify-start font-black font-serif text-gray-600 ${selectedSoundCue?.id === note.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
-                                              onClick={async () => {
-                                                setSelectedSoundCue({
-                                                  id: note.id,
-                                                  name: note.name,
-                                                  src: `musical:${note.note}${note.octave}`,
-                                                })
-                                                await playNote(note.note, note.octave)
-                                              }}
-                                            >
-                                              {note.name}
-                                            </Button>
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              onClick={async () => await playNote(note.note, note.octave)}
-                                              className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
-                                              title={`Preview ${note.name}`}
-                                            >
-                                              <Play className="h-4 w-4" />
-                                            </Button>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </AccordionContent>
-                                  </AccordionItem>
-                                ))}
-                              </Accordion>
-                            </AccordionContent>
-                          </AccordionItem>
-                          <AccordionItem value="miscellaneous">
-                            <AccordionTrigger className="text-logo-teal-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black text-gray-600">
-                              Miscellaneous
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-4">
-                              <div className="space-y-2 text-gray-600">
-                                {SOUND_CUES_LIBRARY.map((cue) => (
-                                  <div key={cue.id} className="flex items-center gap-2 font-black font-serif">
-                                    <Button
-                                      variant={selectedSoundCue?.id === cue.id ? "default" : "ghost"}
-                                      size="sm"
-                                      className={`flex-1 justify-start font-black font-serif text-gray-600 ${selectedSoundCue?.id === cue.id ? "bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-gray-600 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
-                                      onClick={async () => {
-                                        setSelectedSoundCue({ id: cue.id, name: cue.name, src: cue.src })
-                                        await playLabsSound(cue.src)
-                                      }}
-                                    >
-                                      {cue.name}
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={async () => await playLabsSound(cue.src)}
-                                      className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
-                                      title={`Preview ${cue.name}`}
-                                    >
-                                      <Play className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                ))}
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        </Accordion>
+                                    {cue.name}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={async () => await playLabsSound(cue.src)}
+                                    className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
+                                    title={`Preview ${cue.name}`}
+                                  >
+                                    <Play className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
                       <Button
                         className="w-full bg-white text-logo-teal-500 border border-logo-teal-500 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-teal-500 dark:border-logo-teal-500 dark:hover:bg-gray-800 font-serif font-black text-gray-600"
                         onClick={handleAddInstructionSoundEvent}
@@ -2612,3 +2611,4 @@ return (
   </div>
 )
 }
+</merged_code>
