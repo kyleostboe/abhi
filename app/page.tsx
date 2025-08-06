@@ -58,7 +58,7 @@ const [minSilenceDuration, setMinSilenceDuration] = useState<number>(3)
 const [minSpacingDuration, setMinSpacingDuration] = useState<number>(1.5)
 const [preserveNaturalPacing, setPreserveNaturalPacing] = useState<boolean>(true)
 const [compatibilityMode, setCompatibilityMode] = useState<string>("high")
-const [status, setStatus<{ message: string; type: string } | null>(null)
+const [status, setStatus] = useState<{ message: string; type: string } | null>(null)
 const [originalUrl, setOriginalUrl] = useState<string>("")
 const [processedUrl, setProcessedUrl] = useState<string>("")
 const [pausesAdjusted, setPausesAdjusted] = useState<number>(0)
@@ -66,7 +66,7 @@ const [isProcessing, setIsProcessing] = useState<boolean>(false) // Corrected ty
 const [processingProgress, setProcessingProgress] = useState<number>(0)
 const [processingStep, setProcessingStep] = useState<string>("")
 const [durationLimits, setDurationLimits] = useState<{ min: number; max: number } | null>(null)
-const [audioAnalysis, setAudioAnalysis<{
+const [audioAnalysis, setAudioAnalysis] = useState<{
   totalSilence: number
   contentDuration: number
   silenceRegions: number
@@ -92,7 +92,7 @@ const [customInstructionText, setCustomInstructionText] = useState<string>("")
 const [selectedSoundCue, setSelectedSoundCue] = useState<SoundCue | null>(null)
 const [isRecording, setIsRecording] = useState<boolean>(false)
 // State to hold the recorded audio data ready for adding to timeline
-const [readyToAddToTimelineRecording, setReadyToAddToTimelineRecording<{
+const [readyToAddToTimelineRecording, setReadyToAddToTimelineRecording] = useState<{
   url: string
   duration: number
   label: string
@@ -1163,7 +1163,7 @@ const updateEventStartTime = (eventId: string, newTime: number) => {
         // For events at the same time, maintain their relative order based on original array position
         const aIndex = prev.findIndex((e) => e.id === a.id)
         const bIndex = prev.findIndex((e) => e.id === b.id)
-        return aIndex - bIndex
+        return aIndex - bBindex
       }
       return a.startTime - b.startTime
     })
@@ -2611,4 +2611,3 @@ return (
   </div>
 )
 }
-</merged_code>
