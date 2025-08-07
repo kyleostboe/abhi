@@ -429,3 +429,7 @@ export const generateNote = async (
   oscillator.start(audioContext.currentTime)
   oscillator.stop(audioContext.currentTime + duration)
 }
+
+// This file is intentionally left blank.
+// The meditation data is now located in lib/meditation-data.ts
+// This file might be kept for historical reasons or specific project setup.

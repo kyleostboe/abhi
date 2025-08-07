@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from 'react';
 
 export function useMobile() {
@@ -7,26 +5,8 @@ export function useMobile() {
 
   useEffect(() => {
     const checkMobile = () => {
-      const userAgent = typeof window.navigator === 'undefined' ? '' : navigator.userAgent;
-      const mobile = Boolean(
-        userAgent.match(
-          /Android|BlackBerry|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i
-        )
-      );
-      setIsMobile(mobile);
-    };
-
-    // Set initial value
-    checkMobile()
-
-    // Add event listener for window resize
-    window.addEventListener("resize", checkMobile)
-
-    // Clean up event listener on component unmount
-    return () => {
-      window.removeEventListener("resize", checkMobile)
-    }
-  }, [])
-
-  return isMobile
-}
+      const userAgent = typeof navigator === 'undefined' ? '' : navigator.userAgent;
+      const mobile = Boolean(userAgent.match(
+        /Android|BlackBerry|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i
+      ));
+      setIsMobile(mobile || window.innerWidth < 768); // Also consider

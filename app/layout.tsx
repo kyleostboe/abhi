@@ -8,7 +8,13 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "abhī",
-  description: "A meditation tool to adjust audio length and create custom meditations.",
+  description: "A meditation tool to adjust the length of guided meditations and create custom ones.",
+  icons: {
+    icon: "/favicon.ico",
+  },
+  openGraph: {
+    images: "/og-image-v2.png",
+  },
     generator: 'v0.dev'
 }
 

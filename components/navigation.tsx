@@ -1,42 +1,45 @@
 "use client"
 
 import Link from "next/link"
-import { useTheme } from "next-themes"
-import { Button } from "@/components/ui/button"
-import { Sun, Moon } from 'lucide-react'
+import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
 
 export function Navigation() {
-  const { theme, setTheme } = useTheme()
+  const pathname = usePathname()
+
+  const navItems = [
+    { name: "Adjuster", href: "/" },
+    { name: "Encoder", href: "/encoder" },
+    { name: "Donate", href: "/donate" },
+    { name: "Contact", href: "/contact" },
+  ]
 
   return (
-    <nav className="flex justify-between items-center py-4 px-6 md:px-10 max-w-4xl mx-auto mb-8">
-      <div className="flex space-x-4">
-        <Link href="/" passHref>
-          <Button variant="ghost" className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-serif font-black">
-            Home
-          </Button>
-        </Link>
-        <Link href="/donate" passHref>
-          <Button variant="ghost" className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-serif font-black">
-            Donate
-          </Button>
-        </Link>
-        <Link href="/contact" passHref>
-          <Button variant="ghost" className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-serif font-black">
-            Contact
-          </Button>
-        </Link>
+    <motion.nav
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.1 }}
+      className="relative z-10 flex justify-center py-4 mb-8"
+    >
+      <div className="flex space-x-4 bg-white/70 backdrop-blur-md rounded-full px-4 py-2 shadow-lg dark:bg-gray-900/70 dark:shadow-white/10 border border-gray-200 dark:border-gray-700">
+        {navItems.map((item) => (
+          <Link key={item.href} href={item.href} passHref>
+            <motion.div
+              className={cn(
+                "relative px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200",
+                pathname === item.href
+                  ? "text-white bg-gradient-to-r from-logo-rose-500 to-logo-purple-500 dark:from-logo-rose-700 dark:to-logo-purple-700 shadow-md"
+                  : "text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-50",
+              )}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              {item.name}
+            </motion.div>
+          </Link>
+        ))}
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-      >
-        {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-        <span className="sr-only">Toggle theme</span>
-      </Button>
-    </nav>
+    </motion.nav>
   )
 }
