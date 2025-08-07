@@ -1,42 +1,39 @@
 export interface Instruction {
   id: string
-  text: string
   category: string
+  text: string
 }
 
 export interface SoundCue {
   id: string
   name: string
-  src: string // Path to audio file or synthetic: prefix
-  frequency?: number
-  duration?: number // in milliseconds (total sound length)
-  waveform?: OscillatorType
-  harmonics?: number[]
-  attackDuration?: number // in seconds
-  releaseDuration?: number // in seconds
+  src: string // Can be a file path or a synthetic: prefix
 }
 
 export interface AmbientSound {
   id: string
   name: string
-  src: string // Path to audio file or synthetic: prefix
-  noiseType?: "white" | "pink" | "brown"
-  filterType?: BiquadFilterType
-  filterFrequency?: number
-  lfoFrequency?: number
-  volume?: number
+  src: string // Can be a file path or a synthetic: prefix
+  volume: number
 }
 
-export interface TimelineEvent {
-  id: string
-  type: "instruction_sound" | "recorded_voice"
-  startTime: number
-  instructionText?: string
-  soundCueId?: string
-  soundCueName?: string
-  soundCueSrc?: string
-  recordedAudioUrl?: string
-  recordedInstructionLabel?: string
-  duration?: number // Duration of the recorded audio in seconds
-  color?: string // Added color property
-}
+export type TimelineEvent =
+  | {
+      id: string
+      type: "instruction_sound"
+      startTime: number // in seconds
+      instructionText: string
+      soundCueId: string
+      soundCueName: string
+      soundCueSrc: string // Direct source for playback/export
+      color?: string // Optional color for the event icon
+    }
+  | {
+      id: string
+      type: "recorded_voice"
+      startTime: number // in seconds
+      recordedAudioUrl: string
+      recordedInstructionLabel: string
+      duration: number // Duration of the recorded audio in seconds
+      color?: string // Optional color for the event icon
+    }

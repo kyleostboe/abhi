@@ -99,7 +99,7 @@ duration: number
 label: string
 } | null>(null)
 const [recordedBlobs, setRecordedBlobs] = useState<Blob[]>([])
-const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+mediaRecorderRef.current = null; // Initialize mediaRecorderRef.current to null
 const labsAudioRef = useRef<HTMLAudioElement | null>(null)
 const instructionCategories = Array.from(new Set(INSTRUCTIONS_LIBRARY.map((instr) => instr.category)))
 const [recordingLabel, setRecordingLabel] = useState<string>("")
@@ -1051,7 +1051,7 @@ if (!selectedSoundCue) {
 
 // Calculate new startTime based on existing events
 const maxExistingTime = timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
-const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 33 : 0
+const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 10 : 0 // Changed from 33 to 10
 
 const newEvent: TimelineEvent = {
   id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
@@ -1190,7 +1190,7 @@ const handleDuplicateEvent = useCallback((eventToDuplicate: TimelineEvent) => {
 const newEvent: TimelineEvent = {
   ...eventToDuplicate,
   id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, // New unique ID
-  startTime: eventToDuplicate.startTime + 5, // Offset by 5 seconds
+  startTime: eventToDuplicate.startTime + 10, // Offset by 10 seconds (changed from 5)
   // The color property is already copied by the spread operator
 }
 addEventToTimeline(newEvent)
@@ -1556,7 +1556,7 @@ return (
                     href="https://meditofoundation.org/meditations"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border-logo-rose-600 hover:shadow-none shadow-md rounded-xlder-2 rounded-xl border-2"
+                    className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border-logo-rose-600 hover:shadow-none shadow-xlder-2 rounded-xl border-2"
                   >
                     Medito Foundation
                   </a>
@@ -2112,7 +2112,7 @@ return (
                   <div className="p-6 space-y-4 font-black">
                     <Accordion type="single" collapsible className="w-full">
                       <AccordionItem value="musical-notes">
-                        <AccordionTrigger className="text-logo-teal-600 dark:text-logo-teal-400 hover:no-underline py-3 font-serif font-black">
+                        <AccordionTrigger className="text-logo-teal-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
                           Musical Notes
                         </AccordionTrigger>
                         <AccordionContent className="pb-4">
@@ -2135,7 +2135,7 @@ return (
                                 key={octave}
                                 className="border-b border-gray-100 dark:border-gray-800"
                               >
-                                <AccordionTrigger className="text-logo-teal-600 dark:text-logo-teal-400 hover:no-underline py-3 font-serif font-black">
+                                <AccordionTrigger className="text-logo-teal-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
                                   {octave}
                                 </AccordionTrigger>
                                 <AccordionContent className="pb-4">
@@ -2176,7 +2176,7 @@ return (
                         </AccordionContent>
                       </AccordionItem>
                       <AccordionItem value="miscellaneous">
-                        <AccordionTrigger className="text-logo-teal-600 dark:text-logo-teal-400 hover:no-underline py-3 font-serif font-black">
+                        <AccordionTrigger className="text-logo-teal-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
                           Miscellaneous
                         </AccordionTrigger>
                         <AccordionContent className="pb-4">
@@ -2210,7 +2210,7 @@ return (
                       </AccordionItem>
                     </Accordion>
                     <Button
-                      className="w-full bg-logo-teal-500 text-white border border-logo-teal-500 hover:bg-logo-teal-600 dark:bg-logo-teal-700 dark:text-white dark:border-logo-teal-700 dark:hover:bg-logo-teal-800 font-serif font-black"
+                      className="w-full bg-transparent text-logo-teal-500 border border-logo-teal-500 hover:bg-logo-teal-50 dark:bg-gray-900 dark:text-logo-teal-500 dark:border-logo-teal-500 dark:hover:bg-gray-800 font-serif font-black"
                       onClick={handleAddInstructionSoundEvent}
                       disabled={!customInstructionText.trim() || !selectedSoundCue}
                     >
@@ -2303,7 +2303,7 @@ return (
                               // Calculate new startTime based on existing events
                               const maxExistingTime =
                                 timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
-                              const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 33 : 0
+                              const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 10 : 0 // Changed from 33 to 10
 
                               const newEvent: TimelineEvent = {
                                 id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
