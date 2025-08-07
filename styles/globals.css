@@ -116,6 +116,3 @@ audio::-webkit-media-controls-time-remaining-display {
   filter: none !important;
   text-shadow: none !important;
 }
-
-/* This file is intentionally left blank or contains minimal styles if app/globals.css is the primary. */
-/* If you intend to use this file, please add your styles here. */

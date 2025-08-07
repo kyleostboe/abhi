@@ -3,43 +3,53 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { motion } from "framer-motion"
 
 export function Navigation() {
   const pathname = usePathname()
 
-  const navItems = [
-    { name: "Adjuster", href: "/" },
-    { name: "Encoder", href: "/encoder" },
-    { name: "Donate", href: "/donate" },
-    { name: "Contact", href: "/contact" },
-  ]
-
   return (
-    <motion.nav
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.1 }}
-      className="relative z-10 flex justify-center py-4 mb-8"
-    >
-      <div className="flex space-x-4 bg-white/70 backdrop-blur-md rounded-full px-4 py-2 shadow-lg dark:bg-gray-900/70 dark:shadow-white/10 border border-gray-200 dark:border-gray-700">
-        {navItems.map((item) => (
-          <Link key={item.href} href={item.href} passHref>
-            <motion.div
-              className={cn(
-                "relative px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200",
-                pathname === item.href
-                  ? "text-white bg-gradient-to-r from-logo-rose-500 to-logo-purple-500 dark:from-logo-rose-700 dark:to-logo-purple-700 shadow-md"
-                  : "text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-50",
-              )}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {item.name}
-            </motion.div>
+    <nav className="flex justify-center py-4 mb-5">
+      <ul className="flex space-x-4 bg-white/70 backdrop-blur-md px-6 py-3 dark:bg-gray-800/70 dark:shadow-white/10 shadow-2xl rounded-md">
+        <li>
+          <Link
+            href="/"
+            className={cn(
+              "px-4 py-2 transition-colors font-black font-serif text-sm shadow-none rounded-md",
+              pathname === "/"
+                ? "bg-gray-600 text-white shadow-md dark:bg-gray-700"
+                : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
+            )}
+          >
+            Home
           </Link>
-        ))}
-      </div>
-    </motion.nav>
+        </li>
+        <li>
+          <Link
+            href="/contact"
+            className={cn(
+              "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-md",
+              pathname === "/contact"
+                ? "bg-gray-600 text-white shadow-md dark:bg-gray-700"
+                : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
+            )}
+          >
+            Contact
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/donate"
+            className={cn(
+              "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-md",
+              pathname === "/donate"
+                ? "bg-gray-600 text-white shadow-md dark:bg-gray-700"
+                : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
+            )}
+          >
+            Donate
+          </Link>
+        </li>
+      </ul>
+    </nav>
   )
 }

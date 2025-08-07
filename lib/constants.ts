@@ -1,10 +1,10 @@
 export const EVENT_COLORS = [
-  "bg-blue-500",
-  "bg-green-500",
-  "bg-purple-500",
-  "bg-orange-500",
-  "bg-red-500",
-  "bg-teal-500",
-  "bg-indigo-500",
-  "bg-pink-500",
+  "bg-gradient-to-br from-logo-amber-500 to-logo-amber-600",
+  "bg-gradient-to-br from-logo-rose-500 to-logo-rose-600",
+  "bg-gradient-to-br from-logo-purple-500 to-logo-purple-600",
+  "bg-gradient-to-br from-logo-blue-500 to-logo-blue-600",
+  "bg-gradient-to-br from-logo-teal-500 to-logo-teal-600",
+  "bg-gradient-to-br from-logo-emerald-500 to-logo-emerald-600",
+  "bg-gradient-to-br from-pink-500 to-pink-600",
+  "bg-gradient-to-br from-orange-500 to-orange-600",
 ]

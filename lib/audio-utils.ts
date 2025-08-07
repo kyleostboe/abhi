@@ -1,148 +1,183 @@
-import { Howl } from "howler"
 import { NOTE_FREQUENCIES } from "./meditation-data"
+import { sleep, formatFileSize } from "./utils"
 
 let audioContext: AudioContext | null = null
 
-export function getAudioContext(): AudioContext {
+// Initialize AudioContext on user interaction
+export const getAudioContext = (): AudioContext => {
   if (!audioContext || audioContext.state === "closed") {
-    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+    // Attempt to create a new AudioContext if it's null or closed
+    const AudioContextAPI = window.AudioContext || (window as any).webkitAudioContext
+    if (!AudioContextAPI) {
+      throw new Error("Your browser does not support the Web Audio API.")
+    }
+    audioContext = new AudioContextAPI({ sampleRate: 44100 }) // Default to 44.1kHz
+    // Resume context if suspended on user interaction
+    if (audioContext.state === "suspended") {
+      const resumeContext = async () => {
+        if (audioContext && audioContext.state === "suspended") {
+          try {
+            await audioContext.resume()
+          } catch (e) {
+            console.error("Error resuming AudioContext:", e)
+          }
+        }
+        document.removeEventListener("click", resumeContext, true)
+        document.removeEventListener("touchend", resumeContext, true)
+        document.removeEventListener("keydown", resumeContext, true)
+      }
+      document.addEventListener("click", resumeContext, { once: true, capture: true })
+      document.addEventListener("touchend", resumeContext, { once: true, capture: true })
+      document.addEventListener("keydown", resumeContext, { once: true, capture: true })
+    }
   }
   return audioContext
 }
 
-export async function playNote(note: keyof typeof NOTE_FREQUENCIES, octave: number) {
-  const ctx = getAudioContext()
-  if (ctx.state === "suspended") {
-    await ctx.resume()
-  }
-
-  const frequency = NOTE_FREQUENCIES[`${note}${octave}` as keyof typeof NOTE_FREQUENCIES]
-  if (!frequency) {
-    console.error(`Frequency for note ${note}${octave} not found.`)
+export const playNote = async (note: string, octave: number, duration = 0.8, volume = 0.7) => {
+  const context = getAudioContext() // Get the shared AudioContext
+  if (!context) {
+    console.warn("AudioContext not available.")
     return
   }
 
-  const oscillator = ctx.createOscillator()
-  const gainNode = ctx.createGain()
+  // Ensure context is running before playing
+  if (context.state === "suspended") {
+    try {
+      await context.resume()
+    } catch (e) {
+      console.error("Failed to resume AudioContext before playing note:", e)
+      return
+    }
+  }
+
+  const oscillator = context.createOscillator()
+  const gainNode = context.createGain()
+
+  // Calculate frequency based on note and octave
+  const noteKey = `${note}${octave}` as keyof typeof NOTE_FREQUENCIES
+  const frequency = NOTE_FREQUENCIES[noteKey]
+
+  if (!frequency) {
+    console.warn(`Unknown note: ${noteKey}`)
+    return
+  }
+
+  oscillator.type = "sine" // You can change this to 'square', 'sawtooth', 'triangle'
+  oscillator.frequency.setValueAtTime(frequency, context.currentTime)
+
+  // Gentle envelope for smooth, meditation-friendly tones
+  const now = context.currentTime
+  gainNode.gain.setValueAtTime(0, now)
+  gainNode.gain.exponentialRampToValueAtTime(volume, now + 0.05) // Gentle attack
+  gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration) // Smooth release
 
   oscillator.connect(gainNode)
-  gainNode.connect(ctx.destination)
+  gainNode.connect(context.destination)
 
-  oscillator.type = "sine"
-  oscillator.frequency.setValueAtTime(frequency, ctx.currentTime)
-
-  const duration = 0.8 // seconds
-  const peakVolume = 0.4
-
-  // Simple ADSR envelope
-  gainNode.gain.setValueAtTime(0, ctx.currentTime)
-  gainNode.gain.exponentialRampToValueAtTime(peakVolume, ctx.currentTime + 0.05) // Attack
-  gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration) // Release
-
-  oscillator.start(ctx.currentTime)
-  oscillator.stop(ctx.currentTime + duration)
+  oscillator.start(now)
+  oscillator.stop(now + duration)
 }
 
-export async function bufferToWav(
-  audioBuffer: AudioBuffer,
-  highCompatibility: boolean,
+export const bufferToWav = async (
+  buffer: AudioBuffer,
+  highCompatibility = true,
   onProgress: (progress: number) => void,
-  isMobile: boolean,
-): Promise<Blob> {
-  const numberOfChannels = audioBuffer.numberOfChannels
-  let sampleRate = audioBuffer.sampleRate
-  const originalSampleRate = audioBuffer.sampleRate
-  const originalLength = audioBuffer.length
+  isMobileDevice: boolean,
+): Promise<Blob> => {
+  const currentAudioContext = getAudioContext() // Use the centralized AudioContext
+  if (!currentAudioContext) throw new Error("Audio context not available for WAV conversion")
+  onProgress(0)
 
-  // Determine target sample rate for high compatibility mode
-  if (highCompatibility) {
-    if (isMobile && audioBuffer.duration > 30 * 60) {
-      // For very long audio on mobile, reduce to 22.05kHz
-      sampleRate = 22050
-    } else {
-      // Otherwise, use 44.1kHz
-      sampleRate = 44100
+  let targetSampleRate = highCompatibility ? 44100 : buffer.sampleRate
+  if (isMobileDevice && highCompatibility && buffer.duration > 15 * 60) {
+    targetSampleRate = Math.min(targetSampleRate, 22050)
+  }
+
+  let resampledBuffer = buffer
+  if (buffer.sampleRate !== targetSampleRate) {
+    const ratio = targetSampleRate / buffer.sampleRate
+    const newLength = Math.floor(buffer.length * ratio)
+    try {
+      resampledBuffer = currentAudioContext.createBuffer(buffer.numberOfChannels, newLength, targetSampleRate)
+    } catch (e) {
+      // forceGarbageCollection() // This should be handled by the caller if needed
+      throw new Error(
+        `Failed to create resample buffer (target SR: ${targetSampleRate}Hz). Memory limit likely exceeded.`,
+      )
     }
-  }
-
-  let resampledBuffer = audioBuffer
-  if (sampleRate !== originalSampleRate) {
-    onProgress(0)
-    const offlineCtx = new OfflineAudioContext(numberOfChannels, audioBuffer.duration * sampleRate, sampleRate)
-    const source = offlineCtx.createBufferSource()
-    source.buffer = audioBuffer
-    source.connect(offlineCtx.destination)
-    source.start(0)
-    resampledBuffer = await offlineCtx.startRendering()
-    onProgress(100)
-  }
-
-  const float32Arrays = []
-  for (let i = 0; i < numberOfChannels; i++) {
-    float32Arrays.push(resampledBuffer.getChannelData(i))
-  }
-
-  const interleaved = new Float32Array(resampledBuffer.length * numberOfChannels)
-  let k = 0
-  for (let i = 0; i < resampledBuffer.length; i++) {
-    for (let channel = 0; channel < numberOfChannels; channel++) {
-      interleaved[k++] = float32Arrays[channel][i]
+    onProgress(10)
+    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+      const oldData = buffer.getChannelData(channel)
+      const newData = resampledBuffer.getChannelData(channel)
+      for (let i = 0; i < newLength; i++) {
+        if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
+          await sleep(0)
+          onProgress(
+            10 +
+              Math.floor(
+                ((channel * (newLength / buffer.numberOfChannels) + i) / (newLength * buffer.numberOfChannels)) * 40,
+              ),
+          )
+        }
+        const oldIndex = i / ratio
+        const index = Math.floor(oldIndex)
+        const frac = oldIndex - index
+        const samp1 = oldData[Math.min(index, oldData.length - 1)]
+        const samp2 = oldData[Math.min(index + 1, oldData.length - 1)]
+        newData[i] = samp1 + (samp2 - samp1) * frac
+      }
     }
+  } else {
+    onProgress(50)
   }
 
-  const wavBuffer = encodeWAV(interleaved, numberOfChannels, sampleRate, onProgress)
-  return new Blob([wavBuffer], { type: "audio/wav" })
-}
+  const numSamples = resampledBuffer.length
+  const numberOfChannels = resampledBuffer.numberOfChannels
+  const bytesPerSample = 2
+  const dataSize = numSamples * numberOfChannels * bytesPerSample
+  const fileSize = 44 + dataSize
 
-function encodeWAV(samples: Float32Array, numChannels: number, sampleRate: number, onProgress: (p: number) => void) {
-  const dataLength = samples.length * 2 // 16-bit samples
-  const buffer = new ArrayBuffer(44 + dataLength)
-  const view = new DataView(buffer)
+  let finalArrayBuffer: ArrayBuffer
+  try {
+    finalArrayBuffer = new ArrayBuffer(fileSize)
+  } catch (e) {
+    throw new Error(
+      `Failed to create WAV data buffer (size: ${formatFileSize(fileSize)}). Memory limit likely exceeded.`,
+    )
+  }
+  const view = new DataView(finalArrayBuffer)
 
-  /* RIFF identifier */
-  writeString(view, 0, "RIFF")
-  /* file length */
-  view.setUint32(4, 36 + dataLength, true)
-  /* RIFF type */
-  writeString(view, 8, "WAVE")
-  /* format chunk identifier */
-  writeString(view, 12, "fmt ")
-  /* format chunk length */
+  const writeString = (offset: number, string: string) => {
+    for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i))
+  }
+
+  writeString(0, "RIFF")
+  view.setUint32(4, 36 + dataSize, true)
+  writeString(8, "WAVE")
+  writeString(12, "fmt ")
   view.setUint32(16, 16, true)
-  /* sample format (1 == PCM) */
   view.setUint16(20, 1, true)
-  /* channel count */
-  view.setUint16(22, numChannels, true)
-  /* sample rate */
-  view.setUint32(24, sampleRate, true)
-  /* byte rate (sample rate * block align) */
-  view.setUint32(28, sampleRate * numChannels * 2, true)
-  /* block align (channel count * bytes per sample) */
-  view.setUint16(32, numChannels * 2, true)
-  /* bits per sample */
+  view.setUint16(22, numberOfChannels, true)
+  view.setUint32(24, targetSampleRate, true)
+  view.setUint32(28, targetSampleRate * numberOfChannels * bytesPerSample, true)
+  view.setUint16(32, numberOfChannels * bytesPerSample, true)
   view.setUint16(34, 16, true)
-  /* data chunk identifier */
-  writeString(view, 36, "data")
-  /* data chunk length */
-  view.setUint32(40, dataLength, true)
+  writeString(36, "data")
+  view.setUint32(40, dataSize, true)
 
-  floatTo16BitPCM(view, 44, samples, onProgress)
-
-  return view
-}
-
-function floatTo16BitPCM(view: DataView, offset: number, input: Float32Array, onProgress: (p: number) => void) {
-  for (let i = 0; i < input.length; i++, offset += 2) {
-    if (i % 100000 === 0) {
-      onProgress(i / input.length)
+  let offset = 44
+  for (let i = 0; i < numSamples; i++) {
+    if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
+      await sleep(0)
+      onProgress(50 + Math.floor((i / numSamples) * 50))
     }
-    const s = Math.max(-1, Math.min(1, input[i]))
-    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true)
+    for (let channel = 0; channel < numberOfChannels; channel++) {
+      const sample = Math.max(-1, Math.min(1, resampledBuffer.getChannelData(channel)[i]))
+      view.setInt16(offset, sample * 0x7fff, true)
+      offset += bytesPerSample
+    }
   }
-}
-
-function writeString(view: DataView, offset: number, string: string) {
-  for (let i = 0; i < string.length; i++) {
-    view.setUint8(offset + i, string.charCodeAt(i))
-  }
+  onProgress(100)
+  return new Blob([finalArrayBuffer], { type: "audio/wav" })
 }

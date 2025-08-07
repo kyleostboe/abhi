@@ -1,8 +1,14 @@
 import type { Config } from "tailwindcss"
 
 const config = {
-  darkMode: ["class"],
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}", "*.{js,ts,jsx,tsx,mdx}"],
+  // Removed: darkMode: ["class"],
+  content: [
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+    "*.{js,ts,jsx,tsx,mdx}",
+  ],
   prefix: "",
   theme: {
     container: {
@@ -47,96 +53,101 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Custom colors for the abhī app
         "logo-amber": {
-          DEFAULT: "#fbbf24", // amber-400
-          50: "#fffbeb", // amber-50
-          100: "#fff3c7", // amber-100
-          200: "#fce588", // amber-200
-          300: "#fbd38d", // amber-300
-          400: "#fbbf24", // amber-400
-          500: "#f59e0b", // amber-500
-          600: "#d97706", // amber-600
-          700: "#b45309", // amber-700
-          800: "#92400e", // amber-800
-          900: "#78350f", // amber-900
-          950: "#451a03", // amber-950
+          50: "hsl(35 90% 95%)",
+          100: "hsl(35 90% 90%)",
+          200: "hsl(35 90% 80%)",
+          300: "hsl(35 90% 70%)",
+          400: "hsl(35 90% 60%)",
+          DEFAULT: "hsl(35 90% 55%)", // A warm amber
+          500: "hsl(35 90% 55%)",
+          600: "hsl(35 90% 45%)",
+          700: "hsl(35 90% 35%)",
+          800: "hsl(35 90% 25%)",
+          900: "hsl(35 90% 15%)",
+          950: "hsl(35 90% 10%)",
+          foreground: "hsl(0 0% 100%)",
         },
         "logo-rose": {
-          DEFAULT: "#f43f5e", // rose-500
-          50: "#fff1f2", // rose-50
-          100: "#ffe4e6", // rose-100
-          200: "#fecdd3", // rose-200
-          300: "#fda4af", // rose-300
-          400: "#fb7185", // rose-400
-          500: "#f43f5e", // rose-500
-          600: "#e11d48", // rose-600
-          700: "#be123c", // rose-700
-          800: "#9f1239", // rose-800
-          900: "#881337", // rose-900
-          950: "#4c0519", // rose-950
+          50: "hsl(340 80% 95%)",
+          100: "hsl(340 80% 90%)",
+          200: "hsl(340 80% 80%)",
+          300: "hsl(340 80% 70%)",
+          400: "hsl(340 80% 60%)",
+          DEFAULT: "hsl(340 80% 65%)", // A soft rose
+          500: "hsl(340 80% 65%)",
+          600: "hsl(340 80% 55%)",
+          700: "hsl(340 80% 45%)",
+          800: "hsl(340 80% 35%)",
+          900: "hsl(340 80% 25%)",
+          950: "hsl(340 80% 15%)",
+          foreground: "hsl(0 0% 100%)",
         },
         "logo-purple": {
-          DEFAULT: "#a855f7", // purple-500
-          50: "#faf5ff", // purple-50
-          100: "#f3e8ff", // purple-100
-          200: "#e9d5ff", // purple-200
-          300: "#d8b4fe", // purple-300
-          400: "#c084fc", // purple-400
-          500: "#a855f7", // purple-500
-          600: "#9333ea", // purple-600
-          700: "#7e22ce", // purple-700
-          800: "#6b21a8", // purple-800
-          900: "#581c87", // purple-900
-          950: "#3b0764", // purple-950
+          50: "hsl(270 70% 95%)",
+          100: "hsl(270 70% 90%)",
+          200: "hsl(270 70% 80%)",
+          300: "hsl(270 70% 70%)",
+          400: "hsl(270 70% 60%)",
+          DEFAULT: "hsl(270 70% 60%)", // A vibrant purple
+          500: "hsl(270 70% 60%)",
+          600: "hsl(270 70% 50%)",
+          700: "hsl(270 70% 40%)",
+          800: "hsl(270 70% 30%)",
+          900: "hsl(270 70% 20%)",
+          950: "hsl(270 70% 10%)",
+          foreground: "hsl(0 0% 100%)",
         },
         "logo-teal": {
-          DEFAULT: "#14b8a6", // teal-500
-          50: "#f0fdfa", // teal-50
-          100: "#ccfbf1", // teal-100
-          200: "#99f6e4", // teal-200
-          300: "#5eead4", // teal-300
-          400: "#2dd4bf", // teal-400
-          500: "#14b8a6", // teal-500
-          600: "#0d9488", // teal-600
-          700: "#0f766e", // teal-700
-          800: "#115e59", // teal-800
-          900: "#134e4a", // teal-900
-          950: "#042f2e", // teal-950
+          50: "hsl(173 80% 95%)",
+          100: "hsl(173 80% 90%)",
+          200: "hsl(173 80% 80%)",
+          300: "hsl(173 80% 70%)",
+          400: "hsl(173 80% 60%)",
+          DEFAULT: "hsl(173 80% 40%)", // Your existing primary teal
+          500: "hsl(173 80% 40%)",
+          600: "hsl(173 80% 30%)",
+          700: "hsl(173 80% 20%)",
+          800: "hsl(173 80% 10%)",
+          900: "hsl(173 80% 5%)",
+          950: "hsl(173 80% 2%)",
+          foreground: "hsl(210 40% 98%)",
         },
         "logo-emerald": {
-          DEFAULT: "#10b981", // emerald-500
-          50: "#ecfdf5", // emerald-50
-          100: "#d1fae5", // emerald-100
-          200: "#a7f3d0", // emerald-200
-          300: "#6ee7b7", // emerald-300
-          400: "#34d399", // emerald-400
-          500: "#10b981", // emerald-500
-          600: "#059669", // emerald-600
-          700: "#047857", // emerald-700
-          800: "#065f46", // emerald-800
-          900: "#064e3b", // emerald-900
-          950: "#022c22", // emerald-950
+          50: "hsl(142 76% 95%)",
+          100: "hsl(142 76% 90%)",
+          200: "hsl(142 76% 80%)",
+          300: "hsl(142 76% 70%)",
+          400: "hsl(142 76% 60%)",
+          DEFAULT: "hsl(142 76% 65%)", // Your existing secondary emerald
+          500: "hsl(142 76% 65%)",
+          600: "hsl(142 76% 55%)",
+          700: "hsl(142 76% 45%)",
+          800: "hsl(142 76% 35%)",
+          900: "hsl(142 76% 25%)",
+          950: "hsl(142 76% 15%)",
+          foreground: "hsl(222.2 47.4% 11.2%)",
         },
         "logo-blue": {
-          DEFAULT: "#3b82f6", // blue-500
-          50: "#eff6ff", // blue-50
-          100: "#dbeafe", // blue-100
-          200: "#bfdbfe", // blue-200
-          300: "#93c5fd", // blue-300
-          400: "#60a5fa", // blue-400
-          500: "#3b82f6", // blue-500
-          600: "#2563eb", // blue-600
-          700: "#1d4ed8", // blue-700
-          800: "#1e40af", // blue-800
-          900: "#1e3a8a", // blue-900
-          950: "#172554", // blue-950
+          50: "hsl(210 80% 95%)",
+          100: "hsl(210 80% 90%)",
+          200: "hsl(210 80% 80%)",
+          300: "hsl(210 80% 70%)",
+          400: "hsl(210 80% 60%)",
+          DEFAULT: "hsl(210 80% 50%)",
+          500: "hsl(210 80% 50%)",
+          600: "hsl(210 80% 40%)",
+          700: "hsl(210 80% 30%)",
+          800: "hsl(210 80% 20%)",
+          900: "hsl(210 80% 10%)",
+          950: "hsl(210 80% 5%)",
+          foreground: "hsl(0 0% 100%)",
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: "1rem",
+        md: "calc(1rem - 2px)",
+        sm: "calc(1rem - 4px)",
       },
       keyframes: {
         "accordion-down": {
