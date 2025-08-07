@@ -335,8 +335,8 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                   transition={{ delay: index * 0.05 }}
                 >
                   <Card className="p-4 bg-white dark:bg-gray-900 shadow-sm dark:shadow-white/10 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between w-full"> {/* Added w-full */}
-                      <div className="flex items-center space-x-3"> {/* Removed flex-1 */}
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center space-x-3 min-w-0"> {/* Added min-w-0 */}
                         <div
                           className={cn(
                             "rounded-full flex items-center justify-center text-white shadow-sm h-9 w-9",
@@ -345,8 +345,8 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                         >
                           {displayInfo.icon}
                         </div>
-                        <div className="flex flex-col"> {/* Changed to flex-col for better vertical stacking of text */}
-                          <div className="flex items-center space-x-2 mb-1 flex-wrap">
+                        <div className="flex flex-col flex-grow min-w-0"> {/* Added flex-grow and min-w-0 */}
+                          <div className="flex items-center space-x-2 mb-1"> {/* Removed flex-wrap */}
                             <Badge
                               variant="outline"
                               className="text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap border-none"
@@ -383,13 +383,13 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                               </button>
                             )}
                           </div>
-                          <div className="text-sm text-gray-700 dark:text-gray-300 font-black">
+                          <div className="text-sm text-gray-700 dark:text-gray-300 font-black truncate"> {/* Added truncate */}
                             <span className="font-black">{displayInfo.title}</span>
                           </div>
-                          <p className="text-xs text-gray-600 dark:text-gray-400 font-black">{displayInfo.subtitle}</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 font-black truncate">{displayInfo.subtitle}</p> {/* Added truncate */}
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2 flex-shrink-0"> {/* Added flex-shrink-0 and space-x-2 */}
+                      <div className="flex items-center gap-x-3 flex-shrink-0"> {/* Changed space-x-2 to gap-x-3 */}
                         <Button
                           size="sm"
                           variant="ghost"
