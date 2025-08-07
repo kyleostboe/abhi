@@ -10,7 +10,7 @@ Alert,
 AlertTitle,
 AlertDescription
 } from "@/components/ui/alert" // Import Alert component
-import { Volume2, Wand2, Download, Settings2, AlertTriangle, Music2, Mic, StopCircle, Play, PlusCircle, CircleDotDashed, Trash2, Info, BookText, Copy } from 'lucide-react' // Added Copy icon
+import { Volume2, Wand2, Download, Settings2, AlertTriangle, Music2, Mic, StopCircle, Play, PlusCircle, CircleDotDashed, Trash2, Info, BookText } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -306,24 +306,18 @@ setGenerationStep("Initializing...")
 try {
   console.log("Starting audio export with events:", timelineEvents)
 
-  // Calculate the maximum end time needed for the OfflineAudioContext
-  const maxAudioDuration = labsTotalDuration // Start with the user-defined total duration
+  const maxAudioDuration = labsTotalDuration
 
   const ctx = new OfflineAudioContext({
-    numberOfChannels: 1,
+    numberOfChannels: 2, // Use stereo for better soundscapes
     sampleRate: 44100,
-    length: Math.ceil(maxAudioDuration * 44100), // Ensure length is an integer
+    length: Math.ceil(maxAudioDuration * 44100),
   })
 
   let processedEventsCount = 0
   const totalEvents = timelineEvents.length
 
   for (const event of timelineEvents) {
-    if (event.type === "divider") { // Skip divider events for audio generation
-      processedEventsCount++;
-      continue;
-    }
-
     const eventStartTime = event.startTime
     console.log(`Processing event ${event.id} at time ${eventStartTime}:`, event)
 
@@ -334,7 +328,7 @@ try {
       if (event.soundCueSrc?.startsWith("synthetic:")) {
         const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
         if (soundCue) {
-          await generateSyntheticSound(soundCue, ctx) // Pass OfflineAudioContext
+          await generateSyntheticSound(soundCue, ctx, ctx.destination) // Pass ctx.destination
           console.log(`Successfully added synthetic sound at ${eventStartTime}`)
         }
       } else if (event.soundCueSrc?.startsWith("musical:")) {
@@ -350,13 +344,13 @@ try {
             const gainNode = ctx.createGain()
 
             oscillator.connect(gainNode)
-            gainNode.connect(ctx.destination)
+            gainNode.connect(ctx.destination) // Connect to ctx.destination
 
             oscillator.type = "sine"
             oscillator.frequency.setValueAtTime(frequency, eventStartTime)
 
-            const eventDuration = 0.8 // Default duration for musical notes
-            const peakVolume = 0.4 // Good volume for musical notes
+            const eventDuration = 0.8
+            const peakVolume = 0.4
 
             gainNode.gain.setValueAtTime(0, eventStartTime)
             gainNode.gain.exponentialRampToValueAtTime(peakVolume, eventStartTime + 0.05)
@@ -378,8 +372,8 @@ try {
 
           source.buffer = audioBuffer
           source.connect(gainNode)
-          gainNode.connect(ctx.destination)
-          gainNode.gain.setValueAtTime(0.4, eventStartTime) // Good volume for pre-recorded sounds
+          gainNode.connect(ctx.destination) // Connect to ctx.destination
+          gainNode.gain.setValueAtTime(0.4, eventStartTime)
           source.start(eventStartTime)
 
           console.log(`Successfully added pre-recorded audio at ${eventStartTime}`)
@@ -400,8 +394,8 @@ try {
 
         source.buffer = audioBuffer
         source.connect(gainNode)
-        gainNode.connect(ctx.destination)
-        gainNode.gain.setValueAtTime(0.8, eventStartTime) // Higher volume for voice
+        gainNode.connect(ctx.destination) // Connect to ctx.destination
+        gainNode.gain.setValueAtTime(0.8, eventStartTime)
         source.start(eventStartTime)
 
         console.log(`Successfully added recorded voice at ${eventStartTime}`)
@@ -409,9 +403,10 @@ try {
         console.warn(`Could not load recorded audio: ${event.recordedAudioUrl}`, error)
       }
     }
+    // Group labels do not produce audio, so no action needed for them here.
 
     processedEventsCount++
-    setGenerationProgress(Math.floor((processedEventsCount / totalEvents) * 80)) // Progress up to 80% for event processing
+    setGenerationProgress(Math.floor((processedEventsCount / totalEvents) * 80))
   }
 
   // Add background sounds to the audio context
@@ -427,6 +422,7 @@ try {
               ctx,
               maxAudioDuration,
               bgSound.volume * masterBackgroundVolume * 0.3,
+              ctx.destination, // Pass ctx.destination here
             )
           }
         } else {
@@ -437,7 +433,7 @@ try {
           const gainNode = ctx.createGain()
           source.buffer = audioBuffer
           source.connect(gainNode)
-          gainNode.connect(ctx.destination)
+          gainNode.connect(ctx.destination) // Connect to ctx.destination
           const finalVolume = bgSound.volume * masterBackgroundVolume * 0.3
           gainNode.gain.setValueAtTime(finalVolume, 0)
           source.loop = true
@@ -452,7 +448,7 @@ try {
   }
 
   setGenerationStep("Rendering audio...")
-  setGenerationProgress(80) // Set to 80% before rendering
+  setGenerationProgress(80)
   console.log("Starting audio rendering...")
 
   const rendered = await ctx.startRendering()
@@ -474,7 +470,6 @@ try {
   const url = URL.createObjectURL(wavBlob)
   setGeneratedAudioUrl(url)
 
-  // Directly assign to the audio element for immediate playback readiness
   if (labsAudioRef.current) {
     labsAudioRef.current.src = url
     labsAudioRef.current.volume = volume / 100
@@ -1157,19 +1152,21 @@ if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") 
 }
 }
 
-const updateEvent = (eventId: string, updates: Partial<TimelineEvent>) => {
+const updateEventStartTime = (eventId: string, newTime: number) => {
 setTimelineEvents((prev) => {
   const updated = prev.map((event) =>
-    event.id === eventId
-      ? {
-          ...event,
-          ...updates,
-          // Ensure startTime is within bounds if it's being updated
-          ...(updates.startTime !== undefined && { startTime: Math.max(0, Math.min(updates.startTime, labsTotalDuration)) }),
-        }
-      : event,
+    event.id === eventId ? { ...event, startTime: Math.max(0, Math.min(newTime, labsTotalDuration)) } : event,
   )
-  return updated.sort((a, b) => a.startTime - b.startTime)
+  // Simple sort by startTime, with stable sorting for events at the same time
+  return updated.sort((a, b) => {
+    if (a.startTime === b.startTime) {
+      // For events at the same time, maintain their relative order based on original array position
+      const aIndex = prev.findIndex((e) => e.id === a.id)
+      const bIndex = prev.findIndex((e) => e.id === b.id)
+      return aIndex - bBindex
+    }
+    return a.startTime - b.startTime
+  })
 })
 }
 
@@ -1177,54 +1174,6 @@ const removeTimelineEvent = (eventId: string) => {
 setTimelineEvents((prev) => prev.filter((event) => event.id !== eventId))
 toast({ title: "Event Removed" })
 }
-
-const duplicateTimelineEvent = useCallback((eventId: string) => {
-setTimelineEvents((prevEvents) => {
-  const eventToDuplicate = prevEvents.find((e) => e.id === eventId);
-  if (!eventToDuplicate) return prevEvents;
-
-  const newId = `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-  const newStartTime = eventToDuplicate.startTime + 5; // Offset by 5 seconds
-
-  const duplicatedEvent: TimelineEvent = {
-    ...eventToDuplicate,
-    id: newId,
-    startTime: newStartTime,
-    // Clear recordedAudioUrl if it's a recorded voice, as the URL is temporary
-    ...(eventToDuplicate.type === "recorded_voice" && { recordedAudioUrl: undefined }),
-    // Adjust label for duplicated recorded voice
-    ...(eventToDuplicate.type === "recorded_voice" && eventToDuplicate.recordedInstructionLabel && {
-      recordedInstructionLabel: `${eventToDuplicate.recordedInstructionLabel} (copy)`
-    }),
-    // Adjust label for duplicated divider
-    ...(eventToDuplicate.type === "divider" && eventToDuplicate.dividerLabel && {
-      dividerLabel: `${eventToDuplicate.dividerLabel} (copy)`
-    }),
-  };
-
-  const updatedEvents = [...prevEvents, duplicatedEvent];
-  return updatedEvents.sort((a, b) => a.startTime - b.startTime);
-});
-toast({ title: "Event Duplicated", description: "Timeline event copied." });
-}, []);
-
-const addDividerEvent = useCallback(() => {
-setTimelineEvents((prevEvents) => {
-  const maxExistingTime = prevEvents.length > 0 ? Math.max(...prevEvents.map((e) => e.startTime)) : 0;
-  const newStartTime = maxExistingTime + 33; // Place it after the last event
-
-  const newEvent: TimelineEvent = {
-    id: `divider_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-    type: "divider",
-    startTime: newStartTime,
-    dividerLabel: "New Section",
-  };
-  const updatedEvents = [...prevEvents, newEvent];
-  return updatedEvents.sort((a, b) => a.startTime - b.startTime);
-});
-toast({ title: "Divider Added", description: "A new section divider has been added." });
-}, []);
-
 
 // Safe input handlers with validation
 const handleMeditationTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1384,6 +1333,44 @@ return () => {
   stopBackgroundSound() // Ensure background preview is stopped on unmount
 }
 }, [stopBackgroundSound])
+
+const handleDuplicateEvent = useCallback((eventId: string) => {
+  setTimelineEvents((prevEvents) => {
+    const eventToDuplicate = prevEvents.find((event) => event.id === eventId)
+    if (!eventToDuplicate) return prevEvents
+
+    // Create a deep copy and assign a new ID
+    const newEvent: TimelineEvent = {
+      ...eventToDuplicate,
+      id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      // Adjust startTime to be slightly after the original, or at the end if it's the last event
+      startTime: eventToDuplicate.startTime + 5, // Add 5 seconds to avoid direct overlap
+    }
+
+    const updatedEvents = [...prevEvents, newEvent].sort((a, b) => a.startTime - b.startTime)
+
+    toast({
+      title: "Event Duplicated",
+      description: `"${eventToDuplicate.instructionText || eventToDuplicate.recordedInstructionLabel || eventToDuplicate.label || "Event"}" duplicated.`,
+    })
+
+    return updatedEvents
+  })
+}, [])
+
+const handleAddGroupLabel = useCallback(() => {
+  const maxExistingTime = timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
+  const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 10 : 0 // Add 10 seconds for spacing
+
+  const newEvent: TimelineEvent = {
+    id: `group_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+    type: "group_label",
+    startTime: newStartTime,
+    label: "New Section", // Default label
+  }
+  addEventToTimeline(newEvent)
+  toast({ title: "Group Label Added", description: "A new section label has been added to the timeline." })
+}, [addEventToTimeline, timelineEvents])
 
 return (
 <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-0">
@@ -1956,6 +1943,8 @@ return (
               </Button>
             </motion.div>
 
+            
+
             <div className="space-y-6">
               {originalUrl && (
                 <motion.div
@@ -2244,13 +2233,6 @@ return (
                       <PlusCircle className="mr-2 h-4 w-4" />
                       <span className="font-black font-serif">Add to Timeline</span>
                     </Button>
-                    <Button
-                      className="w-full bg-white text-indigo-500 border border-indigo-500 hover:bg-gray-50 dark:bg-gray-900 dark:text-indigo-500 dark:border-indigo-500 dark:hover:bg-gray-800 font-serif font-black text-gray-600"
-                      onClick={addDividerEvent}
-                    >
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      <span className="font-black font-serif">Add Divider</span>
-                    </Button>
                   </div>
                 </Card>
               </motion.div>
@@ -2385,10 +2367,20 @@ return (
                   <VisualTimeline
                     events={timelineEvents}
                     totalDuration={labsTotalDuration}
-                    onUpdateEvent={updateEvent} // Changed to updateEvent
+                    onUpdateEvent={updateEventStartTime}
                     onRemoveEvent={removeTimelineEvent}
-                    onDuplicateEvent={duplicateTimelineEvent} // Pass duplicate function
+                    onDuplicateEvent={handleDuplicateEvent}
                   />
+                  {/* Add Group Label Button */}
+                  <div className="mt-6 flex justify-center">
+                    <Button
+                      onClick={handleAddGroupLabel}
+                      className="bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-800 font-black"
+                    >
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Add Group Label
+                    </Button>
+                  </div>
                   {/* Background Sound Mixer */}
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
                     <h4 className="font-black dark:text-gray-200 text-gray-600 mb-4 text-base">

@@ -1,6 +1,5 @@
 import type { Instruction as ImportedInstruction, SoundCue as ImportedSoundCue } from "./types"
 import type { AmbientSound } from "./types"
-import { getAudioContext } from "./audio-utils"
 
 export interface Instruction extends ImportedInstruction {
   // Additional properties can be added here if needed
@@ -11,39 +10,7 @@ export interface SoundCue extends ImportedSoundCue {
 }
 
 export const INSTRUCTIONS_LIBRARY: Instruction[] = [
-  // Core Instructions
-  {
-    id: "breath_focus",
-    text: "Focus on your breath.",
-    category: "Core",
-  },
-  {
-    id: "body_scan",
-    text: "Bring awareness to your body.",
-    category: "Core",
-  },
-  {
-    id: "return_focus",
-    text: "Gently return your attention to the breath.",
-    category: "Core",
-  },
-  {
-    id: "silence_instruction",
-    text: "Rest in silence.",
-    category: "Core",
-  },
   // Metta (Loving Kindness) Instructions
-  {
-    id: "loving_kindness",
-    text: "May you be happy, may you be peaceful.",
-    category: "Metta",
-  },
-  {
-    id: "compassion",
-    text: "Feel compassion for yourself and others.",
-    category: "Metta",
-  },
-  // Mindfulness Instructions
   {
     id: "metta-1",
     text: "May I/you/we be safe",
@@ -86,14 +53,15 @@ export const INSTRUCTIONS_LIBRARY: Instruction[] = [
   },
   {
     id: "metta-9",
-    text: "May I/you/ourselves accept myself/yourself/ourselves as I am/you are/we are",
+    text: "May I/you/we accept myself/yourself/ourselves as I am/you are/we are",
     category: "Metta",
   },
   {
     id: "metta-10",
-    text: "May I/you/ourselves forgive myself/yourself/ourselves",
+    text: "May I/you/we forgive myself/yourself/ourselves",
     category: "Metta",
   },
+  // Mindfulness Instructions
   {
     id: "mindfulness-1",
     text: "Breathing in, I know I am breathing in",
@@ -435,96 +403,60 @@ export const INSTRUCTIONS_LIBRARY: Instruction[] = [
     text: "Carrying this peace forward",
     category: "Transitions",
   },
-  // Sensory Instructions
-  {
-    id: "sound_awareness",
-    text: "Notice the sounds around you.",
-    category: "Sensory",
-  },
-  // Visualization Instructions
-  {
-    id: "visualize_light",
-    text: "Visualize a soft, warm light filling your body.",
-    category: "Visualization",
-  },
-  // Advanced Instructions
-  {
-    id: "open_awareness",
-    text: "Rest in open awareness.",
-    category: "Advanced",
-  },
-  // Body Instructions
-  {
-    id: "release_tension",
-    text: "Release any tension in your body.",
-    category: "Body",
-  },
 ]
 
 export const SOUND_CUES_LIBRARY: SoundCue[] = [
   {
-    id: "bell_high",
-    name: "High Bell",
-    src: "synthetic:bell_high",
-    waveform: "triangle",
-    frequency: 1200,
-    duration: 700,
-    attackDuration: 0.01,
-    releaseDuration: 0.7,
-  },
-  {
-    id: "bell_mid",
-    name: "Mid Bell",
-    src: "synthetic:bell_mid",
-    waveform: "triangle",
-    frequency: 800,
-    duration: 800,
-    attackDuration: 0.01,
-    releaseDuration: 0.8,
-  },
-  {
-    id: "chime_soft",
-    name: "Soft Chime",
-    src: "synthetic:chime_soft",
-    waveform: "sine",
-    frequency: 1500,
-    duration: 1000,
-    attackDuration: 0.01,
-    releaseDuration: 1.0,
-  },
-  {
-    id: "tone_short_low",
-    name: "Short Low Tone",
-    src: "synthetic:tone_short_low",
-    waveform: "sine",
-    frequency: 300,
-    duration: 300,
-    attackDuration: 0.01,
-    releaseDuration: 0.3,
-  },
-  {
-    id: "tone_short_high",
-    name: "Short High Tone",
-    src: "synthetic:tone_short_high",
-    waveform: "sine",
-    frequency: 900,
-    duration: 300,
-    attackDuration: 0.01,
-    releaseDuration: 0.3,
-  },
-  {
-    id: "wood_block",
-    name: "Wood Block",
-    src: "synthetic:wood_block",
-    duration: 100,
-    attackDuration: 0.01,
-    releaseDuration: 0.1,
-  },
-  {
     id: "singing_bowl",
     name: "Singing Bowl",
-    src: "/sounds/singing-bowl.mp3",
-    duration: 3.0,
+    src: "synthetic:singing_bowl",
+    frequency: 432,
+    duration: 2500, // Total sound length in ms
+    waveform: "sine",
+    harmonics: [864, 1296, 1728], // More harmonics for richness
+    attackDuration: 0.1, // 100ms attack
+    releaseDuration: 2.0, // 2000ms release
+  },
+  {
+    id: "gentle_chime",
+    name: "Gentle Chime",
+    src: "synthetic:chime_gentle",
+    frequency: 1200, // Higher pitch
+    duration: 700, // Total sound length in ms
+    waveform: "triangle", // Softer than square, sharper than sine
+    attackDuration: 0.01, // 10ms attack
+    releaseDuration: 0.5, // 500ms release
+  },
+  {
+    id: "soft_gong",
+    name: "Soft Gong",
+    src: "synthetic:soft_gong",
+    frequency: 180, // Lower, deeper tone
+    duration: 3000, // Total sound length in ms
+    waveform: "sine",
+    harmonics: [360, 540, 720], // For depth
+    attackDuration: 0.2, // 200ms attack
+    releaseDuration: 2.5, // 2500ms release
+  },
+  {
+    id: "short_bell",
+    name: "Short Bell",
+    src: "synthetic:short_bell",
+    frequency: 1500, // High, clear ring
+    duration: 500, // Total sound length in ms
+    waveform: "square", // Sharper, more metallic
+    attackDuration: 0.005, // 5ms attack
+    releaseDuration: 0.2, // 200ms release
+  },
+  {
+    id: "clear_tone",
+    name: "Clear Tone",
+    src: "synthetic:clear_tone",
+    frequency: 528,
+    duration: 1500, // Total sound length in ms
+    waveform: "sine",
+    attackDuration: 0.05, // 50ms attack
+    releaseDuration: 1.0, // 1000ms release
   },
 ]
 
@@ -534,205 +466,813 @@ export const AMBIENT_SOUNDS_LIBRARY: AmbientSound[] = [
     name: "Rain",
     src: "synthetic:rain",
     noiseType: "white",
-    filterType: "lowpass",
+    filterType: "highpass",
     filterFrequency: 1000,
-    lfoFrequency: 0.1,
-    volume: 0.3,
+    lfoFrequency: 20,
+    volume: 0.2,
   },
   {
-    id: "ocean_waves",
+    id: "waves",
     name: "Ocean Waves",
-    src: "synthetic:ocean_waves",
-    noiseType: "pink",
-    filterType: "bandpass",
+    src: "synthetic:waves",
+    noiseType: "white",
+    filterType: "lowpass",
     filterFrequency: 500,
-    lfoFrequency: 0.05,
-    volume: 0.4,
+    lfoFrequency: 0.2,
+    volume: 0.25,
   },
   {
-    id: "forest_ambience",
-    name: "Forest Ambience",
-    src: "synthetic:forest_ambience",
+    id: "forest",
+    name: "Forest",
+    src: "synthetic:forest",
     noiseType: "brown",
     filterType: "lowpass",
     filterFrequency: 800,
-    lfoFrequency: 0.08,
-    volume: 0.35,
+    lfoFrequency: 0.5,
+    volume: 0.2,
   },
   {
-    id: "mountain_stream",
-    name: "Mountain Stream",
-    src: "/sounds/mountain-stream.mp3",
-    volume: 0.4,
-  },
-  {
-    id: "thunderstorm",
-    name: "Thunderstorm",
-    src: "/sounds/thunderstorm.mp3",
-    volume: 0.3,
+    id: "wind",
+    name: "Wind",
+    src: "synthetic:wind",
+    noiseType: "white",
+    filterType: "lowpass",
+    filterFrequency: 400,
+    lfoFrequency: 0.1,
+    volume: 0.2,
   },
 ]
 
 export const NOTE_FREQUENCIES = {
-  "C4": 261.63, "C#4": 277.18, "D4": 293.66, "D#4": 311.13, "E4": 329.63, "F4": 349.23, "F#4": 369.99, "G4": 392.00, "G#4": 415.30, "A4": 440.00, "A#4": 466.16, "B4": 493.88,
-  "C5": 523.25, "C#5": 554.37, "D5": 587.33, "D#5": 622.25, "E5": 659.25, "F5": 698.46, "F#5": 739.99, "G5": 783.99, "G#5": 830.61, "A5": 880.00, "A#5": 932.33, "B5": 987.77,
-  "C6": 1046.50, "C#6": 1108.73, "D6": 1174.66, "D#6": 1244.51, "E6": 1318.51, "F6": 1396.91, "F#6": 1479.98, "G6": 1567.98, "G#6": 1661.22, "A6": 1760.00, "A#6": 1864.66, "B6": 1975.53,
+  C3: 130.81,
+  D3: 146.83,
+  E3: 164.81,
+  F3: 174.61,
+  G3: 196.0,
+  A3: 220.0,
+  B3: 246.94,
+  C4: 261.63,
+  D4: 293.66,
+  E4: 329.63,
+  F4: 349.23,
+  G4: 392.0,
+  A4: 440.0,
+  B4: 493.88,
+  C5: 523.25,
+  D5: 587.33,
+  E5: 659.25,
+  F5: 698.46,
+  G5: 783.99,
+  A5: 880.0,
+  B5: 987.77,
 }
 
+// Musical meditation notes grouped into pleasant octaves
 export const MUSICAL_NOTES = {
-  "C": [
-    { id: "C4", name: "C4", note: "C", octave: 4, src: "musical:C4" },
-    { id: "C5", name: "C5", note: "C", octave: 5, src: "musical:C5" },
-    { id: "C6", name: "C6", note: "C", octave: 6, src: "musical:C6" },
-  ],
-  "D": [
-    { id: "D4", name: "D4", note: "D", octave: 4, src: "musical:D4" },
-    { id: "D5", name: "D5", note: "D", octave: 5, src: "musical:D5" },
-    { id: "D6", name: "D6", note: "D", octave: 6, src: "musical:D6" },
-  ],
-  "E": [
-    { id: "E4", name: "E4", note: "E", octave: 4, src: "musical:E4" },
-    { id: "E5", name: "E5", note: "E", octave: 5, src: "musical:E5" },
-    { id: "E6", name: "E6", note: "E", octave: 6, src: "musical:E6" },
-  ],
-  "F": [
-    { id: "F4", name: "F4", note: "F", octave: 4, src: "musical:F4" },
-    { id: "F5", name: "F5", note: "F", octave: 5, src: "musical:F5" },
-    { id: "F6", name: "F6", note: "F", octave: 6, src: "musical:F6" },
-  ],
-  "G": [
-    { id: "G4", name: "G4", note: "G", octave: 4, src: "musical:G4" },
-    { id: "G5", name: "G5", note: "G", octave: 5, src: "musical:G5" },
-    { id: "G6", name: "G6", note: "G", octave: 6, src: "musical:G6" },
-  ],
-  "A": [
-    { id: "A4", name: "A4", note: "A", octave: 4, src: "musical:A4" },
-    { id: "A5", name: "A5", note: "A", octave: 5, src: "musical:A5" },
-    { id: "A6", name: "A6", note: "A", octave: 6, src: "musical:A6" },
-  ],
-  "B": [
-    { id: "B4", name: "B4", note: "B", octave: 4, src: "musical:B4" },
-    { id: "B5", name: "B5", note: "B", octave: 5, src: "musical:B5" },
-    { id: "B6", name: "B6", note: "B", octave: 6, src: "musical:B6" },
+  Beautiful: [
+    { id: "note-c3", name: "C3", note: "C", octave: 3 },
+    { id: "note-d3", name: "D3", note: "D", octave: 3 },
+    { id: "note-e3", name: "E3", note: "E", octave: 3 },
+    { id: "note-g3", name: "G3", note: "G", octave: 3 },
+    { id: "note-a3", name: "A3", note: "A", octave: 3 },
+    { id: "note-c4", name: "C4", note: "C", octave: 4 },
+    { id: "note-d4", name: "D4", note: "D", octave: 4 },
+    { id: "note-e4", name: "E4", note: "E", octave: 4 },
+    { id: "note-g4", name: "G4", note: "G", octave: 4 },
+    { id: "note-a4", name: "A4", note: "A", octave: 4 },
+    { id: "note-c5", name: "C5", note: "C", octave: 5 },
+    { id: "note-d5", name: "D5", note: "D", octave: 5 },
+    { id: "note-e5", name: "E5", note: "E", octave: 5 },
+    { id: "note-g5", name: "G5", note: "G", octave: 5 },
+    { id: "note-a5", name: "A5", note: "A", octave: 5 },
   ],
 }
 
-// Function to generate synthetic sound based on SoundCue definition
-export const generateSyntheticSound = async (soundCue: SoundCue, audioContext: AudioContext | OfflineAudioContext): Promise<void> => {
-  if (!soundCue.src.startsWith("synthetic:")) {
-    console.warn("Not a synthetic sound cue:", soundCue);
-    return;
-  }
-
-  const startTime = audioContext.currentTime;
-  const baseVolume = 0.3; // Base volume for synthetic sounds
-
-  switch (soundCue.id) {
-    case "bell_high":
-    case "bell_mid":
-    case "chime_soft":
-    case "tone_short_low":
-    case "tone_short_high": {
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      oscillator.type = soundCue.waveform || "sine";
-      oscillator.frequency.setValueAtTime(soundCue.frequency || 440, startTime);
-
-      gainNode.gain.setValueAtTime(0, startTime);
-      gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + (soundCue.attackDuration || 0.01));
-      gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + (soundCue.duration || 500) / 1000);
-
-      oscillator.start(startTime);
-      oscillator.stop(startTime + (soundCue.duration || 500) / 1000);
-      break;
-    }
-    case "wood_block": {
-      const bufferSize = Math.floor(audioContext.sampleRate * (soundCue.duration || 100) / 1000);
-      const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
-      const data = noiseBuffer.getChannelData(0);
-
-      for (let i = 0; i < bufferSize; i++) {
-        const decay = Math.exp(-i / (bufferSize * 0.1));
-        data[i] = (Math.random() * 2 - 1) * decay * 0.5;
-      }
-
-      const noiseSource = audioContext.createBufferSource();
-      const gainNode = audioContext.createGain();
-
-      noiseSource.buffer = noiseBuffer;
-      noiseSource.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      gainNode.gain.setValueAtTime(baseVolume * 0.8, startTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + (soundCue.releaseDuration || 0.1));
-
-      noiseSource.start(startTime);
-      break;
-    }
-    default:
-      console.warn(`Unknown synthetic sound ID: ${soundCue.id}`);
-  }
-};
-
-// Function to generate ambient sound based on AmbientSound definition
-export const generateAmbientSound = async (
-  ambientSound: AmbientSound,
+// Function to generate synthetic sounds using Web Audio API
+export async function generateSyntheticSound(
+  soundCue: SoundCue,
   audioContext: AudioContext | OfflineAudioContext,
-  duration: number, // in seconds
-  volume: number,
-): Promise<void> => {
-  if (!ambientSound.src.startsWith("synthetic:")) {
-    console.warn("Not a synthetic ambient sound:", ambientSound);
-    return;
+): Promise<void> {
+  try {
+    // Resume context if suspended (only for AudioContext, not OfflineAudioContext)
+    if (audioContext instanceof AudioContext && audioContext.state === "suspended") {
+      await audioContext.resume()
+    }
+
+    const totalSoundDurationSeconds = (soundCue.duration || 1000) / 1000 // Convert to seconds
+    const frequency = soundCue.frequency || 440
+    const waveform = soundCue.waveform || "sine"
+    const attackDuration = soundCue.attackDuration || 0.01 // Default 10ms
+    const releaseDuration = soundCue.releaseDuration || 0.5 // Default 500ms
+
+    // Create oscillator
+    const oscillator = audioContext.createOscillator()
+    const gainNode = audioContext.createGain()
+
+    // Connect nodes
+    oscillator.connect(gainNode)
+    gainNode.connect(audioContext.destination)
+
+    // Set oscillator properties
+    oscillator.type = waveform
+    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime)
+
+    // Create envelope (Attack, Sustain, Release)
+    const now = audioContext.currentTime
+    const peakVolume = 0.5 // Max volume
+    const endVolume = 0.001 // Near silence
+
+    // Attack phase
+    gainNode.gain.setValueAtTime(0, now)
+    gainNode.gain.linearRampToValueAtTime(peakVolume, now + attackDuration)
+
+    // Sustain phase (hold peak volume until release starts)
+    const sustainStart = now + attackDuration
+    const releaseStart = now + totalSoundDurationSeconds - releaseDuration
+
+    if (releaseStart > sustainStart) {
+      // If there's a distinct sustain phase
+      gainNode.gain.linearRampToValueAtTime(peakVolume, releaseStart)
+    } else {
+      // If attack + release is longer than or equal to total duration,
+      // start release immediately after attack (or even during attack if attackDuration is long)
+      gainNode.gain.linearRampToValueAtTime(
+        peakVolume,
+        Math.max(now + attackDuration, now + totalSoundDurationSeconds - releaseDuration),
+      )
+    }
+
+    // Release phase
+    gainNode.gain.exponentialRampToValueAtTime(endVolume, now + totalSoundDurationSeconds)
+
+    // Add harmonics if specified
+    if (soundCue.harmonics) {
+      soundCue.harmonics.forEach((harmonic, index) => {
+        const harmonicOsc = audioContext.createOscillator()
+        const harmonicGain = audioContext.createGain()
+
+        harmonicOsc.connect(harmonicGain)
+        harmonicGain.connect(audioContext.destination)
+
+        harmonicOsc.type = waveform
+        harmonicOsc.frequency.setValueAtTime(harmonic, audioContext.currentTime)
+
+        // Harmonics are quieter and follow a similar envelope
+        const harmonicVolume = (peakVolume * 0.2) / (index + 1) // Reduce volume for higher harmonics
+
+        harmonicGain.gain.setValueAtTime(0, now)
+        harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, now + attackDuration)
+
+        if (releaseStart > sustainStart) {
+          harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, releaseStart)
+        } else {
+          harmonicGain.gain.linearRampToValueAtTime(
+            harmonicVolume,
+            Math.max(now + attackDuration, now + totalSoundDurationSeconds - releaseDuration),
+          )
+        }
+        harmonicGain.gain.exponentialRampToValueAtTime(endVolume, now + totalSoundDurationSeconds)
+
+        harmonicOsc.start(now)
+        harmonicOsc.stop(now + totalSoundDurationSeconds)
+      })
+    }
+
+    // Start and stop the oscillator
+    oscillator.start(now)
+    oscillator.stop(now + totalSoundDurationSeconds)
+
+    // Clean up (only for AudioContext, not OfflineAudioContext as it's managed by render)
+    if (audioContext instanceof AudioContext) {
+      setTimeout(
+        () => {
+          try {
+            audioContext.close()
+          } catch (e) {
+            console.warn("Error closing audio context:", e)
+          }
+        },
+        totalSoundDurationSeconds * 1000 + 100,
+      )
+    }
+  } catch (error) {
+    console.error("Error generating synthetic sound:", error)
+    throw error
+  }
+}
+
+// Generate looping ambient noise using Web Audio API
+export async function generateAmbientSound(
+  ambient: AmbientSound,
+  audioContext: AudioContext | OfflineAudioContext,
+  duration: number,
+  volumeOverride?: number,
+): Promise<void> {
+  try {
+    if (audioContext instanceof AudioContext && audioContext.state === "suspended") {
+      await audioContext.resume()
+    }
+
+    const targetVolume = volumeOverride ?? ambient.volume ?? 0.2
+
+    // Master gain node for overall volume control
+  const masterGain = audioContext.createGain()
+  masterGain.gain.setValueAtTime(targetVolume, audioContext.currentTime)
+
+  const panner = new StereoPannerNode(audioContext, { pan: 0 })
+  masterGain.connect(panner)
+
+  const panLfo = audioContext.createOscillator()
+  const panLfoGain = audioContext.createGain()
+  panLfo.type = "sine"
+  panLfo.frequency.value = 0.03 + Math.random() * 0.02
+  panLfoGain.gain.value = 0.5
+  panLfo.connect(panLfoGain).connect(panner.pan)
+  panLfo.start(0)
+  panLfo.stop(duration)
+
+  const dryGain = audioContext.createGain()
+  dryGain.gain.value = 0.7
+
+  const wetGain = audioContext.createGain()
+  wetGain.gain.value = 0.3
+
+  const reverb = audioContext.createConvolver()
+  reverb.buffer = createSimpleReverbBuffer(audioContext, 2.5, 2)
+
+  panner.connect(dryGain).connect(audioContext.destination)
+  panner.connect(reverb).connect(wetGain).connect(audioContext.destination)
+
+    switch (ambient.id) {
+      case "rain":
+        await generateHyperrealisticRain(audioContext, masterGain, duration)
+        break
+      case "waves":
+        await generateHyperrealisticWaves(audioContext, masterGain, duration)
+        break
+      case "forest":
+        await generateHyperrealisticForest(audioContext, masterGain, duration)
+        break
+      case "wind":
+        await generateHyperrealisticWind(audioContext, masterGain, duration)
+        break
+      default:
+        // Fallback to a simpler but improved noise generator
+        await generateSimpleNoise(audioContext, masterGain, duration, ambient)
+        break
+    }
+  } catch (error) {
+    console.error(`Error generating ambient sound for ${ambient.id}:`, error)
+    throw error
+  }
+}
+
+// --- Hyperrealistic Soundscape Generators ---
+
+async function generateHyperrealisticRain(
+  audioContext: AudioContext | OfflineAudioContext,
+  destination: AudioNode,
+  duration: number,
+): Promise<void> {
+  // Layer 1: Background hiss/sheet of rain
+  const hissBuffer = audioContext.createBuffer(2, audioContext.sampleRate * 2, audioContext.sampleRate)
+  for (let channel = 0; channel < 2; channel++) {
+    const data = hissBuffer.getChannelData(channel)
+    for (let i = 0; i < data.length; i++) {
+      data[i] = Math.random() * 2 - 1
+    }
+  }
+  const hissSource = audioContext.createBufferSource()
+  hissSource.buffer = hissBuffer
+  hissSource.loop = true
+
+  const hissFilter = audioContext.createBiquadFilter()
+  hissFilter.type = "highpass"
+  hissFilter.frequency.value = 1500
+  hissFilter.Q.value = 0.7
+
+  const hissGain = audioContext.createGain()
+  hissGain.gain.value = 0.2
+
+  hissSource.connect(hissFilter).connect(hissGain).connect(destination)
+
+  // Layer 2: Stochastic individual droplets
+  const dropletScheduler = () => {
+    const now = audioContext.currentTime
+    if (now > duration) return
+
+    const dropTime = now + Math.random() * 0.2 // Schedule next drop within 200ms
+    if (dropTime < duration) {
+      createRaindrop(audioContext, destination, dropTime)
+    }
+    setTimeout(dropletScheduler, Math.random() * 100 + 20) // Next check in 20-120ms
   }
 
-  const bufferSize = audioContext.sampleRate * duration;
-  const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
-  const data = buffer.getChannelData(0);
+  // Start 5 concurrent schedulers for a denser, more random feel
+  for (let i = 0; i < 5; i++) {
+    dropletScheduler()
+  }
+
+  // Layer 3: Low-frequency rumble
+  const rumbleBuffer = audioContext.createBuffer(2, audioContext.sampleRate * 3, audioContext.sampleRate)
+  for (let channel = 0; channel < 2; channel++) {
+    const data = rumbleBuffer.getChannelData(channel)
+    let lastOut = 0
+    for (let i = 0; i < data.length; i++) {
+      const white = Math.random() * 2 - 1
+      data[i] = (lastOut + 0.02 * white) / 1.02
+      lastOut = data[i]
+      data[i] *= 3.5
+    }
+  }
+  const rumbleSource = audioContext.createBufferSource()
+  rumbleSource.buffer = rumbleBuffer
+  rumbleSource.loop = true
+
+  const rumbleFilter = audioContext.createBiquadFilter()
+  rumbleFilter.type = "lowpass"
+  rumbleFilter.frequency.value = 120
+
+  const rumbleGain = audioContext.createGain()
+  rumbleGain.gain.value = 0.4
+
+  rumbleSource.connect(rumbleFilter).connect(rumbleGain).connect(destination)
+
+  hissSource.start(0)
+  rumbleSource.start(0)
+  hissSource.stop(duration)
+  rumbleSource.stop(duration)
+}
+
+function createRaindrop(audioContext: AudioContext | OfflineAudioContext, destination: AudioNode, time: number) {
+  const freq = 1000 + Math.random() * 2000
+  const pan = Math.random() * 2 - 1
+
+  const panner = new StereoPannerNode(audioContext, { pan })
+
+  const osc = audioContext.createOscillator()
+  osc.type = "triangle"
+  osc.frequency.value = freq
+
+  const gain = audioContext.createGain()
+  gain.gain.setValueAtTime(0, time)
+  gain.gain.linearRampToValueAtTime(Math.random() * 0.3 + 0.1, time + 0.01)
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1 + Math.random() * 0.1)
+
+  osc.connect(gain).connect(panner).connect(destination)
+  osc.start(time)
+  osc.stop(time + 0.2)
+}
+
+async function generateHyperrealisticWaves(
+  audioContext: AudioContext | OfflineAudioContext,
+  destination: AudioNode,
+  duration: number,
+): Promise<void> {
+  // Base layer: Pink noise for a more natural ocean roar
+  const bufferSize = audioContext.sampleRate * 4
+  const pinkNoiseBuffer = audioContext.createBuffer(2, bufferSize, audioContext.sampleRate)
+  for (let channel = 0; channel < 2; channel++) {
+    const data = pinkNoiseBuffer.getChannelData(channel)
+    let b0 = 0,
+      b1 = 0,
+      b2 = 0,
+      b3 = 0,
+      b4 = 0,
+      b5 = 0,
+      b6 = 0
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1
+      b0 = 0.99886 * b0 + white * 0.0555179
+      b1 = 0.99332 * b1 + white * 0.0750759
+      b2 = 0.969 * b2 + white * 0.153852
+      b3 = 0.8665 * b3 + white * 0.3104856
+      b4 = 0.55 * b4 + white * 0.5329522
+      b5 = -0.7616 * b5 - white * 0.016898
+      data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362
+      data[i] *= 0.11 // (roughly) compensate for gain
+      b6 = white * 0.115926
+    }
+  }
+
+  const baseSource = audioContext.createBufferSource()
+  baseSource.buffer = pinkNoiseBuffer
+  baseSource.loop = true
+
+  // Main wave modulation (volume)
+  const waveGain = audioContext.createGain()
+  waveGain.gain.value = 0.1 // Start low
+  const lfo1 = audioContext.createOscillator()
+  lfo1.type = "sine"
+  lfo1.frequency.value = 0.1 + Math.random() * 0.05 // ~7-10s period
+  const lfo1Gain = audioContext.createGain()
+  lfo1Gain.gain.value = 0.3
+
+  const lfo2 = audioContext.createOscillator()
+  lfo2.type = "sine"
+  lfo2.frequency.value = 0.18 + Math.random() * 0.05 // ~4-6s period
+  const lfo2Gain = audioContext.createGain()
+  lfo2Gain.gain.value = 0.2
+
+  lfo1.connect(lfo1Gain).connect(waveGain.gain)
+  lfo2.connect(lfo2Gain).connect(waveGain.gain)
+
+  // Filter modulation for "whoosh"
+  const waveFilter = audioContext.createBiquadFilter()
+  waveFilter.type = "lowpass"
+  waveFilter.Q.value = 2
+  waveFilter.frequency.value = 400 // Base frequency
+  const filterLfo = audioContext.createOscillator()
+  filterLfo.type = "sine"
+  filterLfo.frequency.value = 0.15
+  const filterLfoGain = audioContext.createGain()
+  filterLfoGain.gain.value = 800 // Modulate frequency by 800Hz
+
+  filterLfo.connect(filterLfoGain).connect(waveFilter.frequency)
+
+  // Foam layer (high-frequency, triggered by wave peaks)
+  const foamSource = audioContext.createBufferSource()
+  foamSource.buffer = pinkNoiseBuffer
+  foamSource.loop = true
+  const foamFilter = audioContext.createBiquadFilter()
+  foamFilter.type = "highpass"
+  foamFilter.frequency.value = 1000
+  const foamGain = audioContext.createGain()
+  foamGain.gain.value = 0 // Initially silent
+  // Use the same LFOs but with a gain shaper to only activate on peaks
+  const foamShaper = audioContext.createWaveShaper()
+  const curve = new Float32Array(256)
+  for (let i = 0; i < 256; i++) {
+    const x = i / 128 - 1
+    curve[i] = Math.max(0, x * x * x) * 0.8 // Activate on positive curve, sharp attack
+  }
+  foamShaper.curve = curve
+  waveGain.connect(foamShaper).connect(foamGain.gain)
+
+  // Connect graph
+  baseSource.connect(waveGain).connect(waveFilter).connect(destination)
+  foamSource.connect(foamFilter).connect(foamGain).connect(destination)
+
+  // Start everything
+  lfo1.start(0)
+  lfo2.start(0)
+  filterLfo.start(0)
+  baseSource.start(0)
+  foamSource.start(0)
+
+  lfo1.stop(duration)
+  lfo2.stop(duration)
+  filterLfo.stop(duration)
+  baseSource.stop(duration)
+  foamSource.stop(duration)
+}
+
+async function generateHyperrealisticForest(
+  audioContext: AudioContext | OfflineAudioContext,
+  destination: AudioNode,
+  duration: number,
+): Promise<void> {
+  // Layer 1: Gentle wind/leaf rustle
+  const rustleBuffer = audioContext.createBuffer(2, audioContext.sampleRate * 3, audioContext.sampleRate)
+  for (let channel = 0; channel < 2; channel++) {
+    const data = rustleBuffer.getChannelData(channel)
+    let lastOut = 0
+    for (let i = 0; i < data.length; i++) {
+      const white = Math.random() * 2 - 1
+      data[i] = (lastOut + 0.02 * white) / 1.02
+      lastOut = data[i]
+    }
+  }
+  const rustleSource = audioContext.createBufferSource()
+  rustleSource.buffer = rustleBuffer
+  rustleSource.loop = true
+
+  const rustleFilter = audioContext.createBiquadFilter()
+  rustleFilter.type = "bandpass"
+  rustleFilter.frequency.value = 1200
+  rustleFilter.Q.value = 5
+
+  const rustleGain = audioContext.createGain()
+  rustleGain.gain.value = 0.15
+
+  const rustleLfo = audioContext.createOscillator()
+  rustleLfo.type = "sine"
+  rustleLfo.frequency.value = 0.3
+  const rustleLfoGain = audioContext.createGain()
+  rustleLfoGain.gain.value = 0.05
+  rustleLfo.connect(rustleLfoGain).connect(rustleGain.gain)
+
+  rustleSource.connect(rustleFilter).connect(rustleGain).connect(destination)
+
+  // Layer 2: Stochastic bird calls
+  const birdScheduler = () => {
+    const now = audioContext.currentTime
+    if (now > duration) return
+
+    const callTime = now + 2 + Math.random() * 5 // Next call in 2-7 seconds
+    if (callTime < duration) {
+      const pan = Math.random() * 1.6 - 0.8 // Pan between -0.8 and 0.8
+      const freq = 1500 + Math.random() * 2000
+      const type = Math.random()
+      if (type < 0.5) {
+        createBirdChirp(audioContext, destination, callTime, freq, 0.2 + Math.random() * 0.3, pan)
+      } else {
+        createBirdWarble(audioContext, destination, callTime, freq * 0.6, 0.5 + Math.random() * 0.5, pan)
+      }
+    }
+    setTimeout(birdScheduler, (2 + Math.random() * 5) * 1000)
+  }
+  birdScheduler()
+
+  // Layer 3: Insect/cicada drone
+  const insectSource = audioContext.createBufferSource()
+  insectSource.buffer = rustleBuffer // reuse buffer
+  insectSource.loop = true
+
+  const insectFilter = audioContext.createBiquadFilter()
+  insectFilter.type = "bandpass"
+  insectFilter.frequency.value = 4000
+  insectFilter.Q.value = 15
+
+  const insectGain = audioContext.createGain()
+  insectGain.gain.value = 0.1
+
+  const insectLfo = audioContext.createOscillator()
+  insectLfo.type = "triangle"
+  insectLfo.frequency.value = 8 // Fast tremolo
+  const insectLfoGain = audioContext.createGain()
+  insectLfoGain.gain.value = 0.05
+  insectLfo.connect(insectLfoGain).connect(insectGain.gain)
+
+  insectSource.connect(insectFilter).connect(insectGain).connect(destination)
+
+  // Start sources
+  rustleSource.start(0)
+  rustleLfo.start(0)
+  insectSource.start(0)
+  insectLfo.start(0)
+
+  rustleSource.stop(duration)
+  rustleLfo.stop(duration)
+  insectSource.stop(duration)
+  insectLfo.stop(duration)
+}
+
+// Bird call helpers with panning
+function createBirdChirp(
+  audioContext: AudioContext | OfflineAudioContext,
+  destination: AudioNode,
+  time: number,
+  freq: number,
+  dur: number,
+  pan: number,
+) {
+  const panner = new StereoPannerNode(audioContext, { pan })
+  const osc = audioContext.createOscillator()
+  osc.type = "sine"
+  osc.frequency.setValueAtTime(freq, time)
+  osc.frequency.exponentialRampToValueAtTime(freq * 1.2, time + dur * 0.5)
+  osc.frequency.exponentialRampToValueAtTime(freq * 0.8, time + dur)
+
+  const gain = audioContext.createGain()
+  gain.gain.setValueAtTime(0, time)
+  gain.gain.linearRampToValueAtTime(0.2, time + 0.01)
+  gain.gain.exponentialRampToValueAtTime(0.001, time + dur)
+
+  osc.connect(gain).connect(panner).connect(destination)
+  osc.start(time)
+  osc.stop(time + dur)
+}
+
+function createBirdWarble(
+  audioContext: AudioContext | OfflineAudioContext,
+  destination: AudioNode,
+  time: number,
+  freq: number,
+  dur: number,
+  pan: number,
+) {
+  const panner = new StereoPannerNode(audioContext, { pan })
+  const osc = audioContext.createOscillator()
+  osc.type = "triangle"
+  osc.frequency.value = freq
+
+  const gain = audioContext.createGain()
+  gain.gain.setValueAtTime(0, time)
+  gain.gain.linearRampToValueAtTime(0.15, time + 0.02)
+  gain.gain.exponentialRampToValueAtTime(0.001, time + dur)
+
+  const lfo = audioContext.createOscillator()
+  lfo.type = "sine"
+  lfo.frequency.value = 15 + Math.random() * 10
+  const lfoGain = audioContext.createGain()
+  lfoGain.gain.value = freq * 0.1
+
+  lfo.connect(lfoGain).connect(osc.frequency)
+  osc.connect(gain).connect(panner).connect(destination)
+
+  osc.start(time)
+  lfo.start(time)
+  osc.stop(time + dur)
+  lfo.stop(time + dur)
+}
+
+async function generateHyperrealisticWind(
+  audioContext: AudioContext | OfflineAudioContext,
+  destination: AudioNode,
+  duration: number,
+): Promise<void> {
+  // Layer 1: Low-frequency howl (brown noise)
+  const howlBuffer = audioContext.createBuffer(2, audioContext.sampleRate * 3, audioContext.sampleRate)
+  for (let channel = 0; channel < 2; channel++) {
+    const data = howlBuffer.getChannelData(channel)
+    let lastOut = 0
+    for (let i = 0; i < data.length; i++) {
+      const white = Math.random() * 2 - 1
+      data[i] = (lastOut + 0.02 * white) / 1.02
+      lastOut = data[i]
+      data[i] *= 3.5
+    }
+  }
+  const howlSource = audioContext.createBufferSource()
+  howlSource.buffer = howlBuffer
+  howlSource.loop = true
+
+  const howlFilter = audioContext.createBiquadFilter()
+  howlFilter.type = "lowpass"
+  howlFilter.frequency.value = 250
+  howlFilter.Q.value = 2
+
+  const howlGain = audioContext.createGain()
+  howlGain.gain.value = 0.3
+
+  const howlLfo = audioContext.createOscillator()
+  howlLfo.type = "sine"
+  howlLfo.frequency.value = 0.1
+  const howlLfoGain = audioContext.createGain()
+  howlLfoGain.gain.value = 0.2
+  howlLfo.connect(howlLfoGain).connect(howlGain.gain)
+
+  howlSource.connect(howlFilter).connect(howlGain).connect(destination)
+
+  // Layer 2: Mid-frequency whoosh (pink noise)
+  const whooshSource = audioContext.createBufferSource()
+  const pinkNoiseBuffer = await (async () => {
+    const bufferSize = audioContext.sampleRate * 4
+    const buffer = audioContext.createBuffer(2, bufferSize, audioContext.sampleRate)
+    for (let channel = 0; channel < 2; channel++) {
+      const data = buffer.getChannelData(channel)
+      let b0 = 0,
+        b1 = 0,
+        b2 = 0,
+        b3 = 0,
+        b4 = 0,
+        b5 = 0,
+        b6 = 0
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1
+        b0 = 0.99886 * b0 + white * 0.0555179
+        b1 = 0.99332 * b1 + white * 0.0750759
+        b2 = 0.969 * b2 + white * 0.153852
+        b3 = 0.8665 * b3 + white * 0.3104856
+        b4 = 0.55 * b4 + white * 0.5329522
+        b5 = -0.7616 * b5 - white * 0.016898
+        data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362
+        data[i] *= 0.11
+        b6 = white * 0.115926
+      }
+    }
+    return buffer
+  })()
+  whooshSource.buffer = pinkNoiseBuffer
+  whooshSource.loop = true
+
+  const whooshFilter = audioContext.createBiquadFilter()
+  whooshFilter.type = "bandpass"
+  whooshFilter.Q.value = 1.5
+  whooshFilter.frequency.value = 800
+
+  const whooshGain = audioContext.createGain()
+  whooshGain.gain.value = 0.4
+
+  const whooshLfo = audioContext.createOscillator()
+  whooshLfo.type = "sine"
+  whooshLfo.frequency.value = 0.25
+  const whooshLfoGain = audioContext.createGain()
+  whooshLfoGain.gain.value = 0.3
+  whooshLfo.connect(whooshLfoGain).connect(whooshGain.gain)
+
+  const whooshFilterLfo = audioContext.createOscillator()
+  whooshFilterLfo.type = "sine"
+  whooshFilterLfo.frequency.value = 0.4
+  const whooshFilterLfoGain = audioContext.createGain()
+  whooshFilterLfoGain.gain.value = 400
+  whooshFilterLfo.connect(whooshFilterLfoGain).connect(whooshFilter.frequency)
+
+  whooshSource.connect(whooshFilter).connect(whooshGain).connect(destination)
+
+  // Layer 3: High-frequency whistle/hiss
+  const whistleSource = audioContext.createBufferSource()
+  whistleSource.buffer = howlBuffer // reuse buffer
+  whistleSource.loop = true
+
+  const whistleFilter = audioContext.createBiquadFilter()
+  whistleFilter.type = "bandpass"
+  whistleFilter.Q.value = 20 // High Q for whistle
+  whistleFilter.frequency.value = 3000
+
+  const whistleGain = audioContext.createGain()
+  whistleGain.gain.value = 0.1
+
+  const whistleLfo = audioContext.createOscillator()
+  whistleLfo.type = "sine"
+  whistleLfo.frequency.value = 0.08
+  const whistleLfoGain = audioContext.createGain()
+  whistleLfoGain.gain.value = 1500 // Wide sweep for frequency
+  whistleLfo.connect(whistleLfoGain).connect(whistleFilter.frequency)
+
+  whistleSource.connect(whistleFilter).connect(whistleGain).connect(destination)
+
+  // Start all
+  howlSource.start(0)
+  howlLfo.start(0)
+  whooshSource.start(0)
+  whooshLfo.start(0)
+  whooshFilterLfo.start(0)
+  whistleSource.start(0)
+  whistleLfo.start(0)
+
+  howlSource.stop(duration)
+  howlLfo.stop(duration)
+  whooshSource.stop(duration)
+  whooshLfo.stop(duration)
+  whooshFilterLfo.stop(duration)
+  whistleSource.stop(duration)
+  whistleLfo.stop(duration)
+}
+
+// Fallback simple noise generator
+async function generateSimpleNoise(
+  audioContext: AudioContext | OfflineAudioContext,
+  destination: AudioNode,
+  duration: number,
+  ambient: AmbientSound,
+): Promise<void> {
+  const bufferSize = Math.floor(duration * audioContext.sampleRate)
+  const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate)
+  const data = buffer.getChannelData(0)
 
   for (let i = 0; i < bufferSize; i++) {
-    let value;
-    switch (ambientSound.noiseType) {
-      case "white":
-        value = Math.random() * 2 - 1;
-        break;
-      case "pink":
-        // Simple pink noise approximation (more complex for true pink noise)
-        value = (Math.random() * 2 - 1 + (Math.random() * 2 - 1) * 0.5 + (Math.random() * 2 - 1) * 0.25) / 1.75;
-        break;
-      case "brown":
-        // Simple brownian noise approximation
-        value = (data[i - 1] || 0) + (Math.random() * 2 - 1) * 0.02;
-        break;
-      default:
-        value = Math.random() * 2 - 1;
+    data[i] = Math.random() * 2 - 1
+  }
+
+  const source = audioContext.createBufferSource()
+  source.buffer = buffer
+  source.loop = true
+
+  let lastNode: AudioNode = source
+
+  if (ambient.filterType) {
+    const filter = audioContext.createBiquadFilter()
+    filter.type = ambient.filterType
+    filter.frequency.setValueAtTime(ambient.filterFrequency || 1000, 0)
+    lastNode.connect(filter)
+    lastNode = filter
+  }
+
+  const gainNode = audioContext.createGain()
+  gainNode.gain.setValueAtTime(1.0, 0) // Volume is controlled by master gain
+  lastNode.connect(gainNode)
+  gainNode.connect(destination)
+
+  if (ambient.lfoFrequency) {
+    const lfo = audioContext.createOscillator()
+    const lfoGain = audioContext.createGain()
+    lfo.frequency.setValueAtTime(ambient.lfoFrequency, 0)
+    lfoGain.gain.setValueAtTime(0.5, 0) // Modulate by 50%
+    lfo.connect(lfoGain)
+    lfoGain.connect(gainNode.gain)
+    lfo.start(0)
+    lfo.stop(duration)
+  }
+
+  source.start(0)
+  source.stop(duration)
+}
+
+function createSimpleReverbBuffer(
+  audioContext: AudioContext | OfflineAudioContext,
+  duration = 2,
+  decay = 2,
+): AudioBuffer {
+  const sampleRate = audioContext.sampleRate
+  const length = sampleRate * duration
+  const impulse = audioContext.createBuffer(2, length, sampleRate)
+  for (let channel = 0; channel < impulse.numberOfChannels; channel++) {
+    const data = impulse.getChannelData(channel)
+    for (let i = 0; i < length; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay)
     }
-    data[i] = value * volume;
   }
-
-  const source = audioContext.createBufferSource();
-  source.buffer = buffer;
-
-  const gainNode = audioContext.createGain();
-  gainNode.gain.value = volume;
-
-  source.connect(gainNode);
-
-  if (ambientSound.filterType && ambientSound.filterFrequency) {
-    const filter = audioContext.createBiquadFilter();
-    filter.type = ambientSound.filterType;
-    filter.frequency.setValueAtTime(ambientSound.filterFrequency, audioContext.currentTime);
-    gainNode.connect(filter);
-    filter.connect(audioContext.destination);
-  } else {
-    gainNode.connect(audioContext.destination);
-  }
-
-  source.loop = true;
-  source.start(0);
-  source.stop(duration); // Ensure it stops at the end of the meditation
-};
+  return impulse
+}

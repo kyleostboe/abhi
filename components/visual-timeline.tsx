@@ -6,7 +6,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, Music2Icon, MicIcon, Check, X, Play, Copy } from 'lucide-react' // Added Copy icon
+import { Trash2, Music2Icon, MicIcon, Check, X, Play, BookText, Copy } from 'lucide-react'
 import { SOUND_CUES_LIBRARY, generateSyntheticSound } from "../lib/meditation-data"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn, formatTime } from "@/lib/utils" // Import formatTime
@@ -18,9 +18,9 @@ import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 interface VisualTimelineProps {
   events: TimelineEvent[]
   totalDuration: number
-  onUpdateEvent: (eventId: string, updates: Partial<TimelineEvent>) => void // Changed to accept Partial<TimelineEvent>
+  onUpdateEvent: (eventId: string, newStartTime: number) => void
   onRemoveEvent: (eventId: string) => void
-  onDuplicateEvent: (eventId: string) => void // New prop for duplication
+  onDuplicateEvent: (eventId: string) => void // Add this prop
 }
 
 const EVENT_COLORS = [
@@ -45,7 +45,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
   const timelineRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
-  const [editingTime, setEditingTime] = useState<string>("") // Used for time or divider label
+  const [editingTime, setEditingTime] = useState<string>("")
   const isMobile = useMobile() // Use the useMobile hook
 
   const colorMap = useMemo(() => {
@@ -88,7 +88,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
     isDragging.current = true
 
     if (timelineRef.current) {
-      const rect = timeline.current.getBoundingClientRect()
+      const rect = timelineRef.current.getBoundingClientRect()
       const eventElement = e.currentTarget as HTMLElement
       const eventRect = eventElement.getBoundingClientRect()
       setDragOffset(e.clientX - (eventRect.left + eventRect.width / 2))
@@ -114,7 +114,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
     const handleMouseMove = (e: MouseEvent) => {
       if (draggedEvent && isDragging.current) {
         const newTime = getTimeFromPosition(e.clientX - dragOffset)
-        onUpdateEvent(draggedEvent, { startTime: newTime }) // Pass object
+        onUpdateEvent(draggedEvent, newTime)
       }
     }
 
@@ -141,7 +141,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
       if (draggedEvent && isDragging.current && e.touches[0]) {
         e.preventDefault()
         const newTime = getTimeFromPosition(e.touches[0].clientX - dragOffset)
-        onUpdateEvent(draggedEvent, { startTime: newTime }) // Pass object
+        onUpdateEvent(draggedEvent, newTime)
       }
     }
 
@@ -169,28 +169,17 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
 
   const timeMarkers = Array.from({ length: timeMarkersCount + 1 }, (_, i) => (i / timeMarkersCount) * totalDuration)
 
-  const handleTimeEdit = (event: TimelineEvent) => { // Pass full event object
-    setEditingEventId(event.id)
-    if (event.type === "divider") {
-      setEditingTime(event.dividerLabel || "")
-    } else {
-      setEditingTime(formatTime(event.startTime))
-    }
+  const handleTimeEdit = (eventId: string, currentTime: number) => {
+    setEditingEventId(eventId)
+    setEditingTime(formatTime(currentTime))
   }
 
   const handleTimeSave = (eventId: string) => {
-    const eventToUpdate = events.find(e => e.id === eventId);
-    if (!eventToUpdate) return;
-
-    if (eventToUpdate.type === "divider") {
-      onUpdateEvent(eventId, { dividerLabel: editingTime });
-    } else {
-      const [minutes, seconds] = editingTime.split(":").map(Number);
-      const newTime = minutes * 60 + seconds;
-      onUpdateEvent(eventId, { startTime: newTime });
-    }
-    setEditingEventId(null);
-    setEditingTime("");
+    const [minutes, seconds] = editingTime.split(":").map(Number)
+    const newTime = minutes * 60 + seconds
+    onUpdateEvent(eventId, newTime)
+    setEditingEventId(null)
+    setEditingTime("")
   }
 
   const handleTimeCancel = () => {
@@ -248,17 +237,17 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
         subtitle: soundName ? `+ ${soundName}` : "Unknown Sound",
         icon: <Music2Icon className="h-4 w-4" />,
       }
-    } else if (event.type === "recorded_voice") {
+    } else if (event.type === "recorded_voice") { // Add else if for recorded_voice
       return {
         title: event.recordedInstructionLabel || "Untitled Recording",
         subtitle: "Voice Recording",
         icon: <MicIcon className="h-4 w-4" />,
       }
-    } else { // divider type
+    } else { // Handle group_label
       return {
-        title: event.dividerLabel || "Untitled Divider",
-        subtitle: "Section Divider",
-        icon: <div className="h-4 w-4 bg-white dark:bg-gray-300 rounded-full" />, // Simple circle for divider icon
+        title: event.label || "New Section",
+        subtitle: "Timeline Group",
+        icon: <BookText className="h-4 w-4" />, // Use BookText icon for labels
       }
     }
   }
@@ -286,94 +275,39 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
             {events.map((event) => {
               // Always use the actual start time for positioning to prevent jumping
               const displayTime = event.startTime
+              const isGroupLabel = event.type === "group_label"
 
-              if (event.type === "divider") {
-                return (
-                  <motion.div
-                    key={event.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className={cn(
-                      "absolute top-1/2 -translate-y-1/2 w-full h-10 flex items-center justify-center text-gray-600 dark:text-gray-300",
-                      "cursor-grab active:cursor-grabbing z-20", // Higher z-index for dividers
-                      draggedEvent === event.id ? "ring-2 ring-gray-400/50" : ""
-                    )}
-                    style={{
-                      left: `calc(${getPositionFromTime(displayTime)} - 50%)`, // Center the divider
-                      width: "100%", // Make it span the width of the timeline
-                      transform: "translateY(-50%)",
-                    }}
-                    onMouseDown={(e) => handleMouseDown(event.id, e)}
-                    onTouchStart={(e) => handleTouchStart(event.id, e)}
-                  >
-                    <div className="relative w-full h-px bg-gray-300 dark:bg-gray-600">
-                      <div className="absolute left-1/2 -translate-x-1/2 -top-4 bg-white dark:bg-gray-900 px-2 py-1 rounded-md shadow-sm text-xs font-black text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
-                        {editingEventId === event.id ? (
-                          <Input
-                            value={editingTime}
-                            onChange={(e) => setEditingTime(e.target.value)}
-                            placeholder="Label"
-                            className="w-24 h-6 text-xs text-center bg-transparent border-none focus:ring-0"
-                          />
-                        ) : (
-                          <span onClick={() => handleTimeEdit(event)}>{event.dividerLabel || "Divider"}</span>
-                        )}
-                        {editingEventId === event.id && (
-                          <div className="absolute -right-10 top-0 flex space-x-1">
-                            <Button size="sm" variant="ghost" onClick={() => handleTimeSave(event.id)} className="h-6 w-6 p-0">
-                              <Check className="h-3 w-3" />
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={handleTimeCancel} className="h-6 w-6 p-0">
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => onRemoveEvent(event.id)}
-                        className="absolute -right-8 top-1/2 -translate-y-1/2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                        title="Remove divider"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </motion.div>
-                );
-              } else {
-                return (
-                  <motion.div
-                    key={event.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className={cn(
-                      "absolute top-1/2 -translate-y-1/2 w-10 h-10 rounded-full shadow-md dark:shadow-white/20 cursor-grab active:cursor-grabbing flex items-center justify-center text-white",
-                      draggedEvent === event.id ? "z-30 shadow-lg dark:shadow-white/30 ring-2 ring-white/50" : "z-10",
-                      getEventColor(event.id),
-                    )}
-                    style={{
-                      left: `calc(${getPositionFromTime(displayTime)} - 20px)`,
-                      transform: "translateY(-50%)",
-                    }}
-                    onMouseDown={(e) => handleMouseDown(event.id, e)}
-                    onTouchStart={(e) => handleTouchStart(event.id, e)}
-                    title={
-                      event.type === "instruction_sound"
-                        ? event.instructionText
-                        : event.recordedInstructionLabel || "Recorded Voice"
-                    }
-                  >
-                    {event.type === "instruction_sound" ? (
+              return (
+                <motion.div
+                  key={event.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className={cn(
+                    "absolute top-1/2 -translate-y-1/2 rounded-full shadow-md dark:shadow-white/20 cursor-grab active:cursor-grabbing flex items-center justify-center text-white",
+                    draggedEvent === event.id && !isGroupLabel ? "z-30 shadow-lg dark:shadow-white/30 ring-2 ring-white/50" : "z-10",
+                    isGroupLabel ? "w-auto px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md shadow-inner cursor-default" : "w-10 h-10", // Style for group label
+                    getEventColor(event.id), // Apply color for non-group labels
+                  )}
+                  style={{
+                    left: `calc(${getPositionFromTime(displayTime)} - ${isGroupLabel ? 'auto' : '20px'})`, // Adjust positioning for labels
+                    transform: "translateY(-50%)",
+                  }}
+                  onMouseDown={isGroupLabel ? undefined : (e) => handleMouseDown(event.id, e)} // Disable drag for labels
+                  onTouchStart={isGroupLabel ? undefined : (e) => handleTouchStart(event.id, e)} // Disable drag for labels
+                  title={isGroupLabel ? event.label : (event.type === "instruction_sound" ? event.instructionText : event.recordedInstructionLabel || "Recorded Voice")}
+                >
+                  {isGroupLabel ? (
+                    <span className="font-black text-sm">{event.label}</span>
+                  ) : (
+                    event.type === "instruction_sound" ? (
                       <Music2Icon className="h-4 w-4" />
                     ) : (
                       <MicIcon className="h-4 w-4" />
-                    )}
-                  </motion.div>
-                )
-              }
+                    )
+                  )}
+                </motion.div>
+              )
             })}
           </AnimatePresence>
         </div>
@@ -422,6 +356,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
           ) : (
             events.map((event, index) => {
               const displayInfo = getEventDisplayInfo(event)
+              const isGroupLabel = event.type === "group_label"
               return (
                 <motion.div
                   key={event.id}
@@ -436,7 +371,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                         <div
                           className={cn(
                             "w-8 h-8 rounded-full flex items-center justify-center text-white shadow-sm",
-                            event.type === "divider" ? "bg-gray-500 dark:bg-gray-700" : getEventColor(event.id), // Use gray for dividers
+                            isGroupLabel ? "bg-gray-400 dark:bg-gray-600" : getEventColor(event.id), // Different color for group labels
                           )}
                         >
                           {displayInfo.icon}
@@ -447,15 +382,16 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                               variant="secondary"
                               className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                             >
-                              {event.type === "instruction_sound" ? "Instruction + Sound" : event.type === "recorded_voice" ? "Voice Recording" : "Divider"}
+                              {isGroupLabel ? "Group Label" : (event.type === "instruction_sound" ? "Instruction + Sound" : "Voice Recording")}
                             </Badge>
-                            {editingEventId === event.id && event.type === "divider" ? (
+                            {editingEventId === event.id ? (
                               <div className="flex items-center space-x-2">
                                 <Input
                                   value={editingTime}
                                   onChange={(e) => setEditingTime(e.target.value)}
-                                  placeholder="Label"
+                                  placeholder="MM:SS"
                                   className="w-20 h-6 text-xs"
+                                  pattern="[0-9]{1,2}:[0-9]{2}"
                                 />
                                 <Button
                                   size="sm"
@@ -471,7 +407,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                               </div>
                             ) : (
                               <button
-                                onClick={() => handleTimeEdit(event)} // Pass event object
+                                onClick={() => handleTimeEdit(event.id, event.startTime)}
                                 className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-serif text-xs whitespace-nowrap"
                               >
                                 {formatTime(event.startTime)}
@@ -485,7 +421,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        {event.type !== "divider" && ( // Only show play button for non-divider events
+                        {!isGroupLabel && ( // Only show play button for non-group labels
                           <Button
                             size="sm"
                             variant="ghost"
@@ -503,7 +439,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                           className="hover:bg-gray-100 dark:hover:bg-gray-800"
                           title="Duplicate event"
                         >
-                          <Copy className="h-4 w-4" />
+                          <Copy className="h-4 w-4" /> {/* Copy icon */}
                         </Button>
                         <Button
                           size="sm"

@@ -29,7 +29,7 @@ export interface AmbientSound {
 
 export interface TimelineEvent {
   id: string
-  type: "instruction_sound" | "recorded_voice" | "divider" // Added "divider" type
+  type: "instruction_sound" | "recorded_voice" | "group_label" // Add "group_label"
   startTime: number
   instructionText?: string
   soundCueId?: string
@@ -38,5 +38,5 @@ export interface TimelineEvent {
   recordedAudioUrl?: string
   recordedInstructionLabel?: string
   duration?: number // Duration of the recorded audio in seconds
-  dividerLabel?: string // New property for divider label
+  label?: string // Add label for group_label type
 }
