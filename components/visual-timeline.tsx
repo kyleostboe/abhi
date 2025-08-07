@@ -389,7 +389,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                           <p className="text-xs text-gray-600 dark:text-gray-400 font-black">{displayInfo.subtitle}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-4"> {/* Changed gap-3 to gap-4 for better spacing */}
                         <Button
                           size="sm"
                           variant="ghost"
