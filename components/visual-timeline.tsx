@@ -336,17 +336,17 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                 >
                   <Card className="p-4 bg-white dark:bg-gray-900 shadow-sm dark:shadow-white/10 border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center space-x-3 min-w-0"> {/* Added min-w-0 */}
+                      <div className="flex items-center space-x-3 flex-shrink-0"> {/* Added flex-shrink-0 to icon container */}
                         <div
                           className={cn(
-                            "rounded-full flex items-center justify-center text-white shadow-sm h-9 w-9",
+                            "rounded-full flex items-center justify-center text-white shadow-sm h-9 w-9 flex-shrink-0", // Added flex-shrink-0
                             getEventColor(event), // Use getEventColor with the event object
                           )}
                         >
                           {displayInfo.icon}
                         </div>
-                        <div className="flex flex-col flex-grow min-w-0"> {/* Added flex-grow and min-w-0 */}
-                          <div className="flex items-center space-x-2 mb-1"> {/* Removed flex-wrap */}
+                        <div className="flex flex-col flex-grow min-w-0 overflow-hidden"> {/* Added overflow-hidden */}
+                          <div className="flex items-center space-x-2 mb-1 flex-wrap"> {/* Re-added flex-wrap */}
                             <Badge
                               variant="outline"
                               className="text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap border-none"
@@ -389,12 +389,12 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                           <p className="text-xs text-gray-600 dark:text-gray-400 font-black truncate">{displayInfo.subtitle}</p> {/* Added truncate */}
                         </div>
                       </div>
-                      <div className="flex items-center gap-x-3 flex-shrink-0"> {/* Changed space-x-2 to gap-x-3 */}
+                      <div className="flex items-center gap-x-3 flex-shrink-0"> {/* Ensured gap-x-3 and flex-shrink-0 */}
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => playEventAudio(event)}
-                          className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                          className="hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0" // Added flex-shrink-0
                           title="Preview audio"
                         >
                           <Play className="h-4 w-4" />
@@ -403,7 +403,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                           size="sm"
                           variant="ghost"
                           onClick={() => onDuplicateEvent(event)} // Duplicate button
-                          className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                          className="hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0" // Added flex-shrink-0
                           title="Duplicate event"
                         >
                           <Copy className="h-4 w-4" />
@@ -412,7 +412,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                           size="sm"
                           variant="ghost"
                           onClick={() => onRemoveEvent(event.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 flex-shrink-0" // Added flex-shrink-0
                           title="Remove event"
                         >
                           <Trash2 className="h-4 w-4" />
