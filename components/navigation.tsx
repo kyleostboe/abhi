@@ -3,53 +3,38 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Home, Settings, DollarSign, Mail } from 'lucide-react'
 
 export function Navigation() {
   const pathname = usePathname()
 
+  const navItems = [
+    { name: "Home", href: "/", icon: Home },
+    { name: "Encoder", href: "/encoder", icon: Settings },
+    { name: "Donate", href: "/donate", icon: DollarSign },
+    { name: "Contact", href: "/contact", icon: Mail },
+  ]
+
   return (
-    <nav className="flex justify-center py-4 mb-5">
-      <ul className="flex space-x-4 bg-white/70 backdrop-blur-md px-6 py-3 dark:bg-gray-800/70 dark:shadow-white/10 shadow-2xl rounded-md">
-        <li>
-          <Link
-            href="/"
-            className={cn(
-              "px-4 py-2 transition-colors font-black font-serif text-sm shadow-none rounded-md",
-              pathname === "/"
-                ? "bg-gray-600 text-white shadow-md dark:bg-gray-700"
-                : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
-            )}
-          >
-            Home
+    <nav className="flex justify-center py-4 mb-8">
+      <div className="flex space-x-2 bg-white/70 backdrop-blur-md rounded-full p-1 shadow-lg dark:bg-gray-900/70 dark:shadow-white/10">
+        {navItems.map((item) => (
+          <Link key={item.href} href={item.href} passHref>
+            <Button
+              variant="ghost"
+              className={cn(
+                "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+                "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800",
+                pathname === item.href && "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-50",
+              )}
+            >
+              <item.icon className="h-4 w-4 mr-2" />
+              {item.name}
+            </Button>
           </Link>
-        </li>
-        <li>
-          <Link
-            href="/contact"
-            className={cn(
-              "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-md",
-              pathname === "/contact"
-                ? "bg-gray-600 text-white shadow-md dark:bg-gray-700"
-                : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
-            )}
-          >
-            Contact
-          </Link>
-        </li>
-        <li>
-          <Link
-            href="/donate"
-            className={cn(
-              "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-md",
-              pathname === "/donate"
-                ? "bg-gray-600 text-white shadow-md dark:bg-gray-700"
-                : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
-            )}
-          >
-            Donate
-          </Link>
-        </li>
-      </ul>
+        ))}
+      </div>
     </nav>
   )
 }

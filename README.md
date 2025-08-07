@@ -1,44 +1,35 @@
-# abhī
+# abhī: Meditation Tool
 
-A meditation tool that allows users to adjust the length of guided meditations by intelligently re-spacing silence periods, or create custom meditations by associating instructions with sound cues along a timeline.
+abhī is a meditation tool designed to help users adjust the length of guided meditations and create custom meditation timelines.
 
 ## Features
 
-### Length Adjuster
-
-- Upload an audio file (MP3, WAV, OGG, M4A).
-- Set a target duration for the meditation.
-- The tool analyzes silence periods and adjusts them to fit the target duration.
-- Advanced settings for silence threshold, minimum silence duration, and pacing preservation.
-- Download the processed audio.
-
-### Encoder (Labs)
-
-- Create custom meditation timelines.
-- Add instructions from a library or custom text.
-- Add musical notes and sound cues.
-- Record voice instructions directly within the app.
-- Mix background ambient sounds with adjustable volumes.
-- Export the custom meditation as an audio file.
+- **Length Adjuster**: Upload an audio file and adjust its duration by intelligently modifying silence periods.
+- **Encoder (Labs)**: Create custom meditation sessions by combining instructions, sound cues, and recorded voice.
+- **Visual Timeline**: Arrange and manage meditation events on an interactive timeline.
+- **Background Sound Mixer**: Add and control ambient background sounds for custom meditations.
+- **Audio Export**: Generate and download custom meditation audio files.
 
 ## Technologies Used
 
 - Next.js (App Router)
 - React
-- TypeScript
 - Tailwind CSS
 - shadcn/ui
-- Framer Motion for animations
-- Web Audio API for audio processing and generation
+- Lucide React Icons
+- Framer Motion (for animations)
+- Web Audio API (for audio processing and synthesis)
 
 ## Getting Started
 
-1.  **Clone the repository:**
+To run this project locally, follow these steps:
+
+1.  **Clone the repository**:
     \`\`\`bash
     git clone https://github.com/your-username/abhi.git
     cd abhi
     \`\`\`
-2.  **Install dependencies:**
+2.  **Install dependencies**:
     \`\`\`bash
     npm install
     # or
@@ -46,7 +37,7 @@ A meditation tool that allows users to adjust the length of guided meditations b
     # or
     pnpm install
     \`\`\`
-3.  **Run the development server:**
+3.  **Run the development server**:
     \`\`\`bash
     npm run dev
     # or
@@ -58,12 +49,12 @@ A meditation tool that allows users to adjust the length of guided meditations b
 
 ## Project Structure
 
--   `app/`: Next.js App Router pages and layouts.
--   `components/`: Reusable React components, including shadcn/ui components.
--   `hooks/`: Custom React hooks.
--   `lib/`: Utility functions and data, including audio processing logic and meditation data.
--   `public/`: Static assets like images and sounds.
--   `styles/`: Global CSS.
+- `app/`: Next.js App Router pages and API routes.
+- `components/`: Reusable React components, including shadcn/ui components.
+- `lib/`: Utility functions, types, and meditation data.
+- `hooks/`: Custom React hooks.
+- `public/`: Static assets.
+- `styles/`: Global CSS styles.
 
 ## Contributing
 

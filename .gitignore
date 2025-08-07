@@ -23,4 +23,9 @@ yarn-debug.log*
 yarn-error.log*
 .env*.local
 .vercel/
-*.tgz
+.turbo/
+
+# local dbs
+/prisma/db.sqlite
+/.sqlite
+/.sqlite-journal

@@ -99,7 +99,7 @@ duration: number
 label: string
 } | null>(null)
 const [recordedBlobs, setRecordedBlobs] = useState<Blob[]>([])
-mediaRecorderRef.current = null; // Initialize mediaRecorderRef.current to null
+const mediaRecorderRef = useRef<MediaRecorder | null>(null) // Corrected: Declared using useRef
 const labsAudioRef = useRef<HTMLAudioElement | null>(null)
 const instructionCategories = Array.from(new Set(INSTRUCTIONS_LIBRARY.map((instr) => instr.category)))
 const [recordingLabel, setRecordingLabel] = useState<string>("")
@@ -1003,6 +1003,7 @@ labsAudioRef.current.volume = 0.7
 if (labsAudioRef.current) {
   labsAudioRef.current.onerror = (e) => console.warn("Labs Audio error:", e)
 }
+
 return () => {
   if (labsAudioRef.current) {
     labsAudioRef.current.pause()
@@ -1012,8 +1013,9 @@ return () => {
   if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
     mediaRecorderRef.current.stop()
   }
+  stopBackgroundSound() // Ensure background preview is stopped on unmount
 }
-}, [])
+}, [stopBackgroundSound])
 
 // Helper function to add events to timelineEvents without automatic spacing
 const addEventToTimeline = useCallback((newEvent: TimelineEvent) => {
