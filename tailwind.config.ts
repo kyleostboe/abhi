@@ -47,38 +47,91 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Custom colors for the logo and gradients
-        'logo-amber': '#FFBF00', // Amber
-        'logo-rose': '#E0115F',  // Rose
-        'logo-purple': '#8A2BE2', // Blue Violet / Purple
-        'logo-teal': '#008080',  // Teal
-
-        // Specific shades for gradients and text
-        'logo-amber-400': 'rgb(255 191 0 / 0.2)',
-        'logo-rose-300': 'rgb(253 164 175 / 0.15)',
-        'logo-purple-400': 'rgb(192 132 252 / 0.1)',
-        'logo-teal-300': 'rgb(94 234 212 / 0.2)',
-
-        'logo-amber-600': '#CC9900',
-        'logo-rose-600': '#E0115F',
-        'logo-purple-600': '#5E35B1',
-        'logo-teal-600': '#006666',
-        'logo-emerald-600': '#047857',
-
-        'logo-amber-700': '#CC9900',
-        'logo-rose-700': '#C2185B',
-        'logo-purple-700': '#5E35B1',
-        'logo-teal-700': '#004D4D',
-        'logo-emerald-700': '#065F46',
-
-        'logo-teal-800': '#003333',
-        'logo-emerald-800': '#044F3A',
-
-        'logo-teal-50': '#E0FFFF',
-        'logo-emerald-50': '#ECFDF5',
-
-        'logo-teal-950': '#001A1A',
-        'logo-emerald-950': '#021C15',
+        // Custom colors for the abhī app
+        "logo-amber": {
+          DEFAULT: "#fbbf24", // amber-400
+          50: "#fffbeb", // amber-50
+          100: "#fff3c7", // amber-100
+          200: "#fce588", // amber-200
+          300: "#fbd38d", // amber-300
+          400: "#fbbf24", // amber-400
+          500: "#f59e0b", // amber-500
+          600: "#d97706", // amber-600
+          700: "#b45309", // amber-700
+          800: "#92400e", // amber-800
+          900: "#78350f", // amber-900
+          950: "#451a03", // amber-950
+        },
+        "logo-rose": {
+          DEFAULT: "#f43f5e", // rose-500
+          50: "#fff1f2", // rose-50
+          100: "#ffe4e6", // rose-100
+          200: "#fecdd3", // rose-200
+          300: "#fda4af", // rose-300
+          400: "#fb7185", // rose-400
+          500: "#f43f5e", // rose-500
+          600: "#e11d48", // rose-600
+          700: "#be123c", // rose-700
+          800: "#9f1239", // rose-800
+          900: "#881337", // rose-900
+          950: "#4c0519", // rose-950
+        },
+        "logo-purple": {
+          DEFAULT: "#a855f7", // purple-500
+          50: "#faf5ff", // purple-50
+          100: "#f3e8ff", // purple-100
+          200: "#e9d5ff", // purple-200
+          300: "#d8b4fe", // purple-300
+          400: "#c084fc", // purple-400
+          500: "#a855f7", // purple-500
+          600: "#9333ea", // purple-600
+          700: "#7e22ce", // purple-700
+          800: "#6b21a8", // purple-800
+          900: "#581c87", // purple-900
+          950: "#3b0764", // purple-950
+        },
+        "logo-teal": {
+          DEFAULT: "#14b8a6", // teal-500
+          50: "#f0fdfa", // teal-50
+          100: "#ccfbf1", // teal-100
+          200: "#99f6e4", // teal-200
+          300: "#5eead4", // teal-300
+          400: "#2dd4bf", // teal-400
+          500: "#14b8a6", // teal-500
+          600: "#0d9488", // teal-600
+          700: "#0f766e", // teal-700
+          800: "#115e59", // teal-800
+          900: "#134e4a", // teal-900
+          950: "#042f2e", // teal-950
+        },
+        "logo-emerald": {
+          DEFAULT: "#10b981", // emerald-500
+          50: "#ecfdf5", // emerald-50
+          100: "#d1fae5", // emerald-100
+          200: "#a7f3d0", // emerald-200
+          300: "#6ee7b7", // emerald-300
+          400: "#34d399", // emerald-400
+          500: "#10b981", // emerald-500
+          600: "#059669", // emerald-600
+          700: "#047857", // emerald-700
+          800: "#065f46", // emerald-800
+          900: "#064e3b", // emerald-900
+          950: "#022c22", // emerald-950
+        },
+        "logo-blue": {
+          DEFAULT: "#3b82f6", // blue-500
+          50: "#eff6ff", // blue-50
+          100: "#dbeafe", // blue-100
+          200: "#bfdbfe", // blue-200
+          300: "#93c5fd", // blue-300
+          400: "#60a5fa", // blue-400
+          500: "#3b82f6", // blue-500
+          600: "#2563eb", // blue-600
+          700: "#1d4ed8", // blue-700
+          800: "#1e40af", // blue-800
+          900: "#1e3a8a", // blue-900
+          950: "#172554", // blue-950
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

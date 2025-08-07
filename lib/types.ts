@@ -1,38 +1,39 @@
-// lib/types.ts
-
 export interface Instruction {
-  id: string;
-  category: string;
-  text: string;
+  id: string
+  category: string
+  text: string
 }
 
 export interface SoundCue {
-  id: string;
-  name: string;
-  src: string; // Path to audio file or "synthetic:type"
+  id: string
+  name: string
+  src: string // Can be a URL or a synthetic identifier like "synthetic:soft_pad"
 }
 
 export interface AmbientSound {
-  id: string;
-  name: string;
-  src: string; // Path to audio file or "synthetic:type"
-  volume: number; // 0.0 to 1.0
+  id: string
+  name: string
+  src: string // URL or synthetic identifier
+  volume: number // 0.0 to 1.0
 }
 
-export interface TimelineEvent {
-  id: string;
-  type: "instruction_sound" | "recorded_voice";
-  startTime: number; // in seconds
-  color?: string; // Tailwind CSS class for background and border, e.g., "bg-blue-500 border-blue-500"
-  
-  // For instruction_sound events
-  instructionText?: string;
-  soundCueId?: string;
-  soundCueName?: string; // Added to store directly
-  soundCueSrc?: string; // Added to store directly
-
-  // For recorded_voice events
-  recordedAudioUrl?: string;
-  recordedInstructionLabel?: string;
-  duration?: number; // Duration of the recorded audio in seconds
-}
+export type TimelineEvent =
+  | {
+      id: string
+      type: "instruction_sound"
+      startTime: number // in seconds
+      instructionText: string
+      soundCueId: string
+      soundCueName: string
+      soundCueSrc: string
+      color: string // Tailwind CSS class for background color
+    }
+  | {
+      id: string
+      type: "recorded_voice"
+      startTime: number // in seconds
+      recordedAudioUrl: string
+      recordedInstructionLabel: string
+      duration: number // duration of the recorded audio in seconds
+      color: string // Tailwind CSS class for background color
+    }

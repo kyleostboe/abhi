@@ -1,119 +1,148 @@
+import { Howl } from "howler"
 import { NOTE_FREQUENCIES } from "./meditation-data"
 
 let audioContext: AudioContext | null = null
 
 export function getAudioContext(): AudioContext {
-  if (!audioContext || audioContext.state === 'closed') {
-    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  if (!audioContext || audioContext.state === "closed") {
+    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
   }
-  return audioContext;
+  return audioContext
 }
 
-export async function playNote(note: string, octave: number, duration: number = 0.8, volume: number = 0.4) {
-  const ctx = getAudioContext();
-
-  // Ensure the audio context is running, especially after a user gesture
-  if (ctx.state === 'suspended') {
-    await ctx.resume();
+export async function playNote(note: keyof typeof NOTE_FREQUENCIES, octave: number) {
+  const ctx = getAudioContext()
+  if (ctx.state === "suspended") {
+    await ctx.resume()
   }
 
-  const frequency = NOTE_FREQUENCIES[`${note}${octave}` as keyof typeof NOTE_FREQUENCIES];
+  const frequency = NOTE_FREQUENCIES[`${note}${octave}` as keyof typeof NOTE_FREQUENCIES]
   if (!frequency) {
-    console.warn(`Frequency not found for note: ${note}${octave}`);
-    return;
+    console.error(`Frequency for note ${note}${octave} not found.`)
+    return
   }
 
-  const oscillator = ctx.createOscillator();
-  const gainNode = ctx.createGain();
+  const oscillator = ctx.createOscillator()
+  const gainNode = ctx.createGain()
 
-  oscillator.connect(gainNode);
-  gainNode.connect(ctx.destination);
+  oscillator.connect(gainNode)
+  gainNode.connect(ctx.destination)
 
-  oscillator.type = 'sine'; // Sine wave for a clean tone
-  oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
+  oscillator.type = "sine"
+  oscillator.frequency.setValueAtTime(frequency, ctx.currentTime)
 
-  // Fade in and out for a smoother sound
-  gainNode.gain.setValueAtTime(0, ctx.currentTime);
-  gainNode.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.05); // Fade in
-  gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration); // Fade out
+  const duration = 0.8 // seconds
+  const peakVolume = 0.4
 
-  oscillator.start(ctx.currentTime);
-  oscillator.stop(ctx.currentTime + duration);
+  // Simple ADSR envelope
+  gainNode.gain.setValueAtTime(0, ctx.currentTime)
+  gainNode.gain.exponentialRampToValueAtTime(peakVolume, ctx.currentTime + 0.05) // Attack
+  gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration) // Release
+
+  oscillator.start(ctx.currentTime)
+  oscillator.stop(ctx.currentTime + duration)
 }
 
-export async function bufferToWav(audioBuffer: AudioBuffer, highCompatibility: boolean, onProgress: (progress: number) => void, isMobile: boolean): Promise<Blob> {
-  const numberOfChannels = audioBuffer.numberOfChannels;
-  const sampleRate = audioBuffer.sampleRate;
-  const format = highCompatibility ? (isMobile && audioBuffer.duration > 60 * 15 ? 1 : 3) : 3; // 1 for PCM, 3 for Float32
-  const bitDepth = highCompatibility ? (format === 1 ? 16 : 32) : 32; // 16-bit PCM or 32-bit Float
+export async function bufferToWav(
+  audioBuffer: AudioBuffer,
+  highCompatibility: boolean,
+  onProgress: (progress: number) => void,
+  isMobile: boolean,
+): Promise<Blob> {
+  const numberOfChannels = audioBuffer.numberOfChannels
+  let sampleRate = audioBuffer.sampleRate
+  const originalSampleRate = audioBuffer.sampleRate
+  const originalLength = audioBuffer.length
 
-  const headerSize = 44;
-  const dataSize = audioBuffer.length * numberOfChannels * (bitDepth / 8);
-  const buffer = new ArrayBuffer(headerSize + dataSize);
-  const view = new DataView(buffer);
-
-  // RIFF chunk descriptor
-  writeString(view, 0, 'RIFF');
-  view.setUint32(4, 36 + dataSize, true); // file size
-  writeString(view, 8, 'WAVE');
-
-  // FMT sub-chunk
-  writeString(view, 12, 'fmt ');
-  view.setUint32(16, 16, true); // sub-chunk size
-  view.setUint16(20, format, true); // audio format (1 = PCM, 3 = Float)
-  view.setUint16(22, numberOfChannels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * numberOfChannels * (bitDepth / 8), true); // byte rate
-  view.setUint16(32, numberOfChannels * (bitDepth / 8), true); // block align
-  view.setUint16(34, bitDepth, true); // bits per sample
-
-  // DATA sub-chunk
-  writeString(view, 36, 'data');
-  view.setUint32(40, dataSize, true);
-
-  // Write the audio data
-  const floatToSample = (val: number) => {
-    if (format === 1) { // PCM
-      val = Math.max(-1, Math.min(1, val));
-      return val < 0 ? val * 0x8000 : val * 0x7FFF;
-    } else { // Float32
-      return val;
+  // Determine target sample rate for high compatibility mode
+  if (highCompatibility) {
+    if (isMobile && audioBuffer.duration > 30 * 60) {
+      // For very long audio on mobile, reduce to 22.05kHz
+      sampleRate = 22050
+    } else {
+      // Otherwise, use 44.1kHz
+      sampleRate = 44100
     }
-  };
+  }
 
-  const writeData = (offset: number, value: number) => {
-    if (format === 1) { // PCM
-      view.setInt16(offset, value, true);
-    } else { // Float32
-      view.setFloat32(offset, value, true);
-    }
-  };
+  let resampledBuffer = audioBuffer
+  if (sampleRate !== originalSampleRate) {
+    onProgress(0)
+    const offlineCtx = new OfflineAudioContext(numberOfChannels, audioBuffer.duration * sampleRate, sampleRate)
+    const source = offlineCtx.createBufferSource()
+    source.buffer = audioBuffer
+    source.connect(offlineCtx.destination)
+    source.start(0)
+    resampledBuffer = await offlineCtx.startRendering()
+    onProgress(100)
+  }
 
-  let offset = headerSize;
-  const channelData = [];
+  const float32Arrays = []
   for (let i = 0; i < numberOfChannels; i++) {
-    channelData.push(audioBuffer.getChannelData(i));
+    float32Arrays.push(resampledBuffer.getChannelData(i))
   }
 
-  const totalSamples = audioBuffer.length;
-  const bytesPerSample = bitDepth / 8;
-
-  for (let i = 0; i < totalSamples; i++) {
-    if (i % (Math.floor(totalSamples / 100) + 1) === 0) { // Update progress roughly 100 times
-      onProgress(i / totalSamples);
-    }
+  const interleaved = new Float32Array(resampledBuffer.length * numberOfChannels)
+  let k = 0
+  for (let i = 0; i < resampledBuffer.length; i++) {
     for (let channel = 0; channel < numberOfChannels; channel++) {
-      writeData(offset, floatToSample(channelData[channel][i]));
-      offset += bytesPerSample;
+      interleaved[k++] = float32Arrays[channel][i]
     }
   }
-  onProgress(1); // Ensure 100% progress is reported
 
-  return new Blob([view], { type: 'audio/wav' });
+  const wavBuffer = encodeWAV(interleaved, numberOfChannels, sampleRate, onProgress)
+  return new Blob([wavBuffer], { type: "audio/wav" })
 }
 
-function writeString(view: DataView, offset: number, s: string) {
-  for (let i = 0; i < s.length; i++) {
-    view.setUint8(offset + i, s.charCodeAt(i));
+function encodeWAV(samples: Float32Array, numChannels: number, sampleRate: number, onProgress: (p: number) => void) {
+  const dataLength = samples.length * 2 // 16-bit samples
+  const buffer = new ArrayBuffer(44 + dataLength)
+  const view = new DataView(buffer)
+
+  /* RIFF identifier */
+  writeString(view, 0, "RIFF")
+  /* file length */
+  view.setUint32(4, 36 + dataLength, true)
+  /* RIFF type */
+  writeString(view, 8, "WAVE")
+  /* format chunk identifier */
+  writeString(view, 12, "fmt ")
+  /* format chunk length */
+  view.setUint32(16, 16, true)
+  /* sample format (1 == PCM) */
+  view.setUint16(20, 1, true)
+  /* channel count */
+  view.setUint16(22, numChannels, true)
+  /* sample rate */
+  view.setUint32(24, sampleRate, true)
+  /* byte rate (sample rate * block align) */
+  view.setUint32(28, sampleRate * numChannels * 2, true)
+  /* block align (channel count * bytes per sample) */
+  view.setUint16(32, numChannels * 2, true)
+  /* bits per sample */
+  view.setUint16(34, 16, true)
+  /* data chunk identifier */
+  writeString(view, 36, "data")
+  /* data chunk length */
+  view.setUint32(40, dataLength, true)
+
+  floatTo16BitPCM(view, 44, samples, onProgress)
+
+  return view
+}
+
+function floatTo16BitPCM(view: DataView, offset: number, input: Float32Array, onProgress: (p: number) => void) {
+  for (let i = 0; i < input.length; i++, offset += 2) {
+    if (i % 100000 === 0) {
+      onProgress(i / input.length)
+    }
+    const s = Math.max(-1, Math.min(1, input[i]))
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true)
+  }
+}
+
+function writeString(view: DataView, offset: number, string: string) {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i))
   }
 }

@@ -9,4 +9,16 @@ export function useMobile() {
       const mobile = Boolean(userAgent.match(
         /Android|BlackBerry|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i
       ));
-      setIsMobile(mobile || window.innerWidth < 768); // Also consider
+      setIsMobile(mobile || window.innerWidth < 768); // Also consider screen width for tablets
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
+
+  return isMobile;
+}
