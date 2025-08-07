@@ -346,10 +346,9 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                           {displayInfo.icon}
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-1 flex-wrap">
+                          <div className="flex items-center space-x-2 mb-1">
                             <Badge
-                              variant="secondary"
-                              className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                              className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap"
                             >
                               {event.type === "instruction_sound" ? "Instruction + Sound" : "Voice Recording"}
                             </Badge>
@@ -402,7 +401,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => onDuplicateEvent(event)} // Duplicate button
+                          onClick={() => onDuplicateEvent(event)}
                           className="hover:bg-gray-100 dark:hover:bg-gray-800"
                           title="Duplicate event"
                         >
