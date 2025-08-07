@@ -62,7 +62,7 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 210 40% 98%;
+    --ring: 212.7 26.8% 83.9%;
   }
 }
 
@@ -76,220 +76,365 @@
 }
 
 /* Custom colors for the logo and gradients */
-.text-logo-amber {
-  color: #f59e0b; /* amber-500 */
+.bg-logo-amber {
+  background-color: #FFBF00; /* Amber */
 }
-.text-logo-rose {
-  color: #f43f5e; /* rose-500 */
+
+.bg-logo-rose {
+  background-color: #E0115F; /* Rose */
 }
-.text-logo-purple {
-  color: #a855f7; /* purple-500 */
+
+.bg-logo-purple {
+  background-color: #8A2BE2; /* Blue Violet / Purple */
 }
-.text-logo-teal {
-  color: #14b8a6; /* teal-500 */
-}
-.text-logo-emerald {
-  color: #10b981; /* emerald-500 */
+
+.bg-logo-teal {
+  background-color: #008080; /* Teal */
 }
 
 .from-logo-amber {
-  --tw-gradient-from: #f59e0b var(--tw-gradient-from-position);
-  --tw-gradient-to: rgb(245 158 11 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-from: #FFBF00 var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(255 191 0 / 0) var(--tw-gradient-to-position);
 }
+
 .via-logo-rose {
-  --tw-gradient-to: rgb(244 63 94 / 0) var(--tw-gradient-to-position);
-  --tw-gradient-stops: var(--tw-gradient-from), #f43f5e, var(--tw-gradient-to);
+  --tw-gradient-via: #E0115F var(--tw-gradient-via-position);
 }
+
 .via-logo-purple {
-  --tw-gradient-to: rgb(168 85 247 / 0) var(--tw-gradient-to-position);
-  --tw-gradient-stops: var(--tw-gradient-from), #a855f7, var(--tw-gradient-to);
+  --tw-gradient-via: #8A2BE2 var(--tw-gradient-via-position);
 }
+
 .to-logo-teal {
-  --tw-gradient-to: #14b8a6 var(--tw-gradient-to-position);
-}
-.to-logo-emerald {
-  --tw-gradient-to: #10b981 var(--tw-gradient-to-position);
+  --tw-gradient-to: #008080 var(--tw-gradient-to-position);
 }
 
-/* Dark mode adjustments for logo colors */
-.dark .from-logo-amber {
-  --tw-gradient-from: #d97706 var(--tw-gradient-from-position); /* amber-600 */
-}
-.dark .via-logo-rose {
-  --tw-gradient-to: rgb(225 29 72 / 0) var(--tw-gradient-to-position); /* rose-600 */
-  --tw-gradient-stops: var(--tw-gradient-from), #e11d48, var(--tw-gradient-to);
-}
-.dark .via-logo-purple {
-  --tw-gradient-to: rgb(139 92 246 / 0) var(--tw-gradient-to-position); /* purple-600 */
-  --tw-gradient-stops: var(--tw-gradient-from), #8b5cf6, var(--tw-gradient-to);
-}
-.dark .to-logo-teal {
-  --tw-gradient-to: #0d9488 var(--tw-gradient-to-position); /* teal-600 */
-}
-.dark .to-logo-emerald {
-  --tw-gradient-to: #059669 var(--tw-gradient-to-position); /* emerald-600 */
+/* Text colors */
+.text-logo-amber {
+  color: #FFBF00;
 }
 
-/* Specific color classes for text and borders */
+.text-logo-rose {
+  color: #E0115F;
+}
+
+.text-logo-purple {
+  color: #8A2BE2;
+}
+
+.text-logo-teal {
+  color: #008080;
+}
+
+/* Specific shades for gradients and text */
+.from-logo-amber-400\/20 {
+  --tw-gradient-from: rgb(255 191 0 / 0.2) var(--tw-gradient-from-position);
+}
+.via-rose-300\/15 {
+  --tw-gradient-via: rgb(253 164 175 / 0.15) var(--tw-gradient-via-position);
+}
+.via-purple-400\/10 {
+  --tw-gradient-via: rgb(192 132 252 / 0.1) var(--tw-gradient-via-position);
+}
+.to-teal-300\/20 {
+  --tw-gradient-to: rgb(94 234 212 / 0.2) var(--tw-gradient-to-position);
+}
+
+/* Dark mode specific gradient colors */
+.dark\:from-logo-amber-600\/20 {
+  --tw-gradient-from: rgb(204 153 0 / 0.2) var(--tw-gradient-from-position);
+}
+.dark\:via-rose-500\/15 {
+  --tw-gradient-via: rgb(225 29 72 / 0.15) var(--tw-gradient-via-position);
+}
+.dark\:via-purple-600\/10 {
+  --tw-gradient-via: rgb(147 51 234 / 0.1) var(--tw-gradient-via-position);
+}
+.dark\:to-teal-500\/20 {
+  --tw-gradient-to: rgb(20 184 166 / 0.2) var(--tw-gradient-to-position);
+}
+
+/* Specific shades for elements */
 .text-logo-rose-600 {
-  color: #e11d48; /* rose-600 */
-}
-.dark .text-logo-rose-300 {
-  color: #fda4af; /* rose-300 */
-}
-.border-logo-rose-600 {
-  border-color: #e11d48; /* rose-600 */
-}
-.dark .border-logo-rose-700 {
-  border-color: #be123c; /* rose-700 */
-}
-.text-logo-amber-600 {
-  color: #d97706; /* amber-600 */
-}
-.text-logo-purple-300 {
-  color: #c4b5fd; /* purple-300 */
-}
-.text-logo-teal-600 {
-  color: #0d9488; /* teal-600 */
-}
-.dark .text-logo-teal-300 {
-  color: #5eead4; /* teal-300 */
-}
-.dark .text-logo-amber-300 {
-  color: #fcd34d; /* amber-300 */
-}
-.dark .text-logo-amber-400 {
-  color: #fbbf24; /* amber-400 */
-}
-.dark .text-logo-rose-400 {
-  color: #fb7185; /* rose-400 */
-}
-.dark .text-logo-purple-400 {
-  color: #a78bfa; /* purple-400 */
-}
-.dark .text-logo-teal-400 {
-  color: #2dd4bf; /* teal-400 */
-}
-.dark .text-logo-emerald-400 {
-  color: #34d399; /* emerald-400 */
+  color: #E0115F; /* A darker shade of rose */
 }
 
-/* Background gradients for cards and buttons */
+.dark\:text-logo-rose-300 {
+  color: #F472B6; /* A lighter shade of rose for dark mode */
+}
+
+.text-logo-amber-600 {
+  color: #CC9900; /* A darker shade of amber */
+}
+
+.text-logo-purple-300 {
+  color: #B388FF; /* A lighter shade of purple */
+}
+
+.text-logo-teal-600 {
+  color: #006666; /* A darker shade of teal */
+}
+
+.dark\:text-logo-amber-300 {
+  color: #FFD700; /* Gold-like amber for dark mode */
+}
+
+.dark\:text-logo-amber-400 {
+  color: #FFC107; /* Slightly darker amber for dark mode */
+}
+
+.dark\:text-logo-rose-400 {
+  color: #F06292; /* Medium rose for dark mode */
+}
+
+.dark\:text-logo-teal-300 {
+  color: #4DB6AC; /* Lighter teal for dark mode */
+}
+
+.dark\:text-logo-purple-300 {
+  color: #C3A0E8; /* Lighter purple for dark mode */
+}
+
+.dark\:text-logo-purple-400 {
+  color: #A78BFA; /* Medium purple for dark mode */
+}
+
+.border-logo-rose-600 {
+  border-color: #E0115F;
+}
+
+.dark\:border-logo-rose-700 {
+  border-color: #C2185B;
+}
+
+.border-logo-rose-300 {
+  border-color: #F06292;
+}
+
+.dark\:border-pink-600 {
+  border-color: #D81B60;
+}
+
 .bg-gradient-to-r.from-logo-teal-500 {
-  --tw-gradient-from: #14b8a6 var(--tw-gradient-from-position);
+  --tw-gradient-from: #008080;
 }
+
 .bg-gradient-to-r.to-indigo-500 {
-  --tw-gradient-to: #6366f1 var(--tw-gradient-to-position);
+  --tw-gradient-to: #6366F1;
 }
-.dark .bg-gradient-to-r.from-logo-teal-700 {
-  --tw-gradient-from: #0f766e var(--tw-gradient-from-position);
+
+.dark\:from-logo-teal-700 {
+  --tw-gradient-from: #004D4D;
 }
-.dark .bg-gradient-to-r.to-indigo-700 {
-  --tw-gradient-to: #4338ca var(--tw-gradient-to-position);
+
+.dark\:to-indigo-700 {
+  --tw-gradient-to: #4338CA;
 }
 
 .bg-gradient-to-r.from-indigo-500 {
-  --tw-gradient-from: #6366f1 var(--tw-gradient-from-position);
+  --tw-gradient-from: #6366F1;
 }
+
 .bg-gradient-to-r.to-logo-amber-500 {
-  --tw-gradient-to: #f59e0b var(--tw-gradient-to-position);
+  --tw-gradient-to: #FFBF00;
 }
-.dark .bg-gradient-to-r.from-indigo-700 {
-  --tw-gradient-from: #4338ca var(--tw-gradient-from-position);
+
+.dark\:from-indigo-700 {
+  --tw-gradient-from: #4338CA;
 }
-.dark .bg-gradient-to-r.to-logo-amber-700 {
-  --tw-gradient-to: #b45309 var(--tw-gradient-to-position);
+
+.dark\:to-logo-amber-700 {
+  --tw-gradient-to: #CC9900;
 }
 
 .bg-gradient-to-r.from-logo-amber-500 {
-  --tw-gradient-from: #f59e0b var(--tw-gradient-from-position);
+  --tw-gradient-from: #FFBF00;
 }
+
 .bg-gradient-to-r.to-logo-rose-500 {
-  --tw-gradient-to: #f43f5e var(--tw-gradient-to-position);
+  --tw-gradient-to: #E0115F;
 }
-.dark .bg-gradient-to-r.from-logo-amber-700 {
-  --tw-gradient-from: #b45309 var(--tw-gradient-from-position);
+
+.dark\:from-logo-amber-700 {
+  --tw-gradient-from: #CC9900;
 }
-.dark .bg-gradient-to-r.to-logo-rose-700 {
-  --tw-gradient-to: #be123c var(--tw-gradient-to-position);
+
+.dark\:to-logo-rose-700 {
+  --tw-gradient-to: #C2185B;
 }
 
 .bg-gradient-to-r.from-logo-purple-500 {
-  --tw-gradient-from: #a855f7 var(--tw-gradient-from-position);
+  --tw-gradient-from: #8A2BE2;
 }
+
 .bg-gradient-to-r.to-logo-teal-500 {
-  --tw-gradient-to: #14b8a6 var(--tw-gradient-to-position);
+  --tw-gradient-to: #008080;
 }
-.dark .bg-gradient-to-r.from-logo-purple-700 {
-  --tw-gradient-from: #7e22ce var(--tw-gradient-from-position);
+
+.dark\:from-logo-purple-700 {
+  --tw-gradient-from: #5E35B1;
 }
-.dark .bg-gradient-to-r.to-logo-teal-700 {
-  --tw-gradient-to: #0f766e var(--tw-gradient-to-position);
+
+.dark\:to-logo-teal-700 {
+  --tw-gradient-to: #004D4D;
 }
 
 .bg-gradient-to-r.from-logo-rose-500 {
-  --tw-gradient-from: #f43f5e var(--tw-gradient-from-position);
+  --tw-gradient-from: #E0115F;
 }
+
 .bg-gradient-to-r.to-logo-purple-500 {
-  --tw-gradient-to: #a855f7 var(--tw-gradient-to-position);
+  --tw-gradient-to: #8A2BE2;
 }
-.dark .bg-gradient-to-r.from-logo-rose-700 {
-  --tw-gradient-from: #be123c var(--tw-gradient-from-position);
+
+.dark\:from-logo-rose-700 {
+  --tw-gradient-from: #C2185B;
 }
-.dark .bg-gradient-to-r.to-logo-purple-700 {
-  --tw-gradient-to: #7e22ce var(--tw-gradient-to-position);
+
+.dark\:to-logo-purple-700 {
+  --tw-gradient-to: #5E35B1;
 }
 
 .bg-gradient-to-r.from-logo-teal-600 {
-  --tw-gradient-from: #0d9488 var(--tw-gradient-from-position);
+  --tw-gradient-from: #006666;
 }
+
 .bg-gradient-to-r.to-logo-emerald-600 {
-  --tw-gradient-to: #059669 var(--tw-gradient-to-position);
-}
-.dark .bg-gradient-to-r.from-logo-teal-700 {
-  --tw-gradient-from: #0f766e var(--tw-gradient-from-position);
-}
-.dark .bg-gradient-to-r.to-logo-emerald-700 {
-  --tw-gradient-to: #047857 var(--tw-gradient-to-position);
-}
-.dark .hover\:from-logo-teal-800:hover {
-  --tw-gradient-from: #0e746b var(--tw-gradient-from-position);
-}
-.dark .hover\:to-logo-emerald-800:hover {
-  --tw-gradient-to: #065f46 var(--tw-gradient-to-position);
+  --tw-gradient-to: #047857;
 }
 
-/* Background gradients for specific cards */
+.dark\:from-logo-teal-700 {
+  --tw-gradient-from: #004D4D;
+}
+
+.dark\:to-logo-emerald-700 {
+  --tw-gradient-to: #065F46;
+}
+
+.dark\:hover\:from-logo-teal-800 {
+  --tw-gradient-from: #003333;
+}
+
+.dark\:hover\:to-logo-emerald-800 {
+  --tw-gradient-to: #044F3A;
+}
+
 .from-logo-teal-50 {
-  --tw-gradient-from: #f0fdfa var(--tw-gradient-from-position);
+  --tw-gradient-from: #E0FFFF;
 }
+
 .to-logo-emerald-50 {
-  --tw-gradient-to: #f0fdf4 var(--tw-gradient-to-position);
-}
-.dark .from-logo-teal-950 {
-  --tw-gradient-from: #042f2e var(--tw-gradient-from-position);
-}
-.dark .to-logo-emerald-950 {
-  --tw-gradient-to: #022c22 var(--tw-gradient-to-position);
+  --tw-gradient-to: #ECFDF5;
 }
 
-/* Custom button styles */
-.bg-logo-teal-500 {
-  background-color: #14b8a6;
-}
-.hover\:bg-logo-teal-600:hover {
-  background-color: #0d9488;
-}
-.dark .bg-logo-teal-700 {
-  background-color: #0f766e;
-}
-.dark .hover\:bg-logo-teal-800:hover {
-  background-color: #0e746b;
+.dark\:from-logo-teal-950 {
+  --tw-gradient-from: #001A1A;
 }
 
-.bg-logo-rose-50 {
-  background-color: #fff1f2;
+.dark\:to-logo-emerald-950 {
+  --tw-gradient-to: #021C15;
 }
-.dark .bg-gray-800 {
-  background-color: #27272a;
+
+.border-logo-teal-500 {
+  border-color: #008080;
+}
+
+.hover\:bg-logo-teal-50 {
+  background-color: #E0FFFF;
+}
+
+.dark\:border-logo-teal-500 {
+  border-color: #008080;
+}
+
+.border-logo-rose-500 {
+  border-color: #E0115F;
+}
+
+.hover\:bg-logo-rose-50 {
+  background-color: #FFF0F5;
+}
+
+.dark\:border-logo-rose-400 {
+  border-color: #F06292;
+}
+
+.border-logo-purple-500 {
+  border-color: #8A2BE2;
+}
+
+.hover\:bg-logo-purple-50 {
+  background-color: #F3E8FF;
+}
+
+.dark\:border-logo-purple-400 {
+  border-color: #A78BFA;
+}
+
+.data-\[state\=checked\]\:bg-logo-rose-500 {
+  background-color: #E0115F;
+}
+
+.dark\:data-\[state\=checked\]\:bg-logo-rose-700 {
+  background-color: #C2185B;
+}
+
+.border-indigo-400 {
+  border-color: #818CF8;
+}
+
+.text-indigo-400 {
+  color: #818CF8;
+}
+
+.text-indigo-300 {
+  color: #A5B4FC;
+}
+
+.text-indigo-500\/70 {
+  color: rgb(99 102 241 / 0.7);
+}
+
+.dark\:text-indigo-400\/70 {
+  color: rgb(129 140 248 / 0.7);
+}
+
+.border-indigo-200 {
+  border-color: #C7D2FE;
+}
+
+.placeholder-indigo-400::placeholder {
+  color: #818CF8;
+}
+
+.text-logo-rose {
+  color: #E0115F;
+}
+
+.placeholder-logo-rose::placeholder {
+  color: #E0115F;
+}
+
+.text-logo-rose-600 {
+  color: #E0115F;
+}
+
+.dark\:text-logo-rose-400 {
+  color: #F06292;
+}
+
+.text-logo-teal-500 {
+  color: #008080;
+}
+
+.dark\:text-logo-teal-500 {
+  color: #008080;
+}
+
+.hover\:bg-logo-emerald-50 {
+  background-color: #ECFDF5;
+}
+
+.dark\:hover\:bg-logo-emerald-900 {
+  background-color: #021C15;
 }

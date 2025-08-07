@@ -1,429 +1,231 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useRef, useCallback, useEffect, useMemo } from "react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Trash2, Music2Icon, MicIcon, Check, X, Play, Copy } from 'lucide-react' // Import Copy icon
-import { SOUND_CUES_LIBRARY, generateSyntheticSound } from "../lib/meditation-data"
+import React, { useState, useRef, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { cn, formatTime } from "@/lib/utils" // Import formatTime
+import { Slider } from "@/components/ui/slider"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { getAudioContext, playNote } from "../lib/audio-utils" // Corrected import path and added getAudioContext
-import type { TimelineEvent } from "@/lib/types" // Import TimelineEvent from types
-import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
-import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
+import { Label } from "@/components/ui/label"
+import { Trash2, Copy } from 'lucide-react'
+import { cn, formatTime } from "@/lib/utils"
+import type { TimelineEvent } from "@/lib/types"
+import { EVENT_COLORS } from "@/lib/constants"
 
 interface VisualTimelineProps {
   events: TimelineEvent[]
-  totalDuration: number
-  onUpdateEvent: (eventId: string, newStartTime: number) => void
-  onRemoveEvent: (eventId: string) => void
-  onDuplicateEvent: (event: TimelineEvent) => void // New prop for duplication
+  totalDuration: number // in seconds
+  onUpdateEvent: (id: string, newTime: number) => void
+  onRemoveEvent: (id: string) => void
+  onDuplicateEvent: (event: TimelineEvent) => void
 }
 
-export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveEvent, onDuplicateEvent }: VisualTimelineProps) {
-  const [draggedEvent, setDraggedEvent] = useState<string | null>(null)
-  const [dragOffset, setDragOffset] = useState(0)
+export function VisualTimeline({
+  events,
+  totalDuration,
+  onUpdateEvent,
+  onRemoveEvent,
+  onDuplicateEvent,
+}: VisualTimelineProps) {
   const timelineRef = useRef<HTMLDivElement>(null)
-  const isDragging = useRef(false)
-  const [editingEventId, setEditingEventId] = useState<string | null>(null)
-  const [editingTime, setEditingTime] = useState<string>("")
-  const isMobile = useMobile() // Use the useMobile hook
+  const [timelineWidth, setTimelineWidth] = useState(0)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [dragStartX, setDragStartX] = useState(0)
+  const [initialEventTime, setInitialEventTime] = useState(0)
 
-  // Removed colorMap useMemo as colors are now stored directly on TimelineEvent
-
-  const getEventColor = useCallback(
-    (event: TimelineEvent) => event.color || EVENT_COLORS[0], // Use event.color directly
-    [],
-  )
-
-  const getTimeFromPosition = useCallback(
-    (clientX: number): number => {
-      if (!timelineRef.current) return 0
-      const rect = timelineRef.current.getBoundingClientRect()
-      const relativeX = clientX - rect.left
-      const percentage = Math.max(0, Math.min(1, relativeX / rect.width))
-      return Math.round(percentage * totalDuration)
-    },
-    [totalDuration],
-  )
-
-  const getPositionFromTime = useCallback(
-    (time: number): string => {
-      const percentage = (time / totalDuration) * 100
-      return `${percentage}%`
-    },
-    [totalDuration],
-  )
-
-  // Handle mouse events
-  const handleMouseDown = (eventId: string, e: React.MouseEvent) => {
-    e.preventDefault()
-    setDraggedEvent(eventId)
-    isDragging.current = true
-
-    if (timelineRef.current) {
-      const rect = timelineRef.current.getBoundingClientRect()
-      const eventElement = e.currentTarget as HTMLElement
-      const eventRect = eventElement.getBoundingClientRect()
-      setDragOffset(e.clientX - (eventRect.left + eventRect.width / 2))
-    }
-  }
-
-  // Handle touch events
-  const handleTouchStart = (eventId: string, e: React.TouchEvent) => {
-    e.preventDefault()
-    setDraggedEvent(eventId)
-    isDragging.current = true
-
-    if (timelineRef.current && e.touches[0]) {
-      const rect = timelineRef.current.getBoundingClientRect()
-      const eventElement = e.currentTarget as HTMLElement
-      const eventRect = eventElement.getBoundingClientRect()
-      setDragOffset(e.touches[0].clientX - (eventRect.left + eventRect.width / 2))
-    }
-  }
-
-  // Global mouse move handler
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (draggedEvent && isDragging.current) {
-        const newTime = getTimeFromPosition(e.clientX - dragOffset)
-        onUpdateEvent(draggedEvent, newTime)
+    const updateWidth = () => {
+      if (timelineRef.current) {
+        setTimelineWidth(timelineRef.current.offsetWidth)
       }
     }
+    updateWidth()
+    window.addEventListener("resize", updateWidth)
+    return () => window.removeEventListener("resize", updateWidth)
+  }, [])
 
-    const handleMouseUp = () => {
-      setDraggedEvent(null)
-      isDragging.current = false
-      setDragOffset(0)
-    }
+  const pixelsPerSecond = timelineWidth / totalDuration
 
-    if (draggedEvent) {
-      document.addEventListener("mousemove", handleMouseMove)
-      document.addEventListener("mouseup", handleMouseUp)
-    }
-
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove)
-      document.removeEventListener("mouseup", handleMouseUp)
-    }
-  }, [draggedEvent, getTimeFromPosition, onUpdateEvent, dragOffset])
-
-  // Global touch move handler
-  useEffect(() => {
-    const handleTouchMove = (e: TouchEvent) => {
-      if (draggedEvent && isDragging.current && e.touches[0]) {
-        e.preventDefault()
-        const newTime = getTimeFromPosition(e.touches[0].clientX - dragOffset)
-        onUpdateEvent(draggedEvent, newTime)
+  const handleDragStart = useCallback(
+    (event: React.MouseEvent | React.TouchEvent, eventId: string, currentStartTime: number) => {
+      setDraggingId(eventId)
+      setInitialEventTime(currentStartTime)
+      if ("touches" in event) {
+        setDragStartX(event.touches[0].clientX)
+      } else {
+        setDragStartX(event.clientX)
       }
-    }
+      event.currentTarget.setPointerCapture?.((event as React.MouseEvent).pointerId);
+    },
+    []
+  );
 
-    const handleTouchEnd = () => {
-      setDraggedEvent(null)
-      isDragging.current = false
-      setDragOffset(0)
-    }
+  const handleDrag = useCallback(
+    (event: React.MouseEvent | React.TouchEvent) => {
+      if (!draggingId || !timelineRef.current) return;
 
-    if (draggedEvent) {
-      document.addEventListener("touchmove", handleTouchMove, { passive: false })
-      document.addEventListener("touchend", handleTouchEnd)
-    }
-
-    return () => {
-      document.removeEventListener("touchmove", handleTouchMove)
-      document.removeEventListener("touchend", handleTouchEnd)
-    }
-  }, [draggedEvent, getTimeFromPosition, onUpdateEvent, dragOffset])
-
-  // Responsive time markers - fewer on mobile
-  const timeMarkersCount = isMobile
-    ? Math.max(3, Math.min(Math.floor(totalDuration / 120), 5)) // 3-5 markers on mobile
-    : Math.max(5, Math.min(Math.floor(totalDuration / 60), 10)) // 5-10 markers on desktop
-
-  const timeMarkers = Array.from({ length: timeMarkersCount + 1 }, (_, i) => (i / timeMarkersCount) * totalDuration)
-
-  const handleTimeEdit = (eventId: string, currentTime: number) => {
-    setEditingEventId(eventId)
-    setEditingTime(formatTime(currentTime))
-  }
-
-  const handleTimeSave = (eventId: string) => {
-    const [minutes, seconds] = editingTime.split(":").map(Number)
-    const newTime = minutes * 60 + seconds
-    onUpdateEvent(eventId, newTime)
-    setEditingEventId(null)
-    setEditingTime("")
-  }
-
-  const handleTimeCancel = () => {
-    setEditingEventId(null)
-    setEditingTime("")
-  }
-
-  const playEventAudio = async (event: TimelineEvent) => {
-    try {
-      if (event.type === "instruction_sound" && event.soundCueSrc) {
-        // Use soundCueSrc directly for playback
-        if (event.soundCueSrc.startsWith("synthetic:")) {
-          const soundCue = SOUND_CUES_LIBRARY.find((s) => s.id === event.soundCueId)
-          if (soundCue) {
-            // Pass the live AudioContext to generateSyntheticSound
-            const audioContext = getAudioContext()
-            await generateSyntheticSound(soundCue, audioContext)
-          }
-        } else if (event.soundCueSrc.startsWith("musical:")) {
-          const noteMatch = event.soundCueSrc.match(/musical:([A-G])(\d)/)
-          if (noteMatch) {
-            const note = noteMatch[1]
-            const octave = Number.parseInt(noteMatch[2])
-            await playNote(note, octave) // Await playNote
-          }
-        } else {
-          const audio = new Audio(event.soundCueSrc)
-          audio.volume = 0.7
-          await audio.play()
-        }
-      } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
-        // Play recorded audio
-        const audio = new Audio(event.recordedAudioUrl)
-        audio.volume = 0.7
-        await audio.play()
+      let clientX: number;
+      if ("touches" in event) {
+        clientX = event.touches[0].clientX;
+      } else {
+        clientX = event.clientX;
       }
-    } catch (error) {
-      console.warn("Audio playback failed:", error)
-    }
-  }
 
-  const getEventDuration = (event: TimelineEvent): number => {
-    if (event.type === "recorded_voice" && event.recordedAudioUrl) {
-      return event.duration || 0
-    }
-    return 0
-  }
+      const deltaX = clientX - dragStartX;
+      const deltaSeconds = deltaX / pixelsPerSecond;
+      let newTime = initialEventTime + deltaSeconds;
 
-  const getEventDisplayInfo = (event: TimelineEvent) => {
-    if (event.type === "instruction_sound") {
-      // Prioritize using the directly stored soundCueName
-      const soundName = event.soundCueName || SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)?.name
-      return {
-        title: event.instructionText || "Untitled Instruction",
-        subtitle: soundName ? `+ ${soundName}` : "Unknown Sound",
-        icon: <Music2Icon className="h-4 w-4" />,
-      }
-    } else {
-      return {
-        title: event.recordedInstructionLabel || "Untitled Recording",
-        subtitle: "Voice Recording",
-        icon: <MicIcon className="h-4 w-4" />,
-      }
-    }
-  }
+      // Clamp newTime to stay within bounds [0, totalDuration]
+      newTime = Math.max(0, Math.min(newTime, totalDuration));
+
+      onUpdateEvent(draggingId, newTime);
+    },
+    [draggingId, dragStartX, initialEventTime, pixelsPerSecond, totalDuration, onUpdateEvent]
+  );
+
+  const handleDragEnd = useCallback(() => {
+    setDraggingId(null);
+  }, []);
+
+  const getEventPosition = useCallback(
+    (startTime: number) => {
+      return (startTime / totalDuration) * 100; // Percentage
+    },
+    [totalDuration]
+  );
 
   return (
-    <div className="space-y-6 select-none">
-      {/* Time Markers */}
-      <div className="relative">
-        {/* Timeline Bar */}
-        <div
-          ref={timelineRef}
-          className="relative h-20 bg-gradient-to-r from-gray-100/70 to-gray-200/70 dark:from-gray-800/70 dark:to-gray-900/70 rounded-2xl dark:border-gray-700 cursor-pointer overflow-visible dark:shadow-white/30 shadow-inner border-gray-700 border-0"
-        >
-          {/* Background Grid Lines - excluding first and last */}
-          {timeMarkers.slice(1, -1).map((time, index) => (
+    <div className="space-y-6">
+      <div className="relative h-12 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden shadow-inner">
+        <div ref={timelineRef} className="absolute inset-0 flex items-center">
+          {/* Timeline markers */}
+          {Array.from({ length: Math.floor(totalDuration / 60) + 1 }).map((_, i) => (
             <div
-              key={`grid-${index}`}
-              className="absolute top-0 bottom-0 w-px bg-logo-teal-200/50 dark:bg-logo-teal-700/50"
-              style={{ left: getPositionFromTime(time) }}
-            />
-          ))}
-
-          {/* Events on Timeline */}
-          <AnimatePresence>
-            {events.map((event) => {
-              // Always use the actual start time for positioning to prevent jumping
-              const displayTime = event.startTime
-
-              return (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className={cn(
-                    "absolute top-1/2 -translate-y-1/2 w-10 h-10 rounded-full shadow-md dark:shadow-white/20 cursor-grab active:cursor-grabbing flex items-center justify-center text-white",
-                    draggedEvent === event.id ? "z-30 shadow-lg dark:shadow-white/30 ring-2 ring-white/50" : "z-10",
-                    getEventColor(event), // Use getEventColor with the event object
-                  )}
-                  style={{
-                    left: `calc(${getPositionFromTime(displayTime)} - 20px)`,
-                    transform: "translateY(-50%)",
-                  }}
-                  onMouseDown={(e) => handleMouseDown(event.id, e)}
-                  onTouchStart={(e) => handleTouchStart(event.id, e)}
-                  title={
-                    event.type === "instruction_sound"
-                      ? event.instructionText
-                      : event.recordedInstructionLabel || "Recorded Voice"
-                  }
-                >
-                  {event.type === "instruction_sound" ? (
-                    <Music2Icon className="h-4 w-4" />
-                  ) : (
-                    <MicIcon className="h-4 w-4" />
-                  )}
-                </motion.div>
-              )
-            })}
-          </AnimatePresence>
-        </div>
-
-        {/* Responsive Time Labels */}
-        <div
-          className={cn(
-            "flex justify-between text-gray-500 dark:text-gray-400 px-2 mt-2 font-black",
-            isMobile ? "text-xs" : "text-sm",
-          )}
-        >
-          {timeMarkers.map((time, index) => (
-            <div key={`time-${index}`} className="text-center flex flex-col">
-              <span
-                className={cn(
-                  "leading-tight",
-                  isMobile && index > 0 && index < timeMarkers.length - 1 ? "hidden sm:block" : "",
-                )}
-              >
-                {isMobile ? Math.floor(time / 60) : formatTime(time)}
+              key={`marker-${i}`}
+              className="absolute h-full border-l border-gray-300 dark:border-gray-600 flex flex-col justify-center items-center"
+              style={{ left: `${(i * 60 / totalDuration) * 100}%` }}
+            >
+              <span className="absolute -bottom-6 text-xs text-gray-500 dark:text-gray-400">
+                {i} min
               </span>
-              {isMobile && (
-                <span className="text-xs opacity-60">
-                  {index === 0 ? "0m" : index === timeMarkers.length - 1 ? `${Math.floor(totalDuration / 60)}m` : ""}
-                </span>
-              )}
             </div>
           ))}
+
+          {/* Events on timeline */}
+          <AnimatePresence>
+            {events.map((event) => (
+              <motion.div
+                key={event.id}
+                layout
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className={cn(
+                  "absolute h-8 w-8 rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing shadow-md border-2",
+                  event.color || EVENT_COLORS[0] // Use event.color or default
+                )}
+                style={{
+                  left: `${getEventPosition(event.startTime)}%`,
+                  x: "-50%", // Center the dot on its position
+                  zIndex: draggingId === event.id ? 50 : 10,
+                }}
+                onPointerDown={(e) => handleDragStart(e, event.id, event.startTime)}
+                onPointerMove={handleDrag}
+                onPointerUp={handleDragEnd}
+                onPointerCancel={handleDragEnd}
+                onPointerLeave={handleDragEnd} // Added to handle cases where pointer leaves the element
+                title={`${event.type === "instruction_sound" ? event.instructionText : event.recordedInstructionLabel} at ${formatTime(event.startTime)}`}
+              >
+                {event.type === "instruction_sound" ? (
+                  <Music2 className="h-4 w-4 text-white" />
+                ) : (
+                  <Mic className="h-4 w-4 text-white" />
+                )}
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       </div>
 
       {/* Event List */}
-      <div className="space-y-3 text-left">
-        <h4 className="font-black dark:text-gray-200 text-gray-600 text-base">Timeline Events</h4>
-        <AnimatePresence>
-          {events.length === 0 ? (
+      <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+        {events.length === 0 && (
+          <p className="text-center text-gray-500 dark:text-gray-400 font-serif font-black text-sm py-4">
+            No events added yet. Add instructions or recordings above!
+          </p>
+        )}
+        <AnimatePresence initial={false}>
+          {events.map((event) => (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="text-center py-8 text-gray-500 dark:text-gray-400"
+              key={event.id}
+              layout
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, x: -100, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
-              <div className="mb-2 text-base">No events added yet</div>
-              <div className="text-sm">Add instructions and sound cues to build your meditation timeline</div>
+              <Card className="p-4 flex items-center space-x-4 bg-white dark:bg-gray-900 shadow-md dark:shadow-white/10 border-none">
+                <div className={cn(
+                  "flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center",
+                  event.color || EVENT_COLORS[0] // Use event.color or default
+                )}>
+                  {event.type === "instruction_sound" ? (
+                    <Music2 className="h-5 w-5 text-white" />
+                  ) : (
+                    <Mic className="h-5 w-5 text-white" />
+                  )}
+                </div>
+                <div className="flex-1 grid gap-1">
+                  <p className="font-bold text-gray-800 dark:text-gray-200 text-sm">
+                    {event.type === "instruction_sound" ? event.instructionText : event.recordedInstructionLabel}
+                  </p>
+                  {event.type === "instruction_sound" && event.soundCueName && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Sound: {event.soundCueName}</p>
+                  )}
+                  {event.type === "recorded_voice" && event.duration && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Duration: {formatTime(event.duration)}</p>
+                  )}
+                </div>
+                <div className="w-24">
+                  <Label htmlFor={`time-${event.id}`} className="sr-only">Start Time</Label>
+                  <Input
+                    id={`time-${event.id}`}
+                    type="number"
+                    value={Math.round(event.startTime)}
+                    onChange={(e) => onUpdateEvent(event.id, Number(e.target.value))}
+                    className="w-full text-center text-sm font-mono bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700"
+                    min={0}
+                    max={totalDuration}
+                    step={1}
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-1">
+                    {formatTime(event.startTime)}
+                  </p>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onDuplicateEvent(event)}
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    title="Duplicate Event"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onRemoveEvent(event.id)}
+                    className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-200"
+                    title="Remove Event"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </Card>
             </motion.div>
-          ) : (
-            events.map((event, index) => {
-              const displayInfo = getEventDisplayInfo(event)
-              return (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <Card className="p-4 bg-white dark:bg-gray-900 shadow-sm dark:shadow-white/10 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3 flex-1">
-                        <div
-                          className={cn(
-                            "w-8 h-8 rounded-full flex items-center justify-center text-white shadow-sm",
-                            getEventColor(event), // Use getEventColor with the event object
-                          )}
-                        >
-                          {displayInfo.icon}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-1 flex-wrap">
-                            <Badge
-                              variant="secondary"
-                              className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-                            >
-                              {event.type === "instruction_sound" ? "Instruction + Sound" : "Voice Recording"}
-                            </Badge>
-                            {editingEventId === event.id ? (
-                              <div className="flex items-center space-x-2">
-                                <Input
-                                  value={editingTime}
-                                  onChange={(e) => setEditingTime(e.target.value)}
-                                  placeholder="MM:SS"
-                                  className="w-20 h-6 text-xs"
-                                  pattern="[0-9]{1,2}:[0-9]{2}"
-                                />
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleTimeSave(event.id)}
-                                  className="h-6 w-6 p-0"
-                                >
-                                  <Check className="h-3 w-3" />
-                                </Button>
-                                <Button size="sm" variant="ghost" onClick={handleTimeCancel} className="h-6 w-6 p-0">
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => handleTimeEdit(event.id, event.startTime)}
-                                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-serif text-xs whitespace-nowrap"
-                              >
-                                {formatTime(event.startTime)}
-                              </button>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-700 dark:text-gray-300 font-black">
-                            <span className="font-black">{displayInfo.title}</span>
-                          </div>
-                          <p className="text-xs text-gray-600 dark:text-gray-400 font-black">{displayInfo.subtitle}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => playEventAudio(event)}
-                          className="hover:bg-gray-100 dark:hover:bg-gray-800"
-                          title="Preview audio"
-                        >
-                          <Play className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => onDuplicateEvent(event)} // Duplicate button
-                          className="hover:bg-gray-100 dark:hover:bg-gray-800"
-                          title="Duplicate event"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => onRemoveEvent(event.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                          title="Remove event"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              )
-            })
-          )}
+          ))}
         </AnimatePresence>
       </div>
     </div>

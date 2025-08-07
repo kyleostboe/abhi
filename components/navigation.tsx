@@ -1,40 +1,42 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
+import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
-import { Home, Settings, DollarSign, Mail } from 'lucide-react'
+import { Sun, Moon } from 'lucide-react'
+import { cn } from "@/lib/utils"
 
 export function Navigation() {
-  const pathname = usePathname()
-
-  const navItems = [
-    { name: "Home", href: "/", icon: Home },
-    { name: "Encoder", href: "/encoder", icon: Settings },
-    { name: "Donate", href: "/donate", icon: DollarSign },
-    { name: "Contact", href: "/contact", icon: Mail },
-  ]
+  const { theme, setTheme } = useTheme()
 
   return (
-    <nav className="flex justify-center py-4 mb-8">
-      <div className="flex space-x-2 bg-white/70 backdrop-blur-md rounded-full p-1 shadow-lg dark:bg-gray-900/70 dark:shadow-white/10">
-        {navItems.map((item) => (
-          <Link key={item.href} href={item.href} passHref>
-            <Button
-              variant="ghost"
-              className={cn(
-                "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800",
-                pathname === item.href && "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-50",
-              )}
-            >
-              <item.icon className="h-4 w-4 mr-2" />
-              {item.name}
-            </Button>
-          </Link>
-        ))}
+    <nav className="flex justify-between items-center py-4 px-6 md:px-10 max-w-4xl mx-auto mb-8">
+      <div className="flex space-x-4">
+        <Link href="/" passHref>
+          <Button variant="ghost" className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-serif font-black">
+            Home
+          </Button>
+        </Link>
+        <Link href="/donate" passHref>
+          <Button variant="ghost" className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-serif font-black">
+            Donate
+          </Button>
+        </Link>
+        <Link href="/contact" passHref>
+          <Button variant="ghost" className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-serif font-black">
+            Contact
+          </Button>
+        </Link>
       </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+      >
+        {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        <span className="sr-only">Toggle theme</span>
+      </Button>
     </nav>
   )
 }

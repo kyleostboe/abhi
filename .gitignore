@@ -18,14 +18,16 @@
 # misc
 .DS_Store
 *.pem
+
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# local env files
 .env*.local
 .vercel/
 .turbo/
 
-# local dbs
-/prisma/db.sqlite
-/.sqlite
-/.sqlite-journal
+# vercel
+.vercel

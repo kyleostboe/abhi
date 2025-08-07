@@ -6,38 +6,53 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatTime(seconds: number): string {
-  const min = Math.floor(seconds / 60)
-  const sec = Math.floor(seconds % 60)
-  return `${min.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`
+  if (isNaN(seconds) || seconds < 0) {
+    return "00:00";
+  }
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  const milliseconds = Math.floor((seconds * 1000) % 1000 / 10); // Get first two digits of milliseconds
+
+  const pad = (num: number) => num.toString().padStart(2, '0');
+
+  return `${pad(minutes)}:${pad(remainingSeconds)}.${pad(milliseconds)}`;
 }
 
-export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
-export const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return "0 Bytes"
-  const k = 1024
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${["Bytes", "KB", "MB", "GB"][i]}`
+export function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export const forceGarbageCollection = () => {
-  if (typeof window !== "undefined" && (window as any).gc) {
-    console.log("Attempting to force garbage collection.")
-    ;(window as any).gc()
+export function monitorMemory() {
+  if (typeof window !== 'undefined' && (window.performance as any)?.memory) {
+    const memory = (window.performance as any).memory;
+    const used = (memory.usedJSHeapSize / 1024 / 1024).toFixed(2);
+    const total = (memory.totalJSHeapSize / 1024 / 1024).toFixed(2);
+    // console.log(`Memory: Used ${used} MB / Total ${total} MB`);
   }
 }
 
-export const monitorMemory = () => {
-  if (typeof performance !== "undefined" && (performance as any).memory) {
-    const memory = (performance as any).memory
-    const usedMB = memory.usedJSHeapSize / 1048576
-    const limitMB = memory.jsHeapSizeLimit / 1048576
-    console.log(`Memory usage: ${usedMB.toFixed(2)}MB / ${limitMB.toFixed(2)}MB`)
-    if (usedMB > limitMB * 0.75) {
-      console.warn("High memory usage detected, forcing GC.")
-      forceGarbageCollection()
-      return true
-    }
+export function forceGarbageCollection() {
+  if (typeof window !== 'undefined' && (window as any).gc) {
+    // console.log("Forcing garbage collection...");
+    (window as any).gc();
   }
-  return false
+}
+
+export function formatFileSize(bytes: number, dp: number = 2) {
+  const thresh = 1024;
+
+  if (Math.abs(bytes) < thresh) {
+    return bytes + ' B';
+  }
+
+  const units = ['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+  let u = -1;
+  const r = 10**dp;
+
+  do {
+    bytes /= thresh;
+    ++u;
+  } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
+
+  return bytes.toFixed(dp) + ' ' + units[u];
 }
