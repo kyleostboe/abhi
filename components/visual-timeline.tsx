@@ -6,7 +6,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, Music2Icon, MicIcon, Check, X, Play, BookText, Copy } from 'lucide-react'
+import { Trash2, Music2Icon, MicIcon, Check, X, Play, Copy } from 'lucide-react' // Import Copy icon
 import { SOUND_CUES_LIBRARY, generateSyntheticSound } from "../lib/meditation-data"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn, formatTime } from "@/lib/utils" // Import formatTime
@@ -14,30 +14,15 @@ import { Input } from "@/components/ui/input"
 import { getAudioContext, playNote } from "../lib/audio-utils" // Corrected import path and added getAudioContext
 import type { TimelineEvent } from "@/lib/types" // Import TimelineEvent from types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
+import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
 
 interface VisualTimelineProps {
   events: TimelineEvent[]
   totalDuration: number
   onUpdateEvent: (eventId: string, newStartTime: number) => void
   onRemoveEvent: (eventId: string) => void
-  onDuplicateEvent: (eventId: string) => void // Add this prop
+  onDuplicateEvent: (event: TimelineEvent) => void // New prop for duplication
 }
-
-const EVENT_COLORS = [
-  "bg-gradient-to-br from-logo-amber-500 to-logo-amber-600",
-  "bg-gradient-to-br from-logo-rose-500 to-logo-rose-600",
-  "bg-gradient-to-br from-logo-purple-500 to-logo-purple-600",
-  "bg-gradient-to-br from-logo-blue-500 to-logo-blue-600",
-  "bg-gradient-to-br from-logo-teal-500 to-logo-teal-600",
-  "bg-gradient-to-br from-logo-emerald-500 to-logo-emerald-600",
-  "bg-gradient-to-br from-pink-500 to-pink-600",
-  "bg-gradient-to-br from-orange-500 to-orange-600",
-]
-
-
-
-// Removed getInitialPosition as it was causing instability.
-// Events at the same startTime will now overlap.
 
 export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveEvent, onDuplicateEvent }: VisualTimelineProps) {
   const [draggedEvent, setDraggedEvent] = useState<string | null>(null)
@@ -48,18 +33,11 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
   const [editingTime, setEditingTime] = useState<string>("")
   const isMobile = useMobile() // Use the useMobile hook
 
-  const colorMap = useMemo(() => {
-    const sortedIds = [...events].map((e) => e.id).sort()
-    const map = new Map<string, string>()
-    sortedIds.forEach((id, index) => {
-      map.set(id, EVENT_COLORS[index % EVENT_COLORS.length])
-    })
-    return map
-  }, [events])
+  // Removed colorMap useMemo as colors are now stored directly on TimelineEvent
 
   const getEventColor = useCallback(
-    (eventId: string) => colorMap.get(eventId) ?? EVENT_COLORS[0],
-    [colorMap],
+    (event: TimelineEvent) => event.color || EVENT_COLORS[0], // Use event.color directly
+    [],
   )
 
   const getTimeFromPosition = useCallback(
@@ -237,17 +215,11 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
         subtitle: soundName ? `+ ${soundName}` : "Unknown Sound",
         icon: <Music2Icon className="h-4 w-4" />,
       }
-    } else if (event.type === "recorded_voice") { // Add else if for recorded_voice
+    } else {
       return {
         title: event.recordedInstructionLabel || "Untitled Recording",
         subtitle: "Voice Recording",
         icon: <MicIcon className="h-4 w-4" />,
-      }
-    } else { // Handle group_label
-      return {
-        title: event.label || "New Section",
-        subtitle: "Timeline Group",
-        icon: <BookText className="h-4 w-4" />, // Use BookText icon for labels
       }
     }
   }
@@ -275,7 +247,6 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
             {events.map((event) => {
               // Always use the actual start time for positioning to prevent jumping
               const displayTime = event.startTime
-              const isGroupLabel = event.type === "group_label"
 
               return (
                 <motion.div
@@ -284,27 +255,26 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   className={cn(
-                    "absolute top-1/2 -translate-y-1/2 rounded-full shadow-md dark:shadow-white/20 cursor-grab active:cursor-grabbing flex items-center justify-center text-white",
-                    draggedEvent === event.id && !isGroupLabel ? "z-30 shadow-lg dark:shadow-white/30 ring-2 ring-white/50" : "z-10",
-                    isGroupLabel ? "w-auto px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md shadow-inner cursor-default" : "w-10 h-10", // Style for group label
-                    getEventColor(event.id), // Apply color for non-group labels
+                    "absolute top-1/2 -translate-y-1/2 w-10 h-10 rounded-full shadow-md dark:shadow-white/20 cursor-grab active:cursor-grabbing flex items-center justify-center text-white",
+                    draggedEvent === event.id ? "z-30 shadow-lg dark:shadow-white/30 ring-2 ring-white/50" : "z-10",
+                    getEventColor(event), // Use getEventColor with the event object
                   )}
                   style={{
-                    left: `calc(${getPositionFromTime(displayTime)} - ${isGroupLabel ? 'auto' : '20px'})`, // Adjust positioning for labels
+                    left: `calc(${getPositionFromTime(displayTime)} - 20px)`,
                     transform: "translateY(-50%)",
                   }}
-                  onMouseDown={isGroupLabel ? undefined : (e) => handleMouseDown(event.id, e)} // Disable drag for labels
-                  onTouchStart={isGroupLabel ? undefined : (e) => handleTouchStart(event.id, e)} // Disable drag for labels
-                  title={isGroupLabel ? event.label : (event.type === "instruction_sound" ? event.instructionText : event.recordedInstructionLabel || "Recorded Voice")}
+                  onMouseDown={(e) => handleMouseDown(event.id, e)}
+                  onTouchStart={(e) => handleTouchStart(event.id, e)}
+                  title={
+                    event.type === "instruction_sound"
+                      ? event.instructionText
+                      : event.recordedInstructionLabel || "Recorded Voice"
+                  }
                 >
-                  {isGroupLabel ? (
-                    <span className="font-black text-sm">{event.label}</span>
+                  {event.type === "instruction_sound" ? (
+                    <Music2Icon className="h-4 w-4" />
                   ) : (
-                    event.type === "instruction_sound" ? (
-                      <Music2Icon className="h-4 w-4" />
-                    ) : (
-                      <MicIcon className="h-4 w-4" />
-                    )
+                    <MicIcon className="h-4 w-4" />
                   )}
                 </motion.div>
               )
@@ -356,7 +326,6 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
           ) : (
             events.map((event, index) => {
               const displayInfo = getEventDisplayInfo(event)
-              const isGroupLabel = event.type === "group_label"
               return (
                 <motion.div
                   key={event.id}
@@ -371,7 +340,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                         <div
                           className={cn(
                             "w-8 h-8 rounded-full flex items-center justify-center text-white shadow-sm",
-                            isGroupLabel ? "bg-gray-400 dark:bg-gray-600" : getEventColor(event.id), // Different color for group labels
+                            getEventColor(event), // Use getEventColor with the event object
                           )}
                         >
                           {displayInfo.icon}
@@ -382,7 +351,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                               variant="secondary"
                               className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                             >
-                              {isGroupLabel ? "Group Label" : (event.type === "instruction_sound" ? "Instruction + Sound" : "Voice Recording")}
+                              {event.type === "instruction_sound" ? "Instruction + Sound" : "Voice Recording"}
                             </Badge>
                             {editingEventId === event.id ? (
                               <div className="flex items-center space-x-2">
@@ -421,25 +390,23 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        {!isGroupLabel && ( // Only show play button for non-group labels
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => playEventAudio(event)}
-                            className="hover:bg-gray-100 dark:hover:bg-gray-800"
-                            title="Preview audio"
-                          >
-                            <Play className="h-4 w-4" />
-                          </Button>
-                        )}
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => onDuplicateEvent(event.id)} // Duplicate button
+                          onClick={() => playEventAudio(event)}
+                          className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                          title="Preview audio"
+                        >
+                          <Play className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => onDuplicateEvent(event)} // Duplicate button
                           className="hover:bg-gray-100 dark:hover:bg-gray-800"
                           title="Duplicate event"
                         >
-                          <Copy className="h-4 w-4" /> {/* Copy icon */}
+                          <Copy className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"

@@ -571,7 +571,7 @@ export async function generateSyntheticSound(
 
     // Connect nodes
     oscillator.connect(gainNode)
-    gainNode.connect(audioContext.destination)
+    gainNode.connect(audioContext.destination) // Connect to the provided audioContext's destination
 
     // Set oscillator properties
     oscillator.type = waveform
@@ -612,7 +612,7 @@ export async function generateSyntheticSound(
         const harmonicGain = audioContext.createGain()
 
         harmonicOsc.connect(harmonicGain)
-        harmonicGain.connect(audioContext.destination)
+        harmonicGain.connect(audioContext.destination) // Connect to the provided audioContext's destination
 
         harmonicOsc.type = waveform
         harmonicOsc.frequency.setValueAtTime(harmonic, audioContext.currentTime)
@@ -647,7 +647,10 @@ export async function generateSyntheticSound(
       setTimeout(
         () => {
           try {
-            audioContext.close()
+            // Only close if it's a live AudioContext and not already closed
+            if (audioContext.state !== "closed") {
+              audioContext.close()
+            }
           } catch (e) {
             console.warn("Error closing audio context:", e)
           }
