@@ -255,7 +255,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   className={cn(
-                    "absolute top-1/2 -translate-y-1/2 w-10 h-10 rounded-full shadow-md dark:shadow-white/20 cursor-grab active:cursor-grabbing flex items-center justify-center text-white",
+                    "absolute top-1/2 -translate-y-1/2 rounded-full shadow-md dark:shadow-white/20 cursor-grab active:cursor-grabbing flex items-center justify-center text-white w-9 h-9",
                     draggedEvent === event.id ? "z-30 shadow-lg dark:shadow-white/30 ring-2 ring-white/50" : "z-10",
                     getEventColor(event), // Use getEventColor with the event object
                   )}
@@ -339,7 +339,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                       <div className="flex items-center space-x-3 flex-1">
                         <div
                           className={cn(
-                            "w-8 h-8 rounded-full flex items-center justify-center text-white shadow-sm",
+                            "rounded-full flex items-center justify-center text-white shadow-sm h-9 w-9",
                             getEventColor(event), // Use getEventColor with the event object
                           )}
                         >
