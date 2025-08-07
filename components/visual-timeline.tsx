@@ -335,8 +335,8 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                   transition={{ delay: index * 0.05 }}
                 >
                   <Card className="p-4 bg-white dark:bg-gray-900 shadow-sm dark:shadow-white/10 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3 flex-1">
+                    <div className="flex items-center justify-between w-full"> {/* Added w-full */}
+                      <div className="flex items-center space-x-3"> {/* Removed flex-1 */}
                         <div
                           className={cn(
                             "rounded-full flex items-center justify-center text-white shadow-sm h-9 w-9",
@@ -345,7 +345,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                         >
                           {displayInfo.icon}
                         </div>
-                        <div className="flex-1">
+                        <div className="flex flex-col"> {/* Changed to flex-col for better vertical stacking of text */}
                           <div className="flex items-center space-x-2 mb-1 flex-wrap">
                             <Badge
                               variant="outline"
@@ -389,7 +389,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                           <p className="text-xs text-gray-600 dark:text-gray-400 font-black">{displayInfo.subtitle}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4"> {/* Changed gap-3 to gap-4 for better spacing */}
+                      <div className="flex items-center space-x-2 flex-shrink-0"> {/* Added flex-shrink-0 and space-x-2 */}
                         <Button
                           size="sm"
                           variant="ghost"
