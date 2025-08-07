@@ -1461,7 +1461,7 @@ return (
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="p-4 mb-6 border-gray-600 rounded-md text-gray-600 font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto shadow-inner border-solid border-2"
+              className="p-4 mb-6 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto shadow-inner border-solid border-2 text-logo-rose-600 border-logo-rose-600"
             >
               <p className="text-center text-xs">
                 Change the length of guided meditations by intelligently adjusting silence periods. Upload an audio
