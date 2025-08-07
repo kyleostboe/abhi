@@ -1511,12 +1511,12 @@ return (
                 <h3 className="mb-2 dark:text-white text-center font-black px-0 rounded text-base text-gray-600 pb-0.5">
                   Resources
                 </h3>
-                <div className="text-sm text-logo-rose-600 leading-relaxed dark:text-logo-rose-300 flex flex-wrap gap-2 justify-center text-center px-px">
+                <div className="text-sm text-logo-teal-600 leading-relaxed dark:text-logo-teal-300 flex flex-wrap gap-2 justify-center text-center px-px">
                   <a
                     href="https://dharmaseed.org/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="dark:text-gray-200 font-black text-logo-rose-600 px-5 py-1 border-logo-rose-600 transition-all duration-200 ease-out hover:shadow-none shadow-md rounded-xl border-2"
+                    className="dark:text-logo-teal-400 font-black text-logo-teal-600 px-5 py-1 border-logo-emerald-600 transition-all duration-200 ease-out hover:shadow-none shadow-md rounded-xl border-2"
                   >
                     Dharma Seed
                   </a>
@@ -1524,7 +1524,7 @@ return (
                     href="https://dharmaseed.org/teacher/210/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-black font-serif border-logo-rose-600 hover:shadow-none shadow-md rounded-xl border-2"
+                    className="inline-block text-logo-teal-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-teal-400 dark:border-logo-emerald-600 dark:shadow-white/10 px-5 font-black font-serif border-logo-emerald-600 hover:shadow-none shadow-md rounded-xl border-2"
                   >
                     Rob Burbea's talks & retreats
                   </a>
@@ -1532,7 +1532,7 @@ return (
                     href="https://tasshin.com/guided-meditations/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-black font-serif border-logo-rose-600 hover:shadow-none shadow-md rounded-xl border-2"
+                    className="inline-block text-logo-teal-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-teal-400 dark:border-logo-emerald-600 dark:shadow-white/10 px-5 font-black font-serif border-logo-emerald-600 hover:shadow-none shadow-md rounded-xl border-2"
                   >
                     Tasshin & friend's meditations
                   </a>
@@ -1540,7 +1540,7 @@ return (
                     href="https://www.tarabrach.com/guided-meditations/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border-logo-rose-600 hover:shadow-none shadow-md rounded-xl border-2"
+                    className="inline-block text-logo-teal-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-teal-400 dark:border-logo-emerald-600 dark:shadow-white/10 px-5 font-serif font-black border-logo-emerald-600 hover:shadow-none shadow-md rounded-xl border-2"
                   >
                     Tara Brach's meditations
                   </a>
@@ -1548,7 +1548,7 @@ return (
                     href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDaDo3?usp=drive_link"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border-logo-rose-600 hover:shadow-none shadow-md rounded-xl border-2"
+                    className="inline-block text-logo-teal-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-teal-400 dark:border-logo-emerald-600 dark:shadow-white/10 px-5 font-serif font-black border-logo-emerald-600 hover:shadow-none shadow-md rounded-xl border-2"
                   >
                     Toby Sola's meditations
                   </a>
@@ -1556,7 +1556,7 @@ return (
                     href="https://meditofoundation.org/meditations"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border-logo-rose-600 hover:shadow-none shadow-md rounded-xlder-2 rounded-xl border-2"
+                    className="inline-block text-logo-teal-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-teal-400 dark:border-logo-emerald-600 dark:shadow-white/10 px-5 font-serif font-black border-logo-emerald-600 hover:shadow-none shadow-md rounded-xlder-2 rounded-xl border-2"
                   >
                     Medito Foundation
                   </a>
@@ -1564,7 +1564,7 @@ return (
                     href="https://www.freebuddhistaudio.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="dark:text-gray-200 font-black text-logo-rose-600 px-5 py-1 border-logo-rose-600 transition-all duration-200 ease-out hover:shadow-none shadow-md rounded-xl border-2"
+                    className="dark:text-logo-teal-400 font-black text-logo-teal-600 px-5 py-1 border-logo-emerald-600 transition-all duration-200 ease-out hover:shadow-none shadow-md rounded-xl border-2"
                   >
                     freebuddhistaudio
                   </a>
