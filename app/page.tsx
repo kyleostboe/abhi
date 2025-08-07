@@ -2021,22 +2021,22 @@ return (
           >
             {/* Meditation Setup for Labs */}
             <motion.div
-              className="text-logo-rose"
+              className="text-gray-600"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <Card className="overflow-hidden border-2 border-logo-rose-600 shadow-inner bg-white dark:bg-gray-900 max-w-2xl mx-auto rounded-2xl">
+              <Card className="overflow-hidden border-2 border-gray-600 shadow-inner bg-white dark:bg-gray-900 max-w-2xl mx-auto rounded-2xl">
                 <div className="py-3 px-6 text-center">
-                  <h3 className="flex items-center justify-center font-black text-logo-rose-600 text-left">
+                  <h3 className="flex items-center justify-center font-black text-gray-600 text-left">
                     <Settings2 className="h-4 w-4 mr-2" />
                     Session Setup
                   </h3>
                 </div>
                 <div className="p-6 bg-white text-sm font-black pt-3">
-                  <div className="grid md:grid-cols-2 gap-6 text-logo-rose-600">
+                  <div className="grid md:grid-cols-2 gap-6 text-gray-600">
                     <div className="text-center">
-                      <Label htmlFor="labs-title" className="text-logo-rose-600 font-black">
+                      <Label htmlFor="labs-title" className="text-gray-600 font-black">
                         Meditation Title
                       </Label>
                       <Input
@@ -2044,11 +2044,11 @@ return (
                         value={meditationTitle}
                         onChange={handleMeditationTitleChange}
                         placeholder="My Custom Meditation"
-                        className="mt-1 text-xs font-black text-logo-rose-600 shadow-inner border border-gray-600 focus:ring-logo-rose-600 focus:border-logo-rose-600" // Changed border to gray-600
+                        className="mt-1 text-xs font-black text-gray-600 shadow-inner border border-gray-600 focus:ring-gray-600 focus:border-gray-600" // Changed border to gray-600
                       />
                     </div>
                     <div className="text-center">
-                      <Label htmlFor="labs-duration" className="text-logo-rose-600 font-black">
+                      <Label htmlFor="labs-duration" className="text-gray-600 font-black">
                         Meditation Duration (minutes)
                       </Label>
                       <Input
@@ -2057,7 +2057,7 @@ return (
                         value={labsTotalDuration / 60}
                         onChange={handleDurationChange}
                         min="1"
-                        className="mt-1 text-xs font-black text-logo-rose-600 shadow-inner border border-gray-600 focus:ring-logo-rose-600 focus:border-logo-rose-600" // Changed border to gray-600
+                        className="mt-1 text-xs font-black text-gray-600 shadow-inner border border-gray-600 focus:ring-gray-600 focus:border-gray-600" // Changed border to gray-600
                       />
                     </div>
                   </div>
