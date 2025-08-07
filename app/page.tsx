@@ -1476,7 +1476,7 @@ return (
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="p-4 mb-6 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto text-center shadow-inner text-xs border-solid border-2 text-logo-rose-600 border-logo-rose-600"
+              className="p-4 mb-6 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto text-center shadow-inner text-xs border-solid border-2 text-gray-600 border-gray-600"
             >
               <p>
                 Create custom meditations by associating instructions with sound cues and placing them along a
@@ -1511,12 +1511,12 @@ return (
                 <h3 className="mb-2 dark:text-white text-center font-black px-0 rounded text-base text-gray-600 pb-0.5">
                   Resources
                 </h3>
-                <div className="text-sm text-logo-rose-600 leading-relaxed dark:text-logo-rose-300 flex flex-wrap gap-2 justify-center text-center px-px">
+                <div className="text-sm text-gray-600 leading-relaxed dark:text-gray-300 flex flex-wrap gap-2 justify-center text-center px-px">
                   <a
                     href="https://dharmaseed.org/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="dark:text-gray-200 font-black text-logo-rose-600 px-5 py-1 border-logo-rose-600 transition-all duration-200 ease-out hover:shadow-none shadow-md rounded-xl border-2"
+                    className="dark:text-gray-200 font-black text-gray-600 px-5 py-1 border-gray-600 transition-all duration-200 ease-out hover:shadow-none shadow-md rounded-xl border-2"
                   >
                     Dharma Seed
                   </a>
@@ -1524,7 +1524,7 @@ return (
                     href="https://dharmaseed.org/teacher/210/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-black font-serif border-logo-rose-600 hover:shadow-none shadow-md rounded-xl border-2"
+                    className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-gray-400 dark:border-gray-700 dark:shadow-white/10 px-5 font-black font-serif border-gray-600 hover:shadow-none shadow-md rounded-xl border-2"
                   >
                     Rob Burbea's talks & retreats
                   </a>
@@ -1532,7 +1532,7 @@ return (
                     href="https://tasshin.com/guided-meditations/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-black font-serif border-logo-rose-600 hover:shadow-none shadow-md rounded-xl border-2"
+                    className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-gray-400 dark:border-gray-700 dark:shadow-white/10 px-5 font-black font-serif border-gray-600 hover:shadow-none shadow-md rounded-xl border-2"
                   >
                     Tasshin & friend's meditations
                   </a>
@@ -1540,7 +1540,7 @@ return (
                     href="https://www.tarabrach.com/guided-meditations/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border-logo-rose-600 hover:shadow-none shadow-md rounded-xl border-2"
+                    className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-gray-400 dark:border-gray-700 dark:shadow-white/10 px-5 font-serif font-black border-gray-600 hover:shadow-none shadow-md rounded-xl border-2"
                   >
                     Tara Brach's meditations
                   </a>
@@ -1548,7 +1548,7 @@ return (
                     href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDaDo3?usp=drive_link"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border-logo-rose-600 hover:shadow-none shadow-md rounded-xl border-2"
+                    className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-gray-400 dark:border-gray-700 dark:shadow-white/10 px-5 font-serif font-black border-gray-600 hover:shadow-none shadow-md rounded-xlder-2 rounded-xl border-2"
                   >
                     Toby Sola's meditations
                   </a>
@@ -1556,7 +1556,7 @@ return (
                     href="https://meditofoundation.org/meditations"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block text-logo-rose-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-logo-rose-400 dark:border-pink-600 dark:shadow-white/10 px-5 font-serif font-black border-logo-rose-600 hover:shadow-none shadow-md rounded-xlder-2 rounded-xl border-2"
+                    className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-gray-400 dark:border-gray-700 dark:shadow-white/10 px-5 font-serif font-black border-gray-600 hover:shadow-none shadow-md rounded-xlder-2 rounded-xl border-2"
                   >
                     Medito Foundation
                   </a>
@@ -1564,7 +1564,7 @@ return (
                     href="https://www.freebuddhistaudio.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="dark:text-gray-200 font-black text-logo-rose-600 px-5 py-1 border-logo-rose-600 transition-all duration-200 ease-out hover:shadow-none shadow-md rounded-xl border-2"
+                    className="dark:text-gray-200 font-black text-gray-600 px-5 py-1 border-gray-600 transition-all duration-200 ease-out hover:shadow-none shadow-md rounded-xl border-2"
                   >
                     freebuddhistaudio
                   </a>
@@ -2327,7 +2327,7 @@ return (
                                 description: `"${readyToAddToTimelineRecording.label.trim()}" added to timeline.`,
                               })
                             }}
-                            className="w-full bg-white text-logo-rose-600 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black" // Changed border to gray-600
+                            className="w-full bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black" // Changed border to gray-600
                           >
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Add to Timeline
