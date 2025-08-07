@@ -1476,7 +1476,7 @@ return (
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="p-4 mb-6 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto text-center shadow-inner text-xs border-solid border-2 text-gray-600 border-gray-600"
+              className="p-4 mb-6 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto text-center shadow-inner text-xs border-solid border-2 text-logo-rose-600 border-logo-rose-600"
             >
               <p>
                 Create custom meditations by associating instructions with sound cues and placing them along a
