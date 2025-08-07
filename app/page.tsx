@@ -1508,7 +1508,7 @@ return (
                 </p>
               </div>
               <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto dark:border-logo-rose-700 backdrop-blur-sm dark:bg-gray-900/60 border-0 py-4 px-0 bg-transparent pt-0 pb-3">
-                <h3 className="mb-2 dark:text-white text-center font-black px-0 pb-1.5 rounded text-base text-logo-rose-600">
+                <h3 className="mb-2 dark:text-white text-center font-black px-0 rounded text-base text-gray-600 pb-0.5">
                   Resources
                 </h3>
                 <div className="text-sm text-logo-rose-600 leading-relaxed dark:text-logo-rose-300 flex flex-wrap gap-2 justify-center text-center px-px">
