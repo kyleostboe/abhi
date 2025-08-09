@@ -1136,7 +1136,7 @@ const startRecording = async () => {
           toast({
             title: "Recording Error",
             description: "Could not load recorded audio metadata. Try again.",
-            variant: "destructive",
+            variant: "destructive",,
           })
           URL.revokeObjectURL(url)
           setReadyToAddToTimelineRecording(null)
@@ -1986,7 +1986,8 @@ return (
                               {originalBuffer ? formatTime(originalBuffer.duration) : "--"}
                             </div>
                           </div>
-                          <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-smll-600                            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
+                          <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-smll">
+                            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
                               File Size
                             </div>
                             <div className="dark:text-gray-200 font-black text-gray-600">
@@ -2010,18 +2011,28 @@ return (
                       </div>
                       <div className="p-6">
                         <div className="bg-white rounded-lg p-3 dark:shadow-white/10 mb-4 dark:bg-gray-700 shadow-md">
-                          <audio controlbg-white p-3 dark:shadow-white/10 mb-4 dark:bg-gray-700 shadow-md rounded-smlliv>
+                          <audio controls className="w-full" src={processedUrl}></audio>
+                        </div>
                         <div className="grid grid-cols-2 gap-4 mb-6">
                           <div className="bg-white/60 p-3 rounded-sm text-center dark:bg-gray-800/60 shadow-md">
-                            <div classNamebg-white/60 p-3 rounded-sm text-center dark:bg-gray-800/60 shadow-md    Duration
+                            <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
+                            Duration
                             </div>
-       bg-white/60 p-3 text-center dark:bg-gray-800/60 shadow-md rounded-smgray-600">
+                            <div className="dark:text-black font-black text-gray-600">
                               {formatTime(actualDuration || 0)}
                               {actualDuration && targetDuration && (
                                 <div className="text-xs text-logo-teal-600 mt-1 dark:text-gray-900">
                                   {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}%
                                 </div>
                               )}
+                            </div>
+                          </div>
+                          <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-md">
+                            <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
+                              File Size
+                            </div>
+                            <div className="dark:text-black font-black text-gray-600">
+                              {formatFileSize(file?.size || 0)}
                             </div>
                           </div>
                         </div>
