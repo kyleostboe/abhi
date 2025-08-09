@@ -1710,12 +1710,12 @@ return (
                             </div>
                           </div>
                           <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md px-[5px] py-1">
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl min-h-[76px]">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl min-h-[76px] px-3">
                               <div className="text-xs uppercase tracking-wide text-gray-600 mb-1.5">
                                 Range:
                               </div>
                               <div className="uppercase text-gray-600 tracking-normal text-xs">
-                                {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
+                                {durationLimits.min} min - {isMobileDevice ? "1 hour" : "2 hours"}
                               </div>
                             </div>
                           </div>
