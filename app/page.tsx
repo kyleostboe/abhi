@@ -2012,10 +2012,10 @@ return (
                         <div className="bg-white rounded-lg p-3 dark:shadow-white/10 mb-4 dark:bg-gray-700 shadow-md">
                           <audio controlbg-white p-3 dark:shadow-white/10 mb-4 dark:bg-gray-700 shadow-md rounded-smlliv>
                         <div className="grid grid-cols-2 gap-4 mb-6">
-                          <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-md">
-                            <div classNamebg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-md    Duration
+                          <div className="bg-white/60 p-3 rounded-sm text-center dark:bg-gray-800/60 shadow-md">
+                            <div classNamebg-white/60 p-3 rounded-sm text-center dark:bg-gray-800/60 shadow-md    Duration
                             </div>
-       bg-white/60 p-3 text-center dark:bg-gray-800/60 shadow-md rounded-sm-gray-600">
+       bg-white/60 p-3 text-center dark:bg-gray-800/60 shadow-md rounded-smgray-600">
                               {formatTime(actualDuration || 0)}
                               {actualDuration && targetDuration && (
                                 <div className="text-xs text-logo-teal-600 mt-1 dark:text-gray-900">
