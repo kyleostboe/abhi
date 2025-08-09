@@ -1633,7 +1633,7 @@ return (
                     animate={{ opacity: 1, y: 0, height: "auto" }}
                     exit={{ opacity: 0, y: -10, height: 0 }}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    className="p-0.5 rounded-xl mb-3.5 overflow-hidden bg-gradient-to-r from-logo-blue-500 to-logo-emerald-500 shadow-none px-[5px] py-1"
+                    className="p-0.5 rounded-xl mb-3.5 overflow-hidden bg-gradient-to-r from-logo-blue-500 to-logo-emerald-500 shadow-none py-1 px-[5px]"
                   >
                     <div className="bg-white dark:bg-gray-900 rounded-xl p-5 py-4 shadow">
                       <div className="flex items-center">
@@ -1695,7 +1695,7 @@ return (
                               </div>
                             </div>
                           </div>
-                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md px-[5px]">
+                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md px-[5px] py-1">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl min-h-[76px]">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
                               <div className="font-black text-gray-600">
@@ -1703,13 +1703,13 @@ return (
                               </div>
                             </div>
                           </div>
-                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md px-[5px]">
+                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md px-[5px] py-1">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl min-h-[76px]">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Pauses:</div>
                               <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
                             </div>
                           </div>
-                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md px-[5px]">
+                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md px-[5px] py-1">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl min-h-[76px]">
                               <div className="text-xs uppercase tracking-wide text-gray-600 mb-1.5">
                                 Range:
