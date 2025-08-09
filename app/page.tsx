@@ -1687,7 +1687,7 @@ return (
                           <div className="text-lg font-black text-gray-600">Audio Analysis</div>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-1">
+                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px]">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl min-h-[76px]">
                               <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
                               <div className="font-black text-gray-600">
@@ -1695,7 +1695,7 @@ return (
                               </div>
                             </div>
                           </div>
-                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-1">
+                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px]">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl min-h-[76px]">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
                               <div className="font-black text-gray-600">
@@ -1703,13 +1703,13 @@ return (
                               </div>
                             </div>
                           </div>
-                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-1">
+                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px]">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl min-h-[76px]">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Pauses:</div>
                               <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
                             </div>
                           </div>
-                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-1">
+                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px]">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl min-h-[76px] px-3">
                               <div className="text-xs uppercase tracking-wide text-gray-600 mb-1.5">
                                 Range:
