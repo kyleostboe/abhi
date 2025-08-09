@@ -1690,7 +1690,7 @@ return (
                           <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Content</div>
-                              <div className="font-black mb-1 text-gray-600">
+                              <div className="font-black text-gray-600">
                                 {formatTime(audioAnalysis.contentDuration)}
                               </div>
                             </div>
@@ -1711,8 +1711,10 @@ return (
                           </div>
                           <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl">
-                              <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Range</div>
-                              <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">
+                              <div className="text-xs uppercase tracking-wide text-gray-600">
+                                Range
+                              </div>
+                              <div className="text-xs uppercase tracking-wide text-gray-600">
                                 {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
                               </div>
                             </div>
