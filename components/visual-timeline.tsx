@@ -6,23 +6,31 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, Music2Icon, MicIcon, Check, X, Play, Copy } from 'lucide-react' // Import Copy icon
+import { Trash2, Music2Icon, MicIcon, Check, X, Play, Copy } from 'lucide-react'
 import { SOUND_CUES_LIBRARY, generateSyntheticSound } from "../lib/meditation-data"
 import { motion, AnimatePresence } from "framer-motion"
-import { cn, formatTime } from "@/lib/utils" // Import formatTime
+import { cn, formatTime } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
-import { getAudioContext, playNote } from "../lib/audio-utils" // Corrected import path and added getAudioContext
-import type { TimelineEvent } from "@/lib/types" // Import TimelineEvent from types
-import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
-import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
+import { getAudioContext, playNote } from "../lib/audio-utils"
+import type { TimelineEvent } from "@/lib/types"
+import { useMobile } from "@/hooks/use-mobile"
+import { EVENT_COLORS } from "@/lib/constants"
 
 interface VisualTimelineProps {
   events: TimelineEvent[]
   totalDuration: number
   onUpdateEvent: (eventId: string, newStartTime: number) => void
   onRemoveEvent: (eventId: string) => void
-  onDuplicateEvent: (event: TimelineEvent) => void // New prop for duplication
+  onDuplicateEvent: (event: TimelineEvent) => void
 }
+
+const getFromBorderColorClass = (gradientClass: string): string => {
+  const match = gradientClass.match(/from-([a-zA-Z0-9-]+)/);
+  if (match && match[1]) {
+    return `border-${match[1]}`; // e.g., "border-logo-amber-500"
+  }
+  return "border-gray-500"; // Fallback if no 'from-' color is found
+};
 
 export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveEvent, onDuplicateEvent }: VisualTimelineProps) {
   const [draggedEvent, setDraggedEvent] = useState<string | null>(null)
@@ -31,12 +39,10 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
   const isDragging = useRef(false)
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
   const [editingTime, setEditingTime] = useState<string>("")
-  const isMobile = useMobile() // Use the useMobile hook
-
-  // Removed colorMap useMemo as colors are now stored directly on TimelineEvent
+  const isMobile = useMobile()
 
   const getEventColor = useCallback(
-    (event: TimelineEvent) => event.color || EVENT_COLORS[0], // Use event.color directly
+    (event: TimelineEvent) => event.color || EVENT_COLORS[0],
     [],
   )
 
@@ -59,7 +65,6 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
     [totalDuration],
   )
 
-  // Handle mouse events
   const handleMouseDown = (eventId: string, e: React.MouseEvent) => {
     e.preventDefault()
     setDraggedEvent(eventId)
@@ -73,7 +78,6 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
     }
   }
 
-  // Handle touch events
   const handleTouchStart = (eventId: string, e: React.TouchEvent) => {
     e.preventDefault()
     setDraggedEvent(eventId)
@@ -87,7 +91,6 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
     }
   }
 
-  // Global mouse move handler
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (draggedEvent && isDragging.current) {
@@ -113,7 +116,6 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
     }
   }, [draggedEvent, getTimeFromPosition, onUpdateEvent, dragOffset])
 
-  // Global touch move handler
   useEffect(() => {
     const handleTouchMove = (e: TouchEvent) => {
       if (draggedEvent && isDragging.current && e.touches[0]) {
@@ -140,10 +142,9 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
     }
   }, [draggedEvent, getTimeFromPosition, onUpdateEvent, dragOffset])
 
-  // Responsive time markers - fewer on mobile
   const timeMarkersCount = isMobile
-    ? Math.max(3, Math.min(Math.floor(totalDuration / 120), 5)) // 3-5 markers on mobile
-    : Math.max(5, Math.min(Math.floor(totalDuration / 60), 10)) // 5-10 markers on desktop
+    ? Math.max(3, Math.min(Math.floor(totalDuration / 120), 5))
+    : Math.max(5, Math.min(Math.floor(totalDuration / 60), 10))
 
   const timeMarkers = Array.from({ length: timeMarkersCount + 1 }, (_, i) => (i / timeMarkersCount) * totalDuration)
 
@@ -168,11 +169,9 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
   const playEventAudio = async (event: TimelineEvent) => {
     try {
       if (event.type === "instruction_sound" && event.soundCueSrc) {
-        // Use soundCueSrc directly for playback
         if (event.soundCueSrc.startsWith("synthetic:")) {
           const soundCue = SOUND_CUES_LIBRARY.find((s) => s.id === event.soundCueId)
           if (soundCue) {
-            // Pass the live AudioContext to generateSyntheticSound
             const audioContext = getAudioContext()
             await generateSyntheticSound(soundCue, audioContext)
           }
@@ -181,7 +180,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
           if (noteMatch) {
             const note = noteMatch[1]
             const octave = Number.parseInt(noteMatch[2])
-            await playNote(note, octave) // Await playNote
+            await playNote(note, octave)
           }
         } else {
           const audio = new Audio(event.soundCueSrc)
@@ -189,7 +188,6 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
           await audio.play()
         }
       } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
-        // Play recorded audio
         const audio = new Audio(event.recordedAudioUrl)
         audio.volume = 0.7
         await audio.play()
@@ -208,7 +206,6 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
 
   const getEventDisplayInfo = (event: TimelineEvent) => {
     if (event.type === "instruction_sound") {
-      // Prioritize using the directly stored soundCueName
       const soundName = event.soundCueName || SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)?.name
       return {
         title: event.instructionText || "Untitled Instruction",
@@ -226,14 +223,11 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
 
   return (
     <div className="space-y-6 select-none">
-      {/* Time Markers */}
       <div className="relative">
-        {/* Timeline Bar */}
         <div
           ref={timelineRef}
           className="relative h-20 bg-gradient-to-r from-gray-100/70 to-gray-200/70 dark:from-gray-800/70 dark:to-gray-900/70 rounded-2xl dark:border-gray-700 cursor-pointer overflow-visible dark:shadow-white/30 shadow-inner border-gray-700 border-0"
         >
-          {/* Background Grid Lines - excluding first and last */}
           {timeMarkers.slice(1, -1).map((time, index) => (
             <div
               key={`grid-${index}`}
@@ -242,10 +236,8 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
             />
           ))}
 
-          {/* Events on Timeline */}
           <AnimatePresence>
             {events.map((event) => {
-              // Always use the actual start time for positioning to prevent jumping
               const displayTime = event.startTime
 
               return (
@@ -257,7 +249,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                   className={cn(
                     "absolute top-1/2 -translate-y-1/2 rounded-full shadow-md dark:shadow-white/20 cursor-grab active:cursor-grabbing flex items-center justify-center text-white w-9 h-9",
                     draggedEvent === event.id ? "z-30 shadow-lg dark:shadow-white/30 ring-2 ring-white/50" : "z-10",
-                    getEventColor(event), // Use getEventColor with the event object
+                    getEventColor(event),
                   )}
                   style={{
                     left: `calc(${getPositionFromTime(displayTime)} - 20px)`,
@@ -282,10 +274,9 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
           </AnimatePresence>
         </div>
 
-        {/* Responsive Time Labels */}
         <div
           className={cn(
-            "flex justify-between text-gray-500 dark:text-gray-400 px-2 mt-2 font-black",
+            "flex justify-between dark:text-gray-400 px-2 mt-2 font-black text-gray-600",
             isMobile ? "text-xs" : "text-sm",
           )}
         >
@@ -309,7 +300,6 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
         </div>
       </div>
 
-      {/* Event List */}
       <div className="space-y-3 text-left">
         <h4 className="font-black dark:text-gray-200 text-gray-600 text-base">Timeline Events</h4>
         <AnimatePresence>
@@ -334,67 +324,77 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <Card className="p-4 bg-white dark:bg-gray-900 shadow-sm dark:shadow-white/10 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center space-x-3 flex-shrink-0"> {/* Added flex-shrink-0 to icon container */}
-                        <div
-                          className={cn(
-                            "rounded-full flex items-center justify-center text-white shadow-sm h-9 w-9 flex-shrink-0", // Added flex-shrink-0
-                            getEventColor(event), // Use getEventColor with the event object
-                          )}
-                        >
-                          {displayInfo.icon}
-                        </div>
-                        <div className="flex flex-col flex-grow min-w-0 overflow-hidden"> {/* Added overflow-hidden */}
-                          <div className="flex items-center space-x-2 mb-1 flex-wrap"> {/* Re-added flex-wrap */}
-                            <Badge
-                              variant="outline"
-                              className="text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap border-none"
-                            >
-                              {event.type === "instruction_sound" ? "Instruction + Sound" : "Voice Recording"}
-                            </Badge>
-                            {editingEventId === event.id ? (
-                              <div className="flex items-center space-x-2">
-                                <Input
-                                  value={editingTime}
-                                  onChange={(e) => setEditingTime(e.target.value)}
-                                  placeholder="MM:SS"
-                                  className="w-20 h-6 text-xs"
-                                  pattern="[0-9]{1,2}:[0-9]{2}"
-                                />
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleTimeSave(event.id)}
-                                  className="h-6 w-6 p-0"
-                                >
-                                  <Check className="h-3 w-3" />
-                                </Button>
-                                <Button size="sm" variant="ghost" onClick={handleTimeCancel} className="h-6 w-6 p-0">
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => handleTimeEdit(event.id, event.startTime)}
-                                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-serif text-xs whitespace-nowrap"
-                              >
-                                {formatTime(event.startTime)}
-                              </button>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-700 dark:text-gray-300 font-black truncate"> {/* Added truncate */}
-                            <span className="font-black">{displayInfo.title}</span>
-                          </div>
-                          <p className="text-xs text-gray-600 dark:text-gray-400 font-black truncate">{displayInfo.subtitle}</p> {/* Added truncate */}
-                        </div>
+                  <Card
+                    className={cn(
+                      "p-4 bg-white dark:bg-gray-900 shadow-sm dark:shadow-white/10",
+                      "border-2", // Explicitly set border width to 2px
+                      getFromBorderColorClass(getEventColor(event)) // Dynamic border color based on icon's primary gradient color
+                    )}
+                  >
+                    <div className="flex items-center w-full">
+                      {/* Icon (fixed size, no shrink) */}
+                      <div
+                        className={cn(
+                          "rounded-full flex items-center justify-center text-white shadow-sm h-9 w-9 flex-shrink-0",
+                          getEventColor(event),
+                        )}
+                      >
+                        {displayInfo.icon}
                       </div>
-                      <div className="flex items-center gap-x-3 flex-shrink-0"> {/* Ensured gap-x-3 and flex-shrink-0 */}
+
+                      {/* Text Content (can grow and shrink) */}
+                      <div className="flex flex-col flex-grow min-w-0 ml-3"> {/* Removed overflow-hidden from here */}
+                        <div className="flex items-center space-x-2 mb-1 flex-wrap">
+                          <Badge
+                            variant="outline"
+                            className="text-xs text-gray-700 dark:text-gray-300 border-none"
+                          >
+                            {event.type === "instruction_sound" ? "Instruction + Sound" : "Voice Recording"}
+                          </Badge>
+                          {editingEventId === event.id ? (
+                            <div className="flex items-center space-x-2">
+                              <Input
+                                value={editingTime}
+                                onChange={(e) => setEditingTime(e.target.value)}
+                                placeholder="MM:SS"
+                                className="w-20 h-6 text-xs"
+                                pattern="[0-9]{1,2}:[0-9]{2}"
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleTimeSave(event.id)}
+                                className="h-6 w-6 p-0"
+                              >
+                                <Check className="h-3 w-3" />
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={handleTimeCancel} className="h-6 w-6 p-0">
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleTimeEdit(event.id, event.startTime)}
+                              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-serif text-xs"
+                            >
+                              {formatTime(event.startTime)}
+                            </button>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-700 dark:text-gray-300 font-black"> {/* Removed truncate */}
+                          <span className="font-black text-gray-600">{displayInfo.title}</span>
+                        </div>
+                        {event.type === "instruction_sound" && (
+                          <p className="text-xs dark:text-gray-400 font-black text-gray-500">{displayInfo.subtitle}</p>
+                        )}
+                      </div>
+                      {/* Button group - now with responsive gap */}
+                      <div className="flex items-center gap-x-1 sm:gap-x-3 ml-auto">
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => playEventAudio(event)}
-                          className="hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0" // Added flex-shrink-0
+                          className="hover:bg-gray-100 dark:hover:bg-gray-800"
                           title="Preview audio"
                         >
                           <Play className="h-4 w-4" />
@@ -402,8 +402,8 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => onDuplicateEvent(event)} // Duplicate button
-                          className="hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0" // Added flex-shrink-0
+                          onClick={() => onDuplicateEvent(event)}
+                          className="hover:bg-gray-100 dark:hover:bg-gray-800"
                           title="Duplicate event"
                         >
                           <Copy className="h-4 w-4" />
@@ -412,7 +412,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                           size="sm"
                           variant="ghost"
                           onClick={() => onRemoveEvent(event.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 flex-shrink-0" // Added flex-shrink-0
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                           title="Remove event"
                         >
                           <Trash2 className="h-4 w-4" />
