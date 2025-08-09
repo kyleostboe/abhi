@@ -1601,7 +1601,7 @@ return (
                 onDragLeave={handleDragLeaveAction}
                 onDrop={handleDropAction}
               >
-                <div className="p-0.5 rounded-2xl bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 shadow-lg dark:shadow-white/20 py-[5px] px-[5px]">
+                <div className="p-0.5 rounded-2xl bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 shadow-lg dark:shadow-white/20 px-[5px] py-1">
                   <div className="p-10 md:p-16 text-center md:py-14 rounded-2xl bg-white dark:bg-gray-900 border-white border-0">
                     <motion.div
                       initial={{ opacity: 0, y: 5 }}
@@ -1633,7 +1633,7 @@ return (
                     animate={{ opacity: 1, y: 0, height: "auto" }}
                     exit={{ opacity: 0, y: -10, height: 0 }}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    className="p-0.5 rounded-xl mb-3.5 overflow-hidden bg-gradient-to-r from-logo-blue-500 to-logo-emerald-500 shadow-none py-[5px] px-[5px]"
+                    className="p-0.5 rounded-xl mb-3.5 overflow-hidden bg-gradient-to-r from-logo-blue-500 to-logo-emerald-500 shadow-none px-[5px] py-1"
                   >
                     <div className="bg-white dark:bg-gray-900 rounded-xl p-5 py-4 shadow">
                       <div className="flex items-center">
