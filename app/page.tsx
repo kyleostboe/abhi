@@ -84,9 +84,9 @@ const [audioAnalysis, setAudioAnalysis] = useState<{
 const [actualDuration, setActualDuration] = useState<number | null>(null)
 const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
 const isMobileDevice = useMobile() // Use the useMobile hook
-const [memoryWarning, setMemoryWarning] = useState<boolean>(false)
-const fileInputRef = useRef<HTMLInputElement>(null)
-const uploadAreaRef = useRef<HTMLDivElement>(null)
+const [memoryWarning, setMemoryWarning] = useState<boolean>([])
+const fileInputRef = useRef<HTMLInputElement | null>(null)
+const uploadAreaRef = useRef<HTMLDivElement | null>(null)
 const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
 // Add these new state variables and ref at the top of the HomePage component, near other state declarations:
@@ -1686,11 +1686,8 @@ return (
                           {/* Removed the Info icon div */}
                           <div className="text-lg font-black text-gray-600">Audio Analysis</div>
                         </div>
-                        {/* Replace this grid with the updated version */}
-                        
-                        {/* Original Grid */}
-                        {/*
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          {/* Content */}
                           <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl border-[3px] border-gray-500">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Content</div>
@@ -1699,6 +1696,7 @@ return (
                               </div>
                             </div>
                           </div>
+                          {/* Silence */}
                           <div className="p-[3px] rounded-md bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-md border-[3px] border-gray-500">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence</div>
@@ -1707,12 +1705,14 @@ return (
                               </div>
                             </div>
                           </div>
+                          {/* Pauses */}
                           <div className="p-[3px] rounded-md bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-md border-[3px] border-gray-500">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Pauses</div>
                               <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
                             </div>
                           </div>
+                          {/* Range */}
                           <div className="p-[3px] rounded-md bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-md border-[3px] border-gray-500">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Range</div>
@@ -1722,36 +1722,6 @@ return (
                             </div>
                           </div>
                         </div>
-                        */}
-                        {/* Updated Grid */}
-                        {(() => {
-                          const analysisCards = (
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                              <div className="bg-white dark:bg-gray-900 p-3 text-center rounded-xl shadow-md border-[3px] border-gray-500">
-                                <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Content</div>
-                                <div className="font-black text-gray-600">{formatTime(audioAnalysis.contentDuration)}</div>
-                              </div>
-
-                              <div className="bg-white dark:bg-gray-900 p-3 text-center rounded-xl shadow-md border-[3px] border-gray-500">
-                                <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence</div>
-                                <div className="font-black text-gray-600">{formatTime(audioAnalysis.totalSilence)}</div>
-                              </div>
-
-                              <div className="bg-white dark:bg-gray-900 p-3 text-center rounded-xl shadow-md border-[3px] border-gray-500">
-                                <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Pauses</div>
-                                <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
-                              </div>
-
-                              <div className="bg-white dark:bg-gray-900 p-3 text-center rounded-xl shadow-md border-[3px] border-gray-500">
-                                <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Range</div>
-                                <div className="text-xs uppercase tracking-wide text-gray-600">
-                                  {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
-                                </div>
-                              </div>
-                            </div>
-                          )
-                          return analysisCards
-                        })()}
                       </div>
                     </Alert>
                   </motion.div>
