@@ -1978,7 +1978,7 @@ return (
                           <audio controls className="w-full" src={originalUrl}></audio>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                          <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-smll">
+                          <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-smll rounded-sm">
                             <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
                               Duration
                             </div>
@@ -1986,7 +1986,7 @@ return (
                               {originalBuffer ? formatTime(originalBuffer.duration) : "--"}
                             </div>
                           </div>
-                          <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-smll">
+                          <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-smll rounded-sm">
                             <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
                               File Size
                             </div>
@@ -2010,11 +2010,11 @@ return (
                         <h3 className="text-white font-black">Adjusted Audio</h3>
                       </div>
                       <div className="p-6">
-                        <div className="bg-white rounded-lg p-3 dark:shadow-white/10 mb-4 dark:bg-gray-700 shadow-md">
+                        <div className="bg-white p-3 dark:shadow-white/10 mb-4 dark:bg-gray-700 shadow-md rounded-sm">
                           <audio controls className="w-full" src={processedUrl}></audio>
                         </div>
                         <div className="grid grid-cols-2 gap-4 mb-6">
-                          <div className="bg-white/60 p-3 rounded-sm text-center dark:bg-gray-800/60 shadow-md">
+                          <div className="p-3 rounded-sm text-center dark:bg-gray-800/60 shadow-md bg-white">
                             <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                             Duration
                             </div>
@@ -2027,7 +2027,7 @@ return (
                               )}
                             </div>
                           </div>
-                          <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-md">
+                          <div className="p-3 text-center dark:bg-gray-800/60 shadow-md rounded-sm bg-white">
                             <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                               File Size
                             </div>
