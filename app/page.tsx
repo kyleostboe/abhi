@@ -84,9 +84,9 @@ const [audioAnalysis, setAudioAnalysis] = useState<{
 const [actualDuration, setActualDuration] = useState<number | null>(null)
 const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
 const isMobileDevice = useMobile() // Use the useMobile hook
-const [memoryWarning, setMemoryWarning] = useState<boolean>([])
-const fileInputRef = useRef<HTMLInputElement | null>(null)
-const uploadAreaRef = useRef<HTMLDivElement | null>(null)
+const [memoryWarning, setMemoryWarning] = useState<boolean>(false)
+const fileInputRef = useRef<HTMLInputElement>(null)
+const uploadAreaRef = useRef<HTMLDivElement>(null)
 const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
 // Add these new state variables and ref at the top of the HomePage component, near other state declarations:
@@ -1687,34 +1687,30 @@ return (
                           <div className="text-lg font-black text-gray-600">Audio Analysis</div>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                          {/* Content */}
                           <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md">
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl border-[3px] border-gray-500">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Content</div>
-                              <div className="font-black text-blackde mb-1 text-gray-600">
+                              <div className="font-black mb-1 text-gray-600">
                                 {formatTime(audioAnalysis.contentDuration)}
                               </div>
                             </div>
                           </div>
-                          {/* Silence */}
-                          <div className="p-[3px] rounded-md bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md">
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-md border-[3px] border-gray-500">
+                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence</div>
-                              <div className="font-black rounded-xl text-gray-600">
+                              <div className="font-black text-gray-600">
                                 {formatTime(audioAnalysis.totalSilence)}
                               </div>
                             </div>
                           </div>
-                          {/* Pauses */}
-                          <div className="p-[3px] rounded-md bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md">
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-md border-[3px] border-gray-500">
+                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Pauses</div>
                               <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
                             </div>
                           </div>
-                          {/* Range */}
-                          <div className="p-[3px] rounded-md bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md">
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-md border-[3px] border-gray-500">
+                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Range</div>
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">
                                 {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
@@ -1975,7 +1971,7 @@ return (
                       <div className="bg-gradient-to-r from-gray-700 to-gray-500 py-3 px-6 dark:from-gray-600 dark:to-gray-700">
                         <h3 className="text-white font-black">Original Audio</h3>
                       </div>
-                      <div className="p-6 px-3.5 py-3.5">
+                      <div className="p-6">
                         <div className="bg-white rounded-lg p-3 dark:shadow-white/10 mb-4 dark:bg-gray-700 shadow-md">
                           <audio controls className="w-full" src={originalUrl}></audio>
                         </div>
@@ -2011,7 +2007,7 @@ return (
                       <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
                         <h3 className="text-white font-black">Adjusted Audio</h3>
                       </div>
-                      <div className="p-6 px-3.5 py-3.5">
+                      <div className="p-6">
                         <div className="bg-white rounded-lg p-3 dark:shadow-white/10 mb-4 dark:bg-gray-700 shadow-md">
                           <audio controls className="w-full" src={processedUrl}></audio>
                         </div>
