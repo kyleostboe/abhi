@@ -1711,7 +1711,7 @@ return (
                           </div>
                           <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl">
-                              <div className="text-xs uppercase tracking-wide text-gray-600">
+                              <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">
                                 Range
                               </div>
                               <div className="text-xs uppercase tracking-wide text-gray-600">
