@@ -1633,7 +1633,7 @@ return (
                     animate={{ opacity: 1, y: 0, height: "auto" }}
                     exit={{ opacity: 0, y: -10, height: 0 }}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    className="p-0.5 rounded-xl mb-3.5 overflow-hidden bg-gradient-to-r from-logo-blue-500 to-logo-emerald-500 shadow-none py-1 px-[5px]"
+                    className="p-0.5 rounded-xl mb-3.5 overflow-hidden bg-gradient-to-r from-logo-blue-500 to-logo-emerald-500 py-1 px-[5px] shadow-md"
                   >
                     <div className="bg-white dark:bg-gray-900 rounded-xl p-5 py-4 shadow">
                       <div className="flex items-center">
