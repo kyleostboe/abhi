@@ -2139,7 +2139,7 @@ return (
                   transition={{ delay: 0.3 }}
                 >
                   <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                    <div className="bg-gradient-to-r from-logo-rose-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
+                    <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-500 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
                       <h3 className="text-white flex items-center font-black text-left">
                         <Music2 className="h-4 w-4 mr-2" />
                         Sound Cues
@@ -2262,7 +2262,7 @@ return (
                   transition={{ delay: 0.4 }}
                 >
                   <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                    <div className="bg-gradient-to-r from-logo-blue-500 to-logo-amber-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
+                    <div className="bg-gradient-to-r from-logo-rose-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
                       <h3 className="text-white flex items-center font-black">
                         <Mic className="h-4 w-4 mr-2" />
                         Voice Recording
