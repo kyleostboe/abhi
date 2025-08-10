@@ -1696,7 +1696,7 @@ return (
                             </div>
                           </div>
                           <div className="p-[3px] bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm">
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm shadow-inner">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
                               <div className="font-black text-gray-600">
                                 {formatTime(audioAnalysis.totalSilence)}
@@ -1704,13 +1704,13 @@ return (
                             </div>
                           </div>
                           <div className="p-[3px] bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm">
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm shadow-inner">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Pauses:</div>
                               <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
                             </div>
                           </div>
                           <div className="p-[3px] bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm">
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] px-3 rounded-sm">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] px-3 rounded-sm shadow-inner">
                               <div className="text-xs uppercase tracking-wide text-gray-600 mb-1.5">
                                 Range:
                               </div>
