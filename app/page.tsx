@@ -1466,7 +1466,7 @@ return (
           </motion.div>
         </div>
 
-        <div className="px-6 md:px-10 pb-10 font-serif font-black">
+        <div className="px-6 md:px-10 font-serif font-black pb-7">
           {/* Mode Description Notes */}
           <AnimatePresence mode="wait">
             {activeMode === "adjuster" && (
