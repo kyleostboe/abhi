@@ -1714,7 +1714,7 @@ return (
                               <div className="text-xs uppercase tracking-wide text-gray-600 mb-1.5">
                                 Range:
                               </div>
-                              <div className="uppercase text-gray-600 tracking-normal text-xs">
+                              <div className="uppercase text-gray-600 text-xs tracking-wide">
                                 {durationLimits.min} min - {isMobileDevice ? "1 hour" : "2 hours"}
                               </div>
                             </div>
@@ -1870,7 +1870,7 @@ return (
                         <div className="p-6 px-11 py-6">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="mb-1 dark:text-logo-rose-300 text-gray-600 text-sm">
+                              <p className="mb-1 dark:text-logo-rose-300 text-gray-600 text-sm mr-2">
                                 Maintain the relative length of pauses
                               </p>
                             </div>
