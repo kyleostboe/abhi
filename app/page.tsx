@@ -1397,9 +1397,6 @@ return (
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
       className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-sm shadow-xl dark:shadow-2xl dark:shadow-white/40 overflow-hidden dark:bg-gray-900/80 transition-colors duration-300 ease-in-out"
-      style={{
-        borderRadius: "3rem 2.5rem 3rem 2.5rem",
-      }}
       role="application"
     >
       <div className="relative overflow-hidden">
@@ -1466,7 +1463,7 @@ return (
           </motion.div>
         </div>
 
-        <div className="px-6 md:px-10 pb-10 font-serif font-black">
+        <div className="px-6 md:px-10 font-serif font-black rounded-sm pb-10">
           {/* Mode Description Notes */}
           <AnimatePresence mode="wait">
             {activeMode === "adjuster" && (
