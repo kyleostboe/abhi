@@ -1517,7 +1517,7 @@ return (
                     feel free to
                     <a
                       href="/contact"
-                      className="hover:text-logo-rose-600 underline px-1 rounded transition-colors transition-shadow dark:hover:text-logo-rose-300 font-black text-sm text-logo-purple-300"
+                      className=" underline px-1 rounded transition-colors transition-shadow dark:hover:text-logo-rose-300 font-black text-sm text-logo-purple-300"
                     >
                       contact me
                     </a>
@@ -1810,7 +1810,7 @@ return (
                   <TabsContent value="advanced" className="mt-0 space-y-6">
                     <div className="grid md:grid-cols-2 gap-6 font-serif font-black">
                       <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                        <div className="bg-gradient-to-r from-logo-amber-500 to-logo-rose-500 py-3 px-6 dark:from-logo-amber-700 dark:to-logo-rose-700">
+                        <div className="bg-gradient-to-r from-logo-purple-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-amber-700 dark:to-logo-rose-700">
                           <h3 className="text-white font-black">Min Silence Duration</h3>
                         </div>
                         <div className="p-6 font-serif font-black px-11 py-6">
@@ -1837,7 +1837,7 @@ return (
                         </div>
                       </Card>
                       <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                        <div className="bg-gradient-to-r from-logo-purple-500 to-logo-teal-500 py-3 px-6 dark:from-logo-purple-700 dark:to-logo-teal-700">
+                        <div className="bg-gradient-to-r from-logo-amber-500 to-logo-rose-500 py-3 px-6 dark:from-logo-purple-700 dark:to-logo-teal-700">
                           <h3 className="text-white font-black">Min Spacing Between Content</h3>
                         </div>
                         <div className="p-6 px-11 py-6">
