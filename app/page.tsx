@@ -1398,7 +1398,7 @@ return (
       transition={{ duration: 0.6 }}
       className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl dark:shadow-2xl dark:shadow-white/40 overflow-hidden dark:bg-gray-900/80 transition-colors duration-300 ease-in-out"
       style={{
-        borderRadius: "4rem 3rem 3rem 2rem",
+        borderRadius: "4rem 3rem 2rem 1rem",
       }}
       role="application"
     >
@@ -1635,7 +1635,7 @@ return (
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                     className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-logo-blue-500 to-logo-emerald-500 py-1 px-[5px] shadow-md rounded-sm pr-1"
                   >
-                    <div className="bg-white dark:bg-gray-900 p-5 py-4 shadow rounded-sm">
+                    <div className="bg-white dark:bg-gray-900 p-5 py-4 rounded-sm shadow-inner">
                       <div className="flex items-center">
                         <motion.div
                           initial={{ scale: 0 }}
@@ -1695,7 +1695,7 @@ return (
                               </div>
                             </div>
                           </div>
-                          <div className="p-[3px] bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm">
+                          <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-700 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm shadow-inner">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
                               <div className="font-black text-gray-600">
@@ -1709,7 +1709,7 @@ return (
                               <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
                             </div>
                           </div>
-                          <div className="p-[3px] bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm">
+                          <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-700 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] px-3 rounded-sm shadow-inner">
                               <div className="text-xs uppercase tracking-wide text-gray-600 mb-1.5">
                                 Range:
