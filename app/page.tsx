@@ -1864,7 +1864,7 @@ return (
                       </div>
                     </Card>
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                      <div className="bg-gradient-to-r from-logo-rose-300 to-logo-purple-300 py-3 px-6 dark:from-logo-rose-700 dark:to-logo-purple-700">
+                      <div className="bg-gradient-to-r from-logo-rose-300 to-logo-blue-400 py-3 px-6 dark:from-logo-rose-700 dark:to-logo-purple-700">
                         <h3 className="text-white font-black">Preserve Natural Pacing</h3>
                       </div>
                       <div className="p-6 px-11 py-6">
