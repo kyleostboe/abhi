@@ -1478,7 +1478,7 @@ return (
                 transition={{ duration: 0.2 }}
                 className="p-4 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
               >
-                <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-sm">
+                <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs">
                   Change the length of guided meditations by intelligently adjusting silence periods. Upload an audio
                   file, set your target duration, and this tool will re-space content to fit your schedule.
                 </p>
@@ -1493,7 +1493,7 @@ return (
                 transition={{ duration: 0.2 }}
                 className="p-4 mb-6 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto text-center border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none text-sm py-0 px-0 mt-1"
               >
-                <p className="px-4 pt-1.5 text-logo-rose-600 text-sm">
+                <p className="px-4 pt-1.5 text-logo-rose-600 text-xs">
                   Create custom meditations by associating instructions with sound cues and placing them along a
                   timeline. This tool aims to help bridge the gap between guided and self-directed meditation.
                 </p>
