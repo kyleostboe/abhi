@@ -1633,7 +1633,7 @@ return (
                     animate={{ opacity: 1, y: 0, height: "auto" }}
                     exit={{ opacity: 0, y: -10, height: 0 }}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-logo-blue-500 to-logo-emerald-500 py-1 px-[5px] shadow-md rounded-sm pr-1"
+                    className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-logo-amber-500 to-logo-purple-500 py-1 px-[5px] shadow-md rounded-sm pr-1"
                   >
                     <div className="bg-white dark:bg-gray-900 p-5 py-4 rounded-sm shadow-inner">
                       <div className="flex items-center">
@@ -1750,7 +1750,7 @@ return (
                   <TabsContent value="basic" className="mt-0 space-y-6">
                     <div className="grid md:grid-cols-2 gap-6">
                       <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                        <div className="bg-gradient-to-r from-logo-rose-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-700 dark:to-indigo-700">
+                        <div className="bg-gradient-to-r from-logo-blue-500 to-logo-amber-500 py-3 px-6 dark:from-logo-teal-700 dark:to-indigo-700">
                           <h3 className="text-white flex items-center font-black text-base">Target Duration</h3>
                         </div>
                         <div className="p-6 py-6 px-11">
@@ -1780,7 +1780,7 @@ return (
                         </div>
                       </Card>
                       <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                        <div className="bg-gradient-to-r from-logo-blue-500 to-logo-amber-500 py-3 px-6 dark:from-indigo-700 dark:to-logo-teal-700">
+                        <div className="bg-gradient-to-r from-logo-rose-500 to-logo-emerald-500 py-3 px-6 dark:from-indigo-700 dark:to-logo-teal-700">
                           <h3 className="text-white flex items-center font-black text-base">Silence Threshold</h3>
                         </div>
                         <div className="p-6 px-11">
@@ -1810,7 +1810,7 @@ return (
                   <TabsContent value="advanced" className="mt-0 space-y-6">
                     <div className="grid md:grid-cols-2 gap-6 font-serif font-black">
                       <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                        <div className="bg-gradient-to-r from-logo-purple-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-amber-700 dark:to-logo-rose-700">
+                        <div className="bg-gradient-to-r from-logo-purple-500 to-logo-teal-500 py-3 px-6 dark:from-logo-amber-700 dark:to-logo-rose-700">
                           <h3 className="text-white font-black">Min Silence Duration</h3>
                         </div>
                         <div className="p-6 font-serif font-black px-11 py-6">
