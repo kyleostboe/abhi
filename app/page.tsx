@@ -1973,7 +1973,7 @@ return (
                       <div className="bg-gradient-to-r from-gray-700 to-gray-500 py-3 px-6 dark:from-gray-600 dark:to-gray-700">
                         <h3 className="text-white font-black">Original Audio</h3>
                       </div>
-                      <div className="p-6">
+                      <div className="p-6 py-4 px-3.5">
                         <div className="bg-white rounded-sm p-3 dark:shadow-white/10 mb-4 dark:bg-gray-700 shadow-md">
                           <audio controls className="w-full" src={originalUrl}></audio>
                         </div>
