@@ -1438,7 +1438,7 @@ return (
 
             {/* Mode Switch */}
             <div className="flex justify-center items-center mb-4 space-y-4 flex-row my-[33px]">
-              <div className="grid mx-auto grid-cols-2 bg-gray-100/70 p-1 rounded-md dark:bg-gray-800/70 font-serif text-gray-600 w-64 h-auto shadow-inner rounded-md">
+              <div className="grid mx-auto grid-cols-2 bg-gray-100/70 p-1 rounded-md dark:bg-gray-800/70 font-serif text-gray-600 w-64 shadow-inner rounded-md pb-12 h-12">
                 <button
                   onClick={() => setActiveMode("adjuster")}
                   className={cn(
@@ -1595,13 +1595,13 @@ return (
                 whileTap={{ scale: 0.995 }}
                 transition={{ type: "spring", stiffness: 400, damping: 20 }}
                 ref={uploadAreaRef}
-                className="overflow-hidden border-none bg-white dark:bg-gray-900 rounded-2xl mb-5 cursor-pointer transition-all duration-300 shadow-none hover:shadow-lg dark:shadow-white/10 dark:hover:shadow-white/20"
+                className="overflow-hidden border-none bg-white dark:bg-gray-900 rounded-2xl mb-5 cursor-pointer transition-all duration-300 shadow-none hover:shadow-md dark:shadow-white/10 dark:hover:shadow-white/20"
                 onClick={() => fileInputRef.current?.click()}
                 onDragOver={handleDragOverAction}
                 onDragLeave={handleDragLeaveAction}
                 onDrop={handleDropAction}
               >
-                <div className="p-0.5 rounded-2xl bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 dark:shadow-white/20 px-[5px] py-1 shadow-md">
+                <div className="p-0.5 rounded-2xl bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 dark:shadow-white/20 px-[5px] py-1 shadow-sm">
                   <div className="p-10 md:p-16 text-center md:py-14 rounded-2xl bg-white dark:bg-gray-900 border-white border-0">
                     <motion.div
                       initial={{ opacity: 0, y: 5 }}
@@ -1687,7 +1687,7 @@ return (
                           <div className="text-lg font-black text-gray-600">Audio Analysis</div>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px]">
+                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px]">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl min-h-[76px]">
                               <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
                               <div className="font-black text-gray-600">
@@ -1695,7 +1695,7 @@ return (
                               </div>
                             </div>
                           </div>
-                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px]">
+                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px]">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl min-h-[76px]">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
                               <div className="font-black text-gray-600">
@@ -1703,13 +1703,13 @@ return (
                               </div>
                             </div>
                           </div>
-                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px]">
+                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px]">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl min-h-[76px]">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Pauses:</div>
                               <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
                             </div>
                           </div>
-                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px]">
+                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px]">
                             <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl min-h-[76px] px-3">
                               <div className="text-xs uppercase tracking-wide text-gray-600 mb-1.5">
                                 Range:
@@ -1969,7 +1969,7 @@ return (
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
                   >
-                    <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/25 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
                       <div className="bg-gradient-to-r from-gray-700 to-gray-500 py-3 px-6 dark:from-gray-600 dark:to-gray-700">
                         <h3 className="text-white font-black">Original Audio</h3>
                       </div>
