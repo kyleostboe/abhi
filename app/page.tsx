@@ -1438,7 +1438,7 @@ return (
 
             {/* Mode Switch */}
             <div className="flex justify-center items-center mb-4 space-y-4 flex-row my-[33px]">
-              <div className="grid mx-auto grid-cols-2 bg-gray-100/70 p-1 rounded-md dark:bg-gray-800/70 font-serif text-gray-600 w-64 shadow-inner rounded-md pb-12 h-12">
+              <div className="grid mx-auto grid-cols-2 bg-gray-100/70 p-1 dark:bg-gray-800/70 font-serif text-gray-600 w-64 shadow-inner pb-12 h-12 rounded-sm">
                 <button
                   onClick={() => setActiveMode("adjuster")}
                   className={cn(
@@ -1601,8 +1601,8 @@ return (
                 onDragLeave={handleDragLeaveAction}
                 onDrop={handleDropAction}
               >
-                <div className="p-0.5 rounded-2xl bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 dark:shadow-white/20 px-[5px] py-1 shadow-sm">
-                  <div className="p-10 md:p-16 text-center md:py-14 rounded-2xl bg-white dark:bg-gray-900 border-white border-0">
+                <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 dark:shadow-white/20 px-[5px] py-1 shadow-sm rounded-sm">
+                  <div className="p-10 md:p-16 text-center md:py-14 bg-white dark:bg-gray-900 border-white border-0 rounded-sm">
                     <motion.div
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -1633,9 +1633,9 @@ return (
                     animate={{ opacity: 1, y: 0, height: "auto" }}
                     exit={{ opacity: 0, y: -10, height: 0 }}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    className="p-0.5 rounded-xl mb-3.5 overflow-hidden bg-gradient-to-r from-logo-blue-500 to-logo-emerald-500 py-1 px-[5px] shadow-md"
+                    className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-logo-blue-500 to-logo-emerald-500 py-1 px-[5px] shadow-md rounded-sm"
                   >
-                    <div className="bg-white dark:bg-gray-900 rounded-xl p-5 py-4 shadow">
+                    <div className="bg-white dark:bg-gray-900 p-5 py-4 shadow rounded-sm">
                       <div className="flex items-center">
                         <motion.div
                           initial={{ scale: 0 }}
@@ -1687,30 +1687,30 @@ return (
                           <div className="text-lg font-black text-gray-600">Audio Analysis</div>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px]">
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl min-h-[76px]">
+                          <div className="p-[3px] bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm">
                               <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
                               <div className="font-black text-gray-600">
                                 {formatTime(audioAnalysis.contentDuration)}
                               </div>
                             </div>
                           </div>
-                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px]">
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl min-h-[76px]">
+                          <div className="p-[3px] bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
                               <div className="font-black text-gray-600">
                                 {formatTime(audioAnalysis.totalSilence)}
                               </div>
                             </div>
                           </div>
-                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px]">
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl min-h-[76px]">
+                          <div className="p-[3px] bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Pauses:</div>
                               <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
                             </div>
                           </div>
-                          <div className="p-[3px] rounded-xl bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px]">
-                            <div className="bg-white p-3 text-center dark:bg-gray-900 rounded-xl min-h-[76px] px-3">
+                          <div className="p-[3px] bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm">
+                            <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] px-3 rounded-sm">
                               <div className="text-xs uppercase tracking-wide text-gray-600 mb-1.5">
                                 Range:
                               </div>
