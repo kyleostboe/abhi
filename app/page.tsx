@@ -1601,7 +1601,7 @@ return (
               onDragLeave={handleDragLeaveAction}
               onDrop={handleDropAction}
             >
-              <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 dark:shadow-white/20 px-[5px] py-1 shadow-sm rounded-sm pl-1">
+              <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 dark:shadow-white/20 px-[5px] py-1 shadow-sm rounded-sm pl-1">
                 <div className="p-10 md:p-16 text-center md:py-14 bg-white dark:bg-gray-900 border-white border-0 rounded-sm">
                   <motion.div
                     initial={{ opacity: 0, y: 5 }}
@@ -1633,7 +1633,7 @@ return (
                   animate={{ opacity: 1, y: 0, height: "auto" }}
                   exit={{ opacity: 0, y: -10, height: 0 }}
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-logo-amber-500 to-logo-purple-500 py-1 px-[5px] shadow-md rounded-sm pr-1"
+                  className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-logo-amber-300 to-logo-purple-300 py-1 px-[5px] shadow-md rounded-sm pr-1"
                 >
                   <div className="bg-white dark:bg-gray-900 p-5 py-4 rounded-sm shadow-inner">
                     <div className="flex items-center">
@@ -1687,7 +1687,7 @@ return (
                         <div className="text-lg font-black text-gray-600">Audio Analysis</div>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        <div className="p-[3px] bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm">
+                        <div className="p-[3px] bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm pl-1">
                           <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm">
                             <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
                             <div className="font-black text-gray-600">
@@ -1695,7 +1695,7 @@ return (
                             </div>
                           </div>
                         </div>
-                        <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-700 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm">
+                        <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-600 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm pr-1">
                           <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm shadow-inner">
                             <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
                             <div className="font-black text-gray-600">
@@ -1703,13 +1703,13 @@ return (
                             </div>
                           </div>
                         </div>
-                        <div className="p-[3px] bg-gradient-to-r from-gray-700 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm">
+                        <div className="p-[3px] bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm pl-1">
                           <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm shadow-inner">
                             <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Pauses:</div>
                             <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
                           </div>
                         </div>
-                        <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-700 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm">
+                        <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-600 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm pr-1">
                           <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] px-3 rounded-sm shadow-inner">
                             <div className="text-xs uppercase tracking-wide text-gray-600 mb-1.5">
                               Range:
@@ -1750,7 +1750,7 @@ return (
                 <TabsContent value="basic" className="mt-0 space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                      <div className="bg-gradient-to-r from-blue-400 to-logo-amber-500 py-3 px-6 dark:from-logo-teal-700 dark:to-indigo-700 text-cyan-500">
+                      <div className="bg-gradient-to-r from-blue-400 to-logo-amber-400 py-3 px-6 dark:from-logo-teal-700 dark:to-indigo-700 text-cyan-500">
                         <h3 className="text-white flex items-center font-black text-base">Target Duration</h3>
                       </div>
                       <div className="p-6 py-6 px-11">
@@ -1780,7 +1780,7 @@ return (
                       </div>
                     </Card>
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                      <div className="bg-gradient-to-r from-logo-rose-500 to-logo-emerald-500 py-3 px-6 dark:from-indigo-700 dark:to-logo-teal-700">
+                      <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 dark:from-indigo-700 dark:to-logo-teal-700">
                         <h3 className="text-white flex items-center font-black text-base">Silence Threshold</h3>
                       </div>
                       <div className="p-6 px-11">
@@ -1810,7 +1810,7 @@ return (
                 <TabsContent value="advanced" className="mt-0 space-y-6">
                   <div className="grid md:grid-cols-2 gap-6 font-serif font-black">
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                      <div className="bg-gradient-to-r from-logo-purple-500 to-logo-teal-500 py-3 px-6 dark:from-logo-amber-700 dark:to-logo-rose-700">
+                      <div className="bg-gradient-to-r from-logo-purple-300 to-logo-teal-500 py-3 px-6 dark:from-logo-amber-700 dark:to-logo-rose-700">
                         <h3 className="text-white font-black">Min Silence Duration</h3>
                       </div>
                       <div className="p-6 font-serif font-black px-11 py-6">
@@ -1837,7 +1837,7 @@ return (
                       </div>
                     </Card>
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                      <div className="bg-gradient-to-r from-logo-amber-500 to-logo-rose-500 py-3 px-6 dark:from-logo-purple-700 dark:to-logo-teal-700">
+                      <div className="bg-gradient-to-r from-logo-amber-400 to-logo-rose-300 py-3 px-6 dark:from-logo-purple-700 dark:to-logo-teal-700">
                         <h3 className="text-white font-black">Min Spacing Between Content</h3>
                       </div>
                       <div className="p-6 px-11 py-6">
@@ -1864,7 +1864,7 @@ return (
                       </div>
                     </Card>
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                      <div className="bg-gradient-to-r from-logo-rose-500 to-logo-purple-500 py-3 px-6 dark:from-logo-rose-700 dark:to-logo-purple-700">
+                      <div className="bg-gradient-to-r from-logo-rose-300 to-logo-purple-300 py-3 px-6 dark:from-logo-rose-700 dark:to-logo-purple-700">
                         <h3 className="text-white font-black">Preserve Natural Pacing</h3>
                       </div>
                       <div className="p-6 px-11 py-6">
@@ -1883,7 +1883,7 @@ return (
                       </div>
                     </Card>
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                      <div className="bg-gradient-to-r from-logo-teal-500 to-logo-amber-500 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-amber-700">
+                      <div className="bg-gradient-to-r from-logo-teal-500 to-logo-amber-300 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-amber-700">
                         <h3 className="text-white font-black">Compatibility Mode</h3>
                       </div>
                       <div className="p-6 px-11">
@@ -1970,7 +1970,7 @@ return (
                   transition={{ delay: 0.4 }}
                 >
                   <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/25 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-                    <div className="bg-gradient-to-r from-gray-700 to-gray-500 py-3 px-6 dark:from-gray-600 dark:to-gray-700">
+                    <div className="bg-gradient-to-r from-gray-600 to-gray-500 py-3 px-6 dark:from-gray-600 dark:to-gray-700">
                       <h3 className="text-white font-black">Original Audio</h3>
                     </div>
                     <div className="p-6 py-4 px-3.5">
@@ -2560,7 +2560,7 @@ return (
                   "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
                   "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none text-white",
                   // Multi-stop gradient with gray-600 centered
-                  "bg-[linear-gradient(90deg,#38C79B_0%,#40C9B7_7%,#F287B7_24%,#EE961B_36%,#C099F9_64%,#38BFF2_76%,#29C9E6_93%,#38C79B_100%)]",
+                  "bg-[linear-gradient(90deg,#38C79B_0%,#40C9B7_7%,#EC099F_24%,#F287B7_36%,#EE961B_64%,#38BFF2_76%,#29C9E6_93%,#38C79B_100%)]",
                   "dark:bg-[linear-gradient(90deg,#10b981_0%,#14b8a6_12%,#ec4899_24%,##D97706_36%,#6b7280_50%,#a855f7_64%,#0ea5e9_76%,#06b6d4_88%,#10b981_100%)]",
                   "hover:brightness-[1.06] active:brightness-95",
                 )}
