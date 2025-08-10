@@ -1399,7 +1399,7 @@ return (
       className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-sm shadow-xl dark:shadow-2xl dark:shadow-white/40 overflow-hidden dark:bg-gray-900/80 transition-colors duration-300 ease-in-out"
       role="application"
     >
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden rounded-sm">
         <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
           <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 dark:from-amber-600/20 dark:via-rose-500/15 dark:via-purple-600/10 dark:to-teal-500/20"></div>
           <div className="absolute top-2 left-8 w-16 h-12 bg-gradient-to-br from-emerald-300/30 to-teal-400/25 rounded-full transform rotate-12 dark:from-emerald-500/30 dark:to-teal-600/25"></div>
@@ -1463,7 +1463,7 @@ return (
           </motion.div>
         </div>
 
-        <div className="px-6 md:px-10 font-serif font-black rounded-sm pb-10">
+        <div className="px-6 md:px-10 font-serif font-black pb-0 rounded-sm">
           {/* Mode Description Notes */}
           <AnimatePresence mode="wait">
             {activeMode === "adjuster" && (
