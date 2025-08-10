@@ -9,12 +9,12 @@ export function Navigation() {
 
   return (
     <nav className="flex justify-center py-4 mb-5">
-      <ul className="flex space-x-4 bg-white/70 backdrop-blur-md px-6 py-3 dark:bg-gray-800/70 dark:shadow-white/10 shadow-2xl rounded-md">
+      <ul className="flex space-x-4 bg-white/70 backdrop-blur-md px-6 py-3 dark:bg-gray-800/70 dark:shadow-white/10 shadow-2xl rounded-sm">
         <li>
           <Link
             href="/"
             className={cn(
-              "px-4 py-2 transition-colors font-black font-serif text-sm shadow-none rounded-md",
+              "px-4 py-2 transition-colors font-black font-serif text-sm shadow-none rounded-sm",
               pathname === "/"
                 ? "bg-gray-600 text-white shadow-md dark:bg-gray-700"
                 : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
@@ -27,7 +27,7 @@ export function Navigation() {
           <Link
             href="/contact"
             className={cn(
-              "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-md",
+              "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-sm",
               pathname === "/contact"
                 ? "bg-gray-600 text-white shadow-md dark:bg-gray-700"
                 : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
@@ -40,7 +40,7 @@ export function Navigation() {
           <Link
             href="/donate"
             className={cn(
-              "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-md",
+              "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-sm",
               pathname === "/donate"
                 ? "bg-gray-600 text-white shadow-md dark:bg-gray-700"
                 : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
