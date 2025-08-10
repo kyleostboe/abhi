@@ -1750,7 +1750,7 @@ return (
                 <TabsContent value="basic" className="mt-0 space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                      <div className="bg-gradient-to-r from-blue-400 to-logo-amber-400 py-3 px-6 dark:from-logo-teal-700 dark:to-indigo-700 text-cyan-500">
+                      <div className="bg-gradient-to-r from-blue-400 to-logo-amber-300 py-3 px-6 dark:from-logo-teal-700 dark:to-indigo-700 text-cyan-500">
                         <h3 className="text-white flex items-center font-black text-base">Target Duration</h3>
                       </div>
                       <div className="p-6 py-6 px-11">
@@ -1837,7 +1837,7 @@ return (
                       </div>
                     </Card>
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                      <div className="bg-gradient-to-r from-logo-amber-400 to-logo-rose-300 py-3 px-6 dark:from-logo-purple-700 dark:to-logo-teal-700">
+                      <div className="bg-gradient-to-r from-logo-amber-300 to-logo-rose-300 py-3 px-6 dark:from-logo-purple-700 dark:to-logo-teal-700">
                         <h3 className="text-white font-black">Min Spacing Between Content</h3>
                       </div>
                       <div className="p-6 px-11 py-6">
@@ -2139,7 +2139,7 @@ return (
                 transition={{ delay: 0.3 }}
               >
                 <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                  <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-500 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
+                  <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
                     <h3 className="text-white flex items-center font-black text-left">
                       <Music2 className="h-4 w-4 mr-2" />
                       Sound Cues
@@ -2262,7 +2262,7 @@ return (
                 transition={{ delay: 0.4 }}
               >
                 <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                  <div className="bg-gradient-to-r from-logo-rose-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
+                  <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
                     <h3 className="text-white flex items-center font-black">
                       <Mic className="h-4 w-4 mr-2" />
                       Voice Recording
