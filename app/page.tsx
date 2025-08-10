@@ -1750,7 +1750,7 @@ return (
                   <TabsContent value="basic" className="mt-0 space-y-6">
                     <div className="grid md:grid-cols-2 gap-6">
                       <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                        <div className="bg-gradient-to-r from-logo-blue-500 to-logo-amber-500 py-3 px-6 dark:from-logo-teal-700 dark:to-indigo-700">
+                        <div className="bg-gradient-to-r from-blue-400 to-logo-amber-500 py-3 px-6 dark:from-logo-teal-700 dark:to-indigo-700 text-cyan-500">
                           <h3 className="text-white flex items-center font-black text-base">Target Duration</h3>
                         </div>
                         <div className="p-6 py-6 px-11">
