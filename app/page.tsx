@@ -1601,7 +1601,7 @@ return (
                 onDragLeave={handleDragLeaveAction}
                 onDrop={handleDropAction}
               >
-                <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 dark:shadow-white/20 px-[5px] py-1 shadow-sm rounded-sm">
+                <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 dark:shadow-white/20 px-[5px] py-1 shadow-sm rounded-sm pl-1">
                   <div className="p-10 md:p-16 text-center md:py-14 bg-white dark:bg-gray-900 border-white border-0 rounded-sm">
                     <motion.div
                       initial={{ opacity: 0, y: 5 }}
@@ -1633,7 +1633,7 @@ return (
                     animate={{ opacity: 1, y: 0, height: "auto" }}
                     exit={{ opacity: 0, y: -10, height: 0 }}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-logo-blue-500 to-logo-emerald-500 py-1 px-[5px] shadow-md rounded-sm"
+                    className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-logo-blue-500 to-logo-emerald-500 py-1 px-[5px] shadow-md rounded-sm pr-1"
                   >
                     <div className="bg-white dark:bg-gray-900 p-5 py-4 shadow rounded-sm">
                       <div className="flex items-center">
@@ -2119,7 +2119,7 @@ return (
                     <BookText className="mr-2 h-4 w-4 text-gray-600" />
                     <span className="font-black text-center text-base text-gray-600">Instructions</span>
                   </div>
-                  <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 border-indigo-200 rounded-2xl shadow-md border-0 px-[5px] py-1">
+                  <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-500 border-indigo-200 rounded-2xl shadow-md border-0 px-[5px] py-1 pl-1">
                     <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border-rose-200 border-0">
                       <div className="text-center">
                         <Textarea
