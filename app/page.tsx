@@ -1085,7 +1085,7 @@ const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const mimeType = MediaRecorder.isTypeSupported("audio/mp4;codecs=aac")
-        ? "audio/mp4;co`decs=aac"
+        ? "audio/mp4;codecs=aac"
         : MediaRecorder.isTypeSupported("audio/webm")
           ? "audio/webm"
           : ""
@@ -1136,7 +1136,7 @@ const startRecording = async () => {
           toast({
             title: "Recording Error",
             description: "Could not load recorded audio metadata. Try again.",
-            variant: "destructive",,
+            variant: "destructive",
           })
           URL.revokeObjectURL(url)
           setReadyToAddToTimelineRecording(null)
@@ -1995,47 +1995,6 @@ return (
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </Card>
-                  </motion.div>
-                )}
-                {processedUrl && processedBufferState && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                  >
-                    <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-logo-teal-950 dark:to-logo-emerald-950">
-                      <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
-                        <h3 className="text-white font-black">Adjusted Audio</h3>
-                      </div>
-                      <div className="p-6">
-                        <div className="bg-white p-3 dark:shadow-white/10 mb-4 dark:bg-gray-700 shadow-md rounded-sm">
-                          <audio controls className="w-full" src={processedUrl}></audio>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                          <div className="p-3 rounded-sm text-center dark:bg-gray-800/60 shadow-md bg-white py-3.5">
-                            <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
-                            Duration
-                            </div>
-                            <div className="dark:text-black font-black text-gray-600">
-                              {formatTime(actualDuration || 0)}
-                              {actualDuration && targetDuration && (
-                                <div className="text-xs text-logo-teal-600 mt-1 dark:text-gray-900">
-                                  {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}%
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="p-3 text-center dark:bg-gray-800/60 shadow-md rounded-sm bg-white py-3.5">
-                            <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
-                              File Size
-                            </div>
-                            <div className="dark:text-black font-black text-gray-600">
-                              {formatFileSize(file?.size || 0)}
-                            </div>
-                          </div>
-                        </div>
                         <Button
                           className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:from-logo-teal-500 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
                           onClick={downloadProcessedAudioAction}
@@ -2080,7 +2039,7 @@ return (
                           value={meditationTitle}
                           onChange={handleMeditationTitleChange}
                           placeholder="My Custom Meditation"
-                          className="mt-1 text-xs font-black text-gray-600 shadow-inner border border-gray-500 focus:ring-gray-600 focus:border-gray-600 border-2 border-gray-500"
+                          className="mt-1 text-xs font-black text-gray-600 shadow-inner border border-gray-500 focus:ring-gray-600 focus:border-gray-600 border-[3px]"
                         />
                       </div>
                       <div className="text-center">
@@ -2093,7 +2052,7 @@ return (
                           value={labsTotalDuration / 60}
                           onChange={handleDurationChange}
                           min="1"
-                          className="mt-1 text-xs font-black text-gray-600 shadow-inner border border-gray-500 focus:ring-gray-600 focus:border-gray-600 border-2 border-gray-500"
+                          className="mt-1 text-xs font-black text-gray-600 shadow-inner border border-gray-500 focus:ring-gray-600 focus:border-gray-600 border-[3px]"
                         />
                       </div>
                     </div>
@@ -2591,7 +2550,7 @@ return (
                         </svg>
                       </div>
                     )}
-                    <Wand2 className="mr-2 w-4 h-4 text-white" />
+                    <Wand2 className="mr-2 w-4 h-4" />
                     <span className="text-base text-white tracking-normal">
                       {isGeneratingAudio ? "Generating..." : "Generate Audio"}
                     </span>
