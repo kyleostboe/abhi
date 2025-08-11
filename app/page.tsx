@@ -1810,7 +1810,7 @@ return (
                 <TabsContent value="advanced" className="mt-0 space-y-6">
                   <div className="grid md:grid-cols-2 gap-6 font-serif font-black">
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                      <div className="bg-gradient-to-r from-logo-purple-300 to-logo-teal-500 py-3 px-6 dark:from-logo-amber-700 dark:to-logo-rose-700">
+                      <div className="bg-gradient-to-r from-logo-purple-300 to-logo-emerald-500 py-3 px-6 dark:from-logo-amber-700 dark:to-logo-rose-700">
                         <h3 className="text-white font-black">Min Silence Duration</h3>
                       </div>
                       <div className="p-6 font-serif font-black px-11 py-6">
@@ -1837,7 +1837,7 @@ return (
                       </div>
                     </Card>
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                      <div className="bg-gradient-to-r from-logo-amber-300 to-pink-400 py-3 px-6 dark:from-logo-purple-700 dark:to-logo-teal-700">
+                      <div className="bg-gradient-to-r from-orange-300 to-pink-400 py-3 px-6 dark:from-logo-purple-700 dark:to-logo-teal-700">
                         <h3 className="text-white font-black">Min Spacing Between Content</h3>
                       </div>
                       <div className="p-6 px-11 py-6">
@@ -1921,7 +1921,7 @@ return (
                   "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
                   "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none text-white",
                   // Multi-stop gradient with gray-500 centered
-                  "bg-gradient-to-r from-cyan-400 to-pink-400",
+                  "bg-gradient-to-r from-logo-purple-300 via-logo-teal-500 to-orange-300",
                   "dark:bg-[linear-gradient(90deg,#10b981_0%,#14b8a6_12%,#ec4899_24%,#f59e0b_36%,#6b7280_50%,#a855f7_64%,#0ea5e9_76%,#06b6d4_88%,#10b981_100%)]",
                   "hover:brightness-[1.06] active:brightness-95",
                 )}
