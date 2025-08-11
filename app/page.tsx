@@ -1920,7 +1920,7 @@ return (
                 className={cn(
                   "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
                   "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none text-white",
-                  // Multi-stop gradient with gray-500 centered
+                  // Multi-stop gradient 
                   "bg-gradient-to-r from-logo-purple-300 via-logo-teal-500 to-orange-300",
                   "dark:bg-[linear-gradient(90deg,#10b981_0%,#14b8a6_12%,#ec4899_24%,#f59e0b_36%,#6b7280_50%,#a855f7_64%,#0ea5e9_76%,#06b6d4_88%,#10b981_100%)]",
                   "hover:brightness-[1.06] active:brightness-95",
@@ -2560,7 +2560,7 @@ return (
                   "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
                   "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none text-white",
                   // 
-                  "bg-gradient-to-r from-teal-500 to-logo-blue-400 via-logo-amber-300 to-pink-300",
+                  "bg-gradient-to-r from-logo-purple-300 via-logo-teal-500 to-orange-300",
                   "dark:bg-[linear-gradient(90deg,#10b981_0%,#14b8a6_12%,#ec4899_24%,##D97706_36%,#6b7280_50%,#a855f7_64%,#0ea5e9_76%,#06b6d4_88%,#10b981_100%)]",
                   "hover:brightness-[1.06] active:brightness-95",
                 )}
