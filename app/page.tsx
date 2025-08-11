@@ -1,9 +1,11 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Button, Card, Slider } from "your-ui-library"
-import { PlusCircle, Trash2, Volume2, Wand2, Download } from "your-icon-library"
-import { cn } from "your-classname-library"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Slider } from "@/components/ui/slider"
+import { PlusCircle, Trash2, Volume2, Wand2, Download } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 
 const Page = () => {
