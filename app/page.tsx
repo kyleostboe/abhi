@@ -860,6 +860,7 @@ try {
     currentAudioContext.suspend().catch((err) => console.warn("Error suspending AudioContext post-process:", err))
   }
 }
+}
 
 const rebuildAudioWithScaledPauses = useCallback(
 async (
@@ -1084,7 +1085,7 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     const mimeType = MediaRecorder.isTypeSupported("audio/mp4;codecs=aac")
-      ? "audio/mp4;codecs=aac"
+      ? "audio/mp4;co`decs=aac"
       : MediaRecorder.isTypeSupported("audio/webm")
         ? "audio/webm"
         : ""
@@ -1239,11 +1240,9 @@ const value = e.target?.value
 if (typeof value === "string" && !isNaN(Number(value))) {
   setLabsTotalDuration(Math.max(60, Number(value) * 60) || 60)
 }
+}
 
-// Gradient order: emerald/teal → pink → orange → gray-600 (center) → purple → sky → teal/emerald
-const gradientClass = "bg-gradient-to-r from-logo-teal-500 via-logo-blue-400 via-logo-amber-300 to-logo-rose-300";
-const darkGradientClass = "dark:bg-gradient-to-r dark:from-logo-teal-500 dark:via-logo-blue-400 dark:via-logo-amber-300 dark:to-logo-rose-300";
-
+// Add this useCallback function for toggling background sound previews, after other useCallback functions:
 const toggleBackgroundSoundPreview = useCallback(
 async (sound: AmbientSoundType) => {
   const audioEl = backgroundAudioRef.current
@@ -1921,8 +1920,9 @@ return (
                 className={cn(
                   "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
                   "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none text-white",
-                  "bg-gradient-to-r from-logo-teal-500 via-logo-blue-400 via-logo-amber-300 to-logo-rose-300",
-                  "dark:bg-gradient-to-r dark:from-logo-teal-500 dark:via-logo-blue-400 dark:via-logo-amber-300 dark:to-logo-rose-300",
+                  // Multi-stop gradient with gray-500 centered
+                  "bg-gradient-to-r from-teal-500 to-blue-400 to-logo-amber-300 to-pink-300",
+                  "dark:bg-[linear-gradient(90deg,#10b981_0%,#14b8a6_12%,#ec4899_24%,#f59e0b_36%,#6b7280_50%,#a855f7_64%,#0ea5e9_76%,#06b6d4_88%,#10b981_100%)]",
                   "hover:brightness-[1.06] active:brightness-95",
                 )}
                 disabled={!originalBuffer || isProcessing || !durationLimits}
@@ -2559,8 +2559,9 @@ return (
                 className={cn(
                   "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
                   "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none text-white",
-                  "bg-gradient-to-r from-logo-teal-500 via-logo-blue-400 via-logo-amber-300 to-logo-rose-300",
-                  "dark:bg-gradient-to-r dark:from-logo-teal-500 dark:via-logo-blue-400 dark:via-logo-amber-300 dark:to-logo-rose-300",
+                  // Multi-stop gradient with gray-600 centered
+                  "bg-gradient-to-r from-teal-500 to-blue-400 to-logo-amber-300 to-pink-300",
+                  "dark:bg-[linear-gradient(90deg,#10b981_0%,#14b8a6_12%,#ec4899_24%,##D97706_36%,#6b7280_50%,#a855f7_64%,#0ea5e9_76%,#06b6d4_88%,#10b981_100%)]",
                   "hover:brightness-[1.06] active:brightness-95",
                 )}
               >
