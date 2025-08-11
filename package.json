@@ -60,6 +60,9 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "latest",
     "web-speech-api": "latest",
+    "your-classname-library": "latest",
+    "your-icon-library": "latest",
+    "your-ui-library": "latest",
     "zod": "^3.24.1"
   },
   "devDependencies": {
