@@ -2037,7 +2037,7 @@ return (
                         </div>
                       </div>
                       <Button
-                        className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover: shadow-none transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                        className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover: shadow-none transition-shadow border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
                         onClick={downloadProcessedAudioAction}
                       >
                         <div className="flex items-center justify-center font-black">
