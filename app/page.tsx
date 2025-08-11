@@ -1703,7 +1703,7 @@ return (
                             </div>
                           </div>
                         </div>
-                        <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-600 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm pr-1 pl-1">
+                        <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-600 dark:from-gray-700 dark:to-gray-600 py-1 px-[3px] rounded-sm pr-1 pl-1 shadow-inner">
                           <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm shadow-inner">
                             <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Pauses:</div>
                             <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
@@ -2037,7 +2037,7 @@ return (
                         </div>
                       </div>
                       <Button
-                        className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:from-logo-teal-500 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                        className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover: shadow-none transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
                         onClick={downloadProcessedAudioAction}
                       >
                         <div className="flex items-center justify-center font-black">
