@@ -2,9 +2,11 @@
 
 import { useState, useRef } from "react"
 import { motion } from "framer-motion"
-import { Button, Card, Slider } from "your-ui-library"
-import { PlusCircle, Trash2, Volume2, Wand2, Download } from "your-icon-library"
-import cn from "classnames"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Slider } from "@/components/ui/slider"
+import { PlusCircle, Trash2, Volume2, Wand2, Download } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const formatTime = (duration) => {
   const minutes = Math.floor(duration / 60)
