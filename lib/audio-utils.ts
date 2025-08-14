@@ -1,5 +1,6 @@
 import { NOTE_FREQUENCIES } from "./meditation-data"
 import { sleep, formatFileSize } from "./utils"
+import lamejs from "lamejs"
 
 let audioContext: AudioContext | null = null
 
@@ -131,66 +132,54 @@ export const bufferToMp3 = async (
     onProgress(50)
   }
 
-  // Convert to compressed audio using MediaRecorder API
   try {
-    onProgress(75)
+    onProgress(60)
 
-    // Create MediaStream destination
-    const destination = currentAudioContext.createMediaStreamDestination()
-    const source = currentAudioContext.createBufferSource()
-    source.buffer = resampledBuffer
-    source.connect(destination)
+    const mp3encoder = new lamejs.Mp3Encoder(resampledBuffer.numberOfChannels, targetSampleRate, 128) // 128kbps
+    const mp3Data: Int8Array[] = []
 
-    // Check if WebM with Opus is supported, fallback to other formats
-    let mimeType = "audio/webm;codecs=opus"
-    if (!MediaRecorder.isTypeSupported(mimeType)) {
-      mimeType = "audio/webm"
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = "audio/mp4"
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-          throw new Error("No supported compressed audio format")
+    const blockSize = 1152 // Standard MP3 frame size
+    const numSamples = resampledBuffer.length
+
+    for (let i = 0; i < numSamples; i += blockSize) {
+      if (i % (blockSize * 10) === 0) {
+        await sleep(0)
+        onProgress(60 + Math.floor((i / numSamples) * 35))
+      }
+
+      const left = new Int16Array(blockSize)
+      const right = resampledBuffer.numberOfChannels > 1 ? new Int16Array(blockSize) : null
+
+      const leftChannel = resampledBuffer.getChannelData(0)
+      const rightChannel = resampledBuffer.numberOfChannels > 1 ? resampledBuffer.getChannelData(1) : null
+
+      for (let j = 0; j < blockSize && i + j < numSamples; j++) {
+        left[j] = Math.max(-32768, Math.min(32767, leftChannel[i + j] * 32767))
+        if (right && rightChannel) {
+          right[j] = Math.max(-32768, Math.min(32767, rightChannel[i + j] * 32767))
         }
+      }
+
+      const mp3buf = right ? mp3encoder.encodeBuffer(left, right) : mp3encoder.encodeBuffer(left)
+      if (mp3buf.length > 0) {
+        mp3Data.push(mp3buf)
       }
     }
 
-    const chunks: Blob[] = []
-    const mediaRecorder = new MediaRecorder(destination.stream, {
-      mimeType,
-      audioBitsPerSecond: 128000, // 128kbps for good quality/size balance
-    })
+    onProgress(95)
 
-    return new Promise((resolve, reject) => {
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunks.push(event.data)
-        }
-      }
+    // Flush remaining data
+    const mp3buf = mp3encoder.flush()
+    if (mp3buf.length > 0) {
+      mp3Data.push(mp3buf)
+    }
 
-      mediaRecorder.onstop = () => {
-        onProgress(100)
-        const blob = new Blob(chunks, { type: mimeType })
-        resolve(blob)
-      }
+    onProgress(100)
 
-      mediaRecorder.onerror = (event) => {
-        reject(new Error("MediaRecorder error during audio compression"))
-      }
-
-      // Start recording first, then start the audio source
-      mediaRecorder.start()
-      source.start(0)
-
-      // Stop recording after the buffer duration plus a small buffer
-      setTimeout(
-        () => {
-          mediaRecorder.stop()
-        },
-        resampledBuffer.duration * 1000 + 500,
-      )
-    })
+    return new Blob(mp3Data, { type: "audio/mp3" })
   } catch (error) {
-    // Fallback to WAV if compression fails
-    console.warn("Audio compression failed, falling back to WAV:", error)
+    // Fallback to WAV if MP3 encoding fails
+    console.warn("MP3 encoding failed, falling back to WAV:", error)
     return bufferToWav(resampledBuffer, highCompatibility, onProgress, isMobileDevice)
   }
 }
