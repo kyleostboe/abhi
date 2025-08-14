@@ -189,13 +189,22 @@ export const bufferToWav = async (
   highCompatibility = true,
   onProgress: (progress: number) => void,
   isMobileDevice: boolean,
+  highQuality = false, // Added option for high quality
 ): Promise<Blob> => {
   const currentAudioContext = getAudioContext() // Use the centralized AudioContext
   if (!currentAudioContext) throw new Error("Audio context not available for WAV conversion")
   onProgress(0)
 
-  let targetSampleRate = highCompatibility ? 44100 : buffer.sampleRate
-  if (isMobileDevice && highCompatibility && buffer.duration > 15 * 60) {
+  let targetSampleRate = highQuality ? 44100 : 22050
+  if (highCompatibility && !highQuality) {
+    targetSampleRate = 22050 // Default to lower quality for smaller files
+  } else if (highCompatibility && highQuality) {
+    targetSampleRate = 44100 // High quality option
+  } else {
+    targetSampleRate = highQuality ? Math.max(buffer.sampleRate, 44100) : Math.min(buffer.sampleRate, 22050)
+  }
+
+  if (isMobileDevice && highCompatibility && buffer.duration > 15 * 60 && !highQuality) {
     targetSampleRate = Math.min(targetSampleRate, 22050)
   }
 
@@ -206,7 +215,6 @@ export const bufferToWav = async (
     try {
       resampledBuffer = currentAudioContext.createBuffer(buffer.numberOfChannels, newLength, targetSampleRate)
     } catch (e) {
-      // forceGarbageCollection() // This should be handled by the caller if needed
       throw new Error(
         `Failed to create resample buffer (target SR: ${targetSampleRate}Hz). Memory limit likely exceeded.`,
       )
