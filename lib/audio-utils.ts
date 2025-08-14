@@ -1,6 +1,6 @@
 import { NOTE_FREQUENCIES } from "./meditation-data"
 import { sleep, formatFileSize } from "./utils"
-import lamejs from "lamejs"
+import * as lamejs from "lamejs"
 
 let audioContext: AudioContext | null = null
 
