@@ -133,43 +133,42 @@ export const bufferToMp3 = async (
 
   // Convert to compressed audio using MediaRecorder API
   try {
-    const offlineContext = new OfflineAudioContext(
-      resampledBuffer.numberOfChannels,
-      resampledBuffer.length,
-      targetSampleRate,
-    )
-
-    const source = offlineContext.createBufferSource()
-    source.buffer = resampledBuffer
-    source.connect(offlineContext.destination)
-    source.start(0)
-
-    const renderedBuffer = await offlineContext.startRendering()
     onProgress(75)
 
-    // Create a MediaStream from the buffer
-    const mediaStreamDestination = currentAudioContext.createMediaStreamDestination()
-    const bufferSource = currentAudioContext.createBufferSource()
-    bufferSource.buffer = renderedBuffer
-    bufferSource.connect(mediaStreamDestination)
+    // Create MediaStream destination
+    const destination = currentAudioContext.createMediaStreamDestination()
+    const source = currentAudioContext.createBufferSource()
+    source.buffer = resampledBuffer
+    source.connect(destination)
 
-    // Use MediaRecorder to encode as compressed audio
-    const chunks: Blob[] = []
-    const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream, {
-      mimeType: "audio/webm;codecs=opus", // WebM with Opus codec for good compression
-      audioBitsPerSecond: 128000, // 128kbps for good quality/size balance
-    })
-
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        chunks.push(event.data)
+    // Check if WebM with Opus is supported, fallback to other formats
+    let mimeType = "audio/webm;codecs=opus"
+    if (!MediaRecorder.isTypeSupported(mimeType)) {
+      mimeType = "audio/webm"
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = "audio/mp4"
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          throw new Error("No supported compressed audio format")
+        }
       }
     }
 
+    const chunks: Blob[] = []
+    const mediaRecorder = new MediaRecorder(destination.stream, {
+      mimeType,
+      audioBitsPerSecond: 128000, // 128kbps for good quality/size balance
+    })
+
     return new Promise((resolve, reject) => {
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data)
+        }
+      }
+
       mediaRecorder.onstop = () => {
         onProgress(100)
-        const blob = new Blob(chunks, { type: "audio/webm" })
+        const blob = new Blob(chunks, { type: mimeType })
         resolve(blob)
       }
 
@@ -177,15 +176,16 @@ export const bufferToMp3 = async (
         reject(new Error("MediaRecorder error during audio compression"))
       }
 
+      // Start recording first, then start the audio source
       mediaRecorder.start()
-      bufferSource.start(0)
+      source.start(0)
 
-      // Stop recording after buffer duration
+      // Stop recording after the buffer duration plus a small buffer
       setTimeout(
         () => {
           mediaRecorder.stop()
         },
-        renderedBuffer.duration * 1000 + 100,
+        resampledBuffer.duration * 1000 + 500,
       )
     })
   } catch (error) {
