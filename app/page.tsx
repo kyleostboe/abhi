@@ -83,6 +83,7 @@ silenceRegions: number
 } | null>(null)
 const [actualDuration, setActualDuration] = useState<number | null>(null)
 const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
+const [processedFileSize, setProcessedFileSize] = useState<number>(0)
 const isMobileDevice = useMobile() // Use the useMobile hook
 const [memoryWarning, setMemoryWarning] = useState<boolean>(false)
 const fileInputRef = useRef<HTMLInputElement>(null)
@@ -846,6 +847,7 @@ try {
   setProcessedUrl(url)
   setActualDuration(processedAudioBuffer.duration)
   setProcessedBufferState(processedAudioBuffer)
+  setProcessedFileSize(wavBlob.size)
   setProcessingProgress(100)
   setProcessingStep("Complete!")
   setStatus({ message: "Audio processing completed successfully!", type: "success" })
@@ -1987,7 +1989,7 @@ return (
                           </div>
                         </div>
                         <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-smll rounded-sm py-3.5">
-                          <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
+                          <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400">
                             File Size
                           </div>
                           <div className="dark:text-black font-black text-gray-600">
@@ -2010,13 +2012,13 @@ return (
                       <h3 className="text-white font-black">Adjusted Audio</h3>
                     </div>
                     <div className="p-6">
-                      <div className="bg-white p-3 dark:shadow-white/10 mb-4 dark:bg-gray-700 shadow-md rounded-sm">
+                      <div className="bg-white p-3 dark:shadow-white/10 mb-4 dark:bg-gray-700">
                         <audio controls className="w-full" src={processedUrl}></audio>
                       </div>
                       <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="p-3 rounded-sm text-center dark:bg-gray-800/60 shadow-md bg-white py-3.5">
-                          <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
-                          Duration
+                        <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                          <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
+                            Duration
                           </div>
                           <div className="dark:text-black font-black text-gray-600">
                             {formatTime(actualDuration || 0)}
@@ -2027,21 +2029,30 @@ return (
                             )}
                           </div>
                         </div>
-                        <div className="p-3 text-center dark:bg-gray-800/60 shadow-md rounded-sm bg-white py-3.5">
-                          <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
+                        <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
+                          <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
                             File Size
                           </div>
                           <div className="dark:text-black font-black text-gray-600">
-                            {formatFileSize(file?.size || 0)}
+                            {formatFileSize(processedFileSize || 0)}
                           </div>
                         </div>
                       </div>
                       <Button
-                        className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover: shadow-none transition-shadow border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
-                        onClick={downloadProcessedAudioAction}
+                        className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:shadow-none transition-shadow border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                        onClick={() => {
+                          if (generatedAudioUrl) {
+                            const a = document.createElement("a")
+                            a.href = generatedAudioUrl
+                            a.download = `${meditationTitle.replace(/\s/g, "_") || "meditation"}.wav`
+                            document.body.appendChild(a)
+                            a.click()
+                            document.body.removeChild(a)
+                          }
+                        }}
                       >
                         <div className="flex items-center justify-center font-black">
-                          <Download className="mr-2 h-4 w-4" />
+                          <Download className="mr-2 w-4 h-4" />
                           Download Audio
                         </div>
                       </Button>
@@ -2050,7 +2061,7 @@ return (
                 </motion.div>
               )}
             </div>
-          </>
+          </motion.div>
         ) : (
           // == Labs UI ==
           <motion.div
@@ -2561,7 +2572,7 @@ return (
                   "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none text-white",
                   // 
                   "bg-gradient-to-r from-logo-purple-300 via-logo-teal-500 to-orange-300",
-                  "dark:bg-[linear-gradient(90deg,#10b981_0%,#14b8a6_12%,#ec4899_24%,##D97706_36%,#6b7280_50%,#a855f7_64%,#0ea5e9_76%,#06b6d4_88%,#10b981_100%)]",
+                  "dark:bg-[linear-gradient(90deg,#10b981_0%,#14b8a6_12%,#ec4899_24%,#f59e0b_36%,#6b7280_50%,#a855f7_64%,#0ea5e9_76%,#06b6d4_88%,#10b981_100%)]",
                   "hover:brightness-[1.06] active:brightness-95",
                 )}
               >
@@ -2659,6 +2670,5 @@ return (
       </div>
     </div>
   </motion.div>
-</div>
-)\
+</div>\
 }
