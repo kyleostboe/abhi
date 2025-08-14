@@ -1877,7 +1877,7 @@ export default function HomePage() {
                               <Switch
                                 checked={preserveNaturalPacing}
                                 onCheckedChange={setPreserveNaturalPacing}
-                                className="data-[state=checked]:bg-gray-300 dark:data-[state=checked]:bg-logo-rose-700"
+                                className="data-[state=checked]:bg-gray-400 dark:data-[state=checked]:bg-logo-rose-700"
                               />
                             </div>
                           </div>
