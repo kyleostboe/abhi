@@ -79,6 +79,122 @@ export const playNote = async (note: string, octave: number, duration = 0.8, vol
   oscillator.stop(now + duration)
 }
 
+export const bufferToMp3 = async (
+  buffer: AudioBuffer,
+  highCompatibility = true,
+  onProgress: (progress: number) => void,
+  isMobileDevice: boolean,
+): Promise<Blob> => {
+  const currentAudioContext = getAudioContext()
+  if (!currentAudioContext) throw new Error("Audio context not available for MP3 conversion")
+  onProgress(0)
+
+  let targetSampleRate = highCompatibility ? 44100 : buffer.sampleRate
+  if (isMobileDevice && highCompatibility && buffer.duration > 15 * 60) {
+    targetSampleRate = Math.min(targetSampleRate, 22050)
+  }
+
+  let resampledBuffer = buffer
+  if (buffer.sampleRate !== targetSampleRate) {
+    const ratio = targetSampleRate / buffer.sampleRate
+    const newLength = Math.floor(buffer.length * ratio)
+    try {
+      resampledBuffer = currentAudioContext.createBuffer(buffer.numberOfChannels, newLength, targetSampleRate)
+    } catch (e) {
+      throw new Error(
+        `Failed to create resample buffer (target SR: ${targetSampleRate}Hz). Memory limit likely exceeded.`,
+      )
+    }
+    onProgress(10)
+    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+      const oldData = buffer.getChannelData(channel)
+      const newData = resampledBuffer.getChannelData(channel)
+      for (let i = 0; i < newLength; i++) {
+        if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
+          await sleep(0)
+          onProgress(
+            10 +
+              Math.floor(
+                ((channel * (newLength / buffer.numberOfChannels) + i) / (newLength * buffer.numberOfChannels)) * 40,
+              ),
+          )
+        }
+        const oldIndex = i / ratio
+        const index = Math.floor(oldIndex)
+        const frac = oldIndex - index
+        const samp1 = oldData[Math.min(index, oldData.length - 1)]
+        const samp2 = oldData[Math.min(index + 1, oldData.length - 1)]
+        newData[i] = samp1 + (samp2 - samp1) * frac
+      }
+    }
+  } else {
+    onProgress(50)
+  }
+
+  // Convert to compressed audio using MediaRecorder API
+  try {
+    const offlineContext = new OfflineAudioContext(
+      resampledBuffer.numberOfChannels,
+      resampledBuffer.length,
+      targetSampleRate,
+    )
+
+    const source = offlineContext.createBufferSource()
+    source.buffer = resampledBuffer
+    source.connect(offlineContext.destination)
+    source.start(0)
+
+    const renderedBuffer = await offlineContext.startRendering()
+    onProgress(75)
+
+    // Create a MediaStream from the buffer
+    const mediaStreamDestination = currentAudioContext.createMediaStreamDestination()
+    const bufferSource = currentAudioContext.createBufferSource()
+    bufferSource.buffer = renderedBuffer
+    bufferSource.connect(mediaStreamDestination)
+
+    // Use MediaRecorder to encode as compressed audio
+    const chunks: Blob[] = []
+    const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream, {
+      mimeType: "audio/webm;codecs=opus", // WebM with Opus codec for good compression
+      audioBitsPerSecond: 128000, // 128kbps for good quality/size balance
+    })
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        chunks.push(event.data)
+      }
+    }
+
+    return new Promise((resolve, reject) => {
+      mediaRecorder.onstop = () => {
+        onProgress(100)
+        const blob = new Blob(chunks, { type: "audio/webm" })
+        resolve(blob)
+      }
+
+      mediaRecorder.onerror = (event) => {
+        reject(new Error("MediaRecorder error during audio compression"))
+      }
+
+      mediaRecorder.start()
+      bufferSource.start(0)
+
+      // Stop recording after buffer duration
+      setTimeout(
+        () => {
+          mediaRecorder.stop()
+        },
+        renderedBuffer.duration * 1000 + 100,
+      )
+    })
+  } catch (error) {
+    // Fallback to WAV if compression fails
+    console.warn("Audio compression failed, falling back to WAV:", error)
+    return bufferToWav(resampledBuffer, highCompatibility, onProgress, isMobileDevice)
+  }
+}
+
 export const bufferToWav = async (
   buffer: AudioBuffer,
   highCompatibility = true,
@@ -180,75 +296,4 @@ export const bufferToWav = async (
   }
   onProgress(100)
   return new Blob([finalArrayBuffer], { type: "audio/wav" })
-}
-
-export const bufferToCompressedAudio = async (
-  buffer: AudioBuffer,
-  highCompatibility = true,
-  onProgress: (progress: number) => void,
-  isMobileDevice: boolean,
-): Promise<Blob> => {
-  const currentAudioContext = getAudioContext()
-  if (!currentAudioContext) throw new Error("Audio context not available for audio conversion")
-
-  onProgress(0)
-
-  // Create a MediaStreamDestination to capture the audio
-  const destination = currentAudioContext.createMediaStreamDestination()
-  const source = currentAudioContext.createBufferSource()
-  source.buffer = buffer
-  source.connect(destination)
-
-  // Set up MediaRecorder with compression
-  const mimeTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/mpeg"]
-
-  let selectedMimeType = "audio/webm"
-  for (const mimeType of mimeTypes) {
-    if (MediaRecorder.isTypeSupported(mimeType)) {
-      selectedMimeType = mimeType
-      break
-    }
-  }
-
-  const mediaRecorder = new MediaRecorder(destination.stream, {
-    mimeType: selectedMimeType,
-    audioBitsPerSecond: highCompatibility ? 128000 : 192000, // 128kbps or 192kbps
-  })
-
-  const chunks: Blob[] = []
-
-  return new Promise((resolve, reject) => {
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        chunks.push(event.data)
-      }
-    }
-
-    mediaRecorder.onstop = () => {
-      const blob = new Blob(chunks, { type: selectedMimeType })
-      onProgress(100)
-      resolve(blob)
-    }
-
-    mediaRecorder.onerror = (event) => {
-      reject(new Error("MediaRecorder error: " + event.error))
-    }
-
-    // Start recording
-    mediaRecorder.start()
-    onProgress(25)
-
-    // Play the buffer (this will be captured by MediaRecorder)
-    source.start(0)
-    onProgress(50)
-
-    // Stop recording when the buffer finishes playing
-    setTimeout(
-      () => {
-        mediaRecorder.stop()
-        onProgress(75)
-      },
-      buffer.duration * 1000 + 100,
-    ) // Add small buffer for completion
-  })
 }
