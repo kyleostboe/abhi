@@ -41,7 +41,7 @@ import {
 } from "@/lib/meditation-data"
 import { VisualTimeline } from "@/components/visual-timeline"
 import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFileSize } from "@/lib/utils"
-import { getAudioContext, playNote, bufferToWav, bufferToMp3 } from "@/lib/audio-utils" // Import from audio-utils
+import { getAudioContext, playNote, bufferToWav } from "@/lib/audio-utils" // Import from audio-utils
 import type { Instruction, SoundCue, TimelineEvent, AmbientSound as AmbientSoundType } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
@@ -834,7 +834,7 @@ export default function HomePage() {
       setProcessingStep("Creating download file (step 4/4)...")
       setProcessingProgress(90)
       await sleep(10)
-      const compressedBlob = await bufferToMp3(
+      const compressedBlob = await bufferToWav(
         processedAudioBuffer,
         compatibilityMode === "high",
         (p) => setProcessingProgress(90 + Math.floor(p * 0.1)),
@@ -1892,7 +1892,7 @@ export default function HomePage() {
                                 <SelectValue placeholder="Select compatibility mode" />
                               </SelectTrigger>
                               <SelectContent className="dark:bg-gray-800 dark:text-gray-200">
-                                <SelectItem value="standard">Standard Quality (Original SR)</SelectItem>
+                                <SelectItem value="standard">Standard Quality (22kHz)</SelectItem>
                                 <SelectItem value="high">
                                   High Compatibility (44.1kHz or 22.05kHz for Mobile Long Audio)
                                 </SelectItem>
