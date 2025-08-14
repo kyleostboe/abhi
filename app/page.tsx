@@ -990,18 +990,7 @@ export default function HomePage() {
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Supports MP3, WAV, M4A, and other audio formats
               </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="audio/*"
-                onChange={(e) => {
-                  console.log("File input changed")
-                  if (e.target.files && e.target.files[0]) {
-                    handleFile(e.target.files[0])
-                  }
-                }}
-                className="hidden"
-              />
+              <input ref={fileInputRef} type="file" accept="audio/*" className="hidden" />
             </div>
 
             {/* Status Messages */}
@@ -1009,190 +998,50 @@ export default function HomePage() {
               <div
                 className={`p-4 rounded-lg ${
                   status.type === "error"
-                    ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                    ? "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400"
                     : status.type === "success"
-                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                      : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                      : "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
                 }`}
               >
                 {status.message}
               </div>
             )}
 
-            {/* Processing Progress */}
-            {isProcessing && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{processingStep}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{processingProgress}%</span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div
-                    className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${processingProgress}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Settings Cards */}
-            {originalBuffer && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Target Duration Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-                  <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 dark:from-logo-teal-700 dark:to-indigo-700">
-                    <h3 className="text-white font-black">Target Duration</h3>
-                  </div>
-                  <div className="p-6">
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Duration: {targetDuration} minutes
-                      </label>
-                      <input
-                        type="range"
-                        min={durationLimits?.min || 1}
-                        max={durationLimits?.max || 60}
-                        value={targetDuration}
-                        onChange={(e) => setTargetDuration(Number(e.target.value))}
-                        className="w-full h-2 bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 dark:from-logo-teal-700 dark:to-indigo-700 rounded-lg appearance-none cursor-pointer"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Silence Threshold Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-                  <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 dark:from-indigo-700 dark:to-logo-teal-700">
-                    <h3 className="text-white font-black">Silence Threshold</h3>
-                  </div>
-                  <div className="p-6">
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Threshold: {(silenceThreshold * 100).toFixed(1)}%
-                      </label>
-                      <input
-                        type="range"
-                        min="0.001"
-                        max="0.1"
-                        step="0.001"
-                        value={silenceThreshold}
-                        onChange={(e) => setSilenceThreshold(Number(e.target.value))}
-                        className="w-full h-2 bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 dark:from-indigo-700 dark:to-logo-teal-700 rounded-lg appearance-none cursor-pointer"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Min Silence Duration Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-                  <div className="bg-gradient-to-r from-logo-purple-300 to-logo-emerald-500 py-3 px-6 dark:from-logo-amber-700 dark:to-logo-rose-700">
-                    <h3 className="text-white font-black">Min Silence Duration</h3>
-                  </div>
-                  <div className="p-6">
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Duration: {minSilenceDuration}s
-                      </label>
-                      <input
-                        type="range"
-                        min="0.5"
-                        max="10"
-                        step="0.1"
-                        value={minSilenceDuration}
-                        onChange={(e) => setMinSilenceDuration(Number(e.target.value))}
-                        className="w-full h-2 bg-gradient-to-r from-logo-purple-300 to-logo-emerald-500 dark:from-logo-amber-700 dark:to-logo-rose-700 rounded-lg appearance-none cursor-pointer"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Min Spacing Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-                  <div className="bg-gradient-to-r from-orange-300 to-pink-400 py-3 px-6 dark:from-logo-purple-700 dark:to-logo-teal-700">
-                    <h3 className="text-white font-black">Min Spacing Between Content</h3>
-                  </div>
-                  <div className="p-6">
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Spacing: {minSpacingDuration}s
-                      </label>
-                      <input
-                        type="range"
-                        min="0.1"
-                        max="5"
-                        step="0.1"
-                        value={minSpacingDuration}
-                        onChange={(e) => setMinSpacingDuration(Number(e.target.value))}
-                        className="w-full h-2 bg-gradient-to-r from-orange-300 to-pink-400 dark:from-logo-purple-700 dark:to-logo-teal-700 rounded-lg appearance-none cursor-pointer"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Process Button */}
-            {originalBuffer && !isProcessing && (
-              <div className="text-center">
-                <button
-                  onClick={processAudioAdjusterAction}
-                  className="bg-[linear-gradient(90deg,#1a9d8a_0%,#3b82f6_33%,#f59e0b_66%,#f9a8d4_100%)] hover:shadow-lg text-white font-bold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105"
-                >
-                  Process Audio
-                </button>
-              </div>
-            )}
-
-            {/* Results */}
-            {processedUrl && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-                <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
-                  <h3 className="text-white font-black">Adjusted Audio</h3>
-                </div>
-                <div className="p-6">
-                  <div className="bg-white p-3 dark:shadow-white/10 mb-4 dark:bg-gray-700 shadow-md hover:shadow-none transition-shadow rounded-sm">
-                    <audio controls className="w-full" src={processedUrl}></audio>
-                  </div>
-
-                  {/* File Info */}
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="p-3 text-center dark:bg-gray-800/60 shadow-md rounded-sm bg-white py-3.5">
-                      <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
-                        File Size
-                      </div>
-                      <div className="text-lg font-bold dark:text-white text-gray-800">
-                        {processedFileSize > 0
-                          ? `${(processedFileSize / (1024 * 1024)).toFixed(1)} MB`
-                          : "Calculating..."}
-                      </div>
-                    </div>
-                    <div className="p-3 text-center dark:bg-gray-800/60 shadow-md rounded-sm bg-white py-3.5">
-                      <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
-                        Duration
-                      </div>
-                      <div className="text-lg font-bold dark:text-white text-gray-800">
-                        {actualDuration ? formatTime(actualDuration) : "Calculating..."}
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={downloadProcessedAudioAction}
-                    className="w-full bg-[linear-gradient(90deg,#1a9d8a_0%,#3b82f6_33%,#f59e0b_66%,#f9a8d4_100%)] hover:shadow-lg text-white font-bold py-3 px-6 rounded-lg transition-all duration-300"
-                  >
-                    Download Adjusted Audio
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* Coming Soon placeholder for now */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
+              <div className="text-6xl mb-4">🔧</div>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">Audio Processing</h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                Upload an audio file to adjust its length by modifying silence periods.
+              </p>
+            </div>
           </div>
         ) : (
+          // Labs/Encoder Mode
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-white mb-8">Meditation Encoder</h1>
-            <p className="text-center text-gray-600 dark:text-gray-300">Encoder mode functionality coming soon...</p>
+            <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-white mb-8">
+              Meditation Encoder (Labs)
+            </h1>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
+              <div className="text-6xl mb-4">🧪</div>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">Coming Soon!</h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                The Encoder mode is currently under development. This will allow you to create custom meditations by
+                associating instructions with sound cues.
+              </p>
+            </div>
           </div>
         )}
       </div>
     </div>
   )
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return "0 Bytes"
+  const k = 1024
+  const sizes = ["Bytes", "KB", "MB", "GB"]
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
 }
