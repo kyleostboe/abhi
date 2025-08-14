@@ -181,3 +181,74 @@ export const bufferToWav = async (
   onProgress(100)
   return new Blob([finalArrayBuffer], { type: "audio/wav" })
 }
+
+export const bufferToCompressedAudio = async (
+  buffer: AudioBuffer,
+  highCompatibility = true,
+  onProgress: (progress: number) => void,
+  isMobileDevice: boolean,
+): Promise<Blob> => {
+  const currentAudioContext = getAudioContext()
+  if (!currentAudioContext) throw new Error("Audio context not available for audio conversion")
+
+  onProgress(0)
+
+  // Create a MediaStreamDestination to capture the audio
+  const destination = currentAudioContext.createMediaStreamDestination()
+  const source = currentAudioContext.createBufferSource()
+  source.buffer = buffer
+  source.connect(destination)
+
+  // Set up MediaRecorder with compression
+  const mimeTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/mpeg"]
+
+  let selectedMimeType = "audio/webm"
+  for (const mimeType of mimeTypes) {
+    if (MediaRecorder.isTypeSupported(mimeType)) {
+      selectedMimeType = mimeType
+      break
+    }
+  }
+
+  const mediaRecorder = new MediaRecorder(destination.stream, {
+    mimeType: selectedMimeType,
+    audioBitsPerSecond: highCompatibility ? 128000 : 192000, // 128kbps or 192kbps
+  })
+
+  const chunks: Blob[] = []
+
+  return new Promise((resolve, reject) => {
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        chunks.push(event.data)
+      }
+    }
+
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(chunks, { type: selectedMimeType })
+      onProgress(100)
+      resolve(blob)
+    }
+
+    mediaRecorder.onerror = (event) => {
+      reject(new Error("MediaRecorder error: " + event.error))
+    }
+
+    // Start recording
+    mediaRecorder.start()
+    onProgress(25)
+
+    // Play the buffer (this will be captured by MediaRecorder)
+    source.start(0)
+    onProgress(50)
+
+    // Stop recording when the buffer finishes playing
+    setTimeout(
+      () => {
+        mediaRecorder.stop()
+        onProgress(75)
+      },
+      buffer.duration * 1000 + 100,
+    ) // Add small buffer for completion
+  })
+}
