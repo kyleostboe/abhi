@@ -1808,7 +1808,7 @@ export default function Home() {
                               </div>
                             </div>
                             <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-smll rounded-sm py-3.5">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-gray-600 text-gray-600 text-gray-500 text-gray-500 text-transparent text-gray-500 text-transparent">File Size</div>
+                              <div className="text-xs uppercase tracking-wide mb-1  text-gray-500 ">File Size</div>
                               <div className="dark:text-black font-black text-gray-500">
                                 {formatFileSize(file?.size || 0)}
                               </div>
