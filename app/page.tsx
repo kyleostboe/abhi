@@ -17,7 +17,6 @@ import {
   Play,
   PlusCircle,
   CircleDotDashed,
-  Trash2,
   BookText,
 } from "lucide-react" // Import Copy icon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -35,14 +34,12 @@ import {
   SOUND_CUES_LIBRARY,
   MUSICAL_NOTES,
   generateSyntheticSound,
-  generateAmbientSound,
-  AMBIENT_SOUNDS_LIBRARY,
   NOTE_FREQUENCIES, // Keep NOTE_FREQUENCIES here as it's used by MUSICAL_NOTES
 } from "@/lib/meditation-data"
 import { VisualTimeline } from "@/components/visual-timeline"
 import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFileSize } from "@/lib/utils"
 import { getAudioContext, playNote, bufferToWav } from "@/lib/audio-utils" // Import from audio-utils
-import type { Instruction, SoundCue, TimelineEvent, AmbientSound as AmbientSoundType } from "@/lib/types" // Import types
+import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
 
@@ -90,10 +87,6 @@ export default function HomePage() {
   const uploadAreaRef = useRef<HTMLDivElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Add these new state variables and ref at the top of the HomePage component, near other state declarations:
-  const backgroundAudioRef = useRef<HTMLAudioElement | AudioBufferSourceNode | null>(null) // Can be HTMLAudioElement or AudioBufferSourceNode
-  const [currentPlayingBackgroundSoundId, setCurrentPlayingBackgroundSoundId] = useState<string | null>(null)
-
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
   const [labsTotalDuration, setLabsTotalDuration] = useState<number>(600)
@@ -119,17 +112,6 @@ export default function HomePage() {
   const [generationProgress, setGenerationProgress] = useState<number>(0)
   const [generationStep, setGenerationStep] = useState<string>("")
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
-
-  // Update the type definition for backgroundSounds to remove the redundant 'enabled' property:
-  const [backgroundSounds, setBackgroundSounds] = useState<
-    Array<{
-      id: string
-      name: string
-      src: string // File path or synthetic: prefix for export
-      volume: number
-    }>
-  >([])
-  const [masterBackgroundVolume, setMasterBackgroundVolume] = useState<number>(0.5)
 
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
   const [currentTab, setCurrentTab] = useState<string>("instructions")
@@ -419,43 +401,6 @@ export default function HomePage() {
 
         processedEventsCount++
         setGenerationProgress(Math.floor((processedEventsCount / totalEvents) * 80)) // Progress up to 80% for event processing
-      }
-
-      // Add background sounds to the audio context
-      for (const bgSound of backgroundSounds) {
-        if (bgSound.volume > 0) {
-          try {
-            console.log(`Adding background sound: ${bgSound.name} from src: ${bgSound.src}`)
-            if (bgSound.src.startsWith("synthetic:")) {
-              const ambientSoundDef = AMBIENT_SOUNDS_LIBRARY.find((s) => s.id === bgSound.id) as AmbientSoundType
-              if (ambientSoundDef) {
-                await generateAmbientSound(
-                  ambientSoundDef,
-                  ctx,
-                  maxAudioDuration,
-                  bgSound.volume * masterBackgroundVolume * 0.3,
-                )
-              }
-            } else {
-              const response = await fetch(bgSound.src)
-              const arrayBuffer = await response.arrayBuffer()
-              const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
-              const source = ctx.createBufferSource()
-              const gainNode = ctx.createGain()
-              source.buffer = audioBuffer
-              source.connect(gainNode)
-              gainNode.connect(ctx.destination)
-              const finalVolume = bgSound.volume * masterBackgroundVolume * 0.3
-              gainNode.gain.setValueAtTime(finalVolume, 0)
-              source.loop = true
-              source.start(0)
-              source.stop(maxAudioDuration)
-              console.log(`Successfully added background sound ${bgSound.name} at volume ${finalVolume}`)
-            }
-          } catch (error) {
-            console.warn(`Could not load background sound: ${bgSound.src}`, error)
-          }
-        }
       }
 
       setGenerationStep("Rendering audio...")
@@ -1243,135 +1188,6 @@ export default function HomePage() {
       setLabsTotalDuration(Math.max(60, Number(value) * 60) || 60)
     }
   }
-
-  // Add this useCallback function for toggling background sound previews, after other useCallback functions:
-  const toggleBackgroundSoundPreview = useCallback(
-    async (sound: AmbientSoundType) => {
-      const audioEl = backgroundAudioRef.current
-      const isSynthetic = sound.src.startsWith("synthetic:")
-      const isCurrentlyPlaying = currentPlayingBackgroundSoundId === sound.id && audioEl && !audioEl.paused
-
-      // If this sound is playing, pause it.
-      if (isCurrentlyPlaying) {
-        if (audioEl instanceof AudioBufferSourceNode) {
-          audioEl.stop()
-        } else if (audioEl instanceof HTMLAudioElement) {
-          audioEl.pause()
-        }
-        setCurrentPlayingBackgroundSoundId(null)
-        toast({ title: "Preview Paused", description: `${sound.name} preview paused.` })
-        return
-      }
-
-      // Stop any currently playing sound before starting a new one
-      if (audioEl) {
-        if (audioEl instanceof AudioBufferSourceNode) {
-          audioEl.stop()
-        } else if (audioEl instanceof HTMLAudioElement) {
-          audioEl.pause()
-          audioEl.src = "" // Clear src to ensure new sound loads
-        }
-        backgroundAudioRef.current = null
-      }
-
-      try {
-        const audioContext = getAudioContext()
-        if (audioContext.state === "suspended") {
-          await audioContext.resume()
-        }
-
-        if (isSynthetic) {
-          // For synthetic sounds, generate into a buffer and play via AudioBufferSourceNode
-          const tempCtx = new OfflineAudioContext(1, audioContext.sampleRate * 5, audioContext.sampleRate) // 5s buffer for preview
-          await generateAmbientSound(sound, tempCtx, 5, sound.volume || 0.5) // Use sound's volume or default
-          const renderedBuffer = await tempCtx.startRendering()
-
-          const source = audioContext.createBufferSource()
-          source.buffer = renderedBuffer
-          source.loop = true
-          const gainNode = audioContext.createGain()
-          source.connect(gainNode)
-          gainNode.connect(audioContext.destination)
-          gainNode.gain.value = (sound.volume || 0.5) * masterBackgroundVolume * 0.5 // Apply master volume
-          source.start(0)
-
-          backgroundAudioRef.current = source
-        } else {
-          // For file-based sounds, use HTMLAudioElement
-          const audio = new Audio(sound.src)
-          audio.loop = true
-          audio.volume = (sound.volume || 0.5) * masterBackgroundVolume * 0.5 // Apply master volume
-          await audio.play().catch((e) => console.error("Error playing background audio:", e))
-          backgroundAudioRef.current = audio
-        }
-
-        setCurrentPlayingBackgroundSoundId(sound.id)
-        toast({ title: "Playing Preview", description: `Now playing: ${sound.name}` })
-      } catch (error) {
-        console.error("Failed to play background sound:", error)
-        toast({
-          title: "Background Sound Error",
-          description: `Could not play ${sound.name}. Error: ${error instanceof Error ? error.message : "Unknown"}`,
-          variant: "destructive",
-        })
-        setCurrentPlayingBackgroundSoundId(null)
-      }
-    },
-    [currentPlayingBackgroundSoundId, masterBackgroundVolume],
-  )
-
-  const stopBackgroundSound = useCallback(() => {
-    if (backgroundAudioRef.current) {
-      if (backgroundAudioRef.current instanceof AudioBufferSourceNode) {
-        backgroundAudioRef.current.stop()
-      } else if (backgroundAudioRef.current instanceof HTMLAudioElement) {
-        backgroundAudioRef.current.pause()
-        backgroundAudioRef.current.src = "" // Clear src to ensure it stops loading/playing
-      }
-      backgroundAudioRef.current = null
-      setCurrentPlayingBackgroundSoundId(null)
-      toast({ title: "Preview Stopped", description: "Background sound preview stopped." })
-    }
-  }, [])
-
-  // Add this useEffect hook to update background audio volume when masterBackgroundVolume changes:
-  useEffect(() => {
-    if (backgroundAudioRef.current) {
-      // If it's an AudioBufferSourceNode, its gain is set at creation.
-      // For HTMLAudioElement, we can update volume directly.
-      if (backgroundAudioRef.current instanceof HTMLAudioElement) {
-        const currentSound = AMBIENT_SOUNDS_LIBRARY.find((s) => s.id === currentPlayingBackgroundSoundId)
-        if (currentSound) {
-          backgroundAudioRef.current.volume = (currentSound.volume || 0.5) * masterBackgroundVolume * 0.5
-        }
-      }
-      // For AudioBufferSourceNode, the gain node would need to be exposed or recreated,
-      // which is more complex for a simple preview. For now, it's set once.
-    }
-  }, [masterBackgroundVolume, currentPlayingBackgroundSoundId])
-
-  // Add this useEffect hook for background audio initialization and cleanup, after other useEffects:
-  useEffect(() => {
-    // Initialize a dummy Audio element for file-based previews
-    labsAudioRef.current = new Audio()
-    labsAudioRef.current.preload = "none"
-    labsAudioRef.current.volume = 0.7
-    if (labsAudioRef.current) {
-      labsAudioRef.current.onerror = (e) => console.warn("Labs Audio error:", e)
-    }
-
-    return () => {
-      if (labsAudioRef.current) {
-        labsAudioRef.current.pause()
-        labsAudioRef.current.src = ""
-        labsAudioRef.current = null
-      }
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-        mediaRecorderRef.current.stop()
-      }
-      stopBackgroundSound() // Ensure background preview is stopped on unmount
-    }
-  }, [stopBackgroundSound])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-0">
@@ -2396,163 +2212,6 @@ export default function HomePage() {
                         onRemoveEvent={removeTimelineEvent}
                         onDuplicateEvent={handleDuplicateEvent} // Pass the new duplicate handler
                       />
-                      {/* Background Sound Mixer */}
-                      <div className="border-gray-200 dark:border-gray-700 mt-6 border-t-0 pt-1">
-                        <h4 className="font-black dark:text-gray-200 text-gray-600 mb-4 text-base">
-                          Background Sound Mixer
-                        </h4>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-                          {/* Ambient Sounds */}
-                          <div className="space-y-3">
-                            <h5 className="text-sm font-black text-gray-600 dark:text-gray-300">Ambient Sounds</h5>
-                            <div className="space-y-2">
-                              {AMBIENT_SOUNDS_LIBRARY.map((sound) => (
-                                <div
-                                  key={sound.id}
-                                  className="flex items-center space-x-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 shadow-inner"
-                                >
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => toggleBackgroundSoundPreview(sound)}
-                                    className={`${currentPlayingBackgroundSoundId === sound.id ? "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" : ""}`}
-                                  >
-                                    <Play className="h-3 w-3 mr-1" />
-                                    <span className="font-black text-gray-600 dark:text-gray-300">{sound.name}</span>
-                                  </Button>
-
-                                  {backgroundSounds.some((s) => s.id === sound.id) && (
-                                    <div className="flex-1 flex items-center space-x-2">
-                                      <Volume2 className="h-3 w-3 text-gray-500" />
-                                      <Slider
-                                        value={[backgroundSounds.find((s) => s.id === sound.id)?.volume || 0.3]}
-                                        min={0}
-                                        max={1}
-                                        step={0.1}
-                                        onValueChange={(value) => {
-                                          setBackgroundSounds((prev) =>
-                                            prev.map((s) => (s.id === sound.id ? { ...s, volume: value[0] } : s)),
-                                          )
-                                        }}
-                                        className="flex-1"
-                                        rangeClassName="bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900"
-                                      />
-                                      <span className="text-xs text-gray-500 w-8">
-                                        {Math.round(
-                                          (backgroundSounds.find((s) => s.id === sound.id)?.volume || 0) * 100,
-                                        )}
-                                        %
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-
-                            {/* Custom Audio Upload */}
-                          </div>
-                          <div className="space-y-3">
-                            <h5 className="text-sm font-black text-gray-600 dark:text-gray-300">
-                              Custom Background Audio
-                            </h5>
-                            <div className="border-dashed dark:border-gray-600 rounded-lg p-4 text-center border-gray-500 border-[3px]">
-                              <input
-                                type="file"
-                                accept="audio/*"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0]
-                                  if (file) {
-                                    const url = URL.createObjectURL(file)
-                                    const customSound = {
-                                      id: `custom_${Date.now()}`,
-                                      name: file.name.replace(/\.[^/.]+$/, ""),
-                                      src: url, // For custom uploads, the URL.createObjectURL is the direct source
-                                      volume: 0.3,
-                                    }
-                                    setBackgroundSounds((prev) => [...prev, customSound])
-                                  }
-                                }}
-                                className="hidden"
-                                id="custom-background-upload"
-                              />
-                              <label htmlFor="custom-background-upload" className="cursor-pointer">
-                                <div className="text-gray-500 dark:text-gray-400 text-sm">
-                                  <PlusCircle className="h-6 w-6 mx-auto mb-2" />
-                                  Upload Custom Audio
-                                </div>
-                              </label>
-                            </div>
-
-                            {/* Custom Audio Controls */}
-                            {backgroundSounds
-                              .filter((s) => s.id.startsWith("custom_"))
-                              .map((sound) => (
-                                <div
-                                  key={sound.id}
-                                  className="flex items-center space-x-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 shadow-inner"
-                                >
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => {
-                                      setBackgroundSounds((prev) => prev.filter((s) => s.id !== sound.id))
-                                    }}
-                                    className="text-red-500 hover:text-red-700"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                  <span className="text-sm font-black text-gray-700 dark:text-gray-300 flex-1 truncate">
-                                    {sound.name}
-                                  </span>
-                                  <div className="flex items-center space-x-2">
-                                    <Volume2 className="h-3 w-3" />
-                                    <Slider
-                                      value={[sound.volume]}
-                                      min={0}
-                                      max={1}
-                                      step={0.1}
-                                      onValueChange={(value) => {
-                                        setBackgroundSounds((prev) =>
-                                          prev.map((s) => (s.id === sound.id ? { ...s, volume: value[0] } : s)),
-                                        )
-                                      }}
-                                      className="w-20"
-                                      rangeClassName="bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900"
-                                    />
-                                    <span className="text-xs text-gray-500 w-8">{Math.round(sound.volume * 100)}%</span>
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-                        </div>
-
-                        {/* Master Background Volume */}
-                        {backgroundSounds.length > 0 && (
-                          <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg shadow-inner">
-                            <div className="flex items-center space-x-3">
-                              <span className="text-sm font-black text-gray-600 dark:text-gray-300">
-                                Master Background Volume:
-                              </span>
-                              <div className="flex-1 flex items-center space-x-2">
-                                <Volume2 className="h-4 w-4" />
-                                <Slider
-                                  value={[masterBackgroundVolume]}
-                                  min={0}
-                                  max={1}
-                                  step={0.1}
-                                  onValueChange={(value) => setMasterBackgroundVolume(value[0])}
-                                  className="flex-1"
-                                  rangeClassName="bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900"
-                                />
-                                <span className="text-sm text-gray-500 w-12">
-                                  {Math.round(masterBackgroundVolume * 100)}%
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
                     </div>
                   </Card>
                 </motion.div>
