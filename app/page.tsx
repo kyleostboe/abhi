@@ -1795,7 +1795,7 @@ export default function Home() {
                           <h3 className="text-white font-black">Original Audio</h3>
                         </div>
                         <div className="p-6 py-4 px-3.5">
-                          <div className="bg-white rounded-sm p-3 dark:shadow-white/10 mb-4 dark:bg-gray-700 shadow-md">
+                          <div className="bg-white rounded-sm p-3 dark:shadow-white/10 dark:bg-gray-700 shadow-md mb-3.5">
                             <audio controls className="w-full" src={originalUrl}></audio>
                           </div>
                           <div className="grid grid-cols-2 gap-4">
@@ -1827,11 +1827,11 @@ export default function Home() {
                           <h3 className="text-white font-black">Adjusted Audio</h3>
                         </div>
                         <div className="p-6 px-3.5 py-4">
-                          <div className="bg-white p-3 dark:shadow-white/10 mb-4 dark:bg-gray-700 rounded-sm shadow-md">
+                          <div className="bg-white p-3 dark:shadow-white/10 dark:bg-gray-700 rounded-sm shadow-md mb-3.5">
                             <audio controls className="w-full" src={processedUrl}></audio>
                           </div>
                           <div className="grid grid-cols-2 gap-4 mb-3.5">
-                            <div className="p-3 rounded-lg text-center dark:bg-gray-800/60 bg-white shadow-md">
+                            <div className="p-3 rounded-lg text-center dark:bg-gray-800/60 bg-white shadow-md py-3.5">
                               <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
                                 Duration
                               </div>
@@ -1844,7 +1844,7 @@ export default function Home() {
                                 )}
                               </div>
                             </div>
-                            <div className="p-3 rounded-lg text-center dark:bg-gray-800/60 bg-white shadow-md">
+                            <div className="p-3 rounded-lg text-center dark:bg-gray-800/60 bg-white shadow-md py-3.5">
                               <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
                                 File Size
                               </div>
