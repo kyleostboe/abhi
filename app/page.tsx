@@ -1809,7 +1809,7 @@ export default function Home() {
                             </div>
                             <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-smll rounded-sm py-3.5">
                               <div className="text-xs uppercase tracking-wide mb-1  text-gray-500 ">File Size</div>
-                              <div className="dark:text-black font-black text-gray-500">
+                              <div className="font-black text-gray-500 dark:text-gray-300">
                                 {formatFileSize(file?.size || 0)}
                               </div>
                             </div>
@@ -1847,7 +1847,8 @@ export default function Home() {
                               </div>
                             </div>
                             <div className="p-3 rounded-lg text-center dark:bg-gray-800/60 bg-white shadow-md">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500                File Size
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
+                                File Size
                               </div>
                               <div className="dark:text-black font-black text-gray-600">
                                 {formatFileSize(processedFileSize || 0)}
