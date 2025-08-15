@@ -1795,7 +1795,7 @@ export default function Home() {
                           <h3 className="text-white font-black">Original Audio</h3>
                         </div>
                         <div className="p-6 py-4 px-3.5">
-                          <div className="bg-white rounded-sm p-3 dark:shadow-white/10 dark:bg-gray-700 shadow-md mb-3.5">
+                          <div className="bg-white rounded-sm p-3 dark:shadow-white/10 dark:bg-gray-700 shadow-md mb-3.5 px-0">
                             <audio controls className="w-full" src={originalUrl}></audio>
                           </div>
                           <div className="grid grid-cols-2 gap-4">
@@ -1827,7 +1827,7 @@ export default function Home() {
                           <h3 className="text-white font-black">Adjusted Audio</h3>
                         </div>
                         <div className="p-6 px-3.5 py-4">
-                          <div className="bg-white p-3 dark:shadow-white/10 dark:bg-gray-700 rounded-sm shadow-md mb-3.5">
+                          <div className="bg-white p-3 dark:shadow-white/10 dark:bg-gray-700 rounded-sm shadow-md mb-3.5 px-0">
                             <audio controls className="w-full" src={processedUrl}></audio>
                           </div>
                           <div className="grid grid-cols-2 gap-4 mb-3.5">
@@ -1866,7 +1866,7 @@ export default function Home() {
                           >
                             <div className="flex items-center justify-center font-black">
                               <Download className="mr-2 w-4 h-4" />
-                              Download Audio
+                              Download 
                             </div>
                           </Button>
                         </div>
