@@ -1891,7 +1891,7 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
                 >
-                  <Card className="overflow-hidden bg-white dark:bg-gray-900 max-w-2xl mx-auto rounded-2xl">
+                  <Card className="overflow-hidden bg-white dark:bg-gray-900 max-w-2xl mx-auto rounded-2xl shadow-none">
                     <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none">
                       <div className="grid md:grid-cols-2 gap-6 text-gray-600 pb-2">
                         <div className="text-center">
@@ -2275,7 +2275,9 @@ export default function Home() {
                         <h3 className="text-white font-black">Generated Audio</h3>
                       </div>
                       <div className="p-6 px-3.5 py-4">
-                        <h4 className="dark:text-gray-300 font-black text-sm text-gray-600 mb-2.5 px-2.5">{meditationTitle}</h4>
+                        <h4 className="dark:text-gray-300 font-black text-sm text-gray-600 mb-2.5 px-2.5">
+                          {meditationTitle}
+                        </h4>
                         <div className="bg-white p-3 dark:shadow-white/10 dark:bg-gray-700 px-0 rounded-sm shadow-md mb-3.5">
                           <audio controls className="w-full" src={generatedAudioUrl}></audio>
                         </div>
