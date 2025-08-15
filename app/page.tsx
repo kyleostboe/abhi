@@ -1504,14 +1504,14 @@ export default function Home() {
                       className="mb-6 mt-4"
                     >
                       <Alert className="bg-white dark:bg-gray-900 p-0 border-0 shadow-none">
-                        <div className="p-4 pt-0 pb-0 text-logo-rose-600">
+                        <div className="p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm shadow-none bg-transparent pb-1">
                           <div className="flex items-center mb-4 justify-center">
                             {/* Removed the Info icon div */}
                             <div className="text-lg font-black text-gray-600">Audio Analysis</div>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm pl-1 pr-1">
-                              <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm shadow-inner">
+                              <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] shadow-inner rounded-sm">
                                 <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
                                 <div className="font-black text-gray-600">
                                   {formatTime(audioAnalysis.contentDuration)}
