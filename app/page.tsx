@@ -2312,7 +2312,7 @@ export default function Home() {
                         >
                           <div className="flex items-center justify-center font-black">
                             <Download className="mr-2 w-4 h-4" />
-                            Download Audio
+                            Download
                           </div>
                         </Button>
                       </div>
