@@ -1798,7 +1798,7 @@ export default function Home() {
                           <div className="bg-white rounded-sm p-3 dark:shadow-white/10 dark:bg-gray-700 shadow-md mb-3.5 px-0">
                             <audio controls className="w-full" src={originalUrl}></audio>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-2 gap-3">
                             <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-smll rounded-sm py-3.5">
                               <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
                                 Duration
@@ -1830,7 +1830,7 @@ export default function Home() {
                           <div className="bg-white p-3 dark:shadow-white/10 dark:bg-gray-700 rounded-sm shadow-md mb-3.5 px-0">
                             <audio controls className="w-full" src={processedUrl}></audio>
                           </div>
-                          <div className="grid grid-cols-2 gap-4 mb-3.5">
+                          <div className="grid grid-cols-2 gap-3 mb-3.5">
                             <div className="p-3 rounded-lg text-center dark:bg-gray-800/60 bg-white shadow-md py-3.5">
                               <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
                                 Duration
@@ -2198,7 +2198,7 @@ export default function Home() {
                 {/* Timeline Editor for Labs */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
                   <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                    <div className="bg-gradient-to-r from-gray-700 to-gray-500 px-6 dark:from-gray-800 dark:to-gray-900 py-3">
+                    <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 dark:from-gray-800 dark:to-gray-900 py-3">
                       <h3 className="text-white flex items-center font-black text-base">
                         <CircleDotDashed className="h-5 w-5 mr-2" />
                         Timeline Editor
