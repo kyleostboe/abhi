@@ -1892,7 +1892,7 @@ export default function Home() {
                   transition={{ delay: 0.1 }}
                 >
                   <Card className="overflow-hidden bg-white dark:bg-gray-900 max-w-2xl mx-auto rounded-2xl">
-                    <div className="p-6 text-sm font-black py-0 bg-transparent">
+                    <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none">
                       <div className="grid md:grid-cols-2 gap-6 text-gray-600 pb-2">
                         <div className="text-center">
                           <Label htmlFor="meditation-title" className="text-gray-600 font-black">
@@ -2222,7 +2222,7 @@ export default function Home() {
                     onClick={handleExportAudio}
                     disabled={isGeneratingAudio || timelineEvents.length === 0}
                     className={cn(
-                      "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
+                      "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
                       "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none text-white",
                       "bg-gradient-to-r from-logo-purple-300 via-logo-teal-500 to-orange-300",
                       "dark:bg-[linear-gradient(90deg,#10b981_0%,#14b8a6_12%,#ec4899_24%,#f59e0b_36%,#6b7280_50%,#a855f7_64%,#0ea5e9_76%,#06b6d4_88%,#10b981_100%)]",
