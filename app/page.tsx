@@ -1425,7 +1425,7 @@ export default function Home() {
                   onDrop={handleDropAction}
                 >
                   <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 dark:shadow-white/20 px-[5px] py-1 shadow-sm rounded-sm pl-1 pr-1">
-                    <div className="p-10 md:p-16 text-center md:py-14 bg-white dark:bg-gray-900 border-white border-0 rounded-sm">
+                    <div className="p-10 md:p-16 text-center md:py-14 bg-white dark:bg-gray-900 border-white border-0 rounded-sm shadow-inner">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
