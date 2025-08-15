@@ -1809,7 +1809,7 @@ export default function Home() {
                             </div>
                             <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-smll rounded-sm py-3.5">
                               <div className="text-xs uppercase tracking-wide mb-1  text-gray-500 ">File Size</div>
-                              <div className="font-black text-gray-500">{formatFileSize(file?.size || 0)}</div>
+                              <div className="font-black text-gray-600">{formatFileSize(file?.size || 0)}</div>
                             </div>
                           </div>
                         </div>
@@ -1838,8 +1838,8 @@ export default function Home() {
                               <div className="dark:text-black font-black text-gray-600">
                                 {formatTime(actualDuration || 0)}
                                 {actualDuration && targetDuration && (
-                                  <div className="text-xs text-logo-teal-600 mt-1 dark:text-gray-900">
-                                    {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}%
+                                  <div className="text-xs mt-1 dark:text-gray-900 text-gray-600">
+                                    {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
                                   </div>
                                 )}
                               </div>
@@ -1848,7 +1848,7 @@ export default function Home() {
                               <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
                                 File Size
                               </div>
-                              <div className="font-black text-gray-500">{formatFileSize(processedFileSize || 0)}</div>
+                              <div className="font-black text-gray-600">{formatFileSize(processedFileSize || 0)}</div>
                             </div>
                           </div>
                           <Button
