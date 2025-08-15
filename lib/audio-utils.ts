@@ -1,6 +1,5 @@
 import { NOTE_FREQUENCIES } from "./meditation-data"
 import { sleep, formatFileSize } from "./utils"
-import * as lamejs from "lamejs"
 
 let audioContext: AudioContext | null = null
 
@@ -80,14 +79,14 @@ export const playNote = async (note: string, octave: number, duration = 0.8, vol
   oscillator.stop(now + duration)
 }
 
-export const bufferToMp3 = async (
+export const bufferToWav = async (
   buffer: AudioBuffer,
   highCompatibility = true,
   onProgress: (progress: number) => void,
   isMobileDevice: boolean,
 ): Promise<Blob> => {
-  const currentAudioContext = getAudioContext()
-  if (!currentAudioContext) throw new Error("Audio context not available for MP3 conversion")
+  const currentAudioContext = getAudioContext() // Use the centralized AudioContext
+  if (!currentAudioContext) throw new Error("Audio context not available for WAV conversion")
   onProgress(0)
 
   let targetSampleRate = highCompatibility ? 44100 : buffer.sampleRate
@@ -102,111 +101,7 @@ export const bufferToMp3 = async (
     try {
       resampledBuffer = currentAudioContext.createBuffer(buffer.numberOfChannels, newLength, targetSampleRate)
     } catch (e) {
-      throw new Error(
-        `Failed to create resample buffer (target SR: ${targetSampleRate}Hz). Memory limit likely exceeded.`,
-      )
-    }
-    onProgress(10)
-    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-      const oldData = buffer.getChannelData(channel)
-      const newData = resampledBuffer.getChannelData(channel)
-      for (let i = 0; i < newLength; i++) {
-        if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
-          await sleep(0)
-          onProgress(
-            10 +
-              Math.floor(
-                ((channel * (newLength / buffer.numberOfChannels) + i) / (newLength * buffer.numberOfChannels)) * 40,
-              ),
-          )
-        }
-        const oldIndex = i / ratio
-        const index = Math.floor(oldIndex)
-        const frac = oldIndex - index
-        const samp1 = oldData[Math.min(index, oldData.length - 1)]
-        const samp2 = oldData[Math.min(index + 1, oldData.length - 1)]
-        newData[i] = samp1 + (samp2 - samp1) * frac
-      }
-    }
-  } else {
-    onProgress(50)
-  }
-
-  try {
-    onProgress(60)
-
-    const mp3encoder = new lamejs.Mp3Encoder(resampledBuffer.numberOfChannels, targetSampleRate, 128) // 128kbps
-    const mp3Data: Int8Array[] = []
-
-    const blockSize = 1152 // Standard MP3 frame size
-    const numSamples = resampledBuffer.length
-
-    for (let i = 0; i < numSamples; i += blockSize) {
-      if (i % (blockSize * 10) === 0) {
-        await sleep(0)
-        onProgress(60 + Math.floor((i / numSamples) * 35))
-      }
-
-      const left = new Int16Array(blockSize)
-      const right = resampledBuffer.numberOfChannels > 1 ? new Int16Array(blockSize) : null
-
-      const leftChannel = resampledBuffer.getChannelData(0)
-      const rightChannel = resampledBuffer.numberOfChannels > 1 ? resampledBuffer.getChannelData(1) : null
-
-      for (let j = 0; j < blockSize && i + j < numSamples; j++) {
-        left[j] = Math.max(-32768, Math.min(32767, leftChannel[i + j] * 32767))
-        if (right && rightChannel) {
-          right[j] = Math.max(-32768, Math.min(32767, rightChannel[i + j] * 32767))
-        }
-      }
-
-      const mp3buf = right ? mp3encoder.encodeBuffer(left, right) : mp3encoder.encodeBuffer(left)
-      if (mp3buf.length > 0) {
-        mp3Data.push(mp3buf)
-      }
-    }
-
-    onProgress(95)
-
-    // Flush remaining data
-    const mp3buf = mp3encoder.flush()
-    if (mp3buf.length > 0) {
-      mp3Data.push(mp3buf)
-    }
-
-    onProgress(100)
-
-    return new Blob(mp3Data, { type: "audio/mp3" })
-  } catch (error) {
-    // Fallback to WAV if MP3 encoding fails
-    console.warn("MP3 encoding failed, falling back to WAV:", error)
-    return bufferToWav(resampledBuffer, highCompatibility, onProgress, isMobileDevice)
-  }
-}
-
-export const bufferToWav = async (
-  buffer: AudioBuffer,
-  highCompatibility = true,
-  onProgress: (progress: number) => void,
-  isMobileDevice: boolean,
-): Promise<Blob> => {
-  const currentAudioContext = getAudioContext()
-  if (!currentAudioContext) throw new Error("Audio context not available for WAV conversion")
-  onProgress(0)
-
-  let targetSampleRate = highCompatibility ? 44100 : 22050
-
-  if (isMobileDevice && buffer.duration > 15 * 60) {
-    targetSampleRate = Math.min(targetSampleRate, 22050)
-  }
-
-  let resampledBuffer = buffer
-  if (buffer.sampleRate !== targetSampleRate) {
-    const ratio = targetSampleRate / buffer.sampleRate
-    const newLength = Math.floor(buffer.length * ratio)
-    try {
-      resampledBuffer = currentAudioContext.createBuffer(buffer.numberOfChannels, newLength, targetSampleRate)
-    } catch (e) {
+      // forceGarbageCollection() // This should be handled by the caller if needed
       throw new Error(
         `Failed to create resample buffer (target SR: ${targetSampleRate}Hz). Memory limit likely exceeded.`,
       )

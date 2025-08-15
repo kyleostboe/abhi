@@ -67,7 +67,7 @@ export default function HomePage() {
   const [minSilenceDuration, setMinSilenceDuration] = useState<number>(3)
   const [minSpacingDuration, setMinSpacingDuration] = useState<number>(1.5)
   const [preserveNaturalPacing, setPreserveNaturalPacing] = useState<boolean>(true)
-  const [compatibilityMode, setCompatibilityMode] = useState<string>("standard")
+  const [compatibilityMode, setCompatibilityMode] = useState<string>("high")
   const [status, setStatus] = useState<{ message: string; type: string } | null>(null)
   const [originalUrl, setOriginalUrl] = useState<string>("")
   const [processedUrl, setProcessedUrl] = useState<string>("")
@@ -834,20 +834,20 @@ export default function HomePage() {
       setProcessingStep("Creating download file (step 4/4)...")
       setProcessingProgress(90)
       await sleep(10)
-      const compressedBlob = await bufferToWav(
+      const wavBlob = await bufferToWav(
         processedAudioBuffer,
         compatibilityMode === "high",
         (p) => setProcessingProgress(90 + Math.floor(p * 0.1)),
         isMobileDevice,
       )
-      if (compressedBlob.size === 0) {
-        throw new Error("Generated audio blob is empty. Audio conversion failed or resulted in no data.")
+      if (wavBlob.size === 0) {
+        throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
       }
-      const url = URL.createObjectURL(compressedBlob)
+      const url = URL.createObjectURL(wavBlob)
       setProcessedUrl(url)
       setActualDuration(processedAudioBuffer.duration)
       setProcessedBufferState(processedAudioBuffer)
-      setProcessedFileSize(compressedBlob.size)
+      setProcessedFileSize(wavBlob.size)
       setProcessingProgress(100)
       setProcessingStep("Complete!")
       setStatus({ message: "Audio processing completed successfully!", type: "success" })
@@ -987,7 +987,7 @@ export default function HomePage() {
     }
     const a = document.createElement("a")
     a.href = processedUrl
-    a.download = file ? `processed_${file.name.replace(/\.[^/.]+$/, "")}.webm` : "processed_audio.webm"
+    a.download = file ? `processed_${file.name.replace(/\.[^/.]+$/, "")}.wav` : "processed_audio.wav"
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -1603,7 +1603,7 @@ export default function HomePage() {
                   onDragLeave={handleDragLeaveAction}
                   onDrop={handleDropAction}
                 >
-                  <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 dark:shadow-white/20 px-[5px] py-1 shadow-sm rounded-sm pl-1">
+                  <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 dark:shadow-white/20 px-[5px] py-1 shadow-sm rounded-sm pl-1 pr-1.5">
                     <div className="p-10 md:p-16 text-center md:py-14 bg-white dark:bg-gray-900 border-white border-0 rounded-sm">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
@@ -1635,7 +1635,7 @@ export default function HomePage() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-logo-amber-300 to-logo-purple-300 py-1 px-[5px] shadow-md rounded-sm pr-1"
+                      className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-logo-amber-300 to-logo-purple-300 py-1 px-[5px] shadow-md rounded-sm pr-1 pl-1.5"
                     >
                       <div className="bg-white dark:bg-gray-900 p-5 py-4 rounded-sm shadow-inner">
                         <div className="flex items-center">
@@ -1877,7 +1877,7 @@ export default function HomePage() {
                               <Switch
                                 checked={preserveNaturalPacing}
                                 onCheckedChange={setPreserveNaturalPacing}
-                                className="data-[state=checked]:bg-gray-400 dark:data-[state=checked]:bg-logo-rose-700"
+                                className="data-[state=checked]:bg-gray-300 dark:data-[state=checked]:bg-logo-rose-700"
                               />
                             </div>
                           </div>
@@ -1892,7 +1892,7 @@ export default function HomePage() {
                                 <SelectValue placeholder="Select compatibility mode" />
                               </SelectTrigger>
                               <SelectContent className="dark:bg-gray-800 dark:text-gray-200">
-                                <SelectItem value="standard">Standard Quality (22kHz)</SelectItem>
+                                <SelectItem value="standard">Standard Quality (Original SR)</SelectItem>
                                 <SelectItem value="high">
                                   High Compatibility (44.1kHz or 22.05kHz for Mobile Long Audio)
                                 </SelectItem>
