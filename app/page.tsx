@@ -1808,7 +1808,7 @@ export default function Home() {
                               </div>
                             </div>
                             <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-smll rounded-sm py-3.5">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400">File Size</div>
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-gray-400 text-gray-500 text-gray-500 text-transparent text-gray-500 text-transparent">File Size</div>
                               <div className="dark:text-black font-black text-gray-600">
                                 {formatFileSize(file?.size || 0)}
                               </div>
@@ -1828,13 +1828,13 @@ export default function Home() {
                         <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
                           <h3 className="text-white font-black">Adjusted Audio</h3>
                         </div>
-                        <div className="p-6">
-                          <div className="bg-white p-3 dark:shadow-white/10 mb-4 dark:bg-gray-700">
+                        <div className="p-6 px-3.5 py-4">
+                          <div className="bg-white p-3 dark:shadow-white/10 mb-4 dark:bg-gray-700 rounded-sm shadow-md">
                             <audio controls className="w-full" src={processedUrl}></audio>
                           </div>
-                          <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                              <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
+                          <div className="grid grid-cols-2 gap-4 mb-3.5">
+                            <div className="p-3 rounded-lg text-center dark:bg-gray-800/60 bg-white shadow-md">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
                                 Duration
                               </div>
                               <div className="dark:text-black font-black text-gray-600">
@@ -1846,9 +1846,8 @@ export default function Home() {
                                 )}
                               </div>
                             </div>
-                            <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                              <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
-                                File Size
+                            <div className="p-3 rounded-lg text-center dark:bg-gray-800/60 bg-white shadow-md">
+                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500                File Size
                               </div>
                               <div className="dark:text-black font-black text-gray-600">
                                 {formatFileSize(processedFileSize || 0)}
