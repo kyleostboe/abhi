@@ -189,22 +189,14 @@ export const bufferToWav = async (
   highCompatibility = true,
   onProgress: (progress: number) => void,
   isMobileDevice: boolean,
-  highQuality = false, // Added option for high quality
 ): Promise<Blob> => {
-  const currentAudioContext = getAudioContext() // Use the centralized AudioContext
+  const currentAudioContext = getAudioContext()
   if (!currentAudioContext) throw new Error("Audio context not available for WAV conversion")
   onProgress(0)
 
-  let targetSampleRate = highQuality ? 44100 : 22050
-  if (highCompatibility && !highQuality) {
-    targetSampleRate = 22050 // Default to lower quality for smaller files
-  } else if (highCompatibility && highQuality) {
-    targetSampleRate = 44100 // High quality option
-  } else {
-    targetSampleRate = highQuality ? Math.max(buffer.sampleRate, 44100) : Math.min(buffer.sampleRate, 22050)
-  }
+  let targetSampleRate = highCompatibility ? 44100 : 22050
 
-  if (isMobileDevice && highCompatibility && buffer.duration > 15 * 60 && !highQuality) {
+  if (isMobileDevice && buffer.duration > 15 * 60) {
     targetSampleRate = Math.min(targetSampleRate, 22050)
   }
 
