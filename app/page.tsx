@@ -50,9 +50,8 @@ interface TimelineItem {
   content: Instruction | SoundCue
 }
 
-export default function HomePage() {
-  // State for mode toggle (Length Adjuster vs Labs)
-  const [activeMode, setActiveMode] = useState<"adjuster" | "labs">("adjuster")
+export default function Home() {
+  const [activeMode, setActiveMode] = useState<"adjuster" | "encoder">("adjuster")
 
   // == States for Length Adjuster ==
   const [file, setFile] = useState<File | null>(null)
@@ -89,7 +88,7 @@ export default function HomePage() {
 
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
-  const [labsTotalDuration, setLabsTotalDuration] = useState<number>(600)
+  const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(600)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
   const [selectedLibraryInstruction, setSelectedLibraryInstruction] = useState<Instruction | null>(null)
   const [customInstructionText, setCustomInstructionText] = useState<string>("")
@@ -103,7 +102,7 @@ export default function HomePage() {
   } | null>(null)
   const [recordedBlobs, setRecordedBlobs] = useState<Blob[]>([])
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const labsAudioRef = useRef<HTMLAudioElement | null>(null)
+  const encoderAudioRef = useRef<HTMLAudioElement | null>(null)
   const instructionCategories = Array.from(new Set(INSTRUCTIONS_LIBRARY.map((instr) => instr.category)))
   const [recordingLabel, setRecordingLabel] = useState<string>("")
 
@@ -151,7 +150,7 @@ export default function HomePage() {
     [activeItemIndex],
   )
 
-  const playLabsSound = useCallback(
+  const playEncoderSound = useCallback(
     async (src: string) => {
       const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.src === src)
 
@@ -179,10 +178,10 @@ export default function HomePage() {
           })
         } else {
           // Handle actual audio files
-          if (labsAudioRef.current) {
-            labsAudioRef.current.src = soundCue.src
-            labsAudioRef.current.volume = volume / 100
-            await labsAudioRef.current.play().catch((e) => console.error("Error playing audio:", e))
+          if (encoderAudioRef.current) {
+            encoderAudioRef.current.src = soundCue.src
+            encoderAudioRef.current.volume = volume / 100
+            await encoderAudioRef.current.play().catch((e) => console.error("Error playing audio:", e))
             toast({
               title: "Playing Sound",
               description: `Now playing: ${soundCue.name || "Audio file"}`,
@@ -193,7 +192,7 @@ export default function HomePage() {
           }
         }
       } catch (error) {
-        console.error("Labs Audio playback failed:", error)
+        console.error("Encoder Audio playback failed:", error)
         toast({
           title: "Audio Playback Failed",
           description: `Could not play sound. Error: ${error instanceof Error ? error.message : "Unknown"}`,
@@ -223,7 +222,7 @@ export default function HomePage() {
               setActiveItemIndex(i)
               // Play sound cue when it becomes active
               if (item.type === "sound") {
-                playLabsSound(item.content.src) // Pass src string to playLabsSound
+                playEncoderSound(item.content.src) // Pass src string to playLabsSound
               }
             }
             foundActiveItem = true
@@ -247,7 +246,7 @@ export default function HomePage() {
         return newTime
       })
     }, 100) // Update every 100ms
-  }, [timeline, currentPlaybackTime, totalDuration, activeItemIndex, playLabsSound])
+  }, [timeline, currentPlaybackTime, totalDuration, activeItemIndex, playEncoderSound])
 
   const pausePlayback = useCallback(() => {
     if (playbackIntervalRef.current) {
@@ -300,7 +299,7 @@ export default function HomePage() {
       console.log("Starting audio export with events:", timelineEvents)
 
       // Calculate the maximum end time needed for the OfflineAudioContext
-      const maxAudioDuration = labsTotalDuration // Start with the user-defined total duration
+      const maxAudioDuration = encoderTotalDuration // Start with the user-defined total duration
 
       const ctx = new OfflineAudioContext({
         numberOfChannels: 1,
@@ -427,9 +426,9 @@ export default function HomePage() {
       setGeneratedAudioUrl(url)
 
       // Directly assign to the audio element for immediate playback readiness
-      if (labsAudioRef.current) {
-        labsAudioRef.current.src = url
-        labsAudioRef.current.volume = volume / 100
+      if (encoderAudioRef.current) {
+        encoderAudioRef.current.src = url
+        encoderAudioRef.current.volume = volume / 100
       }
 
       setIsGeneratingAudio(false)
@@ -953,17 +952,17 @@ export default function HomePage() {
 
   // == Effects and Handlers for Labs ==
   useEffect(() => {
-    labsAudioRef.current = new Audio()
-    labsAudioRef.current.preload = "none"
-    labsAudioRef.current.volume = 0.7
-    if (labsAudioRef.current) {
-      labsAudioRef.current.onerror = (e) => console.warn("Labs Audio error:", e)
+    encoderAudioRef.current = new Audio()
+    encoderAudioRef.current.preload = "none"
+    encoderAudioRef.current.volume = 0.7
+    if (encoderAudioRef.current) {
+      encoderAudioRef.current.onerror = (e) => console.warn("Encoder Audio error:", e)
     }
     return () => {
-      if (labsAudioRef.current) {
-        labsAudioRef.current.pause()
-        labsAudioRef.current.src = ""
-        labsAudioRef.current = null
+      if (encoderAudioRef.current) {
+        encoderAudioRef.current.pause()
+        encoderAudioRef.current.src = ""
+        encoderAudioRef.current = null
       }
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
         mediaRecorderRef.current.stop()
@@ -1122,7 +1121,7 @@ export default function HomePage() {
   const updateEventStartTime = (eventId: string, newTime: number) => {
     setTimelineEvents((prev) => {
       const updated = prev.map((event) =>
-        event.id === eventId ? { ...event, startTime: Math.max(0, Math.min(newTime, labsTotalDuration)) } : event,
+        event.id === eventId ? { ...event, startTime: Math.max(0, Math.min(newTime, encoderTotalDuration)) } : event,
       )
       // Simple sort by startTime, with stable sorting for events at the same time
       return updated.sort((a, b) => {
@@ -1185,7 +1184,7 @@ export default function HomePage() {
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target?.value
     if (typeof value === "string" && !isNaN(Number(value))) {
-      setLabsTotalDuration(Math.max(60, Number(value) * 60) || 60)
+      setEncoderTotalDuration(Math.max(60, Number(value) * 60) || 60)
     }
   }
 
@@ -1268,11 +1267,12 @@ export default function HomePage() {
                   >
                     Adjuster
                   </button>
+                  // Updated button onClick and className for encoder
                   <button
-                    onClick={() => setActiveMode("labs")}
+                    onClick={() => setActiveMode("encoder")}
                     className={cn(
                       "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm",
-                      activeMode === "labs"
+                      activeMode === "encoder"
                         ? "bg-white text-gray-600 shadow-sm dark:shadow-white/20 dark:bg-gray-700 dark:text-gray-600"
                         : "text-gray-600 dark:text-gray-600",
                     )}
@@ -1302,18 +1302,19 @@ export default function HomePage() {
                   </p>
                 </motion.div>
               )}
-              {activeMode === "labs" && (
+              // Updated content for encoder mode description
+              {activeMode === "encoder" && (
                 <motion.div
                   key="encoder-note"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="p-4 mb-6 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto text-center border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none text-sm py-0 px-0 mt-1"
+                  className="p-4 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                 >
-                  <p className="px-4 pt-1.5 text-logo-rose-600 text-xs">
-                    Create custom meditations by associating instructions with sound cues and placing them along a
-                    timeline. This tool aims to help bridge the gap between guided and self-directed meditation.
+                  <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs">
+                    Create custom meditations by associating instructions with sound cues and placing them on a
+                    timeline. Record your voice, add background sounds, and generate your personalized meditation.
                   </p>
                 </motion.div>
               )}
@@ -1875,15 +1876,13 @@ export default function HomePage() {
                 </div>
               </>
             ) : (
-              // == Labs UI ==
               <motion.div
-                key="labs-content"
+                key="encoder-content"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
                 className="space-y-6"
               >
-                {/* Meditation Setup for Labs */}
                 <motion.div
                   className="text-gray-600"
                   initial={{ opacity: 0, y: 20 }}
@@ -1907,13 +1906,13 @@ export default function HomePage() {
                           />
                         </div>
                         <div className="text-center">
-                          <Label htmlFor="labs-duration" className="text-gray-600 font-black">
+                          <Label htmlFor="encoder-duration" className="text-gray-600 font-black">
                             Duration (minutes)
                           </Label>
                           <Input
-                            id="labs-duration"
+                            id="encoder-duration"
                             type="number"
-                            value={labsTotalDuration / 60}
+                            value={encoderTotalDuration / 60}
                             onChange={handleDurationChange}
                             min="1"
                             className="mt-1 text-xs font-black text-gray-600 shadow-inner"
@@ -1924,7 +1923,6 @@ export default function HomePage() {
                   </Card>
                 </motion.div>
 
-                {/* Main Content Grid for Labs */}
                 <motion.div
                   className="grid grid-cols-1 lg:grid-cols-3 gap-6"
                   initial={{ opacity: 0, y: 20 }}
@@ -2048,7 +2046,7 @@ export default function HomePage() {
                                       className={`flex-1 justify-start font-black font-serif text-gray-600 ${selectedSoundCue?.id === cue.id ? "bg-white text-gray-600 border-logo-teal-500 border-2 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-logo-teal-500 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
                                       onClick={async () => {
                                         setSelectedSoundCue({ id: cue.id, name: cue.name, src: cue.src })
-                                        await playLabsSound(cue.src)
+                                        await playEncoderSound(cue.src)
                                       }}
                                     >
                                       {cue.name}
@@ -2056,7 +2054,7 @@ export default function HomePage() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={async () => await playLabsSound(cue.src)}
+                                      onClick={async () => await playEncoderSound(cue.src)}
                                       className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
                                       title={`Preview ${cue.name}`}
                                     >
@@ -2207,7 +2205,7 @@ export default function HomePage() {
                     <div className="p-6 px-7">
                       <VisualTimeline
                         events={timelineEvents}
-                        totalDuration={labsTotalDuration}
+                        totalDuration={encoderTotalDuration}
                         onUpdateEvent={updateEventStartTime}
                         onRemoveEvent={removeTimelineEvent}
                         onDuplicateEvent={handleDuplicateEvent} // Pass the new duplicate handler
@@ -2285,7 +2283,7 @@ export default function HomePage() {
                               Duration
                             </div>
                             <div className="dark:text-black font-black text-gray-600">
-                              {formatTime(labsAudioRef.current?.duration || 0)}
+                              {formatTime(encoderAudioRef.current?.duration || 0)}
                             </div>
                           </div>
                           <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">

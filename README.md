@@ -12,8 +12,9 @@ A meditation tool that allows users to adjust the length of guided meditations b
 - Advanced settings for silence threshold, minimum silence duration, and pacing preservation.
 - Download the processed audio.
 
-### Encoder (Labs)
+### Encoder
 
+<!-- Removed "(Labs)" from the Encoder section title -->
 - Create custom meditation timelines.
 - Add instructions from a library or custom text.
 - Add musical notes and sound cues.

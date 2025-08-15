@@ -655,7 +655,7 @@ export default function EncoderPage() {
                 textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
               }}
             >
-              Encoder (Labs)
+              Encoder
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-300 mt-4">
               Create custom meditations by associating instructions with sound cues.
