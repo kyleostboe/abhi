@@ -111,6 +111,7 @@ export default function Home() {
   const [generationProgress, setGenerationProgress] = useState<number>(0)
   const [generationStep, setGenerationStep] = useState<string>("")
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
+  const [generatedAudioFileSize, setGeneratedAudioFileSize] = useState<number>(0)
 
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
   const [currentTab, setCurrentTab] = useState<string>("instructions")
@@ -422,6 +423,9 @@ export default function Home() {
       if (wavBlob.size === 0) {
         throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
       }
+
+      setGeneratedAudioFileSize(wavBlob.size)
+
       const url = URL.createObjectURL(wavBlob)
       setGeneratedAudioUrl(url)
 
@@ -1381,7 +1385,7 @@ export default function Home() {
                         Tara Brach's meditations
                       </a>
                       <a
-                        href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDaDo3?usp=drive_link"
+                        href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDDo3?usp=drive_link"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-gray-400 dark:border-gray-700 dark:shadow-white/10 px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs rounded border-[3px]"
@@ -2291,7 +2295,7 @@ export default function Home() {
                               File Size
                             </div>
                             <div className="dark:text-black font-black text-gray-600">
-                              {generatedAudioUrl ? formatFileSize(0) : "--"}
+                              {generatedAudioUrl ? formatFileSize(generatedAudioFileSize) : "--"}
                             </div>
                           </div>
                         </div>
