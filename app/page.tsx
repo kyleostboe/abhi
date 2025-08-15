@@ -1877,7 +1877,7 @@ export default function HomePage() {
                               <Switch
                                 checked={preserveNaturalPacing}
                                 onCheckedChange={setPreserveNaturalPacing}
-                                className="data-[state=checked]:bg-gray-300 dark:data-[state=checked]:bg-logo-rose-700"
+                                className="data-[state=checked]:bg-gray-400 dark:data-[state=checked]:bg-logo-rose-700"
                               />
                             </div>
                           </div>
@@ -2126,7 +2126,7 @@ export default function HomePage() {
                       <BookText className="mr-2 h-4 w-4 text-gray-600" />
                       <span className="font-black text-center text-base text-gray-600">Instructions</span>
                     </div>
-                    <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 rounded-2xl shadow-md border-0 px-[5px] py-1 pl-1">
+                    <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 rounded-2xl shadow-md border-0 px-[5px] py-1 pl-1 pr-1">
                       <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border-rose-200 border-0">
                         <div className="text-center">
                           <Textarea
