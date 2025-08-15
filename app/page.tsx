@@ -2275,12 +2275,12 @@ export default function Home() {
                         <h3 className="text-white font-black">Generated Audio</h3>
                       </div>
                       <div className="p-6 px-3.5 py-4">
-                        <h4 className="dark:text-gray-300 font-black text-sm text-gray-600 mb-3.5">{meditationTitle}</h4>
+                        <h4 className="dark:text-gray-300 font-black text-sm text-gray-600 mb-2.5">{meditationTitle}</h4>
                         <div className="bg-white p-3 dark:shadow-white/10 dark:bg-gray-700 px-0 rounded-sm shadow-md mb-3.5">
                           <audio controls className="w-full" src={generatedAudioUrl}></audio>
                         </div>
                         <div className="grid grid-cols-2 gap-4 mb-3.5">
-                          <div className="p-3 text-center dark:bg-gray-800/60 rounded-sm shadow-md bg-white">
+                          <div className="p-3 text-center dark:bg-gray-800/60 rounded-sm shadow-md bg-white py-3.5">
                             <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
                               Duration
                             </div>
@@ -2288,7 +2288,7 @@ export default function Home() {
                               {formatTime(encoderAudioRef.current?.duration || 0)}
                             </div>
                           </div>
-                          <div className="p-3 text-center dark:bg-gray-800/60 bg-white shadow-md rounded-sm">
+                          <div className="p-3 text-center dark:bg-gray-800/60 bg-white shadow-md rounded-sm py-3.5">
                             <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
                               File Size
                             </div>
@@ -2298,7 +2298,7 @@ export default function Home() {
                           </div>
                         </div>
                         <Button
-                          className="w-full py-4 rounded-sm shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                          className="w-full py-4 rounded-sm shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:shadow-none transition-shadow transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
                           onClick={() => {
                             if (generatedAudioUrl) {
                               const a = document.createElement("a")
