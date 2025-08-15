@@ -1735,7 +1735,7 @@ export default function Home() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="mb-8 text-center font-serif font-black text-base rounded-sm"
+                  className="mb-6 text-center font-serif font-black text-base rounded-sm"
                 >
                   <Button
                     className={cn(
@@ -2270,35 +2270,35 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
                   >
-                    <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-logo-teal-50 to-logo-emerald-50 dark:from-logo-teal-950 dark:to-logo-emerald-950">
-                      <div className="bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
+                    <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-logo-teal-950 dark:to-logo-emerald-950">
+                      <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
                         <h3 className="text-white font-black">Generated Audio</h3>
                       </div>
-                      <div className="p-6">
-                        <h4 className="mb-2 dark:text-gray-300 font-black text-sm text-gray-600">{meditationTitle}</h4>
-                        <div className="bg-white rounded-lg p-3 shadow-sm dark:shadow-white/10 mb-4 dark:bg-gray-700">
+                      <div className="p-6 px-3.5 py-4">
+                        <h4 className="dark:text-gray-300 font-black text-sm text-gray-600 mb-3.5">{meditationTitle}</h4>
+                        <div className="bg-white p-3 dark:shadow-white/10 dark:bg-gray-700 px-0 rounded-sm shadow-md mb-3.5">
                           <audio controls className="w-full" src={generatedAudioUrl}></audio>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                          <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                            <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
+                        <div className="grid grid-cols-2 gap-4 mb-3.5">
+                          <div className="p-3 text-center dark:bg-gray-800/60 rounded-sm shadow-md bg-white">
+                            <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
                               Duration
                             </div>
-                            <div className="dark:text-black font-black text-gray-600">
+                            <div className="dark:text-black font-black text-gray-600 text-sm">
                               {formatTime(encoderAudioRef.current?.duration || 0)}
                             </div>
                           </div>
-                          <div className="bg-white/60 p-3 rounded-lg text-center dark:bg-gray-800/60 shadow-lg">
-                            <div className="text-xs text-logo-teal-500 uppercase tracking-wide mb-1 dark:text-logo-teal-400">
+                          <div className="p-3 text-center dark:bg-gray-800/60 bg-white shadow-md rounded-sm">
+                            <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
                               File Size
                             </div>
-                            <div className="font-black text-gray-500">
+                            <div className="font-black text-sm text-gray-600">
                               {generatedAudioUrl ? formatFileSize(generatedAudioFileSize) : "--"}
                             </div>
                           </div>
                         </div>
                         <Button
-                          className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-600 to-logo-emerald-600 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                          className="w-full py-4 rounded-sm shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:from-logo-teal-700 hover:to-logo-emerald-700 transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
                           onClick={() => {
                             if (generatedAudioUrl) {
                               const a = document.createElement("a")
