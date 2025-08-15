@@ -1518,7 +1518,7 @@ export default function Home() {
                                 </div>
                               </div>
                             </div>
-                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm pr-1 pl-1">
+                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm pl-1 pr-1">
                               <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm shadow-inner">
                                 <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
                                 <div className="font-black text-gray-600">{formatTime(audioAnalysis.totalSilence)}</div>
@@ -1783,7 +1783,7 @@ export default function Home() {
                   </Button>
                 </motion.div>
 
-                <div className="space-y-6">
+                <div className="space-y-6 mt-6">
                   {originalUrl && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
@@ -1848,7 +1848,9 @@ export default function Home() {
                               <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
                                 File Size
                               </div>
-                              <div className="font-black text-gray-600 text-sm">{formatFileSize(processedFileSize || 0)}</div>
+                              <div className="font-black text-gray-600 text-sm">
+                                {formatFileSize(processedFileSize || 0)}
+                              </div>
                             </div>
                           </div>
                           <Button
@@ -1866,7 +1868,7 @@ export default function Home() {
                           >
                             <div className="flex items-center justify-center font-black">
                               <Download className="mr-2 w-4 h-4" />
-                              Download 
+                              Download
                             </div>
                           </Button>
                         </div>
