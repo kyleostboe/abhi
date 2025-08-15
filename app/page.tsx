@@ -1312,7 +1312,7 @@ export default function Home() {
                   transition={{ duration: 0.2 }}
                   className="p-4 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                 >
-                  <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs">
+                  <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs pb-1.5">
                     Create custom meditations by associating instructions with sound cues and placing them on a
                     timeline. Record your voice, add background sounds, and generate your personalized meditation.
                   </p>
