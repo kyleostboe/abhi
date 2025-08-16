@@ -4,7 +4,6 @@ import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
-import { Wand2 } from "lucide-react"
 import type { SpeechRecognition } from "web-speech-api"
 import * as Tone from "tone"
 
@@ -848,7 +847,7 @@ export default function EncoderPage() {
             </div>
           </Card>
 
-          {/* Original Audio Playback */}
+          {/* Audio Player */}
           {originalAudioUrl && (
             <Card className="p-6 mb-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
               <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Original Audio</h3>
@@ -865,18 +864,18 @@ export default function EncoderPage() {
 
           {/* Sound Preview Section */}
           <Card className="p-6 mb-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
-            <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Test Sound Cues</h3>
+            <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Sound Cues Preview</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Click any sound below to preview the improved Tone.js audio quality:
+              Click on any sound to preview it with the new Tone.js implementation:
             </p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {availableSounds.map((sound) => (
                 <button
                   key={sound.id}
                   onClick={() => playSoundPreview(sound.id)}
-                  className="p-4 bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 hover:from-logo-teal-600 hover:to-logo-blue-500 text-white rounded-lg font-semibold transition-all duration-200 transform hover:scale-105"
+                  className="p-4 bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 text-white rounded-lg hover:from-logo-teal-600 hover:to-logo-blue-500 transition-all duration-200 transform hover:scale-105"
                 >
-                  <div className="text-sm font-bold">{sound.name}</div>
+                  <div className="font-semibold">{sound.name}</div>
                   <div className="text-xs opacity-90 mt-1">{sound.description}</div>
                 </button>
               ))}
@@ -895,7 +894,7 @@ export default function EncoderPage() {
               }`}
             >
               <p
-                className={`text-sm font-medium ${
+                className={`${
                   status.type === "error"
                     ? "text-red-800 dark:text-red-200"
                     : status.type === "success"
@@ -907,18 +906,6 @@ export default function EncoderPage() {
               </p>
             </Card>
           )}
-
-          {/* Full Encoder Coming Soon */}
-          <Card className="p-8 space-y-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
-            <div className="text-center space-y-4">
-              <Wand2 className="h-12 w-12 mx-auto text-logo-teal-600 dark:text-logo-teal-400" />
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Full Encoder Coming Soon!</h2>
-              <p className="text-gray-600 dark:text-gray-400">
-                The complete transcription and encoding functionality is under development. For now, enjoy testing the
-                improved sound quality above!
-              </p>
-            </div>
-          </Card>
         </div>
       </div>
     </div>
