@@ -6,6 +6,7 @@ import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Wand2 } from "lucide-react"
 import type { SpeechRecognition } from "web-speech-api"
+import * as Tone from "tone"
 
 interface Instruction {
   id: string
@@ -78,194 +79,178 @@ export default function EncoderPage() {
     }
   }, [])
 
-  const playSoundPreview = (soundId: string) => {
-    const audioCtx = audioContextRef.current
-    if (!audioCtx) return
-    if (audioCtx.state === "suspended") audioCtx.resume()
-
-    const now = audioCtx.currentTime
+  const playSoundPreview = async (soundId: string) => {
+    // Ensure Tone.js is started
+    if (Tone.context.state !== "running") {
+      await Tone.start()
+    }
 
     switch (soundId) {
       case "bell_high": {
-        const oscillator = audioCtx.createOscillator()
-        const gainNode = audioCtx.createGain()
-        oscillator.connect(gainNode)
-        gainNode.connect(audioCtx.destination)
+        // Professional bell sound using Tone.js FMSynth
+        const bell = new Tone.FMSynth({
+          harmonicity: 8,
+          modulationIndex: 25,
+          detune: 0,
+          oscillator: {
+            type: "sine",
+          },
+          envelope: {
+            attack: 0.001,
+            decay: 1.0,
+            sustain: 0.1,
+            release: 1.2,
+          },
+          modulation: {
+            type: "square",
+          },
+          modulationEnvelope: {
+            attack: 0.5,
+            decay: 0.0,
+            sustain: 1,
+            release: 0.5,
+          },
+        }).toDestination()
 
-        oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(880, now) // A5 - more musical
+        // Add reverb for realistic bell resonance
+        const reverb = new Tone.Reverb(2.5).toDestination()
+        bell.connect(reverb)
 
-        // Very gentle attack for pleasant sound
-        gainNode.gain.setValueAtTime(0, now)
-        gainNode.gain.linearRampToValueAtTime(0.08, now + 0.15)
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 4.0)
+        bell.triggerAttackRelease("A5", "2n")
 
-        // Musical harmonics (perfect fifth and octave)
-        const harmonic1 = audioCtx.createOscillator()
-        const harmonic1Gain = audioCtx.createGain()
-        harmonic1.connect(harmonic1Gain)
-        harmonic1Gain.connect(audioCtx.destination)
-        harmonic1.type = "sine"
-        harmonic1.frequency.setValueAtTime(1320, now) // Perfect fifth
-        harmonic1Gain.gain.setValueAtTime(0, now)
-        harmonic1Gain.gain.linearRampToValueAtTime(0.03, now + 0.15)
-        harmonic1Gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.0)
-
-        const harmonic2 = audioCtx.createOscillator()
-        const harmonic2Gain = audioCtx.createGain()
-        harmonic2.connect(harmonic2Gain)
-        harmonic2Gain.connect(audioCtx.destination)
-        harmonic2.type = "sine"
-        harmonic2.frequency.setValueAtTime(1760, now) // Octave
-        harmonic2Gain.gain.setValueAtTime(0, now)
-        harmonic2Gain.gain.linearRampToValueAtTime(0.015, now + 0.15)
-        harmonic2Gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.0)
-
-        oscillator.start(now)
-        oscillator.stop(now + 4.0)
-        harmonic1.start(now)
-        harmonic1.stop(now + 3.0)
-        harmonic2.start(now)
-        harmonic2.stop(now + 2.0)
+        // Clean up after sound finishes
+        setTimeout(() => {
+          bell.dispose()
+          reverb.dispose()
+        }, 3000)
         break
       }
       case "bell_mid": {
-        const oscillator = audioCtx.createOscillator()
-        const gainNode = audioCtx.createGain()
-        oscillator.connect(gainNode)
-        gainNode.connect(audioCtx.destination)
+        const bell = new Tone.FMSynth({
+          harmonicity: 6,
+          modulationIndex: 20,
+          detune: 0,
+          oscillator: {
+            type: "sine",
+          },
+          envelope: {
+            attack: 0.001,
+            decay: 1.2,
+            sustain: 0.1,
+            release: 1.5,
+          },
+          modulation: {
+            type: "square",
+          },
+          modulationEnvelope: {
+            attack: 0.6,
+            decay: 0.0,
+            sustain: 1,
+            release: 0.6,
+          },
+        }).toDestination()
 
-        oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(523, now) // C5 - musical note
+        const reverb = new Tone.Reverb(2.0).toDestination()
+        bell.connect(reverb)
 
-        gainNode.gain.setValueAtTime(0, now)
-        gainNode.gain.linearRampToValueAtTime(0.1, now + 0.2)
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 5.0)
+        bell.triggerAttackRelease("C5", "2n")
 
-        // Musical harmonic (perfect fifth)
-        const harmonic1 = audioCtx.createOscillator()
-        const harmonic1Gain = audioCtx.createGain()
-        harmonic1.connect(harmonic1Gain)
-        harmonic1Gain.connect(audioCtx.destination)
-        harmonic1.type = "sine"
-        harmonic1.frequency.setValueAtTime(784, now) // Perfect fifth
-        harmonic1Gain.gain.setValueAtTime(0, now)
-        harmonic1Gain.gain.linearRampToValueAtTime(0.04, now + 0.2)
-        harmonic1Gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.5)
-
-        oscillator.start(now)
-        oscillator.stop(now + 5.0)
-        harmonic1.start(now)
-        harmonic1.stop(now + 3.5)
+        setTimeout(() => {
+          bell.dispose()
+          reverb.dispose()
+        }, 3500)
         break
       }
       case "chime_soft": {
-        const oscillator = audioCtx.createOscillator()
-        const gainNode = audioCtx.createGain()
-        oscillator.connect(gainNode)
-        gainNode.connect(audioCtx.destination)
+        // Soft chime using Tone.js MetalSynth
+        const chime = new Tone.MetalSynth({
+          frequency: 200,
+          envelope: {
+            attack: 0.001,
+            decay: 1.4,
+            release: 0.2,
+          },
+          harmonicity: 5.1,
+          modulationIndex: 32,
+          resonance: 4000,
+          octaves: 1.5,
+        }).toDestination()
 
-        oscillator.type = "triangle"
-        oscillator.frequency.setValueAtTime(1047, now) // C6 - musical
+        const reverb = new Tone.Reverb(1.5).toDestination()
+        chime.connect(reverb)
 
-        gainNode.gain.setValueAtTime(0, now)
-        gainNode.gain.linearRampToValueAtTime(0.06, now + 0.1)
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 3.5)
+        chime.triggerAttackRelease("C6", "1n")
 
-        // Gentle shimmer
-        const lfo = audioCtx.createOscillator()
-        const lfoGain = audioCtx.createGain()
-        lfo.connect(lfoGain)
-        lfoGain.connect(oscillator.frequency)
-        lfo.type = "sine"
-        lfo.frequency.setValueAtTime(2, now) // Slower shimmer
-        lfoGain.gain.setValueAtTime(4, now) // Gentler modulation
-
-        // Soft harmonic
-        const harmonic = audioCtx.createOscillator()
-        const harmonicGain = audioCtx.createGain()
-        harmonic.connect(harmonicGain)
-        harmonicGain.connect(audioCtx.destination)
-        harmonic.type = "sine"
-        harmonic.frequency.setValueAtTime(2094, now) // Octave
-        harmonicGain.gain.setValueAtTime(0, now)
-        harmonicGain.gain.linearRampToValueAtTime(0.02, now + 0.1)
-        harmonicGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.5)
-
-        oscillator.start(now)
-        oscillator.stop(now + 3.5)
-        lfo.start(now)
-        lfo.stop(now + 3.5)
-        harmonic.start(now)
-        harmonic.stop(now + 2.5)
+        setTimeout(() => {
+          chime.dispose()
+          reverb.dispose()
+        }, 2500)
         break
       }
       case "tone_short_low": {
-        const oscillator = audioCtx.createOscillator()
-        const gainNode = audioCtx.createGain()
-        oscillator.connect(gainNode)
-        gainNode.connect(audioCtx.destination)
+        // Pleasant low tone using Tone.js Synth
+        const synth = new Tone.Synth({
+          oscillator: {
+            type: "sine",
+          },
+          envelope: {
+            attack: 0.05,
+            decay: 0.1,
+            sustain: 0.3,
+            release: 0.8,
+          },
+        }).toDestination()
 
-        oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(261, now) // C4 - musical
+        synth.triggerAttackRelease("C4", "4n")
 
-        gainNode.gain.setValueAtTime(0, now)
-        gainNode.gain.linearRampToValueAtTime(0.08, now + 0.08)
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 1.2)
-
-        oscillator.start(now)
-        oscillator.stop(now + 1.2)
+        setTimeout(() => {
+          synth.dispose()
+        }, 1500)
         break
       }
       case "tone_short_high": {
-        const oscillator = audioCtx.createOscillator()
-        const gainNode = audioCtx.createGain()
-        oscillator.connect(gainNode)
-        gainNode.connect(audioCtx.destination)
+        const synth = new Tone.Synth({
+          oscillator: {
+            type: "sine",
+          },
+          envelope: {
+            attack: 0.05,
+            decay: 0.1,
+            sustain: 0.3,
+            release: 0.6,
+          },
+        }).toDestination()
 
-        oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(1047, now) // C6 - musical
+        synth.triggerAttackRelease("C6", "8n")
 
-        gainNode.gain.setValueAtTime(0, now)
-        gainNode.gain.linearRampToValueAtTime(0.06, now + 0.06)
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 1.0)
-
-        oscillator.start(now)
-        oscillator.stop(now + 1.0)
+        setTimeout(() => {
+          synth.dispose()
+        }, 1200)
         break
       }
       case "wood_block": {
-        const bufferSize = Math.floor(audioCtx.sampleRate * 0.12)
-        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate)
-        const data = noiseBuffer.getChannelData(0)
+        // Realistic wood block using Tone.js NoiseSynth
+        const woodBlock = new Tone.NoiseSynth({
+          noise: {
+            type: "brown",
+          },
+          envelope: {
+            attack: 0.001,
+            decay: 0.13,
+            sustain: 0,
+          },
+        }).toDestination()
 
-        // Generate more realistic wood percussion
-        for (let i = 0; i < bufferSize; i++) {
-          const decay = Math.exp(-i / (bufferSize * 0.06))
-          const resonance = Math.sin(i * 0.02) * 0.3 + 0.7 // Add wood resonance
-          data[i] = (Math.random() * 2 - 1) * decay * resonance * 0.8
-        }
+        // Add filtering for wood-like resonance
+        const filter = new Tone.Filter(800, "bandpass").toDestination()
+        woodBlock.connect(filter)
 
-        const noiseSource = audioCtx.createBufferSource()
-        const filter = audioCtx.createBiquadFilter()
-        const gainNode = audioCtx.createGain()
+        woodBlock.triggerAttackRelease("16n")
 
-        noiseSource.buffer = noiseBuffer
-        noiseSource.connect(filter)
-        filter.connect(gainNode)
-        gainNode.connect(audioCtx.destination)
-
-        // Better wood filtering
-        filter.type = "bandpass"
-        filter.frequency.setValueAtTime(600, now)
-        filter.Q.setValueAtTime(2, now)
-
-        gainNode.gain.setValueAtTime(0, now)
-        gainNode.gain.linearRampToValueAtTime(0.12, now + 0.003)
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.12)
-
-        noiseSource.start(now)
-        noiseSource.stop(now + 0.12)
+        setTimeout(() => {
+          woodBlock.dispose()
+          filter.dispose()
+        }, 500)
         break
       }
       default:
@@ -548,100 +533,96 @@ export default function EncoderPage() {
     startTime: number,
     volumeMultiplier: number,
   ): Promise<void> => {
-    const baseVolume = 0.2 * volumeMultiplier
+    const baseVolume = 0.15 * volumeMultiplier
 
     switch (soundId) {
       case "bell_high": {
-        const oscillator = offlineCtx.createOscillator()
-        const gainNode = offlineCtx.createGain()
+        // FM synthesis inspired by Tone.js FMSynth
+        const carrier = offlineCtx.createOscillator()
+        const modulator = offlineCtx.createOscillator()
+        const modulatorGain = offlineCtx.createGain()
+        const carrierGain = offlineCtx.createGain()
 
-        oscillator.connect(gainNode)
-        gainNode.connect(offlineCtx.destination)
+        modulator.connect(modulatorGain)
+        modulatorGain.connect(carrier.frequency)
+        carrier.connect(carrierGain)
+        carrierGain.connect(offlineCtx.destination)
 
-        oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(880, startTime)
+        carrier.type = "sine"
+        modulator.type = "square"
+        carrier.frequency.setValueAtTime(880, startTime) // A5
+        modulator.frequency.setValueAtTime(880 * 8, startTime) // Harmonicity: 8
+        modulatorGain.gain.setValueAtTime(880 * 25, startTime) // Modulation index: 25
 
-        gainNode.gain.setValueAtTime(0, startTime)
-        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.15)
-        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 4.0)
+        // Professional envelope
+        carrierGain.gain.setValueAtTime(0, startTime)
+        carrierGain.gain.linearRampToValueAtTime(baseVolume, startTime + 0.001)
+        carrierGain.gain.exponentialRampToValueAtTime(baseVolume * 0.1, startTime + 1.0)
+        carrierGain.gain.exponentialRampToValueAtTime(0.001, startTime + 2.2)
 
-        // Musical harmonics
-        const harmonic1 = offlineCtx.createOscillator()
-        const harmonic1Gain = offlineCtx.createGain()
-        harmonic1.connect(harmonic1Gain)
-        harmonic1Gain.connect(offlineCtx.destination)
-        harmonic1.type = "sine"
-        harmonic1.frequency.setValueAtTime(1320, startTime)
-        harmonic1Gain.gain.setValueAtTime(0, startTime)
-        harmonic1Gain.gain.linearRampToValueAtTime(baseVolume * 0.3, startTime + 0.15)
-        harmonic1Gain.gain.exponentialRampToValueAtTime(0.001, startTime + 3.0)
-
-        oscillator.start(startTime)
-        oscillator.stop(startTime + 4.0)
-        harmonic1.start(startTime)
-        harmonic1.stop(startTime + 3.0)
+        carrier.start(startTime)
+        modulator.start(startTime)
+        carrier.stop(startTime + 2.2)
+        modulator.stop(startTime + 2.2)
         break
       }
 
       case "bell_mid": {
-        const oscillator = offlineCtx.createOscillator()
-        const gainNode = offlineCtx.createGain()
+        const carrier = offlineCtx.createOscillator()
+        const modulator = offlineCtx.createOscillator()
+        const modulatorGain = offlineCtx.createGain()
+        const carrierGain = offlineCtx.createGain()
 
-        oscillator.connect(gainNode)
-        gainNode.connect(offlineCtx.destination)
+        modulator.connect(modulatorGain)
+        modulatorGain.connect(carrier.frequency)
+        carrier.connect(carrierGain)
+        carrierGain.connect(offlineCtx.destination)
 
-        oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(523, startTime)
+        carrier.type = "sine"
+        modulator.type = "square"
+        carrier.frequency.setValueAtTime(523, startTime) // C5
+        modulator.frequency.setValueAtTime(523 * 6, startTime)
+        modulatorGain.gain.setValueAtTime(523 * 20, startTime)
 
-        gainNode.gain.setValueAtTime(0, startTime)
-        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.2)
-        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 5.0)
+        carrierGain.gain.setValueAtTime(0, startTime)
+        carrierGain.gain.linearRampToValueAtTime(baseVolume, startTime + 0.001)
+        carrierGain.gain.exponentialRampToValueAtTime(baseVolume * 0.1, startTime + 1.2)
+        carrierGain.gain.exponentialRampToValueAtTime(0.001, startTime + 2.7)
 
-        // Musical harmonic
-        const harmonic1 = offlineCtx.createOscillator()
-        const harmonic1Gain = offlineCtx.createGain()
-        harmonic1.connect(harmonic1Gain)
-        harmonic1Gain.connect(offlineCtx.destination)
-        harmonic1.type = "sine"
-        harmonic1.frequency.setValueAtTime(784, startTime)
-        harmonic1Gain.gain.setValueAtTime(0, startTime)
-        harmonic1Gain.gain.linearRampToValueAtTime(baseVolume * 0.4, startTime + 0.2)
-        harmonic1Gain.gain.exponentialRampToValueAtTime(0.001, startTime + 3.5)
-
-        oscillator.start(startTime)
-        oscillator.stop(startTime + 5.0)
-        harmonic1.start(startTime)
-        harmonic1.stop(startTime + 3.5)
+        carrier.start(startTime)
+        modulator.start(startTime)
+        carrier.stop(startTime + 2.7)
+        modulator.stop(startTime + 2.7)
         break
       }
 
       case "chime_soft": {
-        const oscillator = offlineCtx.createOscillator()
-        const gainNode = offlineCtx.createGain()
+        // Metal synthesis inspired by Tone.js MetalSynth
+        const oscillators = []
+        const gains = []
+        const frequencies = [1047, 1047 * 5.1, 1047 * 5.1 * 1.5] // Harmonics
 
-        oscillator.connect(gainNode)
-        gainNode.connect(offlineCtx.destination)
+        for (let i = 0; i < frequencies.length; i++) {
+          const osc = offlineCtx.createOscillator()
+          const gain = offlineCtx.createGain()
 
-        oscillator.type = "triangle"
-        oscillator.frequency.setValueAtTime(1047, startTime)
+          osc.connect(gain)
+          gain.connect(offlineCtx.destination)
 
-        gainNode.gain.setValueAtTime(0, startTime)
-        gainNode.gain.linearRampToValueAtTime(baseVolume * 0.8, startTime + 0.1)
-        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 3.5)
+          osc.type = "sine"
+          osc.frequency.setValueAtTime(frequencies[i], startTime)
 
-        // Gentle shimmer
-        const lfo = offlineCtx.createOscillator()
-        const lfoGain = offlineCtx.createGain()
-        lfo.connect(lfoGain)
-        lfoGain.connect(oscillator.frequency)
-        lfo.type = "sine"
-        lfo.frequency.setValueAtTime(2, startTime)
-        lfoGain.gain.setValueAtTime(4, startTime)
+          const volume = baseVolume * (1 / (i + 1)) // Decreasing harmonics
+          gain.gain.setValueAtTime(0, startTime)
+          gain.gain.linearRampToValueAtTime(volume, startTime + 0.001)
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 1.4)
 
-        oscillator.start(startTime)
-        oscillator.stop(startTime + 3.5)
-        lfo.start(startTime)
-        lfo.stop(startTime + 3.5)
+          osc.start(startTime)
+          osc.stop(startTime + 1.4)
+
+          oscillators.push(osc)
+          gains.push(gain)
+        }
         break
       }
 
@@ -653,14 +634,16 @@ export default function EncoderPage() {
         gainNode.connect(offlineCtx.destination)
 
         oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(261, startTime)
+        oscillator.frequency.setValueAtTime(261, startTime) // C4
 
+        // Tone.js-inspired envelope
         gainNode.gain.setValueAtTime(0, startTime)
-        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.08)
-        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 1.2)
+        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.05)
+        gainNode.gain.exponentialRampToValueAtTime(baseVolume * 0.3, startTime + 0.15)
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.95)
 
         oscillator.start(startTime)
-        oscillator.stop(startTime + 1.2)
+        oscillator.stop(startTime + 0.95)
         break
       }
 
@@ -672,27 +655,31 @@ export default function EncoderPage() {
         gainNode.connect(offlineCtx.destination)
 
         oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(1047, startTime)
+        oscillator.frequency.setValueAtTime(1047, startTime) // C6
 
         gainNode.gain.setValueAtTime(0, startTime)
-        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.06)
-        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 1.0)
+        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.05)
+        gainNode.gain.exponentialRampToValueAtTime(baseVolume * 0.3, startTime + 0.1)
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.7)
 
         oscillator.start(startTime)
-        oscillator.stop(startTime + 1.0)
+        oscillator.stop(startTime + 0.7)
         break
       }
 
       case "wood_block": {
-        const bufferSize = Math.floor(offlineCtx.sampleRate * 0.12)
+        // Noise synthesis inspired by Tone.js NoiseSynth
+        const bufferSize = Math.floor(offlineCtx.sampleRate * 0.13)
         const noiseBuffer = offlineCtx.createBuffer(1, bufferSize, offlineCtx.sampleRate)
         const data = noiseBuffer.getChannelData(0)
 
-        // Generate more realistic wood percussion
+        // Brown noise for more realistic wood sound
+        let lastOut = 0
         for (let i = 0; i < bufferSize; i++) {
-          const decay = Math.exp(-i / (bufferSize * 0.06))
-          const resonance = Math.sin(i * 0.02) * 0.3 + 0.7
-          data[i] = (Math.random() * 2 - 1) * decay * resonance * 0.8
+          const white = Math.random() * 2 - 1
+          const brown = (lastOut + 0.02 * white) / 1.02
+          lastOut = brown
+          data[i] = brown * 3.5 // Amplify brown noise
         }
 
         const noiseSource = offlineCtx.createBufferSource()
@@ -704,13 +691,15 @@ export default function EncoderPage() {
         filter.connect(gainNode)
         gainNode.connect(offlineCtx.destination)
 
+        // Tone.js-inspired filtering
         filter.type = "bandpass"
-        filter.frequency.setValueAtTime(600, startTime)
-        filter.Q.setValueAtTime(2, startTime)
+        filter.frequency.setValueAtTime(800, startTime)
+        filter.Q.setValueAtTime(3, startTime)
 
+        // Sharp attack, quick decay like Tone.js NoiseSynth
         gainNode.gain.setValueAtTime(0, startTime)
-        gainNode.gain.linearRampToValueAtTime(baseVolume * 0.9, startTime + 0.003)
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.12)
+        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.001)
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.13)
 
         noiseSource.start(startTime)
         break
