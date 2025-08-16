@@ -410,73 +410,53 @@ export const SOUND_CUES_LIBRARY: SoundCue[] = [
     id: "singing_bowl",
     name: "Singing Bowl",
     src: "synthetic:singing_bowl",
-    note: "A4",
-    duration: 4000,
+    frequency: 432,
+    duration: 2500, // Total sound length in ms
     waveform: "sine",
-    harmonics: [
-      { ratio: 2, amplitude: 0.4, decay: 3.0 },
-      { ratio: 3, amplitude: 0.25, decay: 2.7 },
-      { ratio: 4.2, amplitude: 0.15, decay: 2.4 },
-    ],
-    attackDuration: 0.05,
-    releaseDuration: 3.0,
+    harmonics: [864, 1296, 1728], // More harmonics for richness
+    attackDuration: 0.1, // 100ms attack
+    releaseDuration: 2.0, // 2000ms release
   },
   {
     id: "gentle_chime",
     name: "Gentle Chime",
     src: "synthetic:chime_gentle",
-    note: "E6",
-    duration: 1000,
-    waveform: "triangle",
-    harmonics: [
-      { ratio: 2, amplitude: 0.5, decay: 0.7 },
-      { ratio: 3, amplitude: 0.3, decay: 0.6 },
-      { ratio: 4.1, amplitude: 0.15, decay: 0.5 },
-    ],
-    attackDuration: 0.01,
-    releaseDuration: 0.8,
+    frequency: 1200, // Higher pitch
+    duration: 700, // Total sound length in ms
+    waveform: "triangle", // Softer than square, sharper than sine
+    attackDuration: 0.01, // 10ms attack
+    releaseDuration: 0.5, // 500ms release
   },
   {
     id: "soft_gong",
     name: "Soft Gong",
     src: "synthetic:soft_gong",
-    note: "F3",
-    duration: 4500,
+    frequency: 180, // Lower, deeper tone
+    duration: 3000, // Total sound length in ms
     waveform: "sine",
-    harmonics: [
-      { ratio: 1.5, amplitude: 0.5, decay: 3.5 },
-      { ratio: 2, amplitude: 0.3, decay: 3.0 },
-      { ratio: 2.7, amplitude: 0.2, decay: 2.6 },
-    ],
-    attackDuration: 0.3,
-    releaseDuration: 3.5,
+    harmonics: [360, 540, 720], // For depth
+    attackDuration: 0.2, // 200ms attack
+    releaseDuration: 2.5, // 2500ms release
   },
   {
     id: "short_bell",
     name: "Short Bell",
     src: "synthetic:short_bell",
-    note: "G6",
-    duration: 600,
-    waveform: "square",
-    harmonics: [
-      { ratio: 2, amplitude: 0.6, decay: 0.25 },
-      { ratio: 3, amplitude: 0.3, decay: 0.2 },
-      { ratio: 4.5, amplitude: 0.1, decay: 0.15 },
-    ],
-    attackDuration: 0.005,
-    releaseDuration: 0.3,
+    frequency: 1500, // High, clear ring
+    duration: 500, // Total sound length in ms
+    waveform: "square", // Sharper, more metallic
+    attackDuration: 0.005, // 5ms attack
+    releaseDuration: 0.2, // 200ms release
   },
   {
     id: "clear_tone",
     name: "Clear Tone",
     src: "synthetic:clear_tone",
-    note: "C5",
-    duration: 1500,
+    frequency: 528,
+    duration: 1500, // Total sound length in ms
     waveform: "sine",
-    harmonics: [{ ratio: 2, amplitude: 0.2, decay: 1.1 }],
-    fm: { modRatio: 2, modIndex: 3 },
-    attackDuration: 0.02,
-    releaseDuration: 1.2,
+    attackDuration: 0.05, // 50ms attack
+    releaseDuration: 1.0, // 1000ms release
   },
 ]
 
@@ -545,13 +525,6 @@ export const NOTE_FREQUENCIES = {
   G5: 783.99,
   A5: 880.0,
   B5: 987.77,
-  C6: 1046.5,
-  D6: 1174.66,
-  E6: 1318.51,
-  F6: 1396.91,
-  G6: 1567.98,
-  A6: 1760.0,
-  B6: 1975.53,
 }
 
 // Musical meditation notes grouped into pleasant octaves
@@ -587,11 +560,7 @@ export async function generateSyntheticSound(
     }
 
     const totalSoundDurationSeconds = (soundCue.duration || 1000) / 1000 // Convert to seconds
-    const frequency =
-      soundCue.frequency ||
-      (soundCue.note
-        ? NOTE_FREQUENCIES[soundCue.note as keyof typeof NOTE_FREQUENCIES]
-        : 440)
+    const frequency = soundCue.frequency || 440
     const waveform = soundCue.waveform || "sine"
     const attackDuration = soundCue.attackDuration || 0.01 // Default 10ms
     const releaseDuration = soundCue.releaseDuration || 0.5 // Default 500ms
@@ -599,23 +568,6 @@ export async function generateSyntheticSound(
     // Create oscillator
     const oscillator = audioContext.createOscillator()
     const gainNode = audioContext.createGain()
-
-    // FM synthesis support
-    if (soundCue.fm) {
-      const modOsc = audioContext.createOscillator()
-      const modGain = audioContext.createGain()
-      modOsc.frequency.setValueAtTime(
-        frequency * soundCue.fm.modRatio,
-        audioContext.currentTime,
-      )
-      modGain.gain.setValueAtTime(
-        soundCue.fm.modIndex * frequency,
-        audioContext.currentTime,
-      )
-      modOsc.connect(modGain).connect(oscillator.frequency)
-      modOsc.start()
-      modOsc.stop(audioContext.currentTime + totalSoundDurationSeconds)
-    }
 
     // Connect nodes
     oscillator.connect(gainNode)
@@ -655,7 +607,7 @@ export async function generateSyntheticSound(
 
     // Add harmonics if specified
     if (soundCue.harmonics) {
-      soundCue.harmonics.forEach((h) => {
+      soundCue.harmonics.forEach((harmonic, index) => {
         const harmonicOsc = audioContext.createOscillator()
         const harmonicGain = audioContext.createGain()
 
@@ -663,22 +615,26 @@ export async function generateSyntheticSound(
         harmonicGain.connect(audioContext.destination) // Connect to the provided audioContext's destination
 
         harmonicOsc.type = waveform
-        harmonicOsc.frequency.setValueAtTime(
-          frequency * h.ratio,
-          audioContext.currentTime,
-        )
+        harmonicOsc.frequency.setValueAtTime(harmonic, audioContext.currentTime)
 
-        const harmonicVolume = peakVolume * h.amplitude
+        // Harmonics are quieter and follow a similar envelope
+        const harmonicVolume = (peakVolume * 0.2) / (index + 1) // Reduce volume for higher harmonics
 
         harmonicGain.gain.setValueAtTime(0, now)
-        harmonicGain.gain.linearRampToValueAtTime(
-          harmonicVolume,
-          now + attackDuration,
-        )
-        harmonicGain.gain.exponentialRampToValueAtTime(endVolume, now + h.decay)
+        harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, now + attackDuration)
+
+        if (releaseStart > sustainStart) {
+          harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, releaseStart)
+        } else {
+          harmonicGain.gain.linearRampToValueAtTime(
+            harmonicVolume,
+            Math.max(now + attackDuration, now + totalSoundDurationSeconds - releaseDuration),
+          )
+        }
+        harmonicGain.gain.exponentialRampToValueAtTime(endVolume, now + totalSoundDurationSeconds)
 
         harmonicOsc.start(now)
-        harmonicOsc.stop(now + h.decay)
+        harmonicOsc.stop(now + totalSoundDurationSeconds)
       })
     }
 

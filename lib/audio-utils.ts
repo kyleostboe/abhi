@@ -34,32 +34,7 @@ export const getAudioContext = (): AudioContext => {
   return audioContext
 }
 
-export interface PlayNoteOptions {
-  duration?: number
-  volume?: number
-  waveform?: OscillatorType
-  harmonics?: boolean
-  lowPassCutoff?: number
-  adsr?: {
-    attack?: number
-    decay?: number
-    sustain?: number
-    release?: number
-  }
-}
-
-export const playNote = async (
-  note: string,
-  octave: number,
-  {
-    duration = 0.8,
-    volume = 0.7,
-    waveform = "sine",
-    harmonics = false,
-    lowPassCutoff,
-    adsr = {},
-  }: PlayNoteOptions = {},
-) => {
+export const playNote = async (note: string, octave: number, duration = 0.8, volume = 0.7) => {
   const context = getAudioContext() // Get the shared AudioContext
   if (!context) {
     console.warn("AudioContext not available.")
@@ -76,6 +51,9 @@ export const playNote = async (
     }
   }
 
+  const oscillator = context.createOscillator()
+  const gainNode = context.createGain()
+
   // Calculate frequency based on note and octave
   const noteKey = `${note}${octave}` as keyof typeof NOTE_FREQUENCIES
   const frequency = NOTE_FREQUENCIES[noteKey]
@@ -85,63 +63,20 @@ export const playNote = async (
     return
   }
 
+  oscillator.type = "sine" // You can change this to 'square', 'sawtooth', 'triangle'
+  oscillator.frequency.setValueAtTime(frequency, context.currentTime)
+
+  // Gentle envelope for smooth, meditation-friendly tones
   const now = context.currentTime
-  const normalizedVolume = Math.min(volume * Math.pow(440 / frequency, 0.05), 1)
+  gainNode.gain.setValueAtTime(0, now)
+  gainNode.gain.exponentialRampToValueAtTime(volume, now + 0.05) // Gentle attack
+  gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration) // Smooth release
 
-  const gainNode = context.createGain()
-  let finalNode: AudioNode = context.destination
+  oscillator.connect(gainNode)
+  gainNode.connect(context.destination)
 
-  if (lowPassCutoff) {
-    const filter = context.createBiquadFilter()
-    filter.type = "lowpass"
-    filter.frequency.setValueAtTime(lowPassCutoff, now)
-    filter.connect(context.destination)
-    finalNode = filter
-  }
-
-  gainNode.connect(finalNode)
-
-  const oscillators: OscillatorNode[] = []
-  const fundamentalOsc = context.createOscillator()
-  fundamentalOsc.type = waveform
-  fundamentalOsc.frequency.setValueAtTime(frequency, now)
-  const fundamentalGain = context.createGain()
-  fundamentalGain.gain.value = harmonics ? 0.7 : 1
-  fundamentalOsc.connect(fundamentalGain).connect(gainNode)
-  oscillators.push(fundamentalOsc)
-
-  if (harmonics) {
-    const harmonicPartials = [
-      { multiple: 2, gain: 0.2 },
-      { multiple: 3, gain: 0.1 },
-    ]
-    harmonicPartials.forEach(({ multiple, gain }) => {
-      const osc = context.createOscillator()
-      osc.type = waveform
-      osc.frequency.setValueAtTime(frequency * multiple, now)
-      const g = context.createGain()
-      g.gain.value = gain
-      osc.connect(g).connect(gainNode)
-      oscillators.push(osc)
-    })
-  }
-
-  const attack = adsr.attack ?? 0.1
-  const decay = adsr.decay ?? 0.2
-  const sustainLevel = adsr.sustain ?? 0.7
-  const release = adsr.release ?? 0.3
-  const attackEnd = now + attack
-  const decayEnd = attackEnd + decay
-  const releaseStart = Math.max(now + duration - release, decayEnd)
-
-  gainNode.gain.setValueAtTime(0.0001, now)
-  gainNode.gain.linearRampToValueAtTime(normalizedVolume, attackEnd)
-  gainNode.gain.linearRampToValueAtTime(normalizedVolume * sustainLevel, decayEnd)
-  gainNode.gain.setValueAtTime(normalizedVolume * sustainLevel, releaseStart)
-  gainNode.gain.linearRampToValueAtTime(0.0001, releaseStart + release)
-
-  oscillators.forEach((osc) => osc.start(now))
-  oscillators.forEach((osc) => osc.stop(releaseStart + release))
+  oscillator.start(now)
+  oscillator.stop(now + duration)
 }
 
 export const bufferToWav = async (
