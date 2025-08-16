@@ -10,6 +10,255 @@ export interface SoundCue extends ImportedSoundCue {
   // Additional properties can be added here if needed
 }
 
+export async function startAudio() {
+  await Tone.start()
+  // build reverb IRs once so first notes aren't dry
+  await Promise.all([verbLong.generate(), verbShort.generate()])
+  Tone.getDestination().volume.value = -8 // headroom
+}
+
+const bus = new Tone.Gain().toDestination()
+const verbLong = new Tone.Reverb({ decay: 3.2, preDelay: 0.01, wet: 0.28 }).connect(bus)
+const verbShort = new Tone.Reverb({ decay: 1.2, preDelay: 0.0, wet: 0.2 }).connect(bus)
+const T = () => Tone.now()
+
+export const NOTES = [
+  "C4",
+  "D4",
+  "E4",
+  "F4",
+  "G4",
+  "A4",
+  "B4",
+  "C5",
+  "D5",
+  "E5",
+  "F5",
+  "G5",
+  "A5",
+  "B5",
+  "C6",
+  "D6",
+  "E6",
+  "F6",
+  "G6",
+  "A6",
+]
+
+const noteSynth = new Tone.PolySynth(Tone.Synth, {
+  oscillator: { type: "sine" },
+  envelope: { attack: 0.005, decay: 0.15, sustain: 0.15, release: 0.2 },
+}).connect(verbShort)
+noteSynth.maxPolyphony = 8
+noteSynth.volume.value = -6
+
+export function playNote(noteOrIndex: string | number, dur = 0.5, vel = 0.9) {
+  const note = typeof noteOrIndex === "number" ? NOTES[noteOrIndex % NOTES.length] : noteOrIndex
+  noteSynth.triggerAttackRelease(note, dur, T(), vel)
+}
+
+// Bells / gongs (MetalSynth voices inside PolySynth)
+const bellPoly = new Tone.PolySynth(Tone.MetalSynth, {
+  harmonicity: 5.1,
+  modulationIndex: 32,
+  resonance: 800,
+  octaves: 1.5,
+  envelope: { attack: 0.001, decay: 1.2, release: 0.2 },
+}).connect(verbLong)
+bellPoly.maxPolyphony = 6
+bellPoly.volume.value = -4
+
+const softBell = new Tone.PolySynth(Tone.MetalSynth, {
+  harmonicity: 8,
+  modulationIndex: 20,
+  resonance: 1200,
+  octaves: 1.2,
+  envelope: { attack: 0.002, decay: 1.6, release: 0.4 },
+}).connect(verbLong)
+softBell.maxPolyphony = 4
+softBell.volume.value = -6
+
+const gong = new Tone.PolySynth(Tone.MetalSynth, {
+  harmonicity: 2.5,
+  modulationIndex: 10,
+  resonance: 500,
+  octaves: 0.8,
+  envelope: { attack: 0.003, decay: 2.4, release: 0.8 },
+}).connect(verbLong)
+gong.maxPolyphony = 3
+gong.volume.value = -6
+
+// Wood / perc
+const wood = new Tone.MembraneSynth({
+  pitchDecay: 0.002,
+  octaves: 2,
+  oscillator: { type: "sine" },
+  envelope: { attack: 0.001, decay: 0.08, sustain: 0.0, release: 0.02 },
+}).connect(bus)
+wood.volume.value = -8
+
+const rimNoise = new Tone.NoiseSynth({
+  noise: { type: "white" },
+  envelope: { attack: 0.001, decay: 0.03, sustain: 0, release: 0.02 },
+})
+const rimFilter = new Tone.Filter({ type: "bandpass", frequency: 2500, Q: 8 }).connect(bus)
+rimNoise.connect(rimFilter)
+
+// Air / nature
+const pink = new Tone.Noise("pink")
+const pinkEnv = new Tone.AmplitudeEnvelope({
+  attack: 0.08,
+  decay: 0.15,
+  sustain: 0.6,
+  release: 0.25,
+}).connect(bus)
+pink.connect(pinkEnv)
+
+const whooshFilter = new Tone.Filter({ type: "lowpass", frequency: 300, Q: 0 }).connect(verbShort)
+const whooshEnv = new Tone.AmplitudeEnvelope({
+  attack: 0.05,
+  decay: 0.1,
+  sustain: 0.7,
+  release: 0.3,
+}).connect(whooshFilter)
+const whooshNoise = new Tone.Noise("pink").connect(whooshEnv)
+
+const drop = new Tone.MembraneSynth({
+  pitchDecay: 0.02,
+  octaves: 6,
+  oscillator: { type: "sine" },
+  envelope: { attack: 0.001, decay: 0.35, sustain: 0, release: 0.12 },
+}).connect(verbShort)
+drop.volume.value = -10
+
+// helper
+function bellHit(engine: any, notes: string[], dur = "8n", vel = 0.9, time = T()) {
+  engine.triggerAttackRelease(notes, dur, time, vel)
+}
+
+export const SOUNDS = [
+  "Bright handbell",
+  "Low bowl bell",
+  "Soft temple bell",
+  "High chime",
+  "Chime double",
+  "Chime triple up",
+  "Chime triple down",
+  "Fifth-dyad bell",
+  "Octave bell",
+  "Shimmer arpeggio",
+  "Tam-tam soft",
+  "Wind gong",
+  "Nipple gong",
+  "Opera gong",
+  "Woodblock tok",
+  "Bamboo click",
+  "Rim knock",
+  "Pink swell",
+  "Whoosh",
+  "Water drop",
+]
+
+export function playSound(name: string) {
+  const t = T()
+  switch (name) {
+    // ——— BELLS & CHIMES ———
+    case "Bright handbell":
+      bellHit(bellPoly, ["E5"], "4n", 0.9, t)
+      break
+    case "Low bowl bell":
+      bellHit(bellPoly, ["A3"], "2n", 0.85, t)
+      break
+    case "Soft temple bell":
+      bellHit(softBell, ["D5"], "4n", 0.85, t)
+      break
+    case "High chime":
+      bellHit(bellPoly, ["C6"], "8n", 0.85, t)
+      break
+    case "Chime double":
+      bellHit(bellPoly, ["G5"], "8n", 0.8, t)
+      bellHit(bellPoly, ["G5"], "8n", 0.8, t + 0.6)
+      break
+    case "Chime triple up": {
+      ;["C5", "D5", "E5"].forEach((n, i) => bellHit(bellPoly, [n], "8n", 0.8, t + i * 0.35))
+      break
+    }
+    case "Chime triple down": {
+      ;["E5", "D5", "C5"].forEach((n, i) => bellHit(bellPoly, [n], "8n", 0.8, t + i * 0.35))
+      break
+    }
+    case "Fifth-dyad bell":
+      bellHit(bellPoly, ["C4", "G4"], "2n", 0.85, t)
+      break
+    case "Octave bell":
+      bellHit(bellPoly, ["A4", "A5"], "2n", 0.85, t)
+      break
+    case "Shimmer arpeggio": {
+      ;["A4", "B4", "D5", "E5"].forEach((n, i) => bellHit(softBell, [n], "8n", 0.75, t + i * 0.25))
+      break
+    }
+
+    // ——— GONGS ———
+    case "Tam-tam soft":
+      bellHit(gong, ["D3"], "2n", 0.8, t)
+      break
+    case "Wind gong":
+      whoosh()
+      bellHit(gong, ["A2"], "2n", 0.6, t + 0.05)
+      break
+    case "Nipple gong":
+      bellHit(gong, ["D4"], "2n", 0.85, t)
+      break
+    case "Opera gong":
+      bellHit(gong, ["G4"], "4n", 0.8, t)
+      break
+
+    // ——— WOOD ———
+    case "Woodblock tok":
+      wood.triggerAttackRelease("G5", 0.06, t, 0.8)
+      break
+    case "Bamboo click":
+      wood.triggerAttackRelease("E5", 0.05, t, 0.65)
+      wood.triggerAttackRelease("E5", 0.05, t + 0.28, 0.6)
+      break
+    case "Rim knock":
+      rimNoise.triggerAttackRelease(0.05, t)
+      break
+
+    // ——— AIR / NATURE ———
+    case "Pink swell":
+      pinkSwell(0.9)
+      break
+    case "Whoosh":
+      whoosh()
+      break
+    case "Water drop":
+      drop.triggerAttackRelease("C6", "16n", t, 0.8)
+      break
+
+    default:
+      console.warn(`Unknown sound "${name}". Available:`, SOUNDS)
+  }
+}
+
+// helpers for the noise cues
+function pinkSwell(length = 0.9) {
+  const t = T()
+  pink.start(t)
+  pinkEnv.triggerAttackRelease(length, t)
+  pink.stop(t + length + 0.05) // safety stop
+}
+
+function whoosh() {
+  const t = T()
+  whooshNoise.start(t)
+  whooshEnv.triggerAttackRelease(0.7, t)
+  whooshFilter.frequency.cancelAndHoldAtTime(t)
+  whooshFilter.frequency.linearRampTo(4000, 0.5, t)
+  whooshFilter.frequency.linearRampTo(300, 0.2, t + 0.5)
+  whooshNoise.stop(t + 0.9)
+}
+
 export const INSTRUCTIONS_LIBRARY: Instruction[] = [
   // Metta (Loving Kindness) Instructions
   {
@@ -406,135 +655,19 @@ export const INSTRUCTIONS_LIBRARY: Instruction[] = [
   },
 ]
 
-export const SOUND_CUES_LIBRARY: SoundCue[] = [
-  {
-    id: "singing_bowl",
-    name: "Singing Bowl",
-    src: "synthetic:singing_bowl",
-    frequency: 432,
-    duration: 2500, // Total sound length in ms
-    waveform: "sine",
-    harmonics: [864, 1296, 1728], // More harmonics for richness
-    attackDuration: 0.1, // 100ms attack
-    releaseDuration: 2.0, // 2000ms release
-  },
-  {
-    id: "gentle_chime",
-    name: "Gentle Chime",
-    src: "synthetic:chime_gentle",
-    frequency: 1200, // Higher pitch
-    duration: 700, // Total sound length in ms
-    waveform: "triangle", // Softer than square, sharper than sine
-    attackDuration: 0.01, // 10ms attack
-    releaseDuration: 0.5, // 500ms release
-  },
-  {
-    id: "soft_gong",
-    name: "Soft Gong",
-    src: "synthetic:soft_gong",
-    frequency: 180, // Lower, deeper tone
-    duration: 3000, // Total sound length in ms
-    waveform: "sine",
-    harmonics: [360, 540, 720], // For depth
-    attackDuration: 0.2, // 200ms attack
-    releaseDuration: 2.5, // 2500ms release
-  },
-  {
-    id: "short_bell",
-    name: "Short Bell",
-    src: "synthetic:short_bell",
-    frequency: 1500, // High, clear ring
-    duration: 500, // Total sound length in ms
-    waveform: "square", // Sharper, more metallic
-    attackDuration: 0.005, // 5ms attack
-    releaseDuration: 0.2, // 200ms release
-  },
-  {
-    id: "clear_tone",
-    name: "Clear Tone",
-    src: "synthetic:clear_tone",
-    frequency: 528,
-    duration: 1500, // Total sound length in ms
-    waveform: "sine",
-    attackDuration: 0.05, // 50ms attack
-    releaseDuration: 1.0, // 1000ms release
-  },
-  {
-    id: "wood_block",
-    name: "Wood Block",
-    src: "synthetic:wood_block",
-    frequency: 1800, // Wood resonance frequency
-    duration: 200, // Short, percussive
-    waveform: "noise",
-    attackDuration: 0.001, // Instant attack
-    releaseDuration: 0.08, // Quick decay
-  },
-  {
-    id: "deep_bell",
-    name: "Deep Bell",
-    src: "synthetic:deep_bell",
-    frequency: 220, // Lower than Short Bell
-    duration: 2000,
-    waveform: "sine",
-    harmonics: [440, 660, 880],
-    attackDuration: 0.01,
-    releaseDuration: 1.5,
-  },
-  {
-    id: "crystal_chime",
-    name: "Crystal Chime",
-    src: "synthetic:crystal_chime",
-    frequency: 2000, // Higher, more crystalline
-    duration: 1200,
-    waveform: "triangle",
-    harmonics: [4000, 6000],
-    attackDuration: 0.005,
-    releaseDuration: 0.8,
-  },
-  {
-    id: "tibetan_bowl",
-    name: "Tibetan Bowl",
-    src: "synthetic:tibetan_bowl",
-    frequency: 256, // Different from regular singing bowl
-    duration: 3500,
-    waveform: "sine",
-    harmonics: [512, 768, 1024, 1280],
-    attackDuration: 0.15,
-    releaseDuration: 2.8,
-  },
-  {
-    id: "temple_bell",
-    name: "Temple Bell",
-    src: "synthetic:temple_bell",
-    frequency: 800, // Mid-range temple bell
-    duration: 1800,
-    waveform: "square",
-    harmonics: [1600, 2400, 3200],
-    attackDuration: 0.008,
-    releaseDuration: 1.2,
-  },
-  {
-    id: "wind_chime",
-    name: "Wind Chime",
-    src: "synthetic:wind_chime",
-    frequency: 1400, // Multiple frequencies for wind chime effect
-    duration: 900,
-    waveform: "triangle",
-    harmonics: [1050, 1750, 2100], // Multiple chime frequencies
-    attackDuration: 0.02,
-    releaseDuration: 0.6,
-  },
-  {
-    id: "rain_stick",
-    name: "Rain Stick",
-    src: "synthetic:rain_stick",
-    frequency: 800, // Base frequency for filtering
-    duration: 1500,
-    waveform: "noise",
-    attackDuration: 0.1,
-    releaseDuration: 1.0,
-  },
-]
+export const SOUND_CUES_LIBRARY: SoundCue[] = SOUNDS.map((soundName, index) => ({
+  id: soundName
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_]/g, ""),
+  name: soundName,
+  src: `synthetic:${soundName.toLowerCase().replace(/\s+/g, "_")}`,
+  frequency: 440, // Default frequency, actual sound uses GPT-5 implementation
+  duration: 1000, // Default duration, actual sound uses GPT-5 implementation
+  waveform: "sine" as const,
+  attackDuration: 0.01,
+  releaseDuration: 0.5,
+}))
 
 export const AMBIENT_SOUNDS_LIBRARY: AmbientSound[] = [
   {
@@ -601,321 +734,84 @@ export const NOTE_FREQUENCIES = {
   G5: 783.99,
   A5: 880.0,
   B5: 987.77,
+  C6: 1046.5,
+  D6: 1174.66,
+  E6: 1318.51,
+  F6: 1396.91,
+  G6: 1567.98,
+  A6: 1760.0,
 }
 
 // Musical meditation notes grouped into pleasant octaves
 export const MUSICAL_NOTES = {
-  Beautiful: [
-    { id: "note-c3", name: "C3", note: "C", octave: 3 },
-    { id: "note-d3", name: "D3", note: "D", octave: 3 },
-    { id: "note-e3", name: "E3", note: "E", octave: 3 },
-    { id: "note-g3", name: "G3", note: "G", octave: 3 },
-    { id: "note-a3", name: "A3", note: "A", octave: 3 },
-    { id: "note-c4", name: "C4", note: "C", octave: 4 },
-    { id: "note-d4", name: "D4", note: "D", octave: 4 },
-    { id: "note-e4", name: "E4", note: "E", octave: 4 },
-    { id: "note-g4", name: "G4", note: "G", octave: 4 },
-    { id: "note-a4", name: "A4", note: "A", octave: 4 },
-    { id: "note-c5", name: "C5", note: "C", octave: 5 },
-    { id: "note-d5", name: "D5", note: "D", octave: 5 },
-    { id: "note-e5", name: "E5", note: "E", octave: 5 },
-    { id: "note-g5", name: "G5", note: "G", octave: 5 },
-    { id: "note-a5", name: "A5", note: "A", octave: 5 },
-  ],
+  Beautiful: NOTES.map((note, index) => ({
+    id: `note-${note.toLowerCase().replace("#", "s")}`,
+    name: note,
+    note: note.charAt(0),
+    octave: Number.parseInt(note.charAt(1)),
+  })),
 }
 
-// Function to generate synthetic sounds using Tone.js
 export async function generateSyntheticSound(
   soundCue: SoundCue,
   audioContext: AudioContext | OfflineAudioContext,
 ): Promise<void> {
   try {
-    console.log(`[v0] Generating synthetic sound with Tone.js: ${soundCue.id}`)
+    console.log(`[v0] Using GPT-5 sound system for: ${soundCue.name}`)
 
-    // Initialize Tone.js if not already done
+    // Initialize audio if needed
     if (Tone.context.state !== "running") {
-      console.log("[v0] Starting Tone.js context...")
-      await Tone.start()
+      await startAudio()
     }
 
-    const totalSoundDurationSeconds = (soundCue.duration || 1000) / 1000
-    const frequency = soundCue.frequency || 440
-    const attackDuration = soundCue.attackDuration || 0.1
-    const releaseDuration = soundCue.releaseDuration || 0.8
-
-    let synth: Tone.Synth | Tone.FMSynth | Tone.MetalSynth | Tone.NoiseSynth
-    let reverb: Tone.Reverb | undefined
-
-    if (soundCue.id.includes("bell") || soundCue.id.includes("singing_bowl")) {
-      console.log(`[v0] Using advanced FMSynth for realistic bell sound: ${soundCue.id}`)
-
-      // Create realistic bell with multiple harmonics and metallic resonance
-      synth = new Tone.FMSynth({
-        harmonicity: 2.5, // Perfect bell harmonic ratio
-        modulationIndex: 25, // High modulation for metallic character
-        oscillator: {
-          type: "sine",
-          partials: [1, 0.8, 0.6, 0.4, 0.3, 0.2], // Bell harmonic series
-        },
-        envelope: {
-          attack: 0.01, // Very quick attack like real bell strike
-          decay: 0.3,
-          sustain: 0.2,
-          release: releaseDuration * 1.5, // Longer release for bell resonance
-        },
-        modulation: {
-          type: "triangle",
-          partials: [1, 0.5, 0.3], // Complex modulation waveform
-        },
-        modulationEnvelope: {
-          attack: 0.005,
-          decay: 0.1,
-          sustain: 0.1,
-          release: 0.8,
-        },
-      })
-
-      // Add reverb for realistic bell resonance
-      reverb = new Tone.Reverb({
-        decay: 4,
-        wet: 0.4,
-        roomSize: 0.8,
-      })
-
-      synth.chain(reverb, Tone.Destination)
-    } else if (soundCue.id.includes("chime")) {
-      console.log(`[v0] Using advanced MetalSynth for ethereal chime sound: ${soundCue.id}`)
-
-      // Create shimmery, ethereal chime with frequency modulation
-      synth = new Tone.MetalSynth({
-        frequency: frequency,
-        envelope: {
-          attack: 0.005, // Very gentle attack
-          decay: 0.6,
-          sustain: 0.1,
-          release: releaseDuration,
-        },
-        harmonicity: 8.1, // High harmonicity for shimmer
-        modulationIndex: 45, // High modulation for ethereal quality
-        resonance: 6000, // High resonance for brightness
-        octaves: 2.5, // Wide octave spread for richness
-      })
-
-      // Add shimmer effect with chorus and reverb
-      const chorus = new Tone.Chorus({
-        frequency: 4,
-        delayTime: 2.5,
-        depth: 0.7,
-        wet: 0.3,
-      }).start()
-
-      reverb = new Tone.Reverb({
-        decay: 3,
-        wet: 0.5,
-        roomSize: 0.9,
-      })
-
-      synth.chain(chorus, reverb, Tone.Destination)
-    } else if (soundCue.id.includes("wood")) {
-      console.log(`[v0] Using filtered NoiseSynth for realistic wood block sound: ${soundCue.id}`)
-
-      // Create realistic wood block with filtered noise and resonance
-      synth = new Tone.NoiseSynth({
-        noise: {
-          type: "brown",
-          playbackRate: 2, // Higher pitch for wood character
-        },
-        envelope: {
-          attack: 0.001, // Instant attack like wood strike
-          decay: 0.05,
-          sustain: 0,
-          release: 0.08, // Quick decay like real wood
-        },
-      })
-
-      // Add bandpass filter to simulate wood resonance (1-3kHz range)
-      const filter = new Tone.Filter({
-        frequency: 1800, // Wood resonance frequency
-        type: "bandpass",
-        Q: 8, // High Q for sharp resonance
-        rolloff: -24,
-      })
-
-      // Add slight reverb for natural room sound
-      reverb = new Tone.Reverb({
-        decay: 0.8,
-        wet: 0.15,
-        roomSize: 0.3,
-      })
-
-      synth.chain(filter, reverb, Tone.Destination)
-    } else if (soundCue.id.includes("gong")) {
-      console.log(`[v0] Using complex FMSynth for deep gong sound: ${soundCue.id}`)
-
-      // Create deep, complex gong with inharmonic overtones
-      synth = new Tone.FMSynth({
-        harmonicity: 1.97, // Slightly inharmonic for gong character
-        modulationIndex: 35,
-        oscillator: {
-          type: "sine",
-          partials: [1, 0.9, 0.7, 0.5, 0.4, 0.3, 0.2, 0.15, 0.1], // Complex harmonic series
-        },
-        envelope: {
-          attack: 0.05, // Slow attack for gong strike
-          decay: 1.0,
-          sustain: 0.3,
-          release: releaseDuration * 2, // Very long release
-        },
-        modulation: {
-          type: "sawtooth", // Complex modulation for metallic character
-        },
-        modulationEnvelope: {
-          attack: 0.02,
-          decay: 0.5,
-          sustain: 0.2,
-          release: 1.5,
-        },
-      })
-
-      // Add deep reverb for gong resonance
-      reverb = new Tone.Reverb({
-        decay: 6,
-        wet: 0.6,
-        roomSize: 1.0,
-      })
-
-      synth.chain(reverb, Tone.Destination)
-    } else {
-      console.log(`[v0] Using enhanced Synth for pleasant tone: ${soundCue.id}`)
-
-      // Enhanced regular synth with pleasant characteristics
-      synth = new Tone.Synth({
-        oscillator: {
-          type: "sine",
-          partials: [1, 0.5, 0.3, 0.1], // Gentle harmonics
-        },
-        envelope: {
-          attack: attackDuration * 2, // Gentler attack
-          decay: 0.3,
-          sustain: 0.4,
-          release: releaseDuration,
-        },
-      })
-
-      // Add subtle reverb for warmth
-      reverb = new Tone.Reverb({
-        decay: 2,
-        wet: 0.25,
-        roomSize: 0.5,
-      })
-
-      synth.chain(reverb, Tone.Destination)
-    }
-
-    // Set volume to reasonable level
-    synth.volume.value = Tone.gainToDb(0.4)
-
-    // Play the sound
-    if (synth instanceof Tone.NoiseSynth) {
-      synth.triggerAttackRelease(totalSoundDurationSeconds)
-      console.log(`[v0] Triggered realistic NoiseSynth for ${totalSoundDurationSeconds}s`)
-    } else {
-      synth.triggerAttackRelease(frequency, totalSoundDurationSeconds)
-      console.log(`[v0] Triggered realistic synth at ${frequency}Hz for ${totalSoundDurationSeconds}s`)
-    }
-
-    // Clean up after sound finishes
-    setTimeout(
-      () => {
-        synth.dispose()
-        if (reverb) reverb.dispose()
-        console.log(`[v0] Disposed Tone.js synth and effects for ${soundCue.id}`)
-      },
-      (totalSoundDurationSeconds + 2) * 1000, // Extra time for reverb tail
-    )
+    // Use the GPT-5 playSound function
+    playSound(soundCue.name)
   } catch (error) {
-    console.error(`[v0] Error generating synthetic sound with Tone.js for ${soundCue.id}:`, error)
+    console.error(`[v0] Error with GPT-5 sound generation for ${soundCue.id}:`, error)
     throw error
   }
 }
 
-// Function to generate ambient sounds using Tone.js
 export async function generateAmbientSound(
   ambient: AmbientSound,
   audioContext: AudioContext | OfflineAudioContext,
   duration: number,
   volumeOverride?: number,
 ): Promise<void> {
+  // Keep existing ambient sound generation for compatibility
   try {
-    // Initialize Tone.js if not already done
     if (Tone.context.state !== "running") {
       await Tone.start()
     }
 
     const targetVolume = volumeOverride ?? ambient.volume ?? 0.2
-
     let noise: Tone.Noise
     let filter: Tone.Filter
     let reverb: Tone.Reverb
 
-    // Create appropriate noise type
     const noiseType = ambient.noiseType || "white"
     noise = new Tone.Noise(noiseType)
 
-    // Create filter based on ambient sound type
     if (ambient.id === "rain") {
-      filter = new Tone.Filter({
-        frequency: 2000,
-        type: "highpass",
-        rolloff: -12,
-      })
-      reverb = new Tone.Reverb({
-        decay: 2,
-        wet: 0.3,
-      })
+      filter = new Tone.Filter({ frequency: 2000, type: "highpass", rolloff: -12 })
+      reverb = new Tone.Reverb({ decay: 2, wet: 0.3 })
     } else if (ambient.id === "waves") {
-      filter = new Tone.Filter({
-        frequency: 400,
-        type: "lowpass",
-        rolloff: -24,
-      })
-      reverb = new Tone.Reverb({
-        decay: 4,
-        wet: 0.5,
-      })
+      filter = new Tone.Filter({ frequency: 400, type: "lowpass", rolloff: -24 })
+      reverb = new Tone.Reverb({ decay: 4, wet: 0.5 })
     } else if (ambient.id === "forest") {
-      filter = new Tone.Filter({
-        frequency: 800,
-        type: "bandpass",
-        Q: 2,
-      })
-      reverb = new Tone.Reverb({
-        decay: 3,
-        wet: 0.4,
-      })
+      filter = new Tone.Filter({ frequency: 800, type: "bandpass", Q: 2 })
+      reverb = new Tone.Reverb({ decay: 3, wet: 0.4 })
     } else if (ambient.id === "wind") {
-      filter = new Tone.Filter({
-        frequency: 300,
-        type: "lowpass",
-        rolloff: -12,
-      })
-      reverb = new Tone.Reverb({
-        decay: 1.5,
-        wet: 0.2,
-      })
+      filter = new Tone.Filter({ frequency: 300, type: "lowpass", rolloff: -12 })
+      reverb = new Tone.Reverb({ decay: 1.5, wet: 0.2 })
     } else {
-      // Default filter
       filter = new Tone.Filter({
         frequency: ambient.filterFrequency || 1000,
         type: ambient.filterType || "lowpass",
       })
-      reverb = new Tone.Reverb({
-        decay: 2,
-        wet: 0.3,
-      })
+      reverb = new Tone.Reverb({ decay: 2, wet: 0.3 })
     }
 
-    // Create LFO for modulation if specified
     let lfo: Tone.LFO | undefined
     if (ambient.lfoFrequency) {
       lfo = new Tone.LFO({
@@ -927,16 +823,10 @@ export async function generateAmbientSound(
       lfo.start()
     }
 
-    // Connect the chain: noise -> filter -> reverb -> destination
     noise.chain(filter, reverb, Tone.Destination)
-
-    // Set volume
     noise.volume.value = Tone.gainToDb(targetVolume)
-
-    // Start the noise
     noise.start()
 
-    // Stop after duration and clean up
     setTimeout(() => {
       noise.stop()
       setTimeout(() => {
