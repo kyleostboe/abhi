@@ -410,10 +410,16 @@ export const SOUND_CUES_LIBRARY: SoundCue[] = [
     id: "singing_bowl",
     name: "Singing Bowl",
     src: "synthetic:singing_bowl",
-    frequency: 432,
+    // Base note: A4
+    frequency: NOTE_FREQUENCIES.A4,
     duration: 2500, // Total sound length in ms
     waveform: "sine",
-    harmonics: [864, 1296, 1728], // More harmonics for richness
+    // Harmonics aligned to the base frequency for consonance
+    harmonics: [
+      NOTE_FREQUENCIES.A4 * 2,
+      NOTE_FREQUENCIES.A4 * 3,
+      NOTE_FREQUENCIES.A4 * 4,
+    ],
     attackDuration: 0.1, // 100ms attack
     releaseDuration: 2.0, // 2000ms release
   },
@@ -421,7 +427,8 @@ export const SOUND_CUES_LIBRARY: SoundCue[] = [
     id: "gentle_chime",
     name: "Gentle Chime",
     src: "synthetic:chime_gentle",
-    frequency: 1200, // Higher pitch
+    // Base note: D6
+    frequency: NOTE_FREQUENCIES.D6, // Higher pitch
     duration: 700, // Total sound length in ms
     waveform: "triangle", // Softer than square, sharper than sine
     attackDuration: 0.01, // 10ms attack
@@ -431,10 +438,16 @@ export const SOUND_CUES_LIBRARY: SoundCue[] = [
     id: "soft_gong",
     name: "Soft Gong",
     src: "synthetic:soft_gong",
-    frequency: 180, // Lower, deeper tone
+    // Base note: F3
+    frequency: NOTE_FREQUENCIES.F3, // Lower, deeper tone
     duration: 3000, // Total sound length in ms
     waveform: "sine",
-    harmonics: [360, 540, 720], // For depth
+    // Harmonics aligned to the base frequency for consonance
+    harmonics: [
+      NOTE_FREQUENCIES.F3 * 2,
+      NOTE_FREQUENCIES.F3 * 3,
+      NOTE_FREQUENCIES.F3 * 4,
+    ], // For depth
     attackDuration: 0.2, // 200ms attack
     releaseDuration: 2.5, // 2500ms release
   },
@@ -442,7 +455,8 @@ export const SOUND_CUES_LIBRARY: SoundCue[] = [
     id: "short_bell",
     name: "Short Bell",
     src: "synthetic:short_bell",
-    frequency: 1500, // High, clear ring
+    // Base note: G6
+    frequency: NOTE_FREQUENCIES.G6, // High, clear ring
     duration: 500, // Total sound length in ms
     waveform: "square", // Sharper, more metallic
     attackDuration: 0.005, // 5ms attack
@@ -452,7 +466,8 @@ export const SOUND_CUES_LIBRARY: SoundCue[] = [
     id: "clear_tone",
     name: "Clear Tone",
     src: "synthetic:clear_tone",
-    frequency: 528,
+    // Base note: C5
+    frequency: NOTE_FREQUENCIES.C5,
     duration: 1500, // Total sound length in ms
     waveform: "sine",
     attackDuration: 0.05, // 50ms attack
@@ -525,6 +540,13 @@ export const NOTE_FREQUENCIES = {
   G5: 783.99,
   A5: 880.0,
   B5: 987.77,
+  C6: 1046.5,
+  D6: 1174.66,
+  E6: 1318.51,
+  F6: 1396.91,
+  G6: 1567.98,
+  A6: 1760.0,
+  B6: 1975.53,
 }
 
 // Musical meditation notes grouped into pleasant octaves
