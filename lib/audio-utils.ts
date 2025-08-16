@@ -1,82 +1,57 @@
-import { NOTE_FREQUENCIES } from "./meditation-data"
+import * as Tone from "tone"
 import { sleep, formatFileSize } from "./utils"
 
-let audioContext: AudioContext | null = null
-
-// Initialize AudioContext on user interaction
-export const getAudioContext = (): AudioContext => {
-  if (!audioContext || audioContext.state === "closed") {
-    // Attempt to create a new AudioContext if it's null or closed
-    const AudioContextAPI = window.AudioContext || (window as any).webkitAudioContext
-    if (!AudioContextAPI) {
-      throw new Error("Your browser does not support the Web Audio API.")
-    }
-    audioContext = new AudioContextAPI({ sampleRate: 44100 }) // Default to 44.1kHz
-    // Resume context if suspended on user interaction
-    if (audioContext.state === "suspended") {
-      const resumeContext = async () => {
-        if (audioContext && audioContext.state === "suspended") {
-          try {
-            await audioContext.resume()
-          } catch (e) {
-            console.error("Error resuming AudioContext:", e)
-          }
-        }
-        document.removeEventListener("click", resumeContext, true)
-        document.removeEventListener("touchend", resumeContext, true)
-        document.removeEventListener("keydown", resumeContext, true)
-      }
-      document.addEventListener("click", resumeContext, { once: true, capture: true })
-      document.addEventListener("touchend", resumeContext, { once: true, capture: true })
-      document.addEventListener("keydown", resumeContext, { once: true, capture: true })
-    }
+// Initialize Tone.js
+export const initializeTone = async (): Promise<void> => {
+  if (Tone.context.state !== "running") {
+    console.log("[v0] Initializing Tone.js...")
+    await Tone.start()
+    console.log("[v0] Tone.js initialized successfully")
   }
-  return audioContext
 }
 
-export const playNote = async (note: string, octave: number, duration = 0.8, volume = 0.7) => {
-  const context = getAudioContext() // Get the shared AudioContext
-  if (!context) {
-    console.warn("AudioContext not available.")
-    return
+// Replace playNote with Tone.js implementation
+export const playNote = async (note: string, octave: number, duration = 0.8, volume = 0.7): Promise<void> => {
+  try {
+    console.log(`[v0] Playing note with Tone.js: ${note}${octave}`)
+    await initializeTone()
+
+    // Create a simple synth with pleasant envelope
+    const synth = new Tone.Synth({
+      oscillator: {
+        type: "sine",
+      },
+      envelope: {
+        attack: 0.1,
+        decay: 0.2,
+        sustain: 0.3,
+        release: 0.8,
+      },
+    }).toDestination()
+
+    // Set volume
+    synth.volume.value = Tone.gainToDb(volume)
+
+    // Play the note
+    const noteString = `${note}${octave}`
+    synth.triggerAttackRelease(noteString, duration)
+    console.log(`[v0] Tone.js note ${noteString} triggered successfully`)
+
+    // Clean up after duration
+    setTimeout(
+      () => {
+        synth.dispose()
+        console.log(`[v0] Tone.js synth disposed for ${noteString}`)
+      },
+      (duration + 1) * 1000,
+    )
+  } catch (error) {
+    console.error("[v0] Error playing note with Tone.js:", error)
   }
+}
 
-  // Ensure context is running before playing
-  if (context.state === "suspended") {
-    try {
-      await context.resume()
-    } catch (e) {
-      console.error("Failed to resume AudioContext before playing note:", e)
-      return
-    }
-  }
-
-  const oscillator = context.createOscillator()
-  const gainNode = context.createGain()
-
-  // Calculate frequency based on note and octave
-  const noteKey = `${note}${octave}` as keyof typeof NOTE_FREQUENCIES
-  const frequency = NOTE_FREQUENCIES[noteKey]
-
-  if (!frequency) {
-    console.warn(`Unknown note: ${noteKey}`)
-    return
-  }
-
-  oscillator.type = "sine" // You can change this to 'square', 'sawtooth', 'triangle'
-  oscillator.frequency.setValueAtTime(frequency, context.currentTime)
-
-  // Gentle envelope for smooth, meditation-friendly tones
-  const now = context.currentTime
-  gainNode.gain.setValueAtTime(0, now)
-  gainNode.gain.exponentialRampToValueAtTime(volume, now + 0.05) // Gentle attack
-  gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration) // Smooth release
-
-  oscillator.connect(gainNode)
-  gainNode.connect(context.destination)
-
-  oscillator.start(now)
-  oscillator.stop(now + duration)
+export const getAudioContext = (): AudioContext => {
+  return Tone.context.rawContext as AudioContext
 }
 
 export const bufferToWav = async (
@@ -85,7 +60,7 @@ export const bufferToWav = async (
   onProgress: (progress: number) => void,
   isMobileDevice: boolean,
 ): Promise<Blob> => {
-  const currentAudioContext = getAudioContext() // Use the centralized AudioContext
+  const currentAudioContext = Tone.context.rawContext as AudioContext
   if (!currentAudioContext) throw new Error("Audio context not available for WAV conversion")
   onProgress(0)
 
