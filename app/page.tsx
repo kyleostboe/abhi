@@ -1942,8 +1942,8 @@ export default function Home() {
                       <BookText className="mr-2 h-4 w-4 text-gray-600" />
                       <span className="font-black text-center text-base text-gray-600">Instructions</span>
                     </div>
-                    <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 rounded-2xl shadow-md border-0 px-[5px] py-1 pl-1 pr-1">
-                      <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border-rose-200 border-0">
+                    <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 border-0 px-[5px] py-1 pl-1 pr-1 shadow-lg rounded-sm">
+                      <div className="bg-white dark:bg-gray-900 p-4 border-rose-200 border-0 rounded-sm shadow-inner">
                         <div className="text-center">
                           <Textarea
                             id="custom-instruction"
