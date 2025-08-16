@@ -93,40 +93,40 @@ export default function EncoderPage() {
         gainNode.connect(audioCtx.destination)
 
         oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(1200, now)
+        oscillator.frequency.setValueAtTime(880, now) // A5 - more musical
 
-        // Gentle attack to eliminate punch
+        // Very gentle attack for pleasant sound
         gainNode.gain.setValueAtTime(0, now)
-        gainNode.gain.linearRampToValueAtTime(0.12, now + 0.05)
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 2.5)
+        gainNode.gain.linearRampToValueAtTime(0.08, now + 0.15)
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 4.0)
 
-        // Add harmonics for bell-like quality
+        // Musical harmonics (perfect fifth and octave)
         const harmonic1 = audioCtx.createOscillator()
         const harmonic1Gain = audioCtx.createGain()
         harmonic1.connect(harmonic1Gain)
         harmonic1Gain.connect(audioCtx.destination)
         harmonic1.type = "sine"
-        harmonic1.frequency.setValueAtTime(2400, now)
+        harmonic1.frequency.setValueAtTime(1320, now) // Perfect fifth
         harmonic1Gain.gain.setValueAtTime(0, now)
-        harmonic1Gain.gain.linearRampToValueAtTime(0.04, now + 0.05)
-        harmonic1Gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.8)
+        harmonic1Gain.gain.linearRampToValueAtTime(0.03, now + 0.15)
+        harmonic1Gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.0)
 
         const harmonic2 = audioCtx.createOscillator()
         const harmonic2Gain = audioCtx.createGain()
         harmonic2.connect(harmonic2Gain)
         harmonic2Gain.connect(audioCtx.destination)
         harmonic2.type = "sine"
-        harmonic2.frequency.setValueAtTime(3600, now)
+        harmonic2.frequency.setValueAtTime(1760, now) // Octave
         harmonic2Gain.gain.setValueAtTime(0, now)
-        harmonic2Gain.gain.linearRampToValueAtTime(0.02, now + 0.05)
-        harmonic2Gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2)
+        harmonic2Gain.gain.linearRampToValueAtTime(0.015, now + 0.15)
+        harmonic2Gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.0)
 
         oscillator.start(now)
-        oscillator.stop(now + 2.5)
+        oscillator.stop(now + 4.0)
         harmonic1.start(now)
-        harmonic1.stop(now + 1.8)
+        harmonic1.stop(now + 3.0)
         harmonic2.start(now)
-        harmonic2.stop(now + 1.2)
+        harmonic2.stop(now + 2.0)
         break
       }
       case "bell_mid": {
@@ -136,27 +136,27 @@ export default function EncoderPage() {
         gainNode.connect(audioCtx.destination)
 
         oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(800, now)
+        oscillator.frequency.setValueAtTime(523, now) // C5 - musical note
 
         gainNode.gain.setValueAtTime(0, now)
-        gainNode.gain.linearRampToValueAtTime(0.15, now + 0.08)
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 3.0)
+        gainNode.gain.linearRampToValueAtTime(0.1, now + 0.2)
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 5.0)
 
-        // Add harmonics
+        // Musical harmonic (perfect fifth)
         const harmonic1 = audioCtx.createOscillator()
         const harmonic1Gain = audioCtx.createGain()
         harmonic1.connect(harmonic1Gain)
         harmonic1Gain.connect(audioCtx.destination)
         harmonic1.type = "sine"
-        harmonic1.frequency.setValueAtTime(1600, now)
+        harmonic1.frequency.setValueAtTime(784, now) // Perfect fifth
         harmonic1Gain.gain.setValueAtTime(0, now)
-        harmonic1Gain.gain.linearRampToValueAtTime(0.06, now + 0.08)
-        harmonic1Gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.2)
+        harmonic1Gain.gain.linearRampToValueAtTime(0.04, now + 0.2)
+        harmonic1Gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.5)
 
         oscillator.start(now)
-        oscillator.stop(now + 3.0)
+        oscillator.stop(now + 5.0)
         harmonic1.start(now)
-        harmonic1.stop(now + 2.2)
+        harmonic1.stop(now + 3.5)
         break
       }
       case "chime_soft": {
@@ -166,38 +166,38 @@ export default function EncoderPage() {
         gainNode.connect(audioCtx.destination)
 
         oscillator.type = "triangle"
-        oscillator.frequency.setValueAtTime(1500, now)
+        oscillator.frequency.setValueAtTime(1047, now) // C6 - musical
 
         gainNode.gain.setValueAtTime(0, now)
-        gainNode.gain.linearRampToValueAtTime(0.08, now + 0.02)
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 2.0)
+        gainNode.gain.linearRampToValueAtTime(0.06, now + 0.1)
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 3.5)
 
-        // Add shimmer with slight frequency modulation
+        // Gentle shimmer
         const lfo = audioCtx.createOscillator()
         const lfoGain = audioCtx.createGain()
         lfo.connect(lfoGain)
         lfoGain.connect(oscillator.frequency)
         lfo.type = "sine"
-        lfo.frequency.setValueAtTime(4, now)
-        lfoGain.gain.setValueAtTime(8, now)
+        lfo.frequency.setValueAtTime(2, now) // Slower shimmer
+        lfoGain.gain.setValueAtTime(4, now) // Gentler modulation
 
-        // Add harmonic for richness
+        // Soft harmonic
         const harmonic = audioCtx.createOscillator()
         const harmonicGain = audioCtx.createGain()
         harmonic.connect(harmonicGain)
         harmonicGain.connect(audioCtx.destination)
         harmonic.type = "sine"
-        harmonic.frequency.setValueAtTime(3000, now)
+        harmonic.frequency.setValueAtTime(2094, now) // Octave
         harmonicGain.gain.setValueAtTime(0, now)
-        harmonicGain.gain.linearRampToValueAtTime(0.03, now + 0.02)
-        harmonicGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.5)
+        harmonicGain.gain.linearRampToValueAtTime(0.02, now + 0.1)
+        harmonicGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.5)
 
         oscillator.start(now)
-        oscillator.stop(now + 2.0)
+        oscillator.stop(now + 3.5)
         lfo.start(now)
-        lfo.stop(now + 2.0)
+        lfo.stop(now + 3.5)
         harmonic.start(now)
-        harmonic.stop(now + 1.5)
+        harmonic.stop(now + 2.5)
         break
       }
       case "tone_short_low": {
@@ -207,14 +207,14 @@ export default function EncoderPage() {
         gainNode.connect(audioCtx.destination)
 
         oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(300, now)
+        oscillator.frequency.setValueAtTime(261, now) // C4 - musical
 
         gainNode.gain.setValueAtTime(0, now)
-        gainNode.gain.linearRampToValueAtTime(0.12, now + 0.03)
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.8)
+        gainNode.gain.linearRampToValueAtTime(0.08, now + 0.08)
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 1.2)
 
         oscillator.start(now)
-        oscillator.stop(now + 0.8)
+        oscillator.stop(now + 1.2)
         break
       }
       case "tone_short_high": {
@@ -224,26 +224,26 @@ export default function EncoderPage() {
         gainNode.connect(audioCtx.destination)
 
         oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(900, now)
+        oscillator.frequency.setValueAtTime(1047, now) // C6 - musical
 
         gainNode.gain.setValueAtTime(0, now)
-        gainNode.gain.linearRampToValueAtTime(0.1, now + 0.02)
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.6)
+        gainNode.gain.linearRampToValueAtTime(0.06, now + 0.06)
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 1.0)
 
         oscillator.start(now)
-        oscillator.stop(now + 0.6)
+        oscillator.stop(now + 1.0)
         break
       }
       case "wood_block": {
-        const bufferSize = Math.floor(audioCtx.sampleRate * 0.15)
+        const bufferSize = Math.floor(audioCtx.sampleRate * 0.12)
         const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate)
         const data = noiseBuffer.getChannelData(0)
 
-        // Generate noise with wood-like characteristics
+        // Generate more realistic wood percussion
         for (let i = 0; i < bufferSize; i++) {
-          const decay = Math.exp(-i / (bufferSize * 0.08))
-          const highFreqDecay = Math.exp(-i / (bufferSize * 0.03))
-          data[i] = (Math.random() * 2 - 1) * decay * (0.7 + 0.3 * highFreqDecay)
+          const decay = Math.exp(-i / (bufferSize * 0.06))
+          const resonance = Math.sin(i * 0.02) * 0.3 + 0.7 // Add wood resonance
+          data[i] = (Math.random() * 2 - 1) * decay * resonance * 0.8
         }
 
         const noiseSource = audioCtx.createBufferSource()
@@ -255,17 +255,17 @@ export default function EncoderPage() {
         filter.connect(gainNode)
         gainNode.connect(audioCtx.destination)
 
-        // Filter to make it sound more wooden
+        // Better wood filtering
         filter.type = "bandpass"
-        filter.frequency.setValueAtTime(800, now)
-        filter.Q.setValueAtTime(3, now)
+        filter.frequency.setValueAtTime(600, now)
+        filter.Q.setValueAtTime(2, now)
 
         gainNode.gain.setValueAtTime(0, now)
-        gainNode.gain.linearRampToValueAtTime(0.18, now + 0.005)
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.15)
+        gainNode.gain.linearRampToValueAtTime(0.12, now + 0.003)
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.12)
 
         noiseSource.start(now)
-        noiseSource.stop(now + 0.15)
+        noiseSource.stop(now + 0.12)
         break
       }
       default:
@@ -548,7 +548,7 @@ export default function EncoderPage() {
     startTime: number,
     volumeMultiplier: number,
   ): Promise<void> => {
-    const baseVolume = 0.25 * volumeMultiplier
+    const baseVolume = 0.2 * volumeMultiplier
 
     switch (soundId) {
       case "bell_high": {
@@ -559,27 +559,27 @@ export default function EncoderPage() {
         gainNode.connect(offlineCtx.destination)
 
         oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(1200, startTime)
+        oscillator.frequency.setValueAtTime(880, startTime)
 
         gainNode.gain.setValueAtTime(0, startTime)
-        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.05)
-        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 2.5)
+        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.15)
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 4.0)
 
-        // Add harmonics
+        // Musical harmonics
         const harmonic1 = offlineCtx.createOscillator()
         const harmonic1Gain = offlineCtx.createGain()
         harmonic1.connect(harmonic1Gain)
         harmonic1Gain.connect(offlineCtx.destination)
         harmonic1.type = "sine"
-        harmonic1.frequency.setValueAtTime(2400, startTime)
+        harmonic1.frequency.setValueAtTime(1320, startTime)
         harmonic1Gain.gain.setValueAtTime(0, startTime)
-        harmonic1Gain.gain.linearRampToValueAtTime(baseVolume * 0.3, startTime + 0.05)
-        harmonic1Gain.gain.exponentialRampToValueAtTime(0.001, startTime + 1.8)
+        harmonic1Gain.gain.linearRampToValueAtTime(baseVolume * 0.3, startTime + 0.15)
+        harmonic1Gain.gain.exponentialRampToValueAtTime(0.001, startTime + 3.0)
 
         oscillator.start(startTime)
-        oscillator.stop(startTime + 2.5)
+        oscillator.stop(startTime + 4.0)
         harmonic1.start(startTime)
-        harmonic1.stop(startTime + 1.8)
+        harmonic1.stop(startTime + 3.0)
         break
       }
 
@@ -591,27 +591,27 @@ export default function EncoderPage() {
         gainNode.connect(offlineCtx.destination)
 
         oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(800, startTime)
+        oscillator.frequency.setValueAtTime(523, startTime)
 
         gainNode.gain.setValueAtTime(0, startTime)
-        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.08)
-        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 3.0)
+        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.2)
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 5.0)
 
-        // Add harmonic
+        // Musical harmonic
         const harmonic1 = offlineCtx.createOscillator()
         const harmonic1Gain = offlineCtx.createGain()
         harmonic1.connect(harmonic1Gain)
         harmonic1Gain.connect(offlineCtx.destination)
         harmonic1.type = "sine"
-        harmonic1.frequency.setValueAtTime(1600, startTime)
+        harmonic1.frequency.setValueAtTime(784, startTime)
         harmonic1Gain.gain.setValueAtTime(0, startTime)
-        harmonic1Gain.gain.linearRampToValueAtTime(baseVolume * 0.4, startTime + 0.08)
-        harmonic1Gain.gain.exponentialRampToValueAtTime(0.001, startTime + 2.2)
+        harmonic1Gain.gain.linearRampToValueAtTime(baseVolume * 0.4, startTime + 0.2)
+        harmonic1Gain.gain.exponentialRampToValueAtTime(0.001, startTime + 3.5)
 
         oscillator.start(startTime)
-        oscillator.stop(startTime + 3.0)
+        oscillator.stop(startTime + 5.0)
         harmonic1.start(startTime)
-        harmonic1.stop(startTime + 2.2)
+        harmonic1.stop(startTime + 3.5)
         break
       }
 
@@ -623,38 +623,25 @@ export default function EncoderPage() {
         gainNode.connect(offlineCtx.destination)
 
         oscillator.type = "triangle"
-        oscillator.frequency.setValueAtTime(1500, startTime)
+        oscillator.frequency.setValueAtTime(1047, startTime)
 
         gainNode.gain.setValueAtTime(0, startTime)
-        gainNode.gain.linearRampToValueAtTime(baseVolume * 0.8, startTime + 0.02)
-        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 2.0)
+        gainNode.gain.linearRampToValueAtTime(baseVolume * 0.8, startTime + 0.1)
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 3.5)
 
-        // Add shimmer with LFO
+        // Gentle shimmer
         const lfo = offlineCtx.createOscillator()
         const lfoGain = offlineCtx.createGain()
         lfo.connect(lfoGain)
         lfoGain.connect(oscillator.frequency)
         lfo.type = "sine"
-        lfo.frequency.setValueAtTime(4, startTime)
-        lfoGain.gain.setValueAtTime(8, startTime)
-
-        // Add harmonic
-        const harmonic = offlineCtx.createOscillator()
-        const harmonicGain = offlineCtx.createGain()
-        harmonic.connect(harmonicGain)
-        harmonicGain.connect(offlineCtx.destination)
-        harmonic.type = "sine"
-        harmonic.frequency.setValueAtTime(3000, startTime)
-        harmonicGain.gain.setValueAtTime(0, startTime)
-        harmonicGain.gain.linearRampToValueAtTime(baseVolume * 0.25, startTime + 0.02)
-        harmonicGain.gain.exponentialRampToValueAtTime(0.001, startTime + 1.5)
+        lfo.frequency.setValueAtTime(2, startTime)
+        lfoGain.gain.setValueAtTime(4, startTime)
 
         oscillator.start(startTime)
-        oscillator.stop(startTime + 2.0)
+        oscillator.stop(startTime + 3.5)
         lfo.start(startTime)
-        lfo.stop(startTime + 2.0)
-        harmonic.start(startTime)
-        harmonic.stop(startTime + 1.5)
+        lfo.stop(startTime + 3.5)
         break
       }
 
@@ -666,14 +653,14 @@ export default function EncoderPage() {
         gainNode.connect(offlineCtx.destination)
 
         oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(300, startTime)
+        oscillator.frequency.setValueAtTime(261, startTime)
 
         gainNode.gain.setValueAtTime(0, startTime)
-        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.03)
-        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.8)
+        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.08)
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 1.2)
 
         oscillator.start(startTime)
-        oscillator.stop(startTime + 0.8)
+        oscillator.stop(startTime + 1.2)
         break
       }
 
@@ -685,27 +672,27 @@ export default function EncoderPage() {
         gainNode.connect(offlineCtx.destination)
 
         oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(900, startTime)
+        oscillator.frequency.setValueAtTime(1047, startTime)
 
         gainNode.gain.setValueAtTime(0, startTime)
-        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.02)
-        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.6)
+        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.06)
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 1.0)
 
         oscillator.start(startTime)
-        oscillator.stop(startTime + 0.6)
+        oscillator.stop(startTime + 1.0)
         break
       }
 
       case "wood_block": {
-        const bufferSize = Math.floor(offlineCtx.sampleRate * 0.15)
+        const bufferSize = Math.floor(offlineCtx.sampleRate * 0.12)
         const noiseBuffer = offlineCtx.createBuffer(1, bufferSize, offlineCtx.sampleRate)
         const data = noiseBuffer.getChannelData(0)
 
-        // Generate wood-like noise
+        // Generate more realistic wood percussion
         for (let i = 0; i < bufferSize; i++) {
-          const decay = Math.exp(-i / (bufferSize * 0.08))
-          const highFreqDecay = Math.exp(-i / (bufferSize * 0.03))
-          data[i] = (Math.random() * 2 - 1) * decay * (0.7 + 0.3 * highFreqDecay)
+          const decay = Math.exp(-i / (bufferSize * 0.06))
+          const resonance = Math.sin(i * 0.02) * 0.3 + 0.7
+          data[i] = (Math.random() * 2 - 1) * decay * resonance * 0.8
         }
 
         const noiseSource = offlineCtx.createBufferSource()
@@ -717,14 +704,13 @@ export default function EncoderPage() {
         filter.connect(gainNode)
         gainNode.connect(offlineCtx.destination)
 
-        // Filter for wooden characteristics
         filter.type = "bandpass"
-        filter.frequency.setValueAtTime(800, startTime)
-        filter.Q.setValueAtTime(3, startTime)
+        filter.frequency.setValueAtTime(600, startTime)
+        filter.Q.setValueAtTime(2, startTime)
 
         gainNode.gain.setValueAtTime(0, startTime)
-        gainNode.gain.linearRampToValueAtTime(baseVolume * 0.9, startTime + 0.005)
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.15)
+        gainNode.gain.linearRampToValueAtTime(baseVolume * 0.9, startTime + 0.003)
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.12)
 
         noiseSource.start(startTime)
         break
