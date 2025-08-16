@@ -201,7 +201,7 @@ export const INSTRUCTIONS_LIBRARY: Instruction[] = [
   },
   {
     id: "nonduality-11",
-    text: "Pratyabhijna - recognizing what I already am",
+    text: "Recognizing what I already am",
     category: "Nonduality",
   },
   {
@@ -569,89 +569,194 @@ export async function generateSyntheticSound(
     const releaseDuration = soundCue.releaseDuration || 0.8
 
     let synth: Tone.Synth | Tone.FMSynth | Tone.MetalSynth | Tone.NoiseSynth
+    let reverb: Tone.Reverb | undefined
 
-    // Choose appropriate Tone.js synthesizer based on sound characteristics
     if (soundCue.id.includes("bell") || soundCue.id.includes("singing_bowl")) {
-      console.log(`[v0] Using FMSynth for bell sound: ${soundCue.id}`)
-      // Use FMSynth for bell-like sounds
+      console.log(`[v0] Using advanced FMSynth for realistic bell sound: ${soundCue.id}`)
+
+      // Create realistic bell with multiple harmonics and metallic resonance
       synth = new Tone.FMSynth({
-        harmonicity: 3.01,
-        modulationIndex: 14,
-        oscillator: { type: "sine" },
+        harmonicity: 2.5, // Perfect bell harmonic ratio
+        modulationIndex: 25, // High modulation for metallic character
+        oscillator: {
+          type: "sine",
+          partials: [1, 0.8, 0.6, 0.4, 0.3, 0.2], // Bell harmonic series
+        },
         envelope: {
-          attack: attackDuration,
-          decay: 0.2,
-          sustain: 0.1,
-          release: releaseDuration,
+          attack: 0.01, // Very quick attack like real bell strike
+          decay: 0.3,
+          sustain: 0.2,
+          release: releaseDuration * 1.5, // Longer release for bell resonance
         },
-        modulation: { type: "square" },
+        modulation: {
+          type: "triangle",
+          partials: [1, 0.5, 0.3], // Complex modulation waveform
+        },
         modulationEnvelope: {
-          attack: 0.01,
-          decay: 0.2,
-          sustain: 0,
-          release: 0.2,
+          attack: 0.005,
+          decay: 0.1,
+          sustain: 0.1,
+          release: 0.8,
         },
-      }).toDestination()
+      })
+
+      // Add reverb for realistic bell resonance
+      reverb = new Tone.Reverb({
+        decay: 4,
+        wet: 0.4,
+        roomSize: 0.8,
+      })
+
+      synth.chain(reverb, Tone.Destination)
     } else if (soundCue.id.includes("chime")) {
-      console.log(`[v0] Using MetalSynth for chime sound: ${soundCue.id}`)
-      // Use MetalSynth for chime sounds
+      console.log(`[v0] Using advanced MetalSynth for ethereal chime sound: ${soundCue.id}`)
+
+      // Create shimmery, ethereal chime with frequency modulation
       synth = new Tone.MetalSynth({
         frequency: frequency,
         envelope: {
-          attack: attackDuration,
-          decay: 0.4,
+          attack: 0.005, // Very gentle attack
+          decay: 0.6,
+          sustain: 0.1,
           release: releaseDuration,
         },
-        harmonicity: 5.1,
-        modulationIndex: 32,
-        resonance: 4000,
-        octaves: 1.5,
-      }).toDestination()
+        harmonicity: 8.1, // High harmonicity for shimmer
+        modulationIndex: 45, // High modulation for ethereal quality
+        resonance: 6000, // High resonance for brightness
+        octaves: 2.5, // Wide octave spread for richness
+      })
+
+      // Add shimmer effect with chorus and reverb
+      const chorus = new Tone.Chorus({
+        frequency: 4,
+        delayTime: 2.5,
+        depth: 0.7,
+        wet: 0.3,
+      }).start()
+
+      reverb = new Tone.Reverb({
+        decay: 3,
+        wet: 0.5,
+        roomSize: 0.9,
+      })
+
+      synth.chain(chorus, reverb, Tone.Destination)
     } else if (soundCue.id.includes("wood")) {
-      console.log(`[v0] Using NoiseSynth for wood sound: ${soundCue.id}`)
-      // Use NoiseSynth for wood block sounds
+      console.log(`[v0] Using filtered NoiseSynth for realistic wood block sound: ${soundCue.id}`)
+
+      // Create realistic wood block with filtered noise and resonance
       synth = new Tone.NoiseSynth({
-        noise: { type: "brown" },
-        envelope: {
-          attack: attackDuration,
-          decay: 0.1,
-          sustain: 0,
-          release: 0.1,
+        noise: {
+          type: "brown",
+          playbackRate: 2, // Higher pitch for wood character
         },
-      }).toDestination()
-    } else {
-      console.log(`[v0] Using regular Synth for sound: ${soundCue.id}`)
-      // Use regular Synth for other sounds with pleasant envelope
-      synth = new Tone.Synth({
-        oscillator: { type: "sine" },
         envelope: {
-          attack: attackDuration,
-          decay: 0.2,
+          attack: 0.001, // Instant attack like wood strike
+          decay: 0.05,
+          sustain: 0,
+          release: 0.08, // Quick decay like real wood
+        },
+      })
+
+      // Add bandpass filter to simulate wood resonance (1-3kHz range)
+      const filter = new Tone.Filter({
+        frequency: 1800, // Wood resonance frequency
+        type: "bandpass",
+        Q: 8, // High Q for sharp resonance
+        rolloff: -24,
+      })
+
+      // Add slight reverb for natural room sound
+      reverb = new Tone.Reverb({
+        decay: 0.8,
+        wet: 0.15,
+        roomSize: 0.3,
+      })
+
+      synth.chain(filter, reverb, Tone.Destination)
+    } else if (soundCue.id.includes("gong")) {
+      console.log(`[v0] Using complex FMSynth for deep gong sound: ${soundCue.id}`)
+
+      // Create deep, complex gong with inharmonic overtones
+      synth = new Tone.FMSynth({
+        harmonicity: 1.97, // Slightly inharmonic for gong character
+        modulationIndex: 35,
+        oscillator: {
+          type: "sine",
+          partials: [1, 0.9, 0.7, 0.5, 0.4, 0.3, 0.2, 0.15, 0.1], // Complex harmonic series
+        },
+        envelope: {
+          attack: 0.05, // Slow attack for gong strike
+          decay: 1.0,
           sustain: 0.3,
+          release: releaseDuration * 2, // Very long release
+        },
+        modulation: {
+          type: "sawtooth", // Complex modulation for metallic character
+        },
+        modulationEnvelope: {
+          attack: 0.02,
+          decay: 0.5,
+          sustain: 0.2,
+          release: 1.5,
+        },
+      })
+
+      // Add deep reverb for gong resonance
+      reverb = new Tone.Reverb({
+        decay: 6,
+        wet: 0.6,
+        roomSize: 1.0,
+      })
+
+      synth.chain(reverb, Tone.Destination)
+    } else {
+      console.log(`[v0] Using enhanced Synth for pleasant tone: ${soundCue.id}`)
+
+      // Enhanced regular synth with pleasant characteristics
+      synth = new Tone.Synth({
+        oscillator: {
+          type: "sine",
+          partials: [1, 0.5, 0.3, 0.1], // Gentle harmonics
+        },
+        envelope: {
+          attack: attackDuration * 2, // Gentler attack
+          decay: 0.3,
+          sustain: 0.4,
           release: releaseDuration,
         },
-      }).toDestination()
+      })
+
+      // Add subtle reverb for warmth
+      reverb = new Tone.Reverb({
+        decay: 2,
+        wet: 0.25,
+        roomSize: 0.5,
+      })
+
+      synth.chain(reverb, Tone.Destination)
     }
 
     // Set volume to reasonable level
-    synth.volume.value = Tone.gainToDb(0.5)
+    synth.volume.value = Tone.gainToDb(0.4)
 
     // Play the sound
     if (synth instanceof Tone.NoiseSynth) {
       synth.triggerAttackRelease(totalSoundDurationSeconds)
-      console.log(`[v0] Triggered NoiseSynth for ${totalSoundDurationSeconds}s`)
+      console.log(`[v0] Triggered realistic NoiseSynth for ${totalSoundDurationSeconds}s`)
     } else {
       synth.triggerAttackRelease(frequency, totalSoundDurationSeconds)
-      console.log(`[v0] Triggered synth at ${frequency}Hz for ${totalSoundDurationSeconds}s`)
+      console.log(`[v0] Triggered realistic synth at ${frequency}Hz for ${totalSoundDurationSeconds}s`)
     }
 
     // Clean up after sound finishes
     setTimeout(
       () => {
         synth.dispose()
-        console.log(`[v0] Disposed Tone.js synth for ${soundCue.id}`)
+        if (reverb) reverb.dispose()
+        console.log(`[v0] Disposed Tone.js synth and effects for ${soundCue.id}`)
       },
-      (totalSoundDurationSeconds + 1) * 1000,
+      (totalSoundDurationSeconds + 2) * 1000, // Extra time for reverb tail
     )
   } catch (error) {
     console.error(`[v0] Error generating synthetic sound with Tone.js for ${soundCue.id}:`, error)
