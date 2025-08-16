@@ -1504,7 +1504,7 @@ export default function Home() {
                       className="mb-6 mt-4"
                     >
                       <Alert className="bg-white dark:bg-gray-900 p-0 border-0 shadow-none">
-                        <div className="p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm shadow-none bg-transparent pb-1">
+                        <div className="p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm shadow-none bg-transparent pt-1 pb-0.5">
                           <div className="flex items-center mb-2 justify-center">
                             {/* Removed the Info icon div */}
                             <div className="text-lg font-black text-gray-600">Audio Analysis</div>
