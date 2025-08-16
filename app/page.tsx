@@ -1572,7 +1572,7 @@ export default function Home() {
                           <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 dark:from-logo-teal-700 dark:to-indigo-700 text-cyan-500">
                             <h3 className="text-white flex items-center font-black text-base">Target Duration</h3>
                           </div>
-                          <div className="p-6 py-6 px-11">
+                          <div className="p-6 py-6 px-11 pb-6">
                             <div className="mb-4">
                               <Slider
                                 value={[targetDuration]}
