@@ -824,12 +824,98 @@ export default function EncoderPage() {
         </div>
 
         <div className="px-6 md:px-10 pb-10 font-serif font-black">
+          {/* File Upload Section */}
+          <Card className="p-6 mb-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Upload Audio File</h3>
+            <div
+              ref={uploadAreaRef}
+              className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-logo-teal-500 transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <input ref={fileInputRef} type="file" accept="audio/*" onChange={handleFileChange} className="hidden" />
+              <div className="space-y-2">
+                <div className="text-4xl">🎵</div>
+                <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                  {file ? file.name : "Drop your audio file here or click to browse"}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Supports MP3, WAV, M4A, and other audio formats
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Original Audio Playback */}
+          {originalAudioUrl && (
+            <Card className="p-6 mb-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
+              <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Original Audio</h3>
+              <audio
+                ref={audioRef}
+                controls
+                className="w-full"
+                src={originalAudioUrl}
+                onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+                onLoadedMetadata={(e) => setAudioDuration(e.currentTarget.duration)}
+              />
+            </Card>
+          )}
+
+          {/* Sound Preview Section */}
+          <Card className="p-6 mb-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Test Sound Cues</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Click any sound below to preview the improved Tone.js audio quality:
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {availableSounds.map((sound) => (
+                <button
+                  key={sound.id}
+                  onClick={() => playSoundPreview(sound.id)}
+                  className="p-4 bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 hover:from-logo-teal-600 hover:to-logo-blue-500 text-white rounded-lg font-semibold transition-all duration-200 transform hover:scale-105"
+                >
+                  <div className="text-sm font-bold">{sound.name}</div>
+                  <div className="text-xs opacity-90 mt-1">{sound.description}</div>
+                </button>
+              ))}
+            </div>
+          </Card>
+
+          {/* Status Messages */}
+          {status && (
+            <Card
+              className={`p-4 mb-6 ${
+                status.type === "error"
+                  ? "bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800"
+                  : status.type === "success"
+                    ? "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800"
+                    : "bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800"
+              }`}
+            >
+              <p
+                className={`text-sm font-medium ${
+                  status.type === "error"
+                    ? "text-red-800 dark:text-red-200"
+                    : status.type === "success"
+                      ? "text-green-800 dark:text-green-200"
+                      : "text-blue-800 dark:text-blue-200"
+                }`}
+              >
+                {status.message}
+              </p>
+            </Card>
+          )}
+
+          {/* Full Encoder Coming Soon */}
           <Card className="p-8 space-y-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
             <div className="text-center space-y-4">
               <Wand2 className="h-12 w-12 mx-auto text-logo-teal-600 dark:text-logo-teal-400" />
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Coming Soon!</h2>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Full Encoder Coming Soon!</h2>
               <p className="text-gray-600 dark:text-gray-400">
-                The full Encoder functionality is under active development. Please check back later for updates!
+                The complete transcription and encoding functionality is under development. For now, enjoy testing the
+                improved sound quality above!
               </p>
             </div>
           </Card>
