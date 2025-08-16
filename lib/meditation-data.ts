@@ -459,6 +459,81 @@ export const SOUND_CUES_LIBRARY: SoundCue[] = [
     attackDuration: 0.05, // 50ms attack
     releaseDuration: 1.0, // 1000ms release
   },
+  {
+    id: "wood_block",
+    name: "Wood Block",
+    src: "synthetic:wood_block",
+    frequency: 1800, // Wood resonance frequency
+    duration: 200, // Short, percussive
+    waveform: "noise",
+    attackDuration: 0.001, // Instant attack
+    releaseDuration: 0.08, // Quick decay
+  },
+  {
+    id: "deep_bell",
+    name: "Deep Bell",
+    src: "synthetic:deep_bell",
+    frequency: 220, // Lower than Short Bell
+    duration: 2000,
+    waveform: "sine",
+    harmonics: [440, 660, 880],
+    attackDuration: 0.01,
+    releaseDuration: 1.5,
+  },
+  {
+    id: "crystal_chime",
+    name: "Crystal Chime",
+    src: "synthetic:crystal_chime",
+    frequency: 2000, // Higher, more crystalline
+    duration: 1200,
+    waveform: "triangle",
+    harmonics: [4000, 6000],
+    attackDuration: 0.005,
+    releaseDuration: 0.8,
+  },
+  {
+    id: "tibetan_bowl",
+    name: "Tibetan Bowl",
+    src: "synthetic:tibetan_bowl",
+    frequency: 256, // Different from regular singing bowl
+    duration: 3500,
+    waveform: "sine",
+    harmonics: [512, 768, 1024, 1280],
+    attackDuration: 0.15,
+    releaseDuration: 2.8,
+  },
+  {
+    id: "temple_bell",
+    name: "Temple Bell",
+    src: "synthetic:temple_bell",
+    frequency: 800, // Mid-range temple bell
+    duration: 1800,
+    waveform: "square",
+    harmonics: [1600, 2400, 3200],
+    attackDuration: 0.008,
+    releaseDuration: 1.2,
+  },
+  {
+    id: "wind_chime",
+    name: "Wind Chime",
+    src: "synthetic:wind_chime",
+    frequency: 1400, // Multiple frequencies for wind chime effect
+    duration: 900,
+    waveform: "triangle",
+    harmonics: [1050, 1750, 2100], // Multiple chime frequencies
+    attackDuration: 0.02,
+    releaseDuration: 0.6,
+  },
+  {
+    id: "rain_stick",
+    name: "Rain Stick",
+    src: "synthetic:rain_stick",
+    frequency: 800, // Base frequency for filtering
+    duration: 1500,
+    waveform: "noise",
+    attackDuration: 0.1,
+    releaseDuration: 1.0,
+  },
 ]
 
 export const AMBIENT_SOUNDS_LIBRARY: AmbientSound[] = [
