@@ -79,181 +79,213 @@ export default function EncoderPage() {
   }, [])
 
   const playSoundPreview = async (soundId: string) => {
-    // Ensure Tone.js is started
-    if (Tone.context.state !== "running") {
-      await Tone.start()
-    }
+    console.log("[v0] Playing sound preview for:", soundId)
+    console.log("[v0] Tone.js context state:", Tone.context.state)
 
-    switch (soundId) {
-      case "bell_high": {
-        // Professional bell sound using Tone.js FMSynth
-        const bell = new Tone.FMSynth({
-          harmonicity: 8,
-          modulationIndex: 25,
-          detune: 0,
-          oscillator: {
-            type: "sine",
-          },
-          envelope: {
-            attack: 0.001,
-            decay: 1.0,
-            sustain: 0.1,
-            release: 1.2,
-          },
-          modulation: {
-            type: "square",
-          },
-          modulationEnvelope: {
-            attack: 0.5,
-            decay: 0.0,
-            sustain: 1,
-            release: 0.5,
-          },
-        }).toDestination()
-
-        // Add reverb for realistic bell resonance
-        const reverb = new Tone.Reverb(2.5).toDestination()
-        bell.connect(reverb)
-
-        bell.triggerAttackRelease("A5", "2n")
-
-        // Clean up after sound finishes
-        setTimeout(() => {
-          bell.dispose()
-          reverb.dispose()
-        }, 3000)
-        break
+    try {
+      // Ensure Tone.js is started
+      if (Tone.context.state !== "running") {
+        console.log("[v0] Starting Tone.js context...")
+        await Tone.start()
+        console.log("[v0] Tone.js context started, new state:", Tone.context.state)
       }
-      case "bell_mid": {
-        const bell = new Tone.FMSynth({
-          harmonicity: 6,
-          modulationIndex: 20,
-          detune: 0,
-          oscillator: {
-            type: "sine",
-          },
-          envelope: {
-            attack: 0.001,
-            decay: 1.2,
-            sustain: 0.1,
-            release: 1.5,
-          },
-          modulation: {
-            type: "square",
-          },
-          modulationEnvelope: {
-            attack: 0.6,
-            decay: 0.0,
-            sustain: 1,
-            release: 0.6,
-          },
-        }).toDestination()
 
-        const reverb = new Tone.Reverb(2.0).toDestination()
-        bell.connect(reverb)
+      console.log("[v0] Creating synthesizer for sound:", soundId)
 
-        bell.triggerAttackRelease("C5", "2n")
+      switch (soundId) {
+        case "bell_high": {
+          console.log("[v0] Creating FMSynth for bell_high")
+          // Professional bell sound using Tone.js FMSynth
+          const bell = new Tone.FMSynth({
+            harmonicity: 8,
+            modulationIndex: 25,
+            detune: 0,
+            oscillator: {
+              type: "sine",
+            },
+            envelope: {
+              attack: 0.001,
+              decay: 1.0,
+              sustain: 0.1,
+              release: 1.2,
+            },
+            modulation: {
+              type: "square",
+            },
+            modulationEnvelope: {
+              attack: 0.5,
+              decay: 0.0,
+              sustain: 1,
+              release: 0.5,
+            },
+          }).toDestination()
 
-        setTimeout(() => {
-          bell.dispose()
-          reverb.dispose()
-        }, 3500)
-        break
+          // Add reverb for realistic bell resonance
+          const reverb = new Tone.Reverb(2.5).toDestination()
+          bell.connect(reverb)
+
+          console.log("[v0] Triggering bell_high sound")
+          bell.triggerAttackRelease("A5", "2n")
+
+          // Clean up after sound finishes
+          setTimeout(() => {
+            bell.dispose()
+            reverb.dispose()
+            console.log("[v0] Cleaned up bell_high synthesizer")
+          }, 3000)
+          break
+        }
+        case "bell_mid": {
+          console.log("[v0] Creating FMSynth for bell_mid")
+          const bell = new Tone.FMSynth({
+            harmonicity: 6,
+            modulationIndex: 20,
+            detune: 0,
+            oscillator: {
+              type: "sine",
+            },
+            envelope: {
+              attack: 0.001,
+              decay: 1.2,
+              sustain: 0.1,
+              release: 1.5,
+            },
+            modulation: {
+              type: "square",
+            },
+            modulationEnvelope: {
+              attack: 0.6,
+              decay: 0.0,
+              sustain: 1,
+              release: 0.6,
+            },
+          }).toDestination()
+
+          const reverb = new Tone.Reverb(2.0).toDestination()
+          bell.connect(reverb)
+
+          console.log("[v0] Triggering bell_mid sound")
+          bell.triggerAttackRelease("C5", "2n")
+
+          setTimeout(() => {
+            bell.dispose()
+            reverb.dispose()
+            console.log("[v0] Cleaned up bell_mid synthesizer")
+          }, 3500)
+          break
+        }
+        case "chime_soft": {
+          console.log("[v0] Creating MetalSynth for chime_soft")
+          // Soft chime using Tone.js MetalSynth
+          const chime = new Tone.MetalSynth({
+            frequency: 200,
+            envelope: {
+              attack: 0.001,
+              decay: 1.4,
+              release: 0.2,
+            },
+            harmonicity: 5.1,
+            modulationIndex: 32,
+            resonance: 4000,
+            octaves: 1.5,
+          }).toDestination()
+
+          const reverb = new Tone.Reverb(1.5).toDestination()
+          chime.connect(reverb)
+
+          console.log("[v0] Triggering chime_soft sound")
+          chime.triggerAttackRelease("C6", "1n")
+
+          setTimeout(() => {
+            chime.dispose()
+            reverb.dispose()
+            console.log("[v0] Cleaned up chime_soft synthesizer")
+          }, 2500)
+          break
+        }
+        case "tone_short_low": {
+          console.log("[v0] Creating Synth for tone_short_low")
+          // Pleasant low tone using Tone.js Synth
+          const synth = new Tone.Synth({
+            oscillator: {
+              type: "sine",
+            },
+            envelope: {
+              attack: 0.05,
+              decay: 0.1,
+              sustain: 0.3,
+              release: 0.8,
+            },
+          }).toDestination()
+
+          console.log("[v0] Triggering tone_short_low sound")
+          synth.triggerAttackRelease("C4", "4n")
+
+          setTimeout(() => {
+            synth.dispose()
+            console.log("[v0] Cleaned up tone_short_low synthesizer")
+          }, 1500)
+          break
+        }
+        case "tone_short_high": {
+          console.log("[v0] Creating Synth for tone_short_high")
+          const synth = new Tone.Synth({
+            oscillator: {
+              type: "sine",
+            },
+            envelope: {
+              attack: 0.05,
+              decay: 0.1,
+              sustain: 0.3,
+              release: 0.6,
+            },
+          }).toDestination()
+
+          console.log("[v0] Triggering tone_short_high sound")
+          synth.triggerAttackRelease("C6", "8n")
+
+          setTimeout(() => {
+            synth.dispose()
+            console.log("[v0] Cleaned up tone_short_high synthesizer")
+          }, 1200)
+          break
+        }
+        case "wood_block": {
+          console.log("[v0] Creating NoiseSynth for wood_block")
+          // Realistic wood block using Tone.js NoiseSynth
+          const woodBlock = new Tone.NoiseSynth({
+            noise: {
+              type: "brown",
+            },
+            envelope: {
+              attack: 0.001,
+              decay: 0.13,
+              sustain: 0,
+            },
+          }).toDestination()
+
+          // Add filtering for wood-like resonance
+          const filter = new Tone.Filter(800, "bandpass").toDestination()
+          woodBlock.connect(filter)
+
+          console.log("[v0] Triggering wood_block sound")
+          woodBlock.triggerAttackRelease("16n")
+
+          setTimeout(() => {
+            woodBlock.dispose()
+            filter.dispose()
+            console.log("[v0] Cleaned up wood_block synthesizer")
+          }, 500)
+          break
+        }
+        default:
+          console.log("[v0] Unknown sound ID:", soundId)
+          return
       }
-      case "chime_soft": {
-        // Soft chime using Tone.js MetalSynth
-        const chime = new Tone.MetalSynth({
-          frequency: 200,
-          envelope: {
-            attack: 0.001,
-            decay: 1.4,
-            release: 0.2,
-          },
-          harmonicity: 5.1,
-          modulationIndex: 32,
-          resonance: 4000,
-          octaves: 1.5,
-        }).toDestination()
 
-        const reverb = new Tone.Reverb(1.5).toDestination()
-        chime.connect(reverb)
-
-        chime.triggerAttackRelease("C6", "1n")
-
-        setTimeout(() => {
-          chime.dispose()
-          reverb.dispose()
-        }, 2500)
-        break
-      }
-      case "tone_short_low": {
-        // Pleasant low tone using Tone.js Synth
-        const synth = new Tone.Synth({
-          oscillator: {
-            type: "sine",
-          },
-          envelope: {
-            attack: 0.05,
-            decay: 0.1,
-            sustain: 0.3,
-            release: 0.8,
-          },
-        }).toDestination()
-
-        synth.triggerAttackRelease("C4", "4n")
-
-        setTimeout(() => {
-          synth.dispose()
-        }, 1500)
-        break
-      }
-      case "tone_short_high": {
-        const synth = new Tone.Synth({
-          oscillator: {
-            type: "sine",
-          },
-          envelope: {
-            attack: 0.05,
-            decay: 0.1,
-            sustain: 0.3,
-            release: 0.6,
-          },
-        }).toDestination()
-
-        synth.triggerAttackRelease("C6", "8n")
-
-        setTimeout(() => {
-          synth.dispose()
-        }, 1200)
-        break
-      }
-      case "wood_block": {
-        // Realistic wood block using Tone.js NoiseSynth
-        const woodBlock = new Tone.NoiseSynth({
-          noise: {
-            type: "brown",
-          },
-          envelope: {
-            attack: 0.001,
-            decay: 0.13,
-            sustain: 0,
-          },
-        }).toDestination()
-
-        // Add filtering for wood-like resonance
-        const filter = new Tone.Filter(800, "bandpass").toDestination()
-        woodBlock.connect(filter)
-
-        woodBlock.triggerAttackRelease("16n")
-
-        setTimeout(() => {
-          woodBlock.dispose()
-          filter.dispose()
-        }, 500)
-        break
-      }
-      default:
-        return
+      console.log("[v0] Sound preview completed for:", soundId)
+    } catch (error) {
+      console.error("[v0] Error in playSoundPreview:", error)
     }
   }
 
