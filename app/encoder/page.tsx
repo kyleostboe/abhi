@@ -79,213 +79,129 @@ export default function EncoderPage() {
   }, [])
 
   const playSoundPreview = async (soundId: string) => {
-    console.log("[v0] Playing sound preview for:", soundId)
-    console.log("[v0] Tone.js context state:", Tone.context.state)
-
     try {
       // Ensure Tone.js is started
       if (Tone.context.state !== "running") {
-        console.log("[v0] Starting Tone.js context...")
         await Tone.start()
-        console.log("[v0] Tone.js context started, new state:", Tone.context.state)
       }
 
-      console.log("[v0] Creating synthesizer for sound:", soundId)
-
-      switch (soundId) {
-        case "bell_high": {
-          console.log("[v0] Creating FMSynth for bell_high")
-          // Professional bell sound using Tone.js FMSynth
-          const bell = new Tone.FMSynth({
-            harmonicity: 8,
-            modulationIndex: 25,
-            detune: 0,
-            oscillator: {
-              type: "sine",
-            },
-            envelope: {
-              attack: 0.001,
-              decay: 1.0,
-              sustain: 0.1,
-              release: 1.2,
-            },
-            modulation: {
-              type: "square",
-            },
-            modulationEnvelope: {
-              attack: 0.5,
-              decay: 0.0,
-              sustain: 1,
-              release: 0.5,
-            },
-          }).toDestination()
-
-          // Add reverb for realistic bell resonance
-          const reverb = new Tone.Reverb(2.5).toDestination()
-          bell.connect(reverb)
-
-          console.log("[v0] Triggering bell_high sound")
-          bell.triggerAttackRelease("A5", "2n")
-
-          // Clean up after sound finishes
-          setTimeout(() => {
-            bell.dispose()
-            reverb.dispose()
-            console.log("[v0] Cleaned up bell_high synthesizer")
-          }, 3000)
-          break
-        }
-        case "bell_mid": {
-          console.log("[v0] Creating FMSynth for bell_mid")
-          const bell = new Tone.FMSynth({
-            harmonicity: 6,
-            modulationIndex: 20,
-            detune: 0,
-            oscillator: {
-              type: "sine",
-            },
-            envelope: {
-              attack: 0.001,
-              decay: 1.2,
-              sustain: 0.1,
-              release: 1.5,
-            },
-            modulation: {
-              type: "square",
-            },
-            modulationEnvelope: {
-              attack: 0.6,
-              decay: 0.0,
-              sustain: 1,
-              release: 0.6,
-            },
-          }).toDestination()
-
-          const reverb = new Tone.Reverb(2.0).toDestination()
-          bell.connect(reverb)
-
-          console.log("[v0] Triggering bell_mid sound")
-          bell.triggerAttackRelease("C5", "2n")
-
-          setTimeout(() => {
-            bell.dispose()
-            reverb.dispose()
-            console.log("[v0] Cleaned up bell_mid synthesizer")
-          }, 3500)
-          break
-        }
-        case "chime_soft": {
-          console.log("[v0] Creating MetalSynth for chime_soft")
-          // Soft chime using Tone.js MetalSynth
-          const chime = new Tone.MetalSynth({
-            frequency: 200,
-            envelope: {
-              attack: 0.001,
-              decay: 1.4,
-              release: 0.2,
-            },
-            harmonicity: 5.1,
-            modulationIndex: 32,
-            resonance: 4000,
-            octaves: 1.5,
-          }).toDestination()
-
-          const reverb = new Tone.Reverb(1.5).toDestination()
-          chime.connect(reverb)
-
-          console.log("[v0] Triggering chime_soft sound")
-          chime.triggerAttackRelease("C6", "1n")
-
-          setTimeout(() => {
-            chime.dispose()
-            reverb.dispose()
-            console.log("[v0] Cleaned up chime_soft synthesizer")
-          }, 2500)
-          break
-        }
-        case "tone_short_low": {
-          console.log("[v0] Creating Synth for tone_short_low")
-          // Pleasant low tone using Tone.js Synth
-          const synth = new Tone.Synth({
-            oscillator: {
-              type: "sine",
-            },
-            envelope: {
-              attack: 0.05,
-              decay: 0.1,
-              sustain: 0.3,
-              release: 0.8,
-            },
-          }).toDestination()
-
-          console.log("[v0] Triggering tone_short_low sound")
-          synth.triggerAttackRelease("C4", "4n")
-
-          setTimeout(() => {
-            synth.dispose()
-            console.log("[v0] Cleaned up tone_short_low synthesizer")
-          }, 1500)
-          break
-        }
-        case "tone_short_high": {
-          console.log("[v0] Creating Synth for tone_short_high")
-          const synth = new Tone.Synth({
-            oscillator: {
-              type: "sine",
-            },
-            envelope: {
-              attack: 0.05,
-              decay: 0.1,
-              sustain: 0.3,
-              release: 0.6,
-            },
-          }).toDestination()
-
-          console.log("[v0] Triggering tone_short_high sound")
-          synth.triggerAttackRelease("C6", "8n")
-
-          setTimeout(() => {
-            synth.dispose()
-            console.log("[v0] Cleaned up tone_short_high synthesizer")
-          }, 1200)
-          break
-        }
-        case "wood_block": {
-          console.log("[v0] Creating NoiseSynth for wood_block")
-          // Realistic wood block using Tone.js NoiseSynth
-          const woodBlock = new Tone.NoiseSynth({
-            noise: {
-              type: "brown",
-            },
-            envelope: {
-              attack: 0.001,
-              decay: 0.13,
-              sustain: 0,
-            },
-          }).toDestination()
-
-          // Add filtering for wood-like resonance
-          const filter = new Tone.Filter(800, "bandpass").toDestination()
-          woodBlock.connect(filter)
-
-          console.log("[v0] Triggering wood_block sound")
-          woodBlock.triggerAttackRelease("16n")
-
-          setTimeout(() => {
-            woodBlock.dispose()
-            filter.dispose()
-            console.log("[v0] Cleaned up wood_block synthesizer")
-          }, 500)
-          break
-        }
-        default:
-          console.log("[v0] Unknown sound ID:", soundId)
-          return
-      }
-
-      console.log("[v0] Sound preview completed for:", soundId)
+      // Create and play sound using Tone.js
+      await createToneSound(soundId, 0, 1.0) // immediate playback with full volume
     } catch (error) {
-      console.error("[v0] Error in playSoundPreview:", error)
+      console.error("Error playing sound preview:", error)
+    }
+  }
+
+  const createToneSound = async (soundId: string, startTime = 0, volumeMultiplier = 1.0) => {
+    const baseVolume = 0.3 * volumeMultiplier
+
+    switch (soundId) {
+      case "bell_high": {
+        const bell = new Tone.FMSynth({
+          harmonicity: 8,
+          modulationIndex: 25,
+          oscillator: { type: "sine" },
+          envelope: { attack: 0.001, decay: 1.0, sustain: 0.1, release: 1.2 },
+          modulation: { type: "square" },
+          modulationEnvelope: { attack: 0.5, decay: 0.0, sustain: 1, release: 0.5 },
+        }).toDestination()
+
+        const reverb = new Tone.Reverb(2.5).toDestination()
+        bell.connect(reverb)
+
+        bell.triggerAttackRelease("A5", "2n", `+${startTime}`)
+
+        setTimeout(() => {
+          bell.dispose()
+          reverb.dispose()
+        }, 3000)
+        break
+      }
+      case "bell_mid": {
+        const bell = new Tone.FMSynth({
+          harmonicity: 6,
+          modulationIndex: 20,
+          oscillator: { type: "sine" },
+          envelope: { attack: 0.001, decay: 1.2, sustain: 0.1, release: 1.5 },
+          modulation: { type: "square" },
+          modulationEnvelope: { attack: 0.6, decay: 0.0, sustain: 1, release: 0.6 },
+        }).toDestination()
+
+        const reverb = new Tone.Reverb(2.0).toDestination()
+        bell.connect(reverb)
+
+        bell.triggerAttackRelease("C5", "2n", `+${startTime}`)
+
+        setTimeout(() => {
+          bell.dispose()
+          reverb.dispose()
+        }, 3500)
+        break
+      }
+      case "chime_soft": {
+        const chime = new Tone.MetalSynth({
+          frequency: 200,
+          envelope: { attack: 0.001, decay: 1.4, release: 0.2 },
+          harmonicity: 5.1,
+          modulationIndex: 32,
+          resonance: 4000,
+          octaves: 1.5,
+        }).toDestination()
+
+        const reverb = new Tone.Reverb(1.5).toDestination()
+        chime.connect(reverb)
+
+        chime.triggerAttackRelease("C6", "1n", `+${startTime}`)
+
+        setTimeout(() => {
+          chime.dispose()
+          reverb.dispose()
+        }, 2500)
+        break
+      }
+      case "tone_short_low": {
+        const synth = new Tone.Synth({
+          oscillator: { type: "sine" },
+          envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 0.8 },
+        }).toDestination()
+
+        synth.triggerAttackRelease("C4", "4n", `+${startTime}`)
+
+        setTimeout(() => {
+          synth.dispose()
+        }, 1500)
+        break
+      }
+      case "tone_short_high": {
+        const synth = new Tone.Synth({
+          oscillator: { type: "sine" },
+          envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 0.6 },
+        }).toDestination()
+
+        synth.triggerAttackRelease("C6", "8n", `+${startTime}`)
+
+        setTimeout(() => {
+          synth.dispose()
+        }, 1200)
+        break
+      }
+      case "wood_block": {
+        const woodBlock = new Tone.NoiseSynth({
+          noise: { type: "brown" },
+          envelope: { attack: 0.001, decay: 0.13, sustain: 0 },
+        }).toDestination()
+
+        const filter = new Tone.Filter(800, "bandpass").toDestination()
+        woodBlock.connect(filter)
+
+        woodBlock.triggerAttackRelease("16n", `+${startTime}`)
+
+        setTimeout(() => {
+          woodBlock.dispose()
+          filter.dispose()
+        }, 500)
+        break
+      }
     }
   }
 
@@ -487,260 +403,46 @@ export default function EncoderPage() {
       mappedInstructions.length > 0 ? Math.max(...mappedInstructions.map((instr) => instr.endTime)) : 0
     const estimatedDuration = Math.max(originalBuffer.duration, maxInstructionTime + 2)
 
-    // Create offline context for rendering
-    const offlineCtx = new OfflineAudioContext(
-      2, // stereo
-      Math.ceil(audioCtx.sampleRate * estimatedDuration),
-      audioCtx.sampleRate,
-    )
+    // Create a new Tone.js offline context for rendering
+    const offlineContext = new Tone.OfflineContext(2, estimatedDuration, audioCtx.sampleRate)
 
-    // Sort instructions by start time to avoid conflicts
+    // Set Tone.js to use the offline context
+    Tone.setContext(offlineContext)
+
+    // Sort instructions by start time
     const sortedInstructions = [...mappedInstructions].sort((a, b) => a.startTime - b.startTime)
 
-    // Process each instruction separately
-    for (const instr of sortedInstructions) {
-      const startTime = Math.max(0, instr.startTime)
+    // Add original audio if needed
+    if (sortedInstructions.some((instr) => instr.keepOriginal)) {
+      const player = new Tone.Player(originalAudioUrl).toDestination()
+      await Tone.loaded()
 
-      // Add original speech if requested
-      if (instr.keepOriginal && startTime < originalBuffer.duration) {
-        try {
-          const startSample = Math.floor(startTime * originalBuffer.sampleRate)
-          const endSample = Math.min(Math.floor(instr.endTime * originalBuffer.sampleRate), originalBuffer.length)
-          const segmentLength = Math.max(0, endSample - startSample)
-
-          if (segmentLength > 0) {
-            const segmentBuffer = offlineCtx.createBuffer(
-              originalBuffer.numberOfChannels,
-              segmentLength,
-              originalBuffer.sampleRate,
-            )
-
-            // Copy audio data safely
-            for (let channel = 0; channel < originalBuffer.numberOfChannels; channel++) {
-              const originalData = originalBuffer.getChannelData(channel)
-              const segmentData = segmentBuffer.getChannelData(channel)
-
-              for (let i = 0; i < segmentLength; i++) {
-                if (startSample + i < originalData.length) {
-                  segmentData[i] = originalData[startSample + i]
-                }
-              }
-            }
-
-            const source = offlineCtx.createBufferSource()
-            const gainNode = offlineCtx.createGain()
-            source.buffer = segmentBuffer
-            source.connect(gainNode)
-            gainNode.connect(offlineCtx.destination)
-
-            const volume = (instr.originalVolume / 100) * 0.8
-            gainNode.gain.setValueAtTime(volume, startTime)
-
-            source.start(startTime)
-          }
-        } catch (error) {
-          console.warn("Error adding original audio segment:", error)
+      for (const instr of sortedInstructions) {
+        if (instr.keepOriginal) {
+          const volume = (instr.originalVolume / 100) * 0.8
+          player.volume.value = Tone.gainToDb(volume)
+          player.start(instr.startTime)
         }
-      }
-
-      // Add sound cue
-      try {
-        await addSoundCue(offlineCtx, instr.soundId, startTime, instr.soundVolume / 100)
-      } catch (error) {
-        console.warn("Error adding sound cue:", error)
       }
     }
 
-    // Render the final audio
-    const renderedBuffer = await offlineCtx.startRendering()
+    // Add sound cues using Tone.js
+    for (const instr of sortedInstructions) {
+      await createToneSound(instr.soundId, instr.startTime, instr.soundVolume / 100)
+    }
+
+    // Render the audio
+    const renderedBuffer = await offlineContext.render()
+
+    // Reset Tone.js to use the main context
+    Tone.setContext(audioCtx)
+
+    // Convert to WAV blob
     const wavBlob = await bufferToWav(renderedBuffer)
     return URL.createObjectURL(wavBlob)
   }
 
-  // Helper function to add individual sound cues
-  const addSoundCue = async (
-    offlineCtx: OfflineAudioContext,
-    soundId: string,
-    startTime: number,
-    volumeMultiplier: number,
-  ): Promise<void> => {
-    const baseVolume = 0.15 * volumeMultiplier
-
-    switch (soundId) {
-      case "bell_high": {
-        // FM synthesis inspired by Tone.js FMSynth
-        const carrier = offlineCtx.createOscillator()
-        const modulator = offlineCtx.createOscillator()
-        const modulatorGain = offlineCtx.createGain()
-        const carrierGain = offlineCtx.createGain()
-
-        modulator.connect(modulatorGain)
-        modulatorGain.connect(carrier.frequency)
-        carrier.connect(carrierGain)
-        carrierGain.connect(offlineCtx.destination)
-
-        carrier.type = "sine"
-        modulator.type = "square"
-        carrier.frequency.setValueAtTime(880, startTime) // A5
-        modulator.frequency.setValueAtTime(880 * 8, startTime) // Harmonicity: 8
-        modulatorGain.gain.setValueAtTime(880 * 25, startTime) // Modulation index: 25
-
-        // Professional envelope
-        carrierGain.gain.setValueAtTime(0, startTime)
-        carrierGain.gain.linearRampToValueAtTime(baseVolume, startTime + 0.001)
-        carrierGain.gain.exponentialRampToValueAtTime(baseVolume * 0.1, startTime + 1.0)
-        carrierGain.gain.exponentialRampToValueAtTime(0.001, startTime + 2.2)
-
-        carrier.start(startTime)
-        modulator.start(startTime)
-        carrier.stop(startTime + 2.2)
-        modulator.stop(startTime + 2.2)
-        break
-      }
-
-      case "bell_mid": {
-        const carrier = offlineCtx.createOscillator()
-        const modulator = offlineCtx.createOscillator()
-        const modulatorGain = offlineCtx.createGain()
-        const carrierGain = offlineCtx.createGain()
-
-        modulator.connect(modulatorGain)
-        modulatorGain.connect(carrier.frequency)
-        carrier.connect(carrierGain)
-        carrierGain.connect(offlineCtx.destination)
-
-        carrier.type = "sine"
-        modulator.type = "square"
-        carrier.frequency.setValueAtTime(523, startTime) // C5
-        modulator.frequency.setValueAtTime(523 * 6, startTime)
-        modulatorGain.gain.setValueAtTime(523 * 20, startTime)
-
-        carrierGain.gain.setValueAtTime(0, startTime)
-        carrierGain.gain.linearRampToValueAtTime(baseVolume, startTime + 0.001)
-        carrierGain.gain.exponentialRampToValueAtTime(baseVolume * 0.1, startTime + 1.2)
-        carrierGain.gain.exponentialRampToValueAtTime(0.001, startTime + 2.7)
-
-        carrier.start(startTime)
-        modulator.start(startTime)
-        carrier.stop(startTime + 2.7)
-        modulator.stop(startTime + 2.7)
-        break
-      }
-
-      case "chime_soft": {
-        // Metal synthesis inspired by Tone.js MetalSynth
-        const oscillators = []
-        const gains = []
-        const frequencies = [1047, 1047 * 5.1, 1047 * 5.1 * 1.5] // Harmonics
-
-        for (let i = 0; i < frequencies.length; i++) {
-          const osc = offlineCtx.createOscillator()
-          const gain = offlineCtx.createGain()
-
-          osc.connect(gain)
-          gain.connect(offlineCtx.destination)
-
-          osc.type = "sine"
-          osc.frequency.setValueAtTime(frequencies[i], startTime)
-
-          const volume = baseVolume * (1 / (i + 1)) // Decreasing harmonics
-          gain.gain.setValueAtTime(0, startTime)
-          gain.gain.linearRampToValueAtTime(volume, startTime + 0.001)
-          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 1.4)
-
-          osc.start(startTime)
-          osc.stop(startTime + 1.4)
-
-          oscillators.push(osc)
-          gains.push(gain)
-        }
-        break
-      }
-
-      case "tone_short_low": {
-        const oscillator = offlineCtx.createOscillator()
-        const gainNode = offlineCtx.createGain()
-
-        oscillator.connect(gainNode)
-        gainNode.connect(offlineCtx.destination)
-
-        oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(261, startTime) // C4
-
-        // Tone.js-inspired envelope
-        gainNode.gain.setValueAtTime(0, startTime)
-        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.05)
-        gainNode.gain.exponentialRampToValueAtTime(baseVolume * 0.3, startTime + 0.15)
-        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.95)
-
-        oscillator.start(startTime)
-        oscillator.stop(startTime + 0.95)
-        break
-      }
-
-      case "tone_short_high": {
-        const oscillator = offlineCtx.createOscillator()
-        const gainNode = offlineCtx.createGain()
-
-        oscillator.connect(gainNode)
-        gainNode.connect(offlineCtx.destination)
-
-        oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(1047, startTime) // C6
-
-        gainNode.gain.setValueAtTime(0, startTime)
-        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.05)
-        gainNode.gain.exponentialRampToValueAtTime(baseVolume * 0.3, startTime + 0.1)
-        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.7)
-
-        oscillator.start(startTime)
-        oscillator.stop(startTime + 0.7)
-        break
-      }
-
-      case "wood_block": {
-        // Noise synthesis inspired by Tone.js NoiseSynth
-        const bufferSize = Math.floor(offlineCtx.sampleRate * 0.13)
-        const noiseBuffer = offlineCtx.createBuffer(1, bufferSize, offlineCtx.sampleRate)
-        const data = noiseBuffer.getChannelData(0)
-
-        // Brown noise for more realistic wood sound
-        let lastOut = 0
-        for (let i = 0; i < bufferSize; i++) {
-          const white = Math.random() * 2 - 1
-          const brown = (lastOut + 0.02 * white) / 1.02
-          lastOut = brown
-          data[i] = brown * 3.5 // Amplify brown noise
-        }
-
-        const noiseSource = offlineCtx.createBufferSource()
-        const filter = offlineCtx.createBiquadFilter()
-        const gainNode = offlineCtx.createGain()
-
-        noiseSource.buffer = noiseBuffer
-        noiseSource.connect(filter)
-        filter.connect(gainNode)
-        gainNode.connect(offlineCtx.destination)
-
-        // Tone.js-inspired filtering
-        filter.type = "bandpass"
-        filter.frequency.setValueAtTime(800, startTime)
-        filter.Q.setValueAtTime(3, startTime)
-
-        // Sharp attack, quick decay like Tone.js NoiseSynth
-        gainNode.gain.setValueAtTime(0, startTime)
-        gainNode.gain.linearRampToValueAtTime(baseVolume, startTime + 0.001)
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.13)
-
-        noiseSource.start(startTime)
-        break
-      }
-
-      default:
-        console.warn(`Unknown sound ID: ${soundId}`)
-    }
-  }
-
+  // Helper function to convert AudioBuffer to WAV blob
   const bufferToWav = async (buffer: AudioBuffer): Promise<Blob> => {
     const length = buffer.length
     const numberOfChannels = buffer.numberOfChannels
