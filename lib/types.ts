@@ -8,10 +8,12 @@ export interface SoundCue {
   id: string
   name: string
   src: string // Path to audio file or synthetic: prefix
+  note?: string
   frequency?: number
   duration?: number // in milliseconds (total sound length)
   waveform?: OscillatorType
-  harmonics?: number[]
+  harmonics?: { ratio: number; amplitude: number; decay: number }[]
+  fm?: { modRatio: number; modIndex: number }
   attackDuration?: number // in seconds
   releaseDuration?: number // in seconds
 }
