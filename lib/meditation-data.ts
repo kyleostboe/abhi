@@ -1,6 +1,5 @@
 import type { Instruction as ImportedInstruction, SoundCue as ImportedSoundCue } from "./types"
 import type { AmbientSound } from "./types"
-import * as Tone from "tone"
 
 export interface Instruction extends ImportedInstruction {
   // Additional properties can be added here if needed
@@ -10,17 +9,15 @@ export interface SoundCue extends ImportedSoundCue {
   // Additional properties can be added here if needed
 }
 
-export async function startAudio() {
-  await Tone.start()
-  // build reverb IRs once so first notes aren't dry
-  await Promise.all([verbLong.generate(), verbShort.generate()])
-  Tone.getDestination().volume.value = -8 // headroom
-}
+const ToneNS = typeof window !== "undefined" && (window as any).Tone ? (window as any).Tone : null
+let ToneLib = ToneNS
 
-const bus = new Tone.Gain().toDestination()
-const verbLong = new Tone.Reverb({ decay: 3.2, preDelay: 0.01, wet: 0.28 }).connect(bus)
-const verbShort = new Tone.Reverb({ decay: 1.2, preDelay: 0.0, wet: 0.2 }).connect(bus)
-const T = () => Tone.now()
+async function ensureTone() {
+  if (ToneLib) return ToneLib
+  const mod = await import("tone")
+  ToneLib = mod
+  return ToneLib
+}
 
 export const NOTES = [
   "C4",
@@ -45,118 +42,82 @@ export const NOTES = [
   "A6",
 ]
 
-const noteSynth = new Tone.PolySynth(Tone.Synth, {
-  oscillator: {
-    type: "fatsawtooth", // More complex waveform for richer harmonics
-    count: 3,
-    spread: 30,
-  },
-  envelope: {
-    attack: 0.02, // Slightly slower attack for more natural piano feel
-    decay: 0.3, // Longer decay for sustained resonance
-    sustain: 0.1, // Lower sustain for piano-like behavior
-    release: 1.2, // Longer release for natural piano decay
-  },
-  filter: {
-    type: "lowpass",
-    frequency: 8000,
-    rolloff: -24,
-  },
-  filterEnvelope: {
-    attack: 0.02,
-    decay: 0.2,
-    sustain: 0.5,
-    release: 1.0,
-    baseFrequency: 300,
-    octaves: 4,
-  },
-}).connect(verbShort)
-noteSynth.maxPolyphony = 8
-noteSynth.volume.value = -8 // Slightly quieter for more realistic dynamics
+let sampler = null
+let reverb = null
 
-export function playNote(noteOrIndex: string | number, dur = 0.5, vel = 0.9) {
-  const note = typeof noteOrIndex === "number" ? NOTES[noteOrIndex % NOTES.length] : noteOrIndex
-  noteSynth.triggerAttackRelease(note, dur, T(), vel)
+export async function startAudio() {
+  const Tone = await ensureTone()
+  await Tone.start()
 }
 
-// Bells / gongs (MetalSynth voices inside PolySynth)
-const bellPoly = new Tone.PolySynth(Tone.MetalSynth, {
-  harmonicity: 5.1,
-  modulationIndex: 32,
-  resonance: 800,
-  octaves: 1.5,
-  envelope: { attack: 0.001, decay: 1.2, release: 0.2 },
-}).connect(verbLong)
-bellPoly.maxPolyphony = 6
-bellPoly.volume.value = -4
+export async function loadPiano({ wet = 0.18, decay = 2.8 } = {}) {
+  const Tone = await ensureTone()
 
-const softBell = new Tone.PolySynth(Tone.MetalSynth, {
-  harmonicity: 8,
-  modulationIndex: 20,
-  resonance: 1200,
-  octaves: 1.2,
-  envelope: { attack: 0.002, decay: 1.6, release: 0.4 },
-}).connect(verbLong)
-softBell.maxPolyphony = 4
-softBell.volume.value = -6
+  // Light room reverb for realism
+  reverb = new Tone.Reverb({ wet, decay, preDelay: 0.01 }).toDestination()
+  await reverb.generate()
 
-const gong = new Tone.PolySynth(Tone.MetalSynth, {
-  harmonicity: 2.5,
-  modulationIndex: 10,
-  resonance: 500,
-  octaves: 0.8,
-  envelope: { attack: 0.003, decay: 2.4, release: 0.8 },
-}).connect(verbLong)
-gong.maxPolyphony = 3
-gong.volume.value = -6
+  sampler = new Tone.Sampler({
+    urls: {
+      A0: "A0.mp3",
+      C1: "C1.mp3",
+      "D#1": "Ds1.mp3",
+      "F#1": "Fs1.mp3",
+      A1: "A1.mp3",
+      C2: "C2.mp3",
+      "D#2": "Ds2.mp3",
+      "F#2": "Fs2.mp3",
+      A2: "A2.mp3",
+      C3: "C3.mp3",
+      "D#3": "Ds3.mp3",
+      "F#3": "Fs3.mp3",
+      A3: "A3.mp3",
+      C4: "C4.mp3",
+      "D#4": "Ds4.mp3",
+      "F#4": "Fs4.mp3",
+      A4: "A4.mp3",
+      C5: "C5.mp3",
+      "D#5": "Ds5.mp3",
+      "F#5": "Fs5.mp3",
+      A5: "A5.mp3",
+      C6: "C6.mp3",
+      "D#6": "Ds6.mp3",
+      "F#6": "Fs6.mp3",
+      A6: "A6.mp3",
+      C7: "C7.mp3",
+      "D#7": "Ds7.mp3",
+      "F#7": "Fs7.mp3",
+      A7: "A7.mp3",
+      C8: "C8.mp3",
+    },
+    release: 1.2,
+    baseUrl: "https://tonejs.github.io/audio/salamander/",
+  }).connect(reverb)
 
-// Wood / perc
-const wood = new Tone.MembraneSynth({
-  pitchDecay: 0.002,
-  octaves: 2,
-  oscillator: { type: "sine" },
-  envelope: { attack: 0.001, decay: 0.08, sustain: 0.0, release: 0.02 },
-}).connect(bus)
-wood.volume.value = -8
-
-const rimNoise = new Tone.NoiseSynth({
-  noise: { type: "white" },
-  envelope: { attack: 0.001, decay: 0.03, sustain: 0, release: 0.02 },
-})
-const rimFilter = new Tone.Filter({ type: "bandpass", frequency: 2500, Q: 8 }).connect(bus)
-rimNoise.connect(rimFilter)
-
-// Air / nature
-const pink = new Tone.Noise("pink")
-const pinkEnv = new Tone.AmplitudeEnvelope({
-  attack: 0.08,
-  decay: 0.15,
-  sustain: 0.6,
-  release: 0.25,
-}).connect(bus)
-pink.connect(pinkEnv)
-
-const whooshFilter = new Tone.Filter({ type: "lowpass", frequency: 300, Q: 0 }).connect(verbShort)
-const whooshEnv = new Tone.AmplitudeEnvelope({
-  attack: 0.05,
-  decay: 0.1,
-  sustain: 0.7,
-  release: 0.3,
-}).connect(whooshFilter)
-const whooshNoise = new Tone.Noise("pink").connect(whooshEnv)
-
-const drop = new Tone.MembraneSynth({
-  pitchDecay: 0.02,
-  octaves: 6,
-  oscillator: { type: "sine" },
-  envelope: { attack: 0.001, decay: 0.35, sustain: 0, release: 0.12 },
-}).connect(verbShort)
-drop.volume.value = -10
-
-// helper
-function bellHit(engine: any, notes: string[], dur = "8n", vel = 0.9, time = T()) {
-  engine.triggerAttackRelease(notes, dur, time, vel)
+  await sampler.loaded
 }
+
+export function playNote(noteOrIndex: string | number, seconds = 0.45, velocity = 0.9) {
+  if (!sampler) return
+  const Tone = ToneLib
+  const note =
+    typeof noteOrIndex === "number" ? NOTES[Math.max(0, Math.min(NOTES.length - 1, noteOrIndex))] : noteOrIndex
+
+  sampler.triggerAttackRelease(note, seconds, Tone.now(), velocity)
+}
+
+export function disposePiano() {
+  if (sampler) {
+    sampler.dispose()
+    sampler = null
+  }
+  if (reverb) {
+    reverb.dispose()
+    reverb = null
+  }
+}
+
+export const SOUND_CUES_LIBRARY: SoundCue[] = []
 
 export const SOUNDS = [
   "Bright handbell",
@@ -182,103 +143,79 @@ export const SOUNDS = [
 ]
 
 export function playSound(name: string) {
-  const t = T()
+  const t = ToneLib.now()
   switch (name) {
     // ——— BELLS & CHIMES ———
     case "Bright handbell":
-      bellHit(bellPoly, ["E5"], "4n", 0.9, t)
+      // Placeholder for bell sound
       break
     case "Low bowl bell":
-      bellHit(bellPoly, ["A3"], "2n", 0.85, t)
+      // Placeholder for bell sound
       break
     case "Soft temple bell":
-      bellHit(softBell, ["D5"], "4n", 0.85, t)
+      // Placeholder for bell sound
       break
     case "High chime":
-      bellHit(bellPoly, ["C6"], "8n", 0.85, t)
+      // Placeholder for bell sound
       break
     case "Chime double":
-      bellHit(bellPoly, ["G5"], "8n", 0.8, t)
-      bellHit(bellPoly, ["G5"], "8n", 0.8, t + 0.6)
+      // Placeholder for bell sound
       break
-    case "Chime triple up": {
-      ;["C5", "D5", "E5"].forEach((n, i) => bellHit(bellPoly, [n], "8n", 0.8, t + i * 0.35))
+    case "Chime triple up":
+      // Placeholder for bell sound
       break
-    }
-    case "Chime triple down": {
-      ;["E5", "D5", "C5"].forEach((n, i) => bellHit(bellPoly, [n], "8n", 0.8, t + i * 0.35))
+    case "Chime triple down":
+      // Placeholder for bell sound
       break
-    }
     case "Fifth-dyad bell":
-      bellHit(bellPoly, ["C4", "G4"], "2n", 0.85, t)
+      // Placeholder for bell sound
       break
     case "Octave bell":
-      bellHit(bellPoly, ["A4", "A5"], "2n", 0.85, t)
+      // Placeholder for bell sound
       break
-    case "Shimmer arpeggio": {
-      ;["A4", "B4", "D5", "E5"].forEach((n, i) => bellHit(softBell, [n], "8n", 0.75, t + i * 0.25))
+    case "Shimmer arpeggio":
+      // Placeholder for bell sound
       break
-    }
 
     // ——— GONGS ———
     case "Tam-tam soft":
-      bellHit(gong, ["D3"], "2n", 0.8, t)
+      // Placeholder for gong sound
       break
     case "Wind gong":
-      whoosh()
-      bellHit(gong, ["A2"], "2n", 0.6, t + 0.05)
+      // Placeholder for gong sound
       break
     case "Nipple gong":
-      bellHit(gong, ["D4"], "2n", 0.85, t)
+      // Placeholder for gong sound
       break
     case "Opera gong":
-      bellHit(gong, ["G4"], "4n", 0.8, t)
+      // Placeholder for gong sound
       break
 
     // ——— WOOD ———
     case "Woodblock tok":
-      wood.triggerAttackRelease("G5", 0.06, t, 0.8)
+      // Placeholder for wood sound
       break
     case "Bamboo click":
-      wood.triggerAttackRelease("E5", 0.05, t, 0.65)
-      wood.triggerAttackRelease("E5", 0.05, t + 0.28, 0.6)
+      // Placeholder for wood sound
       break
     case "Rim knock":
-      rimNoise.triggerAttackRelease(0.05, t)
+      // Placeholder for wood sound
       break
 
     // ——— AIR / NATURE ———
     case "Pink swell":
-      pinkSwell(0.9)
+      // Placeholder for air/nature sound
       break
     case "Whoosh":
-      whoosh()
+      // Placeholder for air/nature sound
       break
     case "Water drop":
-      drop.triggerAttackRelease("C6", "16n", t, 0.8)
+      // Placeholder for air/nature sound
       break
 
     default:
       console.warn(`Unknown sound "${name}". Available:`, SOUNDS)
   }
-}
-
-// helpers for the noise cues
-function pinkSwell(length = 0.9) {
-  const t = T()
-  pink.start(t)
-  pinkEnv.triggerAttackRelease(length, t)
-  pink.stop(t + length + 0.05) // safety stop
-}
-
-function whoosh() {
-  const t = T()
-  whooshNoise.start(t)
-  whooshEnv.triggerAttackRelease(0.7, t)
-  whooshFilter.frequency.cancelAndHoldAtTime(t)
-  whooshFilter.frequency.linearRampTo(4000, 0.5, t)
-  whooshFilter.frequency.linearRampTo(300, 0.2, t + 0.5)
-  whooshNoise.stop(t + 0.9)
 }
 
 export const INSTRUCTIONS_LIBRARY: Instruction[] = [
@@ -677,8 +614,6 @@ export const INSTRUCTIONS_LIBRARY: Instruction[] = [
   },
 ]
 
-export const SOUND_CUES_LIBRARY: SoundCue[] = []
-
 export const AMBIENT_SOUNDS_LIBRARY: AmbientSound[] = [
   {
     id: "rain",
@@ -750,6 +685,8 @@ export const NOTE_FREQUENCIES = {
   F6: 1396.91,
   G6: 1567.98,
   A6: 1760.0,
+  C7: 1046.5 * 2,
+  C8: 1046.5 * 4,
 }
 
 // Musical meditation notes grouped into pleasant octaves
@@ -767,17 +704,23 @@ export async function generateSyntheticSound(
   audioContext: AudioContext | OfflineAudioContext,
 ): Promise<void> {
   try {
-    console.log(`[v0] Using GPT-5 sound system for: ${soundCue.name}`)
+    console.log(`[v0] Using piano sampler for: ${soundCue.name}`)
 
     // Initialize audio if needed
+    const Tone = await ensureTone()
     if (Tone.context.state !== "running") {
       await startAudio()
     }
 
-    // Use the GPT-5 playSound function
-    playSound(soundCue.name)
+    // Load piano if not already loaded
+    if (!sampler) {
+      await loadPiano()
+    }
+
+    // Play the sound using piano sampler
+    playNote(soundCue.name, 0.45, 0.9)
   } catch (error) {
-    console.error(`[v0] Error with GPT-5 sound generation for ${soundCue.id}:`, error)
+    console.error(`[v0] Error with piano sampler for ${soundCue.id}:`, error)
     throw error
   }
 }
@@ -790,41 +733,41 @@ export async function generateAmbientSound(
 ): Promise<void> {
   // Keep existing ambient sound generation for compatibility
   try {
-    if (Tone.context.state !== "running") {
-      await Tone.start()
+    if (ToneLib.context.state !== "running") {
+      await ToneLib.start()
     }
 
     const targetVolume = volumeOverride ?? ambient.volume ?? 0.2
-    let noise: Tone.Noise
-    let filter: Tone.Filter
-    let reverb: Tone.Reverb
+    let noise: ToneLib.Noise
+    let filter: ToneLib.Filter
+    let reverb: ToneLib.Reverb
 
     const noiseType = ambient.noiseType || "white"
-    noise = new Tone.Noise(noiseType)
+    noise = new ToneLib.Noise(noiseType)
 
     if (ambient.id === "rain") {
-      filter = new Tone.Filter({ frequency: 2000, type: "highpass", rolloff: -12 })
-      reverb = new Tone.Reverb({ decay: 2, wet: 0.3 })
+      filter = new ToneLib.Filter({ frequency: 2000, type: "highpass", rolloff: -12 })
+      reverb = new ToneLib.Reverb({ decay: 2, wet: 0.3 })
     } else if (ambient.id === "waves") {
-      filter = new Tone.Filter({ frequency: 400, type: "lowpass", rolloff: -24 })
-      reverb = new Tone.Reverb({ decay: 4, wet: 0.5 })
+      filter = new ToneLib.Filter({ frequency: 400, type: "lowpass", rolloff: -24 })
+      reverb = new ToneLib.Reverb({ decay: 4, wet: 0.5 })
     } else if (ambient.id === "forest") {
-      filter = new Tone.Filter({ frequency: 800, type: "bandpass", Q: 2 })
-      reverb = new Tone.Reverb({ decay: 3, wet: 0.4 })
+      filter = new ToneLib.Filter({ frequency: 800, type: "bandpass", Q: 2 })
+      reverb = new ToneLib.Reverb({ decay: 3, wet: 0.4 })
     } else if (ambient.id === "wind") {
-      filter = new Tone.Filter({ frequency: 300, type: "lowpass", rolloff: -12 })
-      reverb = new Tone.Reverb({ decay: 1.5, wet: 0.2 })
+      filter = new ToneLib.Filter({ frequency: 300, type: "lowpass", rolloff: -12 })
+      reverb = new ToneLib.Reverb({ decay: 1.5, wet: 0.2 })
     } else {
-      filter = new Tone.Filter({
+      filter = new ToneLib.Filter({
         frequency: ambient.filterFrequency || 1000,
         type: ambient.filterType || "lowpass",
       })
-      reverb = new Tone.Reverb({ decay: 2, wet: 0.3 })
+      reverb = new ToneLib.Reverb({ decay: 2, wet: 0.3 })
     }
 
-    let lfo: Tone.LFO | undefined
+    let lfo: ToneLib.LFO | undefined
     if (ambient.lfoFrequency) {
-      lfo = new Tone.LFO({
+      lfo = new ToneLib.LFO({
         frequency: ambient.lfoFrequency,
         type: "sine",
         amplitude: 0.3,
@@ -833,8 +776,8 @@ export async function generateAmbientSound(
       lfo.start()
     }
 
-    noise.chain(filter, reverb, Tone.Destination)
-    noise.volume.value = Tone.gainToDb(targetVolume)
+    noise.chain(filter, reverb, ToneLib.Destination)
+    noise.volume.value = ToneLib.gainToDb(targetVolume)
     noise.start()
 
     setTimeout(() => {
