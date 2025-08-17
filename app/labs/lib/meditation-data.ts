@@ -1,6 +1,16 @@
+// sounds.ts
+// Replaces "piano notes" with a **Kalimba (Thumb Piano)** implemented in Tone.js.
+// Keep your existing types and sound libraries; adds a kalimba note player.
+
+/* ------------------------------------------------------------------ */
+/* Types                                                               */
+/* ------------------------------------------------------------------ */
 import type { Instruction as ImportedInstruction, SoundCue as ImportedSoundCue } from "./types"
 import type { AmbientSound } from "./types"
 
+/* ------------------------------------------------------------------ */
+/* Public interfaces                                                   */
+/* ------------------------------------------------------------------ */
 export interface Instruction extends ImportedInstruction {
   // Additional properties can be added here if needed
 }
@@ -14,88 +24,74 @@ export interface SoundCue extends ImportedSoundCue {
   releaseDuration?: number
 }
 
-
-
+/* ------------------------------------------------------------------ */
+/* Sound cue library (files + synthetic descriptors)                   */
+/* ------------------------------------------------------------------ */
 export const SOUND_CUES_LIBRARY: SoundCue[] = [
-  {
-    id: "sound1",
-    name: "Singing Bowl (Short)",
-    src: "/sounds/singing-bowl-short.mp3",
-  },
-  {
-    id: "sound2",
-    name: "Gentle Chime",
-    src: "/sounds/chime-gentle.mp3",
-  },
-  {
-    id: "sound3",
-    name: "Soft Gong",
-    src: "/sounds/soft-gong.mp3",
-  },
-  {
-    id: "sound4",
-    name: "Short Bell",
-    src: "/sounds/short-bell.mp3",
-  },
-  {
-    id: "sound5",
-    name: "Clear Tone",
-    src: "/sounds/clear-tone.mp3",
-  },
+  { id: "sound1", name: "Singing Bowl (Short)", src: "/sounds/singing-bowl-short.mp3" },
+  { id: "sound2", name: "Gentle Chime", src: "/sounds/chime-gentle.mp3" },
+  { id: "sound3", name: "Soft Gong", src: "/sounds/soft-gong.mp3" },
+  { id: "sound4", name: "Short Bell", src: "/sounds/short-bell.mp3" },
+  { id: "sound5", name: "Clear Tone", src: "/sounds/clear-tone.mp3" },
+
+  // Synthetic (can be rendered via generateSyntheticSound)
   {
     id: "singing_bowl",
     name: "Singing Bowl",
     src: "synthetic:singing_bowl",
     frequency: 432,
-    duration: 2500, // Total sound length in ms
+    duration: 2500,
     waveform: "sine",
-    harmonics: [864, 1296, 1728], // More harmonics for richness
-    attackDuration: 0.1, // 100ms attack
-    releaseDuration: 2.0, // 2000ms release
+    harmonics: [864, 1296, 1728],
+    attackDuration: 0.1,
+    releaseDuration: 2.0,
   },
   {
     id: "gentle_chime",
     name: "Gentle Chime",
     src: "synthetic:chime_gentle",
-    frequency: 1200, // Higher pitch
-    duration: 700, // Total sound length in ms
-    waveform: "triangle", // Softer than square, sharper than sine
-    attackDuration: 0.01, // 10ms attack
-    releaseDuration: 0.5, // 500ms release
+    frequency: 1200,
+    duration: 700,
+    waveform: "triangle",
+    attackDuration: 0.01,
+    releaseDuration: 0.5,
   },
   {
     id: "soft_gong",
     name: "Soft Gong",
     src: "synthetic:soft_gong",
-    frequency: 180, // Lower, deeper tone
-    duration: 3000, // Total sound length in ms
+    frequency: 180,
+    duration: 3000,
     waveform: "sine",
-    harmonics: [360, 540, 720], // For depth
-    attackDuration: 0.2, // 200ms attack
-    releaseDuration: 2.5, // 2500ms release
+    harmonics: [360, 540, 720],
+    attackDuration: 0.2,
+    releaseDuration: 2.5,
   },
   {
     id: "short_bell",
     name: "Short Bell",
     src: "synthetic:short_bell",
-    frequency: 1500, // High, clear ring
-    duration: 500, // Total sound length in ms
-    waveform: "square", // Sharper, more metallic
-    attackDuration: 0.005, // 5ms attack
-    releaseDuration: 0.2, // 200ms release
+    frequency: 1500,
+    duration: 500,
+    waveform: "square",
+    attackDuration: 0.005,
+    releaseDuration: 0.2,
   },
   {
     id: "clear_tone",
     name: "Clear Tone",
     src: "synthetic:clear_tone",
     frequency: 528,
-    duration: 1500, // Total sound length in ms
+    duration: 1500,
     waveform: "sine",
-    attackDuration: 0.05, // 50ms attack
-    releaseDuration: 1.0, // 1000ms release
+    attackDuration: 0.05,
+    releaseDuration: 1.0,
   },
 ]
 
+/* ------------------------------------------------------------------ */
+/* Ambient sounds                                                      */
+/* ------------------------------------------------------------------ */
 export const AMBIENT_SOUNDS_LIBRARY: AmbientSound[] = [
   {
     id: "synthetic_rain",
@@ -146,6 +142,9 @@ export const AMBIENT_SOUNDS_LIBRARY: AmbientSound[] = [
   { id: "synthetic_brown_noise", name: "Brown Noise (Synthetic)", src: "synthetic:brown-noise", noiseType: "brown" },
 ]
 
+/* ------------------------------------------------------------------ */
+/* Note frequencies                                                    */
+/* ------------------------------------------------------------------ */
 export const NOTE_FREQUENCIES = {
   C3: 130.81,
   D3: 146.83,
@@ -170,7 +169,10 @@ export const NOTE_FREQUENCIES = {
   B5: 987.77,
 }
 
-// Musical meditation notes grouped into pleasant octaves
+/* ------------------------------------------------------------------ */
+/* Musical notes (your “beautiful” set) — these will be played by     */
+/* the Kalimba engine below (Tone.js PluckSynth).                     */
+/* ------------------------------------------------------------------ */
 export const MUSICAL_NOTES = {
   Beautiful: [
     { id: "note-c3", name: "C3", note: "C", octave: 3 },
@@ -191,77 +193,67 @@ export const MUSICAL_NOTES = {
   ],
 }
 
-// Function to generate synthetic sounds using Web Audio API
+/* Convenience: string list of the Beautiful notes (e.g., "C4") */
+export const KALIMBA_NOTE_NAMES: string[] = MUSICAL_NOTES.Beautiful.map(n => `${n.note}${n.octave}`)
+
+/* ------------------------------------------------------------------ */
+/* Synthetic tone generator (unchanged; Web Audio API)                 */
+/* ------------------------------------------------------------------ */
 export async function generateSyntheticSound(
   soundCue: SoundCue,
   audioContext: AudioContext | OfflineAudioContext,
 ): Promise<void> {
   try {
-    // Resume context if suspended (only for AudioContext, not OfflineAudioContext)
     if (audioContext instanceof AudioContext && audioContext.state === "suspended") {
       await audioContext.resume()
     }
 
-    const totalSoundDurationSeconds = (soundCue.duration || 1000) / 1000 // Convert to seconds
+    const totalSoundDurationSeconds = (soundCue.duration || 1000) / 1000
     const frequency = soundCue.frequency || 440
     const waveform = soundCue.waveform || "sine"
-    const attackDuration = soundCue.attackDuration || 0.01 // Default 10ms
-    const releaseDuration = soundCue.releaseDuration || 0.5 // Default 500ms
+    const attackDuration = soundCue.attackDuration || 0.01
+    const releaseDuration = soundCue.releaseDuration || 0.5
 
-    // Create oscillator
     const oscillator = audioContext.createOscillator()
     const gainNode = audioContext.createGain()
-
-    // Connect nodes
     oscillator.connect(gainNode)
     gainNode.connect(audioContext.destination)
 
-    // Set oscillator properties
-    oscillator.type = waveform
+    oscillator.type = waveform as OscillatorType
     oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime)
 
-    // Create envelope (Attack, Sustain, Release)
     const now = audioContext.currentTime
-    const peakVolume = 0.5 // Max volume
-    const endVolume = 0.001 // Near silence
+    const peakVolume = 0.5
+    const endVolume = 0.001
 
-    // Attack phase
     gainNode.gain.setValueAtTime(0, now)
     gainNode.gain.linearRampToValueAtTime(peakVolume, now + attackDuration)
 
-    // Sustain phase (hold peak volume until release starts)
     const sustainStart = now + attackDuration
     const releaseStart = now + totalSoundDurationSeconds - releaseDuration
 
     if (releaseStart > sustainStart) {
-      // If there's a distinct sustain phase
       gainNode.gain.linearRampToValueAtTime(peakVolume, releaseStart)
     } else {
-      // If attack + release is longer than or equal to total duration,
-      // start release immediately after attack (or even during attack if attackDuration is long)
       gainNode.gain.linearRampToValueAtTime(
         peakVolume,
         Math.max(now + attackDuration, now + totalSoundDurationSeconds - releaseDuration),
       )
     }
 
-    // Release phase
     gainNode.gain.exponentialRampToValueAtTime(endVolume, now + totalSoundDurationSeconds)
 
-    // Add harmonics if specified
-    if (soundCue.harmonics) {
+    if (soundCue.harmonics && soundCue.harmonics.length) {
       soundCue.harmonics.forEach((harmonic, index) => {
         const harmonicOsc = audioContext.createOscillator()
         const harmonicGain = audioContext.createGain()
-
         harmonicOsc.connect(harmonicGain)
         harmonicGain.connect(audioContext.destination)
 
-        harmonicOsc.type = waveform
+        harmonicOsc.type = oscillator.type
         harmonicOsc.frequency.setValueAtTime(harmonic, audioContext.currentTime)
 
-        // Harmonics are quieter and follow a similar envelope
-        const harmonicVolume = (peakVolume * 0.2) / (index + 1) // Reduce volume for higher harmonics
+        const harmonicVolume = (peakVolume * 0.2) / (index + 1)
 
         harmonicGain.gain.setValueAtTime(0, now)
         harmonicGain.gain.linearRampToValueAtTime(harmonicVolume, now + attackDuration)
@@ -281,22 +273,16 @@ export async function generateSyntheticSound(
       })
     }
 
-    // Start and stop the oscillator
     oscillator.start(now)
     oscillator.stop(now + totalSoundDurationSeconds)
 
-    // Clean up (only for AudioContext, not OfflineAudioContext as it's managed by render)
     if (audioContext instanceof AudioContext) {
-      setTimeout(
-        () => {
-          try {
-            audioContext.close()
-          } catch (e) {
-            console.warn("Error closing audio context:", e)
-          }
-        },
-        totalSoundDurationSeconds * 1000 + 100,
-      )
+      // Let the tail finish before closing; in-app you may prefer to **not** close the context.
+      setTimeout(() => {
+        try {
+          audioContext.close()
+        } catch {}
+      }, totalSoundDurationSeconds * 1000 + 100)
     }
   } catch (error) {
     console.error("Error generating synthetic sound:", error)
@@ -304,6 +290,107 @@ export async function generateSyntheticSound(
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* KALIMBA ENGINE (Tone.js)                                            */
+/* ------------------------------------------------------------------ */
+/**
+ * Kalimba implementation using Tone.js PluckSynth (Karplus–Strong).
+ * This avoids external samples and yields a gentle, ethereal plucked-tine sound.
+ *
+ * API:
+ *   await startKalimbaAudio();     // must be called from a user gesture
+ *   await initKalimba();           // create synth + fx
+ *   playKalimbaNote("C4", 0.9);    // or playKalimbaIndex(0)
+ *   disposeKalimba();
+ */
 
+// Import Tone.js (types are included in the package)
+import * as Tone from "tone"
+
+let _kalimbaSynth: Tone.PluckSynth | null = null
+let _kalimbaEQ: Tone.EQ3 | null = null
+let _kalimbaReverb: Tone.Reverb | null = null
+let _kalimbaGain: Tone.Gain | null = null
+
+/** Call from a user gesture before any playback */
+export async function startKalimbaAudio(): Promise<void> {
+  await Tone.start()
+}
+
+/** Build the kalimba signal chain */
+export async function initKalimba(opts?: {
+  volume?: number // dB
+  reverbWet?: number
+  reverbDecay?: number
+  dampening?: number // PluckSynth dampening (Hz)
+  resonance?: number // PluckSynth resonance (0..1)
+  attackNoise?: number // PluckSynth attack noise (0..20)
+}) {
+  const {
+    volume = -10,
+    reverbWet = 0.18,
+    reverbDecay = 2.6,
+    dampening = 3000,
+    resonance = 0.92,
+    attackNoise = 1.0,
+  } = opts || {}
+
+  disposeKalimba()
+
+  _kalimbaSynth = new Tone.PluckSynth({
+  dampening: 4000,   // higher → quicker decay
+  resonance: 0.9,    // slightly lower resonance also trims ring
+  attackNoise: 1.0,
+})
+
+  // Gentle tilt-EQ: soften harsh highs, keep warmth
+  _kalimbaEQ = new Tone.EQ3({
+    low: -1,
+    mid: 0,
+    high: -2,
+    lowFrequency: 200,
+    highFrequency: 6000,
+  })
+
+  _kalimbaReverb = new Tone.Reverb({ wet: reverbWet, decay: reverbDecay, preDelay: 0.01 })
+  await _kalimbaReverb.generate()
+
+  _kalimbaGain = new Tone.Gain(Tone.dbToGain(volume))
+
+  // Chain: Kalimba → EQ → Reverb → Gain → Destination
+  _kalimbaSynth.chain(_kalimbaEQ, _kalimbaReverb, _kalimbaGain, Tone.getDestination())
+}
+
+/** Play a kalimba note by name (e.g., "C4") */
+export function playKalimbaNote(note: string, velocity = 0.9): void {
+  if (!_kalimbaSynth) return
+  _kalimbaSynth.triggerAttack(note, Tone.now(), velocity)
+}
+
+/** Play a kalimba note by index into KALIMBA_NOTE_NAMES (0..len-1) */
+export function playKalimbaIndex(index: number, velocity = 0.9): void {
+  const clamped = Math.max(0, Math.min(KALIMBA_NOTE_NAMES.length - 1, index))
+  playKalimbaNote(KALIMBA_NOTE_NAMES[clamped], velocity)
+}
+
+/** Release resources */
+export function disposeKalimba(): void {
+  _kalimbaSynth?.dispose()
+  _kalimbaEQ?.dispose()
+  _kalimbaReverb?.dispose()
+  _kalimbaGain?.dispose()
+  _kalimbaSynth = null
+  _kalimbaEQ = null
+  _kalimbaReverb = null
+  _kalimbaGain = null
+}
+
+/* ------------------------------------------------------------------ */
+/* Optional helper: play the full “Beautiful” set once each            */
+/* ------------------------------------------------------------------ */
+export async function auditionKalimbaSequence(intervalMs = 350): Promise<void> {
+  for (let i = 0; i < KALIMBA_NOTE_NAMES.length; i++) {
+    playKalimbaIndex(i, 0.9)
+    await new Promise(r => setTimeout(r, intervalMs))
   }
 }
