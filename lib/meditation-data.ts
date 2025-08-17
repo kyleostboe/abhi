@@ -1,259 +1,431 @@
+// meditation-data.ts
+// Meditation data + Kalimba (Thumb Piano) engine using Tone.js
+// - Keeps your existing sound/ambient libraries and WebAudio synthetic generator
+// - Replaces "piano" with a Kalimba-style plucked engine (Tone.PluckSynth)
+// - Adds chords: every note in the Beautiful set maps to a chord built ONLY from the same Beautiful notes
+
+/* ------------------------------------------------------------------ */
+/* Types                                                               */
+/* ------------------------------------------------------------------ */
 import type { Instruction as ImportedInstruction, SoundCue as ImportedSoundCue } from "./types"
 import type { AmbientSound } from "./types"
 
+/* ------------------------------------------------------------------ */
+/* Public interfaces                                                   */
+/* ------------------------------------------------------------------ */
 export interface Instruction extends ImportedInstruction {
   // Additional properties can be added here if needed
 }
 
 export interface SoundCue extends ImportedSoundCue {
-  // Additional properties can be added here if needed
+  frequency?: number
+  duration?: number
+  waveform?: OscillatorType | string
+  harmonics?: number[]
+  attackDuration?: number
+  releaseDuration?: number
 }
 
-const ToneNS = typeof window !== "undefined" && (window as any).Tone ? (window as any).Tone : null
-let ToneLib = ToneNS
+/* ------------------------------------------------------------------ */
+/* Sound cue library (files + synthetic descriptors)                   */
+/* ------------------------------------------------------------------ */
+export const SOUND_CUES_LIBRARY: SoundCue[] = [
+  { id: "sound1", name: "Singing Bowl (Short)", src: "/sounds/singing-bowl-short.mp3" },
+  { id: "sound2", name: "Gentle Chime", src: "/sounds/chime-gentle.mp3" },
+  { id: "sound3", name: "Soft Gong", src: "/sounds/soft-gong.mp3" },
+  { id: "sound4", name: "Short Bell", src: "/sounds/short-bell.mp3" },
+  { id: "sound5", name: "Clear Tone", src: "/sounds/clear-tone.mp3" },
 
-async function ensureTone() {
-  if (ToneLib) return ToneLib
-  const mod = await import("tone")
-  ToneLib = mod
-  return ToneLib
-}
-
-export const NOTES = [
-  "C4",
-  "D4",
-  "E4",
-  "F4",
-  "G4",
-  "A4",
-  "B4",
-  "C5",
-  "D5",
-  "E5",
-  "F5",
-  "G5",
-  "A5",
-  "B5",
-  "C6",
-  "D6",
-  "E6",
-  "F6",
-  "G6",
-  "A6",
+  // Synthetic (renderable via generateSyntheticSound)
+  {
+    id: "singing_bowl",
+    name: "Singing Bowl",
+    src: "synthetic:singing_bowl",
+    frequency: 432,
+    duration: 2500,
+    waveform: "sine",
+    harmonics: [864, 1296, 1728],
+    attackDuration: 0.1,
+    releaseDuration: 2.0,
+  },
+  {
+    id: "gentle_chime",
+    name: "Gentle Chime",
+    src: "synthetic:chime_gentle",
+    frequency: 1200,
+    duration: 700,
+    waveform: "triangle",
+    attackDuration: 0.01,
+    releaseDuration: 0.5,
+  },
+  {
+    id: "soft_gong",
+    name: "Soft Gong",
+    src: "synthetic:soft_gong",
+    frequency: 180,
+    duration: 3000,
+    waveform: "sine",
+    harmonics: [360, 540, 720],
+    attackDuration: 0.2,
+    releaseDuration: 2.5,
+  },
+  {
+    id: "short_bell",
+    name: "Short Bell",
+    src: "synthetic:short_bell",
+    frequency: 1500,
+    duration: 500,
+    waveform: "square",
+    attackDuration: 0.005,
+    releaseDuration: 0.2,
+  },
+  {
+    id: "clear_tone",
+    name: "Clear Tone",
+    src: "synthetic:clear_tone",
+    frequency: 528,
+    duration: 1500,
+    waveform: "sine",
+    attackDuration: 0.05,
+    releaseDuration: 1.0,
+  },
 ]
 
-let sampler = null
-let reverb = null
-let isLoading = false
-let isLoaded = false
+/* ------------------------------------------------------------------ */
+/* Ambient sounds                                                      */
+/* ------------------------------------------------------------------ */
+export const AMBIENT_SOUNDS_LIBRARY: AmbientSound[] = [
+  {
+    id: "synthetic_rain",
+    name: "Synthetic Rain",
+    src: "synthetic:rain",
+    noiseType: "white",
+    filterType: "highpass",
+    filterFrequency: 1000,
+    lfoFrequency: 20,
+    volume: 0.2,
+  },
+  {
+    id: "synthetic_waves",
+    name: "Synthetic Ocean Waves",
+    src: "synthetic:waves",
+    noiseType: "white",
+    filterType: "lowpass",
+    filterFrequency: 500,
+    lfoFrequency: 0.2,
+    volume: 0.25,
+  },
+  {
+    id: "synthetic_forest",
+    name: "Synthetic Forest",
+    src: "synthetic:forest",
+    noiseType: "brown",
+    filterType: "lowpass",
+    filterFrequency: 800,
+    lfoFrequency: 0.5,
+    volume: 0.2,
+  },
+  {
+    id: "synthetic_wind",
+    name: "Synthetic Wind",
+    src: "synthetic:wind",
+    noiseType: "white",
+    filterType: "lowpass",
+    filterFrequency: 400,
+    lfoFrequency: 0.1,
+    volume: 0.2,
+  },
+  { id: "file_rain", name: "Rain (File)", src: "/sounds/rain.mp3" },
+  { id: "file_forest", name: "Forest Birds (File)", src: "/sounds/forest.mp3" },
+  { id: "file_ocean", name: "Ocean Waves (File)", src: "/sounds/ocean.mp3" },
+  { id: "file_river", name: "Gentle River (File)", src: "/sounds/river.mp3" },
+  { id: "synthetic_white_noise", name: "White Noise (Synthetic)", src: "synthetic:white-noise", noiseType: "white" },
+  { id: "synthetic_pink_noise", name: "Pink Noise (Synthetic)", src: "synthetic:pink-noise", noiseType: "pink" },
+  { id: "synthetic_brown_noise", name: "Brown Noise (Synthetic)", src: "synthetic:brown-noise", noiseType: "brown" },
+]
 
-export async function startAudio() {
-  const Tone = await ensureTone()
+/* ------------------------------------------------------------------ */
+/* Note frequencies                                                    */
+/* ------------------------------------------------------------------ */
+export const NOTE_FREQUENCIES = {
+  C3: 130.81,
+  D3: 146.83,
+  E3: 164.81,
+  F3: 174.61,
+  G3: 196.0,
+  A3: 220.0,
+  B3: 246.94,
+  C4: 261.63,
+  D4: 293.66,
+  E4: 329.63,
+  F4: 349.23,
+  G4: 392.0,
+  A4: 440.0,
+  B4: 493.88,
+  C5: 523.25,
+  D5: 587.33,
+  E5: 659.25,
+  F5: 698.46,
+  G5: 783.99,
+  A5: 880.0,
+  B5: 987.77,
+}
+
+/* ------------------------------------------------------------------ */
+/* Musical notes (Beautiful set)                                       */
+/* ------------------------------------------------------------------ */
+export const MUSICAL_NOTES = {
+  Beautiful: [
+    { id: "note-c3", name: "C3", note: "C", octave: 3 },
+    { id: "note-d3", name: "D3", note: "D", octave: 3 },
+    { id: "note-e3", name: "E3", note: "E", octave: 3 },
+    { id: "note-g3", name: "G3", note: "G", octave: 3 },
+    { id: "note-a3", name: "A3", note: "A", octave: 3 },
+
+    { id: "note-c4", name: "C4", note: "C", octave: 4 },
+    { id: "note-d4", name: "D4", note: "D", octave: 4 },
+    { id: "note-e4", name: "E4", note: "E", octave: 4 },
+    { id: "note-g4", name: "G4", note: "G", octave: 4 },
+    { id: "note-a4", name: "A4", note: "A", octave: 4 },
+
+    { id: "note-c5", name: "C5", note: "C", octave: 5 },
+    { id: "note-d5", name: "D5", note: "D", octave: 5 },
+    { id: "note-e5", name: "E5", note: "E", octave: 5 },
+    { id: "note-g5", name: "G5", note: "G", octave: 5 },
+    { id: "note-a5", name: "A5", note: "A", octave: 5 },
+  ],
+}
+
+/** Convenience list like ["C3","D3",...]. These drive the kalimba player. */
+export const KALIMBA_NOTE_NAMES: string[] = MUSICAL_NOTES.Beautiful.map((n) => `${n.note}${n.octave}`)
+
+/* ------------------------------------------------------------------ */
+/* Beautiful-set CHORDS                                                */
+/* Each root maps to a triad built only from Beautiful notes (C D E G A).
+   These are pentatonic-flavored stacks that sound consonant on kalimba.     */
+/* ------------------------------------------------------------------ */
+export const BEAUTIFUL_CHORDS: Record<string, string[]> = {
+  // octave 3
+  C3: ["C3", "E3", "G3"],
+  D3: ["D3", "G3", "A3"],
+  E3: ["E3", "A3", "C4"],
+  G3: ["G3", "C4", "D4"],
+  A3: ["A3", "D4", "E4"],
+  // octave 4
+  C4: ["C4", "E4", "G4"],
+  D4: ["D4", "G4", "A4"],
+  E4: ["E4", "A4", "C5"],
+  G4: ["G4", "C5", "D5"],
+  A4: ["A4", "D5", "E5"],
+  // octave 5
+  C5: ["C5", "E5", "G5"],
+  D5: ["D5", "G5", "A5"],
+  E5: ["E5", "A5", "C5"], // in-set voicing (pleasant quartal/tertian color)
+  G5: ["G5", "C5", "D5"],
+  A5: ["A5", "D5", "E5"],
+}
+
+/* ------------------------------------------------------------------ */
+/* Synthetic tone generator (Web Audio API)                            */
+/* ------------------------------------------------------------------ */
+export async function generateSyntheticSound(
+  soundCue: SoundCue,
+  audioContext: AudioContext | OfflineAudioContext,
+): Promise<void> {
+  try {
+    if (audioContext instanceof AudioContext && audioContext.state === "suspended") {
+      await audioContext.resume()
+    }
+
+    const totalSoundDurationSeconds = (soundCue.duration || 1000) / 1000
+    const frequency = soundCue.frequency || 440
+    const waveform = (soundCue.waveform as OscillatorType) || "sine"
+    const attackDuration = soundCue.attackDuration ?? 0.01
+    const releaseDuration = soundCue.releaseDuration ?? 0.5
+
+    const now = audioContext.currentTime
+    const peakVolume = 0.5
+    const endVolume = 0.001
+
+    const osc = audioContext.createOscillator()
+    const gain = audioContext.createGain()
+    osc.type = waveform
+    osc.frequency.setValueAtTime(frequency, now)
+    osc.connect(gain)
+    gain.connect(audioContext.destination)
+
+    // ADSR-ish envelope
+    gain.gain.setValueAtTime(0, now)
+    gain.gain.linearRampToValueAtTime(peakVolume, now + attackDuration)
+
+    const sustainStart = now + attackDuration
+    const releaseStart = now + totalSoundDurationSeconds - releaseDuration
+    if (releaseStart > sustainStart) {
+      gain.gain.linearRampToValueAtTime(peakVolume, releaseStart)
+    } else {
+      gain.gain.linearRampToValueAtTime(
+        peakVolume,
+        Math.max(now + attackDuration, now + totalSoundDurationSeconds - releaseDuration),
+      )
+    }
+    gain.gain.exponentialRampToValueAtTime(endVolume, now + totalSoundDurationSeconds)
+
+    // Harmonics (quieter, same envelope shape)
+    if (soundCue.harmonics?.length) {
+      soundCue.harmonics.forEach((h, i) => {
+        const ho = audioContext.createOscillator()
+        const hg = audioContext.createGain()
+        ho.type = waveform
+        ho.frequency.setValueAtTime(h, now)
+        ho.connect(hg)
+        hg.connect(audioContext.destination)
+
+        const hv = (peakVolume * 0.2) / (i + 1)
+        hg.gain.setValueAtTime(0, now)
+        hg.gain.linearRampToValueAtTime(hv, now + attackDuration)
+        if (releaseStart > sustainStart) {
+          hg.gain.linearRampToValueAtTime(hv, releaseStart)
+        } else {
+          hg.gain.linearRampToValueAtTime(
+            hv,
+            Math.max(now + attackDuration, now + totalSoundDurationSeconds - releaseDuration),
+          )
+        }
+        hg.gain.exponentialRampToValueAtTime(endVolume, now + totalSoundDurationSeconds)
+
+        ho.start(now)
+        ho.stop(now + totalSoundDurationSeconds)
+      })
+    }
+
+    osc.start(now)
+    osc.stop(now + totalSoundDurationSeconds)
+
+    // Optional: close context after rendering (skip if you reuse it elsewhere)
+    if (audioContext instanceof AudioContext) {
+      setTimeout(
+        () => {
+          try {
+            audioContext.close()
+          } catch {}
+        },
+        totalSoundDurationSeconds * 1000 + 100,
+      )
+    }
+  } catch (err) {
+    console.error("Error generating synthetic sound:", err)
+    throw err
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Kalimba Engine (Tone.js PluckSynth)                                 */
+/* ------------------------------------------------------------------ */
+import * as Tone from "tone"
+
+let _kalimbaSynth: Tone.PluckSynth | null = null
+let _kalimbaEQ: Tone.EQ3 | null = null
+let _kalimbaReverb: Tone.Reverb | null = null
+let _kalimbaGain: Tone.Gain | null = null
+
+/** Must be called from a user gesture before any playback */
+export async function startKalimbaAudio(): Promise<void> {
   await Tone.start()
 }
 
-export async function loadPiano({ wet = 0.18, decay = 2.8 } = {}) {
-  if (isLoading || isLoaded) return // Prevent multiple loading attempts
+/** Create Kalimba signal chain (shorter, still-natural tail) */
+export async function initKalimba(opts?: {
+  volume?: number // dB
+  reverbWet?: number
+  reverbDecay?: number
+  dampening?: number // Hz — higher = quicker decay
+  resonance?: number // 0..1 — lower trims ring
+  attackNoise?: number // 0..20 — more initial "pluck"
+}) {
+  const {
+    volume = -10,
+    reverbWet = 0.18,
+    reverbDecay = 2.6,
+    dampening = 4000, // ↑ slightly quicker decay than 3000
+    resonance = 0.9, // ↓ a touch less ring
+    attackNoise = 1.0,
+  } = opts || {}
 
-  isLoading = true
-  const Tone = await ensureTone()
+  disposeKalimba()
 
-  try {
-    // Light room reverb for realism
-    reverb = new Tone.Reverb({ wet, decay, preDelay: 0.01 }).toDestination()
-    await reverb.generate()
+  _kalimbaSynth = new Tone.PluckSynth({ dampening, resonance, attackNoise })
+  _kalimbaEQ = new Tone.EQ3({ low: -1, mid: 0, high: -2, lowFrequency: 200, highFrequency: 6000 })
+  _kalimbaReverb = new Tone.Reverb({ wet: reverbWet, decay: reverbDecay, preDelay: 0.01 })
+  await _kalimbaReverb.generate()
+  _kalimbaGain = new Tone.Gain(Tone.dbToGain(volume))
 
-    sampler = new Tone.Sampler({
-      urls: {
-        A0: "A0.mp3",
-        C1: "C1.mp3",
-        "D#1": "Ds1.mp3",
-        "F#1": "Fs1.mp3",
-        A1: "A1.mp3",
-        C2: "C2.mp3",
-        "D#2": "Ds2.mp3",
-        "F#2": "Fs2.mp3",
-        A2: "A2.mp3",
-        C3: "C3.mp3",
-        "D#3": "Ds3.mp3",
-        "F#3": "Fs3.mp3",
-        A3: "A3.mp3",
-        C4: "C4.mp3",
-        "D#4": "Ds4.mp3",
-        "F#4": "Fs4.mp3",
-        A4: "A4.mp3",
-        C5: "C5.mp3",
-        "D#5": "Ds5.mp3",
-        "F#5": "Fs5.mp3",
-        A5: "A5.mp3",
-        C6: "C6.mp3",
-        "D#6": "Ds6.mp3",
-        "F#6": "Fs6.mp3",
-        A6: "A6.mp3",
-        C7: "C7.mp3",
-        "D#7": "Ds7.mp3",
-        "F#7": "Fs7.mp3",
-        A7: "A7.mp3",
-        C8: "C8.mp3",
-      },
-      release: 1.2,
-      baseUrl: "https://tonejs.github.io/audio/salamander/",
-    }).connect(reverb)
+  _kalimbaSynth.chain(_kalimbaEQ, _kalimbaReverb, _kalimbaGain, Tone.getDestination())
+}
 
-    await new Promise((resolve) => {
-      const checkLoaded = () => {
-        if (sampler.loaded) {
-          resolve(true)
-        } else {
-          setTimeout(checkLoaded, 100)
-        }
-      }
-      checkLoaded()
-    })
+/** Play a single kalimba note (natural tail, slightly shortened by synth params) */
+export function playKalimbaNote(note: string, velocity = 0.9): void {
+  if (!_kalimbaSynth) return
+  _kalimbaSynth.triggerAttack(note, Tone.now(), velocity)
+}
 
-    isLoaded = true
-    console.log("[v0] Piano sampler fully loaded and ready")
-  } catch (error) {
-    console.error("[v0] Error loading piano:", error)
-    throw error
-  } finally {
-    isLoading = false
+/** Play by index into KALIMBA_NOTE_NAMES */
+export function playKalimbaIndex(index: number, velocity = 0.9): void {
+  const i = Math.max(0, Math.min(KALIMBA_NOTE_NAMES.length - 1, index))
+  playKalimbaNote(KALIMBA_NOTE_NAMES[i], velocity)
+}
+
+/** Play a chord by supplying a root (we look up BEAUTIFUL_CHORDS[root]) */
+export function playKalimbaChordFromRoot(root: string, velocity = 0.9, strumMs = 18): void {
+  const chord = BEAUTIFUL_CHORDS[root]
+  if (!chord) return
+  playKalimbaChord(chord, velocity, strumMs)
+}
+
+/** Play a chord from explicit note names; optional gentle up-strum */
+export function playKalimbaChord(notes: string[], velocity = 0.9, strumMs = 18): void {
+  if (!_kalimbaSynth || !notes?.length) return
+  const t0 = Tone.now()
+  notes.forEach((n, i) => _kalimbaSynth!.triggerAttack(n, t0 + (i * strumMs) / 1000, velocity))
+}
+
+/** Release resources */
+export function disposeKalimba(): void {
+  _kalimbaSynth?.dispose()
+  _kalimbaSynth = null
+  _kalimbaEQ?.dispose()
+  _kalimbaEQ = null
+  _kalimbaReverb?.dispose()
+  _kalimbaReverb = null
+  _kalimbaGain?.dispose()
+  _kalimbaGain = null
+}
+
+/** Quick audition helper */
+export async function auditionKalimbaSequence(intervalMs = 320): Promise<void> {
+  for (const n of KALIMBA_NOTE_NAMES) {
+    playKalimbaNote(n, 0.9)
+    await new Promise((r) => setTimeout(r, intervalMs))
   }
 }
 
 export async function playNote(noteOrIndex: string | number, seconds = 0.45, velocity = 0.9) {
-  if (!isLoaded) {
-    console.log("[v0] Piano not loaded, initializing...")
-    await startAudio()
-    await loadPiano()
+  // Initialize kalimba if not already done
+  if (!_kalimbaSynth) {
+    await startKalimbaAudio()
+    await initKalimba()
   }
 
-  if (!sampler || !sampler.loaded) {
-    throw new Error("Piano sampler is not loaded")
-  }
-
-  const Tone = ToneLib
   const note =
-    typeof noteOrIndex === "number" ? NOTES[Math.max(0, Math.min(NOTES.length - 1, noteOrIndex))] : noteOrIndex
+    typeof noteOrIndex === "number"
+      ? KALIMBA_NOTE_NAMES[Math.max(0, Math.min(KALIMBA_NOTE_NAMES.length - 1, noteOrIndex))]
+      : noteOrIndex
 
-  console.log(`[v0] Playing piano note: ${note}`)
-  sampler.triggerAttackRelease(note, seconds, Tone.now(), velocity)
+  console.log(`[v0] Playing kalimba note: ${note}`)
+  playKalimbaNote(note, velocity)
 }
 
 export function playPianoNote(note: string, duration = 0.45, velocity = 0.9) {
   return playNote(note, duration, velocity)
-}
-
-export function disposePiano() {
-  if (sampler) {
-    sampler.dispose()
-    sampler = null
-  }
-  if (reverb) {
-    reverb.dispose()
-    reverb = null
-  }
-}
-
-export const SOUND_CUES_LIBRARY: SoundCue[] = []
-
-export const SOUNDS = [
-  "Bright handbell",
-  "Low bowl bell",
-  "Soft temple bell",
-  "High chime",
-  "Chime double",
-  "Chime triple up",
-  "Chime triple down",
-  "Fifth-dyad bell",
-  "Octave bell",
-  "Shimmer arpeggio",
-  "Tam-tam soft",
-  "Wind gong",
-  "Nipple gong",
-  "Opera gong",
-  "Woodblock tok",
-  "Bamboo click",
-  "Rim knock",
-  "Pink swell",
-  "Whoosh",
-  "Water drop",
-]
-
-export function playSound(name: string) {
-  const t = ToneLib.now()
-  switch (name) {
-    // ——— BELLS & CHIMES ———
-    case "Bright handbell":
-      // Placeholder for bell sound
-      break
-    case "Low bowl bell":
-      // Placeholder for bell sound
-      break
-    case "Soft temple bell":
-      // Placeholder for bell sound
-      break
-    case "High chime":
-      // Placeholder for bell sound
-      break
-    case "Chime double":
-      // Placeholder for bell sound
-      break
-    case "Chime triple up":
-      // Placeholder for bell sound
-      break
-    case "Chime triple down":
-      // Placeholder for bell sound
-      break
-    case "Fifth-dyad bell":
-      // Placeholder for bell sound
-      break
-    case "Octave bell":
-      // Placeholder for bell sound
-      break
-    case "Shimmer arpeggio":
-      // Placeholder for bell sound
-      break
-
-    // ——— GONGS ———
-    case "Tam-tam soft":
-      // Placeholder for gong sound
-      break
-    case "Wind gong":
-      // Placeholder for gong sound
-      break
-    case "Nipple gong":
-      // Placeholder for gong sound
-      break
-    case "Opera gong":
-      // Placeholder for gong sound
-      break
-
-    // ——— WOOD ———
-    case "Woodblock tok":
-      // Placeholder for wood sound
-      break
-    case "Bamboo click":
-      // Placeholder for wood sound
-      break
-    case "Rim knock":
-      // Placeholder for wood sound
-      break
-
-    // ——— AIR / NATURE ———
-    case "Pink swell":
-      // Placeholder for air/nature sound
-      break
-    case "Whoosh":
-      // Placeholder for air/nature sound
-      break
-    case "Water drop":
-      // Placeholder for air/nature sound
-      break
-
-    default:
-      console.warn(`Unknown sound "${name}". Available:`, SOUNDS)
-  }
 }
 
 export const INSTRUCTIONS_LIBRARY: Instruction[] = [
@@ -652,160 +824,46 @@ export const INSTRUCTIONS_LIBRARY: Instruction[] = [
   },
 ]
 
-export const AMBIENT_SOUNDS_LIBRARY: AmbientSound[] = [
-  {
-    id: "rain",
-    name: "Rain",
-    src: "synthetic:rain",
-    noiseType: "white",
-    filterType: "highpass",
-    filterFrequency: 1000,
-    lfoFrequency: 20,
-    volume: 0.2,
-  },
-  {
-    id: "waves",
-    name: "Ocean Waves",
-    src: "synthetic:waves",
-    noiseType: "white",
-    filterType: "lowpass",
-    filterFrequency: 500,
-    lfoFrequency: 0.2,
-    volume: 0.25,
-  },
-  {
-    id: "forest",
-    name: "Forest",
-    src: "synthetic:forest",
-    noiseType: "brown",
-    filterType: "lowpass",
-    filterFrequency: 800,
-    lfoFrequency: 0.5,
-    volume: 0.2,
-  },
-  {
-    id: "wind",
-    name: "Wind",
-    src: "synthetic:wind",
-    noiseType: "white",
-    filterType: "lowpass",
-    filterFrequency: 400,
-    lfoFrequency: 0.1,
-    volume: 0.2,
-  },
-]
-
-export const NOTE_FREQUENCIES = {
-  C3: 130.81,
-  D3: 146.83,
-  E3: 164.81,
-  F3: 174.61,
-  G3: 196.0,
-  A3: 220.0,
-  B3: 246.94,
-  C4: 261.63,
-  D4: 293.66,
-  E4: 329.63,
-  F4: 349.23,
-  G4: 392.0,
-  A4: 440.0,
-  B4: 493.88,
-  C5: 523.25,
-  D5: 587.33,
-  E5: 659.25,
-  F5: 698.46,
-  G5: 783.99,
-  A5: 880.0,
-  B5: 987.77,
-  C6: 1046.5,
-  D6: 1174.66,
-  E6: 1318.51,
-  F6: 1396.91,
-  G6: 1567.98,
-  A6: 1760.0,
-  C7: 1046.5 * 2,
-  C8: 1046.5 * 4,
-}
-
-// Musical meditation notes grouped into pleasant octaves
-export const MUSICAL_NOTES = {
-  Beautiful: NOTES.map((note, index) => ({
-    id: `note-${note.toLowerCase().replace("#", "s")}`,
-    name: note,
-    note: note.charAt(0),
-    octave: Number.parseInt(note.charAt(1)),
-  })),
-}
-
-export async function generateSyntheticSound(
-  soundCue: SoundCue,
-  audioContext: AudioContext | OfflineAudioContext,
-): Promise<void> {
-  try {
-    console.log(`[v0] Using piano sampler for: ${soundCue.name}`)
-
-    // Initialize audio if needed
-    const Tone = await ensureTone()
-    if (Tone.context.state !== "running") {
-      await startAudio()
-    }
-
-    // Load piano if not already loaded
-    if (!sampler) {
-      await loadPiano()
-    }
-
-    // Play the sound using piano sampler
-    playNote(soundCue.name, 0.45, 0.9)
-  } catch (error) {
-    console.error(`[v0] Error with piano sampler for ${soundCue.id}:`, error)
-    throw error
-  }
-}
-
 export async function generateAmbientSound(
   ambient: AmbientSound,
   audioContext: AudioContext | OfflineAudioContext,
   duration: number,
   volumeOverride?: number,
 ): Promise<void> {
-  // Keep existing ambient sound generation for compatibility
   try {
-    if (ToneLib.context.state !== "running") {
-      await ToneLib.start()
-    }
+    await Tone.start()
 
     const targetVolume = volumeOverride ?? ambient.volume ?? 0.2
-    let noise: ToneLib.Noise
-    let filter: ToneLib.Filter
-    let reverb: ToneLib.Reverb
+    let noise: Tone.Noise
+    let filter: Tone.Filter
+    let reverb: Tone.Reverb
 
     const noiseType = ambient.noiseType || "white"
-    noise = new ToneLib.Noise(noiseType)
+    noise = new Tone.Noise(noiseType)
 
     if (ambient.id === "rain") {
-      filter = new ToneLib.Filter({ frequency: 2000, type: "highpass", rolloff: -12 })
-      reverb = new ToneLib.Reverb({ decay: 2, wet: 0.3 })
+      filter = new Tone.Filter({ frequency: 2000, type: "highpass", rolloff: -12 })
+      reverb = new Tone.Reverb({ decay: 2, wet: 0.3 })
     } else if (ambient.id === "waves") {
-      filter = new ToneLib.Filter({ frequency: 400, type: "lowpass", rolloff: -24 })
-      reverb = new ToneLib.Reverb({ decay: 4, wet: 0.5 })
+      filter = new Tone.Filter({ frequency: 400, type: "lowpass", rolloff: -24 })
+      reverb = new Tone.Reverb({ decay: 4, wet: 0.5 })
     } else if (ambient.id === "forest") {
-      filter = new ToneLib.Filter({ frequency: 800, type: "bandpass", Q: 2 })
-      reverb = new ToneLib.Reverb({ decay: 3, wet: 0.4 })
+      filter = new Tone.Filter({ frequency: 800, type: "bandpass", Q: 2 })
+      reverb = new Tone.Reverb({ decay: 3, wet: 0.4 })
     } else if (ambient.id === "wind") {
-      filter = new ToneLib.Filter({ frequency: 300, type: "lowpass", rolloff: -12 })
-      reverb = new ToneLib.Reverb({ decay: 1.5, wet: 0.2 })
+      filter = new Tone.Filter({ frequency: 300, type: "lowpass", rolloff: -12 })
+      reverb = new Tone.Reverb({ decay: 1.5, wet: 0.2 })
     } else {
-      filter = new ToneLib.Filter({
+      filter = new Tone.Filter({
         frequency: ambient.filterFrequency || 1000,
         type: ambient.filterType || "lowpass",
       })
-      reverb = new ToneLib.Reverb({ decay: 2, wet: 0.3 })
+      reverb = new Tone.Reverb({ decay: 2, wet: 0.3 })
     }
 
-    let lfo: ToneLib.LFO | undefined
+    let lfo: Tone.LFO | undefined
     if (ambient.lfoFrequency) {
-      lfo = new ToneLib.LFO({
+      lfo = new Tone.LFO({
         frequency: ambient.lfoFrequency,
         type: "sine",
         amplitude: 0.3,
@@ -814,8 +872,8 @@ export async function generateAmbientSound(
       lfo.start()
     }
 
-    noise.chain(filter, reverb, ToneLib.Destination)
-    noise.volume.value = ToneLib.gainToDb(targetVolume)
+    noise.chain(filter, reverb, Tone.getDestination())
+    noise.volume.value = Tone.gainToDb(targetVolume)
     noise.start()
 
     setTimeout(() => {
@@ -831,4 +889,15 @@ export async function generateAmbientSound(
     console.error(`Error generating ambient sound for ${ambient.id} with Tone.js:`, error)
     throw error
   }
+}
+
+export async function startAudio(): Promise<void> {
+  await startKalimbaAudio()
+}
+
+export async function loadPiano(opts?: { wet?: number; decay?: number }): Promise<void> {
+  await initKalimba({
+    reverbWet: opts?.wet,
+    reverbDecay: opts?.decay,
+  })
 }
