@@ -46,11 +46,33 @@ export const NOTES = [
 ]
 
 const noteSynth = new Tone.PolySynth(Tone.Synth, {
-  oscillator: { type: "sine" },
-  envelope: { attack: 0.005, decay: 0.15, sustain: 0.15, release: 0.2 },
+  oscillator: {
+    type: "fatsawtooth", // More complex waveform for richer harmonics
+    count: 3,
+    spread: 30,
+  },
+  envelope: {
+    attack: 0.02, // Slightly slower attack for more natural piano feel
+    decay: 0.3, // Longer decay for sustained resonance
+    sustain: 0.1, // Lower sustain for piano-like behavior
+    release: 1.2, // Longer release for natural piano decay
+  },
+  filter: {
+    type: "lowpass",
+    frequency: 8000,
+    rolloff: -24,
+  },
+  filterEnvelope: {
+    attack: 0.02,
+    decay: 0.2,
+    sustain: 0.5,
+    release: 1.0,
+    baseFrequency: 300,
+    octaves: 4,
+  },
 }).connect(verbShort)
 noteSynth.maxPolyphony = 8
-noteSynth.volume.value = -6
+noteSynth.volume.value = -8 // Slightly quieter for more realistic dynamics
 
 export function playNote(noteOrIndex: string | number, dur = 0.5, vel = 0.9) {
   const note = typeof noteOrIndex === "number" ? NOTES[noteOrIndex % NOTES.length] : noteOrIndex
@@ -655,19 +677,7 @@ export const INSTRUCTIONS_LIBRARY: Instruction[] = [
   },
 ]
 
-export const SOUND_CUES_LIBRARY: SoundCue[] = SOUNDS.map((soundName, index) => ({
-  id: soundName
-    .toLowerCase()
-    .replace(/\s+/g, "_")
-    .replace(/[^a-z0-9_]/g, ""),
-  name: soundName,
-  src: `synthetic:${soundName.toLowerCase().replace(/\s+/g, "_")}`,
-  frequency: 440, // Default frequency, actual sound uses GPT-5 implementation
-  duration: 1000, // Default duration, actual sound uses GPT-5 implementation
-  waveform: "sine" as const,
-  attackDuration: 0.01,
-  releaseDuration: 0.5,
-}))
+export const SOUND_CUES_LIBRARY: SoundCue[] = []
 
 export const AMBIENT_SOUNDS_LIBRARY: AmbientSound[] = [
   {

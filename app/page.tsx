@@ -2039,31 +2039,11 @@ export default function Home() {
                               Miscellaneous
                             </AccordionTrigger>
                             <AccordionContent className="pb-4">
-                              <div className="space-y-2 text-gray-600">
-                                {SOUND_CUES_LIBRARY.map((cue) => (
-                                  <div key={cue.id} className="flex items-center gap-2 font-black font-serif">
-                                    <Button
-                                      variant={selectedSoundCue?.id === cue.id ? "default" : "ghost"}
-                                      size="sm"
-                                      className={`flex-1 justify-start font-black font-serif text-gray-600 ${selectedSoundCue?.id === cue.id ? "bg-white text-gray-600 border-logo-teal-500 border-2 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-logo-teal-500 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
-                                      onClick={async () => {
-                                        setSelectedSoundCue({ id: cue.id, name: cue.name, src: cue.src })
-                                        await playEncoderSound(cue.src)
-                                      }}
-                                    >
-                                      {cue.name}
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={async () => await playEncoderSound(cue.src)}
-                                      className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
-                                      title={`Preview ${cue.name}`}
-                                    >
-                                      <Play className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                ))}
+                              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                                <div className="mb-2 text-lg font-black">Coming Soon!</div>
+                                <div className="text-sm">
+                                  Additional sound cues are being developed and will be available in a future update.
+                                </div>
                               </div>
                             </AccordionContent>
                           </AccordionItem>
