@@ -106,6 +106,10 @@ export function playNote(noteOrIndex: string | number, seconds = 0.45, velocity 
   sampler.triggerAttackRelease(note, seconds, Tone.now(), velocity)
 }
 
+export function playPianoNote(note: string, duration = 0.45, velocity = 0.9) {
+  return playNote(note, duration, velocity)
+}
+
 export function disposePiano() {
   if (sampler) {
     sampler.dispose()

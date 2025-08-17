@@ -1,5 +1,6 @@
 import * as Tone from "tone"
 import { sleep, formatFileSize } from "./utils"
+import { startAudio, loadPiano, playPianoNote } from "./meditation-data"
 
 // Initialize Tone.js
 export const initializeTone = async (): Promise<void> => {
@@ -10,43 +11,21 @@ export const initializeTone = async (): Promise<void> => {
   }
 }
 
-// Replace playNote with Tone.js implementation
 export const playNote = async (note: string, octave: number, duration = 0.8, volume = 0.7): Promise<void> => {
   try {
-    console.log(`[v0] Playing note with Tone.js: ${note}${octave}`)
-    await initializeTone()
+    console.log(`[v0] Playing note with Salamander piano: ${note}${octave}`)
 
-    // Create a simple synth with pleasant envelope
-    const synth = new Tone.Synth({
-      oscillator: {
-        type: "sine",
-      },
-      envelope: {
-        attack: 0.1,
-        decay: 0.2,
-        sustain: 0.3,
-        release: 0.8,
-      },
-    }).toDestination()
+    // Initialize audio and load piano if needed
+    await startAudio()
+    await loadPiano()
 
-    // Set volume
-    synth.volume.value = Tone.gainToDb(volume)
-
-    // Play the note
+    // Play the note using Salamander piano sampler
     const noteString = `${note}${octave}`
-    synth.triggerAttackRelease(noteString, duration)
-    console.log(`[v0] Tone.js note ${noteString} triggered successfully`)
+    await playPianoNote(noteString, duration, volume)
 
-    // Clean up after duration
-    setTimeout(
-      () => {
-        synth.dispose()
-        console.log(`[v0] Tone.js synth disposed for ${noteString}`)
-      },
-      (duration + 1) * 1000,
-    )
+    console.log(`[v0] Salamander piano note ${noteString} played successfully`)
   } catch (error) {
-    console.error("[v0] Error playing note with Tone.js:", error)
+    console.error("[v0] Error playing note with Salamander piano:", error)
   }
 }
 
