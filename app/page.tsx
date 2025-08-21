@@ -126,6 +126,7 @@ export default function Home() {
 
   const [multiNoteMode, setMultiNoteMode] = useState(false)
   const [selectedNotes, setSelectedNotes] = useState<string[]>([])
+  const [noteType, setNoteType] = useState<"piano" | "synth" | "harp">("piano")
 
   const totalDuration = timeline.reduce((sum, item) => sum + item.duration, 0)
 
@@ -1196,32 +1197,104 @@ export default function Home() {
     }
   }
 
-  const playChordPreview = async () => {
-    if (selectedNotes.length === 0) return
-
-    console.log("[v0] Playing chord with notes:", selectedNotes)
+  const playSingleNote = async (note: string, octave: number) => {
+    const noteString = `${note}${octave}`
 
     try {
       await Tone.start()
 
-      // Create a polyphonic synth for chord playback
-      const polySynth = new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: "fatsawtooth" },
-        envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
-      }).toDestination()
+      if (noteType === "piano") {
+        // Use existing Salamander piano
+        await playNote(note, octave)
+      } else if (noteType === "synth") {
+        // Use Tone.js synth
+        const synth = new Tone.Synth({
+          oscillator: { type: "fatsawtooth" },
+          envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
+        }).toDestination()
 
-      // Add reverb for pleasant sound
-      const reverb = new Tone.Reverb(1.5).toDestination()
-      polySynth.connect(reverb)
+        const reverb = new Tone.Reverb(1.5).toDestination()
+        synth.connect(reverb)
 
-      // Play all selected notes simultaneously
-      polySynth.triggerAttackRelease(selectedNotes, "4n")
+        synth.triggerAttackRelease(noteString, "4n")
 
-      // Cleanup after playing
-      setTimeout(() => {
-        polySynth.dispose()
-        reverb.dispose()
-      }, 2000)
+        setTimeout(() => {
+          synth.dispose()
+          reverb.dispose()
+        }, 2000)
+      } else if (noteType === "harp") {
+        // Use Tone.js PluckSynth for harp-like sound
+        const harp = new Tone.PluckSynth({
+          attackNoise: 1,
+          dampening: 4000,
+          resonance: 0.9,
+        }).toDestination()
+
+        const reverb = new Tone.Reverb(2.5).toDestination()
+        harp.connect(reverb)
+
+        harp.triggerAttackRelease(noteString, "2n")
+
+        setTimeout(() => {
+          harp.dispose()
+          reverb.dispose()
+        }, 3000)
+      }
+    } catch (error) {
+      console.error(`[v0] Error playing ${noteType} note:`, error)
+    }
+  }
+
+  const playChordPreview = async () => {
+    if (selectedNotes.length === 0) return
+
+    console.log("[v0] Playing chord with notes:", selectedNotes, "using", noteType)
+
+    try {
+      await Tone.start()
+
+      if (noteType === "piano") {
+        // For piano chords, play notes in quick succession since Salamander is monophonic
+        for (let i = 0; i < selectedNotes.length; i++) {
+          const noteString = selectedNotes[i]
+          const note = noteString.slice(0, -1)
+          const octave = Number.parseInt(noteString.slice(-1))
+          setTimeout(() => playNote(note, octave), i * 50)
+        }
+      } else if (noteType === "synth") {
+        // Create a polyphonic synth for chord playback
+        const polySynth = new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: "fatsawtooth" },
+          envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
+        }).toDestination()
+
+        const reverb = new Tone.Reverb(1.5).toDestination()
+        polySynth.connect(reverb)
+
+        polySynth.triggerAttackRelease(selectedNotes, "4n")
+
+        setTimeout(() => {
+          polySynth.dispose()
+          reverb.dispose()
+        }, 2000)
+      } else if (noteType === "harp") {
+        // Create polyphonic harp for chord playback
+        const harpPoly = new Tone.PolySynth(Tone.PluckSynth, {
+          attackNoise: 1,
+          dampening: 4000,
+          resonance: 0.9,
+        }).toDestination()
+
+        const reverb = new Tone.Reverb(2.5).toDestination()
+        harpPoly.connect(reverb)
+
+        harpPoly.triggerAttackRelease(selectedNotes, "2n")
+
+        setTimeout(() => {
+          harpPoly.dispose()
+          reverb.dispose()
+        }, 3000)
+      }
     } catch (error) {
       console.error("[v0] Error playing chord:", error)
     }
@@ -1245,7 +1318,7 @@ export default function Home() {
         name: note.name,
         src: `musical:${note.note}${note.octave}`,
       })
-      await playNote(note.note, note.octave)
+      await playSingleNote(note.note, note.octave)
     }
   }
 
@@ -1371,7 +1444,8 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="p-4 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
+                  className="p-4 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-
+none mb-4 py-0 px-0"
                 >
                   <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs pb-1.5">
                     Create custom meditations by associating instructions with sound cues and placing them on a
@@ -2031,23 +2105,37 @@ export default function Home() {
                             <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
                               <div className="flex items-center justify-between w-full">
                                 <span>Musical Notes</span>
-                                <div className="flex items-center gap-2 mr-4" onClick={(e) => e.stopPropagation()}>
-                                  <span className="text-xs text-gray-500">Multi-Note</span>
-                                  <button
-                                    onClick={() => {
-                                      setMultiNoteMode(!multiNoteMode)
-                                      setSelectedNotes([]) // Clear selections when toggling
-                                    }}
-                                    className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
-                                      multiNoteMode ? "bg-logo-blue-400" : "bg-gray-300"
-                                    }`}
-                                  >
-                                    <span
-                                      className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                                        multiNoteMode ? "translate-x-4" : "translate-x-0.5"
+                                <div className="flex items-center gap-4 mr-4" onClick={(e) => e.stopPropagation()}>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500">Type</span>
+                                    <select
+                                      value={noteType}
+                                      onChange={(e) => setNoteType(e.target.value as "piano" | "synth" | "harp")}
+                                      className="text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1"
+                                    >
+                                      <option value="piano">Piano</option>
+                                      <option value="synth">Synth</option>
+                                      <option value="harp">Harp</option>
+                                    </select>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500">Multi-Note</span>
+                                    <button
+                                      onClick={() => {
+                                        setMultiNoteMode(!multiNoteMode)
+                                        setSelectedNotes([]) // Clear selections when toggling
+                                      }}
+                                      className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
+                                        multiNoteMode ? "bg-logo-blue-400" : "bg-gray-300"
                                       }`}
-                                    />
-                                  </button>
+                                    >
+                                      <span
+                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                                          multiNoteMode ? "translate-x-4" : "translate-x-0.5"
+                                        }`}
+                                      />
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             </AccordionTrigger>
@@ -2123,7 +2211,7 @@ export default function Home() {
                                                 <Button
                                                   variant="ghost"
                                                   size="sm"
-                                                  onClick={async () => await playNote(note.note, note.octave)}
+                                                  onClick={async () => await playSingleNote(note.note, note.octave)}
                                                   className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
                                                   title={`Preview ${note.name}`}
                                                 >
