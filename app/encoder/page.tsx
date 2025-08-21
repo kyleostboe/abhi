@@ -27,6 +27,31 @@ interface SoundDefinition {
   description: string
 }
 
+interface MusicalNote {
+  id: string
+  name: string
+  note: string
+  octave: number
+}
+
+const musicalNotes: MusicalNote[] = [
+  { id: "C4", name: "C4", note: "C", octave: 4 },
+  { id: "D4", name: "D4", note: "D", octave: 4 },
+  { id: "E4", name: "E4", note: "E", octave: 4 },
+  { id: "F4", name: "F4", note: "F", octave: 4 },
+  { id: "G4", name: "G4", note: "G", octave: 4 },
+  { id: "A4", name: "A4", note: "A", octave: 4 },
+  { id: "B4", name: "B4", note: "B", octave: 4 },
+  { id: "C5", name: "C5", note: "C", octave: 5 },
+  { id: "D5", name: "D5", note: "D", octave: 5 },
+  { id: "E5", name: "E5", note: "E", octave: 5 },
+  { id: "F5", name: "F5", note: "F", octave: 5 },
+  { id: "G5", name: "G5", note: "G", octave: 5 },
+  { id: "A5", name: "A5", note: "A", octave: 5 },
+  { id: "B5", name: "B5", note: "B", octave: 5 },
+  { id: "C6", name: "C6", note: "C", octave: 6 },
+]
+
 const availableSounds: SoundDefinition[] = [
   { id: "bell_high", name: "High Bell", description: "A clear, high-pitched bell." },
   { id: "bell_mid", name: "Mid Bell", description: "A resonant, medium-pitched bell." },
@@ -52,6 +77,9 @@ export default function EncoderPage() {
   const [isListening, setIsListening] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [audioDuration, setAudioDuration] = useState(0)
+
+  const [multiNoteMode, setMultiNoteMode] = useState(false)
+  const [selectedNotes, setSelectedNotes] = useState<string[]>([])
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -89,6 +117,70 @@ export default function EncoderPage() {
       await createToneSound(soundId, 0, 1.0) // immediate playback with full volume
     } catch (error) {
       console.error("Error playing sound preview:", error)
+    }
+  }
+
+  const playNotePreview = async (noteId: string) => {
+    try {
+      if (Tone.context.state !== "running") {
+        await Tone.start()
+      }
+
+      const synth = new Tone.Synth({
+        oscillator: { type: "fatsawtooth" },
+        envelope: { attack: 0.02, decay: 0.3, sustain: 0.4, release: 1.2 },
+        filter: { frequency: 1200, rolloff: -12 },
+        filterEnvelope: { attack: 0.02, decay: 0.2, sustain: 0.5, release: 2 },
+      }).toDestination()
+
+      const reverb = new Tone.Reverb(1.5).toDestination()
+      synth.connect(reverb)
+
+      synth.triggerAttackRelease(noteId, "2n")
+
+      setTimeout(() => {
+        synth.dispose()
+        reverb.dispose()
+      }, 3000)
+    } catch (error) {
+      console.error("Error playing note preview:", error)
+    }
+  }
+
+  const playChordPreview = async () => {
+    if (selectedNotes.length === 0) return
+
+    try {
+      if (Tone.context.state !== "running") {
+        await Tone.start()
+      }
+
+      const polySynth = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: "fatsawtooth" },
+        envelope: { attack: 0.02, decay: 0.3, sustain: 0.4, release: 1.2 },
+        filter: { frequency: 1200, rolloff: -12 },
+        filterEnvelope: { attack: 0.02, decay: 0.2, sustain: 0.5, release: 2 },
+      }).toDestination()
+
+      const reverb = new Tone.Reverb(1.5).toDestination()
+      polySynth.connect(reverb)
+
+      polySynth.triggerAttackRelease(selectedNotes, "2n")
+
+      setTimeout(() => {
+        polySynth.dispose()
+        reverb.dispose()
+      }, 3000)
+    } catch (error) {
+      console.error("Error playing chord preview:", error)
+    }
+  }
+
+  const handleNoteSelection = (noteId: string) => {
+    if (multiNoteMode) {
+      setSelectedNotes((prev) => (prev.includes(noteId) ? prev.filter((id) => id !== noteId) : [...prev, noteId]))
+    } else {
+      playNotePreview(noteId)
     }
   }
 
@@ -614,6 +706,63 @@ export default function EncoderPage() {
                 </button>
               ))}
             </div>
+          </Card>
+
+          {/* Musical Notes Section */}
+          <Card className="p-6 mb-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">Musical Notes</h3>
+              <div className="flex items-center space-x-3">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={multiNoteMode}
+                    onChange={(e) => {
+                      setMultiNoteMode(e.target.checked)
+                      setSelectedNotes([])
+                    }}
+                    className="w-4 h-4 text-logo-teal-600 bg-gray-100 border-gray-300 rounded focus:ring-logo-teal-500 dark:focus:ring-logo-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Multi-Note</span>
+                </label>
+                {multiNoteMode && selectedNotes.length > 0 && (
+                  <button
+                    onClick={playChordPreview}
+                    className="px-4 py-2 bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 text-white rounded-lg hover:from-logo-purple-600 hover:to-logo-rose-500 transition-all duration-200 text-sm font-semibold"
+                  >
+                    Play Chord ({selectedNotes.length})
+                  </button>
+                )}
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              {multiNoteMode
+                ? "Select multiple notes to create chords. Click 'Play Chord' to preview them together."
+                : "Click on any note to preview it individually."}
+            </p>
+            <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+              {musicalNotes.map((note) => (
+                <button
+                  key={note.id}
+                  onClick={() => handleNoteSelection(note.id)}
+                  className={`p-3 rounded-lg transition-all duration-200 transform hover:scale-105 font-semibold ${
+                    multiNoteMode && selectedNotes.includes(note.id)
+                      ? "bg-gradient-to-r from-logo-amber-500 to-logo-rose-400 text-white shadow-lg"
+                      : "bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-gray-800 dark:text-gray-200 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-500"
+                  }`}
+                >
+                  {note.name}
+                </button>
+              ))}
+            </div>
+            {multiNoteMode && selectedNotes.length > 0 && (
+              <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Selected notes:{" "}
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">{selectedNotes.join(", ")}</span>
+                </p>
+              </div>
+            )}
           </Card>
 
           {/* Status Messages */}
