@@ -150,9 +150,12 @@ export default function EncoderPage() {
   const playChordPreview = async () => {
     if (selectedNotes.length === 0) return
 
+    console.log("[v0] Playing chord with notes:", selectedNotes)
+
     try {
       if (Tone.context.state !== "running") {
         await Tone.start()
+        console.log("[v0] Tone.js context started for chord")
       }
 
       const polySynth = new Tone.PolySynth(Tone.Synth, {
@@ -165,21 +168,30 @@ export default function EncoderPage() {
       const reverb = new Tone.Reverb(1.5).toDestination()
       polySynth.connect(reverb)
 
+      console.log("[v0] Triggering chord with notes:", selectedNotes)
       polySynth.triggerAttackRelease(selectedNotes, "2n")
+      console.log("[v0] Chord triggered successfully")
 
       setTimeout(() => {
         polySynth.dispose()
         reverb.dispose()
+        console.log("[v0] Chord synth disposed")
       }, 3000)
     } catch (error) {
-      console.error("Error playing chord preview:", error)
+      console.error("[v0] Error playing chord preview:", error)
     }
   }
 
   const handleNoteSelection = (noteId: string) => {
     if (multiNoteMode) {
-      setSelectedNotes((prev) => (prev.includes(noteId) ? prev.filter((id) => id !== noteId) : [...prev, noteId]))
+      console.log("[v0] Multi-note mode: toggling note", noteId)
+      setSelectedNotes((prev) => {
+        const newSelection = prev.includes(noteId) ? prev.filter((id) => id !== noteId) : [...prev, noteId]
+        console.log("[v0] New selected notes:", newSelection)
+        return newSelection
+      })
     } else {
+      console.log("[v0] Single note mode: playing", noteId)
       playNotePreview(noteId)
     }
   }
