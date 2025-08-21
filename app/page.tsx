@@ -42,6 +42,7 @@ import { getAudioContext, playNote, bufferToWav } from "@/lib/audio-utils" // Im
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
+import * as Tone from "tone"
 
 interface TimelineItem {
   id: string
@@ -122,6 +123,9 @@ export default function Home() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const currentItemStartTimeRef = useRef<number>(0)
+
+  const [multiNoteMode, setMultiNoteMode] = useState(false)
+  const [selectedNotes, setSelectedNotes] = useState<string[]>([])
 
   const totalDuration = timeline.reduce((sum, item) => sum + item.duration, 0)
 
@@ -1192,6 +1196,59 @@ export default function Home() {
     }
   }
 
+  const playChordPreview = async () => {
+    if (selectedNotes.length === 0) return
+
+    console.log("[v0] Playing chord with notes:", selectedNotes)
+
+    try {
+      await Tone.start()
+
+      // Create a polyphonic synth for chord playback
+      const polySynth = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: "fatsawtooth" },
+        envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
+      }).toDestination()
+
+      // Add reverb for pleasant sound
+      const reverb = new Tone.Reverb(1.5).toDestination()
+      polySynth.connect(reverb)
+
+      // Play all selected notes simultaneously
+      polySynth.triggerAttackRelease(selectedNotes, "4n")
+
+      // Cleanup after playing
+      setTimeout(() => {
+        polySynth.dispose()
+        reverb.dispose()
+      }, 2000)
+    } catch (error) {
+      console.error("[v0] Error playing chord:", error)
+    }
+  }
+
+  const handleNoteSelection = async (note: any) => {
+    if (multiNoteMode) {
+      // Multi-note mode: toggle selection
+      setSelectedNotes((prev) => {
+        const noteString = `${note.note}${note.octave}`
+        if (prev.includes(noteString)) {
+          return prev.filter((n) => n !== noteString)
+        } else {
+          return [...prev, noteString]
+        }
+      })
+    } else {
+      // Single note mode: play immediately and set as selected sound cue
+      setSelectedSoundCue({
+        id: note.id,
+        name: note.name,
+        src: `musical:${note.note}${note.octave}`,
+      })
+      await playNote(note.note, note.octave)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-0">
       <Navigation />
@@ -1972,9 +2029,48 @@ export default function Home() {
                         <Accordion type="single" collapsible className="w-full">
                           <AccordionItem value="musical-notes">
                             <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
-                              Musical Notes
+                              <div className="flex items-center justify-between w-full">
+                                <span>Musical Notes</span>
+                                <div className="flex items-center gap-2 mr-4" onClick={(e) => e.stopPropagation()}>
+                                  <span className="text-xs text-gray-500">Multi-Note</span>
+                                  <button
+                                    onClick={() => {
+                                      setMultiNoteMode(!multiNoteMode)
+                                      setSelectedNotes([]) // Clear selections when toggling
+                                    }}
+                                    className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
+                                      multiNoteMode ? "bg-logo-blue-400" : "bg-gray-300"
+                                    }`}
+                                  >
+                                    <span
+                                      className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                                        multiNoteMode ? "translate-x-4" : "translate-x-0.5"
+                                      }`}
+                                    />
+                                  </button>
+                                </div>
+                              </div>
                             </AccordionTrigger>
                             <AccordionContent className="pb-4">
+                              {multiNoteMode && (
+                                <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                  <div className="flex items-center justify-between">
+                                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                                      Selected: {selectedNotes.length > 0 ? selectedNotes.join(", ") : "None"}
+                                    </div>
+                                    {selectedNotes.length > 0 && (
+                                      <Button
+                                        size="sm"
+                                        onClick={playChordPreview}
+                                        className="bg-logo-blue-400 hover:bg-logo-blue-500 text-white"
+                                      >
+                                        <Play className="h-3 w-3 mr-1" />
+                                        Play Chord
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                               <Accordion type="single" collapsible className="w-full">
                                 {Object.entries(
                                   Object.entries(MUSICAL_NOTES).reduce(
@@ -1999,34 +2095,44 @@ export default function Home() {
                                     </AccordionTrigger>
                                     <AccordionContent className="pb-4">
                                       <div className="space-y-2 text-gray-600">
-                                        {notes.map((note) => (
-                                          <div key={note.id} className="flex items-center gap-2 font-black font-serif">
-                                            <Button
-                                              variant={selectedSoundCue?.id === note.id ? "default" : "ghost"}
-                                              size="sm"
-                                              className={`flex-1 justify-start font-black font-serif text-gray-600 ${selectedSoundCue?.id === note.id ? "bg-white text-gray-600 border-gray-500 border-2 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-logo-teal-500 dark:hover:bg-gray-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
-                                              onClick={async () => {
-                                                setSelectedSoundCue({
-                                                  id: note.id,
-                                                  name: note.name,
-                                                  src: `musical:${note.note}${note.octave}`,
-                                                })
-                                                await playNote(note.note, note.octave)
-                                              }}
+                                        {notes.map((note) => {
+                                          const noteString = `${note.note}${note.octave}`
+                                          const isSelected = multiNoteMode && selectedNotes.includes(noteString)
+                                          const isSingleSelected = !multiNoteMode && selectedSoundCue?.id === note.id
+
+                                          return (
+                                            <div
+                                              key={note.id}
+                                              className="flex items-center gap-2 font-black font-serif"
                                             >
-                                              {note.name}
-                                            </Button>
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              onClick={async () => await playNote(note.note, note.octave)}
-                                              className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
-                                              title={`Preview ${note.name}`}
-                                            >
-                                              <Play className="h-4 w-4" />
-                                            </Button>
-                                          </div>
-                                        ))}
+                                              <Button
+                                                variant={isSingleSelected ? "default" : "ghost"}
+                                                size="sm"
+                                                className={`flex-1 justify-start font-black font-serif text-gray-600 ${
+                                                  isSelected
+                                                    ? "bg-gradient-to-r from-amber-100 to-rose-100 border-2 border-amber-400 dark:from-amber-900 dark:to-rose-900 dark:border-amber-500"
+                                                    : isSingleSelected
+                                                      ? "bg-white text-gray-600 border-gray-500 border-2 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-logo-teal-500 dark:hover:bg-gray-50"
+                                                      : "hover:bg-gray-50 dark:hover:bg-gray-800"
+                                                }`}
+                                                onClick={() => handleNoteSelection(note)}
+                                              >
+                                                {note.name}
+                                              </Button>
+                                              {!multiNoteMode && (
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  onClick={async () => await playNote(note.note, note.octave)}
+                                                  className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
+                                                  title={`Preview ${note.name}`}
+                                                >
+                                                  <Play className="h-4 w-4" />
+                                                </Button>
+                                              )}
+                                            </div>
+                                          )
+                                        })}
                                       </div>
                                     </AccordionContent>
                                   </AccordionItem>
