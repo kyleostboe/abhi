@@ -1785,7 +1785,7 @@ export default function Home() {
 
       if (noteType === "piano") {
         const noteString = `${note}${octave}`
-        await playPianoNote(noteString, 0.45, 0.9)
+        await playPianoNote(noteString, 0.5, 0.9)
       } else if (noteType === "synth") {
         const synth = new Tone.Synth({
           oscillator: { type: "fatsawtooth" },
@@ -1794,7 +1794,7 @@ export default function Home() {
           filterEnvelope: { attack: 0.02, decay: 0.2, sustain: 0.5, release: 0.8, baseFrequency: 200, octaves: 4 },
         }).toDestination()
 
-        synth.triggerAttackRelease(`${note}${octave}`, "8n")
+        synth.triggerAttackRelease(`${note}${octave}`, 0.5)
 
         setTimeout(() => synth.dispose(), 2000)
       } else if (noteType === "harp") {
@@ -1807,7 +1807,7 @@ export default function Home() {
         const harpReverb = new Tone.Reverb({ decay: 4, wet: 0.6 }).toDestination()
         harp.connect(harpReverb)
 
-        harp.triggerAttackRelease(`${note}${octave}`, "2n")
+        harp.triggerAttackRelease(`${note}${octave}`, 0.5)
 
         setTimeout(() => {
           harp.dispose()
@@ -1838,7 +1838,7 @@ export default function Home() {
           // Play all notes simultaneously using the Salamander piano sampler
           selectedNotes.forEach((noteString) => {
             console.log("[v0] Playing Salamander piano note in chord:", noteString)
-            sampler.triggerAttackRelease(noteString, "2n")
+            sampler.triggerAttackRelease(noteString, 0.5)
           })
         } else {
           console.error("[v0] Piano sampler not available for chord")
@@ -1853,7 +1853,7 @@ export default function Home() {
         const reverb = new Tone.Reverb(1.5).toDestination()
         polySynth.connect(reverb)
 
-        polySynth.triggerAttackRelease(selectedNotes, "4n")
+        polySynth.triggerAttackRelease(selectedNotes, 0.5)
 
         setTimeout(() => {
           polySynth.dispose()
@@ -1870,7 +1870,7 @@ export default function Home() {
         const reverb = new Tone.Reverb(2.5).toDestination()
         harpPoly.connect(reverb)
 
-        harpPoly.triggerAttackRelease(selectedNotes, "2n")
+        harpPoly.triggerAttackRelease(selectedNotes, 0.5)
 
         setTimeout(() => {
           harpPoly.dispose()
