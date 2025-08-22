@@ -52,15 +52,26 @@ export async function startAudio() {
 
   if (Tone.context.state === "closed") {
     console.log("[v0] AudioContext is closed, creating new context...")
-    // Dispose existing context and create new one
-    Tone.context.dispose()
-    await Tone.setContext(new AudioContext())
+    // Create a completely new AudioContext and set it as the Tone context
+    const newContext = new AudioContext()
+    await Tone.setContext(newContext)
+    console.log("[v0] New AudioContext created and set")
   }
 
-  // Start the audio context
+  // Start the audio context if it's not running
   if (Tone.context.state !== "running") {
     console.log("[v0] Starting Tone.js audio context...")
-    await Tone.start()
+    try {
+      await Tone.start()
+      console.log("[v0] AudioContext started successfully")
+    } catch (error) {
+      console.error("[v0] Error starting AudioContext:", error)
+      // If start fails, try creating a completely new context
+      const newContext = new AudioContext()
+      await Tone.setContext(newContext)
+      await Tone.start()
+      console.log("[v0] New AudioContext created and started after error")
+    }
   }
 }
 
@@ -74,11 +85,19 @@ export async function loadPiano({ wet = 0.18, decay = 2.8 } = {}) {
     await startAudio()
 
     if (sampler) {
-      sampler.dispose()
+      try {
+        sampler.dispose()
+      } catch (e) {
+        console.warn("[v0] Error disposing sampler:", e)
+      }
       sampler = null
     }
     if (reverb) {
-      reverb.dispose()
+      try {
+        reverb.dispose()
+      } catch (e) {
+        console.warn("[v0] Error disposing reverb:", e)
+      }
       reverb = null
     }
 
@@ -139,6 +158,7 @@ export async function loadPiano({ wet = 0.18, decay = 2.8 } = {}) {
   } catch (error) {
     console.error("[v0] Error loading piano:", error)
     isLoaded = false
+    isLoading = false
     throw error
   } finally {
     isLoading = false
