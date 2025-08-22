@@ -28,7 +28,6 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { toast } from "@/components/ui/use-toast"
-import { generateSyntheticSound } from "@/lib/meditation-data"
 import { VisualTimeline } from "@/components/visual-timeline"
 import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFileSize } from "@/lib/utils"
 import { getAudioContext, playNote, bufferToWav } from "@/lib/audio-utils" // Import from audio-utils
@@ -911,9 +910,7 @@ export default function Home() {
           if (event.soundCueSrc?.startsWith("synthetic:")) {
             const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
             if (soundCue) {
-              // Pass the OfflineAudioContext directly to generateSyntheticSound
-              await generateSyntheticSound(soundCue, ctx)
-              console.log(`Successfully added synthetic sound at ${eventStartTime}`)
+              console.log(`Skipping synthetic sound at ${eventStartTime} - functionality removed`)
             }
           } else if (event.soundCueSrc?.startsWith("musical:")) {
             const noteMatch = event.soundCueSrc.match(/musical:([A-G])(\d)/)
@@ -2819,7 +2816,7 @@ none mb-4 py-0 px-0"
                           </AccordionItem>
                         </Accordion>
                         <Button
-                          className="w-full bg-transparent text-gray-600 border-2 border-gray-500 hover:bg-gray-50 dark:bg-transparent dark:text-logo-teal-500 dark:border-logo-teal-500 dark:hover:bg-logo-teal-900/20 font-serif font-black"
+                          className="w-full bg-transparent text-gray-600 border-2 border-gray-500 hover:bg-gray-50 dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black"
                           onClick={handleAddInstructionSoundEvent}
                           disabled={!customInstructionText.trim() || !selectedSoundCue}
                         >
