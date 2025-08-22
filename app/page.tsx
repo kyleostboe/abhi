@@ -623,4 +623,119 @@ export default function Home() {
       setIsGeneratingAudio(false)
     }
   }
+
+  const playChordPreview = async () => {
+    if (selectedNotes.length === 0) return
+
+    try {
+      await Tone.start()
+      console.log(`[v0] Playing chord with ${selectedNotes.length} notes:`, selectedNotes)
+
+      if (noteType === "piano") {
+        // Play multiple piano notes simultaneously
+        for (const noteId of selectedNotes) {
+          await playSalamanderPiano(noteId, 1.5, 0.7)
+        }
+      } else if (noteType === "synth") {
+        // Use PolySynth for chord playback
+        const polySynth = new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: "fatsawtooth" },
+          envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
+        }).toDestination()
+
+        const reverb = new Tone.Reverb(1.5).toDestination()
+        polySynth.connect(reverb)
+
+        polySynth.triggerAttackRelease(selectedNotes, "2n")
+
+        setTimeout(() => {
+          polySynth.dispose()
+          reverb.dispose()
+        }, 3000)
+      } else if (noteType === "harp") {
+        // Use multiple PluckSynths for harp chord
+        const harps = selectedNotes.map(() => {
+          const harp = new Tone.PluckSynth({
+            attackNoise: 1,
+            dampening: 4000,
+            resonance: 0.9,
+          }).toDestination()
+
+          const reverb = new Tone.Reverb(2.5).toDestination()
+          harp.connect(reverb)
+          return { harp, reverb }
+        })
+
+        selectedNotes.forEach((note, index) => {
+          harps[index].harp.triggerAttackRelease(note, "1n")
+        })
+
+        setTimeout(() => {
+          harps.forEach(({ harp, reverb }) => {
+            harp.dispose()
+            reverb.dispose()
+          })
+        }, 4000)
+      }
+    } catch (error) {
+      console.error(`[v0] Error playing ${noteType} chord:`, error)
+    }
+  }
+
+  const handleNoteSelection = async (note: string, octave: number) => {
+    const noteId = `${note}${octave}`
+
+    if (multiNoteMode) {
+      // Multi-note mode: toggle selection
+      setSelectedNotes((prev) => (prev.includes(noteId) ? prev.filter((n) => n !== noteId) : [...prev, noteId]))
+    } else {
+      // Single note mode: play immediately
+      await playSingleNote(note, octave)
+    }
+  }
+
+  // Complete JSX return statement for the component
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 dark:text-gray-200 mb-2">abhī</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400">Meditation Tool</p>
+        </div>
+
+        {/* Mode Toggle */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-full p-1 shadow-lg">
+            <button
+              onClick={() => setActiveMode("adjuster")}
+              className={`px-6 py-2 rounded-full transition-all ${
+                activeMode === "adjuster"
+                  ? "bg-blue-500 text-white shadow-md"
+                  : "text-gray-600 dark:text-gray-400 hover:text-blue-500"
+              }`}
+            >
+              Adjuster
+            </button>
+            <button
+              onClick={() => setActiveMode("encoder")}
+              className={`px-6 py-2 rounded-full transition-all ${
+                activeMode === "encoder"
+                  ? "bg-blue-500 text-white shadow-md"
+                  : "text-gray-600 dark:text-gray-400 hover:text-blue-500"
+              }`}
+            >
+              Encoder
+            </button>
+          </div>
+        </div>
+
+        {/* Placeholder content for now */}
+        <div className="text-center">
+          <p className="text-gray-600 dark:text-gray-400">
+            {activeMode === "adjuster" ? "Adjuster mode selected" : "Encoder mode selected"}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
 }
