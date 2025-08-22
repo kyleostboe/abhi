@@ -30,7 +30,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { toast } from "@/components/ui/use-toast"
 import { VisualTimeline } from "@/components/visual-timeline"
 import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFileSize } from "@/lib/utils"
-import { getAudioContext, playNote, bufferToWav } from "@/lib/audio-utils" // Import from audio-utils
+import { getAudioContext, bufferToWav } from "@/lib/audio-utils" // Import from audio-utils
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
@@ -1621,7 +1621,7 @@ export default function Home() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
         const mimeType = MediaRecorder.isTypeSupported("audio/mp4;codecs=aac")
-          ? "audio/mp4;co`decs=aac"
+          ? "audio/mp4;codecs=aac"
           : MediaRecorder.isTypeSupported("audio/webm")
             ? "audio/webm"
             : ""
@@ -1828,12 +1828,20 @@ export default function Home() {
       await Tone.start()
 
       if (noteType === "piano") {
-        // For piano chords, play notes in quick succession since Salamander is monophonic
-        for (let i = 0; i < selectedNotes.length; i++) {
-          const noteString = selectedNotes[i]
-          const note = noteString.slice(0, -1)
-          const octave = Number.parseInt(noteString.slice(-1))
-          setTimeout(() => playNote(note, octave), i * 50)
+        // Initialize piano if not already loaded
+        if (!sampler) {
+          console.log("[v0] Piano not loaded, initializing for chord...")
+          await loadPiano()
+        }
+
+        if (sampler && isLoaded) {
+          // Play all notes simultaneously using the Salamander piano sampler
+          selectedNotes.forEach((noteString) => {
+            console.log("[v0] Playing Salamander piano note in chord:", noteString)
+            sampler.triggerAttackRelease(noteString, "2n")
+          })
+        } else {
+          console.error("[v0] Piano sampler not available for chord")
         }
       } else if (noteType === "synth") {
         // Create a polyphonic synth for chord playback
