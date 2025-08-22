@@ -17,7 +17,6 @@ import {
   Play,
   PlusCircle,
   CircleDotDashed,
-  BookText,
 } from "lucide-react" // Import Copy icon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
@@ -49,6 +48,143 @@ interface TimelineItem {
   type: "instruction" | "sound"
   duration: number // in seconds
   content: Instruction | SoundCue
+}
+
+let sampler = null
+let reverb = null
+let isLoading = false
+let isLoaded = false
+
+async function startPianoAudio() {
+  if (Tone.context.state === "closed") {
+    console.log("[v0] AudioContext is closed, creating new context...")
+    const newContext = new AudioContext()
+    await Tone.setContext(newContext)
+    console.log("[v0] New AudioContext created and set")
+  }
+
+  if (Tone.context.state !== "running") {
+    console.log("[v0] Starting Tone.js audio context...")
+    try {
+      await Tone.start()
+      console.log("[v0] AudioContext started successfully")
+    } catch (error) {
+      console.error("[v0] Error starting AudioContext:", error)
+      const newContext = new AudioContext()
+      await Tone.setContext(newContext)
+      await Tone.start()
+      console.log("[v0] New AudioContext created and started after error")
+    }
+  }
+}
+
+async function loadSalamanderPiano({ wet = 0.18, decay = 2.8 } = {}) {
+  if (isLoading || isLoaded) return
+
+  isLoading = true
+  try {
+    await startPianoAudio()
+
+    if (sampler) {
+      try {
+        sampler.dispose()
+      } catch (e) {
+        console.warn("[v0] Error disposing sampler:", e)
+      }
+      sampler = null
+    }
+    if (reverb) {
+      try {
+        reverb.dispose()
+      } catch (e) {
+        console.warn("[v0] Error disposing reverb:", e)
+      }
+      reverb = null
+    }
+
+    reverb = new Tone.Reverb({ wet, decay, preDelay: 0.01 }).toDestination()
+    await reverb.generate()
+
+    sampler = new Tone.Sampler({
+      urls: {
+        A0: "A0.mp3",
+        C1: "C1.mp3",
+        "D#1": "Ds1.mp3",
+        "F#1": "Fs1.mp3",
+        A1: "A1.mp3",
+        C2: "C2.mp3",
+        "D#2": "Ds2.mp3",
+        "F#2": "Fs2.mp3",
+        A2: "A2.mp3",
+        C3: "C3.mp3",
+        "D#3": "Ds3.mp3",
+        "F#3": "Fs3.mp3",
+        A3: "A3.mp3",
+        C4: "C4.mp3",
+        "D#4": "Ds4.mp3",
+        "F#4": "Fs4.mp3",
+        A4: "A4.mp3",
+        C5: "C5.mp3",
+        "D#5": "Ds5.mp3",
+        "F#5": "Fs5.mp3",
+        A5: "A5.mp3",
+        C6: "C6.mp3",
+        "D#6": "Ds6.mp3",
+        "F#6": "Fs6.mp3",
+        A6: "A6.mp3",
+        C7: "C7.mp3",
+        "D#7": "Ds7.mp3",
+        "F#7": "Fs7.mp3",
+        A7: "A7.mp3",
+        C8: "C8.mp3",
+      },
+      release: 1.2,
+      baseUrl: "https://tonejs.github.io/audio/salamander/",
+    }).connect(reverb)
+
+    await new Promise((resolve) => {
+      const checkLoaded = () => {
+        if (sampler.loaded) {
+          resolve(true)
+        } else {
+          setTimeout(checkLoaded, 100)
+        }
+      }
+      checkLoaded()
+    })
+
+    isLoaded = true
+    console.log("[v0] Piano sampler fully loaded and ready")
+  } catch (error) {
+    console.error("[v0] Error loading piano:", error)
+    isLoaded = false
+    isLoading = false
+    throw error
+  } finally {
+    isLoading = false
+  }
+}
+
+async function playSalamanderPiano(note: string, seconds = 0.45, velocity = 0.9) {
+  try {
+    await startPianoAudio()
+
+    if (!isLoaded) {
+      console.log("[v0] Piano not loaded, initializing...")
+      await loadSalamanderPiano()
+    }
+
+    if (!sampler || !sampler.loaded) {
+      throw new Error("Piano sampler is not loaded")
+    }
+
+    console.log(`[v0] Playing Salamander piano note: ${note}`)
+    sampler.triggerAttackRelease(note, seconds, Tone.now(), velocity)
+  } catch (error) {
+    console.error("[v0] Error playing Salamander piano note:", error)
+    isLoaded = false
+    throw error
+  }
 }
 
 export default function Home() {
@@ -1204,8 +1340,7 @@ export default function Home() {
       await Tone.start()
 
       if (noteType === "piano") {
-        // Use existing Salamander piano
-        await playNote(note, octave)
+        await playSalamanderPiano(noteString)
       } else if (noteType === "synth") {
         // Use Tone.js synth
         const synth = new Tone.Synth({
@@ -2069,7 +2204,7 @@ none mb-4 py-0 px-0"
                     className="p-6 bg-transparent px-0 py-3 pb-0 pt-0" // Add padding and transparent background directly to this div
                   >
                     {/* New Instructions Label and Icon */}
-                    
+
                     <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 border-0 px-[5px] py-1 pl-1 pr-1 shadow-lg rounded-sm">
                       <div className="bg-white dark:bg-gray-900 p-4 border-rose-200 border-0 rounded-sm shadow-inner">
                         <div className="text-center">

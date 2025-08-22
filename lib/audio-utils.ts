@@ -1,6 +1,5 @@
 import * as Tone from "tone"
 import { sleep, formatFileSize } from "./utils"
-import { startAudio, loadPiano, playPianoNote } from "./meditation-data"
 
 // Initialize Tone.js
 export const initializeTone = async (): Promise<void> => {
@@ -13,19 +12,13 @@ export const initializeTone = async (): Promise<void> => {
 
 export const playNote = async (note: string, octave: number, duration = 0.8, volume = 0.7): Promise<void> => {
   try {
-    console.log(`[v0] Playing note with Salamander piano: ${note}${octave}`)
+    console.log(`[v0] Playing note: ${note}${octave}`)
 
-    // Initialize audio and load piano if needed
-    await startAudio()
-    await loadPiano()
-
-    // Play the note using Salamander piano sampler
-    const noteString = `${note}${octave}`
-    await playPianoNote(noteString, duration, volume)
-
-    console.log(`[v0] Salamander piano note ${noteString} played successfully`)
+    // This function is now just a placeholder since the actual piano implementation
+    // has been moved to the main app file (app/page.tsx)
+    console.log(`[v0] Note ${note}${octave} playback handled by main app`)
   } catch (error) {
-    console.error("[v0] Error playing note with Salamander piano:", error)
+    console.error("[v0] Error playing note:", error)
   }
 }
 
