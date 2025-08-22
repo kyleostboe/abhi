@@ -2069,10 +2069,7 @@ none mb-4 py-0 px-0"
                     className="p-6 bg-transparent px-0 py-3 pb-0 pt-0" // Add padding and transparent background directly to this div
                   >
                     {/* New Instructions Label and Icon */}
-                    <div className="flex items-center justify-center mb-2">
-                      <BookText className="mr-2 h-4 w-4 text-gray-600" />
-                      <span className="font-black text-center text-base text-gray-600">Instructions</span>
-                    </div>
+                    
                     <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 border-0 px-[5px] py-1 pl-1 pr-1 shadow-lg rounded-sm">
                       <div className="bg-white dark:bg-gray-900 p-4 border-rose-200 border-0 rounded-sm shadow-inner">
                         <div className="text-center">
