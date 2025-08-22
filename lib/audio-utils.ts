@@ -12,11 +12,16 @@ export const initializeTone = async (): Promise<void> => {
 
 export const playNote = async (note: string, octave: number, duration = 0.8, volume = 0.7): Promise<void> => {
   try {
-    console.log(`[v0] Playing note: ${note}${octave}`)
+    console.log(`[v0] Playing basic synth note: ${note}${octave}`)
 
-    // This function is now just a placeholder since the actual piano implementation
-    // has been moved to the main app file (app/page.tsx)
-    console.log(`[v0] Note ${note}${octave} playback handled by main app`)
+    await Tone.start()
+
+    const synth = new Tone.Synth().toDestination()
+    synth.triggerAttackRelease(`${note}${octave}`, duration)
+
+    setTimeout(() => synth.dispose(), (duration + 0.5) * 1000)
+
+    console.log(`[v0] Basic synth note ${note}${octave} played successfully`)
   } catch (error) {
     console.error("[v0] Error playing note:", error)
   }
