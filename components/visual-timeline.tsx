@@ -2,16 +2,15 @@
 
 import type React from "react"
 
-import { useState, useRef, useCallback, useEffect, useMemo } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, Music2Icon, MicIcon, Check, X, Play, Copy } from 'lucide-react'
-import { SOUND_CUES_LIBRARY, generateSyntheticSound } from "../lib/meditation-data"
+import { Trash2, Music2Icon, MicIcon, Check, X, Play, Copy } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn, formatTime } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
-import { getAudioContext, playNote } from "../lib/audio-utils"
+import { playNote } from "../lib/audio-utils"
 import type { TimelineEvent } from "@/lib/types"
 import { useMobile } from "@/hooks/use-mobile"
 import { EVENT_COLORS } from "@/lib/constants"
@@ -25,14 +24,20 @@ interface VisualTimelineProps {
 }
 
 const getFromBorderColorClass = (gradientClass: string): string => {
-  const match = gradientClass.match(/from-([a-zA-Z0-9-]+)/);
+  const match = gradientClass.match(/from-([a-zA-Z0-9-]+)/)
   if (match && match[1]) {
-    return `border-${match[1]}`; // e.g., "border-logo-amber-500"
+    return `border-${match[1]}` // e.g., "border-logo-amber-500"
   }
-  return "border-gray-500"; // Fallback if no 'from-' color is found
-};
+  return "border-gray-500" // Fallback if no 'from-' color is found
+}
 
-export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveEvent, onDuplicateEvent }: VisualTimelineProps) {
+export function VisualTimeline({
+  events,
+  totalDuration,
+  onUpdateEvent,
+  onRemoveEvent,
+  onDuplicateEvent,
+}: VisualTimelineProps) {
   const [draggedEvent, setDraggedEvent] = useState<string | null>(null)
   const [dragOffset, setDragOffset] = useState(0)
   const timelineRef = useRef<HTMLDivElement>(null)
@@ -41,10 +46,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
   const [editingTime, setEditingTime] = useState<string>("")
   const isMobile = useMobile()
 
-  const getEventColor = useCallback(
-    (event: TimelineEvent) => event.color || EVENT_COLORS[0],
-    [],
-  )
+  const getEventColor = useCallback((event: TimelineEvent) => event.color || EVENT_COLORS[0], [])
 
   const getTimeFromPosition = useCallback(
     (clientX: number): number => {
@@ -169,13 +171,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
   const playEventAudio = async (event: TimelineEvent) => {
     try {
       if (event.type === "instruction_sound" && event.soundCueSrc) {
-        if (event.soundCueSrc.startsWith("synthetic:")) {
-          const soundCue = SOUND_CUES_LIBRARY.find((s) => s.id === event.soundCueId)
-          if (soundCue) {
-            const audioContext = getAudioContext()
-            await generateSyntheticSound(soundCue, audioContext)
-          }
-        } else if (event.soundCueSrc.startsWith("musical:")) {
+        if (event.soundCueSrc.startsWith("musical:")) {
           const noteMatch = event.soundCueSrc.match(/musical:([A-G])(\d)/)
           if (noteMatch) {
             const note = noteMatch[1]
@@ -206,7 +202,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
 
   const getEventDisplayInfo = (event: TimelineEvent) => {
     if (event.type === "instruction_sound") {
-      const soundName = event.soundCueName || SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)?.name
+      const soundName = event.soundCueName || "Sound Cue"
       return {
         title: event.instructionText || "Untitled Instruction",
         subtitle: soundName ? `+ ${soundName}` : "Unknown Sound",
@@ -328,7 +324,7 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                     className={cn(
                       "p-4 bg-white dark:bg-gray-900 shadow-sm dark:shadow-white/10",
                       "border-2", // Explicitly set border width to 2px
-                      getFromBorderColorClass(getEventColor(event)) // Dynamic border color based on icon's primary gradient color
+                      getFromBorderColorClass(getEventColor(event)), // Dynamic border color based on icon's primary gradient color
                     )}
                   >
                     <div className="flex items-center w-full">
@@ -343,12 +339,11 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                       </div>
 
                       {/* Text Content (can grow and shrink) */}
-                      <div className="flex flex-col flex-grow min-w-0 ml-3"> {/* Removed overflow-hidden from here */}
+                      <div className="flex flex-col flex-grow min-w-0 ml-3">
+                        {" "}
+                        {/* Removed overflow-hidden from here */}
                         <div className="flex items-center space-x-2 mb-1 flex-wrap">
-                          <Badge
-                            variant="outline"
-                            className="text-xs text-gray-700 dark:text-gray-300 border-none"
-                          >
+                          <Badge variant="outline" className="text-xs text-gray-700 dark:text-gray-300 border-none">
                             {event.type === "instruction_sound" ? "Instruction + Sound" : "Voice Recording"}
                           </Badge>
                           {editingEventId === event.id ? (
@@ -381,7 +376,9 @@ export function VisualTimeline({ events, totalDuration, onUpdateEvent, onRemoveE
                             </button>
                           )}
                         </div>
-                        <div className="text-sm text-gray-700 dark:text-gray-300 font-black"> {/* Removed truncate */}
+                        <div className="text-sm text-gray-700 dark:text-gray-300 font-black">
+                          {" "}
+                          {/* Removed truncate */}
                           <span className="font-black text-gray-600">{displayInfo.title}</span>
                         </div>
                         {event.type === "instruction_sound" && (
