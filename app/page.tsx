@@ -1860,20 +1860,27 @@ export default function Home() {
           reverb.dispose()
         }, 2000)
       } else if (noteType === "harp") {
-        // Create polyphonic harp for chord playback
-        const harpPoly = new Tone.PolySynth(Tone.PluckSynth, {
-          attackNoise: 1,
-          dampening: 4000,
-          resonance: 0.9,
-        }).toDestination()
-
         const reverb = new Tone.Reverb(2.5).toDestination()
-        harpPoly.connect(reverb)
 
-        harpPoly.triggerAttackRelease(selectedNotes, 0.5)
+        // Create individual PluckSynth instances for each note to play simultaneously
+        const harpSynths = selectedNotes.map(() => {
+          const harp = new Tone.PluckSynth({
+            attackNoise: 1,
+            dampening: 4000,
+            resonance: 0.9,
+          }).connect(reverb)
+          return harp
+        })
 
+        // Play all notes simultaneously
+        selectedNotes.forEach((noteString, index) => {
+          console.log("[v0] Playing harp note in chord:", noteString)
+          harpSynths[index].triggerAttackRelease(noteString, 0.5)
+        })
+
+        // Clean up after notes finish
         setTimeout(() => {
-          harpPoly.dispose()
+          harpSynths.forEach((synth) => synth.dispose())
           reverb.dispose()
         }, 3000)
       }
