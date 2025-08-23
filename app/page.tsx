@@ -1856,18 +1856,18 @@ export default function Home() {
           const synth = new Tone.Synth({
             oscillator: { type: "fatsawtooth" },
             envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
+            filter: { frequency: 2000, type: "lowpass", rolloff: -12 },
+            filterEnvelope: { attack: 0.02, decay: 0.2, sustain: 0.5, release: 0.8, baseFrequency: 200, octaves: 4 },
           })
 
           const synthGain = new Tone.Gain(0.3).toDestination()
-          const reverb = new Tone.Reverb(1.5).connect(synthGain)
-          synth.connect(reverb)
+          synth.connect(synthGain)
 
           console.log("[v0] Playing synth note in chord:", noteString)
           synth.triggerAttackRelease(noteString, 0.5)
 
           setTimeout(() => {
             synth.dispose()
-            reverb.dispose()
             synthGain.dispose()
           }, 2000)
         })
