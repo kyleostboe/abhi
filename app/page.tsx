@@ -1789,7 +1789,7 @@ export default function Home() {
       } else if (noteType === "synth") {
         const synth = new Tone.Synth({
           oscillator: { type: "fatsawtooth" },
-          envelope: { attack: 0.02, decay: 0.3, sustain: 0.3, release: 0.8 },
+          envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
           filter: { frequency: 2000, type: "lowpass", rolloff: -12 },
           filterEnvelope: { attack: 0.02, decay: 0.2, sustain: 0.5, release: 0.8, baseFrequency: 200, octaves: 4 },
         })
@@ -1869,29 +1869,25 @@ export default function Home() {
           synthGain.dispose()
         }, 2000)
       } else if (noteType === "harp") {
+        const harp = new Tone.PluckSynth({
+          attackNoise: 1,
+          dampening: 4000,
+          resonance: 0.9,
+        })
+
         const harpGain = new Tone.Gain(0.8).toDestination()
-        const reverb = new Tone.Reverb(2.5).connect(harpGain)
+        const harpReverb = new Tone.Reverb({ decay: 4, wet: 0.6 }).connect(harpGain)
+        harp.connect(harpReverb)
 
-        // Create individual PluckSynth instances for each note to play simultaneously
-        const harpSynths = selectedNotes.map(() => {
-          const harp = new Tone.PluckSynth({
-            attackNoise: 1,
-            dampening: 4000,
-            resonance: 0.9,
-          }).connect(reverb)
-          return harp
-        })
-
-        // Play all notes simultaneously
-        selectedNotes.forEach((noteString, index) => {
+        // Play all notes simultaneously using the same harp instance
+        selectedNotes.forEach((noteString) => {
           console.log("[v0] Playing harp note in chord:", noteString)
-          harpSynths[index].triggerAttackRelease(noteString, 0.5)
+          harp.triggerAttackRelease(noteString, 0.5)
         })
 
-        // Clean up after notes finish
         setTimeout(() => {
-          harpSynths.forEach((synth) => synth.dispose())
-          reverb.dispose()
+          harp.dispose()
+          harpReverb.dispose()
           harpGain.dispose()
         }, 3000)
       }
