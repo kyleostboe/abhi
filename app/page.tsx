@@ -1792,19 +1792,26 @@ export default function Home() {
           envelope: { attack: 0.02, decay: 0.3, sustain: 0.3, release: 0.8 },
           filter: { frequency: 2000, type: "lowpass", rolloff: -12 },
           filterEnvelope: { attack: 0.02, decay: 0.2, sustain: 0.5, release: 0.8, baseFrequency: 200, octaves: 4 },
-        }).toDestination()
+        })
+
+        const synthGain = new Tone.Gain(0.3).toDestination()
+        synth.connect(synthGain)
 
         synth.triggerAttackRelease(`${note}${octave}`, 0.5)
 
-        setTimeout(() => synth.dispose(), 2000)
+        setTimeout(() => {
+          synth.dispose()
+          synthGain.dispose()
+        }, 2000)
       } else if (noteType === "harp") {
         const harp = new Tone.PluckSynth({
           attackNoise: 1,
           dampening: 4000,
           resonance: 0.9,
-        }).toDestination()
+        })
 
-        const harpReverb = new Tone.Reverb({ decay: 4, wet: 0.6 }).toDestination()
+        const harpGain = new Tone.Gain(0.8).toDestination()
+        const harpReverb = new Tone.Reverb({ decay: 4, wet: 0.6 }).connect(harpGain)
         harp.connect(harpReverb)
 
         harp.triggerAttackRelease(`${note}${octave}`, 0.5)
@@ -1812,6 +1819,7 @@ export default function Home() {
         setTimeout(() => {
           harp.dispose()
           harpReverb.dispose()
+          harpGain.dispose()
         }, 3000)
       }
     } catch (error) {
@@ -1844,13 +1852,13 @@ export default function Home() {
           console.error("[v0] Piano sampler not available for chord")
         }
       } else if (noteType === "synth") {
-        // Create a polyphonic synth for chord playback
         const polySynth = new Tone.PolySynth(Tone.Synth, {
           oscillator: { type: "fatsawtooth" },
           envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
-        }).toDestination()
+        })
 
-        const reverb = new Tone.Reverb(1.5).toDestination()
+        const synthGain = new Tone.Gain(0.3).toDestination()
+        const reverb = new Tone.Reverb(1.5).connect(synthGain)
         polySynth.connect(reverb)
 
         polySynth.triggerAttackRelease(selectedNotes, 0.5)
@@ -1858,9 +1866,11 @@ export default function Home() {
         setTimeout(() => {
           polySynth.dispose()
           reverb.dispose()
+          synthGain.dispose()
         }, 2000)
       } else if (noteType === "harp") {
-        const reverb = new Tone.Reverb(2.5).toDestination()
+        const harpGain = new Tone.Gain(0.8).toDestination()
+        const reverb = new Tone.Reverb(2.5).connect(harpGain)
 
         // Create individual PluckSynth instances for each note to play simultaneously
         const harpSynths = selectedNotes.map(() => {
@@ -1882,6 +1892,7 @@ export default function Home() {
         setTimeout(() => {
           harpSynths.forEach((synth) => synth.dispose())
           reverb.dispose()
+          harpGain.dispose()
         }, 3000)
       }
     } catch (error) {
@@ -2568,7 +2579,7 @@ none mb-4 py-0 px-0"
                               <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
                                 File Size
                               </div>
-                              <div className="font-black text-gray-600 text-sm">
+                              <div className="font-black text-sm text-gray-600">
                                 {formatFileSize(processedFileSize || 0)}
                               </div>
                             </div>
