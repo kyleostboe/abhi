@@ -1852,22 +1852,25 @@ export default function Home() {
           console.error("[v0] Piano sampler not available for chord")
         }
       } else if (noteType === "synth") {
-        const polySynth = new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: "fatsawtooth" },
-          envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
+        selectedNotes.forEach(async (noteString) => {
+          const synth = new Tone.Synth({
+            oscillator: { type: "fatsawtooth" },
+            envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
+          })
+
+          const synthGain = new Tone.Gain(0.3).toDestination()
+          const reverb = new Tone.Reverb(1.5).connect(synthGain)
+          synth.connect(reverb)
+
+          console.log("[v0] Playing synth note in chord:", noteString)
+          synth.triggerAttackRelease(noteString, 0.5)
+
+          setTimeout(() => {
+            synth.dispose()
+            reverb.dispose()
+            synthGain.dispose()
+          }, 2000)
         })
-
-        const synthGain = new Tone.Gain(0.3).toDestination()
-        const reverb = new Tone.Reverb(1.5).connect(synthGain)
-        polySynth.connect(reverb)
-
-        polySynth.triggerAttackRelease(selectedNotes, 0.5)
-
-        setTimeout(() => {
-          polySynth.dispose()
-          reverb.dispose()
-          synthGain.dispose()
-        }, 2000)
       } else if (noteType === "harp") {
         const harp = new Tone.PluckSynth({
           attackNoise: 1,
