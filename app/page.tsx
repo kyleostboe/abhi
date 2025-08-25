@@ -11,12 +11,12 @@ import {
   Wand2,
   Download,
   AlertTriangle,
-  Music2,
   Mic,
   StopCircle,
   Play,
   PlusCircle,
   CircleDotDashed,
+  Music,
 } from "lucide-react" // Import Copy icon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
@@ -2808,53 +2808,52 @@ none mb-4 py-0 px-0"
                   </div>
 
                   <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 }}
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                      <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
-                        <h3 className="text-white flex items-center font-black text-left">
-                          <Music2 className="h-4 w-4 mr-2" />
+                      <div className="bg-gradient-to-r from-logo-blue-500 to-logo-orange-500 py-3 px-6 dark:from-logo-blue-600 dark:to-logo-orange-600 text-center">
+                        <h3 className="text-white flex items-center font-black">
+                          <Music className="h-4 w-4 mr-2" />
                           Sound Cues
                         </h3>
                       </div>
-                      <div className="p-6 space-y-4 font-black">
+                      <div className="p-6 space-y-4">
                         <Accordion type="single" collapsible className="w-full">
-                          <AccordionItem value="musical-notes">
-                            <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
-                              <div className="flex items-center justify-between w-full">
-                                <span>Musical Notes</span>
-                                <div className="flex flex-col gap-2 mr-4" onClick={(e) => e.stopPropagation()}>
+                          <AccordionItem
+                            value="musical-notes"
+                            className="border-b border-gray-200 dark:border-gray-700"
+                          >
+                            <AccordionTrigger className="text-left hover:no-underline py-3">
+                              <div className="flex flex-col gap-2 w-full">
+                                <span className="text-gray-700 dark:text-gray-300 font-black">Musical Notes</span>
+                                <div className="flex flex-col gap-2">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-500">Type</span>
-                                    <select
-                                      value={noteType}
-                                      onChange={(e) => setNoteType(e.target.value as "piano" | "synth" | "harp")}
-                                      className="text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1"
-                                    >
-                                      <option value="piano">Piano</option>
-                                      <option value="synth">Synth</option>
-                                      <option value="harp">Harp</option>
-                                    </select>
+                                    <Label htmlFor="note-type" className="text-xs text-gray-500 dark:text-gray-400">
+                                      Type
+                                    </Label>
+                                    <Select value={noteType} onValueChange={setNoteType}>
+                                      <SelectTrigger className="w-24 h-7 text-xs">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="piano">Piano</SelectItem>
+                                        <SelectItem value="synth">Synth</SelectItem>
+                                        <SelectItem value="harp">Harp</SelectItem>
+                                      </SelectContent>
+                                    </Select>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-500">Multi-Note</span>
-                                    <button
-                                      onClick={() => {
-                                        setMultiNoteMode(!multiNoteMode)
-                                        setSelectedNotes([]) // Clear selections when toggling
-                                      }}
-                                      className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
-                                        multiNoteMode ? "bg-logo-blue-400" : "bg-gray-300"
-                                      }`}
-                                    >
-                                      <span
-                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                                          multiNoteMode ? "translate-x-4" : "translate-x-0.5"
-                                        }`}
-                                      />
-                                    </button>
+                                    <Label htmlFor="multi-note" className="text-xs text-gray-500 dark:text-gray-400">
+                                      Multi-Note
+                                    </Label>
+                                    <Switch
+                                      id="multi-note"
+                                      checked={multiNoteMode}
+                                      onCheckedChange={setMultiNoteMode}
+                                      className="scale-75"
+                                    />
                                   </div>
                                 </div>
                               </div>
