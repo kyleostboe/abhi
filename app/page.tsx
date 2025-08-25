@@ -2656,7 +2656,18 @@ none mb-4 py-0 px-0"
                 </motion.div>
 
                 <motion.div
-                  className="grid grid-cols-1 lg:grid-cols-2 gap-6" // Changed from lg:grid-cols-3 to lg:grid-cols-2
+                  className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:grid-rows-2 lg:gap-6"
+                  style={{
+                    gridTemplateAreas: `
+                      "instruction instruction" 
+                      "sound-cue sound-cue" 
+                      "voice voice"
+                      @media (min-width: 1024px) {
+                        "instruction sound-cue"
+                        "voice sound-cue"
+                      }
+                    `,
+                  }}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
@@ -2665,7 +2676,8 @@ none mb-4 py-0 px-0"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="p-6 bg-transparent px-0 py-3 pb-0 pt-0 order-1 lg:order-1"
+                    className="p-6 bg-transparent px-0 py-3 pb-0 pt-0 order-1 lg:order-none"
+                    style={{ gridArea: "instruction" }}
                   >
                     {/* New Instructions Label and Icon */}
 
@@ -2688,7 +2700,8 @@ none mb-4 py-0 px-0"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="order-2 lg:order-2 lg:row-span-2"
+                    className="order-2 lg:order-none lg:row-span-2"
+                    style={{ gridArea: "sound-cue" }}
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
                       <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
@@ -2858,7 +2871,8 @@ none mb-4 py-0 px-0"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="order-3 lg:order-3"
+                    className="order-3 lg:order-none"
+                    style={{ gridArea: "voice" }}
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
                       <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
