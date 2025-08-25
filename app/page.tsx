@@ -2661,152 +2661,28 @@ none mb-4 py-0 px-0"
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <div className="space-y-6 order-1 lg:order-1">
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
-                    >
-                      {/* New Instructions Label and Icon */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="p-6 bg-transparent px-0 py-3 pb-0 pt-0 order-1 lg:order-1"
+                  >
+                    {/* New Instructions Label and Icon */}
 
-                      <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 border-0 px-[5px] py-1 pl-1 pr-1 shadow-lg rounded-sm">
-                        <div className="bg-white dark:bg-gray-900 p-4 border-rose-200 border-0 rounded-sm shadow-inner">
-                          <div className="text-center">
-                            <Textarea
-                              id="custom-instruction"
-                              value={customInstructionText}
-                              onChange={handleCustomInstructionChange}
-                              placeholder="Enter an instruction..."
-                              className="mt-2 text-sm font-serif font-black text-indigo-400 placeholder-indigo-400 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
-                            />
-                          </div>
+                    <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 border-0 px-[5px] py-1 pl-1 pr-1 shadow-lg rounded-sm">
+                      <div className="bg-white dark:bg-gray-900 p-4 border-rose-200 border-0 rounded-sm shadow-inner">
+                        <div className="text-center">
+                          <Textarea
+                            id="custom-instruction"
+                            value={customInstructionText}
+                            onChange={handleCustomInstructionChange}
+                            placeholder="Enter an instruction..."
+                            className="mt-2 text-sm font-serif font-black text-indigo-400 placeholder-indigo-400 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
+                          />
                         </div>
                       </div>
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 }}
-                      className="order-3 lg:order-2"
-                    >
-                      <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                        <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
-                          <h3 className="text-white flex items-center font-black">
-                            <Mic className="h-4 w-4 mr-2" />
-                            Voice Recording
-                          </h3>
-                        </div>
-                        <div className="p-6 space-y-4">
-                          <div className="text-left">
-                            <Label
-                              htmlFor="recording-label"
-                              className="text-gray-600 dark:text-logo-rose-400 font-black"
-                            >
-                              Label
-                            </Label>
-                            <Input
-                              id="recording-label"
-                              value={recordingLabel}
-                              onChange={handleRecordingLabelChange}
-                              placeholder="Describe this recording..."
-                              className="mt-1 text-sm font-black text-gray-600 placeholder-gray-500"
-                            />
-                          </div>
-                          <Button
-                            onClick={isRecording ? stopRecording : startRecording}
-                            variant={isRecording ? "destructive" : "default"}
-                            className={cn(
-                              "w-full font-black",
-                              isRecording
-                                ? "bg-gradient-to-r from-gray-700 to-gray-500 text-white dark:from-gray-700 dark:to-gray-800"
-                                : "bg-transparent text-gray-600 border-2 border-gray-500 dark:text-logo-rose-400 dark:border-logo-rose-400 hover:bg-gray-50 dark:hover:bg-gray-800",
-                            )}
-                          >
-                            {isRecording ? (
-                              <>
-                                <StopCircle className="mr-2 h-4 w-4" />
-                                Stop Recording
-                              </>
-                            ) : (
-                              <>
-                                <Mic className="mr-2 h-4 w-4" />
-                                Start Recording
-                              </>
-                            )}
-                          </Button>
-                          <AnimatePresence>
-                            {readyToAddToTimelineRecording && (
-                              <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: "auto" }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="space-y-2 border-t border-gray-100 dark:border-gray-500 pt-4"
-                              >
-                                <div className="space-y-2">
-                                  <audio
-                                    controls
-                                    src={readyToAddToTimelineRecording.url}
-                                    className="w-full"
-                                    preload="metadata"
-                                  />
-                                  <p className="text-xs text-gray-600 text-center">
-                                    Duration: {formatTime(readyToAddToTimelineRecording.duration)}
-                                  </p>
-                                </div>
-                                <Button
-                                  onClick={() => {
-                                    if (!readyToAddToTimelineRecording?.label.trim()) {
-                                      toast({
-                                        title: "Missing Label",
-                                        description: "Please provide a label for the recording.",
-                                        variant: "destructive",
-                                      })
-                                      return
-                                    }
-
-                                    // Calculate new startTime based on existing events
-                                    const maxExistingTime =
-                                      timelineEvents.length > 0
-                                        ? Math.max(...timelineEvents.map((e) => e.startTime))
-                                        : 0
-                                    const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 10 : 0
-
-                                    const newEvent: TimelineEvent = {
-                                      id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-                                      type: "recorded_voice",
-                                      startTime: newStartTime, // Now calculated
-                                      recordedAudioUrl: readyToAddToTimelineRecording.url,
-                                      recordedInstructionLabel: readyToAddToTimelineRecording.label.trim(),
-                                      duration: readyToAddToTimelineRecording.duration,
-                                      color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length], // Assign a color
-                                    }
-
-                                    addEventToTimeline(newEvent) // Use the new helper function
-
-                                    // Clean up
-                                    setReadyToAddToTimelineRecording(null)
-                                    setRecordedBlobs([])
-                                    setRecordingLabel("")
-
-                                    toast({
-                                      title: "Recording Added",
-                                      description: `"${readyToAddToTimelineRecording.label.trim()}" added to timeline.`,
-                                    })
-                                  }}
-                                  className="w-full bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black"
-                                >
-                                  <PlusCircle className="mr-2 h-4 w-4" />
-                                  Add to Timeline
-                                </Button>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </Card>
-                    </motion.div>
-                  </div>
+                    </div>
+                  </motion.div>
 
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -2974,6 +2850,123 @@ none mb-4 py-0 px-0"
                           <PlusCircle className="mr-2 h-4 w-4" />
                           <span className="font-black font-serif">Add to Timeline</span>
                         </Button>
+                      </div>
+                    </Card>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="order-3 lg:order-2"
+                  >
+                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
+                      <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
+                        <h3 className="text-white flex items-center font-black">
+                          <Mic className="h-4 w-4 mr-2" />
+                          Voice Recording
+                        </h3>
+                      </div>
+                      <div className="p-6 space-y-4">
+                        <div className="text-left">
+                          <Label htmlFor="recording-label" className="text-gray-600 dark:text-logo-rose-400 font-black">
+                            Label
+                          </Label>
+                          <Input
+                            id="recording-label"
+                            value={recordingLabel}
+                            onChange={handleRecordingLabelChange}
+                            placeholder="Describe this recording..."
+                            className="mt-1 text-sm font-black text-gray-600 placeholder-gray-500"
+                          />
+                        </div>
+                        <Button
+                          onClick={isRecording ? stopRecording : startRecording}
+                          variant={isRecording ? "destructive" : "default"}
+                          className={cn(
+                            "w-full font-black",
+                            isRecording
+                              ? "bg-gradient-to-r from-gray-700 to-gray-500 text-white dark:from-gray-700 dark:to-gray-800"
+                              : "bg-transparent text-gray-600 border-2 border-gray-500 dark:text-logo-rose-400 dark:border-logo-rose-400 hover:bg-gray-50 dark:hover:bg-gray-800",
+                          )}
+                        >
+                          {isRecording ? (
+                            <>
+                              <StopCircle className="mr-2 h-4 w-4" />
+                              Stop Recording
+                            </>
+                          ) : (
+                            <>
+                              <Mic className="mr-2 h-4 w-4" />
+                              Start Recording
+                            </>
+                          )}
+                        </Button>
+                        <AnimatePresence>
+                          {readyToAddToTimelineRecording && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="space-y-2 border-t border-gray-100 dark:border-gray-500 pt-4"
+                            >
+                              <div className="space-y-2">
+                                <audio
+                                  controls
+                                  src={readyToAddToTimelineRecording.url}
+                                  className="w-full"
+                                  preload="metadata"
+                                />
+                                <p className="text-xs text-gray-600 text-center">
+                                  Duration: {formatTime(readyToAddToTimelineRecording.duration)}
+                                </p>
+                              </div>
+                              <Button
+                                onClick={() => {
+                                  if (!readyToAddToTimelineRecording?.label.trim()) {
+                                    toast({
+                                      title: "Missing Label",
+                                      description: "Please provide a label for the recording.",
+                                      variant: "destructive",
+                                    })
+                                    return
+                                  }
+
+                                  // Calculate new startTime based on existing events
+                                  const maxExistingTime =
+                                    timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
+                                  const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 10 : 0
+
+                                  const newEvent: TimelineEvent = {
+                                    id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+                                    type: "recorded_voice",
+                                    startTime: newStartTime, // Now calculated
+                                    recordedAudioUrl: readyToAddToTimelineRecording.url,
+                                    recordedInstructionLabel: readyToAddToTimelineRecording.label.trim(),
+                                    duration: readyToAddToTimelineRecording.duration,
+                                    color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length], // Assign a color
+                                  }
+
+                                  addEventToTimeline(newEvent) // Use the new helper function
+
+                                  // Clean up
+                                  setReadyToAddToTimelineRecording(null)
+                                  setRecordedBlobs([])
+                                  setRecordingLabel("")
+
+                                  toast({
+                                    title: "Recording Added",
+                                    description: `"${readyToAddToTimelineRecording.label.trim()}" added to timeline.`,
+                                  })
+                                }}
+                                className="w-full bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black"
+                              >
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Add to Timeline
+                              </Button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </Card>
                   </motion.div>
