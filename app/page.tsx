@@ -2035,7 +2035,7 @@ export default function Home() {
                   </p>
                 </motion.div>
               )}
-              {/* Updated content for encoder mode description */}
+              // Updated content for encoder mode description
               {activeMode === "encoder" && (
                 <motion.div
                   key="encoder-note"
@@ -2043,7 +2043,8 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="p-4 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
+                  className="p-4 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-
+none mb-4 py-0 px-0"
                 >
                   <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs pb-1.5">
                     Create custom meditations by associating instructions with sound cues and placing them on a
@@ -2255,7 +2256,7 @@ export default function Home() {
                             </div>
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 dark:from-gray-700 dark:to-gray-600 py-1 px-[3px] rounded-sm pr-1 pl-1 shadow-md">
                               <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm shadow-inner">
-                                <div className="text-xs uppercase tracking-wide mb-1  text-gray-600">Pauses:</div>
+                                <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Pauses:</div>
                                 <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
                               </div>
                             </div>
@@ -2404,7 +2405,9 @@ export default function Home() {
                               <span className="dark:text-logo-purple-300 font-black text-xl text-gray-600">
                                 {minSpacingDuration.toFixed(1)}
                               </span>
-                              <span className="ml-1 dark:text-logo-teal-400 text-base text-gray-600">seconds</span>
+                              <span className="ml-1 dark:text-logo-teal-400 text-basee text-base text-gray-600">
+                                seconds
+                              </span>
                             </div>
                             <div className="text-center dark:text-logo-purple-400/70 text-sm mt-0 text-gray-500">
                               Minimum pause between speaking parts
@@ -2526,7 +2529,7 @@ export default function Home() {
                             <audio controls className="w-full" src={originalUrl}></audio>
                           </div>
                           <div className="grid grid-cols-2 gap-3">
-                            <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-sm py-3.5">
+                            <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-smll rounded-sm py-3.5">
                               <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
                                 Duration
                               </div>
@@ -2534,7 +2537,7 @@ export default function Home() {
                                 {originalBuffer ? formatTime(originalBuffer.duration) : "--"}
                               </div>
                             </div>
-                            <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-sm py-3.5">
+                            <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-smll rounded-sm py-3.5">
                               <div className="text-xs uppercase tracking-wide mb-1  text-gray-500 ">File Size</div>
                               <div className="font-black text-gray-600 text-sm">{formatFileSize(file?.size || 0)}</div>
                             </div>
@@ -2658,12 +2661,12 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <div className="space-y-6">
+                  <div className="space-y-6 order-1 lg:order-1">
                     <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
-                      className="p-6 bg-transparent px-0 py-3 pb-0 pt-0 order-1"
+                      className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                     >
                       {/* New Instructions Label and Icon */}
 
@@ -2686,10 +2689,10 @@ export default function Home() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
-                      className="order-3"
+                      className="order-3 lg:order-2"
                     >
                       <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                        <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
+                        <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
                           <h3 className="text-white flex items-center font-black">
                             <Mic className="h-4 w-4 mr-2" />
                             Voice Recording
@@ -2809,7 +2812,7 @@ export default function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="order-2"
+                    className="order-2 lg:order-3"
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
                       <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
@@ -2821,7 +2824,7 @@ export default function Home() {
                       <div className="p-6 space-y-4 font-black">
                         <Accordion type="single" collapsible className="w-full">
                           <AccordionItem value="musical-notes">
-                            <AccordionTrigger className="text-gray-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
+                            <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
                               <div className="flex items-center justify-between w-full">
                                 <span>Musical Notes</span>
                                 <div className="flex flex-col gap-2 mr-4" onClick={(e) => e.stopPropagation()}>
@@ -3055,7 +3058,7 @@ export default function Home() {
                         <h3 className="text-white font-black">Generated Audio</h3>
                       </div>
                       <div className="p-6 px-3.5 py-4">
-                        <h4 className="dark:text-gray-300 font-black text-sm text-gray-600 mb-2.5">
+                        <h4 className="dark:text-gray-300 font-black text-sm text-gray-600 mb-2.5 px-2.5">
                           {meditationTitle}
                         </h4>
                         <div className="bg-white p-3 dark:shadow-white/10 dark:bg-gray-700 px-0 rounded-sm shadow-md mb-3.5">
