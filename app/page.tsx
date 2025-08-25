@@ -2656,7 +2656,7 @@ none mb-4 py-0 px-0"
                 </motion.div>
 
                 <motion.div
-                  className="grid grid-cols-1 lg:grid-cols-2 gap-6" // Changed from lg:grid-cols-3 to lg:grid-cols-2
+                  className="grid grid-cols-1 lg:grid-cols-2 gap-6"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
@@ -2794,7 +2794,7 @@ none mb-4 py-0 px-0"
                                       description: `"${readyToAddToTimelineRecording.label.trim()}" added to timeline.`,
                                     })
                                   }}
-                                  className="w-full bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black"
+                                  className="w-full bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black" // Changed border to gray-600
                                 >
                                   <PlusCircle className="mr-2 h-4 w-4" />
                                   Add to Timeline
@@ -2976,6 +2976,7 @@ none mb-4 py-0 px-0"
                     </Card>
                   </motion.div>
                 </motion.div>
+
                 {/* Timeline Editor for Labs */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
                   <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
