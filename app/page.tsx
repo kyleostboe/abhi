@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
-import { Alert } from "@/components/ui/alert" // Import Alert component
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert" // Import Alert component
 import {
   Volume2,
   Wand2,
@@ -2656,7 +2656,7 @@ none mb-4 py-0 px-0"
                 </motion.div>
 
                 <motion.div
-                  className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+                  className="grid grid-cols-1 lg:grid-cols-2 gap-6" // Changed from lg:grid-cols-3 to lg:grid-cols-2
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
@@ -2688,425 +2688,367 @@ none mb-4 py-0 px-0"
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 }}
+                      transition={{ delay: 0.3 }}
+                      className="lg:hidden" // Only show on mobile/tablet
                     >
                       <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                        <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
-                          <h3 className="text-white flex items-center font-black">
+                        <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
+                          <h3 className="text-white flex items-center font-black text-left">
+                            <Music2 className="h-4 w-4 mr-2" />
+                            Sound Cues
+                          </h3>
+                        </div>
+                        <div className="p-6 space-y-4 font-black">
+                          <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="musical-notes">
+                              <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
+                                <div className="flex items-center justify-between w-full">
+                                  <span>Musical Notes</span>
+                                  <div className="flex flex-col gap-2 mr-4" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-500">Type</span>
+                                      <select
+                                        value={noteType}
+                                        onChange={(e) => setNoteType(e.target.value as "piano" | "synth" | "harp")}
+                                        className="text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1"
+                                      >
+                                        <option value="piano">Piano</option>
+                                        <option value="synth">Synth</option>
+                                        <option value="harp">Harp</option>
+                                      </select>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-500">Multi-Note</span>
+                                      <button
+                                        onClick={() => {
+                                          setMultiNoteMode(!multiNoteMode)
+                                          setSelectedNotes([]) // Clear selections when toggling
+                                        }}
+                                        className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
+                                          multiNoteMode ? "bg-logo-blue-400" : "bg-gray-300"
+                                        }`}
+                                      >
+                                        <span
+                                          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                                            multiNoteMode ? "translate-x-4" : "translate-x-0.5"
+                                          }`}
+                                        />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="pb-4">
+                                {multiNoteMode && (
+                                  <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                    <div className="flex items-center justify-between">
+                                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                                        Selected: {selectedNotes.length > 0 ? selectedNotes.join(", ") : "None"}
+                                      </div>
+                                      {selectedNotes.length > 0 && (
+                                        <Button
+                                          size="sm"
+                                          onClick={playChordPreview}
+                                          className="bg-logo-blue-400 hover:bg-logo-blue-500 text-white"
+                                        >
+                                          <Play className="h-3 w-3 mr-1" />
+                                          Play Chord
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                                <Accordion type="single" collapsible className="w-full">
+                                  {Object.entries(
+                                    Object.entries(MUSICAL_NOTES).reduce(
+                                      (acc, [_, notes]) => {
+                                        notes.forEach((note) => {
+                                          const octave = `Octave ${note.octave}`
+                                          if (!acc[octave]) acc[octave] = []
+                                          acc[octave].push(note)
+                                        })
+                                        return acc
+                                      },
+                                      {} as Record<string, any[]>,
+                                    ),
+                                  ).map(([octave, notes]) => (
+                                    <AccordionItem
+                                      value={octave}
+                                      key={octave}
+                                      className="border-b border-gray-100 dark:border-gray-800"
+                                    >
+                                      <AccordionTrigger className="text-gray-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
+                                        {octave}
+                                      </AccordionTrigger>
+                                      <AccordionContent className="pb-4">
+                                        <div className="space-y-2 text-gray-600">
+                                          {notes.map((note) => {
+                                            const noteString = `${note.note}${note.octave}`
+                                            const isSelected = multiNoteMode && selectedNotes.includes(noteString)
+                                            const isSingleSelected = !multiNoteMode && selectedSoundCue?.id === note.id
+
+                                            return (
+                                              <div
+                                                key={note.id}
+                                                className="flex items-center gap-2 font-black font-serif"
+                                              >
+                                                <Button
+                                                  variant={isSingleSelected ? "default" : "ghost"}
+                                                  size="sm"
+                                                  className={`flex-1 justify-start font-black font-serif text-gray-600 ${
+                                                    isSelected
+                                                      ? "bg-gradient-to-r from-amber-100 to-rose-100 border-2 border-amber-400 dark:from-amber-900 dark:to-rose-900 dark:border-amber-500"
+                                                      : isSingleSelected
+                                                        ? "bg-white text-gray-600 border-gray-500 border-2 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-logo-teal-500 dark:hover:bg-gray-50"
+                                                        : "hover:bg-gray-50 dark:hover:bg-gray-800"
+                                                  }`}
+                                                  onClick={() => handleNoteSelection(note)}
+                                                >
+                                                  {note.name}
+                                                </Button>
+                                                {!multiNoteMode && (
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={async () =>
+                                                      await playSingleNote(note.note, note.octave, noteType)
+                                                    }
+                                                    className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
+                                                    title={`Preview ${note.name}`}
+                                                  >
+                                                    <Play className="h-4 w-4" />
+                                                  </Button>
+                                                )}
+                                              </div>
+                                            )
+                                          })}
+                                        </div>
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  ))}
+                                </Accordion>
+                              </AccordionContent>
+                            </AccordionItem>
+                            <AccordionItem value="miscellaneous">
+                              <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
+                                Miscellaneous
+                              </AccordionTrigger>
+                              <AccordionContent className="pb-4">
+                                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                                  <div className="mb-2 text-lg font-black">Coming Soon!</div>
+                                  <div className="text-sm">
+                                    Additional sound cues are being developed and will be available in a future update.
+                                  </div>
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          </Accordion>
+                          <Button
+                            className="w-full bg-transparent text-gray-600 border-2 border-gray-500 hover:bg-gray-50 dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black"
+                            onClick={handleAddInstructionSoundEvent}
+                            disabled={!customInstructionText.trim() || !selectedSoundCue}
+                          >
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            <span className="font-black font-serif">Add to Timeline</span>
+                          </Button>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  </div
+\
+                  <div className="space-y-6">
+                    <motion.div
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
+                        <div className="bg-gradient-to-r from-logo-rose-400 to-logo-emerald-300 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-emerald-600 text-center">
+                          <h3 className="text-white flex items-center font-black text-left">
                             <Mic className="h-4 w-4 mr-2" />
-                            Voice Recording
+                            Record Voice
                           </h3>
                         </div>
                         <div className="p-6 space-y-4">
-                          <div className="text-left">
-                            <Label
-                              htmlFor="recording-label"
-                              className="text-gray-600 dark:text-logo-rose-400 font-black"
-                            >
-                              Label
+                          <div className="text-center">
+                            <Label htmlFor="recording-label" className="text-gray-600 font-black">
+                              Recording Label
                             </Label>
                             <Input
                               id="recording-label"
+                              type="text"
                               value={recordingLabel}
                               onChange={handleRecordingLabelChange}
-                              placeholder="Describe this recording..."
-                              className="mt-1 text-sm font-black text-gray-600 placeholder-gray-500"
+                              placeholder="Untitled Recording"
+                              className="mt-1 text-xs font-black text-gray-600 shadow-inner"
                             />
                           </div>
-                          <Button
-                            onClick={isRecording ? stopRecording : startRecording}
-                            variant={isRecording ? "destructive" : "default"}
-                            className={cn(
-                              "w-full font-black",
-                              isRecording
-                                ? "bg-gradient-to-r from-gray-700 to-gray-500 text-white dark:from-gray-700 dark:to-gray-800"
-                                : "bg-transparent text-gray-600 border-2 border-gray-500 dark:text-logo-rose-400 dark:border-logo-rose-400 hover:bg-gray-50 dark:hover:bg-gray-800",
-                            )}
-                          >
-                            {isRecording ? (
-                              <>
-                                <StopCircle className="mr-2 h-4 w-4" />
-                                Stop Recording
-                              </>
-                            ) : (
-                              <>
-                                <Mic className="mr-2 h-4 w-4" />
-                                Start Recording
-                              </>
-                            )}
-                          </Button>
-                          <AnimatePresence>
+                          <div className="flex justify-center space-x-4">
+                            <Button
+                              variant="outline"
+                              className="bg-transparent text-gray-600 border-2 border-gray-500 hover:bg-gray-50 dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black"
+                              onClick={isRecording ? stopRecording : startRecording}
+                              disabled={readyToAddToTimelineRecording !== null}
+                            >
+                              {isRecording ? (
+                                <>
+                                  <StopCircle className="mr-2 h-4 w-4" />
+                                  Stop Recording
+                                </>
+                              ) : (
+                                <>
+                                  <Mic className="mr-2 h-4 w-4" />
+                                  Start Recording
+                                </>
+                              )}
+                            </Button>
                             {readyToAddToTimelineRecording && (
-                              <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: "auto" }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="space-y-2 border-t border-gray-100 dark:border-gray-500 pt-4"
+                              <Button
+                                className="bg-transparent text-gray-600 border-2 border-gray-500 hover:bg-gray-50 dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black"
+                                onClick={() => {
+                                  const newEvent: TimelineEvent = {
+                                    id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+                                    type: "recorded_voice",
+                                    startTime: 0, // Default start time
+                                    recordedAudioUrl: readyToAddToTimelineRecording.url,
+                                    recordedInstructionLabel: readyToAddToTimelineRecording.label,
+                                    color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length], // Assign a color
+                                  }
+                                  addEventToTimeline(newEvent)
+                                  setReadyToAddToTimelineRecording(null)
+                                  setRecordingLabel("")
+                                  toast({
+                                    title: "Recording Added",
+                                    description: `"${newEvent.recordedInstructionLabel}" added to timeline.`,
+                                  })
+                                }}
                               >
-                                <div className="space-y-2">
-                                  <audio
-                                    controls
-                                    src={readyToAddToTimelineRecording.url}
-                                    className="w-full"
-                                    preload="metadata"
-                                  />
-                                  <p className="text-xs text-gray-600 text-center">
-                                    Duration: {formatTime(readyToAddToTimelineRecording.duration)}
-                                  </p>
-                                </div>
-                                <Button
-                                  onClick={() => {
-                                    if (!readyToAddToTimelineRecording?.label.trim()) {
-                                      toast({
-                                        title: "Missing Label",
-                                        description: "Please provide a label for the recording.",
-                                        variant: "destructive",
-                                      })
-                                      return
-                                    }
-
-                                    // Calculate new startTime based on existing events
-                                    const maxExistingTime =
-                                      timelineEvents.length > 0
-                                        ? Math.max(...timelineEvents.map((e) => e.startTime))
-                                        : 0
-                                    const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 10 : 0
-
-                                    const newEvent: TimelineEvent = {
-                                      id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-                                      type: "recorded_voice",
-                                      startTime: newStartTime, // Now calculated
-                                      recordedAudioUrl: readyToAddToTimelineRecording.url,
-                                      recordedInstructionLabel: readyToAddToTimelineRecording.label.trim(),
-                                      duration: readyToAddToTimelineRecording.duration,
-                                      color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length], // Assign a color
-                                    }
-
-                                    addEventToTimeline(newEvent) // Use the new helper function
-
-                                    // Clean up
-                                    setReadyToAddToTimelineRecording(null)
-                                    setRecordedBlobs([])
-                                    setRecordingLabel("")
-
-                                    toast({
-                                      title: "Recording Added",
-                                      description: `"${readyToAddToTimelineRecording.label.trim()}" added to timeline.`,
-                                    })
-                                  }}
-                                  className="w-full bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black" // Changed border to gray-600
-                                >
-                                  <PlusCircle className="mr-2 h-4 w-4" />
-                                  Add to Timeline
-                                </Button>
-                              </motion.div>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Add to Timeline
+                              </Button>
                             )}
-                          </AnimatePresence>
+                          </div>
+                          {readyToAddToTimelineRecording && (
+                            <div className="mt-4">
+                              <audio controls src={readyToAddToTimelineRecording.url} className="w-full"></audio>
+                              <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                Duration: {formatTime(readyToAddToTimelineRecording.duration)}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </Card>
                     </motion.div>
                   </div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                      <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
-                        <h3 className="text-white flex items-center font-black text-left">
-                          <Music2 className="h-4 w-4 mr-2" />
-                          Sound Cues
-                        </h3>
-                      </div>
-                      <div className="p-6 space-y-4 font-black">
-                        <Accordion type="single" collapsible className="w-full">
-                          <AccordionItem value="musical-notes">
-                            <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
-                              <div className="flex items-center justify-between w-full">
-                                <span>Musical Notes</span>
-                                <div className="flex flex-col gap-2 mr-4" onClick={(e) => e.stopPropagation()}>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-500">Type</span>
-                                    <select
-                                      value={noteType}
-                                      onChange={(e) => setNoteType(e.target.value as "piano" | "synth" | "harp")}
-                                      className="text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1"
-                                    >
-                                      <option value="piano">Piano</option>
-                                      <option value="synth">Synth</option>
-                                      <option value="harp">Harp</option>
-                                    </select>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-500">Multi-Note</span>
-                                    <button
-                                      onClick={() => {
-                                        setMultiNoteMode(!multiNoteMode)
-                                        setSelectedNotes([]) // Clear selections when toggling
-                                      }}
-                                      className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
-                                        multiNoteMode ? "bg-logo-blue-400" : "bg-gray-300"
-                                      }`}
-                                    >
-                                      <span
-                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                                          multiNoteMode ? "translate-x-4" : "translate-x-0.5"
-                                        }`}
-                                      />
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-4">
-                              {multiNoteMode && (
-                                <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                                  <div className="flex items-center justify-between">
-                                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                                      Selected: {selectedNotes.length > 0 ? selectedNotes.join(", ") : "None"}
-                                    </div>
-                                    {selectedNotes.length > 0 && (
-                                      <Button
-                                        size="sm"
-                                        onClick={playChordPreview}
-                                        className="bg-logo-blue-400 hover:bg-logo-blue-500 text-white"
-                                      >
-                                        <Play className="h-3 w-3 mr-1" />
-                                        Play Chord
-                                      </Button>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-                              <Accordion type="single" collapsible className="w-full">
-                                {Object.entries(
-                                  Object.entries(MUSICAL_NOTES).reduce(
-                                    (acc, [_, notes]) => {
-                                      notes.forEach((note) => {
-                                        const octave = `Octave ${note.octave}`
-                                        if (!acc[octave]) acc[octave] = []
-                                        acc[octave].push(note)
-                                      })
-                                      return acc
-                                    },
-                                    {} as Record<string, any[]>,
-                                  ),
-                                ).map(([octave, notes]) => (
-                                  <AccordionItem
-                                    value={octave}
-                                    key={octave}
-                                    className="border-b border-gray-100 dark:border-gray-800"
-                                  >
-                                    <AccordionTrigger className="text-gray-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
-                                      {octave}
-                                    </AccordionTrigger>
-                                    <AccordionContent className="pb-4">
-                                      <div className="space-y-2 text-gray-600">
-                                        {notes.map((note) => {
-                                          const noteString = `${note.note}${note.octave}`
-                                          const isSelected = multiNoteMode && selectedNotes.includes(noteString)
-                                          const isSingleSelected = !multiNoteMode && selectedSoundCue?.id === note.id
-
-                                          return (
-                                            <div
-                                              key={note.id}
-                                              className="flex items-center gap-2 font-black font-serif"
-                                            >
-                                              <Button
-                                                variant={isSingleSelected ? "default" : "ghost"}
-                                                size="sm"
-                                                className={`flex-1 justify-start font-black font-serif text-gray-600 ${
-                                                  isSelected
-                                                    ? "bg-gradient-to-r from-amber-100 to-rose-100 border-2 border-amber-400 dark:from-amber-900 dark:to-rose-900 dark:border-amber-500"
-                                                    : isSingleSelected
-                                                      ? "bg-white text-gray-600 border-gray-500 border-2 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-logo-teal-500 dark:hover:bg-gray-50"
-                                                      : "hover:bg-gray-50 dark:hover:bg-gray-800"
-                                                }`}
-                                                onClick={() => handleNoteSelection(note)}
-                                              >
-                                                {note.name}
-                                              </Button>
-                                              {!multiNoteMode && (
-                                                <Button
-                                                  variant="ghost"
-                                                  size="sm"
-                                                  onClick={async () =>
-                                                    await playSingleNote(note.note, note.octave, noteType)
-                                                  }
-                                                  className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
-                                                  title={`Preview ${note.name}`}
-                                                >
-                                                  <Play className="h-4 w-4" />
-                                                </Button>
-                                              )}
-                                            </div>
-                                          )
-                                        })}
-                                      </div>
-                                    </AccordionContent>
-                                  </AccordionItem>
-                                ))}
-                              </Accordion>
-                            </AccordionContent>
-                          </AccordionItem>
-                          <AccordionItem value="miscellaneous">
-                            <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
-                              Miscellaneous
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-4">
-                              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                                <div className="mb-2 text-lg font-black">Coming Soon!</div>
-                                <div className="text-sm">
-                                  Additional sound cues are being developed and will be available in a future update.
-                                </div>
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        </Accordion>
-                        <Button
-                          className="w-full bg-transparent text-gray-600 border-2 border-gray-500 hover:bg-gray-50 dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black"
-                          onClick={handleAddInstructionSoundEvent}
-                          disabled={!customInstructionText.trim() || !selectedSoundCue}
-                        >
-                          <PlusCircle className="mr-2 h-4 w-4" />
-                          <span className="font-black font-serif">Add to Timeline</span>
-                        </Button>
-                      </div>
-                    </Card>
-                  </motion.div>
                 </motion.div>
 
-                {/* Timeline Editor for Labs */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+                <motion.div
+                  className="col-span-1 lg:col-span-2"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
                   <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                    <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 dark:from-gray-800 dark:to-gray-900 py-3">
-                      <h3 className="text-white flex items-center font-black text-base">
-                        <CircleDotDashed className="h-5 w-5 mr-2" />
-                        Timeline Editor
+                    <div className="bg-gradient-to-r from-logo-purple-400 to-logo-teal-300 py-3 px-6 dark:from-logo-purple-600 dark:to-logo-teal-600 text-center">
+                      <h3 className="text-white flex items-center font-black text-left">
+                        <CircleDotDashed className="h-4 w-4 mr-2" />
+                        Timeline
                       </h3>
                     </div>
-                    <div className="p-6 px-7">
+                    <div className="p-6 space-y-4">
+                      <div className="flex justify-between items-center">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          Total Duration: {formatTime(encoderTotalDuration)}
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button variant="outline" size="sm" onClick={handleSaveTimeline}>
+                            Save
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={handleLoadTimeline}>
+                            Load
+                          </Button>
+                        </div>
+                      </div>
                       <VisualTimeline
                         events={timelineEvents}
                         totalDuration={encoderTotalDuration}
-                        onUpdateEvent={updateEventStartTime}
-                        onRemoveEvent={removeTimelineEvent}
-                        onDuplicateEvent={handleDuplicateEvent} // Pass the new duplicate handler
+                        updateEventStartTime={updateEventStartTime}
+                        removeTimelineEvent={removeTimelineEvent}
+                        handleDuplicateEvent={handleDuplicateEvent}
                       />
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center space-x-3">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={isPlaying ? pausePlayback : startPlayback}
+                            disabled={timelineEvents.length === 0}
+                          >
+                            {isPlaying ? <StopCircle className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                          </Button>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            {formatTime(currentPlaybackTime)} / {formatTime(encoderTotalDuration)}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <Volume2 className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                          <Slider
+                            value={[volume]}
+                            min={0}
+                            max={100}
+                            step={1}
+                            onValueChange={(value) => setVolume(value[0])}
+                            className="w-24"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-center">
+                        <Button
+                          className="bg-transparent text-gray-600 border-2 border-gray-500 hover:bg-gray-50 dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black"
+                          onClick={handleExportAudio}
+                          disabled={isGeneratingAudio || timelineEvents.length === 0}
+                        >
+                          {isGeneratingAudio ? (
+                            <>
+                              Generating... ({generationProgress}%)
+                            </>
+                          ) : (
+                            <>
+                              <Download className="mr-2 h-4 w-4" />
+                              Export Audio
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      {isGeneratingAudio && (
+                        <div className="mt-4">
+                          <progress value={generationProgress} max="100" className="w-full"></progress>
+                          <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                            {generationStep}
+                          </div>
+                        </div>
+                      )}
+                      {generatedAudioUrl && (
+                        <div className="mt-4">
+                          <audio controls src={generatedAudioUrl} className="w-full"></audio>
+                          <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                            File Size: {formatFileSize(generatedAudioFileSize)}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </Card>
                 </motion.div>
-
-                {/* Generate Audio Button */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-                  <Button
-                    onClick={handleExportAudio}
-                    disabled={isGeneratingAudio || timelineEvents.length === 0}
-                    className={cn(
-                      "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
-                      "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none text-white",
-                      "bg-gradient-to-r from-logo-purple-300 via-logo-teal-500 to-orange-300",
-                      "dark:bg-[linear-gradient(90deg,#10b981_0%,#14b8a6_12%,#ec4899_24%,#f59e0b_36%,#6b7280_50%,#a855f7_64%,#0ea5e9_76%,#06b6d4_88%,#10b981_100%)]",
-                      "hover:brightness-[1.06] active:brightness-95",
-                    )}
-                  >
-                    <div className="flex items-center justify-center font-black">
-                      {isGeneratingAudio && (
-                        <div className="mr-3 h-5 w-5">
-                          <svg
-                            className="animate-spin h-5 w-5 text-white"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291
-  A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                        </div>
-                      )}
-                      <Wand2 className="mr-2 w-4 h-4 text-white" />
-                      <span className="text-base text-white tracking-normal">
-                        {isGeneratingAudio ? "Generating..." : "Generate Audio"}
-                      </span>
-                    </div>
-                  </Button>
-                </motion.div>
-
-                {/* Generated Audio Section for Labs */}
-                {generatedAudioUrl && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                  >
-                    <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-logo-teal-950 dark:to-logo-emerald-950">
-                      <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
-                        <h3 className="text-white font-black">Generated Audio</h3>
-                      </div>
-                      <div className="p-6 px-3.5 py-4">
-                        <h4 className="dark:text-gray-300 font-black text-sm text-gray-600 mb-2.5 px-2.5">
-                          {meditationTitle}
-                        </h4>
-                        <div className="bg-white p-3 dark:shadow-white/10 dark:bg-gray-700 px-0 rounded-sm shadow-md mb-3.5">
-                          <audio controls className="w-full" src={generatedAudioUrl}></audio>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 mb-3.5">
-                          <div className="p-3 text-center dark:bg-gray-800/60 rounded-sm shadow-md bg-white py-3.5">
-                            <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
-                              Duration
-                            </div>
-                            <div className="dark:text-black font-black text-gray-600 text-sm">
-                              {formatTime(encoderAudioRef.current?.duration || 0)}
-                            </div>
-                          </div>
-                          <div className="p-3 text-center dark:bg-gray-800/60 bg-white shadow-md rounded-sm py-3.5">
-                            <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
-                              File Size
-                            </div>
-                            <div className="font-black text-sm text-gray-600">
-                              {generatedAudioUrl ? formatFileSize(generatedAudioFileSize) : "--"}
-                            </div>
-                          </div>
-                        </div>
-                        <Button
-                          className="w-full py-4 rounded-sm shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:shadow-none transition-shadow transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
-                          onClick={() => {
-                            if (generatedAudioUrl) {
-                              const a = document.createElement("a")
-                              a.href = generatedAudioUrl
-                              a.download = `${meditationTitle.replace(/\s/g, "_") || "meditation"}.wav`
-                              document.body.appendChild(a)
-                              a.click()
-                              document.body.removeChild(a)
-                            }
-                          }}
-                        >
-                          <div className="flex items-center justify-center font-black">
-                            <Download className="mr-2 w-4 h-4" />
-                            Download
-                          </div>
-                        </Button>
-                      </div>
-                    </Card>
-                  </motion.div>
-                )}
               </motion.div>
             )}
           </div>
         </div>
+        {status && (
+          <Alert className="fixed bottom-4 left-1/2 transform -translate-x-1/2 w-96 z-50">
+            <AlertTitle>{status.type === "success" ? "Success" : "Error"}</AlertTitle>
+            <AlertDescription>{status.message}</AlertDescription>
+          </Alert>
+        )}
       </motion.div>
     </div>
   )
