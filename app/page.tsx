@@ -2661,7 +2661,7 @@ none mb-4 py-0 px-0"
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <div className="space-y-6 order-1">
+                  <div className="space-y-6 order-1 lg:order-1">
                     <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
