@@ -2000,6 +2000,7 @@ export default function Home() {
                   >
                     Adjuster
                   </button>
+                  {/*  Removed visible comment that was displaying on page */}
                   <button
                     onClick={() => setActiveMode("encoder")}
                     className={cn(
@@ -2034,6 +2035,7 @@ export default function Home() {
                   </p>
                 </motion.div>
               )}
+              {/* Updated content for encoder mode description */}
               {activeMode === "encoder" && (
                 <motion.div
                   key="encoder-note"
@@ -2115,7 +2117,7 @@ export default function Home() {
                         href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDDo3?usp=drive_link"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-gray-400 dark:border-gray-700 dark:shadow-white/10 px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs rounded border-[3px]"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-gray-400 dark:border-gray-700 dark:shadow-white/10 px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs rounded border-[3px]"
                       >
                         Toby Sola's meditations
                       </a>
@@ -2123,7 +2125,7 @@ export default function Home() {
                         href="https://meditofoundation.org/meditations"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-gray-400 dark:border-gray-700 dark:shadow-white/10 px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs rounded border-[3px]"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-gray-400 dark:border-gray-700 dark:shadow-white/10 px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs rounded border-[3px]"
                       >
                         Medito Foundation
                       </a>
@@ -2233,6 +2235,7 @@ export default function Home() {
                       <Alert className="bg-white dark:bg-gray-900 p-0 border-0 shadow-none">
                         <div className="p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm shadow-none bg-transparent pt-1 pb-0.5">
                           <div className="flex items-center mb-2 justify-center">
+                            {/* Removed the Info icon div */}
                             <div className="text-lg font-black text-gray-600">Audio Analysis</div>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -2252,7 +2255,7 @@ export default function Home() {
                             </div>
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 dark:from-gray-700 dark:to-gray-600 py-1 px-[3px] rounded-sm pr-1 pl-1 shadow-md">
                               <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm shadow-inner">
-                                <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Pauses:</div>
+                                <div className="text-xs uppercase tracking-wide mb-1  text-gray-600">Pauses:</div>
                                 <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
                               </div>
                             </div>
@@ -2523,7 +2526,7 @@ export default function Home() {
                             <audio controls className="w-full" src={originalUrl}></audio>
                           </div>
                           <div className="grid grid-cols-2 gap-3">
-                            <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-smll rounded-sm py-3.5">
+                            <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-sm py-3.5">
                               <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
                                 Duration
                               </div>
@@ -2531,7 +2534,7 @@ export default function Home() {
                                 {originalBuffer ? formatTime(originalBuffer.duration) : "--"}
                               </div>
                             </div>
-                            <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-smll rounded-sm py-3.5">
+                            <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-sm py-3.5">
                               <div className="text-xs uppercase tracking-wide mb-1  text-gray-500 ">File Size</div>
                               <div className="font-black text-gray-600 text-sm">{formatFileSize(file?.size || 0)}</div>
                             </div>
@@ -2551,7 +2554,7 @@ export default function Home() {
                           <h3 className="text-white font-black">Adjusted Audio</h3>
                         </div>
                         <div className="p-6 px-3.5 py-4">
-                          <div className="bg-white p-3 dark:shadow-white/10 dark:bg-gray-700 rounded-sm shadow-md mb-3.5">
+                          <div className="bg-white p-3 dark:shadow-white/10 dark:bg-gray-700 rounded-sm shadow-md mb-3.5 px-0">
                             <audio controls className="w-full" src={processedUrl}></audio>
                           </div>
                           <div className="grid grid-cols-2 gap-3 mb-3.5">
@@ -2655,14 +2658,15 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <div className="space-y-6 lg:order-1">
+                  <div className="space-y-6">
                     <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
-                      className="p-6 bg-transparent px-0 py-3 pb-0 pt-0 order-1"
+                      className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                     >
                       {/* New Instructions Label and Icon */}
+
                       <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 border-0 px-[5px] py-1 pl-1 pr-1 shadow-lg rounded-sm">
                         <div className="bg-white dark:bg-gray-900 p-4 border-rose-200 border-0 rounded-sm shadow-inner">
                           <div className="text-center">
@@ -2682,10 +2686,9 @@ export default function Home() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
-                      className="order-3 lg:order-2"
                     >
                       <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                        <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
+                        <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
                           <h3 className="text-white flex items-center font-black">
                             <Mic className="h-4 w-4 mr-2" />
                             Voice Recording
@@ -3045,7 +3048,7 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
                   >
-                    <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+                    <Card className="overflow-hidden border-none shadow-xl dark:shadow-white/25 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-logo-teal-950 dark:to-logo-emerald-950">
                       <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
                         <h3 className="text-white font-black">Generated Audio</h3>
                       </div>
