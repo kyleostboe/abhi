@@ -238,9 +238,9 @@ const INSTRUCTIONS_LIBRARY = [
     category: "Nonduality",
   },
   {
-    id: "nonduality-12",\
-    text": 'Resting as the source of the \"I\" thought',\
-    category: \"Nonduality\",
+    id: "nonduality-12",
+    text: 'Resting as the source of the "I" thought',
+    category: "Nonduality",
   },
   // Body Scan Instructions
   {
@@ -717,9 +717,8 @@ export default function Home() {
   const [generationStep, setGenerationStep] = useState<string>("")
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
   const [generatedAudioFileSize, setGeneratedAudioFileSize] = useState<number>(0)
-  \
-  const [timeline, setTimeline] = useState<TimelineItem[]>[]
-  )
+
+  const [timeline, setTimeline] = useState<TimelineItem[]>([])
   const [currentTab, setCurrentTab] = useState<string>("instructions")
   const [isPlaying, setIsPlaying] = useState<boolean>(false)
   const [currentPlaybackTime, setCurrentPlaybackTime] = useState<number>(0) // in seconds
@@ -2853,8 +2852,7 @@ none mb-4 py-0 px-0"
                           </div>
                         </Card>
                       </motion.div>
-                    </motion.div>
-                  </motion.div>
+                    </div >
 
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -3033,6 +3031,6 @@ none mb-4 py-0 px-0"
           </div>
         </div>
       </motion.div>
-    </div>
-  )
+    </div >
+  )\
 }
