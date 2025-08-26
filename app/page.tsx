@@ -2157,7 +2157,7 @@ none mb-4 py-0 px-0"
                   onDrop={handleDropAction}
                 >
                   <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 dark:shadow-white/20 px-[5px] py-1 shadow-sm rounded-sm pl-1 pr-1">
-                    <div className="p-10 md:p-16 text-center md:py-14 bg-white dark:bg-gray-900 border-white border-0 rounded-sm shadow-inner">
+                    <div className="p-10 md:p-16 text-center md:py-14 bg-white dark:bg-gray-900 border-white border-0 rounded-sm">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -2190,7 +2190,7 @@ none mb-4 py-0 px-0"
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
                       className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-logo-amber-300 to-logo-purple-300 py-1 px-[5px] shadow-md rounded-sm pr-1 pl-1"
                     >
-                      <div className="bg-white dark:bg-gray-900 p-5 py-4 rounded-sm shadow-inner">
+                      <div className="bg-white dark:bg-gray-900 p-5 py-4 rounded-sm">
                         <div className="flex items-center">
                           <motion.div
                             initial={{ scale: 0 }}
@@ -2243,7 +2243,7 @@ none mb-4 py-0 px-0"
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm pl-1 pr-1">
-                              <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] shadow-inner rounded-sm">
+                              <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm">
                                 <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
                                 <div className="font-black text-gray-600">
                                   {formatTime(audioAnalysis.contentDuration)}
@@ -2251,19 +2251,19 @@ none mb-4 py-0 px-0"
                               </div>
                             </div>
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm pl-1 pr-1">
-                              <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm shadow-inner">
+                              <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm">
                                 <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
                                 <div className="font-black text-gray-600">{formatTime(audioAnalysis.totalSilence)}</div>
                               </div>
                             </div>
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 dark:from-gray-700 dark:to-gray-600 py-1 px-[3px] rounded-sm pr-1 pl-1 shadow-md">
-                              <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm shadow-inner">
+                              <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm">
                                 <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Pauses:</div>
                                 <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
                               </div>
                             </div>
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm pr-1 pl-1">
-                              <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm shadow-inner">
+                              <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm">
                                 <div className="text-xs uppercase tracking-wide text-gray-600 mb-1.5">Range:</div>
                                 <div className="uppercase text-gray-600 text-xs tracking-wide">
                                   {durationLimits.min} min - {isMobileDevice ? "1 hour" : "2 hours"}
