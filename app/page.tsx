@@ -2656,7 +2656,7 @@ none mb-4 py-0 px-0"
                 </motion.div>
 
                 <motion.div
-                  className="grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-2 gap-6" // Added lg:grid-rows-2 to ensure proper grid structure
+                  className="grid grid-cols-1 lg:grid-cols-2 gap-6" // Changed from lg:grid-cols-3 to lg:grid-cols-2
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
@@ -2665,7 +2665,7 @@ none mb-4 py-0 px-0"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="p-6 bg-transparent px-0 py-3 pb-0 pt-0 lg:row-start-1 lg:col-start-1" // Added explicit grid positioning
+                    className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                   >
                     {/* New Instructions Label and Icon */}
 
@@ -2688,7 +2688,7 @@ none mb-4 py-0 px-0"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="lg:row-span-2 lg:row-start-1 lg:col-start-2" // Added explicit grid positioning for sound cue section
+                    className="lg:row-span-2"
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
                       <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
@@ -2704,7 +2704,7 @@ none mb-4 py-0 px-0"
                               <div className="flex items-center justify-between w-full">
                                 <span>Musical Notes</span>
                                 <div className="flex flex-col gap-2 mr-6" onClick={(e) => e.stopPropagation()}>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 mb-[3px]">
                                     <span className="text-xs text-gray-500">Type</span>
                                     <select
                                       value={noteType}
@@ -2858,7 +2858,7 @@ none mb-4 py-0 px-0"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="lg:row-start-2 lg:col-start-1" // Added explicit grid positioning for voice recording section
+                    
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
                       <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
