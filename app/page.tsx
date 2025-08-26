@@ -2656,7 +2656,7 @@ none mb-4 py-0 px-0"
                 </motion.div>
 
                 <motion.div
-                  className="grid grid-cols-1 lg:grid-cols-2 gap-6" // Changed from lg:grid-cols-3 to lg:grid-cols-2
+                  className="grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-2 gap-6" // Added lg:grid-rows-2 to ensure proper grid structure
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
@@ -2665,7 +2665,7 @@ none mb-4 py-0 px-0"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
+                    className="p-6 bg-transparent px-0 py-3 pb-0 pt-0 lg:row-start-1 lg:col-start-1" // Added explicit grid positioning
                   >
                     {/* New Instructions Label and Icon */}
 
@@ -2688,7 +2688,7 @@ none mb-4 py-0 px-0"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="lg:row-span-2"
+                    className="lg:row-span-2 lg:row-start-1 lg:col-start-2" // Added explicit grid positioning for sound cue section
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
                       <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
@@ -2858,7 +2858,7 @@ none mb-4 py-0 px-0"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    
+                    className="lg:row-start-2 lg:col-start-1" // Added explicit grid positioning for voice recording section
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
                       <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
