@@ -1031,7 +1031,27 @@ export default function Home() {
                     synth.triggerAttackRelease(noteString, 0.8, eventStartTime)
                   } else if (instrument === "harp") {
                     await loadHarp()
-                    harp.triggerAttackRelease(noteString, 0.8, eventStartTime)
+                    selectedNotes.forEach(async (noteString, index) => {
+                      const harp = new Tone.PluckSynth({
+                        attackNoise: 1,
+                        dampening: 4000,
+                        resonance: 0.9,
+                      })
+
+                      const harpGain = new Tone.Gain(0.8).toDestination()
+                      const harpReverb = new Tone.Reverb({ decay: 4, wet: 0.6 }).connect(harpGain)
+                      harp.connect(harpReverb)
+
+                      console.log("[v0] Playing harp note in chord:", noteString)
+                      // Add small delay to prevent scheduling conflicts
+                      harp.triggerAttackRelease(noteString, 0.5, `+${index * 0.01}`)
+
+                      setTimeout(() => {
+                        harp.dispose()
+                        harpReverb.dispose()
+                        harpGain.dispose()
+                      }, 3000)
+                    })
                   }
 
                   console.log(`Successfully added ${instrument} note ${noteString} at ${eventStartTime}`)
@@ -1994,27 +2014,27 @@ export default function Home() {
           }, 2000)
         })
       } else if (noteType === "harp") {
-        const harp = new Tone.PluckSynth({
-          attackNoise: 1,
-          dampening: 4000,
-          resonance: 0.9,
-        })
+        selectedNotes.forEach(async (noteString, index) => {
+          const harp = new Tone.PluckSynth({
+            attackNoise: 1,
+            dampening: 4000,
+            resonance: 0.9,
+          })
 
-        const harpGain = new Tone.Gain(0.8).toDestination()
-        const harpReverb = new Tone.Reverb({ decay: 4, wet: 0.6 }).connect(harpGain)
-        harp.connect(harpReverb)
+          const harpGain = new Tone.Gain(0.8).toDestination()
+          const harpReverb = new Tone.Reverb({ decay: 4, wet: 0.6 }).connect(harpGain)
+          harp.connect(harpReverb)
 
-        // Play all notes simultaneously using the same harp instance
-        selectedNotes.forEach((noteString) => {
           console.log("[v0] Playing harp note in chord:", noteString)
-          harp.triggerAttackRelease(noteString, 0.5)
-        })
+          // Add small delay to prevent scheduling conflicts
+          harp.triggerAttackRelease(noteString, 0.5, `+${index * 0.01}`)
 
-        setTimeout(() => {
-          harp.dispose()
-          harpReverb.dispose()
-          harpGain.dispose()
-        }, 3000)
+          setTimeout(() => {
+            harp.dispose()
+            harpReverb.dispose()
+            harpGain.dispose()
+          }, 3000)
+        })
       }
     } catch (error) {
       console.error("[v0] Error playing chord:", error)
