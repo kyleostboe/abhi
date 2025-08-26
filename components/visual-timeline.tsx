@@ -329,7 +329,7 @@ export function VisualTimeline({
                       getFromBorderColorClass(getEventColor(event)), // Dynamic border color based on icon's primary gradient color
                     )}
                   >
-                    <div className="flex items-center w-full">
+                    <div className="flex items-center w-full mx-[-8px] px-1">
                       {/* Icon (fixed size, no shrink) */}
                       <div
                         className={cn(
