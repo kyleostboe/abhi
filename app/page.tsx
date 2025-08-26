@@ -896,6 +896,9 @@ export default function Home() {
         length: Math.ceil(maxAudioDuration * 44100), // Ensure length is an integer
       })
 
+      const Tone = await ensureTone()
+      await Tone.setContext(ctx)
+
       let processedEventsCount = 0
       const totalEvents = timelineEvents.length
 
@@ -915,37 +918,106 @@ export default function Home() {
           } else if (event.soundCueSrc?.startsWith("musical:")) {
             const notesPart = event.soundCueSrc.replace("musical:", "")
             const noteStrings = notesPart.split("|")
-            noteStrings.forEach((ns) => {
+
+            for (const ns of noteStrings) {
               const match = ns.match(/([A-G])(\d)/)
               if (match) {
                 const note = match[1]
                 const octave = Number.parseInt(match[2])
-                console.log(`Processing musical note: ${note}${octave}`)
+                const noteString = `${note}${octave}`
+                console.log(`Processing musical note with Tone.js: ${noteString}`)
 
-                const frequency = NOTE_FREQUENCIES[`${note}${octave}` as keyof typeof NOTE_FREQUENCIES]
-                if (frequency) {
-                  const oscillator = ctx.createOscillator()
-                  const gainNode = ctx.createGain()
+                try {
+                  if (noteType === "piano") {
+                    // Use Salamander piano sampler for consistency
+                    const pianoSampler = new Tone.Sampler({
+                      urls: {
+                        A0: "A0.mp3",
+                        C1: "C1.mp3",
+                        "D#1": "Ds1.mp3",
+                        "F#1": "Fs1.mp3",
+                        A1: "A1.mp3",
+                        C2: "C2.mp3",
+                        "D#2": "Ds2.mp3",
+                        "F#2": "Fs2.mp3",
+                        A2: "A2.mp3",
+                        C3: "C3.mp3",
+                        "D#3": "Ds3.mp3",
+                        "F#3": "Fs3.mp3",
+                        A3: "A3.mp3",
+                        C4: "C4.mp3",
+                        "D#4": "Ds4.mp3",
+                        "F#4": "Fs4.mp3",
+                        A4: "A4.mp3",
+                        C5: "C5.mp3",
+                        "D#5": "Ds5.mp3",
+                        "F#5": "Fs5.mp3",
+                        A5: "A5.mp3",
+                        C6: "C6.mp3",
+                        "D#6": "Ds6.mp3",
+                        "F#6": "Fs6.mp3",
+                        A6: "A6.mp3",
+                        C7: "C7.mp3",
+                        "D#7": "Ds7.mp3",
+                        "F#7": "Fs7.mp3",
+                        A7: "A7.mp3",
+                        C8: "C8.mp3",
+                      },
+                      release: 1.2,
+                      baseUrl: "https://tonejs.github.io/audio/salamander/",
+                    })
 
-                  oscillator.connect(gainNode)
-                  gainNode.connect(ctx.destination)
+                    const pianoReverb = new Tone.Reverb({ wet: 0.18, decay: 2.8, preDelay: 0.01 })
+                    pianoSampler.connect(pianoReverb)
+                    pianoReverb.toDestination()
 
-                  oscillator.type = "sine"
-                  oscillator.frequency.setValueAtTime(frequency, eventStartTime)
+                    await pianoReverb.generate()
+                    pianoSampler.triggerAttackRelease(noteString, 0.8, eventStartTime, 0.9)
+                  } else if (noteType === "synth") {
+                    // Use the same synth configuration as playSingleNote
+                    const synth = new Tone.Synth({
+                      oscillator: { type: "fatsawtooth" },
+                      envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
+                      filter: { frequency: 2000, type: "lowpass", rolloff: -12 },
+                      filterEnvelope: {
+                        attack: 0.02,
+                        decay: 0.2,
+                        sustain: 0.5,
+                        release: 0.8,
+                        baseFrequency: 200,
+                        octaves: 4,
+                      },
+                    })
 
-                  const eventDuration = 0.8 // Default duration for musical notes
-                  const peakVolume = 0.4 // Good volume for musical notes
+                    const synthGain = new Tone.Gain(0.3)
+                    synth.connect(synthGain)
+                    synthGain.toDestination()
 
-                  gainNode.gain.setValueAtTime(0, eventStartTime)
-                  gainNode.gain.exponentialRampToValueAtTime(peakVolume, eventStartTime + 0.05)
-                  gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
+                    synth.triggerAttackRelease(noteString, 0.8, eventStartTime)
+                  } else if (noteType === "harp") {
+                    // Use the same harp configuration as playSingleNote
+                    const harp = new Tone.PluckSynth({
+                      attackNoise: 1,
+                      dampening: 4000,
+                      resonance: 0.9,
+                    })
 
-                  oscillator.start(eventStartTime)
-                  oscillator.stop(eventStartTime + eventDuration)
-                  console.log(`Successfully added musical note ${note}${octave} at ${eventStartTime}`)
+                    const harpReverb = new Tone.Reverb({ decay: 4, wet: 0.6 })
+                    const harpGain = new Tone.Gain(0.8)
+                    harp.connect(harpReverb)
+                    harpReverb.connect(harpGain)
+                    harpGain.toDestination()
+
+                    await harpReverb.generate()
+                    harp.triggerAttackRelease(noteString, 0.8, eventStartTime)
+                  }
+
+                  console.log(`Successfully added ${noteType} note ${noteString} at ${eventStartTime}`)
+                } catch (error) {
+                  console.error(`Error adding ${noteType} note ${noteString}:`, error)
                 }
               }
-            })
+            }
           } else if (event.soundCueSrc) {
             try {
               console.log(`Loading pre-recorded audio: ${event.soundCueSrc}`)
