@@ -35,6 +35,7 @@ export interface TimelineEvent {
   soundCueId?: string
   soundCueName?: string
   soundCueSrc?: string
+  instrument?: "piano" | "synth" | "harp"
   recordedAudioUrl?: string
   recordedInstructionLabel?: string
   duration?: number // Duration of the recorded audio in seconds
