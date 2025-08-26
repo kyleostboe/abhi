@@ -384,33 +384,33 @@ export function VisualTimeline({
                         )}
                       </div>
                       {/* Button group - now with responsive gap */}
-                      <div className="flex items-center gap-x-1 sm:gap-x-3 ml-auto">
+                      <div className="flex items-center gap-x-0.5 sm:gap-x-1.5 ml-auto">
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => playEventAudio(event)}
-                          className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                          className="hover:bg-gray-100 dark:hover:bg-gray-800 px-1.5 py-1.5 h-7 w-7"
                           title="Preview audio"
                         >
-                          <Play className="h-4 w-4" />
+                          <Play className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => onDuplicateEvent(event)}
-                          className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                          className="hover:bg-gray-100 dark:hover:bg-gray-800 px-1.5 py-1.5 h-7 w-7"
                           title="Duplicate event"
                         >
-                          <Copy className="h-4 w-4" />
+                          <Copy className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => onRemoveEvent(event.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 px-1.5 py-1.5 h-7 w-7"
                           title="Remove event"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
