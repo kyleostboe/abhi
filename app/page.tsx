@@ -2961,8 +2961,9 @@ none mb-4 py-0 px-0"
                             </AccordionContent>
                           </AccordionItem>
                         </Accordion>
+                        <div className="h-7" />
                         <Button
-                          className="w-full bg-transparent text-gray-600 border-2 border-gray-500 hover:bg-gray-50 dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black"
+                          className="w-full bg-transparent text-gray-600 border-2 border-gray-500 hover:bg-gray-50 dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black mt-auto"
                           onClick={handleAddInstructionSoundEvent}
                           disabled={!customInstructionText.trim() || !selectedSoundCue}
                         >
