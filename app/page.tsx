@@ -2704,7 +2704,7 @@ none mb-4 py-0 px-0"
                           <AccordionItem value="musical-notes">
                             <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
                               <div className="flex items-center justify-between w-full">
-                                <span>Musical Notes</span>
+                                <span>Notes</span>
                                 <div className="flex flex-col gap-2 mr-6" onClick={(e) => e.stopPropagation()}>
                                   <div className="flex items-center gap-2 mb-[3px]">
                                     <span className="text-xs text-gray-500">Type</span>
