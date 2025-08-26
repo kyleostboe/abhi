@@ -1781,12 +1781,13 @@ export default function Home() {
   const playSingleNote = async (note: string, octave: number, noteType: string) => {
     try {
       console.log(`[v0] Playing ${noteType} note: ${note}${octave}`)
-      await Tone.start()
+      await startPianoAudio()
 
       if (noteType === "piano") {
         const noteString = `${note}${octave}`
         await playPianoNote(noteString, 0.5, 0.9)
       } else if (noteType === "synth") {
+        const Tone = await ensureTone()
         const synth = new Tone.Synth({
           oscillator: { type: "fatsawtooth" },
           envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
@@ -1804,6 +1805,7 @@ export default function Home() {
           synthGain.dispose()
         }, 2000)
       } else if (noteType === "harp") {
+        const Tone = await ensureTone()
         const harp = new Tone.PluckSynth({
           attackNoise: 1,
           dampening: 4000,
@@ -2858,7 +2860,6 @@ none mb-4 py-0 px-0"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
                       <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
