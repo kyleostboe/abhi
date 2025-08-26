@@ -389,7 +389,7 @@ export function VisualTimeline({
                           size="sm"
                           variant="ghost"
                           onClick={() => playEventAudio(event)}
-                          className="hover:bg-gray-100 dark:hover:bg-gray-800 px-1.5 py-1.5 h-7 w-7"
+                          className="hover:text-gray-600 dark:hover:bg-gray-800 px-1.5 py-1.5 h-7 w-7"
                           title="Preview audio"
                         >
                           <Play className="h-3.5 w-3.5" />
@@ -398,7 +398,7 @@ export function VisualTimeline({
                           size="sm"
                           variant="ghost"
                           onClick={() => onDuplicateEvent(event)}
-                          className="hover:bg-gray-100 dark:hover:bg-gray-800 px-1.5 py-1.5 h-7 w-7"
+                          className="hover: text-gray-600 dark:hover:bg-gray-800 px-1.5 py-1.5 h-7 w-7"
                           title="Duplicate event"
                         >
                           <Copy className="h-3.5 w-3.5" />
@@ -407,7 +407,7 @@ export function VisualTimeline({
                           size="sm"
                           variant="ghost"
                           onClick={() => onRemoveEvent(event.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 px-1.5 py-1.5 h-7 w-7"
+                          className="text-red-500 hover:text-red-700  dark:hover:bg-red-900/20 px-1.5 py-1.5 h-7 w-7"
                           title="Remove event"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
