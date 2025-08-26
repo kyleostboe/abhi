@@ -2807,17 +2807,17 @@ none mb-4 py-0 px-0"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="lg:w-1/2"
+                    className="flex flex-col lg:w-1/2"
                   >
-                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
+                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full flex flex-col">
                       <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 dark:from-logo-teal-600 dark:to-logo-emerald-600 text-center">
                         <h3 className="text-white flex items-center font-black text-left">
                           <Music2 className="h-4 w-4 mr-2" />
                           Sound Cues
                         </h3>
                       </div>
-                      <div className="p-6 space-y-4 font-black">
-                        <Accordion type="single" collapsible className="w-full">
+                      <div className="p-6 space-y-4 font-black flex flex-col flex-1">
+                        <Accordion type="single" collapsible className="w-full flex-1">
                           <AccordionItem value="musical-notes">
                             <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
                               <div className="flex items-center justify-between w-full">
@@ -2962,7 +2962,7 @@ none mb-4 py-0 px-0"
                           </AccordionItem>
                         </Accordion>
                         <Button
-                          className="w-full bg-transparent text-gray-600 border-2 border-gray-500 hover:bg-gray-50 dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black"
+                          className="w-full bg-transparent text-gray-600 border-2 border-gray-500 hover:bg-gray-50 dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black mt-auto"
                           onClick={handleAddInstructionSoundEvent}
                           disabled={!customInstructionText.trim() || !selectedSoundCue}
                         >
