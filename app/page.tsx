@@ -913,35 +913,39 @@ export default function Home() {
               console.log(`Skipping synthetic sound at ${eventStartTime} - functionality removed`)
             }
           } else if (event.soundCueSrc?.startsWith("musical:")) {
-            const noteMatch = event.soundCueSrc.match(/musical:([A-G])(\d)/)
-            if (noteMatch) {
-              const note = noteMatch[1]
-              const octave = Number.parseInt(noteMatch[2])
-              console.log(`Processing musical note: ${note}${octave}`)
+            const notesPart = event.soundCueSrc.replace("musical:", "")
+            const noteStrings = notesPart.split("|")
+            noteStrings.forEach((ns) => {
+              const match = ns.match(/([A-G])(\d)/)
+              if (match) {
+                const note = match[1]
+                const octave = Number.parseInt(match[2])
+                console.log(`Processing musical note: ${note}${octave}`)
 
-              const frequency = NOTE_FREQUENCIES[`${note}${octave}` as keyof typeof NOTE_FREQUENCIES]
-              if (frequency) {
-                const oscillator = ctx.createOscillator()
-                const gainNode = ctx.createGain()
+                const frequency = NOTE_FREQUENCIES[`${note}${octave}` as keyof typeof NOTE_FREQUENCIES]
+                if (frequency) {
+                  const oscillator = ctx.createOscillator()
+                  const gainNode = ctx.createGain()
 
-                oscillator.connect(gainNode)
-                gainNode.connect(ctx.destination)
+                  oscillator.connect(gainNode)
+                  gainNode.connect(ctx.destination)
 
-                oscillator.type = "sine"
-                oscillator.frequency.setValueAtTime(frequency, eventStartTime)
+                  oscillator.type = "sine"
+                  oscillator.frequency.setValueAtTime(frequency, eventStartTime)
 
-                const eventDuration = 0.8 // Default duration for musical notes
-                const peakVolume = 0.4 // Good volume for musical notes
+                  const eventDuration = 0.8 // Default duration for musical notes
+                  const peakVolume = 0.4 // Good volume for musical notes
 
-                gainNode.gain.setValueAtTime(0, eventStartTime)
-                gainNode.gain.exponentialRampToValueAtTime(peakVolume, eventStartTime + 0.05)
-                gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
+                  gainNode.gain.setValueAtTime(0, eventStartTime)
+                  gainNode.gain.exponentialRampToValueAtTime(peakVolume, eventStartTime + 0.05)
+                  gainNode.gain.exponentialRampToValueAtTime(0.001, eventStartTime + eventDuration)
 
-                oscillator.start(eventStartTime)
-                oscillator.stop(eventStartTime + eventDuration)
-                console.log(`Successfully added musical note ${note}${octave} at ${eventStartTime}`)
+                  oscillator.start(eventStartTime)
+                  oscillator.stop(eventStartTime + eventDuration)
+                  console.log(`Successfully added musical note ${note}${octave} at ${eventStartTime}`)
+                }
               }
-            }
+            })
           } else if (event.soundCueSrc) {
             try {
               console.log(`Loading pre-recorded audio: ${event.soundCueSrc}`)
@@ -1589,7 +1593,7 @@ export default function Home() {
       })
       return
     }
-    if (!selectedSoundCue) {
+    if (!selectedSoundCue && selectedNotes.length === 0) {
       toast({ title: "Missing Sound Cue", description: "Please select a sound cue.", variant: "destructive" })
       return
     }
@@ -1598,21 +1602,41 @@ export default function Home() {
     const maxExistingTime = timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
     const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 10 : 0
 
-    const newEvent: TimelineEvent = {
-      id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-      type: "instruction_sound",
-      startTime: newStartTime,
-      instructionText: instructionTextToAdd,
-      soundCueId: selectedSoundCue.id,
-      soundCueName: selectedSoundCue.name,
-      soundCueSrc: selectedSoundCue.src,
-      color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length], // Assign a color
+    let newEvent: TimelineEvent
+
+    if (multiNoteMode && selectedNotes.length > 0) {
+      newEvent = {
+        id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        type: "instruction_sound",
+        startTime: newStartTime,
+        instructionText: instructionTextToAdd,
+        soundCueId: `chord_${Date.now()}`,
+        soundCueName: selectedNotes.join(", "),
+        soundCueSrc: `musical:${selectedNotes.join("|")}`,
+        color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length],
+      }
+    } else if (selectedSoundCue) {
+      newEvent = {
+        id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        type: "instruction_sound",
+        startTime: newStartTime,
+        instructionText: instructionTextToAdd,
+        soundCueId: selectedSoundCue.id,
+        soundCueName: selectedSoundCue.name,
+        soundCueSrc: selectedSoundCue.src,
+        color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length],
+      }
+    } else {
+      return
     }
+
     addEventToTimeline(newEvent)
     setCustomInstructionText("")
+    setSelectedNotes([])
+    setSelectedSoundCue(null)
     toast({
       title: "Event Added",
-      description: `"${instructionTextToAdd.substring(0, 30)}..." with ${selectedSoundCue.name} added.`,
+      description: `"${instructionTextToAdd.substring(0, 30)}..." with ${newEvent.soundCueName} added.`,
     })
   }
 
@@ -2847,7 +2871,7 @@ none mb-4 py-0 px-0"
                         <Button
                           className="w-full bg-transparent text-gray-600 border-2 border-gray-500 hover:bg-gray-50 dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black"
                           onClick={handleAddInstructionSoundEvent}
-                          disabled={!customInstructionText.trim() || !selectedSoundCue}
+                          disabled={!customInstructionText.trim() || (!selectedSoundCue && selectedNotes.length === 0)}
                         >
                           <PlusCircle className="mr-2 h-4 w-4" />
                           <span className="font-black font-serif">Add to Timeline</span>
