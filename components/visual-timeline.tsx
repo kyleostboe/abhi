@@ -174,12 +174,18 @@ export function VisualTimeline({
         if (event.soundCueSrc.startsWith("synthetic:")) {
           console.log("Synthetic sound playback not available")
         } else if (event.soundCueSrc.startsWith("musical:")) {
-          const noteMatch = event.soundCueSrc.match(/musical:([A-G])(\d)/)
-          if (noteMatch) {
-            const note = noteMatch[1]
-            const octave = Number.parseInt(noteMatch[2])
-            await playNote(note, octave)
-          }
+          const notesPart = event.soundCueSrc.replace("musical:", "")
+          const noteStrings = notesPart.split("|")
+          await Promise.all(
+            noteStrings.map(async (ns) => {
+              const match = ns.match(/([A-G])(\d)/)
+              if (match) {
+                const note = match[1]
+                const octave = Number.parseInt(match[2])
+                await playNote(note, octave)
+              }
+            }),
+          )
         } else {
           const audio = new Audio(event.soundCueSrc)
           audio.volume = 0.7
