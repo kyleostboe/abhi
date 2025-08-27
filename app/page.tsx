@@ -1014,7 +1014,7 @@ export default function Home() {
             const noteStrings = notesPart.split("|")
 
             const instrument = event.instrument || noteType
-            for (const ns of noteStrings) {
+            for (const [noteIndex, ns] of noteStrings.entries()) {
               const match = ns.match(/([A-G])(\d)/)
               if (match) {
                 const note = match[1]
@@ -1031,7 +1031,8 @@ export default function Home() {
                     synth.triggerAttackRelease(noteString, 0.8, eventStartTime)
                   } else if (instrument === "harp") {
                     await loadHarp()
-                    harp.triggerAttackRelease(noteString, 0.8, eventStartTime)
+                    const harpStartTime = eventStartTime + noteIndex * 0.01
+                    harp.triggerAttackRelease(noteString, 0.8, harpStartTime)
                   }
 
                   console.log(`Successfully added ${instrument} note ${noteString} at ${eventStartTime}`)
