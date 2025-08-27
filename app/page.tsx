@@ -2907,7 +2907,7 @@ none mb-4 py-0 px-0"
                                     <div className="text-sm text-gray-600 dark:text-gray-400">
                                       Selected: {selectedNotes.length > 0 ? selectedNotes.join(", ") : "None"}
                                     </div>
-                                    {selectedNotes.length > 0 && (
+                                    {selectedNotes.length > 1 && (
                                       <Button
                                         size="sm"
                                         onClick={() => {
@@ -2917,7 +2917,6 @@ none mb-4 py-0 px-0"
                                         }}
                                         className="bg-logo-blue-400 hover:bg-logo-blue-500 text-white font-serif font-black text-xs rounded-sm"
                                       >
-    
                                         Play Chord
                                       </Button>
                                     )}
