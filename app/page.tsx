@@ -2902,7 +2902,7 @@ none mb-4 py-0 px-0"
                             </AccordionTrigger>
                             <AccordionContent className="pb-4">
                               {multiNoteMode && (
-                                <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-sm">
                                   <div className="flex items-center justify-between">
                                     <div className="text-sm text-gray-600 dark:text-gray-400">
                                       Selected: {selectedNotes.length > 0 ? selectedNotes.join(", ") : "None"}
@@ -2915,9 +2915,9 @@ none mb-4 py-0 px-0"
                                           console.log("[v0] multiNoteMode:", multiNoteMode)
                                           playChordPreview()
                                         }}
-                                        className="bg-logo-blue-400 hover:bg-logo-blue-500 text-white"
+                                        className="bg-logo-blue-400 hover:bg-logo-blue-500 text-white font-serif font-black text-xs rounded-sm"
                                       >
-                                        <Play className="h-3 w-3 mr-1" />
+    
                                         Play Chord
                                       </Button>
                                     )}
