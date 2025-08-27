@@ -1950,10 +1950,11 @@ export default function Home() {
     }
   }
 
-  const playChordPreview = async () => {
-    if (selectedNotes.length === 0) return
+  const playChordPreview = async (notesToPlay?: string[]) => {
+    const notes = notesToPlay || selectedNotes
+    if (notes.length === 0) return
 
-    console.log("[v0] Playing chord with notes:", selectedNotes, "using", noteType)
+    console.log("[v0] Playing chord with notes:", notes, "using", noteType)
 
     try {
       await Tone.start()
@@ -1967,7 +1968,7 @@ export default function Home() {
 
         if (sampler && isLoaded) {
           // Play all notes simultaneously using the Salamander piano sampler
-          selectedNotes.forEach((noteString) => {
+          notes.forEach((noteString) => {
             console.log("[v0] Playing Salamander piano note in chord:", noteString)
             sampler.triggerAttackRelease(noteString, 0.5)
           })
@@ -1975,7 +1976,7 @@ export default function Home() {
           console.error("[v0] Piano sampler not available for chord")
         }
       } else if (noteType === "synth") {
-        selectedNotes.forEach(async (noteString) => {
+        notes.forEach(async (noteString) => {
           const synth = new Tone.Synth({
             oscillator: { type: "fatsawtooth" },
             envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
@@ -1995,7 +1996,7 @@ export default function Home() {
           }, 2000)
         })
       } else if (noteType === "harp") {
-        selectedNotes.forEach(async (noteString, index) => {
+        notes.forEach(async (noteString, index) => {
           const harp = new Tone.PluckSynth({
             attackNoise: 1,
             dampening: 4000,
@@ -2069,15 +2070,8 @@ export default function Home() {
     try {
       console.log(`[v0] Timeline playing chord: ${noteStrings} using ${noteType}`)
 
-      // Temporarily set selectedNotes to the chord notes
-      const originalSelectedNotes = selectedNotes
-      setSelectedNotes(noteStrings)
-
-      // Use the same playChordPreview function as the sound cue section
-      await playChordPreview()
-
-      // Restore original selectedNotes
-      setSelectedNotes(originalSelectedNotes)
+      // Pass notes directly to playChordPreview instead of relying on state
+      await playChordPreview(noteStrings)
     } catch (error) {
       console.error("[v0] Timeline chord preview error:", error)
     }
