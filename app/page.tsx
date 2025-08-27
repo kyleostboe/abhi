@@ -2887,7 +2887,7 @@ none mb-4 py-0 px-0"
                                         setSelectedNotes([]) // Clear selections when toggling
                                       }}
                                       className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
-                                        multiNoteMode ? "bg-logo-blue-400" : "bg-gray-300"
+                                        multiNoteMode ? "bg-gray-500" : "bg-gray-300"
                                       }`}
                                     >
                                       <span
@@ -2902,9 +2902,9 @@ none mb-4 py-0 px-0"
                             </AccordionTrigger>
                             <AccordionContent className="pb-4">
                               {multiNoteMode && (
-                                <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-sm">
+                                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-sm mb-1.5 shadow-inner py-3 px-3">
                                   <div className="flex items-center justify-between">
-                                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                                    <div className="dark:text-gray-400 text-sm text-gray-500">
                                       Selected: {selectedNotes.length > 0 ? selectedNotes.join(", ") : "None"}
                                     </div>
                                     {selectedNotes.length > 1 && (
@@ -2915,7 +2915,7 @@ none mb-4 py-0 px-0"
                                           console.log("[v0] multiNoteMode:", multiNoteMode)
                                           playChordPreview()
                                         }}
-                                        className="bg-logo-blue-400 hover:bg-logo-blue-500 text-white font-serif font-black text-xs rounded-sm"
+                                        className="bg-gray-500 hover:bg-gray-600 text-white font-serif font-black text-xs rounded-sm"
                                       >
                                         Play Chord
                                       </Button>
@@ -2962,7 +2962,7 @@ none mb-4 py-0 px-0"
                                                 size="sm"
                                                 className={`flex-1 justify-start font-black font-serif text-gray-600 ${
                                                   isSelected
-                                                    ? "bg-gradient-to-r from-amber-100 to-rose-100 border-2 border-amber-400 dark:from-amber-900 dark:to-rose-900 dark:border-amber-500"
+                                                    ? "bg-white border-2 border-gray-500 dark:from-amber-900 dark:to-rose-900 dark:border-amber-500"
                                                     : isSingleSelected
                                                       ? "bg-white text-gray-600 border-gray-500 border-2 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-logo-teal-500 dark:hover:bg-gray-50"
                                                       : "hover:bg-gray-50 dark:hover:bg-gray-800"
