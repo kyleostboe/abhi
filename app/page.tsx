@@ -2892,7 +2892,7 @@ none mb-4 py-0 px-0"
                                     >
                                       <span
                                         className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                                          multiNoteMode ? "translate-x-4" : "translate-x-0.5"
+                                          multiNoteMode ? "translate-x-[1.125rem]" : "translate-x-0.5"
                                         }`}
                                       />
                                     </button>
