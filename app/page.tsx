@@ -1952,7 +1952,17 @@ export default function Home() {
 
   const playChordPreview = async (notes?: string[]) => {
     const chordNotes = notes ?? selectedNotes
-    if (!Array.isArray(chordNotes) || chordNotes.length === 0) return
+
+    console.log("[v0] playChordPreview called with notes:", notes)
+    console.log("[v0] selectedNotes from state:", selectedNotes)
+    console.log("[v0] chordNotes to use:", chordNotes)
+    console.log("[v0] chordNotes is array:", Array.isArray(chordNotes))
+    console.log("[v0] chordNotes length:", chordNotes?.length)
+
+    if (!Array.isArray(chordNotes) || chordNotes.length === 0) {
+      console.log("[v0] No valid chord notes to play, returning early")
+      return
+    }
 
     console.log("[v0] Playing chord with notes:", chordNotes, "using", noteType)
 
@@ -2309,7 +2319,7 @@ none mb-4 py-0 px-0"
                   onDragLeave={handleDragLeaveAction}
                   onDrop={handleDropAction}
                 >
-                  <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 dark:shadow-white/20 px-[5px] py-1 shadow-sm rounded-sm pl-1 pr-1">
+                  <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 border-0 px-[5px] py-1 pl-1 pr-1 shadow-lg rounded-sm">
                     <div className="p-10 md:p-16 text-center md:py-14 bg-white dark:bg-gray-900 border-white border-0 rounded-sm">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
@@ -2900,7 +2910,11 @@ none mb-4 py-0 px-0"
                                     {selectedNotes.length > 0 && (
                                       <Button
                                         size="sm"
-                                        onClick={playChordPreview}
+                                        onClick={() => {
+                                          console.log("[v0] Chord button clicked, selectedNotes:", selectedNotes)
+                                          console.log("[v0] multiNoteMode:", multiNoteMode)
+                                          playChordPreview()
+                                        }}
                                         className="bg-logo-blue-400 hover:bg-logo-blue-500 text-white"
                                       >
                                         <Play className="h-3 w-3 mr-1" />
