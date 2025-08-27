@@ -1952,7 +1952,7 @@ export default function Home() {
 
   const playChordPreview = async (notes?: string[]) => {
     const chordNotes = notes ?? selectedNotes
-    if (chordNotes.length === 0) return
+    if (!Array.isArray(chordNotes) || chordNotes.length === 0) return
 
     console.log("[v0] Playing chord with notes:", chordNotes, "using", noteType)
 
