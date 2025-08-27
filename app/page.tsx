@@ -2812,7 +2812,7 @@ none mb-4 py-0 px-0"
                     className="lg:row-span-2"
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
-                      <div className="bg-gradient-to-r from-gray-600 to-gray-500 py-3 px-6 dark:from-gray-800 dark:to-gray-900 text-center">
+                      <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 dark:from-gray-800 dark:to-gray-900 text-center">
                         <h3 className="text-white flex items-center font-black text-left">
                           <Music2 className="h-4 w-4 mr-2" />
                           Sound Cues
