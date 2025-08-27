@@ -10,7 +10,6 @@ import { Trash2, Music2Icon, MicIcon, Check, X, Play, Copy } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn, formatTime } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
-import { playNote } from "../lib/audio-utils"
 import type { TimelineEvent } from "@/lib/types"
 import { useMobile } from "@/hooks/use-mobile"
 import { EVENT_COLORS } from "@/lib/constants"
@@ -21,6 +20,9 @@ interface VisualTimelineProps {
   onUpdateEvent: (eventId: string, newStartTime: number) => void
   onRemoveEvent: (eventId: string) => void
   onDuplicateEvent: (event: TimelineEvent) => void
+  selectedInstrument?: string
+  playSingleNote?: (noteString: string) => Promise<void>
+  playChordPreview?: (noteStrings: string[]) => Promise<void>
 }
 
 const getFromBorderColorClass = (gradientClass: string): string => {
@@ -37,6 +39,9 @@ export function VisualTimeline({
   onUpdateEvent,
   onRemoveEvent,
   onDuplicateEvent,
+  selectedInstrument = "piano",
+  playSingleNote,
+  playChordPreview,
 }: VisualTimelineProps) {
   const [draggedEvent, setDraggedEvent] = useState<string | null>(null)
   const [dragOffset, setDragOffset] = useState(0)
@@ -172,21 +177,30 @@ export function VisualTimeline({
     try {
       if (event.type === "instruction_sound" && event.soundCueSrc) {
         if (event.soundCueSrc.startsWith("synthetic:")) {
-          console.log("Synthetic sound playback not available")
+          console.log("[v0] Timeline: Synthetic sound playback not available")
         } else if (event.soundCueSrc.startsWith("musical:")) {
           const notesPart = event.soundCueSrc.replace("musical:", "")
           const noteStrings = notesPart.split("|")
-          await Promise.all(
-            noteStrings.map(async (ns) => {
-              const match = ns.match(/([A-G])(\d)/)
-              if (match) {
-                const note = match[1]
-                const octave = Number.parseInt(match[2])
-                await playNote(note, octave)
+
+          console.log("[v0] Timeline: Playing musical notes:", noteStrings)
+
+          // Use the unified audio functions from main app
+          if (noteStrings.length === 1 && playSingleNote) {
+            await playSingleNote(noteStrings[0])
+          } else if (noteStrings.length > 1 && playChordPreview) {
+            await playChordPreview(noteStrings)
+          } else {
+            // Fallback: play each note individually if chord preview not available
+            if (playSingleNote) {
+              for (const noteString of noteStrings) {
+                await playSingleNote(noteString)
+                // Small delay between notes if playing individually
+                await new Promise((resolve) => setTimeout(resolve, 100))
               }
-            }),
-          )
+            }
+          }
         } else {
+          // Regular audio file playback
           const audio = new Audio(event.soundCueSrc)
           audio.volume = 0.7
           await audio.play()
@@ -197,7 +211,7 @@ export function VisualTimeline({
         await audio.play()
       }
     } catch (error) {
-      console.warn("Audio playback failed:", error)
+      console.error("[v0] Timeline audio playback failed:", error)
     }
   }
 

@@ -2044,6 +2044,45 @@ export default function Home() {
     }
   }
 
+  const timelinePlaySingleNote = async (noteString: string) => {
+    try {
+      console.log(`[v0] Timeline playing single note: ${noteString} using ${noteType}`)
+
+      // Parse note string (e.g., "C4" -> note="C", octave=4)
+      const match = noteString.match(/([A-G]#?)(\d)/)
+      if (!match) {
+        console.error("[v0] Invalid note string format:", noteString)
+        return
+      }
+
+      const note = match[1]
+      const octave = Number.parseInt(match[2])
+
+      // Use the same playSingleNote function as the sound cue section
+      await playSingleNote(note, octave, noteType)
+    } catch (error) {
+      console.error("[v0] Timeline single note error:", error)
+    }
+  }
+
+  const timelinePlayChordPreview = async (noteStrings: string[]) => {
+    try {
+      console.log(`[v0] Timeline playing chord: ${noteStrings} using ${noteType}`)
+
+      // Temporarily set selectedNotes to the chord notes
+      const originalSelectedNotes = selectedNotes
+      setSelectedNotes(noteStrings)
+
+      // Use the same playChordPreview function as the sound cue section
+      await playChordPreview()
+
+      // Restore original selectedNotes
+      setSelectedNotes(originalSelectedNotes)
+    } catch (error) {
+      console.error("[v0] Timeline chord preview error:", error)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-0">
       <Navigation />
@@ -3107,6 +3146,9 @@ none mb-4 py-0 px-0"
                         onUpdateEvent={updateEventStartTime}
                         onRemoveEvent={removeTimelineEvent}
                         onDuplicateEvent={handleDuplicateEvent} // Pass the new duplicate handler
+                        selectedInstrument={noteType}
+                        playSingleNote={timelinePlaySingleNote}
+                        playChordPreview={timelinePlayChordPreview}
                       />
                     </div>
                   </Card>
