@@ -2821,7 +2821,7 @@ none mb-4 py-0 px-0"
                       <div className="p-6 space-y-4 font-black">
                         <Accordion type="single" collapsible className="w-full">
                           <AccordionItem value="musical-notes">
-                            <AccordionTrigger className="text-gray-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
+                            <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
                               <div className="flex items-center justify-between w-full">
                                 <span>Notes</span>
                                 <div className="flex flex-col gap-2 mr-6" onClick={(e) => e.stopPropagation()}>
