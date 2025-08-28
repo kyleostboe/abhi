@@ -2917,7 +2917,7 @@ none mb-4 py-0 px-0"
                                           console.log("[v0] multiNoteMode:", multiNoteMode)
                                           playChordPreview()
                                         }}
-                                        className="bg-gray-500 hover:bg-gray-600 text-white font-serif font-black text-xs rounded-sm"
+                                        className="bg-gray-500 hover:bg-gray-600 text-white font-serif font-black text-xs rounded-sm shadow-md"
                                       >
                                         Play Chord
                                       </Button>
@@ -2964,9 +2964,9 @@ none mb-4 py-0 px-0"
                                                 size="sm"
                                                 className={`flex-1 justify-start rounded-sm font-black font-serif text-gray-600 ${
                                                   isSelected
-                                                    ? "bg-white border-2 border-gray-500 dark:from-amber-900 dark:to-rose-900 dark:border-amber-500"
+                                                    ? "bg-white shadow-md border-2 border-gray-500 dark:from-amber-900 dark:to-rose-900 dark:border-amber-500"
                                                     : isSingleSelected
-                                                      ? "bg-white text-gray-600 border-gray-500 border-2 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-logo-teal-500 dark:hover:bg-gray-50"
+                                                      ? "bg-white shadow-md text-gray-600 border-gray-500 border-2 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-logo-teal-500 dark:hover:bg-gray-50"
                                                       : "hover:bg-gray-50 dark:hover:bg-gray-800"
                                                 }`}
                                                 onClick={() => handleNoteSelection(note)}
