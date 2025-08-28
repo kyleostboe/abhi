@@ -2917,7 +2917,7 @@ none mb-4 py-0 px-0"
                                           console.log("[v0] multiNoteMode:", multiNoteMode)
                                           playChordPreview()
                                         }}
-                                        className="bg-gray-500 hover:bg-gray-600 text-white font-serif font-black text-xs rounded-sm shadow-md"
+                                        className="bg-gray-500 hover:bg-gray-600 text-white font-serif font-black text-xs rounded-sm shadow-md hover: shadow-none"
                                       >
                                         Play Chord
                                       </Button>
