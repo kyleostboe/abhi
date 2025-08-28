@@ -1031,8 +1031,9 @@ export default function Home() {
                     synth.triggerAttackRelease(noteString, 0.8, eventStartTime)
                   } else if (instrument === "harp") {
                     await loadHarp()
-                    const harpStartTime = eventStartTime + noteIndex * 0.01
-                    harp.triggerAttackRelease(noteString, 0.8, harpStartTime)
+                    const startDelay = noteIndex * 0.01
+                    const duration = 0.8 + startDelay
+                    harp.triggerAttackRelease(noteString, duration, eventStartTime + startDelay)
                   }
 
                   console.log(`Successfully added ${instrument} note ${noteString} at ${eventStartTime}`)
@@ -2018,8 +2019,9 @@ export default function Home() {
           harp.connect(harpReverb)
 
           console.log("[v0] Playing harp note in chord:", noteString)
-          // Add small delay to prevent scheduling conflicts
-          harp.triggerAttackRelease(noteString, 0.5, `+${index * 0.01}`)
+          const startDelay = index * 0.01
+          const duration = 0.5 + startDelay
+          harp.triggerAttackRelease(noteString, duration, `+${startDelay}`)
 
           setTimeout(() => {
             harp.dispose()
