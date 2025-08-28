@@ -3033,16 +3033,13 @@ export default function Home() {
                         </h3>
                       </div>
                       <div className="p-6 space-y-4">
-                        
-                    
-                          <Input
-                            id="recording-label"
-                            value={recordingLabel}
-                            onChange={handleRecordingLabelChange}
-                            placeholder="Describe this recording..."
-                            className="mt-1 text-sm font-black border-rose-300 text-rose-300 placeholder-rose-200"
-                          />
-                        </div>
+                        <Input
+                          id="recording-label"
+                          value={recordingLabel}
+                          onChange={handleRecordingLabelChange}
+                          placeholder="Describe this recording..."
+                          className="mt-1 text-sm font-black border-rose-300 text-rose-300 placeholder-rose-200"
+                        />
                         <Button
                           onClick={isRecording ? stopRecording : startRecording}
                           variant={isRecording ? "destructive" : "default"}
