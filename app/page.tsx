@@ -2887,7 +2887,7 @@ export default function Home() {
                                         setSelectedNotes([]) // Clear selections when toggling
                                       }}
                                       className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
-                                        multiNoteMode ? "bg-gray-500" : "bg-gray-100"
+                                        multiNoteMode ? "bg-gray-500" : "bg-gray-200"
                                       }`}
                                     >
                                       <span
