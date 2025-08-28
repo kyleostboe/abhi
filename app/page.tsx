@@ -2202,7 +2202,6 @@ export default function Home() {
                   </p>
                 </motion.div>
               )}
-              // Updated content for encoder mode description
               {activeMode === "encoder" && (
                 <motion.div
                   key="encoder-note"
@@ -2210,8 +2209,7 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="p-4 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-
-none mb-4 py-0 px-0"
+                  className="p-4 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                 >
                   <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs pb-1.5">
                     Create custom meditations by associating instructions with sound cues and placing them on a
@@ -2862,7 +2860,7 @@ none mb-4 py-0 px-0"
                           Sound Cues
                         </h3>
                       </div>
-                      <div className="p-6 space-y-4 font-black pb-6 pb-px pb-0 pb-2 pb-2.5 pb-0">
+                      <div className="p-6 space-y-4">
                         <Accordion type="single" collapsible className="w-full">
                           <AccordionItem value="musical-notes">
                             <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
@@ -3034,7 +3032,7 @@ none mb-4 py-0 px-0"
                           Recorder
                         </h3>
                       </div>
-                      <div className="p-6 space-y-4 pt-6 pt-6 pt-0 pt-7 pt-7 pt-6 pt-7 pt-6 pt-5 pt-6 pt-3.5 pt-3 pt-0 pt-2.5 pt-2.5 pt-1.5 pt-6 pt-3 pt-3.5 pt-2.5 pt-2 pt-0 pt-2.5 pt-2.5 pt-0 pt-2.5 pt-2.5 pt-0 pt-2.5 pt-2.5 pt-2 pt-1.5 pt-px pt-0 pt-px pt-0 pt-0.5 pt-1 pt-3.5 pt-4 pt-0">
+                      <div className="p-6 space-y-4">
                         
                     
                           <Input
@@ -3135,7 +3133,7 @@ none mb-4 py-0 px-0"
                       </div>
                     </Card>
                   </motion.div>
-                </motion.div>
+                </motion.div>\
                 {/* Timeline Editor for Labs */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
                   <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
@@ -3270,6 +3268,6 @@ none mb-4 py-0 px-0"
           </div>
         </div>
       </motion.div>
-    </div>
+  </div>
   )
 }
