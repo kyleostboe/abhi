@@ -3034,7 +3034,7 @@ none mb-4 py-0 px-0"
                           Recorder
                         </h3>
                       </div>
-                      <div className="p-6 space-y-4 pt-2.5 pt-2.5 pt-0 pt-2.5 pt-2.5 pt-0 pt-2.5 pt-2.5 pt-2 pt-1.5 pt-px pt-0 pt-px pt-0 pt-0.5 pt-1 pt-3.5 pt-4 pt-0">
+                      <div className="p-6 space-y-4 pt-6 pt-6 pt-0 pt-7 pt-7 pt-6 pt-7 pt-6 pt-5 pt-6 pt-3.5 pt-3 pt-0 pt-2.5 pt-2.5 pt-1.5 pt-6 pt-3 pt-3.5 pt-2.5 pt-2 pt-0 pt-2.5 pt-2.5 pt-0 pt-2.5 pt-2.5 pt-0 pt-2.5 pt-2.5 pt-2 pt-1.5 pt-px pt-0 pt-px pt-0 pt-0.5 pt-1 pt-3.5 pt-4 pt-0">
                         
                     
                           <Input
