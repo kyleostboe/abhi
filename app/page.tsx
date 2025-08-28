@@ -3050,7 +3050,7 @@ export default function Home() {
                             "w-full font-white font-serif font-black",
                             isRecording
                               ? "bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none"
-                              : "w-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald 500 shadow-md text-white rounded-sm hover:shadow-none",
+                              : "w-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none",
                           )}
                         >
                           {isRecording ? (
