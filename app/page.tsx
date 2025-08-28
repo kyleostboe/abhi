@@ -2155,7 +2155,7 @@ export default function Home() {
 
               {/* Mode Switch */}
               <div className="flex justify-center items-center mb-4 space-y-4 flex-row my-[33px]">
-                <div className="grid mx-auto grid-cols-2 p-1 dark:bg-gray-800/70 font-serif text-gray-600 w-64 shadow-inner pb-12 h-12 rounded-sm bg-gray-100">
+                <div className="grid mx-auto grid-cols-2 p-1 dark:bg-gray-800/70 font-serif text-gray-600 w-64 shadow-inner pb-12 h-12 rounded-sm bg-stone-100">
                   <button
                     onClick={() => setActiveMode("adjuster")}
                     className={cn(
@@ -2887,7 +2887,7 @@ export default function Home() {
                                         setSelectedNotes([]) // Clear selections when toggling
                                       }}
                                       className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
-                                        multiNoteMode ? "bg-gray-500" : "bg-gray-300"
+                                        multiNoteMode ? "bg-gray-500" : "bg-gray-100"
                                       }`}
                                     >
                                       <span
