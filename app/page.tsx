@@ -3042,7 +3042,7 @@ export default function Home() {
                             placeholder="Describe this recording..."
                             className="mt-1 text-sm font-black border-rose-300 text-rose-300 placeholder-rose-200"
                           />
-                        </div>
+                        
                         <Button
                           onClick={isRecording ? stopRecording : startRecording}
                           variant={isRecording ? "destructive" : "default"}
@@ -3268,5 +3268,5 @@ export default function Home() {
         </div>
       </motion.div>
   </div>
-  )
+  )\
 }
