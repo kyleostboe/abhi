@@ -2747,28 +2747,27 @@ export default function Home() {
                             </div>
                           </div>
                           <Button
-                            className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:shadow-none transition-shadow border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
-                            onClick={() => {
-                              if (generatedAudioUrl) {
-                                const a = document.createElement("a")
-                                a.href = generatedAudioUrl
-                                a.download = `${meditationTitle.replace(/\s/g, "_") || "meditation"}.wav`
-                                document.body.appendChild(a)
-                                a.click()
-                                document.body.removeChild(a)
-                              }
-                            }}
-                          >
-                            <div className="flex items-center justify-center font-black">
-                              <Download className="mr-2 w-4 h-4" />
-                              Download
-                            </div>
-                          </Button>
-                        </div>
-                      </Card>
-                    </motion.div>
-                  )}
-                </div>
+                            className="w-full py-4 rounded-sm shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:shadow-none transition-shadow transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                          onClick={() => {
+                            if (generatedAudioUrl) {
+                              const a = document.createElement("a")
+                              a.href = generatedAudioUrl
+                              a.download = `${meditationTitle.replace(/\s/g, "_") || "meditation"}.wav`
+                              document.body.appendChild(a)
+                              a.click()
+                              document.body.removeChild(a)
+                            }
+                          }}
+                        >
+                          <div className="flex items-center justify-center font-black">
+                            <Download className="mr-2 w-4 h-4" />
+                            Download
+                          </div>
+                        </Button>
+                      </div>
+                    </Card>
+                  </motion.div>
+                )}
               </>
             ) : (
               <motion.div
@@ -3042,7 +3041,7 @@ export default function Home() {
                             placeholder="Describe this recording..."
                             className="mt-1 text-sm font-black border-rose-300 text-rose-300 shadow-none placeholder-rose-200"
                           />
-                        </div>
+                        <div>
                         <Button
                           onClick={isRecording ? stopRecording : startRecording}
                           variant={isRecording ? "destructive" : "default"}
@@ -3065,6 +3064,7 @@ export default function Home() {
                             </>
                           )}
                         </Button>
+                        </div>
                         <AnimatePresence>
                           {readyToAddToTimelineRecording && (
                             <motion.div
@@ -3267,6 +3267,6 @@ export default function Home() {
           </div>
         </div>
       </motion.div>
-  </div>
-  )
+    </div>
+  )\
 }
