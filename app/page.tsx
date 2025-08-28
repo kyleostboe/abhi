@@ -3011,7 +3011,7 @@ none mb-4 py-0 px-0"
                           </AccordionItem>
                         </Accordion>
                         <Button
-                          className="w-full bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-lg text-white rounded-sm border-3 hover:shadow-none dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black"
+                          className="w-full bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-sm hover:shadow-none dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black"
                           onClick={handleAddInstructionSoundEvent}
                           disabled={!customInstructionText.trim() || (!selectedSoundCue && selectedNotes.length === 0)}
                         >
@@ -3051,10 +3051,10 @@ none mb-4 py-0 px-0"
                           onClick={isRecording ? stopRecording : startRecording}
                           variant={isRecording ? "destructive" : "default"}
                           className={cn(
-                            "w-full font-black",
+                            "w-full font-white font-serif font-black",
                             isRecording
-                              ? "bg-gradient-to-r from-gray-700 to-gray-500 text-white dark:from-gray-700 dark:to-gray-800"
-                              : "bg-transparent text-gray-600 border-2 border-gray-500 dark:text-logo-rose-400 dark:border-logo-rose-400 hover:bg-gray-50 dark:hover:bg-gray-800",
+                              ? "bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none"
+                              : "w-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald 500 shadow-md text-white rounded-sm hover:shadow-none",
                           )}
                         >
                           {isRecording ? (
@@ -3126,7 +3126,7 @@ none mb-4 py-0 px-0"
                                     description: `"${readyToAddToTimelineRecording.label.trim()}" added to timeline.`,
                                   })
                                 }}
-                                className="w-full bg-white text-gray-600 border border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-logo-rose-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black"
+                                className="w-full bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-sm hover:shadow-none dark:bg-gray-900 dark:text-logo-rose-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black"
                               >
                                 <PlusCircle className="mr-2 h-4 w-4" />
                                 Add to Timeline
