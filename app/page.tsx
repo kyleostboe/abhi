@@ -2962,7 +2962,7 @@ none mb-4 py-0 px-0"
                                               <Button
                                                 variant={isSingleSelected ? "default" : "ghost"}
                                                 size="sm"
-                                                className={`flex-1 justify-start font-black font-serif text-gray-600 ${
+                                                className={`flex-1 justify-start rounded-sm font-black font-serif text-gray-600 ${
                                                   isSelected
                                                     ? "bg-white border-2 border-gray-500 dark:from-amber-900 dark:to-rose-900 dark:border-amber-500"
                                                     : isSingleSelected
