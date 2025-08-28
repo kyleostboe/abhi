@@ -2862,7 +2862,7 @@ none mb-4 py-0 px-0"
                           Sound Cues
                         </h3>
                       </div>
-                      <div className="p-6 space-y-4 font-black">
+                      <div className="p-6 space-y-4 font-black pb-6 pb-px pb-0 pb-2 pb-2.5 pb-0">
                         <Accordion type="single" collapsible className="w-full">
                           <AccordionItem value="musical-notes">
                             <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
@@ -3034,7 +3034,7 @@ none mb-4 py-0 px-0"
                           Recorder
                         </h3>
                       </div>
-                      <div className="p-6 space-y-4">
+                      <div className="p-6 space-y-4 pt-2.5 pt-2.5 pt-0 pt-2.5 pt-2.5 pt-0 pt-2.5 pt-2.5 pt-2 pt-1.5 pt-px pt-0 pt-px pt-0 pt-0.5 pt-1 pt-3.5 pt-4 pt-0">
                         
                     
                           <Input
