@@ -3133,7 +3133,6 @@ export default function Home() {
                       </div>
                     </Card>
                   </motion.div>
-                </motion.div>\
                 {/* Timeline Editor for Labs */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
                   <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
