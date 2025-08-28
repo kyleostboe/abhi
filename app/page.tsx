@@ -2915,7 +2915,7 @@ export default function Home() {
                                           console.log("[v0] multiNoteMode:", multiNoteMode)
                                           playChordPreview()
                                         }}
-                                        className="bg-gradient-to-r from-gray-600 to-gray-500 text-white font-serif font-black text-xs rounded-sm shadow-md hover:bg-gradient-to-r from-gray-500 to-gray-600"
+                                        className="bg-gradient-to-r from-gray-600 to-gray-500 text-white font-serif font-black text-xs rounded-sm shadow-md"
                                       >
                                         Play Chord
                                       </Button>
