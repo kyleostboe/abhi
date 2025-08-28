@@ -3029,22 +3029,20 @@ none mb-4 py-0 px-0"
                   >
                     <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
                       <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
-                        <h3 className="text-white flex items-center font-black">
+                        <h3 className="text-white flex items-center font-serif font-black">
                           <Mic className="h-4 w-4 mr-2" />
-                          Voice Recording
+                          Recorder
                         </h3>
                       </div>
                       <div className="p-6 space-y-4">
-                        <div className="text-left">
-                          <Label htmlFor="recording-label" className="text-gray-600 dark:text-logo-rose-400 font-black">
-                            Label
-                          </Label>
+                        
+                    
                           <Input
                             id="recording-label"
                             value={recordingLabel}
                             onChange={handleRecordingLabelChange}
                             placeholder="Describe this recording..."
-                            className="mt-1 text-sm font-black text-gray-600 placeholder-gray-500"
+                            className="mt-1 text-sm font-black border-rose-300 text-rose-300 placeholder-rose-200"
                           />
                         </div>
                         <Button
