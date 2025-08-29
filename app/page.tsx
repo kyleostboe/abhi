@@ -2197,8 +2197,7 @@ export default function Home() {
                   className="p-4 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                 >
                   <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs">
-                    Change the length of guided meditations by intelligently adjusting silence periods. Upload an audio
-                    file, set your target duration, and this tool will re-space content to fit your schedule.
+                    Change the length of your guided meditations. Upload an audio file, set your target duration, and this tool will re-space content to fit your schedule.
                   </p>
                 </motion.div>
               )}
@@ -2229,9 +2228,9 @@ export default function Home() {
                       <strong className="pr-1.5 font-black font-serif text-center text-sm text-logo-amber-400">
                         Note:
                       </strong>
-                      Depending on the audio, users may need to tweak the advanced settings for optimal results. Any
-                      guided meditation, talk, podcast, or audiobook{" "}
-                      {"(under " + (isMobileDevice ? "50MB" : "500MB") + ")"} should be compatible. Teachers, please
+                      Depending on the audio, users may need to tweak the advanced settings for optimal results. Only pauses are adjusted, spoken instruction is preserved. Any
+                      guided meditation{" "}
+                      {"under " + (isMobileDevice ? "50MB" : "500MB") + ""} should be compatible. Teachers, please
                       feel free to
                       <a
                         href="/contact"
