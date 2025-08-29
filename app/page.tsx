@@ -686,7 +686,7 @@ export default function Home() {
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
   const [processedFileSize, setProcessedFileSize] = useState<number>(0)
   const isMobileDevice = useMobile() // Use the useMobile hook
-  const [memoryWarning, setMemoryWarning] = useState<boolean>(false)
+  const [memoryWarning, setMemoryWarning] = useState<boolean>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadAreaRef = useRef<HTMLDivElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
