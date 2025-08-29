@@ -2859,7 +2859,7 @@ export default function Home() {
                           Sound Cues
                         </h3>
                       </div>
-                      <div className="p-6 space-y-4 pt-[5px] flex flex-col h-full">
+                      <div className="p-6 space-y-4 pt-[5px] flex flex-col min-h-[500px]">
                         <div className="flex-1">
                           <Accordion type="single" collapsible className="w-full">
                             <AccordionItem value="musical-notes">
