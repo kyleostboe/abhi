@@ -2870,6 +2870,7 @@ export default function Home() {
                           <Button
                             onClick={isRecording ? stopRecording : startRecording}
                             variant={isRecording ? "destructive" : "default"}
+                            disabled={!recordingLabel.trim() && !isRecording}
                             className={cn(
                               "w-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none font-serif font-black",
                               isRecording && "from-red-500 to-red-600",
