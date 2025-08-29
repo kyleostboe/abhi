@@ -3195,8 +3195,8 @@ export default function Home() {
                           </svg>
                         </div>
                       )}
-                      <Mic className="h-5 w-5 mr-2" />
-                      <span className="font-medium">{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
+                      <Mic className="mr-2 h-4 w-4" />
+                      <span className="font-black tracking-tight text-base">{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
                     </div>
                   </Button>
                 </motion.div>
