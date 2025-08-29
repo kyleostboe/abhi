@@ -2859,154 +2859,156 @@ export default function Home() {
                           Sound Cues
                         </h3>
                       </div>
-                      <div className="p-6 space-y-4 pt-[5px]">
-                        <Accordion type="single" collapsible className="w-full">
-                          <AccordionItem value="musical-notes">
-                            <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
-                              <div className="flex items-center justify-between w-full">
-                                <span>Notes</span>
-                                <div className="flex flex-col gap-2 mr-6" onClick={(e) => e.stopPropagation()}>
-                                  <div className="flex items-center gap-2 mb-[3px]">
-                                    <span className="text-xs text-gray-500">Type</span>
-                                    <select
-                                      value={noteType}
-                                      onChange={(e) => setNoteType(e.target.value as "piano" | "synth" | "harp")}
-                                      className="text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1"
-                                    >
-                                      <option value="piano">Piano</option>
-                                      <option value="synth">Synth</option>
-                                      <option value="harp">Harp</option>
-                                    </select>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-500">Multi-Note</span>
-                                    <button
-                                      onClick={() => {
-                                        setMultiNoteMode(!multiNoteMode)
-                                        setSelectedNotes([])
-                                      }}
-                                      className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
-                                        multiNoteMode ? "bg-gray-500" : "bg-gray-200"
-                                      }`}
-                                    >
-                                      <span
-                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                                          multiNoteMode ? "translate-x-[1.125rem]" : "translate-x-0.5"
-                                        }`}
-                                      />
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-4">
-                              {multiNoteMode && (
-                                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-sm mb-1.5 shadow-inner py-3 px-3">
-                                  <div className="flex items-center justify-between">
-                                    <div className="dark:text-gray-400 text-sm text-gray-500">
-                                      Selected: {selectedNotes.length > 0 ? selectedNotes.join(", ") : "None"}
-                                    </div>
-                                    {selectedNotes.length > 1 && (
-                                      <Button
-                                        size="sm"
-                                        onClick={() => {
-                                          console.log("[v0] Chord button clicked, selectedNotes:", selectedNotes)
-                                          console.log("[v0] multiNoteMode:", multiNoteMode)
-                                          playChordPreview()
-                                        }}
-                                        className="bg-gradient-to-r from-gray-600 to-gray-500 text-white font-serif font-black text-xs rounded-sm shadow-md"
+                      <div className="p-6 space-y-4 pt-[5px] flex flex-col h-full">
+                        <div className="flex-1">
+                          <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="musical-notes">
+                              <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
+                                <div className="flex items-center justify-between w-full">
+                                  <span>Notes</span>
+                                  <div className="flex flex-col gap-2 mr-6" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex items-center gap-2 mb-[3px]">
+                                      <span className="text-xs text-gray-500">Type</span>
+                                      <select
+                                        value={noteType}
+                                        onChange={(e) => setNoteType(e.target.value as "piano" | "synth" | "harp")}
+                                        className="text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1"
                                       >
-                                        Play Chord
-                                      </Button>
-                                    )}
+                                        <option value="piano">Piano</option>
+                                        <option value="synth">Synth</option>
+                                        <option value="harp">Harp</option>
+                                      </select>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-500">Multi-Note</span>
+                                      <button
+                                        onClick={() => {
+                                          setMultiNoteMode(!multiNoteMode)
+                                          setSelectedNotes([])
+                                        }}
+                                        className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
+                                          multiNoteMode ? "bg-gray-500" : "bg-gray-200"
+                                        }`}
+                                      >
+                                        <span
+                                          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                                            multiNoteMode ? "translate-x-[1.125rem]" : "translate-x-0.5"
+                                          }`}
+                                        />
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
-                              )}
-                              <Accordion type="single" collapsible className="w-full">
-                                {Object.entries(
-                                  Object.entries(MUSICAL_NOTES).reduce(
-                                    (acc, [_, notes]) => {
-                                      notes.forEach((note) => {
-                                        const octave = `Octave ${note.octave}`
-                                        if (!acc[octave]) acc[octave] = []
-                                        acc[octave].push(note)
-                                      })
-                                      return acc
-                                    },
-                                    {} as Record<string, any[]>,
-                                  ),
-                                ).map(([octave, notes]) => (
-                                  <AccordionItem
-                                    value={octave}
-                                    key={octave}
-                                    className="border-b border-gray-100 dark:border-gray-800"
-                                  >
-                                    <AccordionTrigger className="text-gray-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
-                                      {octave}
-                                    </AccordionTrigger>
-                                    <AccordionContent className="pb-4">
-                                      <div className="space-y-2 text-gray-600">
-                                        {notes.map((note) => {
-                                          const noteString = `${note.note}${note.octave}`
-                                          const isSelected = multiNoteMode && selectedNotes.includes(noteString)
-                                          const isSingleSelected = !multiNoteMode && selectedSoundCue?.id === note.id
-
-                                          return (
-                                            <div
-                                              key={note.id}
-                                              className="flex items-center gap-2 font-black font-serif"
-                                            >
-                                              <Button
-                                                variant={isSingleSelected ? "default" : "ghost"}
-                                                size="sm"
-                                                className={`flex-1 justify-start rounded-sm font-black font-serif text-gray-600 ${
-                                                  isSelected
-                                                    ? "bg-white shadow-md border-2 border-gray-500 dark:from-amber-900 dark:to-rose-900 dark:border-amber-500"
-                                                    : isSingleSelected
-                                                      ? "bg-white shadow-md text-gray-600 border-gray-500 border-2 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-logo-teal-500 dark:hover:bg-gray-50"
-                                                      : "hover:bg-gray-50 dark:hover:bg-gray-800"
-                                                }`}
-                                                onClick={() => handleNoteSelection(note)}
-                                              >
-                                                {note.name}
-                                              </Button>
-                                              {!multiNoteMode && (
-                                                <Button
-                                                  variant="ghost"
-                                                  size="sm"
-                                                  onClick={async () =>
-                                                    await playSingleNote(note.note, note.octave, noteType)
-                                                  }
-                                                  className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
-                                                  title={`Preview ${note.name}`}
-                                                >
-                                                  <Play className="h-4 w-4" />
-                                                </Button>
-                                              )}
-                                            </div>
-                                          )
-                                        })}
+                              </AccordionTrigger>
+                              <AccordionContent className="pb-4">
+                                {multiNoteMode && (
+                                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-sm mb-1.5 shadow-inner py-3 px-3">
+                                    <div className="flex items-center justify-between">
+                                      <div className="dark:text-gray-400 text-sm text-gray-500">
+                                        Selected: {selectedNotes.length > 0 ? selectedNotes.join(", ") : "None"}
                                       </div>
-                                    </AccordionContent>
-                                  </AccordionItem>
-                                ))}
-                              </Accordion>
-                            </AccordionContent>
-                          </AccordionItem>
-                          <AccordionItem value="miscellaneous">
-                            <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
-                              Miscellaneous
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-4">
-                              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                                <div className="mb-2 text-lg font-black">Coming Soon!</div>
-                                <div className="text-sm">
-                                  Additional sound cues are being developed and will be available in a future update.
+                                      {selectedNotes.length > 1 && (
+                                        <Button
+                                          size="sm"
+                                          onClick={() => {
+                                            console.log("[v0] Chord button clicked, selectedNotes:", selectedNotes)
+                                            console.log("[v0] multiNoteMode:", multiNoteMode)
+                                            playChordPreview()
+                                          }}
+                                          className="bg-gradient-to-r from-gray-600 to-gray-500 text-white font-serif font-black text-xs rounded-sm shadow-md"
+                                        >
+                                          Play Chord
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                                <Accordion type="single" collapsible className="w-full">
+                                  {Object.entries(
+                                    Object.entries(MUSICAL_NOTES).reduce(
+                                      (acc, [_, notes]) => {
+                                        notes.forEach((note) => {
+                                          const octave = `Octave ${note.octave}`
+                                          if (!acc[octave]) acc[octave] = []
+                                          acc[octave].push(note)
+                                        })
+                                        return acc
+                                      },
+                                      {} as Record<string, any[]>,
+                                    ),
+                                  ).map(([octave, notes]) => (
+                                    <AccordionItem
+                                      value={octave}
+                                      key={octave}
+                                      className="border-b border-gray-100 dark:border-gray-800"
+                                    >
+                                      <AccordionTrigger className="text-gray-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
+                                        {octave}
+                                      </AccordionTrigger>
+                                      <AccordionContent className="pb-4">
+                                        <div className="space-y-2 text-gray-600">
+                                          {notes.map((note) => {
+                                            const noteString = `${note.note}${note.octave}`
+                                            const isSelected = multiNoteMode && selectedNotes.includes(noteString)
+                                            const isSingleSelected = !multiNoteMode && selectedSoundCue?.id === note.id
+
+                                            return (
+                                              <div
+                                                key={note.id}
+                                                className="flex items-center gap-2 font-black font-serif"
+                                              >
+                                                <Button
+                                                  variant={isSingleSelected ? "default" : "ghost"}
+                                                  size="sm"
+                                                  className={`flex-1 justify-start rounded-sm font-black font-serif text-gray-600 ${
+                                                    isSelected
+                                                      ? "bg-white shadow-md border-2 border-gray-500 dark:from-amber-900 dark:to-rose-900 dark:border-amber-500"
+                                                      : isSingleSelected
+                                                        ? "bg-white shadow-md text-gray-600 border-gray-500 border-2 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-logo-teal-500 dark:hover:bg-gray-50"
+                                                        : "hover:bg-gray-50 dark:hover:bg-gray-800"
+                                                  }`}
+                                                  onClick={() => handleNoteSelection(note)}
+                                                >
+                                                  {note.name}
+                                                </Button>
+                                                {!multiNoteMode && (
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={async () =>
+                                                      await playSingleNote(note.note, note.octave, noteType)
+                                                    }
+                                                    className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
+                                                    title={`Preview ${note.name}`}
+                                                  >
+                                                    <Play className="h-4 w-4" />
+                                                  </Button>
+                                                )}
+                                              </div>
+                                            )
+                                          })}
+                                        </div>
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  ))}
+                                </Accordion>
+                              </AccordionContent>
+                            </AccordionItem>
+                            <AccordionItem value="miscellaneous">
+                              <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
+                                Miscellaneous
+                              </AccordionTrigger>
+                              <AccordionContent className="pb-4">
+                                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                                  <div className="mb-2 text-lg font-black">Coming Soon!</div>
+                                  <div className="text-sm">
+                                    Additional sound cues are being developed and will be available in a future update.
+                                  </div>
                                 </div>
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        </Accordion>
+                              </AccordionContent>
+                            </AccordionItem>
+                          </Accordion>
+                        </div>
                         <Button
                           className="w-full bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-sm hover:shadow-none dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black"
                           onClick={handleAddInstructionSoundEvent}
