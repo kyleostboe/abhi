@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss"
+import colors from "tailwindcss/colors"
 
 const config = {
   // Removed: darkMode: ["class"],
@@ -20,6 +21,11 @@ const config = {
     },
     extend: {
       colors: {
+        // Tailwind CSS v3 color name updates
+        neutral: colors.neutral,
+        gray: colors.gray,
+        slate: colors.slate,
+
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
