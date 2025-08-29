@@ -2859,8 +2859,8 @@ export default function Home() {
                           Sound Cues
                         </h3>
                       </div>
-                      <div className="p-6 space-y-4 pt-[5px] flex flex-col h-full">
-                        <div className="flex-1">
+                      <div className="p-6 space-y-4 pt-[5px] relative h-full">
+                        <div className="pb-16">
                           <Accordion type="single" collapsible className="w-full">
                             <AccordionItem value="musical-notes">
                               <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
@@ -3010,7 +3010,7 @@ export default function Home() {
                           </Accordion>
                         </div>
                         <Button
-                          className="w-full bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-sm hover:shadow-none dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black mt-4"
+                          className="absolute bottom-6 left-6 right-6 bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-sm hover:shadow-none dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black"
                           onClick={handleAddInstructionSoundEvent}
                           disabled={!customInstructionText.trim() || (!selectedSoundCue && selectedNotes.length === 0)}
                         >
