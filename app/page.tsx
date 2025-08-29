@@ -2857,7 +2857,7 @@ export default function Home() {
                             Recorder
                           </h3>
                         </div>
-                        <div className="p-6 space-y-4">
+                        <div className="p-6 space-y-4 pt-3">
                           <Input
                             id="recording-label"
                             value={recordingLabel}
