@@ -2211,7 +2211,7 @@ export default function Home() {
                   className="p-4 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                 >
                   <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs pb-1.5">
-                    Generate custom guided meditations by pairing instructions with sound cues or recording you own, then arranging them on the timeline. You can also record your own instructions/cues.                       
+                    Generate custom guided meditations by pairing instructions with sound cues or recording you own, then arranging them on the timeline.                        
                   </p>
                 </motion.div>
               )}
