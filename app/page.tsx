@@ -2747,27 +2747,28 @@ export default function Home() {
                             </div>
                           </div>
                           <Button
-                            className="w-full py-4 rounded-sm shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:shadow-none transition-shadow transition-all border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
-                          onClick={() => {
-                            if (generatedAudioUrl) {
-                              const a = document.createElement("a")
-                              a.href = generatedAudioUrl
-                              a.download = `${meditationTitle.replace(/\s/g, "_") || "meditation"}.wav`
-                              document.body.appendChild(a)
-                              a.click()
-                              document.body.removeChild(a)
-                            }
-                          }}
-                        >
-                          <div className="flex items-center justify-center font-black">
-                            <Download className="mr-2 w-4 h-4" />
-                            Download
-                          </div>
-                        </Button>
-                      </div>
-                    </Card>
-                  </motion.div>
-                )}
+                            className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:shadow-none transition-shadow border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                            onClick={() => {
+                              if (generatedAudioUrl) {
+                                const a = document.createElement("a")
+                                a.href = generatedAudioUrl
+                                a.download = `${meditationTitle.replace(/\s/g, "_") || "meditation"}.wav`
+                                document.body.appendChild(a)
+                                a.click()
+                                document.body.removeChild(a)
+                              }
+                            }}
+                          >
+                            <div className="flex items-center justify-center font-black">
+                              <Download className="mr-2 w-4 h-4" />
+                              Download
+                            </div>
+                          </Button>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  )}
+                </div>
               </>
             ) : (
               <motion.div
@@ -3032,39 +3033,33 @@ export default function Home() {
                         </h3>
                       </div>
                       <div className="p-6 space-y-4">
-                        
-                    
-                          <Input
-                            id="recording-label"
-                            value={recordingLabel}
-                            onChange={handleRecordingLabelChange}
-                            placeholder="Describe this recording..."
-                            className="mt-1 text-sm font-black border-rose-300 text-rose-300 shadow-none placeholder-rose-200"
-                          />
-                        <div>
+                        <Input
+                          id="recording-label"
+                          value={recordingLabel}
+                          onChange={handleRecordingLabelChange}
+                          placeholder="Describe this recording..."
+                          className="mt-1 text-sm font-black border-rose-300 text-rose-300 shadow-none placeholder-rose-200"
+                        />
                         <Button
                           onClick={isRecording ? stopRecording : startRecording}
                           variant={isRecording ? "destructive" : "default"}
                           className={cn(
-                            "w-full font-white font-serif font-black",
-                            isRecording
-                              ? "bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none"
-                              : "w-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none",
+                            "w-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none font-serif font-black",
+                            isRecording && "from-red-500 to-red-600"
                           )}
                         >
                           {isRecording ? (
                             <>
                               <StopCircle className="mr-2 h-4 w-4" />
-                              Stop Recording
+                              <span className="font-black font-serif">Stop Recording</span>
                             </>
                           ) : (
                             <>
                               <Mic className="mr-2 h-4 w-4" />
-                              Start Recording
+                              <span className="font-black font-serif">Start Recording</span>
                             </>
                           )}
                         </Button>
-                        </div>
                         <AnimatePresence>
                           {readyToAddToTimelineRecording && (
                             <motion.div
@@ -3133,6 +3128,7 @@ export default function Home() {
                       </div>
                     </Card>
                   </motion.div>
+
                 {/* Timeline Editor for Labs */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
                   <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
