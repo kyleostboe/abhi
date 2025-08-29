@@ -2968,8 +2968,8 @@ export default function Home() {
                           Sound Cues
                         </h3>
                       </div>
-                      <div className="p-6 pt-[5px] flex flex-col space-y-4 min-h-[248px]">
-                        <div className="flex-1">
+                      <div className="p-6 pt-[5px] flex flex-col space-y-4 min-h-[248px] h-60">
+                        <div className="flex-1 h-auto">
                           <Accordion type="single" collapsible className="w-full">
                             <AccordionItem value="musical-notes">
                               <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
