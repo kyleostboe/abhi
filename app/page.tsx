@@ -3196,10 +3196,67 @@ export default function Home() {
                         </div>
                       )}
                       <Mic className="mr-2 h-4 w-4" />
-                      <span className="font-black tracking-tight text-base">{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
+                      <span className="font-black tracking-tight text-base">
+                        {isGeneratingAudio ? "Generating..." : "Generate Audio"}
+                      </span>
                     </div>
                   </Button>
                 </motion.div>
+
+                {generatedAudioUrl && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
+                  >
+                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/25 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-logo-teal-950 dark:to-logo-emerald-950">
+                      <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
+                        <h3 className="text-white font-black">Generated Audio</h3>
+                      </div>
+                      <div className="p-6 px-3.5 py-4">
+                        <div className="bg-white p-3 dark:shadow-white/10 dark:bg-gray-700 rounded-sm shadow-md mb-3.5 px-0">
+                          <audio ref={encoderAudioRef} controls className="w-full" src={generatedAudioUrl}></audio>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 mb-3.5">
+                          <div className="p-3 rounded-lg text-center dark:bg-gray-800/60 bg-white shadow-md py-3.5">
+                            <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
+                              Duration
+                            </div>
+                            <div className="dark:text-black font-black text-gray-600 text-sm">
+                              {formatTime(encoderTotalDuration)}
+                            </div>
+                          </div>
+                          <div className="p-3 rounded-lg text-center dark:bg-gray-800/60 bg-white shadow-md py-3.5">
+                            <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
+                              File Size
+                            </div>
+                            <div className="font-black text-sm text-gray-600">
+                              {formatFileSize(generatedAudioFileSize || 0)}
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:shadow-none transition-shadow border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                          onClick={() => {
+                            if (generatedAudioUrl) {
+                              const a = document.createElement("a")
+                              a.href = generatedAudioUrl
+                              a.download = `${meditationTitle.replace(/\s/g, "_") || "meditation"}.wav`
+                              document.body.appendChild(a)
+                              a.click()
+                              document.body.removeChild(a)
+                            }
+                          }}
+                        >
+                          <div className="flex items-center justify-center font-black">
+                            <Download className="mr-2 w-4 h-4" />
+                            Download
+                          </div>
+                        </Button>
+                      </div>
+                    </Card>
+                  </motion.div>
+                )}
               </motion.div>
             )}
           </div>
