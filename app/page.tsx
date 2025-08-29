@@ -2771,6 +2771,7 @@ export default function Home() {
                 </div>
               </>
             ) : (
+              // == Encoder UI ==
               <motion.div
                 key="encoder-content"
                 initial={{ opacity: 0, y: 20 }}
@@ -2819,7 +2820,7 @@ export default function Home() {
                 </motion.div>
 
                 <motion.div
-                  className="grid grid-cols-1 lg:grid-cols-2 gap-6" // Changed from lg:grid-cols-3 to lg:grid-cols-2
+                  className="grid grid-cols-1 lg:grid-cols-2 gap-6"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
@@ -2830,8 +2831,6 @@ export default function Home() {
                     transition={{ delay: 0.2 }}
                     className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                   >
-                    {/* New Instructions Label and Icon */}
-
                     <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 border-0 px-[5px] py-1 pl-1 pr-1 shadow-lg rounded-sm">
                       <div className="bg-white dark:bg-gray-900 p-4 border-rose-200 border-0 rounded-sm shadow-inner">
                         <div className="text-center">
@@ -2884,7 +2883,7 @@ export default function Home() {
                                     <button
                                       onClick={() => {
                                         setMultiNoteMode(!multiNoteMode)
-                                        setSelectedNotes([]) // Clear selections when toggling
+                                        setSelectedNotes([])
                                       }}
                                       className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
                                         multiNoteMode ? "bg-gray-500" : "bg-gray-200"
@@ -3045,7 +3044,7 @@ export default function Home() {
                           variant={isRecording ? "destructive" : "default"}
                           className={cn(
                             "w-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none font-serif font-black",
-                            isRecording && "from-red-500 to-red-600"
+                            isRecording && "from-red-500 to-red-600",
                           )}
                         >
                           {isRecording ? (
@@ -3090,7 +3089,6 @@ export default function Home() {
                                     return
                                   }
 
-                                  // Calculate new startTime based on existing events
                                   const maxExistingTime =
                                     timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
                                   const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 10 : 0
@@ -3098,16 +3096,15 @@ export default function Home() {
                                   const newEvent: TimelineEvent = {
                                     id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
                                     type: "recorded_voice",
-                                    startTime: newStartTime, // Now calculated
+                                    startTime: newStartTime,
                                     recordedAudioUrl: readyToAddToTimelineRecording.url,
                                     recordedInstructionLabel: readyToAddToTimelineRecording.label.trim(),
                                     duration: readyToAddToTimelineRecording.duration,
-                                    color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length], // Assign a color
+                                    color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length],
                                   }
 
-                                  addEventToTimeline(newEvent) // Use the new helper function
+                                  addEventToTimeline(newEvent)
 
-                                  // Clean up
                                   setReadyToAddToTimelineRecording(null)
                                   setRecordedBlobs([])
                                   setRecordingLabel("")
@@ -3128,6 +3125,7 @@ export default function Home() {
                       </div>
                     </Card>
                   </motion.div>
+                </motion.div>
 
                 {/* Timeline Editor for Labs */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
@@ -3144,7 +3142,7 @@ export default function Home() {
                         totalDuration={encoderTotalDuration}
                         onUpdateEvent={updateEventStartTime}
                         onRemoveEvent={removeTimelineEvent}
-                        onDuplicateEvent={handleDuplicateEvent} // Pass the new duplicate handler
+                        onDuplicateEvent={handleDuplicateEvent}
                         selectedInstrument={noteType}
                         playSingleNote={timelinePlaySingleNote}
                         playChordPreview={timelinePlayChordPreview}
@@ -3179,4 +3177,28 @@ export default function Home() {
                               className="opacity-25"
                               cx="12"
                               cy="12"
-\
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                        </div>
+                      )}
+                      <Mic className="h-5 w-5 mr-2" />
+                      <span className="font-medium">{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
+                    </div>
+                  </Button>
+                </motion.div>
+              </motion.div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
