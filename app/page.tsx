@@ -2197,7 +2197,8 @@ export default function Home() {
                   className="p-4 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                 >
                   <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs">
-                    Change the length of your guided meditations. Upload an audio file, set your target duration, and this tool will re-space content to fit your schedule.
+                    Change the length of your guided meditations. Upload an audio file, set your target duration, and
+                    this tool will re-space content to fit your schedule.
                   </p>
                 </motion.div>
               )}
@@ -2211,7 +2212,8 @@ export default function Home() {
                   className="p-4 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                 >
                   <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs pb-1.5">
-                    Generate custom guided meditations by pairing instructions with sound cues or recording you own, then arranging them on the timeline.                        
+                    Generate custom guided meditations by pairing instructions with sound cues or recording you own,
+                    then arranging them on the timeline.
                   </p>
                 </motion.div>
               )}
@@ -2227,10 +2229,10 @@ export default function Home() {
                       <strong className="pr-1.5 font-black font-serif text-center text-sm text-logo-amber-400">
                         Note:
                       </strong>
-                      Depending on the audio, users may need to tweak the advanced settings for optimal results. Only pauses are adjusted, spoken instruction is preserved. Any
-                      guided meditation{" "}
-                      {"under " + (isMobileDevice ? "50MB" : "500MB") + ""} should be compatible. Teachers, please
-                      feel free to
+                      Depending on the audio, users may need to tweak the advanced settings for optimal results. Only
+                      pauses are adjusted, spoken instruction is preserved. Any guided meditation{" "}
+                      {"under " + (isMobileDevice ? "50MB" : "500MB") + ""} should be compatible. Teachers, please feel
+                      free to
                       <a
                         href="/contact"
                         className=" underline px-1 rounded transition-colors transition-shadow dark:hover:text-logo-rose-300 font-black text-sm text-logo-purple-300"
@@ -2961,14 +2963,14 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900 h-full">
+                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
                       <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 dark:from-gray-800 dark:to-gray-900 text-center">
                         <h3 className="text-white flex items-center font-black text-left">
                           <Music2 className="h-4 w-4 mr-2" />
                           Sound Cues
                         </h3>
                       </div>
-                      <div className="p-6 pt-[5px] flex flex-col space-y-4 min-h-[248px] h-60">
+                      <div className="p-6 pt-[5px] flex flex-col space-y-4">
                         <div className="flex-1 h-auto">
                           <Accordion type="single" collapsible className="w-full">
                             <AccordionItem value="musical-notes">
