@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { formatTime } from "@/lib/utils"
 
 export function MeditationTimer() {
   const [minutes, setMinutes] = useState(5)
@@ -26,12 +27,6 @@ export function MeditationTimer() {
     return () => clearInterval(interval)
   }, [isRunning, secondsLeft])
 
-  const formatTime = (s: number) => {
-    const m = Math.floor(s / 60)
-    const sec = s % 60
-    return `${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`
-  }
-
   const handleStart = () => {
     setSecondsLeft(minutes * 60)
     setIsRunning(true)
@@ -42,30 +37,82 @@ export function MeditationTimer() {
     setSecondsLeft(minutes * 60)
   }
 
+  const totalSeconds = minutes * 60
+  const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100
+  const radius = 80
+  const circumference = 2 * Math.PI * radius
+
   return (
     <Card className="p-6 mb-10 bg-white dark:bg-gray-900 shadow-lg max-w-md mx-auto">
-      <div className="text-center font-serif font-black">
-        <div className="text-4xl mb-4 text-gray-700 dark:text-gray-200">
-          {formatTime(secondsLeft)}
+      <div className="flex flex-col items-center space-y-6 font-serif font-black">
+        <div className="relative">
+          <svg className="w-48 h-48 -rotate-90" viewBox="0 0 180 180">
+            <circle
+              cx="90"
+              cy="90"
+              r={radius}
+              strokeWidth="12"
+              className="text-gray-200 dark:text-gray-700"
+              stroke="currentColor"
+              fill="transparent"
+            />
+            <circle
+              cx="90"
+              cy="90"
+              r={radius}
+              strokeWidth="12"
+              stroke="currentColor"
+              fill="transparent"
+              className="text-logo-rose-500 transition-all"
+              strokeDasharray={circumference}
+              strokeDashoffset={circumference - (progress / 100) * circumference}
+            />
+          </svg>
+          <span className="absolute inset-0 flex items-center justify-center text-5xl font-bold text-gray-700 dark:text-gray-200">
+            {formatTime(secondsLeft)}
+          </span>
         </div>
-        <div className="flex items-center justify-center space-x-2 mb-6">
+
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setMinutes((m) => Math.max(1, m - 1))}
+            disabled={isRunning}
+          >
+            -
+          </Button>
           <Input
             type="number"
             min={1}
             value={minutes}
             onChange={(e) => setMinutes(parseInt(e.target.value) || 0)}
-            className="w-20 text-center"
+            className="w-16 text-center"
+            disabled={isRunning}
           />
-          <span className="text-gray-600 dark:text-gray-400 text-sm">minutes</span>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setMinutes((m) => m + 1)}
+            disabled={isRunning}
+          >
+            +
+          </Button>
         </div>
-        <div className="space-x-2">
-          <Button onClick={handleStart} disabled={isRunning}>
-            Start
+
+        <div className="flex gap-2">
+          {isRunning ? (
+            <Button onClick={() => setIsRunning(false)}>Pause</Button>
+          ) : (
+            <Button onClick={handleStart}>{secondsLeft === totalSeconds ? "Start" : "Resume"}</Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={handleReset}
+            disabled={secondsLeft === totalSeconds && !isRunning}
+          >
+            Reset
           </Button>
-          <Button onClick={() => setIsRunning(false)} disabled={!isRunning}>
-            Pause
-          </Button>
-          <Button onClick={handleReset}>Reset</Button>
         </div>
       </div>
     </Card>
