@@ -17,12 +17,14 @@ import {
   Play,
   PlusCircle,
   CircleDotDashed,
+  Timer as TimerIcon,
 } from "lucide-react" // Import Copy icon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
+import { MeditationTimer } from "@/components/meditation-timer"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -656,7 +658,7 @@ const playPianoNote = async (noteString: string, duration = 0.45, velocity = 0.9
 }
 
 export default function Home() {
-  const [activeMode, setActiveMode] = useState<"adjuster" | "encoder">("adjuster")
+  const [activeMode, setActiveMode] = useState<"adjuster" | "timer" | "encoder">("adjuster")
 
   // == States for Length Adjuster ==
   const [file, setFile] = useState<File | null>(null)
@@ -2155,7 +2157,7 @@ export default function Home() {
 
               {/* Mode Switch */}
               <div className="flex justify-center items-center mb-4 space-y-4 flex-row my-[33px]">
-                <div className="grid mx-auto grid-cols-2 p-1 dark:bg-gray-800/70 font-serif text-gray-600 w-64 shadow-inner pb-12 h-12 rounded-sm bg-stone-100">
+                <div className="grid mx-auto grid-cols-3 p-1 dark:bg-gray-800/70 font-serif text-gray-600 w-64 shadow-inner pb-12 h-12 rounded-sm bg-stone-100">
                   <button
                     onClick={() => setActiveMode("adjuster")}
                     className={cn(
@@ -2166,6 +2168,17 @@ export default function Home() {
                     )}
                   >
                     Adjuster
+                  </button>
+                  <button
+                    onClick={() => setActiveMode("timer")}
+                    className={cn(
+                      "inline-flex items-center justify-center whitespace-nowrap rounded-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm w-10 h-10",
+                      activeMode === "timer"
+                        ? "bg-white text-gray-600 shadow-sm dark:shadow-white/20 dark:bg-gray-700 dark:text-gray-600"
+                        : "text-gray-600 dark:text-gray-600",
+                    )}
+                  >
+                    <TimerIcon className="h-4 w-4" />
                   </button>
                   {/*  Removed visible comment that was displaying on page */}
                   <button
@@ -2199,6 +2212,20 @@ export default function Home() {
                   <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs">
                     Change the length of your guided meditations. Upload an audio file, set your target duration, and
                     this tool will re-space content to fit your schedule.
+                  </p>
+                </motion.div>
+              )}
+              {activeMode === "timer" && (
+                <motion.div
+                  key="timer-note"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="p-4 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
+                >
+                  <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs">
+                    Use this timer to support your meditation practice.
                   </p>
                 </motion.div>
               )}
@@ -2770,6 +2797,8 @@ export default function Home() {
                   )}
                 </div>
               </>
+            ) : activeMode === "timer" ? (
+              <MeditationTimer />
             ) : (
               // == Encoder UI ==
               <motion.div
