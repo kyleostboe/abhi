@@ -3,9 +3,8 @@ import React, { useState, useEffect, useRef } from "react";
 const TIMER_DURATION = 59;
 const BORDER_WIDTH = 36; // px: thickness of the rainbow border
 const CARD_RADIUS = "4rem 3rem 2rem 1rem";
-// Set a fixed card width/height to keep numbers size fixed:
-const CARD_WIDTH = "340px";
-const CARD_HEIGHT = "160px";
+const BASE_CARD_WIDTH = 340; // px
+const BASE_CARD_HEIGHT = 160; // px
 const COLOR_RING_MULTIPLIER = 2.2; // Lower for less wasted border space
 
 export const MeditationTimer = () => {
@@ -28,39 +27,42 @@ export const MeditationTimer = () => {
       s % 60
     ).padStart(2, "0")}`;
 
-  // Responsive outer container for border window, adapts for aspect ratio
-  const getResponsiveOuterSize = () => {
-    // You can play with these ratios for your design preference!
+  // Responsive outer container and card sizes, adapts for aspect ratio
+  const getResponsiveSizes = () => {
     if (typeof window !== "undefined") {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      // Use wider rectangle on desktop, squarer on mobile
-      if (vw / vh > 1.2) {
-        // Desktop: add a bit more width
-        return {
-          width: `calc(${CARD_WIDTH} + ${BORDER_WIDTH * 2 * 1.2}px)`,
-          height: `calc(${CARD_HEIGHT} + ${BORDER_WIDTH * 2}px)`,
-        };
-      } else {
-        // Mobile: border gets squarer
-        return {
-          width: `calc(${CARD_WIDTH} + ${BORDER_WIDTH * 2}px)`,
-          height: `calc(${CARD_HEIGHT} + ${BORDER_WIDTH * 2 * 1.1}px)`,
-        };
-      }
+      const cardWidth = Math.min(BASE_CARD_WIDTH, vw * 0.8);
+      const cardHeight = Math.min(BASE_CARD_HEIGHT, vh * 0.25);
+      const outerWidth =
+        vw / vh > 1.2
+          ? cardWidth + BORDER_WIDTH * 2 * 1.2
+          : cardWidth + BORDER_WIDTH * 2;
+      const outerHeight =
+        vw / vh > 1.2
+          ? cardHeight + BORDER_WIDTH * 2
+          : cardHeight + BORDER_WIDTH * 2 * 1.1;
+      return {
+        cardWidth: `${cardWidth}px`,
+        cardHeight: `${cardHeight}px`,
+        outerWidth: `${outerWidth}px`,
+        outerHeight: `${outerHeight}px`,
+      };
     }
     // fallback (SSR)
     return {
-      width: `calc(${CARD_WIDTH} + ${BORDER_WIDTH * 2}px)`,
-      height: `calc(${CARD_HEIGHT} + ${BORDER_WIDTH * 2}px)`,
+      cardWidth: `${BASE_CARD_WIDTH}px`,
+      cardHeight: `${BASE_CARD_HEIGHT}px`,
+      outerWidth: `${BASE_CARD_WIDTH + BORDER_WIDTH * 2}px`,
+      outerHeight: `${BASE_CARD_HEIGHT + BORDER_WIDTH * 2}px`,
     };
   };
 
-  const [outerStyle, setOuterStyle] = React.useState(getResponsiveOuterSize());
+  const [sizes, setSizes] = React.useState(getResponsiveSizes());
   // Listen for window resize
   React.useEffect(() => {
     function refresh() {
-      setOuterStyle(getResponsiveOuterSize());
+      setSizes(getResponsiveSizes());
     }
     window.addEventListener("resize", refresh);
     refresh();
@@ -71,8 +73,7 @@ export const MeditationTimer = () => {
   return (
     <div
       style={{
-        minHeight: "100dvh",
-        minWidth: "100vw",
+        width: "100%",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
@@ -83,7 +84,8 @@ export const MeditationTimer = () => {
       <div
         style={{
           position: "relative",
-          ...outerStyle,
+          width: sizes.outerWidth,
+          height: sizes.outerHeight,
           borderRadius: CARD_RADIUS,
           overflow: "hidden",
           display: "flex",
@@ -132,8 +134,8 @@ export const MeditationTimer = () => {
           onMouseLeave={() => setPressed(false)}
           style={{
             position: "relative",
-            width: CARD_WIDTH,
-            height: CARD_HEIGHT,
+            width: sizes.cardWidth,
+            height: sizes.cardHeight,
             background: "#fff",
             borderRadius: CARD_RADIUS,
             fontFamily: "'Roboto Serif', serif",
