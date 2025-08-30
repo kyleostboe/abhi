@@ -2916,7 +2916,9 @@ export default function Home() {
                 </div>
               </>
             ) : activeMode === "timer" ? (
-              <MeditationTimer />
+              <div className="flex justify-center">
+                <MeditationTimer />
+              </div>
             ) : (
               // == Encoder UI ==
               <motion.div
