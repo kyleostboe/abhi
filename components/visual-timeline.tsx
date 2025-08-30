@@ -344,9 +344,8 @@ export function VisualTimeline({
                 >
                   <Card
                     className={cn(
-                      "p-4 bg-white dark:bg-gray-900 shadow-sm dark:shadow-white/10",
-                      "border-2", // Explicitly set border width to 2px
-                      getFromBorderColorClass(getEventColor(event)), // Dynamic border color based on icon's primary gradient color
+                      "p-4 bg-white dark:bg-gray-900 shadow-md dark:shadow-white/10",
+                      "border-2 border-gray-500",
                     )}
                   >
                     <div className="flex items-center w-full mx-[-8px] px-1">
