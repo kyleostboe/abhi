@@ -2798,7 +2798,7 @@ export default function Home() {
                             value={meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
-                            className="mt-1 text-xs border-gray-500 focus-visible:border-gray-600 font-black text-gray-500 shadow-inner"
+                            className="mt-1 text-xs border-gray-500 focus-visible:border-gray-600 placeholder:text-gray-500 font-black text-gray-500 shadow-md"
                           />
                         </div>
                         <div className="text-center">
@@ -2811,7 +2811,7 @@ export default function Home() {
                             value={encoderTotalDuration / 60}
                             onChange={handleDurationChange}
                             min="1"
-                            className="mt-1 text-xs font-black border-gray-500 focus-visible:border-gray-600 text-gray-500 shadow-inner"
+                            className="mt-1 text-xs font-black border-gray-500 focus-visible:border-gray-600 text-gray-500 shadow-md"
                           />
                         </div>
                       </div>
