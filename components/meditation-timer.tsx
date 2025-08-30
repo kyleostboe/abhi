@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 
 const TIMER_DURATION = 59;
-const BORDER_WIDTH = 22; // width of border in px
+const BORDER_WIDTH = 24; // px
 
 export const MeditationTimer = () => {
   const [running, setRunning] = useState(false);
@@ -26,9 +26,9 @@ export const MeditationTimer = () => {
   const formatTime = (s) =>
     `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
-  // Responsive sizes
-  const CARD_SIZE = "min(62vw, 32vh)";
-  const WHEEL_SIZE = "min(110vw, 80vh)";
+  // Responsive sizing
+  const CARD_SIZE = "min(54vw, 26vh)";
+  const SPIN_SIZE = "250vw"; // MASSIVE, guarantees pure spectrum border always
 
   return (
     <div
@@ -43,28 +43,25 @@ export const MeditationTimer = () => {
         overflow: "hidden",
       }}
     >
-      {/* Giant spinning color wheel */}
+      {/* Giant spinning color wheel behind everything */}
       <div
         style={{
           position: "absolute",
           left: "50%",
           top: "50%",
-          width: WHEEL_SIZE,
-          height: WHEEL_SIZE,
+          width: SPIN_SIZE,
+          height: SPIN_SIZE,
           transform: "translate(-50%, -50%)",
           zIndex: 1,
           pointerEvents: "none",
           background: "conic-gradient(#FDA4AF, #34D399, #60A5FA, #FCD34D, #FDA4AF)",
           borderRadius: "50%",
           animation: running ? "pinwheel-spin 2.3s linear infinite" : "none",
-          // Hide everywhere except through the timer's border using mask
-          maskImage: "none", // allow all for this layer – masking is on the card
-          WebkitMaskImage: "none",
         }}
         aria-hidden="true"
       ></div>
 
-      {/* Timer Card with masked border (shows pinwheel through border) */}
+      {/* Timer Card with a border that reveals the spinning color underneath */}
       <div
         role="button"
         tabIndex={0}
@@ -91,15 +88,13 @@ export const MeditationTimer = () => {
           userSelect: "none",
           cursor: "pointer",
           transition: "box-shadow 0.15s cubic-bezier(.4,0,.2,1), outline 0.1s",
-
           border: `${BORDER_WIDTH}px solid transparent`,
           boxShadow:
             running || pressed
               ? "none"
               : "0 8px 40px 0 rgba(0,0,0,0.13), 0 0 0 4px rgba(0,0,0,0.02)",
           outline: pressed ? "2px solid #34D399" : "none",
-
-          // MAGIC: Only show what's beneath through the border
+          // Mask so only the border shows spinning color
           WebkitMaskImage: `
             radial-gradient(circle, 
               transparent calc(50% - ${BORDER_WIDTH}px), 
@@ -116,7 +111,6 @@ export const MeditationTimer = () => {
               transparent calc(50% + ${BORDER_WIDTH}px)
             )
           `,
-          // Fallback for browsers without mask support (leave normal)
         }}
       >
         {formatTime(seconds)}
@@ -133,5 +127,6 @@ export const MeditationTimer = () => {
     </div>
   );
 };
+
 
 export { MeditationTimer };
