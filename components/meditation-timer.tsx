@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 
 const TIMER_DURATION = 59;
-const BORDER_WIDTH = 24; // px
+const BORDER_WIDTH = 26; // px
 
 export const MeditationTimer = () => {
   const [running, setRunning] = useState(false);
@@ -27,8 +27,8 @@ export const MeditationTimer = () => {
     `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
   // Responsive sizing
-  const CARD_SIZE = "min(54vw, 26vh)";
-  const SPIN_SIZE = "250vw"; // MASSIVE, guarantees pure spectrum border always
+  const CARD_SIZE = "min(50vw, 24vh)";
+  const SPIN_SIZE = "240vw"; // MASSIVE for butter-smooth blur
 
   return (
     <div
@@ -43,7 +43,7 @@ export const MeditationTimer = () => {
         overflow: "hidden",
       }}
     >
-      {/* Giant spinning color wheel behind everything */}
+      {/* Giant spinning BLURRED color wheel behind everything */}
       <div
         style={{
           position: "absolute",
@@ -54,14 +54,15 @@ export const MeditationTimer = () => {
           transform: "translate(-50%, -50%)",
           zIndex: 1,
           pointerEvents: "none",
-          background: "conic-gradient(#FDA4AF, #34D399, #60A5FA, #FCD34D, #FDA4AF)",
+          background: "conic-gradient(at 50% 50%, #FDA4AF 0%, #34D399 25%, #60A5FA 50%, #FCD34D 75%, #FDA4AF 100%)",
           borderRadius: "50%",
+          filter: "blur(32px) brightness(1.15)", // Crucial for smoothness, removes pinwheel/banding
           animation: running ? "pinwheel-spin 2.3s linear infinite" : "none",
         }}
         aria-hidden="true"
       ></div>
 
-      {/* Timer Card with a border that reveals the spinning color underneath */}
+      {/* Timer Card with a border that reveals the blurred color underneath */}
       <div
         role="button"
         tabIndex={0}
@@ -94,7 +95,7 @@ export const MeditationTimer = () => {
               ? "none"
               : "0 8px 40px 0 rgba(0,0,0,0.13), 0 0 0 4px rgba(0,0,0,0.02)",
           outline: pressed ? "2px solid #34D399" : "none",
-          // Mask so only the border shows spinning color
+          // Mask so only the border shows color wheel
           WebkitMaskImage: `
             radial-gradient(circle, 
               transparent calc(50% - ${BORDER_WIDTH}px), 
