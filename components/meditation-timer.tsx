@@ -1,7 +1,12 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 const TIMER_DURATION = 59;
-const BORDER_WIDTH = 56; // px (thick for a nice visual)
+const BORDER_WIDTH = 36; // px: thickness of the rainbow border
+const CARD_RADIUS = "4rem 3rem 2rem 1rem";
+// Set a fixed card width/height to keep numbers size fixed:
+const CARD_WIDTH = "340px";
+const CARD_HEIGHT = "160px";
+const COLOR_RING_MULTIPLIER = 2.2; // Lower for less wasted border space
 
 export const MeditationTimer = () => {
   const [running, setRunning] = useState(false);
@@ -11,9 +16,7 @@ export const MeditationTimer = () => {
 
   useEffect(() => {
     if (running && seconds > 0) {
-      intervalRef.current = setInterval(() => {
-        setSeconds((s) => s - 1);
-      }, 1000);
+      intervalRef.current = setInterval(() => setSeconds((s) => s - 1), 1000);
     } else {
       clearInterval(intervalRef.current);
     }
@@ -21,90 +24,133 @@ export const MeditationTimer = () => {
   }, [running, seconds]);
 
   const formatTime = (s) =>
-    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(
+      s % 60
+    ).padStart(2, "0")}`;
 
-  // Sizing
-  const CARD_SIZE = "min(44vw, 34vh)";
+  // Responsive outer container for border window, adapts for aspect ratio
+  const getResponsiveOuterSize = () => {
+    // You can play with these ratios for your design preference!
+    if (typeof window !== "undefined") {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      // Use wider rectangle on desktop, squarer on mobile
+      if (vw / vh > 1.2) {
+        // Desktop: add a bit more width
+        return {
+          width: `calc(${CARD_WIDTH} + ${BORDER_WIDTH * 2 * 1.2}px)`,
+          height: `calc(${CARD_HEIGHT} + ${BORDER_WIDTH * 2}px)`,
+        };
+      } else {
+        // Mobile: border gets squarer
+        return {
+          width: `calc(${CARD_WIDTH} + ${BORDER_WIDTH * 2}px)`,
+          height: `calc(${CARD_HEIGHT} + ${BORDER_WIDTH * 2 * 1.1}px)`,
+        };
+      }
+    }
+    // fallback (SSR)
+    return {
+      width: `calc(${CARD_WIDTH} + ${BORDER_WIDTH * 2}px)`,
+      height: `calc(${CARD_HEIGHT} + ${BORDER_WIDTH * 2}px)`,
+    };
+  };
+
+  const [outerStyle, setOuterStyle] = React.useState(getResponsiveOuterSize());
+  // Listen for window resize
+  React.useEffect(() => {
+    function refresh() {
+      setOuterStyle(getResponsiveOuterSize());
+    }
+    window.addEventListener("resize", refresh);
+    refresh();
+    return () => window.removeEventListener("resize", refresh);
+    // eslint-disable-next-line
+  }, []);
 
   return (
     <div
       style={{
         minHeight: "100dvh",
-        width: "100vw",
+        minWidth: "100vw",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
         background: "transparent",
         position: "relative",
-        overflow: "hidden",
       }}
     >
-      {/* Border Ring & Timer Card */}
       <div
         style={{
-          width: CARD_SIZE,
-          height: CARD_SIZE,
-          borderRadius: "4rem 3rem 2rem 1rem",
           position: "relative",
+          ...outerStyle,
+          borderRadius: CARD_RADIUS,
+          overflow: "hidden",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          transition: "width 0.3s, height 0.3s",
         }}
       >
-        {/* Spinning color ring, exactly matches border shape */}
+        {/* Spinner wrapper */}
         <div
-          aria-hidden="true"
           style={{
             position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            borderRadius: "4rem 3rem 2rem 1rem",
-            padding: 0,
+            left: "50%",
+            top: "50%",
+            width: `calc(100% * ${COLOR_RING_MULTIPLIER})`,
+            height: `calc(100% * ${COLOR_RING_MULTIPLIER})`,
+            transform: "translate(-50%, -50%)",
             zIndex: 1,
             pointerEvents: "none",
-            // Outer ring, then inner "cutout" with white center using box-shadow
-            background: "conic-gradient(#FDA4AF, #34D399, #60A5FA, #FCD34D, #FDA4AF)",
-            animation: running ? "pinwheel-spin 2.3s linear infinite" : "none",
-            // This creates a color border, but overlays card's center with white in next element
-            boxShadow: `0 0 0 ${BORDER_WIDTH/2}px #fff inset`,
-            // The above overlays white inside, so only the border shows gradient
           }}
-        />
-        {/* Timer Card (content) */}
+        >
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              borderRadius: "50%",
+              background:
+                "conic-gradient(#34D399, #FBBF24, #D8B4FE, #34D399)",
+              animation: running
+                ? "pinwheel-spin 2.3s linear infinite"
+                : "none",
+            }}
+          ></div>
+        </div>
+        {/* Timer Card */}
         <div
           role="button"
           tabIndex={0}
           aria-label={running ? "Pause timer" : "Start timer"}
           onClick={() => setRunning((r) => !r)}
-          onKeyDown={e => (e.key === "Enter" || e.key === " ") && setRunning((r) => !r)}
+          onKeyDown={e =>
+            (e.key === "Enter" || e.key === " ") && setRunning((r) => !r)
+          }
           onMouseDown={() => setPressed(true)}
           onMouseUp={() => setPressed(false)}
           onMouseLeave={() => setPressed(false)}
           style={{
             position: "relative",
-            zIndex: 2,
-            width: "100%",
-            height: "100%",
-            borderRadius: "4rem 3rem 2rem 1rem",
-            background: "transparent",
+            width: CARD_WIDTH,
+            height: CARD_HEIGHT,
+            background: "#fff",
+            borderRadius: CARD_RADIUS,
             fontFamily: "'Roboto Serif', serif",
             fontWeight: 900,
-            fontSize: "clamp(2.4rem, 8vw, 6rem)",
+            fontSize: "5rem", // or set a px value for always the same size
             color: "#6B7280",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             userSelect: "none",
             cursor: "pointer",
-            border: "none",
-            boxShadow:
-              running || pressed
-                ? "none"
-                : "0 8px 40px 0 rgba(0,0,0,0.13), 0 0 0 4px rgba(0,0,0,0.02)",
-            outline: pressed ? "2px solid #34D399" : "none",
-            backgroundClip: "padding-box",
+            boxShadow: pressed
+              ? "none"
+              : "0 12px 48px 0 rgba(0,0,0,0.19)",
+            outline: "none",
+            zIndex: 2,
+            transition: "box-shadow 0.18s cubic-bezier(.44,0,.56,1)",
           }}
         >
           {formatTime(seconds)}

@@ -2110,7 +2110,7 @@ export default function Home() {
             Recorder
           </h3>
         </div>
-        <div className="p-6 space-y-4 pt-3">
+        <div className="p-6 space-y-4 pt-3.5">
           <Input
             id={inputId}
             value={recordingLabel}
@@ -3158,7 +3158,7 @@ export default function Home() {
                             </AccordionItem>
                           </Accordion>
                         </div>
-                        <div className="h-[9px]"></div>
+                        <div className="h-[11px]"></div>
                         <Button
                           className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-sm hover:shadow-none dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black mt-4"
                           onClick={handleAddInstructionSoundEvent}
