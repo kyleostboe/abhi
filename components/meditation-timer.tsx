@@ -73,4 +73,33 @@ const MeditationTimer = () => {
             background: "#fff",
             borderRadius: "4rem 3rem 2rem 1rem",
             padding: "0.5em 2em",
-            fontFamily: "'Roboto Serif
+            fontFamily: "'Roboto Serif', serif",
+            fontWeight: 900,
+            fontSize: "clamp(2rem,12vw,6rem)",
+            color: "#6B7280",
+            border: "6px solid transparent",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minWidth: "5ch",
+            userSelect: "none",
+            transition: "background 0.2s",
+          }}
+        >
+          {formatTime(seconds)}
+        </div>
+      </div>
+      <style>
+        {`
+          @keyframes border-spin {
+            100% {
+              transform: rotate(360deg);
+            }
+          }
+        `}
+      </style>
+    </div>
+  );
+};
+
+export { MeditationTimer };
