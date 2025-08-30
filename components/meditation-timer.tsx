@@ -81,7 +81,7 @@ export const MeditationTimer = () => {
         position: "relative",
       }}
     >
-      <div
+      <div className="shadow-lg"
         style={{
           position: "relative",
           width: sizes.outerWidth,
