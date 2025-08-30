@@ -3120,7 +3120,7 @@ export default function Home() {
                             </AccordionItem>
                           </Accordion>
                         </div>
-                        <div className="flex-grow"></div>
+                        <div className="h-4"></div>
                         <Button
                           className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-sm hover:shadow-none dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black mt-4"
                           onClick={handleAddInstructionSoundEvent}
