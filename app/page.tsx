@@ -2157,7 +2157,7 @@ export default function Home() {
 
               {/* Mode Switch */}
               <div className="flex justify-center items-center mb-4 space-y-4 flex-row my-[33px]">
-                <div className="grid mx-auto grid-cols-3 p-1 dark:bg-gray-800/70 font-serif text-gray-600 w-64 shadow-inner pb-12 h-12 rounded-sm bg-stone-100">
+                <div className="flex mx-auto items-center p-1 dark:bg-gray-800/70 font-serif text-gray-600 shadow-inner rounded-sm bg-stone-100 gap-1 w-fit">
                   <button
                     onClick={() => setActiveMode("adjuster")}
                     className={cn(
@@ -2172,7 +2172,7 @@ export default function Home() {
                   <button
                     onClick={() => setActiveMode("timer")}
                     className={cn(
-                      "inline-flex items-center justify-center whitespace-nowrap rounded-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm w-10 h-10",
+                      "inline-flex items-center justify-center whitespace-nowrap rounded-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm w-12 h-12",
                       activeMode === "timer"
                         ? "bg-white text-gray-600 shadow-sm dark:shadow-white/20 dark:bg-gray-700 dark:text-gray-600"
                         : "text-gray-600 dark:text-gray-600",
@@ -2180,7 +2180,6 @@ export default function Home() {
                   >
                     <TimerIcon className="h-4 w-4" />
                   </button>
-                  {/*  Removed visible comment that was displaying on page */}
                   <button
                     onClick={() => setActiveMode("encoder")}
                     className={cn(
