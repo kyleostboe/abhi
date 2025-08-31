@@ -1,50 +1,61 @@
-"use client";
-import React, { useState, useEffect, useRef } from "react";
-const TIMER_DURATION = 59;
-const BORDER_WIDTH_RATIO_VERTICAL = 0.16; // vertical (top/bottom) border is thicker
-const BORDER_WIDTH_RATIO_HORIZONTAL = 0.07; // horizontal (left/right) border is thinner
-const CARD_RADIUS = "4rem 3rem 2rem 1rem";
-const ASPECT_W = 2.2;
-const BASE_UNIT = 140;
-const COLOR_RING_MULTIPLIER = 2.2;
+"use client"
+import React, { useState, useEffect, useRef } from "react"
+const TIMER_DURATION = 59
+const BORDER_WIDTH_RATIO_VERTICAL = 0.14 // reduced from 0.16 for better proportions
+const BORDER_WIDTH_RATIO_HORIZONTAL = 0.06 // reduced from 0.07 for better proportions
+const CARD_RADIUS = "4rem 3rem 2rem 1rem"
+const ASPECT_W = 2.2
+const BASE_UNIT = 140
+const COLOR_RING_MULTIPLIER = 2.2
 
 export const MeditationTimer = () => {
-  const [running, setRunning] = useState(false);
-  const [seconds, setSeconds] = useState(TIMER_DURATION);
-  const [pressed, setPressed] = useState(false);
-  const intervalRef = useRef(null);
+  const [running, setRunning] = useState(false)
+  const [seconds, setSeconds] = useState(TIMER_DURATION)
+  const [pressed, setPressed] = useState(false)
+  const intervalRef = useRef(null)
 
   useEffect(() => {
     if (running && seconds > 0) {
-      intervalRef.current = setInterval(() => setSeconds((s) => s - 1), 1000);
+      intervalRef.current = setInterval(() => setSeconds((s) => s - 1), 1000)
     } else {
-      clearInterval(intervalRef.current);
+      clearInterval(intervalRef.current)
     }
-    return () => clearInterval(intervalRef.current);
-  }, [running, seconds]);
+    return () => clearInterval(intervalRef.current)
+  }, [running, seconds])
 
   const getResponsiveSizes = () => {
     if (typeof window !== "undefined") {
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      // Padding: 24px sides, 6vh top/bottom
-      const padVw = vw - Math.max(vw * 0.12, 48);
-      const padVh = vh - Math.max(vh * 0.12, 36);
-      // Determine desktop vs mobile (arbitrary: aspect > 1.3 = desktop)
-      const isDesktop = vw / vh > 1.3;
-      // The main driver is card height (vertical) since we want ratios to hold
-      const base = Math.min(padVw / (ASPECT_W + 0.27), padVh / 1.11, BASE_UNIT * 2.2);
-      const cardHeight = base > 0 ? base : BASE_UNIT;
-      const cardWidth = cardHeight * ASPECT_W;
-      // Make side borders thinner than top/bottom borders on desktop
-      // On mobile/aspect<=1.3, borders become more equal for best fit
-      const borderV = cardHeight * BORDER_WIDTH_RATIO_VERTICAL;
-      const borderH = isDesktop
-        ? cardHeight * BORDER_WIDTH_RATIO_HORIZONTAL
-        : borderV;
-      const fontSize = Math.max(cardHeight * 0.45, 36);
-      const outerWidth = cardWidth + borderH * 2;
-      const outerHeight = cardHeight + borderV * 2;
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      const padVw = vw - Math.max(vw * 0.08, 32)
+      const padVh = vh - Math.max(vh * 0.08, 24)
+
+      const aspectRatio = vw / vh
+      const isDesktop = aspectRatio > 1.4
+      const isTablet = aspectRatio > 1.0 && aspectRatio <= 1.4
+
+      const maxWidthBased = padVw / (ASPECT_W + 0.2)
+      const maxHeightBased = padVh / 1.05
+      const base = Math.min(maxWidthBased, maxHeightBased, BASE_UNIT * 2.0)
+
+      const cardHeight = Math.max(base, BASE_UNIT * 0.8)
+      const cardWidth = cardHeight * ASPECT_W
+
+      const borderV = cardHeight * BORDER_WIDTH_RATIO_VERTICAL
+      let borderH
+      if (isDesktop) {
+        borderH = cardHeight * BORDER_WIDTH_RATIO_HORIZONTAL
+      } else if (isTablet) {
+        borderH = borderV * 0.7 // intermediate between desktop and mobile
+      } else {
+        borderH = borderV * 0.85 // mobile - more equal but not completely
+      }
+
+      const fontSize = Math.max(cardHeight * 0.38, 32)
+
+      const outerWidth = cardWidth + borderH * 2
+      const outerHeight = cardHeight + borderV * 2
+
       return {
         cardWidth: `${cardWidth}px`,
         cardHeight: `${cardHeight}px`,
@@ -53,12 +64,12 @@ export const MeditationTimer = () => {
         borderV: `${borderV}px`,
         borderH: `${borderH}px`,
         fontSize: `${fontSize}px`,
-        borderHNum: borderH, // for absolute positioning in px
+        borderHNum: borderH,
         borderVNum: borderV,
-      };
+      }
     }
-    // fallback (SSR)
-    const borderV = BASE_UNIT * BORDER_WIDTH_RATIO_VERTICAL;
+
+    const borderV = BASE_UNIT * BORDER_WIDTH_RATIO_VERTICAL
     return {
       cardWidth: `${BASE_UNIT * ASPECT_W}px`,
       cardHeight: `${BASE_UNIT}px`,
@@ -66,24 +77,23 @@ export const MeditationTimer = () => {
       outerHeight: `${BASE_UNIT + borderV * 2}px`,
       borderV: `${borderV}px`,
       borderH: `${borderV}px`,
-      fontSize: `${BASE_UNIT * 0.42}px`,
+      fontSize: `${BASE_UNIT * 0.35}px`, // reduced from 0.42 to 0.35
       borderHNum: borderV,
       borderVNum: borderV,
-    };
-  };
+    }
+  }
 
-  const [sizes, setSizes] = React.useState(getResponsiveSizes());
+  const [sizes, setSizes] = React.useState(getResponsiveSizes())
   useEffect(() => {
     function refresh() {
-      setSizes(getResponsiveSizes());
+      setSizes(getResponsiveSizes())
     }
-    window.addEventListener("resize", refresh);
-    refresh();
-    return () => window.removeEventListener("resize", refresh);
-  }, []);
+    window.addEventListener("resize", refresh)
+    refresh()
+    return () => window.removeEventListener("resize", refresh)
+  }, [])
 
-  const formatTime = (s) =>
-    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  const formatTime = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`
 
   return (
     <div
@@ -132,9 +142,7 @@ export const MeditationTimer = () => {
               height: "100%",
               borderRadius: "50%",
               background: "conic-gradient(#34D399, #FBBF24, #D8B4FE, #34D399)",
-              animation: running
-                ? "pinwheel-spin 2.3s linear infinite"
-                : "none",
+              animation: running ? "pinwheel-spin 2.3s linear infinite" : "none",
             }}
           ></div>
         </div>
@@ -143,9 +151,7 @@ export const MeditationTimer = () => {
           tabIndex={0}
           aria-label={running ? "Pause timer" : "Start timer"}
           onClick={() => setRunning((r) => !r)}
-          onKeyDown={e =>
-            (e.key === "Enter" || e.key === " ") && setRunning((r) => !r)
-          }
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setRunning((r) => !r)}
           onMouseDown={() => setPressed(true)}
           onMouseUp={() => setPressed(false)}
           onMouseLeave={() => setPressed(false)}
@@ -166,9 +172,7 @@ export const MeditationTimer = () => {
             justifyContent: "center",
             userSelect: "none",
             cursor: "pointer",
-            boxShadow: pressed
-              ? "none"
-              : "0 12px 48px 0 rgba(0,0,0,0.19)",
+            boxShadow: pressed ? "none" : "0 12px 48px 0 rgba(0,0,0,0.19)",
             outline: "none",
             zIndex: 2,
             transition:
@@ -186,7 +190,5 @@ export const MeditationTimer = () => {
         </style>
       </div>
     </div>
-  );
-};
-
-export { MeditationTimer };
+  )
+}
