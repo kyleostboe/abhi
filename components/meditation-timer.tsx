@@ -86,7 +86,7 @@ export const MeditationTimer = () => {
         alignItems: "flex-start",
         background: "transparent",
         position: "relative",
-        padding: "20px 16px",
+        padding: "8px 16px", // Reduced padding from 20px to 8px top to bring timer much closer to instruction text
         boxSizing: "border-box",
       }}
     >
