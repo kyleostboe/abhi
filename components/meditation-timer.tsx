@@ -1,11 +1,11 @@
 "use client"
 import React, { useState, useEffect, useRef } from "react"
 const TIMER_DURATION = 59
-const BORDER_WIDTH_RATIO_VERTICAL = 0.14 // reduced from 0.16 for better proportions
-const BORDER_WIDTH_RATIO_HORIZONTAL = 0.06 // reduced from 0.07 for better proportions
+const BORDER_WIDTH_RATIO_VERTICAL = 0.08 // reduced from 0.16
+const BORDER_WIDTH_RATIO_HORIZONTAL = 0.04 // reduced from 0.07
 const CARD_RADIUS = "4rem 3rem 2rem 1rem"
-const ASPECT_W = 2.2
-const BASE_UNIT = 140
+const ASPECT_W = 1.8 // reduced from 2.2
+const BASE_UNIT = 100 // reduced from 140
 const COLOR_RING_MULTIPLIER = 2.2
 
 export const MeditationTimer = () => {
@@ -27,35 +27,17 @@ export const MeditationTimer = () => {
     if (typeof window !== "undefined") {
       const vw = window.innerWidth
       const vh = window.innerHeight
-      const padVw = vw - Math.max(vw * 0.08, 32)
-      const padVh = vh - Math.max(vh * 0.08, 24)
-
-      const aspectRatio = vw / vh
-      const isDesktop = aspectRatio > 1.4
-      const isTablet = aspectRatio > 1.0 && aspectRatio <= 1.4
-
-      const maxWidthBased = padVw / (ASPECT_W + 0.2)
-      const maxHeightBased = padVh / 1.05
-      const base = Math.min(maxWidthBased, maxHeightBased, BASE_UNIT * 2.0)
-
-      const cardHeight = Math.max(base, BASE_UNIT * 0.8)
+      const padVw = vw - Math.max(vw * 0.08, 32) // reduced from 0.12 and 48
+      const padVh = vh - Math.max(vh * 0.08, 24) // reduced from 0.12 and 36
+      const isDesktop = vw / vh > 1.3
+      const base = Math.min(padVw / (ASPECT_W + 0.2), padVh / 0.8, BASE_UNIT * 1.8) // reduced multipliers
+      const cardHeight = base > 0 ? base : BASE_UNIT
       const cardWidth = cardHeight * ASPECT_W
-
       const borderV = cardHeight * BORDER_WIDTH_RATIO_VERTICAL
-      let borderH
-      if (isDesktop) {
-        borderH = cardHeight * BORDER_WIDTH_RATIO_HORIZONTAL
-      } else if (isTablet) {
-        borderH = borderV * 0.7 // intermediate between desktop and mobile
-      } else {
-        borderH = borderV * 0.85 // mobile - more equal but not completely
-      }
-
-      const fontSize = Math.max(cardHeight * 0.38, 32)
-
+      const borderH = isDesktop ? cardHeight * BORDER_WIDTH_RATIO_HORIZONTAL : borderV
+      const fontSize = Math.max(cardHeight * 0.55, 32) // increased from 0.45 and 36
       const outerWidth = cardWidth + borderH * 2
       const outerHeight = cardHeight + borderV * 2
-
       return {
         cardWidth: `${cardWidth}px`,
         cardHeight: `${cardHeight}px`,
@@ -68,7 +50,7 @@ export const MeditationTimer = () => {
         borderVNum: borderV,
       }
     }
-
+    // fallback (SSR)
     const borderV = BASE_UNIT * BORDER_WIDTH_RATIO_VERTICAL
     return {
       cardWidth: `${BASE_UNIT * ASPECT_W}px`,
@@ -77,7 +59,7 @@ export const MeditationTimer = () => {
       outerHeight: `${BASE_UNIT + borderV * 2}px`,
       borderV: `${borderV}px`,
       borderH: `${borderV}px`,
-      fontSize: `${BASE_UNIT * 0.35}px`, // reduced from 0.42 to 0.35
+      fontSize: `${BASE_UNIT * 0.52}px`, // increased from 0.42
       borderHNum: borderV,
       borderVNum: borderV,
     }
@@ -98,16 +80,16 @@ export const MeditationTimer = () => {
   return (
     <div
       style={{
-        width: "100vw",
-        height: "100dvh",
-        minHeight: "100dvh",
-        minWidth: "100vw",
+        width: "100%",
+        height: "60vh",
+        minHeight: "300px",
+        maxHeight: "500px",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
         background: "transparent",
         position: "relative",
-        padding: "min(6vw, 6vh) 24px",
+        padding: "min(4vw, 4vh) 16px",
         boxSizing: "border-box",
       }}
     >
