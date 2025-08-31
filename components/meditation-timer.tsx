@@ -81,15 +81,12 @@ export const MeditationTimer = () => {
     <div
       style={{
         width: "100%",
-        height: "60vh",
-        minHeight: "300px",
-        maxHeight: "500px",
         display: "flex",
         justifyContent: "center",
-        alignItems: "center",
+        alignItems: "flex-start",
         background: "transparent",
         position: "relative",
-        padding: "min(4vw, 4vh) 16px",
+        padding: "20px 16px",
         boxSizing: "border-box",
       }}
     >
