@@ -244,12 +244,12 @@ export function VisualTimeline({
       <div className="relative">
         <div
           ref={timelineRef}
-          className="relative h-20 bg-gradient-to-r from-gray-100/70 to-gray-200/70 dark:from-gray-800/70 dark:to-gray-900/70 dark:border-gray-700 cursor-pointer overflow-visible dark:shadow-white/30 shadow-inner border-gray-700 border-0 rounded-sm"
+          className="relative h-20 bg-gradient-to-r from-gray-100/70 to-gray-200/70 cursor-pointer overflow-visible shadow-inner border-gray-700 border-0 rounded-sm"
         >
           {timeMarkers.slice(1, -1).map((time, index) => (
             <div
               key={`grid-${index}`}
-              className="absolute top-0 bottom-0 w-px bg-logo-teal-200/50 dark:bg-logo-teal-700/50"
+              className="absolute top-0 bottom-0 w-px bg-logo-teal-200/50 "
               style={{ left: getPositionFromTime(time) }}
             />
           ))}
@@ -265,8 +265,8 @@ export function VisualTimeline({
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   className={cn(
-                    "absolute top-1/2 -translate-y-1/2 rounded-full shadow-md dark:shadow-white/20 cursor-grab active:cursor-grabbing flex items-center justify-center text-white w-9 h-9",
-                    draggedEvent === event.id ? "z-30 shadow-lg dark:shadow-white/30 ring-2 ring-white/50" : "z-10",
+                    "absolute top-1/2 -translate-y-1/2 rounded-full shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-white w-9 h-9",
+                    draggedEvent === event.id ? "z-30 shadow-lg ring-2 ring-white/50" : "z-10",
                     getEventColor(event),
                   )}
                   style={{
@@ -294,7 +294,7 @@ export function VisualTimeline({
 
         <div
           className={cn(
-            "flex justify-between dark:text-gray-400 px-2 mt-2 font-black text-gray-600",
+            "flex justify-between px-2 mt-2 font-black text-gray-600",
             isMobile ? "text-xs" : "text-sm",
           )}
         >
@@ -319,14 +319,14 @@ export function VisualTimeline({
       </div>
 
       <div className="space-y-3 text-left">
-        <h4 className="font-black dark:text-gray-200 text-gray-600 text-base">Timeline Events</h4>
+        <h4 className="font-black text-gray-600 text-base">Timeline Events</h4>
         <AnimatePresence>
           {events.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-center py-8 text-gray-500 dark:text-gray-400"
+              className="text-center py-8 text-gray-500 "
             >
               <div className="mb-2 text-base">No events added yet</div>
               <div className="text-sm">Add instructions and sound cues to build your meditation timeline</div>
@@ -344,7 +344,7 @@ export function VisualTimeline({
                 >
                   <Card
                     className={cn(
-                      "p-4 bg-white dark:bg-gray-900 shadow-md dark:shadow-white/10",
+                      "p-4 bg-white shadow-md ",
                       "border-2 border-gray-500",
                     )}
                   >
@@ -362,7 +362,7 @@ export function VisualTimeline({
                       {/* Text Content (can grow and shrink) */}
                       <div className="flex flex-col flex-grow min-w-0 ml-3">
                         <div className="flex items-center space-x-2 mb-1 flex-wrap">
-                          <Badge variant="outline" className="text-xs text-gray-700 dark:text-gray-300 border-none">
+                          <Badge variant="outline" className="text-xs text-gray-700 border-none">
                             {event.type === "instruction_sound" ? "Instruction + Sound" : "Voice Recording"}
                           </Badge>
                           {editingEventId === event.id ? (
@@ -389,17 +389,17 @@ export function VisualTimeline({
                           ) : (
                             <button
                               onClick={() => handleTimeEdit(event.id, event.startTime)}
-                              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-serif text-xs ml-0 mr-2"
+                              className="text-gray-500 hover:text-gray-700 bg-gray-100 px-2 py-1 rounded font-serif text-xs ml-0 mr-2"
                             >
                               {formatTime(event.startTime)}
                             </button>
                           )}
                         </div>
-                        <div className="text-sm text-gray-700 dark:text-gray-300 font-black">
+                        <div className="text-sm text-gray-700 font-black">
                           <span className="font-black text-gray-600">{displayInfo.title}</span>
                         </div>
                         {event.type === "instruction_sound" && (
-                          <p className="text-xs dark:text-gray-400 font-black text-gray-500">{displayInfo.subtitle}</p>
+                          <p className="text-xs font-black text-gray-500">{displayInfo.subtitle}</p>
                         )}
                       </div>
                       {/* Button group - now with responsive gap */}
@@ -408,7 +408,7 @@ export function VisualTimeline({
                           size="sm"
                           variant="ghost"
                           onClick={() => playEventAudio(event)}
-                          className="hover:text-gray-600 dark:hover:bg-gray-800 px-1.5 py-1.5 h-7 w-7"
+                          className="hover:text-gray-600 px-1.5 py-1.5 h-7 w-7"
                           title="Preview audio"
                         >
                           <Play className="h-3.5 w-3.5" />
@@ -417,7 +417,7 @@ export function VisualTimeline({
                           size="sm"
                           variant="ghost"
                           onClick={() => onDuplicateEvent(event)}
-                          className="hover: text-gray-600 dark:hover:bg-gray-800 px-1.5 py-1.5 h-7 w-7"
+                          className="hover: text-gray-600 px-1.5 py-1.5 h-7 w-7"
                           title="Duplicate event"
                         >
                           <Copy className="h-3.5 w-3.5" />
@@ -426,7 +426,7 @@ export function VisualTimeline({
                           size="sm"
                           variant="ghost"
                           onClick={() => onRemoveEvent(event.id)}
-                          className="text-red-500 hover:text-red-700  dark:hover:bg-red-900/20 px-1.5 py-1.5 h-7 w-7"
+                          className="text-red-500 hover:text-red-700  px-1.5 py-1.5 h-7 w-7"
                           title="Remove event"
                         >
                           <Trash2 className="h-3.5 w-3.5" />

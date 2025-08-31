@@ -636,17 +636,17 @@ export default function EncoderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-0">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-0">
       <Navigation />
 
-      <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl dark:shadow-2xl dark:shadow-white/40 overflow-hidden dark:bg-gray-900/80 transition-colors duration-300 ease-in-out">
+      <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out">
         <div className="relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 dark:from-amber-600/20 dark:via-rose-500/15 dark:via-purple-600/10 dark:to-teal-500/20"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 "></div>
           </div>
           <div className="relative text-center px-[69px] pt-16 pb-8">
             <h1
-              className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter text-center"
+              className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter text-center"
               style={{
                 fontFamily: 'Georgia, "Times New Roman", serif',
                 textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
@@ -654,7 +654,7 @@ export default function EncoderPage() {
             >
               Encoder
             </h1>
-            <p className="text-lg text-gray-600 dark:text-gray-400 mt-4">
+            <p className="text-lg text-gray-600 mt-4">
               Create custom meditations by associating instructions with sound cues.
             </p>
           </div>
@@ -662,11 +662,11 @@ export default function EncoderPage() {
 
         <div className="px-6 md:px-10 pb-10 font-serif font-black">
           {/* File Upload Section */}
-          <Card className="p-6 mb-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
-            <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Upload Audio File</h3>
+          <Card className="p-6 mb-6 bg-white shadow-lg border border-gray-200 ">
+            <h3 className="text-xl font-bold mb-4 text-gray-800 ">Upload Audio File</h3>
             <div
               ref={uploadAreaRef}
-              className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-logo-teal-500 transition-colors"
+              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-logo-teal-500 transition-colors"
               onClick={() => fileInputRef.current?.click()}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -675,10 +675,10 @@ export default function EncoderPage() {
               <input ref={fileInputRef} type="file" accept="audio/*" onChange={handleFileChange} className="hidden" />
               <div className="space-y-2">
                 <div className="text-4xl">🎵</div>
-                <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                <p className="text-lg font-semibold text-gray-700 ">
                   {file ? file.name : "Drop your audio file here or click to browse"}
                 </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-500 ">
                   Supports MP3, WAV, M4A, and other audio formats
                 </p>
               </div>
@@ -687,8 +687,8 @@ export default function EncoderPage() {
 
           {/* Audio Player */}
           {originalAudioUrl && (
-            <Card className="p-6 mb-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
-              <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Original Audio</h3>
+            <Card className="p-6 mb-6 bg-white shadow-lg border border-gray-200 ">
+              <h3 className="text-xl font-bold mb-4 text-gray-800 ">Original Audio</h3>
               <audio
                 ref={audioRef}
                 controls
@@ -701,9 +701,9 @@ export default function EncoderPage() {
           )}
 
           {/* Sound Preview Section */}
-          <Card className="p-6 mb-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
-            <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Sound Cues Preview</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          <Card className="p-6 mb-6 bg-white shadow-lg border border-gray-200 ">
+            <h3 className="text-xl font-bold mb-4 text-gray-800 ">Sound Cues Preview</h3>
+            <p className="text-sm text-gray-600 mb-4">
               Click on any sound to preview it with the new Tone.js implementation:
             </p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -721,9 +721,9 @@ export default function EncoderPage() {
           </Card>
 
           {/* Musical Notes Section */}
-          <Card className="p-6 mb-6 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700">
+          <Card className="p-6 mb-6 bg-white shadow-lg border border-gray-200 ">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">Musical Notes</h3>
+              <h3 className="text-xl font-bold text-gray-800 ">Musical Notes</h3>
               <div className="flex items-center space-x-3">
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
@@ -733,9 +733,9 @@ export default function EncoderPage() {
                       setMultiNoteMode(e.target.checked)
                       setSelectedNotes([])
                     }}
-                    className="w-4 h-4 text-logo-teal-600 bg-gray-100 border-gray-300 rounded focus:ring-logo-teal-500 dark:focus:ring-logo-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    className="w-4 h-4 text-logo-teal-600 bg-gray-100 border-gray-300 rounded focus:ring-logo-teal-500 focus:ring-2 "
                   />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Multi-Note</span>
+                  <span className="text-sm font-medium text-gray-700 ">Multi-Note</span>
                 </label>
                 {multiNoteMode && selectedNotes.length > 0 && (
                   <button
@@ -747,7 +747,7 @@ export default function EncoderPage() {
                 )}
               </div>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-sm text-gray-600 mb-4">
               {multiNoteMode
                 ? "Select multiple notes to create chords. Click 'Play Chord' to preview them together."
                 : "Click on any note to preview it individually."}
@@ -760,7 +760,7 @@ export default function EncoderPage() {
                   className={`p-3 rounded-lg transition-all duration-200 transform hover:scale-105 font-semibold ${
                     multiNoteMode && selectedNotes.includes(note.id)
                       ? "bg-gradient-to-r from-logo-amber-500 to-logo-rose-400 text-white shadow-lg"
-                      : "bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-gray-800 dark:text-gray-200 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-500"
+                      : "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 hover:from-gray-200 hover:to-gray-300 "
                   }`}
                 >
                   {note.name}
@@ -768,10 +768,10 @@ export default function EncoderPage() {
               ))}
             </div>
             {multiNoteMode && selectedNotes.length > 0 && (
-              <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600 ">
                   Selected notes:{" "}
-                  <span className="font-semibold text-gray-800 dark:text-gray-200">{selectedNotes.join(", ")}</span>
+                  <span className="font-semibold text-gray-800 ">{selectedNotes.join(", ")}</span>
                 </p>
               </div>
             )}
@@ -782,19 +782,19 @@ export default function EncoderPage() {
             <Card
               className={`p-4 mb-6 ${
                 status.type === "error"
-                  ? "bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800"
+                  ? "bg-red-50 border-red-200 "
                   : status.type === "success"
-                    ? "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800"
-                    : "bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800"
+                    ? "bg-green-50 border-green-200 "
+                    : "bg-blue-50 border-blue-200 "
               }`}
             >
               <p
                 className={`${
                   status.type === "error"
-                    ? "text-red-800 dark:text-red-200"
+                    ? "text-red-800 "
                     : status.type === "success"
-                      ? "text-green-800 dark:text-green-200"
-                      : "text-blue-800 dark:text-blue-200"
+                      ? "text-green-800 "
+                      : "text-blue-800 "
                 }`}
               >
                 {status.message}
