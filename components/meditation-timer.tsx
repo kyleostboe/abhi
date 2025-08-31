@@ -27,15 +27,21 @@ export const MeditationTimer = () => {
     if (typeof window !== "undefined") {
       const vw = window.innerWidth
       const vh = window.innerHeight
-      const padVw = vw - Math.max(vw * 0.08, 32) // reduced from 0.12 and 48
-      const padVh = vh - Math.max(vh * 0.08, 24) // reduced from 0.12 and 36
+      const isMobile = vw < 768
+      const padVw = vw - (isMobile ? Math.max(vw * 0.1, 20) : Math.max(vw * 0.08, 32))
+      const padVh = vh - Math.max(vh * 0.08, 24)
       const isDesktop = vw / vh > 1.3
-      const base = Math.min(padVw / (ASPECT_W + 0.2), padVh / 0.8, BASE_UNIT * 1.8) // reduced multipliers
+
+      const maxWidth = isMobile ? padVw * 0.9 : padVw
+      const base = Math.min(maxWidth / (ASPECT_W + 0.2), padVh / 0.8, BASE_UNIT * 1.8)
       const cardHeight = base > 0 ? base : BASE_UNIT
       const cardWidth = cardHeight * ASPECT_W
       const borderV = cardHeight * BORDER_WIDTH_RATIO_VERTICAL
       const borderH = isDesktop ? cardHeight * BORDER_WIDTH_RATIO_HORIZONTAL : borderV
-      const fontSize = Math.max(cardHeight * 0.55, 32) // increased from 0.45 and 36
+
+      const fontSizeMultiplier = isMobile ? 0.45 : 0.55
+      const fontSize = Math.max(cardHeight * fontSizeMultiplier, isMobile ? 24 : 32)
+
       const outerWidth = cardWidth + borderH * 2
       const outerHeight = cardHeight + borderV * 2
       return {
@@ -50,7 +56,6 @@ export const MeditationTimer = () => {
         borderVNum: borderV,
       }
     }
-    // fallback (SSR)
     const borderV = BASE_UNIT * BORDER_WIDTH_RATIO_VERTICAL
     return {
       cardWidth: `${BASE_UNIT * ASPECT_W}px`,
@@ -59,7 +64,7 @@ export const MeditationTimer = () => {
       outerHeight: `${BASE_UNIT + borderV * 2}px`,
       borderV: `${borderV}px`,
       borderH: `${borderV}px`,
-      fontSize: `${BASE_UNIT * 0.52}px`, // increased from 0.42
+      fontSize: `${BASE_UNIT * 0.4}px`,
       borderHNum: borderV,
       borderVNum: borderV,
     }
@@ -86,7 +91,7 @@ export const MeditationTimer = () => {
         alignItems: "flex-start",
         background: "transparent",
         position: "relative",
-        padding: "8px 16px", // Reduced padding from 20px to 8px top to bring timer much closer to instruction text
+        padding: "20px 16px",
         boxSizing: "border-box",
       }}
     >
