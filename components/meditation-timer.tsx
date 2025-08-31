@@ -28,22 +28,38 @@ export const MeditationTimer = () => {
       const vw = window.innerWidth
       const vh = window.innerHeight
       const isMobile = vw < 768
-      const padVw = vw - (isMobile ? Math.max(vw * 0.1, 20) : Math.max(vw * 0.08, 32))
+      const padVw = vw - (isMobile ? Math.max(vw * 0.15, 30) : Math.max(vw * 0.08, 32))
       const padVh = vh - Math.max(vh * 0.08, 24)
       const isDesktop = vw / vh > 1.3
 
-      const maxWidth = isMobile ? padVw * 0.9 : padVw
-      const base = Math.min(maxWidth / (ASPECT_W + 0.2), padVh / 0.8, BASE_UNIT * 1.8)
-      const cardHeight = base > 0 ? base : BASE_UNIT
+      const maxWidth = isMobile ? Math.min(padVw * 0.85, vw - 40) : padVw
+      const base = Math.min(maxWidth / (ASPECT_W + 0.3), padVh / 0.8, isMobile ? BASE_UNIT * 1.2 : BASE_UNIT * 1.8)
+      const cardHeight = base > 0 ? base : isMobile ? BASE_UNIT * 0.8 : BASE_UNIT
       const cardWidth = cardHeight * ASPECT_W
       const borderV = cardHeight * BORDER_WIDTH_RATIO_VERTICAL
       const borderH = isDesktop ? cardHeight * BORDER_WIDTH_RATIO_HORIZONTAL : borderV
 
-      const fontSizeMultiplier = isMobile ? 0.45 : 0.55
-      const fontSize = Math.max(cardHeight * fontSizeMultiplier, isMobile ? 24 : 32)
+      const fontSizeMultiplier = isMobile ? 0.35 : 0.55
+      const fontSize = Math.max(cardHeight * fontSizeMultiplier, isMobile ? 20 : 32)
 
       const outerWidth = cardWidth + borderH * 2
       const outerHeight = cardHeight + borderV * 2
+
+      if (isMobile && outerWidth > vw - 20) {
+        const scale = (vw - 20) / outerWidth
+        return {
+          cardWidth: `${cardWidth * scale}px`,
+          cardHeight: `${cardHeight * scale}px`,
+          outerWidth: `${outerWidth * scale}px`,
+          outerHeight: `${outerHeight * scale}px`,
+          borderV: `${borderV * scale}px`,
+          borderH: `${borderH * scale}px`,
+          fontSize: `${fontSize * scale}px`,
+          borderHNum: borderH * scale,
+          borderVNum: borderV * scale,
+        }
+      }
+
       return {
         cardWidth: `${cardWidth}px`,
         cardHeight: `${cardHeight}px`,
