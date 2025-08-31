@@ -2297,7 +2297,7 @@ export default function Home() {
                         : "text-gray-600 ",
                     )}
                   >
-                    <TimerIcon className="w-[21px] h-[21px]" />
+                    <TimerIcon className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => setActiveMode("encoder")}
