@@ -2103,8 +2103,8 @@ export default function Home() {
       transition={{ delay: 0.4 }}
       className={className}
     >
-      <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-        <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 dark:from-logo-rose-600 dark:to-logo-amber-600 text-center">
+      <Card className="overflow-hidden border-none shadow-lg bg-white ">
+        <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 text-center">
           <h3 className="text-white flex items-center font-serif font-black">
             <Mic className="h-4 w-4 mr-2" />
             Recorder
@@ -2145,7 +2145,7 @@ export default function Home() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="space-y-2 border-t border-gray-100 dark:border-gray-500 pt-4"
+                className="space-y-2 border-t border-gray-100 pt-4"
               >
                 <div className="space-y-2">
                   <audio
@@ -2196,7 +2196,7 @@ export default function Home() {
                       description: `"${readyToAddToTimelineRecording.label.trim()}" added to timeline.`,
                     })
                   }}
-                  className="w-full bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-sm hover:shadow-none dark:bg-gray-900 dark:text-logo-rose-400 dark:border-gray-600 dark:hover:bg-gray-800 font-black"
+                  className="w-full bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-sm hover:shadow-none font-black"
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Add to Timeline
@@ -2210,18 +2210,18 @@ export default function Home() {
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8 md:pt-[3px]">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px]">
       <Navigation />
 
       {memoryWarning && activeMode === "adjuster" && (
-        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-yellow-100 to-amber-50 border border-yellow-300 shadow-sm dark:shadow-white/10 dark:from-yellow-950 dark:to-amber-900 dark:border-yellow-700">
+        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-yellow-100 to-amber-50 border border-yellow-300 shadow-sm ">
           <div className="flex items-start">
             <AlertTriangle className="text-yellow-500 mr-3 flex-shrink-0 mt-0.5 w-5 h-5" />
             <div>
-              <h3 className="text-yellow-700 dark:text-yellow-300 mb-1 font-serif font-black text-sm">
+              <h3 className="text-yellow-700 mb-1 font-serif font-black text-sm">
                 High Memory Usage Expected
               </h3>
-              <p className="text-yellow-600 dark:text-yellow-400 font-serif font-black text-xs">
+              <p className="text-yellow-600 font-serif font-black text-xs">
                 Large files or long target durations require significant memory. Processing may be slow or unstable on
                 devices with limited RAM.
               </p>
@@ -2234,7 +2234,7 @@ export default function Home() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl dark:shadow-2xl dark:shadow-white/40 overflow-hidden dark:bg-gray-900/80 transition-colors duration-300 ease-in-out"
+        className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
         style={{
           borderRadius: "4rem 3rem 2rem 1rem",
         }}
@@ -2242,11 +2242,11 @@ export default function Home() {
       >
         <div className="relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 dark:from-amber-600/20 dark:via-rose-500/15 dark:via-purple-600/10 dark:to-teal-500/20"></div>
-            <div className="absolute top-2 left-8 w-16 h-12 bg-gradient-to-br from-emerald-300/30 to-teal-400/25 rounded-full transform rotate-12 dark:from-emerald-500/30 dark:to-teal-600/25"></div>
-            <div className="absolute top-6 right-12 w-20 h-8 bg-gradient-to-bl from-rose-300/25 to-purple-400/20 rounded-full transform -rotate-6 dark:from-rose-500/25 dark:to-purple-600/20"></div>
-            <div className="absolute top-1 left-1/3 w-12 h-16 bg-gradient-to-tr from-amber-300/20 to-orange-400/15 rounded-full transform rotate-45 dark:from-amber-500/20 dark:to-orange-600/15"></div>
-            <div className="absolute top-8 right-1/4 w-14 h-10 bg-gradient-to-tl from-blue-300/25 to-indigo-400/20 rounded-full transform -rotate-12 dark:from-blue-500/25 dark:to-indigo-600/20"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 "></div>
+            <div className="absolute top-2 left-8 w-16 h-12 bg-gradient-to-br from-emerald-300/30 to-teal-400/25 rounded-full transform rotate-12 "></div>
+            <div className="absolute top-6 right-12 w-20 h-8 bg-gradient-to-bl from-rose-300/25 to-purple-400/20 rounded-full transform -rotate-6 "></div>
+            <div className="absolute top-1 left-1/3 w-12 h-16 bg-gradient-to-tr from-amber-300/20 to-orange-400/15 rounded-full transform rotate-45 "></div>
+            <div className="absolute top-8 right-1/4 w-14 h-10 bg-gradient-to-tl from-blue-300/25 to-indigo-400/20 rounded-full transform -rotate-12 "></div>
           </div>
           <div className="relative text-center px-[69px]">
             <motion.div
@@ -2255,7 +2255,7 @@ export default function Home() {
               transition={{ delay: 0.2, duration: 0.5 }}
             >
               <h1
-                className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal dark:from-logo-amber dark:via-logo-rose dark:via-logo-purple dark:to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter text-center mt-16"
+                className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter text-center mt-16"
                 style={{
                   fontFamily: 'Georgia, "Times New Roman", serif',
                   textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
@@ -2265,25 +2265,25 @@ export default function Home() {
               </h1>
               <div className="font-black text-logo-rose-600 font-serif mb-[7px] text-xs">Meditation Tool</div>
               <div className="flex justify-center items-center mb-4 space-x-[3px]">
-                <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 dark:from-logo-teal dark:to-logo-emerald w-[13px] h-[13px]"></div>
-                <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full dark:from-logo-rose dark:to-pink-400 h-[9px] w-[9px]"></div>
-                <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-sm transform -rotate-6 dark:from-logo-amber dark:to-orange-400 h-[9px]"></div>
+                <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[13px] h-[13px]"></div>
+                <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px]"></div>
+                <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-sm transform -rotate-6 h-[9px]"></div>
                 <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-0 mx-0 rounded-sm w-[51px] text-logo-rose-600 border-0 bg-gray-600 h-[5px]"></div>
-                <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-sm transform rotate-6 dark:from-logo-purple dark:to-indigo-400 h-[9px] pl-0 ml-2"></div>
-                <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full dark:from-blue-500 dark:to-cyan-400 h-[9px] w-[9px]"></div>
-                <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 dark:from-logo-emerald dark:to-logo-teal w-[13px] h-[13px]"></div>
+                <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-sm transform rotate-6 h-[9px] pl-0 ml-2"></div>
+                <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[9px] w-[9px]"></div>
+                <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[13px] h-[13px]"></div>
               </div>
 
               {/* Mode Switch */}
               <div className="flex justify-center items-center mb-4 space-y-4 flex-row my-[33px]">
-                <div className="flex mx-auto items-center p-1 dark:bg-gray-800/70 font-serif text-gray-600 shadow-inner rounded-sm bg-stone-100 gap-1 w-fit">
+                <div className="flex mx-auto items-center p-1 font-serif text-gray-600 shadow-inner rounded-sm bg-stone-100 gap-1 w-fit">
                   <button
                     onClick={() => setActiveMode("adjuster")}
                     className={cn(
                       "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black py-3 tracking-tight text-sm",
                       activeMode === "adjuster"
-                        ? "bg-white text-gray-600 shadow-sm dark:shadow-white/20 dark:bg-gray-700 dark:text-gray-600"
-                        : "text-gray-600 dark:text-gray-600",
+                        ? "bg-white text-gray-600 shadow-sm "
+                        : "text-gray-600 ",
                     )}
                   >
                     Adjuster
@@ -2293,8 +2293,8 @@ export default function Home() {
                     className={cn(
                       "inline-flex items-center justify-center whitespace-nowrap rounded-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm w-12 h-12",
                       activeMode === "timer"
-                        ? "bg-white text-gray-600 shadow-sm dark:shadow-white/20 dark:bg-gray-700 dark:text-gray-600"
-                        : "text-gray-600 dark:text-gray-600",
+                        ? "bg-white text-gray-600 shadow-sm "
+                        : "text-gray-600 ",
                     )}
                   >
                     <TimerIcon className="w-[21px] h-[21px]" />
@@ -2304,8 +2304,8 @@ export default function Home() {
                     className={cn(
                       "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm",
                       activeMode === "encoder"
-                        ? "bg-white text-gray-600 shadow-sm dark:shadow-white/20 dark:bg-gray-700 dark:text-gray-600"
-                        : "text-gray-600 dark:text-gray-600",
+                        ? "bg-white text-gray-600 shadow-sm "
+                        : "text-gray-600 ",
                     )}
                   >
                     Encoder
@@ -2325,7 +2325,7 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="p-4 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
+                  className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                 >
                   <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs">
                     Change the length of your guided meditations. Upload an audio file, set your target duration, and
@@ -2340,7 +2340,7 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="p-4 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
+                  className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                 >
                   <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs">
                     Click/press timer to start/pause.
@@ -2354,7 +2354,7 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="p-4 rounded-md font-serif font-black dark:border-gray-700 dark:text-gray-300 max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
+                  className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                 >
                   <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs pb-1.5">
                     Generate custom guided meditations by pairing instructions with sound cues or recording you own,
@@ -2369,8 +2369,8 @@ export default function Home() {
               <>
                 {/* Note and Resources sections - moved to proper position */}
                 <div className="space-y-4 mb-[27px]">
-                  <div className="p-4 max-w-2xl dark:border-logo-rose-700 text-center mx-auto rounded-md border-logo-rose-500 border-0 shadow-none pt-0 pb-1">
-                    <p className="leading-relaxed dark:text-logo-rose-300 font-serif font-black text-xs text-gray-600">
+                  <div className="p-4 max-w-2xl text-center mx-auto rounded-md border-logo-rose-500 border-0 shadow-none pt-0 pb-1">
+                    <p className="leading-relaxed font-serif font-black text-xs text-gray-600">
                       <strong className="pr-1.5 font-black font-serif text-center text-sm text-logo-amber-400">
                         Note:
                       </strong>
@@ -2380,23 +2380,23 @@ export default function Home() {
                       free to
                       <a
                         href="/contact"
-                        className=" underline px-1 rounded transition-colors transition-shadow dark:hover:text-logo-rose-300 font-black text-sm text-logo-purple-300"
+                        className=" underline px-1 rounded transition-colors transition-shadow font-black text-sm text-logo-purple-300"
                       >
                         contact me
                       </a>
                       to opt out. Enjoy:)
                     </p>
                   </div>
-                  <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto dark:border-logo-rose-700 backdrop-blur-sm dark:bg-gray-900/60 border-0 py-4 px-0 bg-transparent pt-0 pb-0">
-                    <h3 className="mb-2 dark:text-white text-center font-black px-0 rounded text-base text-gray-600 pb-0.5">
+                  <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto backdrop-blur-sm border-0 py-4 px-0 bg-transparent pt-0 pb-0">
+                    <h3 className="mb-2 text-center font-black px-0 rounded text-base text-gray-600 pb-0.5">
                       Resources
                     </h3>
-                    <div className="text-sm text-gray-600 leading-relaxed dark:text-gray-300 flex flex-wrap justify-center text-center gap-[5px] px-2">
+                    <div className="text-sm text-gray-600 leading-relaxed flex flex-wrap justify-center text-center gap-[5px] px-2">
                       <a
                         href="https://dharmaseed.org/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="dark:text-gray-200 font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs rounded border-[3px]"
+                        className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs rounded border-[3px]"
                       >
                         Dharma Seed
                       </a>
@@ -2404,7 +2404,7 @@ export default function Home() {
                         href="https://dharmaseed.org/teacher/210/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-gray-400 dark:border-gray-700 dark:shadow-white/10 px-5 font-black font-serif hover:shadow-none shadow-md border-gray-500 text-xs rounded border-[3px]"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-black font-serif hover:shadow-none shadow-md border-gray-500 text-xs rounded border-[3px]"
                       >
                         Rob Burbea's talks &amp; retreats
                       </a>
@@ -2412,7 +2412,7 @@ export default function Home() {
                         href="https://tasshin.com/guided-meditations/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-gray-400 dark:border-gray-700 dark:shadow-white/10 px-5 font-black font-serif hover:shadow-none shadow-md border-gray-500 text-xs rounded border-[3px]"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-black font-serif hover:shadow-none shadow-md border-gray-500 text-xs rounded border-[3px]"
                       >
                         Tasshin &amp; friend's meditations
                       </a>
@@ -2420,7 +2420,7 @@ export default function Home() {
                         href="https://www.tarabrach.com/guided-meditations/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-gray-400 dark:border-gray-700 dark:shadow-white/10 px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs rounded border-[3px]"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs rounded border-[3px]"
                       >
                         Tara Brach's meditations
                       </a>
@@ -2428,7 +2428,7 @@ export default function Home() {
                         href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDDo3?usp=drive_link"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-gray-400 dark:border-gray-700 dark:shadow-white/10 px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs rounded border-[3px]"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs rounded border-[3px]"
                       >
                         Toby Sola's meditations
                       </a>
@@ -2436,7 +2436,7 @@ export default function Home() {
                         href="https://meditofoundation.org/meditations"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out dark:text-gray-400 dark:border-gray-700 dark:shadow-white/10 px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs rounded border-[3px]"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs rounded border-[3px]"
                       >
                         Medito Foundation
                       </a>
@@ -2444,7 +2444,7 @@ export default function Home() {
                         href="https://www.freebuddhistaudio.com"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="dark:text-gray-200 font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs rounded border-[3px]"
+                        className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs rounded border-[3px]"
                       >
                         freebuddhistaudio
                       </a>
@@ -2458,23 +2458,23 @@ export default function Home() {
                   whileTap={{ scale: 0.995 }}
                   transition={{ type: "spring", stiffness: 400, damping: 20 }}
                   ref={uploadAreaRef}
-                  className="overflow-hidden border-none bg-white dark:bg-gray-900 rounded-2xl mb-5 cursor-pointer transition-all duration-300 shadow-none hover:shadow-md dark:shadow-white/10 dark:hover:shadow-white/20"
+                  className="overflow-hidden border-none bg-white rounded-2xl mb-5 cursor-pointer transition-all duration-300 shadow-none hover:shadow-md "
                   onClick={() => fileInputRef.current?.click()}
                   onDragOver={handleDragOverAction}
                   onDragLeave={handleDragLeaveAction}
                   onDrop={handleDropAction}
                 >
                   <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 border-0 px-[5px] py-1 pl-1 pr-1 shadow-lg rounded-sm">
-                    <div className="p-10 md:p-16 text-center md:py-14 bg-white dark:bg-gray-900 border-white border-0 rounded-sm">
+                    <div className="p-10 md:p-16 text-center md:py-14 bg-white border-white border-0 rounded-sm">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
                       >
-                        <div className="dark:text-gray-200 font-serif mb-2.5 font-black text-base text-gray-600">
+                        <div className="font-serif mb-2.5 font-black text-base text-gray-600">
                           Drop your audio file here or click to browse
                         </div>
-                        <div className="dark:text-gray-400/70 font-serif text-xs text-gray-500">
+                        <div className="font-serif text-xs text-gray-500">
                           Supports MP3, WAV, OGG, and M4A files {"(Max: " + (isMobileDevice ? "50MB" : "500MB") + ")"}
                         </div>
                       </motion.div>
@@ -2498,13 +2498,13 @@ export default function Home() {
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
                       className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-logo-amber-300 to-logo-purple-300 py-1 px-[5px] shadow-md rounded-sm pr-1 pl-1"
                     >
-                      <div className="bg-white dark:bg-gray-900 p-5 py-4 rounded-sm">
+                      <div className="bg-white p-5 py-4 rounded-sm">
                         <div className="flex items-center">
                           <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
                             transition={{ type: "spring", stiffness: 500, damping: 30, delay: 0.1 }}
-                            className="p-2 rounded-lg mr-4 dark:bg-gray-800 bg-transparent text-purple-300"
+                            className="p-2 rounded-lg mr-4 bg-transparent text-purple-300"
                           >
                             <Volume2 className="h-4 w-4 text-gray-600" />
                           </motion.div>
@@ -2543,35 +2543,35 @@ export default function Home() {
                       transition={{ delay: 0.1 }}
                       className="mb-6 mt-4"
                     >
-                      <Alert className="bg-white dark:bg-gray-900 p-0 border-0 shadow-none">
-                        <div className="p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm shadow-none bg-transparent pt-1 pb-0.5">
+                      <Alert className="bg-white p-0 border-0 shadow-none">
+                        <div className="p-3 text-center min-h-[76px] rounded-sm shadow-none bg-transparent pt-1 pb-0.5">
                           <div className="flex items-center mb-2 justify-center">
                             {/* Removed the Info icon div */}
                             <div className="text-lg font-black text-gray-600">Audio Analysis</div>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm pl-1 pr-1">
-                              <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm">
+                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 px-[3px] rounded-sm pl-1 pr-1">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm">
                                 <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
                                 <div className="font-black text-gray-600">
                                   {formatTime(audioAnalysis.contentDuration)}
                                 </div>
                               </div>
                             </div>
-                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm pl-1 pr-1">
-                              <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm">
+                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 px-[3px] rounded-sm pl-1 pr-1">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm">
                                 <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
                                 <div className="font-black text-gray-600">{formatTime(audioAnalysis.totalSilence)}</div>
                               </div>
                             </div>
-                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 dark:from-gray-700 dark:to-gray-600 py-1 px-[3px] rounded-sm pr-1 pl-1 shadow-md">
-                              <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm">
+                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 px-[3px] rounded-sm pr-1 pl-1 shadow-md">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm">
                                 <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Pauses:</div>
                                 <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
                               </div>
                             </div>
-                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 dark:from-gray-700 dark:to-gray-600 shadow-md py-1 px-[3px] rounded-sm pr-1 pl-1">
-                              <div className="bg-white p-3 text-center dark:bg-gray-900 min-h-[76px] rounded-sm">
+                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 px-[3px] rounded-sm pr-1 pl-1">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm">
                                 <div className="text-xs uppercase tracking-wide text-gray-600 mb-1.5">Range:</div>
                                 <div className="uppercase text-gray-600 text-xs tracking-wide">
                                   {durationLimits.min} min - {isMobileDevice ? "1 hour" : "2 hours"}
@@ -2592,24 +2592,24 @@ export default function Home() {
                   className="mb-8"
                 >
                   <Tabs defaultValue="basic" className="w-full font-serif font-black">
-                    <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100/70 p-1 rounded-md dark:bg-gray-800/70">
+                    <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100/70 p-1 rounded-md ">
                       <TabsTrigger
                         value="basic"
-                        className="data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-sm dark:data-[state=active]:shadow-white/20 rounded-sm dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-logo-teal-300 dark:text-gray-300"
+                        className="data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-sm rounded-sm "
                       >
                         Basic Settings
                       </TabsTrigger>
                       <TabsTrigger
                         value="advanced"
-                        className="data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-sm dark:data-[state=active]:shadow-white/20 rounded-sm dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-logo-teal-300 dark:text-gray-300"
+                        className="data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-sm rounded-sm "
                       >
                         Advanced Settings
                       </TabsTrigger>
                     </TabsList>
                     <TabsContent value="basic" className="mt-0 space-y-6">
                       <div className="grid md:grid-cols-2 gap-6">
-                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 dark:from-logo-teal-700 dark:to-indigo-700 text-cyan-500">
+                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                          <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-cyan-500">
                             <h3 className="text-white flex items-center font-black text-base">Target Duration</h3>
                           </div>
                           <div className="p-6 py-6 px-11 pb-6">
@@ -2622,24 +2622,24 @@ export default function Home() {
                                 onValueChange={(value) => setTargetDuration(value[0])}
                                 disabled={!durationLimits}
                                 className="py-4"
-                                rangeClassName="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 dark:from-logo-teal-700 dark:to-indigo-700"
+                                rangeClassName="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 "
                               />
                             </div>
                             <div className="text-center font-serif font-black">
-                              <span className="dark:text-logo-amber-300 font-black text-xl text-gray-600">
+                              <span className="font-black text-xl text-gray-600">
                                 {targetDuration}
                               </span>
-                              <span className="ml-1 dark:text-logo-amber-400 text-base text-gray-600">minutes</span>
+                              <span className="ml-1 text-base text-gray-600">minutes</span>
                             </div>
                             {durationLimits && (
-                              <div className="text-center dark:text-logo-amber-400/70 text-sm mt-0 text-gray-500">
+                              <div className="text-center text-sm mt-0 text-gray-500">
                                 Range: {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
                               </div>
                             )}
                           </div>
                         </Card>
-                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 dark:from-indigo-700 dark:to-logo-teal-700">
+                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                          <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 ">
                             <h3 className="text-white flex items-center font-black text-base">Silence Threshold</h3>
                           </div>
                           <div className="p-6 px-11">
@@ -2651,15 +2651,15 @@ export default function Home() {
                                 step={0.001}
                                 onValueChange={(value) => setSilenceThreshold(value[0])}
                                 className="py-4"
-                                rangeClassName="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 dark:from-indigo-700 dark:to-logo-teal-700"
+                                rangeClassName="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 "
                               />
                             </div>
                             <div className="text-center">
-                              <span className="dark:text-indigo-300 font-serif font-black text-xl text-gray-600">
+                              <span className="font-serif font-black text-xl text-gray-600">
                                 {silenceThreshold.toFixed(3)}
                               </span>
                             </div>
-                            <div className="text-center dark:text-logo-amber-400/70 text-sm mt-0 text-gray-500">
+                            <div className="text-center text-sm mt-0 text-gray-500">
                               Lower = more sensitive
                             </div>
                           </div>
@@ -2668,8 +2668,8 @@ export default function Home() {
                     </TabsContent>
                     <TabsContent value="advanced" className="mt-0 space-y-6">
                       <div className="grid md:grid-cols-2 gap-6 font-serif font-black">
-                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div className="bg-gradient-to-r from-logo-purple-300 to-logo-emerald-500 py-3 px-6 dark:from-logo-amber-700 dark:to-logo-rose-700">
+                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                          <div className="bg-gradient-to-r from-logo-purple-300 to-logo-emerald-500 py-3 px-6 ">
                             <h3 className="text-white font-black">Min Silence Duration</h3>
                           </div>
                           <div className="p-6 font-serif font-black px-11 py-6">
@@ -2681,22 +2681,22 @@ export default function Home() {
                                 step={0.5}
                                 onValueChange={(value) => setMinSilenceDuration(value[0])}
                                 className="py-4"
-                                rangeClassName="bg-gradient-to-r from-logo-purple-300 to-logo-emerald-500 dark:from-logo-amber-700 dark:to-logo-rose-700"
+                                rangeClassName="bg-gradient-to-r from-logo-purple-300 to-logo-emerald-500 "
                               />
                             </div>
                             <div className="text-center">
-                              <span className="dark:text-logo-amber-300 font-black text-xl text-gray-600">
+                              <span className="font-black text-xl text-gray-600">
                                 {minSilenceDuration}
                               </span>
-                              <span className="ml-1 dark:text-logo-rose-400 text-base text-gray-600">seconds</span>
+                              <span className="ml-1 text-base text-gray-600">seconds</span>
                             </div>
-                            <div className="text-center dark:text-logo-amber-400/70 mt-0 text-sm text-gray-500">
+                            <div className="text-center mt-0 text-sm text-gray-500">
                               Shorter = detect more pauses
                             </div>
                           </div>
                         </Card>
-                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div className="bg-gradient-to-r from-orange-300 to-logo-rose-300 py-3 px-6 dark:from-logo-purple-700 dark:to-logo-teal-700">
+                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                          <div className="bg-gradient-to-r from-orange-300 to-logo-rose-300 py-3 px-6 ">
                             <h3 className="text-white font-black">Min Spacing Between Content</h3>
                           </div>
                           <div className="p-6 px-11 py-6">
@@ -2708,56 +2708,56 @@ export default function Home() {
                                 step={0.1}
                                 onValueChange={(value) => setMinSpacingDuration(value[0])}
                                 className="py-4"
-                                rangeClassName="bg-gradient-to-r from-orange-300 to-logo-rose-300 dark:from-logo-purple-700 dark:to-logo-teal-700"
+                                rangeClassName="bg-gradient-to-r from-orange-300 to-logo-rose-300 "
                               />
                             </div>
                             <div className="text-center">
-                              <span className="dark:text-logo-purple-300 font-black text-xl text-gray-600">
+                              <span className="font-black text-xl text-gray-600">
                                 {minSpacingDuration.toFixed(1)}
                               </span>
-                              <span className="ml-1 dark:text-logo-teal-400 text-base text-gray-600">seconds</span>
+                              <span className="ml-1 text-base text-gray-600">seconds</span>
                             </div>
-                            <div className="text-center dark:text-logo-purple-400/70 text-sm mt-0 text-gray-500">
+                            <div className="text-center text-sm mt-0 text-gray-500">
                               Minimum pause between speaking parts
                             </div>
                           </div>
                         </Card>
-                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div className="bg-gradient-to-r from-pink-400 to-cyan-400 py-3 px-6 dark:from-logo-rose-700 dark:to-logo-purple-700">
+                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                          <div className="bg-gradient-to-r from-pink-400 to-cyan-400 py-3 px-6 ">
                             <h3 className="text-white font-black">Preserve Natural Pacing</h3>
                           </div>
                           <div className="p-6 px-11 py-6">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="mb-1 dark:text-logo-rose-300 text-gray-600 text-sm mr-2">
+                                <p className="mb-1 text-gray-600 text-sm mr-2">
                                   Maintain the relative length of pauses
                                 </p>
                               </div>
                               <Switch
                                 checked={preserveNaturalPacing}
                                 onCheckedChange={setPreserveNaturalPacing}
-                                className="data-[state=checked]:bg-gray-400 dark:data-[state=checked]:bg-logo-rose-700"
+                                className="data-[state=checked]:bg-gray-400 "
                               />
                             </div>
                           </div>
                         </Card>
-                        <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                          <div className="bg-gradient-to-r from-logo-teal-500 to-logo-amber-300 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-amber-700">
+                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                          <div className="bg-gradient-to-r from-logo-teal-500 to-logo-amber-300 py-3 px-6 ">
                             <h3 className="text-white font-black">Compatibility Mode</h3>
                           </div>
                           <div className="p-6 px-11">
                             <Select value={compatibilityMode} onValueChange={(value) => setCompatibilityMode(value)}>
-                              <SelectTrigger className="w-full mb-2 border-logo-teal-200 focus:ring-logo-teal-500 dark:border-logo-teal-700 dark:bg-gray-800 dark:text-gray-200">
+                              <SelectTrigger className="w-full mb-2 border-logo-teal-200 focus:ring-logo-teal-500 ">
                                 <SelectValue placeholder="Select compatibility mode" />
                               </SelectTrigger>
-                              <SelectContent className="dark:bg-gray-800 dark:text-gray-200">
+                              <SelectContent className="">
                                 <SelectItem value="standard">Standard Quality (Original SR)</SelectItem>
                                 <SelectItem value="high">
                                   High Compatibility (44.1kHz or 22.05kHz for Mobile Long Audio)
                                 </SelectItem>
                               </SelectContent>
                             </Select>
-                            <div className="text-xs dark:text-logo-teal-400/70 mt-3.5 text-gray-500">
+                            <div className="text-xs mt-3.5 text-gray-500">
                               High Compatibility for better playback on mobile/AirPods. May reduce sample rate for long
                               audio on mobile.
                             </div>
@@ -2778,10 +2778,10 @@ export default function Home() {
                   <Button
                     className={cn(
                       "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
-                      "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none text-white",
+                      "shadow-lg hover:shadow-none active:shadow-none text-white",
                       // Multi-stop gradient
                       "bg-gradient-to-r from-logo-purple-300 via-logo-teal-500 to-orange-300",
-                      "dark:bg-[linear-gradient(90deg,#10b981_0%,#14b8a6_12%,#ec4899_24%,#f59e0b_36%,#6b7280_50%,#a855f7_64%,#0ea5e9_76%,#06b6d4_88%,#10b981_100%)]",
+                      "",
                       "hover:brightness-[1.06] active:brightness-95",
                     )}
                     disabled={!originalBuffer || isProcessing || !durationLimits}
@@ -2828,24 +2828,24 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
                     >
-                      <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/25 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-                        <div className="bg-gradient-to-r from-gray-600 to-gray-500 py-3 px-6 dark:from-gray-600 dark:to-gray-700">
+                      <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 ">
+                        <div className="bg-gradient-to-r from-gray-600 to-gray-500 py-3 px-6 ">
                           <h3 className="text-white font-black">Original Audio</h3>
                         </div>
                         <div className="p-6 py-4 px-3.5">
-                          <div className="bg-white rounded-sm p-3 dark:shadow-white/10 dark:bg-gray-700 shadow-md mb-3.5 px-0">
+                          <div className="bg-white rounded-sm p-3 shadow-md mb-3.5 px-0">
                             <audio controls className="w-full" src={originalUrl}></audio>
                           </div>
                           <div className="grid grid-cols-2 gap-3">
-                            <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-smll rounded-sm py-3.5">
-                              <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 dark:text-gray-400">
+                            <div className="p-3 text-center shadow-md bg-white rounded-smll rounded-sm py-3.5">
+                              <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 ">
                                 Duration
                               </div>
-                              <div className="dark:text-black font-black text-gray-600 text-sm">
+                              <div className="font-black text-gray-600 text-sm">
                                 {originalBuffer ? formatTime(originalBuffer.duration) : "--"}
                               </div>
                             </div>
-                            <div className="p-3 text-center dark:bg-gray-800/60 shadow-md bg-white rounded-smll rounded-sm py-3.5">
+                            <div className="p-3 text-center shadow-md bg-white rounded-smll rounded-sm py-3.5">
                               <div className="text-xs uppercase tracking-wide mb-1  text-gray-500 ">File Size</div>
                               <div className="font-black text-gray-600 text-sm">{formatFileSize(file?.size || 0)}</div>
                             </div>
@@ -2860,30 +2860,30 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.5 }}
                     >
-                      <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/25 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-logo-teal-950 dark:to-logo-emerald-950">
-                        <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
+                      <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 ">
+                        <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 ">
                           <h3 className="text-white font-black">Adjusted Audio</h3>
                         </div>
                         <div className="p-6 px-3.5 py-4">
-                          <div className="bg-white p-3 dark:shadow-white/10 dark:bg-gray-700 rounded-sm shadow-md mb-3.5 px-0">
+                          <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
                             <audio controls className="w-full" src={processedUrl}></audio>
                           </div>
                           <div className="grid grid-cols-2 gap-3 mb-3.5">
-                            <div className="p-3 rounded-lg text-center dark:bg-gray-800/60 bg-white shadow-md py-3.5">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
+                            <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
+                              <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">
                                 Duration
                               </div>
-                              <div className="dark:text-black font-black text-gray-600 text-sm">
+                              <div className="font-black text-gray-600 text-sm">
                                 {formatTime(actualDuration || 0)}
                                 {actualDuration && targetDuration && (
-                                  <div className="text-xs mt-1 dark:text-gray-900 text-gray-600">
+                                  <div className="text-xs mt-1 text-gray-600">
                                     {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
                                   </div>
                                 )}
                               </div>
                             </div>
-                            <div className="p-3 rounded-lg text-center dark:bg-gray-800/60 bg-white shadow-md py-3.5">
-                              <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
+                            <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
+                              <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">
                                 File Size
                               </div>
                               <div className="font-black text-sm text-gray-600">
@@ -2892,7 +2892,7 @@ export default function Home() {
                             </div>
                           </div>
                           <Button
-                            className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:shadow-none transition-shadow border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                            className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:shadow-none transition-shadow border-none "
                             onClick={() => {
                               if (generatedAudioUrl) {
                                 const a = document.createElement("a")
@@ -2934,7 +2934,7 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
                 >
-                  <Card className="overflow-hidden bg-white dark:bg-gray-900 max-w-2xl mx-auto rounded-2xl shadow-none">
+                  <Card className="overflow-hidden bg-white max-w-2xl mx-auto rounded-2xl shadow-none">
                     <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none">
                       <div className="grid md:grid-cols-2 gap-6 text-gray-600 pb-2">
                         <div className="text-center">
@@ -2982,7 +2982,7 @@ export default function Home() {
                       className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                     >
                       <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 border-0 px-[5px] py-1 pl-1 pr-1 shadow-lg rounded-sm">
-                        <div className="bg-white dark:bg-gray-900 p-4 border-rose-200 border-0 rounded-sm shadow-inner">
+                        <div className="bg-white p-4 border-rose-200 border-0 rounded-sm shadow-inner">
                           <div className="text-center">
                             <Textarea
                               id="custom-instruction"
@@ -3003,8 +3003,8 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3 }}
                     >
-                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                      <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 dark:from-gray-800 dark:to-gray-900 text-center">
+                    <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                      <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-center">
                         <h3 className="text-white flex items-center font-black text-left">
                           <Music2 className="h-4 w-4 mr-2" />
                           Sound Cues
@@ -3014,7 +3014,7 @@ export default function Home() {
                         <div className="flex-1 h-auto">
                           <Accordion type="single" collapsible className="w-full">
                             <AccordionItem value="musical-notes">
-                              <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
+                              <AccordionTrigger className="text-gray-600 hover:no-underline py-3 font-serif font-black">
                                 <div className="flex items-center justify-between w-full">
                                   <span>Notes</span>
                                   <div className="flex flex-col gap-2 mr-6" onClick={(e) => e.stopPropagation()}>
@@ -3023,7 +3023,7 @@ export default function Home() {
                                       <select
                                         value={noteType}
                                         onChange={(e) => setNoteType(e.target.value as "piano" | "synth" | "harp")}
-                                        className="text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1"
+                                        className="text-xs bg-white border border-gray-300 rounded px-2 py-1"
                                       >
                                         <option value="piano">Piano</option>
                                         <option value="synth">Synth</option>
@@ -3053,9 +3053,9 @@ export default function Home() {
                               </AccordionTrigger>
                               <AccordionContent className="pb-4">
                                 {multiNoteMode && (
-                                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-sm mb-1.5 shadow-inner py-3 px-3">
+                                  <div className="p-3 bg-gray-50 rounded-sm mb-1.5 shadow-inner py-3 px-3">
                                     <div className="flex items-center justify-between">
-                                      <div className="dark:text-gray-400 text-sm text-gray-500">
+                                      <div className="text-sm text-gray-500">
                                         Selected: {selectedNotes.length > 0 ? selectedNotes.join(", ") : "None"}
                                       </div>
                                       {selectedNotes.length > 1 && (
@@ -3091,9 +3091,9 @@ export default function Home() {
                                     <AccordionItem
                                       value={octave}
                                       key={octave}
-                                      className="border-b border-gray-100 dark:border-gray-800"
+                                      className="border-b border-gray-100 "
                                     >
-                                      <AccordionTrigger className="text-gray-500 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
+                                      <AccordionTrigger className="text-gray-500 hover:no-underline py-3 font-serif font-black">
                                         {octave}
                                       </AccordionTrigger>
                                       <AccordionContent className="pb-4">
@@ -3113,10 +3113,10 @@ export default function Home() {
                                                   size="sm"
                                                   className={`flex-1 justify-start rounded-sm font-black font-serif text-gray-600 ${
                                                     isSelected
-                                                      ? "bg-white shadow-md border-2 border-gray-500 dark:from-amber-900 dark:to-rose-900 dark:border-amber-500"
+                                                      ? "bg-white shadow-md border-2 border-gray-500 "
                                                       : isSingleSelected
-                                                        ? "bg-white shadow-md text-gray-600 border-gray-500 border-2 hover:bg-gray-50 dark:bg-white dark:text-gray-600 dark:border-logo-teal-500 dark:hover:bg-gray-50"
-                                                        : "hover:bg-gray-50 dark:hover:bg-gray-800"
+                                                        ? "bg-white shadow-md text-gray-600 border-gray-500 border-2 hover:bg-gray-50 "
+                                                        : "hover:bg-gray-50 "
                                                   }`}
                                                   onClick={() => handleNoteSelection(note)}
                                                 >
@@ -3129,7 +3129,7 @@ export default function Home() {
                                                     onClick={async () =>
                                                       await playSingleNote(note.note, note.octave, noteType)
                                                     }
-                                                    className="hover:bg-logo-emerald-50 dark:hover:bg-logo-emerald-900"
+                                                    className="hover:bg-logo-emerald-50 "
                                                     title={`Preview ${note.name}`}
                                                   >
                                                     <Play className="h-4 w-4" />
@@ -3146,11 +3146,11 @@ export default function Home() {
                               </AccordionContent>
                             </AccordionItem>
                             <AccordionItem value="miscellaneous">
-                              <AccordionTrigger className="text-gray-600 dark:text-logo-teal-500 hover:no-underline py-3 font-serif font-black">
+                              <AccordionTrigger className="text-gray-600 hover:no-underline py-3 font-serif font-black">
                                 Miscellaneous
                               </AccordionTrigger>
                               <AccordionContent className="pb-4">
-                                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                                <div className="text-center py-8 text-gray-500 ">
                                   <div className="mb-2 text-lg font-black">Coming Soon!</div>
                                   <div className="text-sm">
                                     Additional sound cues are being developed and will be available in a future update.
@@ -3162,7 +3162,7 @@ export default function Home() {
                         </div>
                         <div className="h-[11px]"></div>
                         <Button
-                          className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-sm hover:shadow-none dark:bg-transparent dark:text-logo-rose-400 dark:border-logo-rose-400 dark:hover:bg-gray-800 font-serif font-black mt-4"
+                          className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-sm hover:shadow-none font-serif font-black mt-4"
                           onClick={handleAddInstructionSoundEvent}
                           disabled={!customInstructionText.trim() || (!selectedSoundCue && selectedNotes.length === 0)}
                         >
@@ -3177,8 +3177,8 @@ export default function Home() {
 
                 {/* Timeline Editor for Labs */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                  <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/20 bg-white dark:bg-gray-900">
-                    <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 dark:from-gray-800 dark:to-gray-900 py-3">
+                  <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                    <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 py-3">
                       <h3 className="text-white flex items-center font-black text-base">
                         <CircleDotDashed className="h-5 w-5 mr-2" />
                         Timeline Editor
@@ -3206,9 +3206,9 @@ export default function Home() {
                     disabled={isGeneratingAudio || timelineEvents.length === 0}
                     className={cn(
                       "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
-                      "shadow-lg dark:shadow-white/20 hover:shadow-none active:shadow-none text-white",
+                      "shadow-lg hover:shadow-none active:shadow-none text-white",
                       "bg-gradient-to-r from-logo-purple-300 via-logo-teal-500 to-orange-300",
-                      "dark:bg-[linear-gradient(90deg,#10b981_0%,#14b8a6_12%,#ec4899_24%,#f59e0b_36%,#6b7280_50%,#a855f7_64%,#0ea5e9_76%,#06b6d4_88%,#10b981_100%)]",
+                      "",
                       "hover:brightness-[1.06] active:brightness-95",
                     )}
                   >
@@ -3251,25 +3251,25 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.7 }}
                   >
-                    <Card className="overflow-hidden border-none shadow-lg dark:shadow-white/25 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-logo-teal-950 dark:to-logo-emerald-950">
-                      <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 dark:from-logo-teal-700 dark:to-logo-emerald-700">
+                    <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 ">
+                      <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 ">
                         <h3 className="text-white font-black">Generated Audio</h3>
                       </div>
                       <div className="p-6 px-3.5 py-4">
-                        <div className="bg-white p-3 dark:shadow-white/10 dark:bg-gray-700 rounded-sm shadow-md mb-3.5 px-0">
+                        <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
                           <audio ref={encoderAudioRef} controls className="w-full" src={generatedAudioUrl}></audio>
                         </div>
                         <div className="grid grid-cols-2 gap-3 mb-3.5">
-                          <div className="p-3 rounded-lg text-center dark:bg-gray-800/60 bg-white shadow-md py-3.5">
-                            <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
+                          <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
+                            <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">
                               Duration
                             </div>
-                            <div className="dark:text-black font-black text-gray-600 text-sm">
+                            <div className="font-black text-gray-600 text-sm">
                               {formatTime(encoderTotalDuration)}
                             </div>
                           </div>
-                          <div className="p-3 rounded-lg text-center dark:bg-gray-800/60 bg-white shadow-md py-3.5">
-                            <div className="text-xs uppercase tracking-wide mb-1 dark:text-logo-teal-400 text-gray-500">
+                          <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
+                            <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">
                               File Size
                             </div>
                             <div className="font-black text-sm text-gray-600">
@@ -3278,7 +3278,7 @@ export default function Home() {
                           </div>
                         </div>
                         <Button
-                          className="w-full py-4 rounded-xl shadow-md dark:shadow-white/20 bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:shadow-none transition-shadow border-none dark:from-logo-teal-700 dark:to-logo-emerald-700 dark:hover:from-logo-teal-800 dark:hover:to-logo-emerald-800"
+                          className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:shadow-none transition-shadow border-none "
                           onClick={() => {
                             if (generatedAudioUrl) {
                               const a = document.createElement("a")
