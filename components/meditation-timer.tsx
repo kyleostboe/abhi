@@ -14,7 +14,12 @@ export const MeditationTimer = () => {
   const [selectedSeconds, setSelectedSeconds] = useState(TIMER_DURATION)
   const [pressed, setPressed] = useState(false)
   const intervalRef = useRef(null)
-  const timeListRef = useRef<HTMLDivElement>(null)
+  const hourRef = useRef<HTMLDivElement>(null)
+  const minuteRef = useRef<HTMLDivElement>(null)
+  const secondRef = useRef<HTMLDivElement>(null)
+  const [selectedHour, setSelectedHour] = useState(0)
+  const [selectedMinute, setSelectedMinute] = useState(10)
+  const [selectedSecond, setSelectedSecond] = useState(0)
 
   useEffect(() => {
     if (running && seconds > 0) {
@@ -89,6 +94,7 @@ export const MeditationTimer = () => {
   }
 
   const [sizes, setSizes] = React.useState(getResponsiveSizes())
+  const fontSizeNum = parseFloat(sizes.fontSize as string)
   useEffect(() => {
     function refresh() {
       setSizes(getResponsiveSizes())
@@ -98,59 +104,112 @@ export const MeditationTimer = () => {
     return () => window.removeEventListener("resize", refresh)
   }, [])
 
-  const formatTime = (s) => {
-    const h = Math.floor(s / 3600)
-    const m = Math.floor((s % 3600) / 60)
-    const sec = s % 60
-    return `${h > 0 ? String(h).padStart(2, "0") + ":" : ""}${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
-  }
+  const hourOptions = Array.from({ length: 13 }, (_, i) => i)
+  const minuteOptions = Array.from({ length: 60 }, (_, i) => i)
+  const secondOptions = Array.from({ length: 60 }, (_, i) => i)
 
-  const timeOptions = Array.from({ length: 37 }, (_, i) => i * 5)
+  const scrollToValue = (
+    ref: React.RefObject<HTMLDivElement>,
+    value: number
+  ) => {
+    if (!ref.current) return
+    const child = ref.current.children[value] as HTMLElement
+    if (child) {
+      const top =
+        child.offsetTop - ref.current.clientHeight / 2 + child.clientHeight / 2
+      ref.current.scrollTo({ top, behavior: "smooth" })
+    }
+  }
 
   useEffect(() => {
-    if (timeListRef.current) {
-      const index = timeOptions.indexOf(10)
-      const child = timeListRef.current.children[index] as HTMLElement
-      if (child) {
-        const left =
-          child.offsetLeft - timeListRef.current.clientWidth / 2 + child.clientWidth / 2
-        timeListRef.current.scrollTo({ left })
-      }
-    }
+    scrollToValue(hourRef, selectedHour)
+    scrollToValue(minuteRef, selectedMinute)
+    scrollToValue(secondRef, selectedSecond)
   }, [sizes])
 
-  const scrollToIndex = (index: number) => {
-    if (!timeListRef.current) return
-    const child = timeListRef.current.children[index] as HTMLElement
-    if (child) {
-      const left =
-        child.offsetLeft - timeListRef.current.clientWidth / 2 + child.clientWidth / 2
-      timeListRef.current.scrollTo({ left, behavior: "smooth" })
-    }
-  }
-
-  const handleScroll = () => {
-    if (!timeListRef.current) return
-    const container = timeListRef.current
-    const center = container.scrollLeft + container.clientWidth / 2
+  const handleHourScroll = () => {
+    if (!hourRef.current || running) return
+    const container = hourRef.current
+    const center = container.scrollTop + container.clientHeight / 2
     const children = Array.from(container.children) as HTMLElement[]
     let closestIndex = 0
     let closestDistance = Infinity
     children.forEach((child, index) => {
-      const childCenter = child.offsetLeft + child.offsetWidth / 2
+      const childCenter = child.offsetTop + child.offsetHeight / 2
       const distance = Math.abs(center - childCenter)
       if (distance < closestDistance) {
         closestDistance = distance
         closestIndex = index
       }
     })
-    const m = timeOptions[closestIndex]
-    const newSeconds = m * 60
-    if (newSeconds !== selectedSeconds) {
-      setSelectedSeconds(newSeconds)
-      setSeconds(newSeconds)
+    const h = hourOptions[closestIndex]
+    if (h !== selectedHour) {
+      setSelectedHour(h)
+      const total = h * 3600 + selectedMinute * 60 + selectedSecond
+      setSelectedSeconds(total)
+      setSeconds(total)
     }
   }
+
+  const handleMinuteScroll = () => {
+    if (!minuteRef.current || running) return
+    const container = minuteRef.current
+    const center = container.scrollTop + container.clientHeight / 2
+    const children = Array.from(container.children) as HTMLElement[]
+    let closestIndex = 0
+    let closestDistance = Infinity
+    children.forEach((child, index) => {
+      const childCenter = child.offsetTop + child.offsetHeight / 2
+      const distance = Math.abs(center - childCenter)
+      if (distance < closestDistance) {
+        closestDistance = distance
+        closestIndex = index
+      }
+    })
+    const m = minuteOptions[closestIndex]
+    if (m !== selectedMinute) {
+      setSelectedMinute(m)
+      const total = selectedHour * 3600 + m * 60 + selectedSecond
+      setSelectedSeconds(total)
+      setSeconds(total)
+    }
+  }
+
+  const handleSecondScroll = () => {
+    if (!secondRef.current || running) return
+    const container = secondRef.current
+    const center = container.scrollTop + container.clientHeight / 2
+    const children = Array.from(container.children) as HTMLElement[]
+    let closestIndex = 0
+    let closestDistance = Infinity
+    children.forEach((child, index) => {
+      const childCenter = child.offsetTop + child.offsetHeight / 2
+      const distance = Math.abs(center - childCenter)
+      if (distance < closestDistance) {
+        closestDistance = distance
+        closestIndex = index
+      }
+    })
+    const s = secondOptions[closestIndex]
+    if (s !== selectedSecond) {
+      setSelectedSecond(s)
+      const total = selectedHour * 3600 + selectedMinute * 60 + s
+      setSelectedSeconds(total)
+      setSeconds(total)
+    }
+  }
+
+  useEffect(() => {
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = seconds % 60
+    setSelectedHour(h)
+    setSelectedMinute(m)
+    setSelectedSecond(s)
+    scrollToValue(hourRef, h)
+    scrollToValue(minuteRef, m)
+    scrollToValue(secondRef, s)
+  }, [seconds])
 
   return (
     <div
@@ -235,17 +294,115 @@ export const MeditationTimer = () => {
                 "box-shadow 0.18s cubic-bezier(.44,0,.56,1), width 0.3s, height 0.3s, font-size 0.3s, left 0.3s, top 0.3s",
             }}
           >
-            <div className="text-6xl">{formatTime(seconds)}</div>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <div
+                ref={hourRef}
+                onScroll={handleHourScroll}
+                className="hide-scrollbar"
+                style={{
+                  width: `${fontSizeNum * 1.2}px`,
+                  height: `${fontSizeNum * 2}px`,
+                  overflowY: "scroll",
+                  scrollSnapType: "y mandatory",
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
+                  paddingTop: `${fontSizeNum * 0.5}px`,
+                  paddingBottom: `${fontSizeNum * 0.5}px`,
+                  pointerEvents: running ? "none" : "auto",
+                }}
+              >
+                {hourOptions.map((h) => (
+                  <div
+                    key={h}
+                    style={{
+                      scrollSnapAlign: "center",
+                      fontFamily: "'Roboto Serif', serif",
+                      fontWeight: 900,
+                      fontSize: `${selectedHour === h ? fontSizeNum : fontSizeNum * 0.6}px`,
+                      color: selectedHour === h ? "#000" : "#9CA3AF",
+                      textAlign: "center",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {String(h).padStart(2, "0")}
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding: "0 4px", fontSize: `${fontSizeNum * 0.8}px` }}>:</div>
+              <div
+                ref={minuteRef}
+                onScroll={handleMinuteScroll}
+                className="hide-scrollbar"
+                style={{
+                  width: `${fontSizeNum * 1.2}px`,
+                  height: `${fontSizeNum * 2}px`,
+                  overflowY: "scroll",
+                  scrollSnapType: "y mandatory",
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
+                  paddingTop: `${fontSizeNum * 0.5}px`,
+                  paddingBottom: `${fontSizeNum * 0.5}px`,
+                  pointerEvents: running ? "none" : "auto",
+                }}
+              >
+                {minuteOptions.map((m) => (
+                  <div
+                    key={m}
+                    style={{
+                      scrollSnapAlign: "center",
+                      fontFamily: "'Roboto Serif', serif",
+                      fontWeight: 900,
+                      fontSize: `${selectedMinute === m ? fontSizeNum : fontSizeNum * 0.6}px`,
+                      color: selectedMinute === m ? "#000" : "#9CA3AF",
+                      textAlign: "center",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {String(m).padStart(2, "0")}
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding: "0 4px", fontSize: `${fontSizeNum * 0.8}px` }}>:</div>
+              <div
+                ref={secondRef}
+                onScroll={handleSecondScroll}
+                className="hide-scrollbar"
+                style={{
+                  width: `${fontSizeNum * 1.2}px`,
+                  height: `${fontSizeNum * 2}px`,
+                  overflowY: "scroll",
+                  scrollSnapType: "y mandatory",
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
+                  paddingTop: `${fontSizeNum * 0.5}px`,
+                  paddingBottom: `${fontSizeNum * 0.5}px`,
+                  pointerEvents: running ? "none" : "auto",
+                }}
+              >
+                {secondOptions.map((s) => (
+                  <div
+                    key={s}
+                    style={{
+                      scrollSnapAlign: "center",
+                      fontFamily: "'Roboto Serif', serif",
+                      fontWeight: 900,
+                      fontSize: `${selectedSecond === s ? fontSizeNum : fontSizeNum * 0.6}px`,
+                      color: selectedSecond === s ? "#000" : "#9CA3AF",
+                      textAlign: "center",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {String(s).padStart(2, "0")}
+                  </div>
+                ))}
+              </div>
+            </div>
             <button className="font-serif font-black text-base text-logo-rose-300"
               style={{
                 marginTop: "8px",
-              
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-            
-            
-                
               }}
               onMouseDown={(e) => {
                 e.currentTarget.style.color = "#4B5563"
@@ -272,50 +429,6 @@ export const MeditationTimer = () => {
               }
             `}
           </style>
-        </div>
-        <div
-          ref={timeListRef}
-          onScroll={handleScroll}
-          className="hide-scrollbar"
-          style={{
-            marginTop: "16px",
-            width: sizes.outerWidth,
-            overflowX: "scroll",
-            display: "flex",
-            gap: "16px",
-            paddingBottom: "8px",
-            paddingLeft: "8px",
-            paddingRight: "8px",
-            scrollSnapType: "x mandatory",
-            scrollbarWidth: "none",
-            msOverflowStyle: "none",
-            scrollBehavior: "smooth",
-          }}
-        >
-          {timeOptions.map((m, index) => (
-            <div
-              className="font-black font-serif"
-              key={m}
-              onClick={() => {
-                setRunning(false)
-                setSelectedSeconds(m * 60)
-                setSeconds(m * 60)
-                scrollToIndex(index)
-              }}
-              style={{
-                cursor: "pointer",
-                flex: "0 0 auto",
-                fontFamily: "'Roboto Serif', serif",
-                fontSize: selectedSeconds === m * 60 ? "24px" : "16px",
-                fontWeight: 900,
-                color: "#000",
-                transition: "font-size 0.2s",
-                scrollSnapAlign: "center",
-              }}
-            >
-              {formatTime(m * 60)}
-            </div>
-          ))}
         </div>
         <style>
           {`.hide-scrollbar::-webkit-scrollbar { display: none; }`}
