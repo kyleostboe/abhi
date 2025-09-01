@@ -1,57 +1,145 @@
 "use client"
-import React, { useState, useEffect, useRef } from "react"
-const TIMER_DURATION = 10 * 60
-const BORDER_WIDTH_RATIO_VERTICAL = 0.08 // reduced from 0.16
-const BORDER_WIDTH_RATIO_HORIZONTAL = 0.04 // reduced from 0.07
-const CARD_RADIUS = "4rem 3rem 2rem 1rem"
-const ASPECT_W = 2.2 // widened to fit timer numbers
-const BASE_UNIT = 100 // reduced from 140
-const COLOR_RING_MULTIPLIER = 2.2
+import React, { useRef, useState, useEffect } from "react"
 
-export const MeditationTimer = () => {
-  const [running, setRunning] = useState(false)
-  const [seconds, setSeconds] = useState(TIMER_DURATION)
-  const [selectedSeconds, setSelectedSeconds] = useState(TIMER_DURATION)
-  const [pressed, setPressed] = useState(false)
-  const intervalRef = useRef(null)
-  const hourRef = useRef<HTMLDivElement>(null)
-  const minuteRef = useRef<HTMLDivElement>(null)
-  const secondRef = useRef<HTMLDivElement>(null)
-  const [selectedHour, setSelectedHour] = useState(0)
-  const [selectedMinute, setSelectedMinute] = useState(10)
-  const [selectedSecond, setSelectedSecond] = useState(0)
+const TIMER_DURATION = 10 * 60
+const BORDER_WIDTH_RATIO_VERTICAL = 0.08
+const BORDER_WIDTH_RATIO_HORIZONTAL = 0.04
+const CARD_RADIUS = "4rem 3rem 2rem 1rem"
+const ASPECT_W = 2.2
+const BASE_UNIT = 100
+const COLOR_RING_MULTIPLIER = 2.2
+const PICKER_ITEM_HEIGHT = 34
+
+function pad2(n) { return String(n).padStart(2, "0"); }
+
+function PickerColumn({ value, setValue, min, max, pad = 2, enabled = true, running = false }) {
+  const ref = useRef();
+  const itemCount = max - min + 1;
+  const values = Array.from({ length: itemCount }, (_, i) => min + i);
+
+  // FIX: jump instantly when running, smoothly when paused
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.scrollTo({
+        top: (value - min) * PICKER_ITEM_HEIGHT,
+        behavior: enabled ? (running ? "auto" : "smooth") : "auto"
+      });
+    }
+  }, [value, enabled, min, running]);
 
   useEffect(() => {
-    if (running && seconds > 0) {
-      intervalRef.current = setInterval(() => setSeconds((s) => s - 1), 1000)
-    } else {
-      clearInterval(intervalRef.current)
+    if (!enabled && ref.current) {
+      ref.current.scrollTo({
+        top: (value - min) * PICKER_ITEM_HEIGHT,
+        behavior: "auto"
+      });
     }
-    return () => clearInterval(intervalRef.current)
-  }, [running, seconds])
+  }, [enabled, value, min]);
 
+  useEffect(() => {
+    if (!enabled) return;
+    const node = ref.current;
+    if (!node) return;
+    let tid;
+    const finish = () => {
+      const idx = Math.round(node.scrollTop / PICKER_ITEM_HEIGHT);
+      setValue(idx + min);
+      node._userScrolling = false;
+    };
+    const onScroll = () => {
+      node._userScrolling = true;
+      clearTimeout(tid);
+      tid = setTimeout(finish, 80);
+    };
+    node.addEventListener("scroll", onScroll);
+    return () => {
+      clearTimeout(tid);
+      node.removeEventListener("scroll", onScroll);
+    };
+  }, [enabled, min, setValue]);
+  
+  return (
+    <div style={{
+      width: 46,
+      height: PICKER_ITEM_HEIGHT * 3,
+      overflow: "hidden",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      position: "relative",
+      userSelect: enabled ? "auto" : "none"
+    }}>
+      <div
+        ref={ref}
+        style={{
+          width: "100%",
+          height: "100%",
+          overflowY: enabled ? "scroll" : "hidden",
+          scrollSnapType: enabled ? "y mandatory" : "none"
+        }}
+        tabIndex={0}
+        className="hide-scrollbar"
+      >
+        <div style={{ height: PICKER_ITEM_HEIGHT }}></div>
+        {values.map((v, idx) => {
+          let visible = true;
+          if (running && v !== value) visible = false;
+          const style = {
+            color: v === value ? "#222" : "#bbb",
+            fontWeight: v === value ? 700 : 400,
+            fontSize: v === value ? 26 : 16,
+            textAlign: "center",
+            height: PICKER_ITEM_HEIGHT,
+            lineHeight: `${PICKER_ITEM_HEIGHT}px`,
+            transition: "color 0.08s, font-size 0.08s",
+            opacity: visible ? 1 : 0,
+            pointerEvents: v === value && enabled ? "auto" : "none",
+          };
+          return (
+            <div
+              key={v}
+              style={style}
+              onClick={() => enabled && setValue(v)}
+              aria-selected={v === value}
+            >
+              {pad2(v)}
+            </div>
+          );
+        })}
+        <div style={{ height: PICKER_ITEM_HEIGHT }}></div>
+      </div>
+      {!enabled &&
+        <div style={{
+          position: "absolute",
+          left: 0, top: 0, width: "100%", height: "100%",
+          zIndex: 99,
+          pointerEvents: "auto",
+          background: "transparent"
+        }} />
+      }
+    </div>
+  );
+}
+
+
+export function MeditationTimer() {
+  // Responsive container sizing (unchanged)
   const getResponsiveSizes = () => {
     if (typeof window !== "undefined") {
-      const vw = window.innerWidth
-      const vh = window.innerHeight
+      const vw = window.innerWidth, vh = window.innerHeight
       const isMobile = vw < 768
       const padVw = vw - (isMobile ? Math.max(vw * 0.15, 30) : Math.max(vw * 0.08, 32))
       const padVh = vh - Math.max(vh * 0.08, 24)
       const isDesktop = vw / vh > 1.3
-
       const maxWidth = isMobile ? Math.min(padVw * 0.85, vw - 40) : padVw
       const base = Math.min(maxWidth / (ASPECT_W + 0.3), padVh / 0.8, isMobile ? BASE_UNIT * 1.2 : BASE_UNIT * 1.8)
       const cardHeight = base > 0 ? base : isMobile ? BASE_UNIT * 0.8 : BASE_UNIT
       const cardWidth = cardHeight * ASPECT_W
       const borderV = cardHeight * BORDER_WIDTH_RATIO_VERTICAL
       const borderH = isDesktop ? cardHeight * BORDER_WIDTH_RATIO_HORIZONTAL : borderV
-
-      const fontSizeMultiplier = isMobile ? 0.25 : 0.4
-      const fontSize = Math.max(cardHeight * fontSizeMultiplier, isMobile ? 16 : 24)
-
+      const fontSize = Math.max(cardHeight * (isMobile ? 0.24 : 0.34), isMobile ? 16 : 22)
       const outerWidth = cardWidth + borderH * 2
       const outerHeight = cardHeight + borderV * 2
-
       if (isMobile && outerWidth > vw - 20) {
         const scale = (vw - 20) / outerWidth
         return {
@@ -66,7 +154,6 @@ export const MeditationTimer = () => {
           borderVNum: borderV * scale,
         }
       }
-
       return {
         cardWidth: `${cardWidth}px`,
         cardHeight: `${cardHeight}px`,
@@ -93,119 +180,38 @@ export const MeditationTimer = () => {
     }
   }
 
-  const [sizes, setSizes] = React.useState(getResponsiveSizes())
-  const fontSizeNum = Number.parseFloat(sizes.fontSize as string)
+  const [seconds, setSeconds] = useState(TIMER_DURATION)
+  const [running, setRunning] = useState(false)
+  const [sizes, setSizes] = useState(getResponsiveSizes())
+
   useEffect(() => {
-    function refresh() {
-      setSizes(getResponsiveSizes())
-    }
+    const refresh = () => setSizes(getResponsiveSizes())
     window.addEventListener("resize", refresh)
     refresh()
     return () => window.removeEventListener("resize", refresh)
   }, [])
 
-  const hourOptions = Array.from({ length: 13 }, (_, i) => i)
-  const minuteOptions = Array.from({ length: 60 }, (_, i) => i)
-  const secondOptions = Array.from({ length: 60 }, (_, i) => i)
-
-  const scrollToValue = (ref: React.RefObject<HTMLDivElement>, value: number) => {
-    if (!ref.current) return
-    const child = ref.current.children[value] as HTMLElement
-    if (child) {
-      const top = child.offsetTop - ref.current.clientHeight / 2 + child.clientHeight / 2
-      ref.current.scrollTo({ top, behavior: "smooth" })
-    }
-  }
-
   useEffect(() => {
-    scrollToValue(hourRef, selectedHour)
-    scrollToValue(minuteRef, selectedMinute)
-    scrollToValue(secondRef, selectedSecond)
-  }, [sizes])
+    if (!running) return
+    if (seconds <= 0) { setRunning(false); return }
+    const int = setInterval(() => setSeconds(s => s - 1), 1000)
+    return () => clearInterval(int)
+  }, [running, seconds])
 
-  const handleHourScroll = () => {
-    if (!hourRef.current || running) return
-    const container = hourRef.current
-    const center = container.scrollTop + container.clientHeight / 2
-    const children = Array.from(container.children) as HTMLElement[]
-    let closestIndex = 0
-    let closestDistance = Number.POSITIVE_INFINITY
-    children.forEach((child, index) => {
-      const childCenter = child.offsetTop + child.offsetHeight / 2
-      const distance = Math.abs(center - childCenter)
-      if (distance < closestDistance) {
-        closestDistance = distance
-        closestIndex = index
-      }
-    })
-    const h = hourOptions[closestIndex]
-    if (h !== selectedHour) {
-      setSelectedHour(h)
-      const total = h * 3600 + selectedMinute * 60 + selectedSecond
-      setSelectedSeconds(total)
-      setSeconds(total)
-    }
+  const hour = Math.floor(seconds / 3600)
+  const minute = Math.floor((seconds % 3600) / 60)
+  const second = seconds % 60
+
+  const setHour = h => { !running && setSeconds(h * 3600 + minute * 60 + second) }
+  const setMinute = m => { !running && setSeconds(hour * 3600 + m * 60 + second) }
+  const setSecond = s => { !running && setSeconds(hour * 3600 + minute * 60 + s) }
+
+  function reset() {
+    setRunning(false)
+    setSeconds(TIMER_DURATION)
   }
 
-  const handleMinuteScroll = () => {
-    if (!minuteRef.current || running) return
-    const container = minuteRef.current
-    const center = container.scrollTop + container.clientHeight / 2
-    const children = Array.from(container.children) as HTMLElement[]
-    let closestIndex = 0
-    let closestDistance = Number.POSITIVE_INFINITY
-    children.forEach((child, index) => {
-      const childCenter = child.offsetTop + child.offsetHeight / 2
-      const distance = Math.abs(center - childCenter)
-      if (distance < closestDistance) {
-        closestDistance = distance
-        closestIndex = index
-      }
-    })
-    const m = minuteOptions[closestIndex]
-    if (m !== selectedMinute) {
-      setSelectedMinute(m)
-      const total = selectedHour * 3600 + m * 60 + selectedSecond
-      setSelectedSeconds(total)
-      setSeconds(total)
-    }
-  }
-
-  const handleSecondScroll = () => {
-    if (!secondRef.current || running) return
-    const container = secondRef.current
-    const center = container.scrollTop + container.clientHeight / 2
-    const children = Array.from(container.children) as HTMLElement[]
-    let closestIndex = 0
-    let closestDistance = Number.POSITIVE_INFINITY
-    children.forEach((child, index) => {
-      const childCenter = child.offsetTop + child.offsetHeight / 2
-      const distance = Math.abs(center - childCenter)
-      if (distance < closestDistance) {
-        closestDistance = distance
-        closestIndex = index
-      }
-    })
-    const s = secondOptions[closestIndex]
-    if (s !== selectedSecond) {
-      setSelectedSecond(s)
-      const total = selectedHour * 3600 + selectedMinute * 60 + s
-      setSelectedSeconds(total)
-      setSeconds(total)
-    }
-  }
-
-  useEffect(() => {
-    const h = Math.floor(seconds / 3600)
-    const m = Math.floor((seconds % 3600) / 60)
-    const s = seconds % 60
-    setSelectedHour(h)
-    setSelectedMinute(m)
-    setSelectedSecond(s)
-    scrollToValue(hourRef, h)
-    scrollToValue(minuteRef, m)
-    scrollToValue(secondRef, s)
-  }, [seconds])
+  const fmt = n => String(n).padStart(2, "0")
 
   return (
     <div
@@ -232,8 +238,10 @@ export const MeditationTimer = () => {
             alignItems: "center",
             justifyContent: "center",
             transition: "width 0.3s, height 0.3s",
+            background: "none",
           }}
         >
+          {/* Colorful spinning border */}
           <div
             style={{
               position: "absolute",
@@ -260,11 +268,7 @@ export const MeditationTimer = () => {
             role="button"
             tabIndex={0}
             aria-label={running ? "Pause timer" : "Start timer"}
-            onClick={() => seconds > 0 && setRunning((r) => !r)}
-            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && seconds > 0 && setRunning((r) => !r)}
-            onMouseDown={() => setPressed(true)}
-            onMouseUp={() => setPressed(false)}
-            onMouseLeave={() => setPressed(false)}
+            onClick={() => seconds > 0 && setRunning(r => !r)}
             style={{
               position: "absolute",
               left: sizes.borderH,
@@ -283,122 +287,18 @@ export const MeditationTimer = () => {
               justifyContent: "center",
               userSelect: "none",
               cursor: "pointer",
-              boxShadow: pressed ? "none" : "0 12px 48px 0 rgba(0,0,0,0.19)",
+              boxShadow: "0 12px 48px 0 rgba(0,0,0,0.16)",
               outline: "none",
               zIndex: 2,
-              transition:
-                "box-shadow 0.18s cubic-bezier(.44,0,.56,1), width 0.3s, height 0.3s, font-size 0.3s, left 0.3s, top 0.3s",
+              transition: "box-shadow 0.18s cubic-bezier(.44,0,.56,1), width 0.3s, height 0.3s, font-size 0.3s, left 0.3s, top 0.3s",
             }}
           >
             <div style={{ display: "flex", alignItems: "center" }}>
-              <div
-                ref={hourRef}
-                onScroll={handleHourScroll}
-                className="hide-scrollbar"
-                style={{
-                  width: `${fontSizeNum * 1.2}px`,
-                  height: `${fontSizeNum * 2}px`,
-                  overflowY: "scroll",
-                  scrollSnapType: "y mandatory",
-                  scrollbarWidth: "none",
-                  msOverflowStyle: "none",
-                  paddingTop: `${fontSizeNum * 0.5}px`,
-                  paddingBottom: `${fontSizeNum * 0.5}px`,
-                  pointerEvents: running ? "none" : "auto",
-                  opacity: running ? 0 : 1,
-                  transition: "opacity 0.3s ease",
-                }}
-              >
-                {hourOptions.map((h) => (
-                  <div
-                    className=""
-                    key={h}
-                    style={{
-                      scrollSnapAlign: "center",
-                      fontFamily: "'Roboto Serif', serif",
-                      fontWeight: 900,
-                      fontSize: `${selectedHour === h ? fontSizeNum : fontSizeNum * 0.5}px`,
-                      color: selectedHour === h ? "#000" : "#9CA3AF",
-                      textAlign: "center",
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {String(h).padStart(2, "0")}
-                  </div>
-                ))}
-              </div>
-              <div style={{ padding: "0 4px", fontSize: `${fontSizeNum * 0.8}px` }}>:</div>
-              <div
-                ref={minuteRef}
-                onScroll={handleMinuteScroll}
-                className="hide-scrollbar"
-                style={{
-                  width: `${fontSizeNum * 1.2}px`,
-                  height: `${fontSizeNum * 2}px`,
-                  overflowY: "scroll",
-                  scrollSnapType: "y mandatory",
-                  scrollbarWidth: "none",
-                  msOverflowStyle: "none",
-                  paddingTop: `${fontSizeNum * 0.5}px`,
-                  paddingBottom: `${fontSizeNum * 0.5}px`,
-                  pointerEvents: running ? "none" : "auto",
-                  opacity: running ? 0 : 1,
-                  transition: "opacity 0.3s ease",
-                }}
-              >
-                {minuteOptions.map((m) => (
-                  <div
-                    key={m}
-                    style={{
-                      scrollSnapAlign: "center",
-                      fontFamily: "'Roboto Serif', serif",
-                      fontWeight: 900,
-                      fontSize: `${selectedMinute === m ? fontSizeNum : fontSizeNum * 0.5}px`,
-                      color: selectedMinute === m ? "#000" : "#9CA3AF",
-                      textAlign: "center",
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {String(m).padStart(2, "0")}
-                  </div>
-                ))}
-              </div>
-              <div style={{ padding: "0 4px", fontSize: `${fontSizeNum * 0.8}px` }}>:</div>
-              <div
-                ref={secondRef}
-                onScroll={handleSecondScroll}
-                className="hide-scrollbar"
-                style={{
-                  width: `${fontSizeNum * 1.2}px`,
-                  height: `${fontSizeNum * 2}px`,
-                  overflowY: "scroll",
-                  scrollSnapType: "y mandatory",
-                  scrollbarWidth: "none",
-                  msOverflowStyle: "none",
-                  paddingTop: `${fontSizeNum * 0.5}px`,
-                  paddingBottom: `${fontSizeNum * 0.5}px`,
-                  pointerEvents: running ? "none" : "auto",
-                  opacity: running ? 0 : 1,
-                  transition: "opacity 0.3s ease",
-                }}
-              >
-                {secondOptions.map((s) => (
-                  <div
-                    key={s}
-                    style={{
-                      scrollSnapAlign: "center",
-                      fontFamily: "'Roboto Serif', serif",
-                      fontWeight: 900,
-                      fontSize: `${selectedSecond === s ? fontSizeNum : fontSizeNum * 0.5}px`,
-                      color: selectedSecond === s ? "#000" : "#9CA3AF",
-                      textAlign: "center",
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {String(s).padStart(2, "0")}
-                  </div>
-                ))}
-              </div>
+              <PickerColumn value={hour} setValue={setHour} min={0} max={12} pad={2} enabled={!running} running={running} />
+              <div className="text-gray-600" style={{ fontSize: 22, margin: "0 2px" }}>:</div>
+              <PickerColumn value={minute} setValue={setMinute} min={0} max={59} pad={2} enabled={!running} running={running} />
+              <div classname="text-gray-600" style={{ fontSize: 22, margin: "0 2px" }}>:</div>
+              <PickerColumn value={second} setValue={setSecond} min={0} max={59} pad={2} enabled={!running} running={running} />
             </div>
           </div>
           <style>
@@ -410,26 +310,17 @@ export const MeditationTimer = () => {
           </style>
         </div>
         <button
-          className="font-serif font-black text-base text-logo-rose-300"
           style={{
             marginTop: "8px",
             background: "none",
             border: "none",
             cursor: "pointer",
+            color: "#6B7280",
+            fontFamily: "'Roboto Serif', serif",
+            fontWeight: 700,
+            fontSize: 16,
           }}
-          onMouseDown={(e) => {
-            e.currentTarget.style.color = "#4B5563"
-          }}
-          onMouseUp={(e) => {
-            e.currentTarget.style.color = "#6B7280"
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = "#6B7280"
-          }}
-          onClick={(e) => {
-            setRunning(false)
-            setSeconds(selectedSeconds)
-          }}
+          onClick={reset}
         >
           reset
         </button>
