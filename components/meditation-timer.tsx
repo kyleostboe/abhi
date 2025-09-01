@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect, useRef } from "react"
-const TIMER_DURATION = 0
+const TIMER_DURATION = 10 * 60
 const BORDER_WIDTH_RATIO_VERTICAL = 0.08 // reduced from 0.16
 const BORDER_WIDTH_RATIO_HORIZONTAL = 0.04 // reduced from 0.07
 const CARD_RADIUS = "4rem 3rem 2rem 1rem"
@@ -11,9 +11,10 @@ const COLOR_RING_MULTIPLIER = 2.2
 export const MeditationTimer = () => {
   const [running, setRunning] = useState(false)
   const [seconds, setSeconds] = useState(TIMER_DURATION)
-  const [selectedSeconds, setSelectedSeconds] = useState(0)
+  const [selectedSeconds, setSelectedSeconds] = useState(TIMER_DURATION)
   const [pressed, setPressed] = useState(false)
   const intervalRef = useRef(null)
+  const timeListRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (running && seconds > 0) {
@@ -105,6 +106,51 @@ export const MeditationTimer = () => {
   }
 
   const timeOptions = Array.from({ length: 37 }, (_, i) => i * 5)
+
+  useEffect(() => {
+    if (timeListRef.current) {
+      const index = timeOptions.indexOf(10)
+      const child = timeListRef.current.children[index] as HTMLElement
+      if (child) {
+        const left =
+          child.offsetLeft - timeListRef.current.clientWidth / 2 + child.clientWidth / 2
+        timeListRef.current.scrollTo({ left })
+      }
+    }
+  }, [sizes])
+
+  const scrollToIndex = (index: number) => {
+    if (!timeListRef.current) return
+    const child = timeListRef.current.children[index] as HTMLElement
+    if (child) {
+      const left =
+        child.offsetLeft - timeListRef.current.clientWidth / 2 + child.clientWidth / 2
+      timeListRef.current.scrollTo({ left, behavior: "smooth" })
+    }
+  }
+
+  const handleScroll = () => {
+    if (!timeListRef.current) return
+    const container = timeListRef.current
+    const center = container.scrollLeft + container.clientWidth / 2
+    const children = Array.from(container.children) as HTMLElement[]
+    let closestIndex = 0
+    let closestDistance = Infinity
+    children.forEach((child, index) => {
+      const childCenter = child.offsetLeft + child.offsetWidth / 2
+      const distance = Math.abs(center - childCenter)
+      if (distance < closestDistance) {
+        closestDistance = distance
+        closestIndex = index
+      }
+    })
+    const m = timeOptions[closestIndex]
+    const newSeconds = m * 60
+    if (newSeconds !== selectedSeconds) {
+      setSelectedSeconds(newSeconds)
+      setSeconds(newSeconds)
+    }
+  }
 
   return (
     <div
@@ -228,51 +274,52 @@ export const MeditationTimer = () => {
           </style>
         </div>
         <div
+          ref={timeListRef}
+          onScroll={handleScroll}
+          className="hide-scrollbar"
           style={{
             marginTop: "16px",
             width: sizes.outerWidth,
-            overflowX: "auto",
+            overflowX: "scroll",
             display: "flex",
             gap: "16px",
             paddingBottom: "8px",
             paddingLeft: "8px",
             paddingRight: "8px",
+            scrollSnapType: "x mandatory",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            scrollBehavior: "smooth",
           }}
         >
-          {timeOptions.map((m) => (
-            <div className="font-black font-serif"
+          {timeOptions.map((m, index) => (
+            <div
+              className="font-black font-serif"
               key={m}
               onClick={() => {
                 setRunning(false)
                 setSelectedSeconds(m * 60)
                 setSeconds(m * 60)
+                scrollToIndex(index)
               }}
               style={{
                 cursor: "pointer",
                 flex: "0 0 auto",
                 fontFamily: "'Roboto Serif', serif",
-                fontSize: "16px",
-                fontWeight: selectedSeconds === m * 60 ? 600 : 400,
-                color: selectedSeconds === m * 60 ? "#059669" : "#6B7280",
-                transition: "all 0.2s ease",
-                padding: "4px 0",
-                borderBottom: selectedSeconds === m * 60 ? "2px solid #059669" : "2px solid transparent",
-              }}
-              onMouseEnter={(e) => {
-                if (selectedSeconds !== m * 60) {
-                  e.currentTarget.style.color = "#374151"
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedSeconds !== m * 60) {
-                  e.currentTarget.style.color = "#6B7280"
-                }
+                fontSize: selectedSeconds === m * 60 ? "24px" : "16px",
+                fontWeight: 900,
+                color: "#000",
+                transition: "font-size 0.2s",
+                scrollSnapAlign: "center",
               }}
             >
               {formatTime(m * 60)}
             </div>
           ))}
         </div>
+        <style>
+          {`.hide-scrollbar::-webkit-scrollbar { display: none; }`}
+        </style>
       </div>
     </div>
   )
