@@ -189,7 +189,7 @@ export const MeditationTimer = () => {
                 "box-shadow 0.18s cubic-bezier(.44,0,.56,1), width 0.3s, height 0.3s, font-size 0.3s, left 0.3s, top 0.3s",
             }}
           >
-            <div>{formatTime(seconds)}</div>
+            <div className="text-6xl">{formatTime(seconds)}</div>
             <button
               style={{
                 marginTop: "8px",
@@ -241,7 +241,7 @@ export const MeditationTimer = () => {
           }}
         >
           {timeOptions.map((m) => (
-            <div
+            <div className="font-black font-serif"
               key={m}
               onClick={() => {
                 setRunning(false)
