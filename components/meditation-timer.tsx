@@ -312,7 +312,7 @@ export const MeditationTimer = () => {
                 }}
               >
                 {hourOptions.map((h) => (
-                  <div
+                  <div className=""
                     key={h}
                     style={{
                       scrollSnapAlign: "center",
