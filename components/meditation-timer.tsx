@@ -46,8 +46,8 @@ export const MeditationTimer = () => {
       const borderV = cardHeight * BORDER_WIDTH_RATIO_VERTICAL
       const borderH = isDesktop ? cardHeight * BORDER_WIDTH_RATIO_HORIZONTAL : borderV
 
-      const fontSizeMultiplier = isMobile ? 0.32 : 0.5
-      const fontSize = Math.max(cardHeight * fontSizeMultiplier, isMobile ? 20 : 32)
+      const fontSizeMultiplier = isMobile ? 0.25 : 0.4
+      const fontSize = Math.max(cardHeight * fontSizeMultiplier, isMobile ? 16 : 24)
 
       const outerWidth = cardWidth + borderH * 2
       const outerHeight = cardHeight + borderV * 2
@@ -87,14 +87,14 @@ export const MeditationTimer = () => {
       outerHeight: `${BASE_UNIT + borderV * 2}px`,
       borderV: `${borderV}px`,
       borderH: `${borderV}px`,
-      fontSize: `${BASE_UNIT * 0.4}px`,
+      fontSize: `${BASE_UNIT * 0.32}px`,
       borderHNum: borderV,
       borderVNum: borderV,
     }
   }
 
   const [sizes, setSizes] = React.useState(getResponsiveSizes())
-  const fontSizeNum = parseFloat(sizes.fontSize as string)
+  const fontSizeNum = Number.parseFloat(sizes.fontSize as string)
   useEffect(() => {
     function refresh() {
       setSizes(getResponsiveSizes())
@@ -108,15 +108,11 @@ export const MeditationTimer = () => {
   const minuteOptions = Array.from({ length: 60 }, (_, i) => i)
   const secondOptions = Array.from({ length: 60 }, (_, i) => i)
 
-  const scrollToValue = (
-    ref: React.RefObject<HTMLDivElement>,
-    value: number
-  ) => {
+  const scrollToValue = (ref: React.RefObject<HTMLDivElement>, value: number) => {
     if (!ref.current) return
     const child = ref.current.children[value] as HTMLElement
     if (child) {
-      const top =
-        child.offsetTop - ref.current.clientHeight / 2 + child.clientHeight / 2
+      const top = child.offsetTop - ref.current.clientHeight / 2 + child.clientHeight / 2
       ref.current.scrollTo({ top, behavior: "smooth" })
     }
   }
@@ -133,7 +129,7 @@ export const MeditationTimer = () => {
     const center = container.scrollTop + container.clientHeight / 2
     const children = Array.from(container.children) as HTMLElement[]
     let closestIndex = 0
-    let closestDistance = Infinity
+    let closestDistance = Number.POSITIVE_INFINITY
     children.forEach((child, index) => {
       const childCenter = child.offsetTop + child.offsetHeight / 2
       const distance = Math.abs(center - childCenter)
@@ -157,7 +153,7 @@ export const MeditationTimer = () => {
     const center = container.scrollTop + container.clientHeight / 2
     const children = Array.from(container.children) as HTMLElement[]
     let closestIndex = 0
-    let closestDistance = Infinity
+    let closestDistance = Number.POSITIVE_INFINITY
     children.forEach((child, index) => {
       const childCenter = child.offsetTop + child.offsetHeight / 2
       const distance = Math.abs(center - childCenter)
@@ -181,7 +177,7 @@ export const MeditationTimer = () => {
     const center = container.scrollTop + container.clientHeight / 2
     const children = Array.from(container.children) as HTMLElement[]
     let closestIndex = 0
-    let closestDistance = Infinity
+    let closestDistance = Number.POSITIVE_INFINITY
     children.forEach((child, index) => {
       const childCenter = child.offsetTop + child.offsetHeight / 2
       const distance = Math.abs(center - childCenter)
@@ -309,16 +305,19 @@ export const MeditationTimer = () => {
                   paddingTop: `${fontSizeNum * 0.5}px`,
                   paddingBottom: `${fontSizeNum * 0.5}px`,
                   pointerEvents: running ? "none" : "auto",
+                  opacity: running ? 0 : 1,
+                  transition: "opacity 0.3s ease",
                 }}
               >
                 {hourOptions.map((h) => (
-                  <div className=""
+                  <div
+                    className=""
                     key={h}
                     style={{
                       scrollSnapAlign: "center",
                       fontFamily: "'Roboto Serif', serif",
                       fontWeight: 900,
-                      fontSize: `${selectedHour === h ? fontSizeNum : fontSizeNum * 0.6}px`,
+                      fontSize: `${selectedHour === h ? fontSizeNum : fontSizeNum * 0.5}px`,
                       color: selectedHour === h ? "#000" : "#9CA3AF",
                       textAlign: "center",
                       lineHeight: 1.2,
@@ -343,6 +342,8 @@ export const MeditationTimer = () => {
                   paddingTop: `${fontSizeNum * 0.5}px`,
                   paddingBottom: `${fontSizeNum * 0.5}px`,
                   pointerEvents: running ? "none" : "auto",
+                  opacity: running ? 0 : 1,
+                  transition: "opacity 0.3s ease",
                 }}
               >
                 {minuteOptions.map((m) => (
@@ -352,7 +353,7 @@ export const MeditationTimer = () => {
                       scrollSnapAlign: "center",
                       fontFamily: "'Roboto Serif', serif",
                       fontWeight: 900,
-                      fontSize: `${selectedMinute === m ? fontSizeNum : fontSizeNum * 0.6}px`,
+                      fontSize: `${selectedMinute === m ? fontSizeNum : fontSizeNum * 0.5}px`,
                       color: selectedMinute === m ? "#000" : "#9CA3AF",
                       textAlign: "center",
                       lineHeight: 1.2,
@@ -377,6 +378,8 @@ export const MeditationTimer = () => {
                   paddingTop: `${fontSizeNum * 0.5}px`,
                   paddingBottom: `${fontSizeNum * 0.5}px`,
                   pointerEvents: running ? "none" : "auto",
+                  opacity: running ? 0 : 1,
+                  transition: "opacity 0.3s ease",
                 }}
               >
                 {secondOptions.map((s) => (
@@ -386,7 +389,7 @@ export const MeditationTimer = () => {
                       scrollSnapAlign: "center",
                       fontFamily: "'Roboto Serif', serif",
                       fontWeight: 900,
-                      fontSize: `${selectedSecond === s ? fontSizeNum : fontSizeNum * 0.6}px`,
+                      fontSize: `${selectedSecond === s ? fontSizeNum : fontSizeNum * 0.5}px`,
                       color: selectedSecond === s ? "#000" : "#9CA3AF",
                       textAlign: "center",
                       lineHeight: 1.2,
@@ -406,7 +409,8 @@ export const MeditationTimer = () => {
             `}
           </style>
         </div>
-        <button className="font-serif font-black text-base text-logo-rose-300"
+        <button
+          className="font-serif font-black text-base text-logo-rose-300"
           style={{
             marginTop: "8px",
             background: "none",
@@ -429,9 +433,7 @@ export const MeditationTimer = () => {
         >
           reset
         </button>
-        <style>
-          {`.hide-scrollbar::-webkit-scrollbar { display: none; }`}
-        </style>
+        <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
       </div>
     </div>
   )
