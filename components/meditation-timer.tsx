@@ -190,16 +190,16 @@ export const MeditationTimer = () => {
             }}
           >
             <div className="text-6xl">{formatTime(seconds)}</div>
-            <button
+            <button className="font-serif font-black text-base"
               style={{
                 marginTop: "8px",
-                fontSize: "12px",
+              
                 background: "none",
                 border: "none",
                 color: "#6B7280",
                 cursor: "pointer",
-                fontFamily: "'Roboto Serif', serif",
-                fontWeight: 400,
+            
+            
                 transition: "color 0.15s ease",
               }}
               onMouseDown={(e) => {
