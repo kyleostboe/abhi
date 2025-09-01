@@ -133,126 +133,148 @@ export const MeditationTimer = () => {
             transition: "width 0.3s, height 0.3s",
           }}
         >
-        <div
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: "50%",
-            width: `calc(100% * ${COLOR_RING_MULTIPLIER})`,
-            height: `calc(100% * ${COLOR_RING_MULTIPLIER})`,
-            transform: "translate(-50%, -50%)",
-            zIndex: 1,
-            pointerEvents: "none",
-          }}
-        >
           <div
             style={{
-              width: "100%",
-              height: "100%",
-              borderRadius: "50%",
-              background: "conic-gradient(#34D399, #FBBF24, #D8B4FE, #34D399)",
-              animation: running ? "pinwheel-spin 2.3s linear infinite" : "none",
-            }}
-          ></div>
-        </div>
-        <div
-          role="button"
-          tabIndex={0}
-          aria-label={running ? "Pause timer" : "Start timer"}
-          onClick={() => seconds > 0 && setRunning((r) => !r)}
-          onKeyDown={(e) =>
-            (e.key === "Enter" || e.key === " ") && seconds > 0 && setRunning((r) => !r)
-          }
-          onMouseDown={() => setPressed(true)}
-          onMouseUp={() => setPressed(false)}
-          onMouseLeave={() => setPressed(false)}
-          style={{
-            position: "absolute",
-            left: sizes.borderH,
-            top: sizes.borderV,
-            width: sizes.cardWidth,
-            height: sizes.cardHeight,
-            background: "#fff",
-            borderRadius: CARD_RADIUS,
-            fontFamily: "'Roboto Serif', serif",
-            fontWeight: 900,
-            fontSize: sizes.fontSize,
-            color: "#6B7280",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            userSelect: "none",
-            cursor: "pointer",
-            boxShadow: pressed ? "none" : "0 12px 48px 0 rgba(0,0,0,0.19)",
-            outline: "none",
-            zIndex: 2,
-            transition:
-              "box-shadow 0.18s cubic-bezier(.44,0,.56,1), width 0.3s, height 0.3s, font-size 0.3s, left 0.3s, top 0.3s",
-          }}
-        >
-          <div>{formatTime(seconds)}</div>
-          <button
-            style={{
-              marginTop: "4px",
-              fontSize: "0.5em",
-              background: "none",
-              border: "none",
-              color: "#FBBF24",
-              cursor: "pointer",
-            }}
-            onClick={(e) => {
-              e.stopPropagation()
-              setRunning(false)
-              setSeconds(selectedSeconds)
+              position: "absolute",
+              left: "50%",
+              top: "50%",
+              width: `calc(100% * ${COLOR_RING_MULTIPLIER})`,
+              height: `calc(100% * ${COLOR_RING_MULTIPLIER})`,
+              transform: "translate(-50%, -50%)",
+              zIndex: 1,
+              pointerEvents: "none",
             }}
           >
-            reset
-          </button>
-        </div>
-        <style>
-          {`
-            @keyframes pinwheel-spin {
-              100% { transform: rotate(360deg); }
-            }
-          `}
-        </style>
-      </div>
-      <div
-        style={{
-          marginTop: "12px",
-          width: sizes.outerWidth,
-          overflowX: "auto",
-          display: "flex",
-          gap: "8px",
-          paddingBottom: "4px",
-        }}
-      >
-        {timeOptions.map((m) => (
-          <div
-            key={m}
-            onClick={() => {
-              setRunning(false)
-              setSelectedSeconds(m * 60)
-              setSeconds(m * 60)
-            }}
-            style={{
-              padding: "6px 12px",
-              borderRadius: "12px",
-              background: selectedSeconds === m * 60 ? "#34D399" : "#fff",
-              color: selectedSeconds === m * 60 ? "#fff" : "#6B7280",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-              cursor: "pointer",
-              flex: "0 0 auto",
-              fontFamily: "'Roboto Serif', serif",
-              fontSize: "14px",
-            }}
-          >
-            {formatTime(m * 60)}
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: "50%",
+                background: "conic-gradient(#34D399, #FBBF24, #D8B4FE, #34D399)",
+                animation: running ? "pinwheel-spin 2.3s linear infinite" : "none",
+              }}
+            ></div>
           </div>
-        ))}
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label={running ? "Pause timer" : "Start timer"}
+            onClick={() => seconds > 0 && setRunning((r) => !r)}
+            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && seconds > 0 && setRunning((r) => !r)}
+            onMouseDown={() => setPressed(true)}
+            onMouseUp={() => setPressed(false)}
+            onMouseLeave={() => setPressed(false)}
+            style={{
+              position: "absolute",
+              left: sizes.borderH,
+              top: sizes.borderV,
+              width: sizes.cardWidth,
+              height: sizes.cardHeight,
+              background: "#fff",
+              borderRadius: CARD_RADIUS,
+              fontFamily: "'Roboto Serif', serif",
+              fontWeight: 900,
+              fontSize: sizes.fontSize,
+              color: "#6B7280",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              userSelect: "none",
+              cursor: "pointer",
+              boxShadow: pressed ? "none" : "0 12px 48px 0 rgba(0,0,0,0.19)",
+              outline: "none",
+              zIndex: 2,
+              transition:
+                "box-shadow 0.18s cubic-bezier(.44,0,.56,1), width 0.3s, height 0.3s, font-size 0.3s, left 0.3s, top 0.3s",
+            }}
+          >
+            <div>{formatTime(seconds)}</div>
+            <button
+              style={{
+                marginTop: "8px",
+                fontSize: "12px",
+                background: "none",
+                border: "none",
+                color: "#6B7280",
+                cursor: "pointer",
+                fontFamily: "'Roboto Serif', serif",
+                fontWeight: 400,
+                transition: "color 0.15s ease",
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.color = "#4B5563"
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.color = "#6B7280"
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "#6B7280"
+              }}
+              onClick={(e) => {
+                e.stopPropagation()
+                setRunning(false)
+                setSeconds(selectedSeconds)
+              }}
+            >
+              reset
+            </button>
+          </div>
+          <style>
+            {`
+              @keyframes pinwheel-spin {
+                100% { transform: rotate(360deg); }
+              }
+            `}
+          </style>
+        </div>
+        <div
+          style={{
+            marginTop: "16px",
+            width: sizes.outerWidth,
+            overflowX: "auto",
+            display: "flex",
+            gap: "16px",
+            paddingBottom: "8px",
+            paddingLeft: "8px",
+            paddingRight: "8px",
+          }}
+        >
+          {timeOptions.map((m) => (
+            <div
+              key={m}
+              onClick={() => {
+                setRunning(false)
+                setSelectedSeconds(m * 60)
+                setSeconds(m * 60)
+              }}
+              style={{
+                cursor: "pointer",
+                flex: "0 0 auto",
+                fontFamily: "'Roboto Serif', serif",
+                fontSize: "16px",
+                fontWeight: selectedSeconds === m * 60 ? 600 : 400,
+                color: selectedSeconds === m * 60 ? "#059669" : "#6B7280",
+                transition: "all 0.2s ease",
+                padding: "4px 0",
+                borderBottom: selectedSeconds === m * 60 ? "2px solid #059669" : "2px solid transparent",
+              }}
+              onMouseEnter={(e) => {
+                if (selectedSeconds !== m * 60) {
+                  e.currentTarget.style.color = "#374151"
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedSeconds !== m * 60) {
+                  e.currentTarget.style.color = "#6B7280"
+                }
+              }}
+            >
+              {formatTime(m * 60)}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
-  </div>
-)
+  )
 }
