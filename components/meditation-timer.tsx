@@ -4,7 +4,7 @@ const TIMER_DURATION = 10 * 60
 const BORDER_WIDTH_RATIO_VERTICAL = 0.08 // reduced from 0.16
 const BORDER_WIDTH_RATIO_HORIZONTAL = 0.04 // reduced from 0.07
 const CARD_RADIUS = "4rem 3rem 2rem 1rem"
-const ASPECT_W = 1.8 // reduced from 2.2
+const ASPECT_W = 2.2 // widened to fit timer numbers
 const BASE_UNIT = 100 // reduced from 140
 const COLOR_RING_MULTIPLIER = 2.2
 
@@ -46,7 +46,7 @@ export const MeditationTimer = () => {
       const borderV = cardHeight * BORDER_WIDTH_RATIO_VERTICAL
       const borderH = isDesktop ? cardHeight * BORDER_WIDTH_RATIO_HORIZONTAL : borderV
 
-      const fontSizeMultiplier = isMobile ? 0.35 : 0.55
+      const fontSizeMultiplier = isMobile ? 0.32 : 0.5
       const fontSize = Math.max(cardHeight * fontSizeMultiplier, isMobile ? 20 : 32)
 
       const outerWidth = cardWidth + borderH * 2
@@ -397,30 +397,6 @@ export const MeditationTimer = () => {
                 ))}
               </div>
             </div>
-            <button className="font-serif font-black text-base text-logo-rose-300"
-              style={{
-                marginTop: "8px",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-              }}
-              onMouseDown={(e) => {
-                e.currentTarget.style.color = "#4B5563"
-              }}
-              onMouseUp={(e) => {
-                e.currentTarget.style.color = "#6B7280"
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = "#6B7280"
-              }}
-              onClick={(e) => {
-                e.stopPropagation()
-                setRunning(false)
-                setSeconds(selectedSeconds)
-              }}
-            >
-              reset
-            </button>
           </div>
           <style>
             {`
@@ -430,6 +406,29 @@ export const MeditationTimer = () => {
             `}
           </style>
         </div>
+        <button className="font-serif font-black text-base text-logo-rose-300"
+          style={{
+            marginTop: "8px",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+          }}
+          onMouseDown={(e) => {
+            e.currentTarget.style.color = "#4B5563"
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.style.color = "#6B7280"
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = "#6B7280"
+          }}
+          onClick={(e) => {
+            setRunning(false)
+            setSeconds(selectedSeconds)
+          }}
+        >
+          reset
+        </button>
         <style>
           {`.hide-scrollbar::-webkit-scrollbar { display: none; }`}
         </style>
