@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect, useRef } from "react"
-const TIMER_DURATION = 59
+const TIMER_DURATION = 0
 const BORDER_WIDTH_RATIO_VERTICAL = 0.08 // reduced from 0.16
 const BORDER_WIDTH_RATIO_HORIZONTAL = 0.04 // reduced from 0.07
 const CARD_RADIUS = "4rem 3rem 2rem 1rem"
@@ -11,6 +11,7 @@ const COLOR_RING_MULTIPLIER = 2.2
 export const MeditationTimer = () => {
   const [running, setRunning] = useState(false)
   const [seconds, setSeconds] = useState(TIMER_DURATION)
+  const [selectedSeconds, setSelectedSeconds] = useState(0)
   const [pressed, setPressed] = useState(false)
   const intervalRef = useRef(null)
 
@@ -96,7 +97,14 @@ export const MeditationTimer = () => {
     return () => window.removeEventListener("resize", refresh)
   }, [])
 
-  const formatTime = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`
+  const formatTime = (s) => {
+    const h = Math.floor(s / 3600)
+    const m = Math.floor((s % 3600) / 60)
+    const sec = s % 60
+    return `${h > 0 ? String(h).padStart(2, "0") + ":" : ""}${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
+  }
+
+  const timeOptions = Array.from({ length: 37 }, (_, i) => i * 5)
 
   return (
     <div
@@ -111,19 +119,20 @@ export const MeditationTimer = () => {
         boxSizing: "border-box",
       }}
     >
-      <div
-        style={{
-          position: "relative",
-          width: sizes.outerWidth,
-          height: sizes.outerHeight,
-          borderRadius: CARD_RADIUS,
-          overflow: "hidden",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          transition: "width 0.3s, height 0.3s",
-        }}
-      >
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div
+          style={{
+            position: "relative",
+            width: sizes.outerWidth,
+            height: sizes.outerHeight,
+            borderRadius: CARD_RADIUS,
+            overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "width 0.3s, height 0.3s",
+          }}
+        >
         <div
           style={{
             position: "absolute",
@@ -150,8 +159,10 @@ export const MeditationTimer = () => {
           role="button"
           tabIndex={0}
           aria-label={running ? "Pause timer" : "Start timer"}
-          onClick={() => setRunning((r) => !r)}
-          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setRunning((r) => !r)}
+          onClick={() => seconds > 0 && setRunning((r) => !r)}
+          onKeyDown={(e) =>
+            (e.key === "Enter" || e.key === " ") && seconds > 0 && setRunning((r) => !r)
+          }
           onMouseDown={() => setPressed(true)}
           onMouseUp={() => setPressed(false)}
           onMouseLeave={() => setPressed(false)}
@@ -168,6 +179,7 @@ export const MeditationTimer = () => {
             fontSize: sizes.fontSize,
             color: "#6B7280",
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
             userSelect: "none",
@@ -179,7 +191,24 @@ export const MeditationTimer = () => {
               "box-shadow 0.18s cubic-bezier(.44,0,.56,1), width 0.3s, height 0.3s, font-size 0.3s, left 0.3s, top 0.3s",
           }}
         >
-          {formatTime(seconds)}
+          <div>{formatTime(seconds)}</div>
+          <button
+            style={{
+              marginTop: "4px",
+              fontSize: "0.5em",
+              background: "none",
+              border: "none",
+              color: "#FBBF24",
+              cursor: "pointer",
+            }}
+            onClick={(e) => {
+              e.stopPropagation()
+              setRunning(false)
+              setSeconds(selectedSeconds)
+            }}
+          >
+            reset
+          </button>
         </div>
         <style>
           {`
@@ -189,6 +218,41 @@ export const MeditationTimer = () => {
           `}
         </style>
       </div>
+      <div
+        style={{
+          marginTop: "12px",
+          width: sizes.outerWidth,
+          overflowX: "auto",
+          display: "flex",
+          gap: "8px",
+          paddingBottom: "4px",
+        }}
+      >
+        {timeOptions.map((m) => (
+          <div
+            key={m}
+            onClick={() => {
+              setRunning(false)
+              setSelectedSeconds(m * 60)
+              setSeconds(m * 60)
+            }}
+            style={{
+              padding: "6px 12px",
+              borderRadius: "12px",
+              background: selectedSeconds === m * 60 ? "#34D399" : "#fff",
+              color: selectedSeconds === m * 60 ? "#fff" : "#6B7280",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+              cursor: "pointer",
+              flex: "0 0 auto",
+              fontFamily: "'Roboto Serif', serif",
+              fontSize: "14px",
+            }}
+          >
+            {formatTime(m * 60)}
+          </div>
+        ))}
+      </div>
     </div>
-  )
+  </div>
+)
 }
