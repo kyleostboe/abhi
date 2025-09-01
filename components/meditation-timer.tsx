@@ -115,7 +115,7 @@ export const MeditationTimer = () => {
         alignItems: "flex-start",
         background: "transparent",
         position: "relative",
-        padding: "20px 16px",
+        padding: "0px 16px",
         boxSizing: "border-box",
       }}
     >
