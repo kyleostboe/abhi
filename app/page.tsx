@@ -2422,7 +2422,7 @@ export default function Home() {
                         href="https://dharmaseed.org/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs rounded border-[3px]"
+                        className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm"
                       >
                         Dharma Seed
                       </a>
@@ -2430,7 +2430,7 @@ export default function Home() {
                         href="https://dharmaseed.org/teacher/210/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-black font-serif hover:shadow-none shadow-md border-gray-500 text-xs rounded border-[3px]"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-black font-serif hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm"
                       >
                         Rob Burbea's talks &amp; retreats
                       </a>
@@ -2438,12 +2438,7 @@ export default function Home() {
                         href="https://tasshin.com/guided-meditations/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-black font-serif hover:shadow-none shadow-md border-gray-500 text-xs rounded border-[3px]"
-                      >
-                        Tasshin &amp; friend's meditations
-                      </a>
-                      <a
-                        href="https://www.tarabrach.com/guided-meditations/"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-black font-serif hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] > Tasshin &amp; friend's meditations </a> <a href= rounded-sm"https://www.tarabrach.com/guided-meditations/"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs rounded border-[3px]"
@@ -2454,7 +2449,7 @@ export default function Home() {
                         href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDDo3?usp=drive_link"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs rounded border-[3px]"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-sm"
                       >
                         Toby Sola's meditations
                       </a>
@@ -2462,7 +2457,7 @@ export default function Home() {
                         href="https://meditofoundation.org/meditations"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs rounded border-[3px]"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-sm"
                       >
                         Medito Foundation
                       </a>
@@ -2470,7 +2465,7 @@ export default function Home() {
                         href="https://www.freebuddhistaudio.com"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs rounded border-[3px]"
+                        className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm"
                       >
                         freebuddhistaudio
                       </a>
