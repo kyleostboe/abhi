@@ -2116,7 +2116,7 @@ export default function Home() {
             value={recordingLabel}
             onChange={handleRecordingLabelChange}
             placeholder="Describe this recording..."
-            className="mt-1 text-sm font-black border-rose-300 text-rose-400 shadow-none placeholder-rose-200"
+            className="mt-1 text-sm font-black border-gray-500 focus-visible:border-gray-600 text-gray-500 shadow-md placeholder-gray-500"
           />
           <Button
             onClick={isRecording ? stopRecording : startRecording}
