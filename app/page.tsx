@@ -17,7 +17,7 @@ import {
   Play,
   PlusCircle,
   CircleDotDashed,
-  Timer as TimerIcon,
+  TimerIcon,
 } from "lucide-react" // Import Copy icon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
@@ -122,12 +122,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
               className="space-y-2 border-t border-gray-100 pt-4"
             >
               <div className="space-y-2">
-                <audio
-                  controls
-                  src={readyToAddToTimelineRecording.url}
-                  className="w-full"
-                  preload="metadata"
-                />
+                <audio controls src={readyToAddToTimelineRecording.url} className="w-full" preload="metadata" />
                 <p className="text-xs text-gray-600 text-center">
                   Duration: {formatTime(readyToAddToTimelineRecording.duration)}
                 </p>
@@ -144,9 +139,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
                   }
 
                   const maxExistingTime =
-                    timelineEvents.length > 0
-                      ? Math.max(...timelineEvents.map((e) => e.startTime))
-                      : 0
+                    timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
                   const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 10 : 0
 
                   const newEvent: TimelineEvent = {
@@ -900,7 +893,7 @@ export default function Home() {
       setTimeline((prev) => prev.filter((_, i) => i !== index))
       if (activeItemIndex === index) {
         setActiveItemIndex(null)
-      } else if (activeItemIndex !== null && activeItemIndex > index) {
+      } else if (activeItemIndex !== null && activeItemIndex !== null && activeItemIndex > index) {
         setActiveItemIndex((prev) => (prev !== null ? prev - 1 : null))
       }
     },
@@ -2244,9 +2237,7 @@ export default function Home() {
           <div className="flex items-start">
             <AlertTriangle className="text-yellow-500 mr-3 flex-shrink-0 mt-0.5 w-5 h-5" />
             <div>
-              <h3 className="text-yellow-700 mb-1 font-serif font-black text-sm">
-                High Memory Usage Expected
-              </h3>
+              <h3 className="text-yellow-700 mb-1 font-serif font-black text-sm">High Memory Usage Expected</h3>
               <p className="text-yellow-600 font-serif font-black text-xs">
                 Large files or long target durations require significant memory. Processing may be slow or unstable on
                 devices with limited RAM.
@@ -2307,9 +2298,7 @@ export default function Home() {
                     onClick={() => setActiveMode("adjuster")}
                     className={cn(
                       "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black py-3 tracking-tight text-sm",
-                      activeMode === "adjuster"
-                        ? "bg-white text-gray-600 shadow-sm "
-                        : "text-gray-600 ",
+                      activeMode === "adjuster" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
                     )}
                   >
                     Adjuster
@@ -2318,9 +2307,7 @@ export default function Home() {
                     onClick={() => setActiveMode("timer")}
                     className={cn(
                       "inline-flex items-center justify-center whitespace-nowrap rounded-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm w-12 h-11",
-                      activeMode === "timer"
-                        ? "bg-white text-gray-600 shadow-sm "
-                        : "text-gray-600 ",
+                      activeMode === "timer" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
                     )}
                   >
                     <TimerIcon className="w-5 h-5" />
@@ -2329,9 +2316,7 @@ export default function Home() {
                     onClick={() => setActiveMode("encoder")}
                     className={cn(
                       "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm",
-                      activeMode === "encoder"
-                        ? "bg-white text-gray-600 shadow-sm "
-                        : "text-gray-600 ",
+                      activeMode === "encoder" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
                     )}
                   >
                     Encoder
@@ -2439,14 +2424,15 @@ export default function Home() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-black font-serif hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm"
-                        > 
-                          Tasshin &amp; friend's meditations 
-                        </a> 
-                        <a href= rounded-sm"https://www.tarabrach.com/guided-meditations/"
+                      >
+                        Tasshin &amp; friend's meditations
+                      </a>
+                      <a
+                        href="https://www.tarabrach.com/guided-meditations/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm"
-                        >
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-sm"
+                      >
                         Tara Brach's meditations
                       </a>
                       <a
@@ -2651,9 +2637,7 @@ export default function Home() {
                               />
                             </div>
                             <div className="text-center font-serif font-black">
-                              <span className="font-black text-xl text-gray-600">
-                                {targetDuration}
-                              </span>
+                              <span className="font-black text-xl text-gray-600">{targetDuration}</span>
                               <span className="ml-1 text-base text-gray-600">minutes</span>
                             </div>
                             {durationLimits && (
@@ -2684,9 +2668,7 @@ export default function Home() {
                                 {silenceThreshold.toFixed(3)}
                               </span>
                             </div>
-                            <div className="text-center text-sm mt-0 text-gray-500">
-                              Lower = more sensitive
-                            </div>
+                            <div className="text-center text-sm mt-0 text-gray-500">Lower = more sensitive</div>
                           </div>
                         </Card>
                       </div>
@@ -2710,14 +2692,10 @@ export default function Home() {
                               />
                             </div>
                             <div className="text-center">
-                              <span className="font-black text-xl text-gray-600">
-                                {minSilenceDuration}
-                              </span>
+                              <span className="font-black text-xl text-gray-600">{minSilenceDuration}</span>
                               <span className="ml-1 text-base text-gray-600">seconds</span>
                             </div>
-                            <div className="text-center mt-0 text-sm text-gray-500">
-                              Shorter = detect more pauses
-                            </div>
+                            <div className="text-center mt-0 text-sm text-gray-500">Shorter = detect more pauses</div>
                           </div>
                         </Card>
                         <Card className="overflow-hidden border-none shadow-lg bg-white ">
@@ -2737,9 +2715,7 @@ export default function Home() {
                               />
                             </div>
                             <div className="text-center">
-                              <span className="font-black text-xl text-gray-600">
-                                {minSpacingDuration.toFixed(1)}
-                              </span>
+                              <span className="font-black text-xl text-gray-600">{minSpacingDuration.toFixed(1)}</span>
                               <span className="ml-1 text-base text-gray-600">seconds</span>
                             </div>
                             <div className="text-center text-sm mt-0 text-gray-500">
@@ -2863,9 +2839,7 @@ export default function Home() {
                           </div>
                           <div className="grid grid-cols-2 gap-3">
                             <div className="p-3 text-center shadow-md bg-white rounded-smll rounded-sm py-3.5">
-                              <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 ">
-                                Duration
-                              </div>
+                              <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 ">Duration</div>
                               <div className="font-black text-gray-600 text-sm">
                                 {originalBuffer ? formatTime(originalBuffer.duration) : "--"}
                               </div>
@@ -2895,9 +2869,7 @@ export default function Home() {
                           </div>
                           <div className="grid grid-cols-2 gap-3 mb-3.5">
                             <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
-                              <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">
-                                Duration
-                              </div>
+                              <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Duration</div>
                               <div className="font-black text-gray-600 text-sm">
                                 {formatTime(actualDuration || 0)}
                                 {actualDuration && targetDuration && (
@@ -2908,9 +2880,7 @@ export default function Home() {
                               </div>
                             </div>
                             <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
-                              <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">
-                                File Size
-                              </div>
+                              <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">File Size</div>
                               <div className="font-black text-sm text-gray-600">
                                 {formatFileSize(processedFileSize || 0)}
                               </div>
@@ -3020,28 +2990,28 @@ export default function Home() {
                         </div>
                       </div>
                     </motion.div>
-                      <RecorderSection
-                        className="hidden lg:block"
-                        inputId="recording-label-desktop"
-                        recordingLabel={recordingLabel}
-                        onRecordingLabelChange={handleRecordingLabelChange}
-                        isRecording={isRecording}
-                        startRecording={startRecording}
-                        stopRecording={stopRecording}
-                        readyToAddToTimelineRecording={readyToAddToTimelineRecording}
-                        timelineEvents={timelineEvents}
-                        addEventToTimeline={addEventToTimeline}
-                        setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
-                        setRecordedBlobs={setRecordedBlobs}
-                        setRecordingLabel={setRecordingLabel}
-                      />
+                    <RecorderSection
+                      className="hidden lg:block"
+                      inputId="recording-label-desktop"
+                      recordingLabel={recordingLabel}
+                      onRecordingLabelChange={handleRecordingLabelChange}
+                      isRecording={isRecording}
+                      startRecording={startRecording}
+                      stopRecording={stopRecording}
+                      readyToAddToTimelineRecording={readyToAddToTimelineRecording}
+                      timelineEvents={timelineEvents}
+                      addEventToTimeline={addEventToTimeline}
+                      setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
+                      setRecordedBlobs={setRecordedBlobs}
+                      setRecordingLabel={setRecordingLabel}
+                    />
                   </div>
 
                   <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
                     <Card className="overflow-hidden border-none shadow-lg bg-white ">
                       <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-center">
                         <h3 className="text-white flex items-center font-black text-left">
@@ -3127,11 +3097,7 @@ export default function Home() {
                                       {} as Record<string, any[]>,
                                     ),
                                   ).map(([octave, notes]) => (
-                                    <AccordionItem
-                                      value={octave}
-                                      key={octave}
-                                      className="border-b border-gray-100 "
-                                    >
+                                    <AccordionItem value={octave} key={octave} className="border-b border-gray-100 ">
                                       <AccordionTrigger className="text-gray-500 hover:no-underline py-3 font-serif font-black">
                                         {octave}
                                       </AccordionTrigger>
@@ -3314,17 +3280,11 @@ export default function Home() {
                         </div>
                         <div className="grid grid-cols-2 gap-3 mb-3.5">
                           <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
-                            <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">
-                              Duration
-                            </div>
-                            <div className="font-black text-gray-600 text-sm">
-                              {formatTime(encoderTotalDuration)}
-                            </div>
+                            <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Duration</div>
+                            <div className="font-black text-gray-600 text-sm">{formatTime(encoderTotalDuration)}</div>
                           </div>
                           <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
-                            <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">
-                              File Size
-                            </div>
+                            <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">File Size</div>
                             <div className="font-black text-sm text-gray-600">
                               {formatFileSize(generatedAudioFileSize || 0)}
                             </div>
