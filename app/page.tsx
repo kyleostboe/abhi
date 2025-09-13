@@ -2310,7 +2310,7 @@ export default function Home() {
                       activeMode === "timer" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
                     )}
                   >
-                    <TimerIcon className="w-5 h-5" />
+                    <TimerIcon className="h-6 w-6" />
                   </button>
                   <button
                     onClick={() => setActiveMode("encoder")}
