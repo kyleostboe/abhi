@@ -1,5 +1,5 @@
 "use client"
-import React, { useRef, useState, useEffect } from "react"
+import { useRef, useState, useEffect } from "react"
 
 const TIMER_DURATION = 10 * 60
 const BORDER_WIDTH_RATIO_VERTICAL = 0.08
@@ -10,36 +10,34 @@ const BASE_UNIT = 100
 const COLOR_RING_MULTIPLIER = 2.2
 const PICKER_ITEM_HEIGHT = 34
 
-function pad2(n) { return String(n).padStart(2, "0"); }
+function pad2(n) {
+  return String(n).padStart(2, "0")
+}
 
 function PickerColumn({ value, setValue, min, max, pad = 2, enabled = true, running = false }) {
   const ref = useRef()
   const itemCount = max - min + 1
   const values = Array.from({ length: itemCount }, (_, i) => min + i)
 
-  // Instantly snap on timer changes, smoothly animate on user change
+  // FIX: jump instantly when running, smoothly when paused
   useEffect(() => {
     if (ref.current) {
       ref.current.scrollTo({
         top: (value - min) * PICKER_ITEM_HEIGHT,
-        behavior: running ? "auto" : "smooth"
-      });
+        behavior: enabled ? (running ? "auto" : "smooth") : "auto",
+      })
     }
-    // eslint-disable-next-line
-  }, [value, running, min])
+  }, [value, enabled, min, running])
 
-  // When disabled, snap instantly too (just defensive)
   useEffect(() => {
     if (!enabled && ref.current) {
       ref.current.scrollTo({
         top: (value - min) * PICKER_ITEM_HEIGHT,
-        behavior: "auto"
-      });
+        behavior: "auto",
+      })
     }
-    // eslint-disable-next-line
   }, [enabled, value, min])
 
-  // On user scroll, snap to nearest (but NOT during running)
   useEffect(() => {
     if (!enabled) return
     const node = ref.current
@@ -63,66 +61,66 @@ function PickerColumn({ value, setValue, min, max, pad = 2, enabled = true, runn
   }, [enabled, min, setValue])
 
   return (
-    <div style={{
-      width: 46,
-      height: PICKER_ITEM_HEIGHT * 3,
-      overflow: "hidden",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      position: "relative",
-      userSelect: enabled ? "auto" : "none"
-    }}>
+    <div
+      style={{
+        width: 46,
+        height: PICKER_ITEM_HEIGHT * 3,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        position: "relative",
+        userSelect: enabled ? "auto" : "none",
+      }}
+    >
       <div
         ref={ref}
         style={{
           width: "100%",
           height: "100%",
           overflowY: enabled ? "scroll" : "hidden",
-          scrollSnapType: enabled ? "y mandatory" : "none"
+          scrollSnapType: enabled ? "y mandatory" : "none",
         }}
         tabIndex={0}
         className="hide-scrollbar"
       >
         <div style={{ height: PICKER_ITEM_HEIGHT }}></div>
         {values.map((v, idx) => {
-          // Only show above/below if NOT running
           let visible = true
           if (running && v !== value) visible = false
-          const baseStyle = {
-            fontFamily: "'Roboto Serif', serif",
-            fontWeight: v === value ? 900 : 700,
-            fontSize: v === value ? 40 : 16,
+          const style = {
+            color: v === value ? "#222" : "#bbb",
+            fontWeight: v === value ? 700 : 400,
+            fontSize: v === value ? 26 : 16,
             textAlign: "center",
             height: PICKER_ITEM_HEIGHT,
             lineHeight: `${PICKER_ITEM_HEIGHT}px`,
             transition: "color 0.08s, font-size 0.08s",
             opacity: visible ? 1 : 0,
             pointerEvents: v === value && enabled ? "auto" : "none",
-            color: v === value ? "#4B5563" : "#bbb"
           }
           return (
-            <div
-              key={v}
-              style={baseStyle}
-              onClick={() => enabled && setValue(v)}
-              aria-selected={v === value}
-            >
+            <div key={v} style={style} onClick={() => enabled && setValue(v)} aria-selected={v === value}>
               {pad2(v)}
             </div>
           )
         })}
         <div style={{ height: PICKER_ITEM_HEIGHT }}></div>
       </div>
-      {!enabled &&
-        <div style={{
-          position: "absolute",
-          left: 0, top: 0, width: "100%", height: "100%",
-          zIndex: 99,
-          pointerEvents: "auto",
-          background: "transparent"
-        }} />
-      }
+      {!enabled && (
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: "100%",
+            height: "100%",
+            zIndex: 99,
+            pointerEvents: "auto",
+            background: "transparent",
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -131,7 +129,8 @@ export function MeditationTimer() {
   // Responsive container sizing (unchanged)
   const getResponsiveSizes = () => {
     if (typeof window !== "undefined") {
-      const vw = window.innerWidth, vh = window.innerHeight
+      const vw = window.innerWidth,
+        vh = window.innerHeight
       const isMobile = vw < 768
       const padVw = vw - (isMobile ? Math.max(vw * 0.15, 30) : Math.max(vw * 0.08, 32))
       const padVh = vh - Math.max(vh * 0.08, 24)
@@ -198,8 +197,11 @@ export function MeditationTimer() {
 
   useEffect(() => {
     if (!running) return
-    if (seconds <= 0) { setRunning(false); return }
-    const int = setInterval(() => setSeconds(s => s - 1), 1000)
+    if (seconds <= 0) {
+      setRunning(false)
+      return
+    }
+    const int = setInterval(() => setSeconds((s) => s - 1), 1000)
     return () => clearInterval(int)
   }, [running, seconds])
 
@@ -207,16 +209,22 @@ export function MeditationTimer() {
   const minute = Math.floor((seconds % 3600) / 60)
   const second = seconds % 60
 
-  const setHour = h => { !running && setSeconds(h * 3600 + minute * 60 + second) }
-  const setMinute = m => { !running && setSeconds(hour * 3600 + m * 60 + second) }
-  const setSecond = s => { !running && setSeconds(hour * 3600 + minute * 60 + s) }
+  const setHour = (h) => {
+    !running && setSeconds(h * 3600 + minute * 60 + second)
+  }
+  const setMinute = (m) => {
+    !running && setSeconds(hour * 3600 + m * 60 + second)
+  }
+  const setSecond = (s) => {
+    !running && setSeconds(hour * 3600 + minute * 60 + s)
+  }
 
   function reset() {
     setRunning(false)
     setSeconds(TIMER_DURATION)
   }
 
-  const fmt = n => String(n).padStart(2, "0")
+  const fmt = (n) => String(n).padStart(2, "0")
 
   return (
     <div
@@ -273,7 +281,7 @@ export function MeditationTimer() {
             role="button"
             tabIndex={0}
             aria-label={running ? "Pause timer" : "Start timer"}
-            onClick={() => seconds > 0 && setRunning(r => !r)}
+            onClick={() => seconds > 0 && setRunning((r) => !r)}
             style={{
               position: "absolute",
               left: sizes.borderH,
@@ -285,7 +293,7 @@ export function MeditationTimer() {
               fontFamily: "'Roboto Serif', serif",
               fontWeight: 900,
               fontSize: sizes.fontSize,
-              color: "#4B5563",
+              color: "#6B7280",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -295,27 +303,44 @@ export function MeditationTimer() {
               boxShadow: "0 12px 48px 0 rgba(0,0,0,0.16)",
               outline: "none",
               zIndex: 2,
-              transition: "box-shadow 0.18s cubic-bezier(.44,0,.56,1), width 0.3s, height 0.3s, font-size 0.3s, left 0.3s, top 0.3s",
+              transition:
+                "box-shadow 0.18s cubic-bezier(.44,0,.56,1), width 0.3s, height 0.3s, font-size 0.3s, left 0.3s, top 0.3s",
             }}
           >
             <div style={{ display: "flex", alignItems: "center" }}>
-              <PickerColumn value={hour} setValue={setHour} min={0} max={12} pad={2} enabled={!running} running={running} />
-              <div className="pb-1 mx-[7px]" style={{
-                fontFamily: "serif",
-                fontWeight: 900,
-                fontSize: 36,
-                color: "#4B5563",
-             
-              }}>:</div>
-              <PickerColumn value={minute} setValue={setMinute} min={0} max={59} pad={2} enabled={!running} running={running} />
-              <div className="pb-1 mx-[7px]" style={{
-                fontFamily: "serif",
-                fontWeight: 900,
-                fontSize: 36,
-                color: "#4B5563",
-                
-              }}>:</div>
-              <PickerColumn value={second} setValue={setSecond} min={0} max={59} pad={2} enabled={!running} running={running} />
+              <PickerColumn
+                value={hour}
+                setValue={setHour}
+                min={0}
+                max={12}
+                pad={2}
+                enabled={!running}
+                running={running}
+              />
+              <div className="text-gray-600" style={{ fontSize: 22, margin: "0 2px" }}>
+                :
+              </div>
+              <PickerColumn
+                value={minute}
+                setValue={setMinute}
+                min={0}
+                max={59}
+                pad={2}
+                enabled={!running}
+                running={running}
+              />
+              <div className="text-gray-600" style={{ fontSize: 22, margin: "0 2px" }}>
+                :
+              </div>
+              <PickerColumn
+                value={second}
+                setValue={setSecond}
+                min={0}
+                max={59}
+                pad={2}
+                enabled={!running}
+                running={running}
+              />
             </div>
           </div>
           <style>
@@ -334,7 +359,7 @@ export function MeditationTimer() {
             cursor: "pointer",
             color: "#6B7280",
             fontFamily: "'Roboto Serif', serif",
-            fontWeight: 900,
+            fontWeight: 700,
             fontSize: 16,
           }}
           onClick={reset}
