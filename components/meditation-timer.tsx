@@ -90,7 +90,7 @@ function PickerColumn({ value, setValue, min, max, pad = 2, enabled = true, runn
           if (running && v !== value) visible = false
           const style = {
             color: v === value ? "#222" : "#bbb",
-            fontWeight: v === value ? 700 : 400,
+            fontWeight: v === value ? 700 : 700,
             fontSize: v === value ? 26 : 16,
             textAlign: "center",
             height: PICKER_ITEM_HEIGHT,
