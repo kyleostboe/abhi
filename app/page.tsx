@@ -17,14 +17,12 @@ import {
   Play,
   PlusCircle,
   CircleDotDashed,
-  TimerIcon,
 } from "lucide-react" // Import Copy icon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
-import { MeditationTimer } from "@/components/meditation-timer"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -796,7 +794,7 @@ const playPianoNote = async (noteString: string, duration = 0.45, velocity = 0.9
 }
 
 export default function Home() {
-  const [activeMode, setActiveMode] = useState<"adjuster" | "timer" | "encoder">("adjuster")
+  const [activeMode, setActiveMode] = useState<"adjuster" | "encoder">("adjuster")
 
   // == States for Length Adjuster ==
   const [file, setFile] = useState<File | null>(null)
@@ -2298,29 +2296,20 @@ export default function Home() {
                     onClick={() => setActiveMode("adjuster")}
                     className={cn(
                       "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black py-3 tracking-tight text-sm",
-                      activeMode === "adjuster" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
-                    )}
-                  >
-                    Adjuster
-                  </button>
-                  <button
-                    onClick={() => setActiveMode("timer")}
-                    className={cn(
-                      "inline-flex items-center justify-center whitespace-nowrap rounded-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm w-12 h-11",
-                      activeMode === "timer" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
-                    )}
-                  >
-                    <TimerIcon className="h-6 w-6" />
-                  </button>
-                  <button
-                    onClick={() => setActiveMode("encoder")}
-                    className={cn(
-                      "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm",
-                      activeMode === "encoder" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
-                    )}
-                  >
-                    Encoder
-                  </button>
+                    activeMode === "adjuster" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
+                  )}
+                >
+                  Adjuster
+                </button>
+                <button
+                  onClick={() => setActiveMode("encoder")}
+                  className={cn(
+                    "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm",
+                    activeMode === "encoder" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
+                  )}
+                >
+                  Encoder
+                </button>
                 </div>
               </div>
             </motion.div>
@@ -2344,25 +2333,11 @@ export default function Home() {
                   </p>
                 </motion.div>
               )}
-              {activeMode === "timer" && (
-                <motion.div
-                  key="timer-note"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
-                >
-                  <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs">
-                    Click/press timer to start/pause.
-                  </p>
-                </motion.div>
-              )}
-              {activeMode === "encoder" && (
-                <motion.div
-                  key="encoder-note"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
+                {activeMode === "encoder" && (
+                  <motion.div
+                    key="encoder-note"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
                   className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
@@ -2910,10 +2885,6 @@ export default function Home() {
                   )}
                 </div>
               </>
-            ) : activeMode === "timer" ? (
-              <div className="flex justify-center">
-                <MeditationTimer />
-              </div>
             ) : (
               // == Encoder UI ==
               <motion.div
