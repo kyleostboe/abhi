@@ -277,7 +277,7 @@ export function MeditationTimer() {
               }}
             ></div>
           </div>
-          <div
+          <div className="h-auto"
             role="button"
             tabIndex={0}
             aria-label={running ? "Pause timer" : "Start timer"}
