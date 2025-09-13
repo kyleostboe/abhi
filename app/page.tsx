@@ -3064,8 +3064,8 @@ export default function Home() {
                                 {multiNoteMode && (
                                   <div className="p-3 bg-gray-50 rounded-sm mb-1.5 shadow-inner py-3 px-3">
                                     <div className="flex items-center justify-between">
-                                      <div className="text-gray-500 text-xs">
-                                        Selected: {selectedNotes.length > 0 ? selectedNotes.join(", ") : "None"}
+                                      <div className="text-gray-500 text-sm">
+                                         {selectedNotes.length > 0 ? selectedNotes.join(", ") : "None"}
                                       </div>
                                       {selectedNotes.length > 1 && (
                                         <Button
