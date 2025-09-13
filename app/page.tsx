@@ -2438,11 +2438,15 @@ export default function Home() {
                         href="https://tasshin.com/guided-meditations/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-black font-serif hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] > Tasshin &amp; friend's meditations </a> <a href= rounded-sm"https://www.tarabrach.com/guided-meditations/"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-black font-serif hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm"
+                        > 
+                          Tasshin &amp; friend's meditations 
+                        </a> 
+                        <a href= rounded-sm"https://www.tarabrach.com/guided-meditations/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs rounded border-[3px]"
-                      >
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm"
+                        >
                         Tara Brach's meditations
                       </a>
                       <a
