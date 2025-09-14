@@ -1923,7 +1923,6 @@ export default function Home() {
               label: recordingLabel.trim(),
             })
             setRecordedBlobs([blob]) // Keep the blob for potential future use if needed
-            URL.revokeObjectURL(url) // Revoke the temporary URL after duration is captured
             toast({ title: "Recording Stopped", description: `Duration: ${formatTime(duration)}` })
           }
 
@@ -1946,6 +1945,9 @@ export default function Home() {
 
         mediaRecorderRef.current.start()
         setIsRecording(true)
+        if (readyToAddToTimelineRecording) {
+          URL.revokeObjectURL(readyToAddToTimelineRecording.url)
+        }
         setReadyToAddToTimelineRecording(null) // Clear previous recording
         setRecordedBlobs([])
         toast({ title: "Recording Started" })
