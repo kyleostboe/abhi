@@ -305,6 +305,18 @@ export function VisualTimeline({
               const isRecording = event.type === "recorded_voice"
               const widthPercent = totalDuration > 0 ? (duration / totalDuration) * 100 : 0
 
+              if (isRecording) {
+                const prevRecording = events
+                  .filter((e) => e.type === "recorded_voice" && e.startTime < event.startTime)
+                  .sort((a, b) => b.startTime - a.startTime)[0]
+                if (prevRecording) {
+                  const prevEnd = prevRecording.startTime + (prevRecording.duration || 0)
+                  if (displayTime < prevEnd) {
+                    displayTime = prevEnd
+                  }
+                }
+              }
+
               if (!isRecording && circleHalfTime > 0) {
                 const prevRecording = events
                   .filter((e) => e.type === "recorded_voice" && e.startTime < event.startTime)
@@ -422,7 +434,8 @@ export function VisualTimeline({
                       {/* Icon (fixed size, no shrink) */}
                       <div
                         className={cn(
-                          "rounded-full flex items-center justify-center text-white shadow-sm h-9 w-9 flex-shrink-0",
+                          "flex items-center justify-center text-white shadow-sm h-9 w-9 flex-shrink-0",
+                          event.type === "recorded_voice" ? "rounded-sm" : "rounded-full",
                           getEventColor(event),
                         )}
                       >
