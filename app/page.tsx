@@ -1929,9 +1929,19 @@ export default function Home() {
           tempAudio.preload = "metadata"
           tempAudio.src = url
 
-          tempAudio.onloadedmetadata = () => {
-            const duration =
+          tempAudio.onloadedmetadata = async () => {
+            let duration =
               tempAudio.duration && !isNaN(tempAudio.duration) && isFinite(tempAudio.duration) ? tempAudio.duration : 0
+
+            if (!duration) {
+              try {
+                const arrayBuffer = await blob.arrayBuffer()
+                const audioBuffer = await getAudioContext().decodeAudioData(arrayBuffer)
+                duration = audioBuffer.duration
+              } catch (error) {
+                console.error("Error decoding audio for duration:", error)
+              }
+            }
 
             setReadyToAddToTimelineRecording({
               url,
