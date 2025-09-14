@@ -6,7 +6,7 @@ import { useState, useRef, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, Music2Icon, MicIcon, Check, X, Play, Copy } from "lucide-react"
+import { Trash2, Music2Icon, MicIcon, Check, X, Play, Copy, Pause } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn, formatTime } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
@@ -50,6 +50,14 @@ export function VisualTimeline({
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
   const [editingTime, setEditingTime] = useState<string>("")
   const isMobile = useMobile()
+  const [playingEventId, setPlayingEventId] = useState<string | null>(null)
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
+
+  useEffect(() => {
+    return () => {
+      currentAudio?.pause()
+    }
+  }, [currentAudio])
 
   const getEventColor = useCallback((event: TimelineEvent) => event.color || EVENT_COLORS[0], [])
 
@@ -72,29 +80,35 @@ export function VisualTimeline({
     [totalDuration],
   )
 
-  const handleMouseDown = (eventId: string, e: React.MouseEvent) => {
+  const handleMouseDown = (eventId: string, e: React.MouseEvent, timelineEvent: TimelineEvent) => {
     e.preventDefault()
     setDraggedEvent(eventId)
     isDragging.current = true
 
     if (timelineRef.current) {
-      const rect = timelineRef.current.getBoundingClientRect()
       const eventElement = e.currentTarget as HTMLElement
       const eventRect = eventElement.getBoundingClientRect()
-      setDragOffset(e.clientX - (eventRect.left + eventRect.width / 2))
+      if (timelineEvent.type === "recorded_voice") {
+        setDragOffset(e.clientX - eventRect.left)
+      } else {
+        setDragOffset(e.clientX - (eventRect.left + eventRect.width / 2))
+      }
     }
   }
 
-  const handleTouchStart = (eventId: string, e: React.TouchEvent) => {
+  const handleTouchStart = (eventId: string, e: React.TouchEvent, timelineEvent: TimelineEvent) => {
     e.preventDefault()
     setDraggedEvent(eventId)
     isDragging.current = true
 
     if (timelineRef.current && e.touches[0]) {
-      const rect = timelineRef.current.getBoundingClientRect()
       const eventElement = e.currentTarget as HTMLElement
       const eventRect = eventElement.getBoundingClientRect()
-      setDragOffset(e.touches[0].clientX - (eventRect.left + eventRect.width / 2))
+      if (timelineEvent.type === "recorded_voice") {
+        setDragOffset(e.touches[0].clientX - eventRect.left)
+      } else {
+        setDragOffset(e.touches[0].clientX - (eventRect.left + eventRect.width / 2))
+      }
     }
   }
 
@@ -184,31 +198,44 @@ export function VisualTimeline({
 
           console.log("[v0] Timeline: Playing musical notes:", noteStrings)
 
-          // Use the unified audio functions from main app
           if (noteStrings.length === 1 && playSingleNote) {
             await playSingleNote(noteStrings[0])
           } else if (noteStrings.length > 1 && playChordPreview) {
             await playChordPreview(noteStrings)
-          } else {
-            // Fallback: play each note individually if chord preview not available
-            if (playSingleNote) {
-              for (const noteString of noteStrings) {
-                await playSingleNote(noteString)
-                // Small delay between notes if playing individually
-                await new Promise((resolve) => setTimeout(resolve, 100))
-              }
+          } else if (playSingleNote) {
+            for (const noteString of noteStrings) {
+              await playSingleNote(noteString)
+              await new Promise((resolve) => setTimeout(resolve, 100))
             }
           }
         } else {
-          // Regular audio file playback
           const audio = new Audio(event.soundCueSrc)
           audio.volume = 0.7
           await audio.play()
         }
       } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
+        if (playingEventId === event.id) {
+          currentAudio?.pause()
+          if (currentAudio) currentAudio.currentTime = 0
+          setPlayingEventId(null)
+          setCurrentAudio(null)
+          return
+        }
+
+        if (currentAudio) {
+          currentAudio.pause()
+          currentAudio.currentTime = 0
+        }
+
         const audio = new Audio(event.recordedAudioUrl)
         audio.volume = 0.7
+        audio.onended = () => {
+          setPlayingEventId(null)
+          setCurrentAudio(null)
+        }
         await audio.play()
+        setCurrentAudio(audio)
+        setPlayingEventId(event.id)
       }
     } catch (error) {
       console.error("[v0] Timeline audio playback failed:", error)
@@ -257,6 +284,9 @@ export function VisualTimeline({
           <AnimatePresence>
             {events.map((event) => {
               const displayTime = event.startTime
+              const duration = getEventDuration(event)
+              const isRecording = event.type === "recorded_voice"
+              const widthPercent = totalDuration > 0 ? (duration / totalDuration) * 100 : 0
 
               return (
                 <motion.div
@@ -265,16 +295,26 @@ export function VisualTimeline({
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   className={cn(
-                    "absolute top-1/2 -translate-y-1/2 rounded-full shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-white w-9 h-9",
+                    "absolute top-1/2 -translate-y-1/2 shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-white",
+                    isRecording ? "h-9 rounded-sm" : "rounded-full w-9 h-9",
                     draggedEvent === event.id ? "z-30 shadow-lg ring-2 ring-white/50" : "z-10",
                     getEventColor(event),
                   )}
-                  style={{
-                    left: `calc(${getPositionFromTime(displayTime)} - 20px)`,
-                    transform: "translateY(-50%)",
-                  }}
-                  onMouseDown={(e) => handleMouseDown(event.id, e)}
-                  onTouchStart={(e) => handleTouchStart(event.id, e)}
+                  style={
+                    isRecording
+                      ? {
+                          left: getPositionFromTime(displayTime),
+                          width: `${widthPercent}%`,
+                          minWidth: "2.25rem",
+                          transform: "translateY(-50%)",
+                        }
+                      : {
+                          left: `calc(${getPositionFromTime(displayTime)} - 20px)`,
+                          transform: "translateY(-50%)",
+                        }
+                  }
+                  onMouseDown={(e) => handleMouseDown(event.id, e, event)}
+                  onTouchStart={(e) => handleTouchStart(event.id, e, event)}
                   title={
                     event.type === "instruction_sound"
                       ? event.instructionText
@@ -409,9 +449,13 @@ export function VisualTimeline({
                           variant="ghost"
                           onClick={() => playEventAudio(event)}
                           className="hover:text-gray-600 px-1.5 py-1.5 h-7 w-7"
-                          title="Preview audio"
+                          title={playingEventId === event.id ? "Pause audio" : "Preview audio"}
                         >
-                          <Play className="h-3.5 w-3.5" />
+                          {playingEventId === event.id ? (
+                            <Pause className="h-3.5 w-3.5" />
+                          ) : (
+                            <Play className="h-3.5 w-3.5" />
+                          )}
                         </Button>
                         <Button
                           size="sm"
