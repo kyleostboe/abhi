@@ -462,6 +462,9 @@ export function VisualTimeline({
                               className="text-gray-500 hover:text-gray-700 bg-gray-100 px-2 py-1 rounded font-serif text-xs ml-0 mr-2"
                             >
                               {formatTime(event.startTime)}
+                              {event.type === "recorded_voice" && event.duration
+                                ? ` - ${formatTime(event.startTime + event.duration)}`
+                                : ""}
                             </button>
                           )}
                         </div>

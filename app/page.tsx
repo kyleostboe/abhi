@@ -1998,9 +1998,44 @@ export default function Home() {
 
   const updateEventStartTime = (eventId: string, newTime: number) => {
     setTimelineEvents((prev) => {
-      const updated = prev.map((event) =>
-        event.id === eventId ? { ...event, startTime: Math.max(0, Math.min(newTime, encoderTotalDuration)) } : event,
-      )
+      const index = prev.findIndex((e) => e.id === eventId)
+      if (index === -1) return prev
+
+      const event = prev[index]
+      const duration = event.duration || 0
+      let start = Math.max(0, Math.min(newTime, encoderTotalDuration - duration))
+
+      if (event.type === "recorded_voice") {
+        const others = prev.filter((e) => e.id !== eventId && e.type === "recorded_voice")
+
+        const prevRecording = others
+          .filter((e) => e.startTime < start)
+          .sort((a, b) => b.startTime - a.startTime)[0]
+        const nextRecording = others
+          .filter((e) => e.startTime > start)
+          .sort((a, b) => a.startTime - b.startTime)[0]
+
+        if (prevRecording) {
+          const prevEnd = prevRecording.startTime + (prevRecording.duration || 0)
+          if (start < prevEnd) start = prevEnd
+        }
+
+        if (nextRecording) {
+          if (start + duration > nextRecording.startTime) {
+            start = nextRecording.startTime - duration
+          }
+        }
+
+        if (prevRecording) {
+          const prevEnd = prevRecording.startTime + (prevRecording.duration || 0)
+          if (start < prevEnd) start = prevEnd
+        }
+
+        start = Math.max(0, Math.min(start, encoderTotalDuration - duration))
+      }
+
+      const updated = prev.map((e) => (e.id === eventId ? { ...e, startTime: start } : e))
+
       // Simple sort by startTime, with stable sorting for events at the same time
       return updated.sort((a, b) => {
         if (a.startTime === b.startTime) {
