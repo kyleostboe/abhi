@@ -120,7 +120,14 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
               className="space-y-2 border-t border-gray-100 pt-4"
             >
               <div className="space-y-2">
-                <audio controls src={readyToAddToTimelineRecording.url} className="w-full" preload="metadata" />
+                <audio
+                  key={readyToAddToTimelineRecording.url}
+                  ref={recordingPreviewRef}
+                  controls
+                  src={readyToAddToTimelineRecording.url}
+                  className="w-full"
+                  preload="metadata"
+                />
                 <p className="text-xs text-gray-600 text-center">
                   Duration: {formatTime(readyToAddToTimelineRecording.duration)}
                 </p>
@@ -863,6 +870,7 @@ export default function Home() {
   const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null)
   const [volume, setVolume] = useState<number>(75) // Default volume 75%
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const recordingPreviewRef = useRef<HTMLAudioElement | null>(null)
   const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const currentItemStartTimeRef = useRef<number>(0)
 
@@ -885,6 +893,12 @@ export default function Home() {
   const updateTimelineItemDuration = useCallback((index: number, newDuration: number) => {
     setTimeline((prev) => prev.map((item, i) => (i === index ? { ...item, duration: Math.max(1, newDuration) } : item)))
   }, [])
+
+  useEffect(() => {
+    if (readyToAddToTimelineRecording && recordingPreviewRef.current) {
+      recordingPreviewRef.current.load()
+    }
+  }, [readyToAddToTimelineRecording])
 
   const removeTimelineItem = useCallback(
     (index: number) => {
