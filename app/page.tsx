@@ -52,6 +52,7 @@ interface RecorderSectionProps {
   >
   setRecordedBlobs: React.Dispatch<React.SetStateAction<Blob[]>>
   setRecordingLabel: React.Dispatch<React.SetStateAction<string>>
+  recordingPreviewRef: React.RefObject<HTMLAudioElement>
 }
 
 const RecorderSection: React.FC<RecorderSectionProps> = ({
@@ -68,6 +69,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
   setReadyToAddToTimelineRecording,
   setRecordedBlobs,
   setRecordingLabel,
+  recordingPreviewRef,
 }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
@@ -2312,20 +2314,20 @@ export default function Home() {
                     onClick={() => setActiveMode("adjuster")}
                     className={cn(
                       "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black py-3 tracking-tight text-sm",
-                    activeMode === "adjuster" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
-                  )}
-                >
-                  Adjuster
-                </button>
-                <button
-                  onClick={() => setActiveMode("encoder")}
-                  className={cn(
-                    "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm",
-                    activeMode === "encoder" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
-                  )}
-                >
-                  Encoder
-                </button>
+                      activeMode === "adjuster" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
+                    )}
+                  >
+                    Adjuster
+                  </button>
+                  <button
+                    onClick={() => setActiveMode("encoder")}
+                    className={cn(
+                      "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm",
+                      activeMode === "encoder" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
+                    )}
+                  >
+                    Encoder
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -2349,17 +2351,18 @@ export default function Home() {
                   </p>
                 </motion.div>
               )}
-                {activeMode === "encoder" && (
-                  <motion.div
-                    key="encoder-note"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
+              {activeMode === "encoder" && (
+                <motion.div
+                  key="encoder-note"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
                   className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                 >
                   <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs pb-1.5">
-                     Design custom guided meditations by pairing instructions with sound cues or using the recorder, then arranging your events on the timeline.
+                    Design custom guided meditations by pairing instructions with sound cues or using the recorder, then
+                    arranging your events on the timeline.
                   </p>
                 </motion.div>
               )}
@@ -2990,6 +2993,7 @@ export default function Home() {
                       setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
                       setRecordedBlobs={setRecordedBlobs}
                       setRecordingLabel={setRecordingLabel}
+                      recordingPreviewRef={recordingPreviewRef}
                     />
                   </div>
 
@@ -3051,7 +3055,7 @@ export default function Home() {
                                   <div className="p-3 bg-gray-50 rounded-sm mb-1.5 shadow-inner py-3 px-3">
                                     <div className="flex items-center justify-between">
                                       <div className="text-gray-500 text-sm">
-                                         {selectedNotes.length > 0 ? selectedNotes.join(", ") : "None"}
+                                        {selectedNotes.length > 0 ? selectedNotes.join(", ") : "None"}
                                       </div>
                                       {selectedNotes.length > 1 && (
                                         <Button
@@ -3178,6 +3182,7 @@ export default function Home() {
                   setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
                   setRecordedBlobs={setRecordedBlobs}
                   setRecordingLabel={setRecordingLabel}
+                  recordingPreviewRef={recordingPreviewRef}
                 />
 
                 {/* Timeline Editor for Labs */}
