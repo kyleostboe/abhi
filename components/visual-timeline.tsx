@@ -163,6 +163,19 @@ export function VisualTimeline({
     }
   }, [draggedEvent, getTimeFromPosition, onUpdateEvent, dragOffset])
 
+  const [timelineWidth, setTimelineWidth] = useState(0)
+
+  useEffect(() => {
+    const updateWidth = () => {
+      if (timelineRef.current) {
+        setTimelineWidth(timelineRef.current.offsetWidth)
+      }
+    }
+    updateWidth()
+    window.addEventListener("resize", updateWidth)
+    return () => window.removeEventListener("resize", updateWidth)
+  }, [])
+
   const timeMarkersCount = isMobile
     ? Math.max(3, Math.min(Math.floor(totalDuration / 120), 5))
     : Math.max(5, Math.min(Math.floor(totalDuration / 60), 10))
@@ -266,6 +279,10 @@ export function VisualTimeline({
     }
   }
 
+  const circleWidthPx = 36
+  const circleHalfTime =
+    timelineWidth > 0 ? (circleWidthPx / 2 / timelineWidth) * totalDuration : 0
+
   return (
     <div className="space-y-6 select-none">
       <div className="relative">
@@ -283,10 +300,23 @@ export function VisualTimeline({
 
           <AnimatePresence>
             {events.map((event) => {
-              const displayTime = event.startTime
+              let displayTime = event.startTime
               const duration = getEventDuration(event)
               const isRecording = event.type === "recorded_voice"
               const widthPercent = totalDuration > 0 ? (duration / totalDuration) * 100 : 0
+
+              if (!isRecording && circleHalfTime > 0) {
+                const prevRecording = events
+                  .filter((e) => e.type === "recorded_voice" && e.startTime < event.startTime)
+                  .sort((a, b) => b.startTime - a.startTime)[0]
+                if (prevRecording) {
+                  const prevEnd = prevRecording.startTime + (prevRecording.duration || 0)
+                  if (displayTime - circleHalfTime < prevEnd) {
+                    displayTime = prevEnd + circleHalfTime
+                  }
+                }
+              }
+              displayTime = Math.min(displayTime, totalDuration)
 
               return (
                 <motion.div
