@@ -280,8 +280,7 @@ export function VisualTimeline({
   }
 
   const circleWidthPx = 36
-  const circleHalfTime =
-    timelineWidth > 0 ? (circleWidthPx / 2 / timelineWidth) * totalDuration : 0
+  const circleHalfTime = timelineWidth > 0 ? (circleWidthPx / 2 / timelineWidth) * totalDuration : 0
 
   return (
     <div className="space-y-6 select-none">
@@ -306,18 +305,26 @@ export function VisualTimeline({
               const widthPercent = totalDuration > 0 ? (duration / totalDuration) * 100 : 0
 
               if (isRecording) {
-                const prevRecording = events
-                  .filter((e) => e.type === "recorded_voice" && e.startTime < event.startTime)
-                  .sort((a, b) => b.startTime - a.startTime)[0]
-                if (prevRecording) {
-                  const prevEnd = prevRecording.startTime + (prevRecording.duration || 0)
-                  if (displayTime < prevEnd) {
-                    displayTime = prevEnd
+                // Recorder icons cannot overlap with any other events
+                const prevEvents = events
+                  .filter((e) => e.startTime < event.startTime)
+                  .sort((a, b) => b.startTime - a.startTime)
+
+                for (const prevEvent of prevEvents) {
+                  if (prevEvent.type === "recorded_voice") {
+                    const prevEnd = prevEvent.startTime + (prevEvent.duration || 0)
+                    if (displayTime < prevEnd) {
+                      displayTime = prevEnd
+                    }
+                  } else {
+                    // Circle event - ensure recorder doesn't overlap
+                    if (displayTime - circleHalfTime < prevEvent.startTime + circleHalfTime) {
+                      displayTime = prevEvent.startTime + circleHalfTime * 2
+                    }
                   }
                 }
-              }
-
-              if (!isRecording && circleHalfTime > 0) {
+              } else {
+                // Circle icons can only be placed over other circles, not over recorder icons
                 const prevRecording = events
                   .filter((e) => e.type === "recorded_voice" && e.startTime < event.startTime)
                   .sort((a, b) => b.startTime - a.startTime)[0]
@@ -375,10 +382,7 @@ export function VisualTimeline({
         </div>
 
         <div
-          className={cn(
-            "flex justify-between px-2 mt-2 font-black text-gray-600",
-            isMobile ? "text-xs" : "text-sm",
-          )}
+          className={cn("flex justify-between px-2 mt-2 font-black text-gray-600", isMobile ? "text-xs" : "text-sm")}
         >
           {timeMarkers.map((time, index) => (
             <div key={`time-${index}`} className="text-center flex flex-col">
@@ -414,119 +418,120 @@ export function VisualTimeline({
               <div className="text-sm">Add instructions and sound cues to build your meditation timeline</div>
             </motion.div>
           ) : (
-            events.map((event, index) => {
-              const displayInfo = getEventDisplayInfo(event)
-              return (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <Card
-                    className={cn(
-                      "p-4 bg-white shadow-lg ",
-                      "border-[3px] border-gray-100",
-                    )}
+            events
+              .sort((a, b) => a.startTime - b.startTime)
+              .map((event, index) => {
+                const displayInfo = getEventDisplayInfo(event)
+                return (
+                  <motion.div
+                    key={event.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ delay: index * 0.05 }}
                   >
-                    <div className="flex items-center w-full mx-[-8px] px-1">
-                      {/* Icon (fixed size, no shrink) */}
-                      <div
-                        className={cn(
-                          "flex items-center justify-center text-white shadow-sm h-9 w-9 flex-shrink-0",
-                          event.type === "recorded_voice" ? "rounded-sm" : "rounded-full",
-                          getEventColor(event),
-                        )}
-                      >
-                        {displayInfo.icon}
-                      </div>
+                    <Card className={cn("p-4 bg-white shadow-lg ", "border-[3px] border-gray-100")}>
+                      <div className="flex items-center w-full mx-[-8px] px-1">
+                        <div className="flex items-center justify-center w-6 h-6 mr-2 flex-shrink-0">
+                          <span className="text-gray-500 font-serif font-black text-sm">{index + 1}</span>
+                        </div>
 
-                      {/* Text Content (can grow and shrink) */}
-                      <div className="flex flex-col flex-grow min-w-0 ml-3">
-                        <div className="flex items-center space-x-2 mb-1 flex-wrap">
-                          <Badge variant="outline" className="text-xs text-gray-700 border-none">
-                            {event.type === "instruction_sound" ? "Instruction + Sound" : "Voice Recording"}
-                          </Badge>
-                          {editingEventId === event.id ? (
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                value={editingTime}
-                                onChange={(e) => setEditingTime(e.target.value)}
-                                placeholder="MM:SS"
-                                className="w-20 h-6 text-xs"
-                                pattern="[0-9]{1,2}:[0-9]{2}"
-                              />
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleTimeSave(event.id)}
-                                className="h-6 w-6 p-0"
+                        {/* Icon (fixed size, no shrink) */}
+                        <div
+                          className={cn(
+                            "flex items-center justify-center text-white shadow-sm h-9 w-9 flex-shrink-0",
+                            event.type === "recorded_voice" ? "rounded-sm" : "rounded-full",
+                            getEventColor(event),
+                          )}
+                        >
+                          {displayInfo.icon}
+                        </div>
+
+                        {/* Text Content (can grow and shrink) */}
+                        <div className="flex flex-col flex-grow min-w-0 ml-3">
+                          <div className="flex items-center space-x-2 mb-1 flex-wrap">
+                            <Badge variant="outline" className="text-xs text-gray-700 border-none">
+                              {event.type === "instruction_sound" ? "Instruction + Sound" : "Voice Recording"}
+                            </Badge>
+                            {editingEventId === event.id ? (
+                              <div className="flex items-center space-x-2">
+                                <Input
+                                  value={editingTime}
+                                  onChange={(e) => setEditingTime(e.target.value)}
+                                  placeholder="MM:SS"
+                                  className="w-20 h-6 text-xs"
+                                  pattern="[0-9]{1,2}:[0-9]{2}"
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleTimeSave(event.id)}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Check className="h-3 w-3" />
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={handleTimeCancel} className="h-6 w-6 p-0">
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => handleTimeEdit(event.id, event.startTime)}
+                                className="text-gray-500 hover:text-gray-700 bg-gray-100 px-2 py-1 rounded font-serif text-xs ml-0 mr-2"
                               >
-                                <Check className="h-3 w-3" />
-                              </Button>
-                              <Button size="sm" variant="ghost" onClick={handleTimeCancel} className="h-6 w-6 p-0">
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => handleTimeEdit(event.id, event.startTime)}
-                              className="text-gray-500 hover:text-gray-700 bg-gray-100 px-2 py-1 rounded font-serif text-xs ml-0 mr-2"
-                            >
-                              {formatTime(event.startTime)}
-                              {event.type === "recorded_voice" && event.duration
-                                ? ` - ${formatTime(event.startTime + event.duration)}`
-                                : ""}
-                            </button>
+                                {formatTime(event.startTime)}
+                                {event.type === "recorded_voice" && event.duration
+                                  ? ` - ${formatTime(event.startTime + event.duration)}`
+                                  : ""}
+                              </button>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-700 font-black">
+                            <span className="font-black text-gray-600">{displayInfo.title}</span>
+                          </div>
+                          {event.type === "instruction_sound" && (
+                            <p className="text-xs font-black text-gray-500">{displayInfo.subtitle}</p>
                           )}
                         </div>
-                        <div className="text-sm text-gray-700 font-black">
-                          <span className="font-black text-gray-600">{displayInfo.title}</span>
+                        {/* Button group - now with responsive gap */}
+                        <div className="flex items-center gap-x-0.5 sm:gap-x-1.5 ml-auto">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => playEventAudio(event)}
+                            className="hover:text-gray-600 px-1.5 py-1.5 h-7 w-7"
+                            title={playingEventId === event.id ? "Pause audio" : "Preview audio"}
+                          >
+                            {playingEventId === event.id ? (
+                              <Pause className="h-3.5 w-3.5" />
+                            ) : (
+                              <Play className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onDuplicateEvent(event)}
+                            className="hover: text-gray-600 px-1.5 py-1.5 h-7 w-7"
+                            title="Duplicate event"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onRemoveEvent(event.id)}
+                            className="text-red-500 hover:text-red-700  px-1.5 py-1.5 h-7 w-7"
+                            title="Remove event"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
-                        {event.type === "instruction_sound" && (
-                          <p className="text-xs font-black text-gray-500">{displayInfo.subtitle}</p>
-                        )}
                       </div>
-                      {/* Button group - now with responsive gap */}
-                      <div className="flex items-center gap-x-0.5 sm:gap-x-1.5 ml-auto">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => playEventAudio(event)}
-                          className="hover:text-gray-600 px-1.5 py-1.5 h-7 w-7"
-                          title={playingEventId === event.id ? "Pause audio" : "Preview audio"}
-                        >
-                          {playingEventId === event.id ? (
-                            <Pause className="h-3.5 w-3.5" />
-                          ) : (
-                            <Play className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => onDuplicateEvent(event)}
-                          className="hover: text-gray-600 px-1.5 py-1.5 h-7 w-7"
-                          title="Duplicate event"
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => onRemoveEvent(event.id)}
-                          className="text-red-500 hover:text-red-700  px-1.5 py-1.5 h-7 w-7"
-                          title="Remove event"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              )
-            })
+                    </Card>
+                  </motion.div>
+                )
+              })
           )}
         </AnimatePresence>
       </div>
