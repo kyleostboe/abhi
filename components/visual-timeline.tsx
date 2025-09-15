@@ -426,8 +426,8 @@ export function VisualTimeline({
                 >
                   <Card
                     className={cn(
-                      "p-4 bg-white shadow-md ",
-                      "border-3 border-gray-400",
+                      "p-4 bg-white shadow-lg ",
+                      "border-[3px] border-gray-100",
                     )}
                   >
                     <div className="flex items-center w-full mx-[-8px] px-1">
