@@ -431,7 +431,7 @@ export function VisualTimeline({
                     transition={{ delay: index * 0.05 }}
                   >
                     <Card className={cn("p-4 bg-white shadow-lg ", "border-[3px] border-gray-100")}>
-                      <div className="flex items-center w-full mx-[-8px] px-1">
+                      <div className="flex items-center w-full mx-[-8px] px-1 pl-0">
                         <div className="flex items-center justify-center w-6 h-6 mr-2 flex-shrink-0">
                           <span className="text-gray-500 font-serif font-black text-sm">{index + 1}</span>
                         </div>
