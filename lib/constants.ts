@@ -1,5 +1,5 @@
 export const EVENT_COLORS = [
-  "bg-gradient-to-br from-logo-amber-500 to-logo-amber-600",
+  "bg-gradient-to-br from-logo-amber-100 to-logo-amber-600",
   "bg-gradient-to-br from-logo-rose-500 to-logo-rose-600",
   "bg-gradient-to-br from-logo-purple-500 to-logo-purple-600",
   "bg-gradient-to-br from-logo-blue-500 to-logo-blue-600",
