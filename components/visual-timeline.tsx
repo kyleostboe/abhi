@@ -49,6 +49,7 @@ export function VisualTimeline({
   const isDragging = useRef(false)
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
   const [editingTime, setEditingTime] = useState<string>("")
+  const [editingDuration, setEditingDuration] = useState<string>("")
   const isMobile = useMobile()
   const [playingEventId, setPlayingEventId] = useState<string | null>(null)
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
@@ -183,8 +184,14 @@ export function VisualTimeline({
   const timeMarkers = Array.from({ length: timeMarkersCount + 1 }, (_, i) => (i / timeMarkersCount) * totalDuration)
 
   const handleTimeEdit = (eventId: string, currentTime: number) => {
+    const event = events.find((e) => e.id === eventId)
     setEditingEventId(eventId)
     setEditingTime(formatTime(currentTime))
+    if (event?.type === "recorded_voice" && event.duration) {
+      setEditingDuration(formatTime(event.duration))
+    } else {
+      setEditingDuration("")
+    }
   }
 
   const handleTimeSave = (eventId: string) => {
@@ -193,11 +200,13 @@ export function VisualTimeline({
     onUpdateEvent(eventId, newTime)
     setEditingEventId(null)
     setEditingTime("")
+    setEditingDuration("")
   }
 
   const handleTimeCancel = () => {
     setEditingEventId(null)
     setEditingTime("")
+    setEditingDuration("")
   }
 
   const playEventAudio = async (event: TimelineEvent) => {
@@ -305,7 +314,6 @@ export function VisualTimeline({
               const widthPercent = totalDuration > 0 ? (duration / totalDuration) * 100 : 0
 
               if (isRecording) {
-                // Recorder icons cannot overlap with any other events
                 const prevEvents = events
                   .filter((e) => e.startTime < event.startTime)
                   .sort((a, b) => b.startTime - a.startTime)
@@ -317,14 +325,12 @@ export function VisualTimeline({
                       displayTime = prevEnd
                     }
                   } else {
-                    // Circle event - ensure recorder doesn't overlap
                     if (displayTime - circleHalfTime < prevEvent.startTime + circleHalfTime) {
                       displayTime = prevEvent.startTime + circleHalfTime * 2
                     }
                   }
                 }
               } else {
-                // Circle icons can only be placed over other circles, not over recorder icons
                 const prevRecording = events
                   .filter((e) => e.type === "recorded_voice" && e.startTime < event.startTime)
                   .sort((a, b) => b.startTime - a.startTime)[0]
@@ -436,7 +442,6 @@ export function VisualTimeline({
                           <span className="text-gray-500 font-serif font-black text-sm">{index + 1}</span>
                         </div>
 
-                        {/* Icon (fixed size, no shrink) */}
                         <div
                           className={cn(
                             "flex items-center justify-center text-white shadow-sm h-9 w-9 flex-shrink-0",
@@ -447,7 +452,6 @@ export function VisualTimeline({
                           {displayInfo.icon}
                         </div>
 
-                        {/* Text Content (can grow and shrink) */}
                         <div className="flex flex-col flex-grow min-w-0 ml-3">
                           <div className="flex items-center space-x-2 mb-1 flex-wrap">
                             <Badge variant="outline" className="text-xs text-gray-700 border-none">
@@ -462,6 +466,20 @@ export function VisualTimeline({
                                   className="w-20 h-6 text-xs"
                                   pattern="[0-9]{1,2}:[0-9]{2}"
                                 />
+                                {event.type === "recorded_voice" && (
+                                  <>
+                                    <span className="text-xs text-gray-500">-</span>
+                                    <Input
+                                      value={editingDuration}
+                                      onChange={(e) => setEditingDuration(e.target.value)}
+                                      placeholder="Duration"
+                                      className="w-20 h-6 text-xs"
+                                      pattern="[0-9]{1,2}:[0-9]{2}"
+                                      disabled
+                                      title="Duration is determined by the recording length"
+                                    />
+                                  </>
+                                )}
                                 <Button
                                   size="sm"
                                   variant="ghost"
@@ -479,10 +497,9 @@ export function VisualTimeline({
                                 onClick={() => handleTimeEdit(event.id, event.startTime)}
                                 className="text-gray-500 hover:text-gray-700 bg-gray-100 px-2 py-1 rounded font-serif text-xs ml-0 mr-2"
                               >
-                                {formatTime(event.startTime)}
                                 {event.type === "recorded_voice" && event.duration
-                                  ? ` - ${formatTime(event.startTime + event.duration)}`
-                                  : ""}
+                                  ? `${formatTime(event.startTime)} - ${formatTime(event.startTime + event.duration)} (${formatTime(event.duration)})`
+                                  : formatTime(event.startTime)}
                               </button>
                             )}
                           </div>
@@ -493,7 +510,6 @@ export function VisualTimeline({
                             <p className="text-xs font-black text-gray-500">{displayInfo.subtitle}</p>
                           )}
                         </div>
-                        {/* Button group - now with responsive gap */}
                         <div className="flex items-center gap-x-0.5 sm:gap-x-1.5 ml-auto">
                           <Button
                             size="sm"
@@ -512,7 +528,7 @@ export function VisualTimeline({
                             size="sm"
                             variant="ghost"
                             onClick={() => onDuplicateEvent(event)}
-                            className="hover: text-gray-600 px-1.5 py-1.5 h-7 w-7"
+                            className="hover:text-gray-600 px-1.5 py-1.5 h-7 w-7"
                             title="Duplicate event"
                           >
                             <Copy className="h-3.5 w-3.5" />
@@ -521,7 +537,7 @@ export function VisualTimeline({
                             size="sm"
                             variant="ghost"
                             onClick={() => onRemoveEvent(event.id)}
-                            className="text-red-500 hover:text-red-700  px-1.5 py-1.5 h-7 w-7"
+                            className="text-red-500 hover:text-red-700 px-1.5 py-1.5 h-7 w-7"
                             title="Remove event"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
