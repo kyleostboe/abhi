@@ -98,7 +98,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
           disabled={!recordingLabel.trim() && !isRecording}
           className={cn(
             "w-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none font-serif font-black",
-            isRecording && "from-logo-rose-300 to-logo-rose-500",
+            isRecording && "from-logo-rose-300 to-logo-rose-600",
           )}
         >
           {isRecording ? (
@@ -170,7 +170,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
                     description: `"${readyToAddToTimelineRecording.label.trim()}" added to timeline.`,
                   })
                 }}
-                className="w-full bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-sm hover:shadow-none font-black"
+                className="w-full bg-gradient-to-r from-logo-blue-400 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none font-black"
               >
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Add to Timeline
