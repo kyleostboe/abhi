@@ -119,7 +119,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="space-y-2 border-t border-gray-100 pt-4"
+              className="space-y-2 border-gray-100 border-t-0 pt-1"
             >
               <div className="space-y-2">
                 <audio
@@ -130,7 +130,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
                   className="w-full"
                   preload="metadata"
                 />
-                <p className="text-xs text-gray-600 text-center">
+                <p className="text-xs text-gray-600 text-center pb-1.5">
                   Duration: {formatTime(readyToAddToTimelineRecording.duration)}
                 </p>
               </div>
