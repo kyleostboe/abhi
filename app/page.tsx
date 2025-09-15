@@ -98,7 +98,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
           disabled={!recordingLabel.trim() && !isRecording}
           className={cn(
             "w-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none font-serif font-black",
-            isRecording && "from-red-500 to-red-600",
+            isRecording && "from-logo-rose-300 to-logo-rose-500",
           )}
         >
           {isRecording ? (
@@ -816,412 +816,407 @@ export default function Home() {
   const [minSpacingDuration, setMinSpacingDuration] = useState<number>(1.5)
   const [preserveNaturalPacing, setPreserveNaturalPacing] = useState<boolean>(true)
   const [compatibilityMode, setCompatibilityMode] = useState<string>("high")
-  const [status, setStatus] = useState<{ message: string; type: string } | null>(null)
-  const [originalUrl, setOriginalUrl] = useState<string>("")
-  const [processedUrl, setProcessedUrl] = useState<string>("")
-  const [pausesAdjusted, setPausesAdjusted] = useState<number>(0)
-  const [isProcessing, setIsProcessing] = useState<boolean>(false) // Corrected type to boolean
-  const [processingProgress, setProcessingProgress] = useState<number>(0)
-  const [processingStep, setProcessingStep] = useState<string>("")
-  const [durationLimits, setDurationLimits] = useState<{ min: number; max: number } | null>(null)
-  const [audioAnalysis, setAudioAnalysis] = useState<{
-    totalSilence: number
-    contentDuration: number
-    silenceRegions: number
-  } | null>(null)
-  const [actualDuration, setActualDuration] = useState<number | null>(null)
-  const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
-  const [processedFileSize, setProcessedFileSize] = useState<number>(0)
-  const isMobileDevice = useMobile() // Use the useMobile hook
-  const [memoryWarning, setMemoryWarning] = useState<boolean>("")
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const uploadAreaRef = useRef<HTMLDivElement>(null)
-  const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  \
+  const [status, setStatus<{ message: string;
+  type: string
+}
+| null>(null)
+const [originalUrl, setOriginalUrl] = useState<string>("")
+const [processedUrl, setProcessedUrl] = useState<string>("")
+const [pausesAdjusted, setPausesAdjusted] = useState<number>(0)
+const [isProcessing, setIsProcessing] = useState<boolean>(false) // Corrected type to boolean
+const [processingProgress, setProcessingProgress] = useState<number>(0)
+const [processingStep, setProcessingStep] = useState<string>("")
+\
+const [durationLimits, setDurationLimits<{ min: number;
+max: number
+} | null>(null)\
+const [audioAnalysis, setAudioAnalysis<{\
+    totalSilence: number\
+    contentDuration: number\
+    silenceRegions: number\
+} | null>(null)\
+const [actualDuration, setActualDuration<number | null>(null
+)
+const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
+const [processedFileSize, setProcessedFileSize] = useState<number>(0)
+const isMobileDevice = useMobile() // Use the useMobile hook
+const [memoryWarning, setMemoryWarning] = useState<boolean>("")
+const fileInputRef = useRef<HTMLInputElement>(null)
+const uploadAreaRef = useRef<HTMLDivElement>(null)
+const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // == States for Labs ==
-  const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
-  const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(600)
-  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
-  const [selectedLibraryInstruction, setSelectedLibraryInstruction] = useState<Instruction | null>(null)
-  const [customInstructionText, setCustomInstructionText] = useState<string>("")
-  const [selectedSoundCue, setSelectedSoundCue] = useState<SoundCue | null>(null)
-  const [isRecording, setIsRecording] = useState<boolean>(false)
-  // State to hold the recorded audio data ready for adding to timeline
-  const [readyToAddToTimelineRecording, setReadyToAddToTimelineRecording] = useState<{
-    url: string
-    duration: number
-    label: string
-  } | null>(null)
-  const [recordedBlobs, setRecordedBlobs] = useState<Blob[]>([])
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const encoderAudioRef = useRef<HTMLAudioElement | null>(null)
-  const instructionCategories = Array.from(new Set(INSTRUCTIONS_LIBRARY.map((instr) => instr.category)))
-  const [recordingLabel, setRecordingLabel] = useState<string>("")
+// == States for Labs ==
+const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
+const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(600)
+\
+const [timelineEvents, setTimelineEvents<TimelineEvent[]
+>([])
+const [selectedLibraryInstruction, setSelectedLibraryInstruction] = useState<Instruction | null>(null)
+const [customInstructionText, setCustomInstructionText] = useState<string>("")
+const [selectedSoundCue, setSelectedSoundCue] = useState<SoundCue | null>(null)
+const [isRecording, setIsRecording] = useState<boolean>(false)
+// State to hold the recorded audio data ready for adding to timeline\
+const [readyToAddToTimelineRecording, setReadyToAddToTimelineRecording<{\
+    url: string\
+    duration: number\
+    label: string\
+} | null>(null)\
+const [recordedBlobs, setRecordedBlobs<Blob[]
+>([])
+const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+const encoderAudioRef = useRef<HTMLAudioElement | null>(null)
+const instructionCategories = Array.from(new Set(INSTRUCTIONS_LIBRARY.map((instr) => instr.category)))
+const [recordingLabel, setRecordingLabel] = useState<string>("")
 
-  // Audio generation states
-  const [isGeneratingAudio, setIsGeneratingAudio] = useState<boolean>(false)
-  const [generationProgress, setGenerationProgress] = useState<number>(0)
-  const [generationStep, setGenerationStep] = useState<string>("")
-  const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
-  const [generatedAudioFileSize, setGeneratedAudioFileSize] = useState<number>(0)
+// Audio generation states
+const [isGeneratingAudio, setIsGeneratingAudio] = useState<boolean>(false)
+const [generationProgress, setGenerationProgress] = useState<number>(0)
+const [generationStep, setGenerationStep] = useState<string>("")
+\
+const [generatedAudioUrl, setGeneratedAudioUrl<string | null>(null
+)
+const [generatedAudioFileSize, setGeneratedAudioFileSize] = useState<number>(0)
+\
+const [timeline, setTimeline<TimelineItem[]
+>([])
+const [currentTab, setCurrentTab] = useState<string>("instructions")
+const [isPlaying, setIsPlaying] = useState<boolean>(false)
+const [currentPlaybackTime, setCurrentPlaybackTime] = useState<number>(0) // in seconds\
+const [activeItemIndex, setActiveItemIndex<number | null>(null
+)
+const [volume, setVolume] = useState<number>(75) // Default volume 75%
+const audioRef = useRef<HTMLAudioElement | null>(null)
+const recordingPreviewRef = useRef<HTMLAudioElement | null>(null)
+const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null)
+const currentItemStartTimeRef = useRef<number>(0)
 
-  const [timeline, setTimeline] = useState<TimelineItem[]>([])
-  const [currentTab, setCurrentTab] = useState<string>("instructions")
-  const [isPlaying, setIsPlaying] = useState<boolean>(false)
-  const [currentPlaybackTime, setCurrentPlaybackTime] = useState<number>(0) // in seconds
-  const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null)
-  const [volume, setVolume] = useState<number>(75) // Default volume 75%
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const recordingPreviewRef = useRef<HTMLAudioElement | null>(null)
-  const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const currentItemStartTimeRef = useRef<number>(0)
+const [multiNoteMode, setMultiNoteMode] = useState(false)
+\
+const [selectedNotes, setSelectedNotes<string[]
+>([])
+const [noteType, setNoteType] = useState<"piano" | "synth" | "harp">("piano")
 
-  const [multiNoteMode, setMultiNoteMode] = useState(false)
-  const [selectedNotes, setSelectedNotes] = useState<string[]>([])
-  const [noteType, setNoteType] = useState<"piano" | "synth" | "harp">("piano")
+const totalDuration = timeline.reduce((sum, item) => sum + item.duration, 0)
 
-  const totalDuration = timeline.reduce((sum, item) => sum + item.duration, 0)
+const addTimelineItem = useCallback((item: Instruction | SoundCue, type: "instruction" | "sound") => {
+  const newItem: TimelineItem = {
+    id: `${type}-${Date.now()}`,
+    type,
+    duration: type === "instruction" ? 60 : 5, // Default duration: 60s for instruction, 5s for sound
+    content: item,
+  }
+  setTimeline((prev) => [...prev, newItem])
+}, [])
 
-  const addTimelineItem = useCallback((item: Instruction | SoundCue, type: "instruction" | "sound") => {
-    const newItem: TimelineItem = {
-      id: `${type}-${Date.now()}`,
-      type,
-      duration: type === "instruction" ? 60 : 5, // Default duration: 60s for instruction, 5s for sound
-      content: item,
+const updateTimelineItemDuration = useCallback((index: number, newDuration: number) => {
+  setTimeline((prev) => prev.map((item, i) => (i === index ? { ...item, duration: Math.max(1, newDuration) } : item)))
+}, [])
+
+useEffect(() => {
+  if (readyToAddToTimelineRecording && recordingPreviewRef.current) {
+    recordingPreviewRef.current.load()
+  }
+}, [readyToAddToTimelineRecording])
+
+const removeTimelineItem = useCallback(
+  (index: number) => {
+    setTimeline((prev) => prev.filter((_, i) => i !== index))
+    if (activeItemIndex === index) {
+      setActiveItemIndex(null)
+    } else if (activeItemIndex !== null && activeItemIndex !== null && activeItemIndex > index) {
+      setActiveItemIndex((prev) => (prev !== null ? prev - 1 : null))
     }
-    setTimeline((prev) => [...prev, newItem])
-  }, [])
+  },
+  [activeItemIndex],
+)
 
-  const updateTimelineItemDuration = useCallback((index: number, newDuration: number) => {
-    setTimeline((prev) => prev.map((item, i) => (i === index ? { ...item, duration: Math.max(1, newDuration) } : item)))
-  }, [])
+const playEncoderSound = useCallback(
+  async (src: string) => {
+    const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.src === src)
 
-  useEffect(() => {
-    if (readyToAddToTimelineRecording && recordingPreviewRef.current) {
-      recordingPreviewRef.current.load()
-    }
-  }, [readyToAddToTimelineRecording])
-
-  const removeTimelineItem = useCallback(
-    (index: number) => {
-      setTimeline((prev) => prev.filter((_, i) => i !== index))
-      if (activeItemIndex === index) {
-        setActiveItemIndex(null)
-      } else if (activeItemIndex !== null && activeItemIndex !== null && activeItemIndex > index) {
-        setActiveItemIndex((prev) => (prev !== null ? prev - 1 : null))
-      }
-    },
-    [activeItemIndex],
-  )
-
-  const playEncoderSound = useCallback(
-    async (src: string) => {
-      const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.src === src)
-
-      if (!soundCue || typeof soundCue.src !== "string") {
-        console.error("Invalid sound cue or src property for src:", src, "Found soundCue:", soundCue)
-        toast({
-          title: "Sound Playback Error",
-          description: "The selected sound cue is malformed or not found.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      try {
-        toast({
-          title: "Sound Playback",
-          description: "Sound cues are currently disabled.",
-          variant: "default",
-        })
-      } catch (error) {
-        console.error("Error playing encoder sound:", error)
-        toast({
-          title: "Sound Playback Error",
-          description: "Failed to play the selected sound.",
-          variant: "destructive",
-        })
-      }
-    },
-    [toast],
-  )
-
-  const startPlayback = useCallback(() => {
-    if (timeline.length === 0) return
-
-    setIsPlaying(true)
-    currentItemStartTimeRef.current = currentPlaybackTime // Store start time of current item
-
-    playbackIntervalRef.current = setInterval(() => {
-      setCurrentPlaybackTime((prevTime) => {
-        const newTime = prevTime + 0.1 // Increment by 100ms
-
-        let accumulatedDuration = 0
-        let foundActiveItem = false
-        for (let i = 0; i < timeline.length; i++) {
-          const item = timeline[i]
-          if (newTime >= accumulatedDuration && newTime < accumulatedDuration + item.duration) {
-            if (activeItemIndex !== i) {
-              setActiveItemIndex(i)
-              // Play sound cue when it becomes active
-              if (item.type === "sound") {
-                playEncoderSound(item.content.src) // Pass src string to playLabsSound
-              }
-            }
-            foundActiveItem = true
-            break
-          }
-          accumulatedDuration += item.duration
-        }
-
-        if (!foundActiveItem) {
-          setActiveItemIndex(null)
-        }
-
-        if (newTime >= totalDuration) {
-          // End of timeline
-          clearInterval(playbackIntervalRef.current!)
-          setIsPlaying(false)
-          setCurrentPlaybackTime(0)
-          setActiveItemIndex(null)
-          return 0
-        }
-        return newTime
+    if (!soundCue || typeof soundCue.src !== "string") {
+      console.error("Invalid sound cue or src property for src:", src, "Found soundCue:", soundCue)
+      toast({
+        title: "Sound Playback Error",
+        description: "The selected sound cue is malformed or not found.",
+        variant: "destructive",
       })
-    }, 100) // Update every 100ms
-  }, [timeline, currentPlaybackTime, totalDuration, activeItemIndex, playEncoderSound])
-
-  const pausePlayback = useCallback(() => {
-    if (playbackIntervalRef.current) {
-      clearInterval(playbackIntervalRef.current)
-      playbackIntervalRef.current = null
+      return
     }
-    setIsPlaying(false)
-  }, [])
-
-  const resetPlayback = useCallback(() => {
-    pausePlayback()
-    setCurrentPlaybackTime(0)
-    setActiveItemIndex(null)
-  }, [pausePlayback])
-
-  useEffect(() => {
-    // Cleanup interval on component unmount
-    return () => {
-      if (playbackIntervalRef.current) {
-        clearInterval(playbackIntervalRef.current)
-      }
-    }
-  }, [])
-
-  // Update audio volume if audioRef exists
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume / 100
-    }
-  }, [volume])
-
-  const handleSaveTimeline = () => {
-    // Placeholder for save functionality
-    console.log("Saving timeline:", timeline)
-    alert("Save functionality not yet implemented.")
-  }
-
-  const handleLoadTimeline = () => {
-    // Placeholder for load functionality
-    console.log("Loading timeline...")
-    alert("Load functionality not yet implemented.")
-  }
-
-  const handleExportAudio = async () => {
-    setIsGeneratingAudio(true)
-    setGenerationProgress(0)
-    setGenerationStep("Initializing...")
 
     try {
-      console.log("Starting audio export with events:", timelineEvents)
-
-      // Calculate the maximum end time needed for the OfflineAudioContext
-      const maxAudioDuration = encoderTotalDuration // Start with the user-defined total duration
-
-      const ctx = new OfflineAudioContext({
-        numberOfChannels: 1,
-        sampleRate: 44100,
-        length: Math.ceil(maxAudioDuration * 44100), // Ensure length is an integer
+      toast({
+        title: "Sound Playback",
+        description: "Sound cues are currently disabled.",
+        variant: "default",
       })
+    } catch (error) {
+      console.error("Error playing encoder sound:", error)
+      toast({
+        title: "Sound Playback Error",
+        description: "Failed to play the selected sound.",
+        variant: "destructive",
+      })
+    }
+  },
+  [toast],
+)
 
-      const Tone = await ensureTone()
-      await Tone.setContext(ctx)
+const startPlayback = useCallback(() => {
+  if (timeline.length === 0) return
 
-      // Prepare instrument instances for offline rendering
-      let pianoSampler: any = null
-      let pianoReverb: any = null
-      const loadPiano = async () => {
-        if (!pianoSampler) {
-          pianoSampler = new Tone.Sampler({
-            urls: {
-              A0: "A0.mp3",
-              C1: "C1.mp3",
-              "D#1": "Ds1.mp3",
-              "F#1": "Fs1.mp3",
-              A1: "A1.mp3",
-              C2: "C2.mp3",
-              "D#2": "Ds2.mp3",
-              "F#2": "Fs2.mp3",
-              A2: "A2.mp3",
-              C3: "C3.mp3",
-              "D#3": "Ds3.mp3",
-              "F#3": "Fs3.mp3",
-              A3: "A3.mp3",
-              C4: "C4.mp3",
-              "D#4": "Ds4.mp3",
-              "F#4": "Fs4.mp3",
-              A4: "A4.mp3",
-              C5: "C5.mp3",
-              "D#5": "Ds5.mp3",
-              "F#5": "Fs5.mp3",
-              A5: "A5.mp3",
-              C6: "C6.mp3",
-              "D#6": "Ds6.mp3",
-              "F#6": "Fs6.mp3",
-              A6: "A6.mp3",
-              C7: "C7.mp3",
-              "D#7": "Ds7.mp3",
-              "F#7": "Fs7.mp3",
-              A7: "A7.mp3",
-              C8: "C8.mp3",
-            },
-            release: 1.2,
-            baseUrl: "https://tonejs.github.io/audio/salamander/",
-          })
+  setIsPlaying(true)
+  currentItemStartTimeRef.current = currentPlaybackTime // Store start time of current item
 
-          pianoReverb = new Tone.Reverb({ wet: 0.18, decay: 2.8, preDelay: 0.01 })
-          pianoSampler.connect(pianoReverb)
-          pianoReverb.toDestination()
-          await pianoReverb.generate()
-          await Tone.loaded()
-        }
-      }
+  playbackIntervalRef.current = setInterval(() => {
+    setCurrentPlaybackTime((prevTime) => {
+      const newTime = prevTime + 0.1 // Increment by 100ms
 
-      let synth: any = null
-      let synthGain: any = null
-      const loadSynth = async () => {
-        if (!synth) {
-          synth = new Tone.Synth({
-            oscillator: { type: "fatsawtooth" },
-            envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
-            filter: { frequency: 2000, type: "lowpass", rolloff: -12 },
-            filterEnvelope: {
-              attack: 0.02,
-              decay: 0.2,
-              sustain: 0.5,
-              release: 0.8,
-              baseFrequency: 200,
-              octaves: 4,
-            },
-          })
-
-          synthGain = new Tone.Gain(0.3)
-          synth.connect(synthGain)
-          synthGain.toDestination()
-        }
-      }
-
-      let harp: any = null
-      let harpReverb: any = null
-      let harpGain: any = null
-      const loadHarp = async () => {
-        if (!harp) {
-          harp = new Tone.PluckSynth({
-            attackNoise: 1,
-            dampening: 4000,
-            resonance: 0.9,
-          })
-
-          harpReverb = new Tone.Reverb({ decay: 4, wet: 0.6 })
-          harpGain = new Tone.Gain(0.8)
-          harp.connect(harpReverb)
-          harpReverb.connect(harpGain)
-          harpGain.toDestination()
-          await harpReverb.generate()
-        }
-      }
-
-      let processedEventsCount = 0
-      const totalEvents = timelineEvents.length
-
-      for (const event of timelineEvents) {
-        const eventStartTime = event.startTime
-        console.log(`Processing event ${event.id} at time ${eventStartTime}:`, event)
-
-        if (event.type === "instruction_sound") {
-          setGenerationStep(`Adding sound: ${event.soundCueName || "Sound Cue"}`)
-          console.log(`Processing sound cue from soundCueSrc: ${event.soundCueSrc}`)
-
-          if (event.soundCueSrc?.startsWith("synthetic:")) {
-            const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
-            if (soundCue) {
-              console.log(`Skipping synthetic sound at ${eventStartTime} - functionality removed`)
-            }
-          } else if (event.soundCueSrc?.startsWith("musical:")) {
-            const notesPart = event.soundCueSrc.replace("musical:", "")
-            const noteStrings = notesPart.split("|")
-
-            const instrument = event.instrument || noteType
-            for (const [noteIndex, ns] of noteStrings.entries()) {
-              const match = ns.match(/([A-G])(\d)/)
-              if (match) {
-                const note = match[1]
-                const octave = Number.parseInt(match[2])
-                const noteString = `${note}${octave}`
-                console.log(`Processing musical note with Tone.js: ${noteString}`)
-
-                try {
-                  if (instrument === "piano") {
-                    await loadPiano()
-                    pianoSampler.triggerAttackRelease(noteString, 0.8, eventStartTime, 0.9)
-                  } else if (instrument === "synth") {
-                    await loadSynth()
-                    synth.triggerAttackRelease(noteString, 0.8, eventStartTime)
-                  } else if (instrument === "harp") {
-                    await loadHarp()
-                    const startDelay = noteIndex * 0.01
-                    const duration = 0.8 + startDelay
-                    harp.triggerAttackRelease(noteString, duration, eventStartTime + startDelay)
-                  }
-
-                  console.log(`Successfully added ${instrument} note ${noteString} at ${eventStartTime}`)
-                } catch (error) {
-                  console.error(`Error adding ${instrument} note ${noteString}:`, error)
-                }
-              }
-            }
-          } else if (event.soundCueSrc) {
-            try {
-              console.log(`Loading pre-recorded audio: ${event.soundCueSrc}`)
-              const response = await fetch(event.soundCueSrc)
-              const arrayBuffer = await response.arrayBuffer()
-              const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
-              const source = ctx.createBufferSource()
-              const gainNode = ctx.createGain()
-
-              source.buffer = audioBuffer
-              source.connect(gainNode)
-              gainNode.connect(ctx.destination)
-              gainNode.gain.setValueAtTime(0.4, eventStartTime) // Good volume for pre-recorded sounds
-              source.start(eventStartTime)
-
-              console.log(`Successfully added pre-recorded audio at ${eventStartTime}`)
-            } catch (error) {
-              console.warn(`Could not load recorded audio: ${event.soundCueSrc}`, error)
+      let accumulatedDuration = 0
+      let foundActiveItem = false
+      for (let i = 0; i < timeline.length; i++) {
+        const item = timeline[i]
+        if (newTime >= accumulatedDuration && newTime < accumulatedDuration + item.duration) {
+          if (activeItemIndex !== i) {
+            setActiveItemIndex(i)
+            // Play sound cue when it becomes active
+            if (item.type === "sound") {
+              playEncoderSound(item.content.src) // Pass src string to playLabsSound
             }
           }
-        } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
-          setGenerationStep(`Adding recorded voice: ${event.recordedInstructionLabel || "Untitled"}`)
-          console.log(`Processing recorded voice: ${event.recordedAudioUrl}`)
+          foundActiveItem = true
+          break
+        }
+        accumulatedDuration += item.duration
+      }
 
+      if (!foundActiveItem) {
+        setActiveItemIndex(null)
+      }
+
+      if (newTime >= totalDuration) {
+        // End of timeline
+        clearInterval(playbackIntervalRef.current!)
+        setIsPlaying(false)
+        setCurrentPlaybackTime(0)
+        setActiveItemIndex(null)
+        return 0
+      }
+      return newTime
+    })
+  }, 100) // Update every 100ms
+}, [timeline, currentPlaybackTime, totalDuration, activeItemIndex, playEncoderSound])
+
+const pausePlayback = useCallback(() => {
+  if (playbackIntervalRef.current) {
+    clearInterval(playbackIntervalRef.current)
+    playbackIntervalRef.current = null
+  }
+  setIsPlaying(false)
+}, [])
+
+const resetPlayback = useCallback(() => {
+  pausePlayback()
+  setCurrentPlaybackTime(0)
+  setActiveItemIndex(null)
+}, [pausePlayback])
+
+useEffect(() => {
+  // Cleanup interval on component unmount
+  return () => {
+    if (playbackIntervalRef.current) {
+      clearInterval(playbackIntervalRef.current)
+    }
+  }
+}, [])
+
+// Update audio volume if audioRef exists
+useEffect(() => {
+  if (audioRef.current) {
+    audioRef.current.volume = volume / 100
+  }
+}, [volume])
+
+const handleSaveTimeline = () => {
+  // Placeholder for save functionality
+  console.log("Saving timeline:", timeline)
+  alert("Save functionality not yet implemented.")
+}
+
+const handleLoadTimeline = () => {
+  // Placeholder for load functionality
+  console.log("Loading timeline...")
+  alert("Load functionality not yet implemented.")
+}
+
+const handleExportAudio = async () => {
+  setIsGeneratingAudio(true)
+  setGenerationProgress(0)
+  setGenerationStep("Initializing...")
+
+  try {
+    console.log("Starting audio export with events:", timelineEvents)
+
+    // Calculate the maximum end time needed for the OfflineAudioContext
+    const maxAudioDuration = encoderTotalDuration // Start with the user-defined total duration
+
+    const ctx = new OfflineAudioContext({
+      numberOfChannels: 1,
+      sampleRate: 44100,
+      length: Math.ceil(maxAudioDuration * 44100), // Ensure length is an integer
+    })
+
+    const Tone = await ensureTone()
+    await Tone.setContext(ctx)
+
+    // Prepare instrument instances for offline rendering
+    let pianoSampler: any = null
+    let pianoReverb: any = null
+    const loadPiano = async () => {
+      if (!pianoSampler) {
+        pianoSampler = new Tone.Sampler({
+          urls: {
+            A0: "A0.mp3",
+            C1: "C1.mp3",
+            "D#1": "Ds1.mp3",
+            "F#1": "Fs1.mp3",
+            A1: "A1.mp3",
+            C2: "C2.mp3",
+            "D#2": "Ds2.mp3",
+            "F#2": "Fs2.mp3",
+            A2: "A2.mp3",
+            C3: "C3.mp3",
+            "D#3": "Ds3.mp3",
+            "F#3": "Fs3.mp3",
+            A3: "A3.mp3",
+            C4: "C4.mp3",
+            "D#4": "Ds4.mp3",
+            "F#4": "Fs4.mp3",
+            A4: "A4.mp3",
+            C5: "C5.mp3",
+            "D#5": "Ds5.mp3",
+            "F#5": "Fs5.mp3",
+            A5: "A5.mp3",
+            C6: "C6.mp3",
+            "D#6": "Ds6.mp3",
+            "F#6": "Fs6.mp3",
+            A6: "A6.mp3",
+            C7: "C7.mp3",
+            "D#7": "Ds7.mp3",
+            "F#7": "Fs7.mp3",
+            A7: "A7.mp3",
+            C8: "C8.mp3",
+          },
+          release: 1.2,
+          baseUrl: "https://tonejs.github.io/audio/salamander/",
+        })
+
+        pianoReverb = new Tone.Reverb({ wet: 0.18, decay: 2.8, preDelay: 0.01 })
+        pianoSampler.connect(pianoReverb)
+        pianoReverb.toDestination()
+        await pianoReverb.generate()
+        await Tone.loaded()
+      }
+    }
+
+    let synth: any = null
+    let synthGain: any = null
+    const loadSynth = async () => {
+      if (!synth) {
+        synth = new Tone.Synth({
+          oscillator: { type: "fatsawtooth" },
+          envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
+          filter: { frequency: 2000, type: "lowpass", rolloff: -12 },
+          filterEnvelope: {
+            attack: 0.02,
+            decay: 0.2,
+            sustain: 0.5,
+            release: 0.8,
+            baseFrequency: 200,
+            octaves: 4,
+          },
+        })
+
+        synthGain = new Tone.Gain(0.3)
+        synth.connect(synthGain)
+        synthGain.toDestination()
+      }
+    }
+
+    let harp: any = null
+    let harpReverb: any = null
+    let harpGain: any = null
+    const loadHarp = async () => {
+      if (!harp) {
+        harp = new Tone.PluckSynth({
+          attackNoise: 1,
+          dampening: 4000,
+          resonance: 0.9,
+        })
+
+        harpReverb = new Tone.Reverb({ decay: 4, wet: 0.6 })
+        harpGain = new Tone.Gain(0.8)
+        harp.connect(harpReverb)
+        harpReverb.connect(harpGain)
+        harpGain.toDestination()
+        await harpReverb.generate()
+      }
+    }
+
+    let processedEventsCount = 0
+    const totalEvents = timelineEvents.length
+
+    for (const event of timelineEvents) {
+      const eventStartTime = event.startTime
+      console.log(`Processing event ${event.id} at time ${eventStartTime}:`, event)
+
+      if (event.type === "instruction_sound") {
+        setGenerationStep(`Adding sound: ${event.soundCueName || "Sound Cue"}`)
+        console.log(`Processing sound cue from soundCueSrc: ${event.soundCueSrc}`)
+
+        if (event.soundCueSrc?.startsWith("synthetic:")) {
+          const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
+          if (soundCue) {
+            console.log(`Skipping synthetic sound at ${eventStartTime} - functionality removed`)
+          }
+        } else if (event.soundCueSrc?.startsWith("musical:")) {
+          const notesPart = event.soundCueSrc.replace("musical:", "")
+          const noteStrings = notesPart.split("|")
+
+          const instrument = event.instrument || noteType
+          for (const [noteIndex, ns] of noteStrings.entries()) {
+            const match = ns.match(/([A-G])(\d)/)
+            if (match) {
+              const note = match[1]
+              const octave = Number.parseInt(match[2])
+              const noteString = `${note}${octave}`
+              console.log(`Processing musical note with Tone.js: ${noteString}`)
+
+              try {
+                if (instrument === "piano") {
+                  await loadPiano()
+                  pianoSampler.triggerAttackRelease(noteString, 0.8, eventStartTime, 0.9)
+                } else if (instrument === "synth") {
+                  await loadSynth()
+                  synth.triggerAttackRelease(noteString, 0.8, eventStartTime)
+                } else if (instrument === "harp") {
+                  await loadHarp()
+                  const startDelay = noteIndex * 0.01
+                  const duration = 0.8 + startDelay
+                  harp.triggerAttackRelease(noteString, duration, eventStartTime + startDelay)
+                }
+
+                console.log(`Successfully added ${instrument} note ${noteString} at ${eventStartTime}`)
+              } catch (error) {
+                console.error(`Error adding ${instrument} note ${noteString}:`, error)
+              }
+            }
+          }
+        } else if (event.soundCueSrc) {
           try {
-            const response = await fetch(event.recordedAudioUrl)
+            console.log(`Loading pre-recorded audio: ${event.soundCueSrc}`)
+            const response = await fetch(event.soundCueSrc)
             const arrayBuffer = await response.arrayBuffer()
             const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
             const source = ctx.createBufferSource()
@@ -1230,887 +1225,983 @@ export default function Home() {
             source.buffer = audioBuffer
             source.connect(gainNode)
             gainNode.connect(ctx.destination)
-            gainNode.gain.setValueAtTime(0.8, eventStartTime) // Higher volume for voice
+            gainNode.gain.setValueAtTime(0.4, eventStartTime) // Good volume for pre-recorded sounds
             source.start(eventStartTime)
 
-            console.log(`Successfully added recorded voice at ${eventStartTime}`)
+            console.log(`Successfully added pre-recorded audio at ${eventStartTime}`)
           } catch (error) {
-            console.warn(`Could not load recorded audio: ${event.recordedAudioUrl}`, error)
+            console.warn(`Could not load recorded audio: ${event.soundCueSrc}`, error)
           }
         }
+      } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
+        setGenerationStep(`Adding recorded voice: ${event.recordedInstructionLabel || "Untitled"}`)
+        console.log(`Processing recorded voice: ${event.recordedAudioUrl}`)
 
-        processedEventsCount++
-        setGenerationProgress(Math.floor((processedEventsCount / totalEvents) * 80)) // Progress up to 80% for event processing
-      }
+        try {
+          const response = await fetch(event.recordedAudioUrl)
+          const arrayBuffer = await response.arrayBuffer()
+          const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+          const source = ctx.createBufferSource()
+          const gainNode = ctx.createGain()
 
-      setGenerationStep("Rendering audio...")
-      setGenerationProgress(80) // Set to 80% before rendering
-      console.log("Starting audio rendering...")
+          source.buffer = audioBuffer
+          source.connect(gainNode)
+          gainNode.connect(ctx.destination)
+          gainNode.gain.setValueAtTime(0.8, eventStartTime) // Higher volume for voice
+          source.start(eventStartTime)
 
-      const rendered = await ctx.startRendering()
-      console.log("Audio rendering complete, creating WAV blob...")
-
-      if (rendered.length === 0) {
-        throw new Error("Rendered audio buffer is empty. No audio content was generated.")
-      }
-
-      const wavBlob = await bufferToWav(
-        rendered,
-        compatibilityMode === "high",
-        (p) => setProcessingProgress(90 + Math.floor(p * 0.1)),
-        isMobileDevice,
-      )
-      if (wavBlob.size === 0) {
-        throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
-      }
-
-      setGeneratedAudioFileSize(wavBlob.size)
-
-      const url = URL.createObjectURL(wavBlob)
-      setGeneratedAudioUrl(url)
-
-      // Directly assign to the audio element for immediate playback readiness
-      if (encoderAudioRef.current) {
-        encoderAudioRef.current.src = url
-        encoderAudioRef.current.volume = volume / 100
-      }
-
-      setIsGeneratingAudio(false)
-      setGenerationProgress(100)
-      setGenerationStep("Export Complete")
-
-      console.log("Audio export completed successfully!")
-      toast({ title: "Export Complete", description: "Timeline audio exported with sound cues included!" })
-    } catch (error) {
-      console.error("Audio export failed:", error)
-      toast({
-        title: "Audio Export Failed",
-        description: `Could not export audio. Error: ${error instanceof Error ? error.message : "Unknown"}`,
-        variant: "destructive",
-      })
-    } finally {
-      setIsGeneratingAudio(false)
-    }
-  }
-
-  // Define the missing functions
-  const handleDragOverLocal = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-  }
-
-  const handleDragLeaveLocal = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-  }
-
-  const handleDropLocal = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
-      const droppedFile = event.dataTransfer.files[0]
-      setFile(droppedFile)
-    }
-  }
-
-  const processAudioAdjuster = async () => {
-    // Placeholder function
-  }
-
-  const downloadProcessedAudioAdjuster = async () => {
-    // Placeholder function
-  }
-
-  // == Effects for Length Adjuster ==
-  useEffect(() => {
-    // Use the useMobile hook for initial detection
-    // The useMobile hook already handles window.innerWidth and user agent.
-    // No need for manual check here.
-    if (typeof navigator !== "undefined" && (navigator as any).deviceMemory) {
-      const deviceMemory = (navigator as any).deviceMemory
-      if (deviceMemory < 4) {
-        console.warn("Device memory less than 4GB, enabling memory warnings.")
-        setMemoryWarning(true)
-      }
-    }
-  }, []) // isMobileDevice is now a hook, no longer a dependency here
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-
-    // Use getAudioContext for consistent initialization
-    try {
-      const ctx = getAudioContext()
-      audioContextRef.current = ctx
-    } catch (error) {
-      setStatus({
-        message: `Error initializing audio system: ${error instanceof Error ? error.message : "Unknown error"}`,
-        type: "error",
-      })
-    }
-
-    return () => {
-      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-        audioContextRef.current
-          .close()
-          .catch((err) => console.warn("Error closing AudioContext in main useEffect cleanup:", err))
-        audioContextRef.current = null
-      }
-    }
-  }, []) // isMobileDevice removed from dependency array as it's handled by useMobile hook
-
-  const cleanupMemory = useCallback(() => {
-    setOriginalBuffer(null)
-    setProcessedBufferState(null)
-    if (originalUrl) {
-      URL.revokeObjectURL(originalUrl)
-      setOriginalUrl("")
-    }
-    if (processedUrl) {
-      URL.revokeObjectURL(processedUrl)
-      setProcessedUrl("")
-    }
-    forceGarbageCollection()
-    if (isMobileDevice) setTimeout(() => forceGarbageCollection(), 100)
-  }, [originalUrl, processedUrl, isMobileDevice])
-
-  const validateFileSize = (fileToValidate: File): boolean => {
-    const maxSize = isMobileDevice ? 50 * 1024 * 1024 : 500 * 1024 * 1024
-    if (fileToValidate.size > maxSize) {
-      setStatus({ message: `File too large. Max ${isMobileDevice ? "50MB" : "500MB"}.`, type: "error" })
-      return false
-    }
-    if (
-      (isMobileDevice && fileToValidate.size > 20 * 1024 * 1024) ||
-      (!isMobileDevice && fileToValidate.size > 150 * 1024 * 1024)
-    ) {
-      setMemoryWarning(true)
-    } else {
-      setMemoryWarning(false)
-    }
-    return true
-  }
-
-  const handleFile = async (selectedFile: File) => {
-    if (!selectedFile || !selectedFile.type) {
-      setStatus({ message: "Invalid file selected.", type: "error" })
-      return
-    }
-
-    if (!selectedFile.type.startsWith("audio/") && !selectedFile.name.toLowerCase().endsWith(".m4a")) {
-      setStatus({ message: "Please select a valid audio file.", type: "error" })
-      return
-    }
-    if (!validateFileSize(selectedFile)) return
-    if (!audioContextRef.current || audioContextRef.current.state === "closed") {
-      setStatus({ message: "Audio system not ready. Please refresh.", type: "error" })
-      return
-    }
-    cleanupMemory()
-    await sleep(100)
-    setIsProcessingComplete(false) // Add this line
-    setFile(selectedFile)
-    setProcessingProgress(0)
-    setProcessingStep("Initializing...")
-    setDurationLimits(null)
-    setAudioAnalysis(null)
-    setProcessedUrl("")
-    setProcessedBufferState(null)
-    setActualDuration(null)
-    setStatus(null)
-    try {
-      setStatus({ message: "Loading audio file...", type: "info" })
-      await loadAudioFile(selectedFile)
-    } catch (error) {
-      setStatus({
-        message: `Error loading audio: ${error instanceof Error ? error.message : "Unknown"}`,
-        type: "error",
-      })
-      setOriginalBuffer(null)
-    }
-  }
-
-  const detectSilenceRegions = async (
-    buffer: AudioBuffer,
-    threshold: number,
-    minSilenceDur: number,
-  ): Promise<{ start: number; end: number }[]> => {
-    const sampleRate = buffer.sampleRate
-    const channelData = buffer.getChannelData(0)
-    const silenceRegions: { start: number; end: number }[] = []
-    let silenceStart: number | null = null
-    let consecutiveSilentSamples = 0
-    const skipSamples = isMobileDevice ? 20 : 10
-
-    for (let i = 0; i < channelData.length; i += skipSamples) {
-      if (i % (sampleRate * (isMobileDevice ? 2 : 5)) === 0) {
-        await sleep(0)
-        setProcessingProgress(20 + Math.floor((i / channelData.length) * 10))
-      }
-      const amplitude = Math.abs(channelData[i])
-      if (amplitude < threshold) {
-        if (silenceStart === null) silenceStart = i
-        consecutiveSilentSamples++
-      } else {
-        if (silenceStart !== null && (consecutiveSilentSamples * skipSamples) / sampleRate >= minSilenceDur) {
-          silenceRegions.push({ start: silenceStart / sampleRate, end: i / sampleRate })
+          console.log(`Successfully added recorded voice at ${eventStartTime}`)
+        } catch (error) {
+          console.warn(`Could not load recorded audio: ${event.recordedAudioUrl}`, error)
         }
-        silenceStart = null
-        consecutiveSilentSamples = 0
       }
-    }
-    if (silenceStart !== null && (consecutiveSilentSamples * skipSamples) / sampleRate >= minSilenceDur) {
-      silenceRegions.push({ start: silenceStart / sampleRate, end: channelData.length / sampleRate })
-    }
-    return silenceRegions
-  }
 
-  const analyzeAudioForLimits = async (buffer: AudioBuffer, minSpacing: number) => {
-    setProcessingStep("Analyzing audio for limits...")
-    const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
-    const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
-    const audioContentDuration = buffer.duration - totalSilenceDuration
-    const minRequiredSpacing = silenceRegions.length > 0 ? silenceRegions.length * minSpacing : 0
-    const minPossibleDuration = Math.max(1, Math.ceil((audioContentDuration + minRequiredSpacing) / 60))
-    const maxPossibleDuration = isMobileDevice ? 60 : 120
-    setDurationLimits({ min: minPossibleDuration, max: maxPossibleDuration })
-    setAudioAnalysis({
-      totalSilence: totalSilenceDuration,
-      contentDuration: audioContentDuration,
-      silenceRegions: silenceRegions.length,
-    })
-    if (targetDuration < minPossibleDuration) setTargetDuration(minPossibleDuration)
-    else if (targetDuration > maxPossibleDuration) setTargetDuration(maxPossibleDuration)
-    setProcessingStep("Analysis complete.")
-  }
-
-  const loadAudioFile = useCallback(
-    async (fileToLoad: File) => {
-      const currentAudioContext = audioContextRef.current
-      if (!currentAudioContext) {
-        setStatus({ message: "Audio context not initialized.", type: "error" })
-        throw new Error("AudioContext not initialized")
-      }
-      let attempts = 0
-      const maxAttempts = 3
-      while (currentAudioContext.state !== "running" && attempts < maxAttempts) {
-        attempts++
-        if (currentAudioContext.state === "suspended") {
-          try {
-            await currentAudioContext.resume()
-            if (currentAudioContext.state !== "running") await sleep(50 * attempts)
-          } catch (err) {
-            break
-          }
-        } else if (currentAudioContext.state === "closed") {
-          setStatus({ message: "Audio system closed.", type: "error" })
-          throw new Error("AudioContext closed")
-        }
-        if (currentAudioContext.state !== "running" && currentAudioContext.state !== "closed" && attempts < maxAttempts)
-          await sleep(100 * attempts)
-      }
-      if (currentAudioContext.state !== "running") {
-        setStatus({ message: "Failed to start audio system.", type: "error" })
-        throw new Error(`AudioContext not running: ${currentAudioContext.state}`)
-      }
-      setProcessingStep("Reading file data...")
-      setProcessingProgress(10)
-      const arrayBuffer = await fileToLoad.arrayBuffer()
-      setProcessingStep("Decoding audio data...")
-      setProcessingProgress(50)
-      try {
-        const decodePromise = currentAudioContext.decodeAudioData(arrayBuffer.slice(0))
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Audio decoding timeout (30s)")), 30000),
-        )
-        const buffer = await Promise.race([decodePromise, timeoutPromise])
-        setProcessingStep("Analyzing audio...")
-        setProcessingProgress(80)
-        await sleep(50)
-        setOriginalBuffer(buffer)
-        setProcessingStep("Creating audio player...")
-        setProcessingProgress(95)
-        if (originalUrl) URL.revokeObjectURL(originalUrl)
-        const blob = new Blob([fileToLoad], { type: fileToLoad.type })
-        const url = URL.createObjectURL(blob)
-        setOriginalUrl(url)
-        setProcessingProgress(100)
-        setProcessingStep("Load complete!")
-        setStatus({
-          message: `Audio loaded. Duration: ${formatTime(buffer.duration)}.`,
-          type: "success",
-        })
-      } catch (decodeError) {
-        setStatus({
-          message: `Error decoding: ${decodeError instanceof Error ? decodeError.message : "Unknown"}`,
-          type: "error",
-        })
-        throw decodeError
-      }
-    },
-    [originalUrl, isMobileDevice],
-  )
-
-  useEffect(() => {
-    if (originalBuffer) analyzeAudioForLimits(originalBuffer, minSpacingDuration)
-  }, [originalBuffer, silenceThreshold, minSilenceDuration, minSpacingDuration])
-
-  const processAudioAdjusterAction = async () => {
-    setIsProcessingComplete(false) // Add this line
-    const currentAudioContext = audioContextRef.current
-    if (!originalBuffer || !currentAudioContext) {
-      setStatus({ message: "Original audio or audio system not ready.", type: "error" })
-      return
+      processedEventsCount++
+      setGenerationProgress(Math.floor((processedEventsCount / totalEvents) * 80)) // Progress up to 80% for event processing
     }
-    setIsProcessing(true)
-    setProcessingProgress(0)
-    setProcessingStep("Starting processing...")
-    if (currentAudioContext.state === "suspended") {
-      try {
-        await currentAudioContext.resume()
-        if (currentAudioContext.state !== "running") throw new Error("Failed to resume for processing.")
-      } catch (err) {
-        setStatus({ message: `Audio system error: ${err instanceof Error ? err.message : "Unknown"}`, type: "error" })
-        setIsProcessing(false)
-        return
-      }
-    } else if (currentAudioContext.state === "closed") {
-      setStatus({ message: "Audio system closed.", type: "error" })
-      setIsProcessing(false)
-      return
+
+    setGenerationStep("Rendering audio...")
+    setGenerationProgress(80) // Set to 80% before rendering
+    console.log("Starting audio rendering...")
+
+    const rendered = await ctx.startRendering()
+    console.log("Audio rendering complete, creating WAV blob...")
+
+    if (rendered.length === 0) {
+      throw new Error("Rendered audio buffer is empty. No audio content was generated.")
     }
-    if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
-    processingTimeoutRef.current = setTimeout(
-      () => {
-        setIsProcessing(false)
-        setStatus({ message: "Processing timed out.", type: "error" })
-      },
-      isMobileDevice ? 120000 : 600000,
+
+    const wavBlob = await bufferToWav(
+      rendered,
+      compatibilityMode === "high",
+      (p) => setProcessingProgress(90 + Math.floor(p * 0.1)),
+      isMobileDevice,
     )
+    if (wavBlob.size === 0) {
+      throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
+    }
 
-    try {
-      setStatus({ message: "Processing audio...", type: "info" })
-      const targetDurationSeconds = targetDuration * 60
-      setProcessingStep("Detecting silence regions (step 1/4)...")
-      setProcessingProgress(10)
-      await sleep(10)
-      const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
-      setProcessingStep("Calculating adjustments (step 2/4)...")
-      await sleep(10)
-      await sleep(10)
-      const silenceRegions2 = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
-      setProcessingStep("Calculating adjustments (step 2/4)...")
-      await sleep(10)
-      const totalSilenceDuration = silenceRegions2.reduce((sum, region) => sum + (region.end - region.start), 0)
-      const audioContentDuration = originalBuffer.duration - totalSilenceDuration
-      const availableSilenceDuration = Math.max(
-        targetDurationSeconds - audioContentDuration,
-        silenceRegions2.length * minSpacingDuration,
-      )
-      const scaleFactor = totalSilenceDuration > 0 ? availableSilenceDuration / totalSilenceDuration : 1
-      setProcessingStep("Rebuilding audio (step 3/4)...")
-      setProcessingProgress(50)
-      await sleep(10)
+    setGeneratedAudioFileSize(wavBlob.size)
 
-      const processedAudioBuffer = await rebuildAudioWithScaledPauses(
-        originalBuffer,
-        silenceRegions2,
-        scaleFactor,
-        minSpacingDuration,
-        preserveNaturalPacing,
-        availableSilenceDuration,
-        (p) => setProcessingProgress(50 + Math.floor(p * 0.4)),
-      )
-      setPausesAdjusted(silenceRegions2.length)
-      setProcessingStep("Creating download file (step 4/4)...")
-      setProcessingProgress(90)
-      await sleep(10)
-      const wavBlob = await bufferToWav(
-        processedAudioBuffer,
-        compatibilityMode === "high",
-        (p) => setProcessingProgress(90 + Math.floor(p * 0.1)),
-        isMobileDevice,
-      )
-      if (wavBlob.size === 0) {
-        throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
-      }
-      const url = URL.createObjectURL(wavBlob)
-      setProcessedUrl(url)
-      setActualDuration(processedAudioBuffer.duration)
-      setProcessedBufferState(processedAudioBuffer)
-      setProcessedFileSize(wavBlob.size)
-      setProcessingProgress(100)
-      setProcessingStep("Complete!")
-      setStatus({ message: "Audio processing completed successfully!", type: "success" })
-      setIsProcessingComplete(true)
-    } catch (error) {
-      console.error("Error during audio processing:", error)
-      setStatus({ message: `Processing error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
-    } finally {
-      setIsProcessing(false)
-      if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
-      if (currentAudioContext && currentAudioContext.state === "running") {
-        currentAudioContext.suspend().catch((err) => console.warn("Error suspending AudioContext post-process:", err))
-      }
+    const url = URL.createObjectURL(wavBlob)
+    setGeneratedAudioUrl(url)
+
+    // Directly assign to the audio element for immediate playback readiness
+    if (encoderAudioRef.current) {
+      encoderAudioRef.current.src = url
+      encoderAudioRef.current.volume = volume / 100
+    }
+
+    setIsGeneratingAudio(false)
+    setGenerationProgress(100)
+    setGenerationStep("Export Complete")
+
+    console.log("Audio export completed successfully!")
+    toast({ title: "Export Complete", description: "Timeline audio exported with sound cues included!" })
+  } catch (error) {
+    console.error("Audio export failed:", error)
+    toast({
+      title: "Audio Export Failed",
+      description: `Could not export audio. Error: ${error instanceof Error ? error.message : "Unknown"}`,
+      variant: "destructive",
+    })
+  } finally {
+    setIsGeneratingAudio(false)
+  }
+}
+
+// Define the missing functions
+const handleDragOverLocal = (event: React.DragEvent<HTMLDivElement>) => {
+  event.preventDefault()
+}
+
+const handleDragLeaveLocal = (event: React.DragEvent<HTMLDivElement>) => {
+  event.preventDefault()
+}
+
+const handleDropLocal = (event: React.DragEvent<HTMLDivElement>) => {
+  event.preventDefault()
+  if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+    const droppedFile = event.dataTransfer.files[0]
+    setFile(droppedFile)
+  }
+}
+
+const processAudioAdjuster = async () => {
+  // Placeholder function
+}
+
+const downloadProcessedAudioAdjuster = async () => {
+  // Placeholder function
+}
+
+// == Effects for Length Adjuster ==
+useEffect(() => {
+  // Use the useMobile hook for initial detection
+  // The useMobile hook already handles window.innerWidth and user agent.
+  // No need for manual check here.
+  if (typeof navigator !== "undefined" && (navigator as any).deviceMemory) {
+    const deviceMemory = (navigator as any).deviceMemory
+    if (deviceMemory < 4) {
+      console.warn("Device memory less than 4GB, enabling memory warnings.")
+      setMemoryWarning(true)
     }
   }
+}, []) // isMobileDevice is now a hook, no longer a dependency here
 
-  const rebuildAudioWithScaledPauses = useCallback(
-    async (
-      buffer: AudioBuffer,
-      regions: { start: number; end: number }[],
-      scaleFactorVal: number,
-      minSpacingVal: number,
-      preservePacing: boolean,
-      targetTotalSilence: number,
-      onProgress: (progress: number) => void,
-    ): Promise<AudioBuffer> => {
-      const currentAudioContext = audioContextRef.current
-      if (!currentAudioContext) throw new Error("Audio context not available for rebuild")
-      onProgress(0)
-      let dynamicScale = scaleFactorVal
-      if (!preservePacing && regions.length > 0) {
-        const currentTotalSilence = regions.reduce((sum, r) => sum + (r.end - r.start), 0)
-        dynamicScale = currentTotalSilence > 0 ? targetTotalSilence / currentTotalSilence : 1
-        if (!isFinite(dynamicScale) || dynamicScale <= 0) dynamicScale = 1
+useEffect(() => {
+  if (typeof window === "undefined") return
+
+  // Use getAudioContext for consistent initialization
+  try {
+    const ctx = getAudioContext()
+    audioContextRef.current = ctx
+  } catch (error) {
+    setStatus({
+      message: `Error initializing audio system: ${error instanceof Error ? error.message : "Unknown error"}`,
+      type: "error",
+    })
+  }
+
+  return () => {
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      audioContextRef.current
+        .close()
+        .catch((err) => console.warn("Error closing AudioContext in main useEffect cleanup:", err))
+      audioContextRef.current = null
+    }
+  }
+}, []) // isMobileDevice removed from dependency array as it's handled by useMobile hook
+
+const cleanupMemory = useCallback(() => {
+  setOriginalBuffer(null)
+  setProcessedBufferState(null)
+  if (originalUrl) {
+    URL.revokeObjectURL(originalUrl)
+    setOriginalUrl("")
+  }
+  if (processedUrl) {
+    URL.revokeObjectURL(processedUrl)
+    setProcessedUrl("")
+  }
+  forceGarbageCollection()
+  if (isMobileDevice) setTimeout(() => forceGarbageCollection(), 100)
+}, [originalUrl, processedUrl, isMobileDevice])
+
+const validateFileSize = (fileToValidate: File): boolean => {
+  const maxSize = isMobileDevice ? 50 * 1024 * 1024 : 500 * 1024 * 1024
+  if (fileToValidate.size > maxSize) {
+    setStatus({ message: `File too large. Max ${isMobileDevice ? "50MB" : "500MB"}.`, type: "error" })
+    return false
+  }
+  if (
+    (isMobileDevice && fileToValidate.size > 20 * 1024 * 1024) ||
+    (!isMobileDevice && fileToValidate.size > 150 * 1024 * 1024)
+  ) {
+    setMemoryWarning(true)
+  } else {
+    setMemoryWarning(false)
+  }
+  return true
+}
+
+const handleFile = async (selectedFile: File) => {
+  if (!selectedFile || !selectedFile.type) {
+    setStatus({ message: "Invalid file selected.", type: "error" })
+    return
+  }
+
+  if (!selectedFile.type.startsWith("audio/") && !selectedFile.name.toLowerCase().endsWith(".m4a")) {
+    setStatus({ message: "Please select a valid audio file.", type: "error" })
+    return
+  }
+  if (!validateFileSize(selectedFile)) return
+  if (!audioContextRef.current || audioContextRef.current.state === "closed") {
+    setStatus({ message: "Audio system not ready. Please refresh.", type: "error" })
+    return
+  }
+  cleanupMemory()
+  await sleep(100)
+  setIsProcessingComplete(false) // Add this line
+  setFile(selectedFile)
+  setProcessingProgress(0)
+  setProcessingStep("Initializing...")
+  setDurationLimits(null)
+  setAudioAnalysis(null)
+  setProcessedUrl("")
+  setProcessedBufferState(null)
+  setActualDuration(null)
+  setStatus(null)
+  try {
+    setStatus({ message: "Loading audio file...", type: "info" })
+    await loadAudioFile(selectedFile)
+  } catch (error) {
+    setStatus({
+      message: `Error loading audio: ${error instanceof Error ? error.message : "Unknown"}`,
+      type: "error",
+    })
+    setOriginalBuffer(null)
+  }
+}
+
+const detectSilenceRegions = async (
+  buffer: AudioBuffer,
+  threshold: number,
+  minSilenceDur: number,
+): Promise<{ start: number; end: number }[]> => {
+  const sampleRate = buffer.sampleRate
+  const channelData = buffer.getChannelData(0)
+  const silenceRegions: { start: number; end: number }[] = []
+  let silenceStart: number | null = null
+  let consecutiveSilentSamples = 0
+  const skipSamples = isMobileDevice ? 20 : 10
+
+  for (let i = 0; i < channelData.length; i += skipSamples) {
+    if (i % (sampleRate * (isMobileDevice ? 2 : 5)) === 0) {
+      await sleep(0)
+      setProcessingProgress(20 + Math.floor((i / channelData.length) * 10))
+    }
+    const amplitude = Math.abs(channelData[i])
+    if (amplitude < threshold) {
+      if (silenceStart === null) silenceStart = i
+      consecutiveSilentSamples++
+    } else {
+      if (silenceStart !== null && (consecutiveSilentSamples * skipSamples) / sampleRate >= minSilenceDur) {
+        silenceRegions.push({ start: silenceStart / sampleRate, end: i / sampleRate })
       }
-      const processedRegions = regions.map((region) => {
-        const duration = region.end - region.start
-        const newDuration = preservePacing
-          ? Math.max(duration * dynamicScale, minSpacingVal)
-          : regions.length > 0
-            ? Math.max(minSpacingVal, targetTotalSilence / regions.length)
-            : minSpacingVal
-        return { ...region, newDuration }
+      silenceStart = null
+      consecutiveSilentSamples = 0
+    }
+  }
+  if (silenceStart !== null && (consecutiveSilentSamples * skipSamples) / sampleRate >= minSilenceDur) {
+    silenceRegions.push({ start: silenceStart / sampleRate, end: channelData.length / sampleRate })
+  }
+  return silenceRegions
+}
+
+const analyzeAudioForLimits = async (buffer: AudioBuffer, minSpacing: number) => {
+  setProcessingStep("Analyzing audio for limits...")
+  const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
+  const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+  const audioContentDuration = buffer.duration - totalSilenceDuration
+  const minRequiredSpacing = silenceRegions.length > 0 ? silenceRegions.length * minSpacing : 0
+  const minPossibleDuration = Math.max(1, Math.ceil((audioContentDuration + minRequiredSpacing) / 60))
+  const maxPossibleDuration = isMobileDevice ? 60 : 120
+  setDurationLimits({ min: minPossibleDuration, max: maxPossibleDuration })
+  setAudioAnalysis({
+    totalSilence: totalSilenceDuration,
+    contentDuration: audioContentDuration,
+    silenceRegions: silenceRegions.length,
+  })
+  if (targetDuration < minPossibleDuration) setTargetDuration(minPossibleDuration)
+  else if (targetDuration > maxPossibleDuration) setTargetDuration(maxPossibleDuration)
+  setProcessingStep("Analysis complete.")
+}
+
+const loadAudioFile = useCallback(
+  async (fileToLoad: File) => {
+    const currentAudioContext = audioContextRef.current
+    if (!currentAudioContext) {
+      setStatus({ message: "Audio context not initialized.", type: "error" })
+      throw new Error("AudioContext not initialized")
+    }
+    let attempts = 0
+    const maxAttempts = 3
+    while (currentAudioContext.state !== "running" && attempts < maxAttempts) {
+      attempts++
+      if (currentAudioContext.state === "suspended") {
+        try {
+          await currentAudioContext.resume()
+          if (currentAudioContext.state !== "running") await sleep(50 * attempts)
+        } catch (err) {
+          break
+        }
+      } else if (currentAudioContext.state === "closed") {
+        setStatus({ message: "Audio system closed.", type: "error" })
+        throw new Error("AudioContext closed")
+      }
+      if (currentAudioContext.state !== "running" && currentAudioContext.state !== "closed" && attempts < maxAttempts)
+        await sleep(100 * attempts)
+    }
+    if (currentAudioContext.state !== "running") {
+      setStatus({ message: "Failed to start audio system.", type: "error" })
+      throw new Error(`AudioContext not running: ${currentAudioContext.state}`)
+    }
+    setProcessingStep("Reading file data...")
+    setProcessingProgress(10)
+    const arrayBuffer = await fileToLoad.arrayBuffer()
+    setProcessingStep("Decoding audio data...")
+    setProcessingProgress(50)
+    try {
+      const decodePromise = currentAudioContext.decodeAudioData(arrayBuffer.slice(0))
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Audio decoding timeout (30s)")), 30000),
+      )
+      const buffer = await Promise.race([decodePromise, timeoutPromise])
+      setProcessingStep("Analyzing audio...")
+      setProcessingProgress(80)
+      await sleep(50)
+      setOriginalBuffer(buffer)
+      setProcessingStep("Creating audio player...")
+      setProcessingProgress(95)
+      if (originalUrl) URL.revokeObjectURL(originalUrl)
+      const blob = new Blob([fileToLoad], { type: fileToLoad.type })
+      const url = URL.createObjectURL(blob)
+      setOriginalUrl(url)
+      setProcessingProgress(100)
+      setProcessingStep("Load complete!")
+      setStatus({
+        message: `Audio loaded. Duration: ${formatTime(buffer.duration)}.`,
+        type: "success",
       })
-      const audioContentDur = buffer.duration - regions.reduce((sum, r) => sum + (r.end - r.start), 0)
-      const newSilenceDur = processedRegions.reduce((sum, r) => sum + r.newDuration, 0)
-      const newTotalDur = audioContentDur + newSilenceDur
-      if (newTotalDur <= 0) throw new Error("Calculated new total duration is zero or negative.")
-      if (isMobileDevice && newTotalDur > 45 * 60) {
-        console.warn(`Mobile device: Output duration ${formatTime(newTotalDur)} may cause issues.`)
-        setMemoryWarning(true)
-      }
-      let newBuffer: AudioBuffer
-      try {
-        newBuffer = currentAudioContext.createBuffer(
-          buffer.numberOfChannels,
-          Math.max(1, Math.floor(newTotalDur * buffer.sampleRate)),
-          buffer.sampleRate,
-        )
-      } catch (e) {
-        forceGarbageCollection()
-        throw new Error(
-          `Failed to create output buffer (duration: ${newTotalDur.toFixed(2)}s). Memory limit likely exceeded. Try a shorter target duration.`,
-        )
-      }
-      onProgress(10)
-      for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-        const originalData = buffer.getChannelData(channel)
-        const newData = newBuffer.getChannelData(channel)
-        let writeIndex = 0
-        let readIndex = 0
-        const totalSamples = originalData.length
-        if (regions.length > 0 && regions[0].start > 0) {
-          const samplesToCopy = Math.floor(regions[0].start * buffer.sampleRate)
-          for (let i = 0; i < samplesToCopy; i++) newData[writeIndex++] = originalData[readIndex++]
-        }
-        for (let i = 0; i < regions.length; i++) {
-          if (i % (isMobileDevice ? 5 : 10) === 0) {
-            await sleep(0)
-            onProgress(10 + Math.floor((i / regions.length) * 80))
-          }
-          const region = regions[i]
-          const processedReg = processedRegions[i]
-          readIndex = Math.floor(region.end * buffer.sampleRate)
-          const newSilenceLength = Math.floor(processedReg.newDuration * buffer.sampleRate)
-          for (let j = 0; j < newSilenceLength; j++) {
-            if (writeIndex < newData.length) newData[writeIndex++] = 0
-          }
-          const nextRegionStart =
-            i < regions.length - 1 ? Math.floor(regions[i + 1].start * buffer.sampleRate) : totalSamples
-          const segmentLength = nextRegionStart - readIndex
-          for (let j = 0; j < segmentLength; j++) {
-            if (writeIndex < newData.length && readIndex + j < totalSamples) {
-              newData[writeIndex++] = originalData[readIndex + j]
-            }
-          }
-          readIndex = nextRegionStart
-        }
-        if (readIndex < totalSamples && regions.length === 0) {
-          for (let i = readIndex; i < totalSamples; i++)
-            if (writeIndex < newData.length) newData[writeIndex++] = originalData[i]
-        }
-      }
-      onProgress(100)
-      return newBuffer
+    } catch (decodeError) {
+      setStatus({
+        message: `Error decoding: ${decodeError instanceof Error ? decodeError.message : "Unknown"}`,
+        type: "error",
+      })
+      throw decodeError
+    }
+  },
+  [originalUrl, isMobileDevice],
+)
+
+useEffect(() => {
+  if (originalBuffer) analyzeAudioForLimits(originalBuffer, minSpacingDuration)
+}, [originalBuffer, silenceThreshold, minSilenceDuration, minSpacingDuration])
+
+const processAudioAdjusterAction = async () => {
+  setIsProcessingComplete(false) // Add this line
+  const currentAudioContext = audioContextRef.current
+  if (!originalBuffer || !currentAudioContext) {
+    setStatus({ message: "Original audio or audio system not ready.", type: "error" })
+    return
+  }
+  setIsProcessing(true)
+  setProcessingProgress(0)
+  setProcessingStep("Starting processing...")
+  if (currentAudioContext.state === "suspended") {
+    try {
+      await currentAudioContext.resume()
+      if (currentAudioContext.state !== "running") throw new Error("Failed to resume for processing.")
+    } catch (err) {
+      setStatus({ message: `Audio system error: ${err instanceof Error ? err.message : "Unknown"}`, type: "error" })
+      setIsProcessing(false)
+      return
+    }
+  } else if (currentAudioContext.state === "closed") {
+    setStatus({ message: "Audio system closed.", type: "error" })
+    setIsProcessing(false)
+    return
+  }
+  if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
+  processingTimeoutRef.current = setTimeout(
+    () => {
+      setIsProcessing(false)
+      setStatus({ message: "Processing timed out.", type: "error" })
     },
-    [isMobileDevice],
+    isMobileDevice ? 120000 : 600000,
   )
 
-  const handleFileSelectAction = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0]
-    if (selectedFile) handleFile(selectedFile)
-    if (e.target) e.target.value = ""
-  }
+  try {
+    setStatus({ message: "Processing audio...", type: "info" })
+    const targetDurationSeconds = targetDuration * 60
+    setProcessingStep("Detecting silence regions (step 1/4)...")
+    setProcessingProgress(10)
+    await sleep(10)
+    const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
+    setProcessingStep("Calculating adjustments (step 2/4)...")
+    await sleep(10)
+    await sleep(10)
+    const silenceRegions2 = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
+    setProcessingStep("Calculating adjustments (step 2/4)...")
+    await sleep(10)
+    const totalSilenceDuration = silenceRegions2.reduce((sum, region) => sum + (region.end - region.start), 0)
+    const audioContentDuration = originalBuffer.duration - totalSilenceDuration
+    const availableSilenceDuration = Math.max(
+      targetDurationSeconds - audioContentDuration,
+      silenceRegions2.length * minSpacingDuration,
+    )
+    const scaleFactor = totalSilenceDuration > 0 ? availableSilenceDuration / totalSilenceDuration : 1
+    setProcessingStep("Rebuilding audio (step 3/4)...")
+    setProcessingProgress(50)
+    await sleep(10)
 
-  const handleDragOverAction = (e: React.DragEvent) => {
-    e.preventDefault()
-    if (uploadAreaRef.current) uploadAreaRef.current.classList.add("border-primary")
-  }
-
-  const handleDragLeaveAction = (e: React.DragEvent) => {
-    e.preventDefault()
-    if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
-  }
-
-  const handleDropAction = (e: React.DragEvent) => {
-    e.preventDefault()
-    if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
-    const files = e.dataTransfer.files
-    if (files.length > 0) handleFile(files[0])
-  }
-
-  const downloadProcessedAudioAction = async () => {
-    if (!processedUrl) {
-      setStatus({ message: "No processed audio available to download.", type: "warning" })
-      return
+    const processedAudioBuffer = await rebuildAudioWithScaledPauses(
+      originalBuffer,
+      silenceRegions2,
+      scaleFactor,
+      minSpacingDuration,
+      preserveNaturalPacing,
+      availableSilenceDuration,
+      (p) => setProcessingProgress(50 + Math.floor(p * 0.4)),
+    )
+    setPausesAdjusted(silenceRegions2.length)
+    setProcessingStep("Creating download file (step 4/4)...")
+    setProcessingProgress(90)
+    await sleep(10)
+    const wavBlob = await bufferToWav(
+      processedAudioBuffer,
+      compatibilityMode === "high",
+      (p) => setProcessingProgress(90 + Math.floor(p * 0.1)),
+      isMobileDevice,
+    )
+    if (wavBlob.size === 0) {
+      throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
     }
-    const a = document.createElement("a")
-    a.href = processedUrl
-    a.download = file ? `processed_${file.name.replace(/\.[^/.]+$/, "")}.wav` : "processed_audio.wav"
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-  }
-
-  useEffect(() => {
-    // This effect no longer resets isProcessingComplete.
-    // It's now reset at the start of processAudioAdjusterAction or handleFile.
-  }, [targetDuration, silenceThreshold, minSilenceDuration, minSpacingDuration, preserveNaturalPacing])
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout | undefined
-    if (isProcessing) interval = setInterval(monitorMemory, 3000)
-    return () => {
-      if (interval) clearInterval(interval)
+    const url = URL.createObjectURL(wavBlob)
+    setProcessedUrl(url)
+    setActualDuration(processedAudioBuffer.duration)
+    setProcessedBufferState(processedAudioBuffer)
+    setProcessedFileSize(wavBlob.size)
+    setProcessingProgress(100)
+    setProcessingStep("Complete!")
+    setStatus({ message: "Audio processing completed successfully!", type: "success" })
+    setIsProcessingComplete(true)
+  } catch (error) {
+    console.error("Error during audio processing:", error)
+    setStatus({ message: `Processing error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
+  } finally {
+    setIsProcessing(false)
+    if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
+    if (currentAudioContext && currentAudioContext.state === "running") {
+      currentAudioContext.suspend().catch((err) => console.warn("Error suspending AudioContext post-process:", err))
     }
-  }, [isProcessing])
+  }
+}
 
-  // == Effects and Handlers for Labs ==
-  useEffect(() => {
-    encoderAudioRef.current = new Audio()
-    encoderAudioRef.current.preload = "none"
-    encoderAudioRef.current.volume = 0.7
+const rebuildAudioWithScaledPauses = useCallback(
+  async (
+    buffer: AudioBuffer,
+    regions: { start: number; end: number }[],
+    scaleFactorVal: number,
+    minSpacingVal: number,
+    preservePacing: boolean,
+    targetTotalSilence: number,
+    onProgress: (progress: number) => void,
+  ): Promise<AudioBuffer> => {
+    const currentAudioContext = audioContextRef.current
+    if (!currentAudioContext) throw new Error("Audio context not available for rebuild")
+    onProgress(0)
+    let dynamicScale = scaleFactorVal
+    if (!preservePacing && regions.length > 0) {
+      const currentTotalSilence = regions.reduce((sum, r) => sum + (r.end - r.start), 0)
+      dynamicScale = currentTotalSilence > 0 ? targetTotalSilence / currentTotalSilence : 1
+      if (!isFinite(dynamicScale) || dynamicScale <= 0) dynamicScale = 1
+    }
+    const processedRegions = regions.map((region) => {
+      const duration = region.end - region.start
+      const newDuration = preservePacing
+        ? Math.max(duration * dynamicScale, minSpacingVal)
+        : regions.length > 0
+          ? Math.max(minSpacingVal, targetTotalSilence / regions.length)
+          : minSpacingVal
+      return { ...region, newDuration }
+    })
+    const audioContentDur = buffer.duration - regions.reduce((sum, r) => sum + (r.end - r.start), 0)
+    const newSilenceDur = processedRegions.reduce((sum, r) => sum + r.newDuration, 0)
+    const newTotalDur = audioContentDur + newSilenceDur
+    if (newTotalDur <= 0) throw new Error("Calculated new total duration is zero or negative.")
+    if (isMobileDevice && newTotalDur > 45 * 60) {
+      console.warn(`Mobile device: Output duration ${formatTime(newTotalDur)} may cause issues.`)
+      setMemoryWarning(true)
+    }
+    let newBuffer: AudioBuffer
+    try {
+      newBuffer = currentAudioContext.createBuffer(
+        buffer.numberOfChannels,
+        Math.max(1, Math.floor(newTotalDur * buffer.sampleRate)),
+        buffer.sampleRate,
+      )
+    } catch (e) {
+      forceGarbageCollection()
+      throw new Error(
+        `Failed to create output buffer (duration: ${newTotalDur.toFixed(2)}s). Memory limit likely exceeded. Try a shorter target duration.`,
+      )
+    }
+    onProgress(10)
+    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+      const originalData = buffer.getChannelData(channel)
+      const newData = newBuffer.getChannelData(channel)
+      let writeIndex = 0
+      let readIndex = 0
+      const totalSamples = originalData.length
+      if (regions.length > 0 && regions[0].start > 0) {
+        const samplesToCopy = Math.floor(regions[0].start * buffer.sampleRate)
+        for (let i = 0; i < samplesToCopy; i++) newData[writeIndex++] = originalData[readIndex++]
+      }
+      for (let i = 0; i < regions.length; i++) {
+        if (i % (isMobileDevice ? 5 : 10) === 0) {
+          await sleep(0)
+          onProgress(10 + Math.floor((i / regions.length) * 80))
+        }
+        const region = regions[i]
+        const processedReg = processedRegions[i]
+        readIndex = Math.floor(region.end * buffer.sampleRate)
+        const newSilenceLength = Math.floor(processedReg.newDuration * buffer.sampleRate)
+        for (let j = 0; j < newSilenceLength; j++) {
+          if (writeIndex < newData.length) newData[writeIndex++] = 0
+        }
+        const nextRegionStart =
+          i < regions.length - 1 ? Math.floor(regions[i + 1].start * buffer.sampleRate) : totalSamples
+        const segmentLength = nextRegionStart - readIndex
+        for (let j = 0; j < segmentLength; j++) {
+          if (writeIndex < newData.length && readIndex + j < totalSamples) {
+            newData[writeIndex++] = originalData[readIndex + j]
+          }
+        }
+        readIndex = nextRegionStart
+      }
+      if (readIndex < totalSamples && regions.length === 0) {
+        for (let i = readIndex; i < totalSamples; i++)
+          if (writeIndex < newData.length) newData[writeIndex++] = originalData[i]
+      }
+    }
+    onProgress(100)
+    return newBuffer
+  },
+  [isMobileDevice],
+)
+
+const handleFileSelectAction = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const selectedFile = e.target.files?.[0]
+  if (selectedFile) handleFile(selectedFile)
+  if (e.target) e.target.value = ""
+}
+
+const handleDragOverAction = (e: React.DragEvent) => {
+  e.preventDefault()
+  if (uploadAreaRef.current) uploadAreaRef.current.classList.add("border-primary")
+}
+
+const handleDragLeaveAction = (e: React.DragEvent) => {
+  e.preventDefault()
+  if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
+}
+
+const handleDropAction = (e: React.DragEvent) => {
+  e.preventDefault()
+  if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
+  const files = e.dataTransfer.files
+  if (files.length > 0) handleFile(files[0])
+}
+
+const downloadProcessedAudioAction = async () => {
+  if (!processedUrl) {
+    setStatus({ message: "No processed audio available to download.", type: "warning" })
+    return
+  }
+  const a = document.createElement("a")
+  a.href = processedUrl
+  a.download = file ? `processed_${file.name.replace(/\.[^/.]+$/, "")}.wav` : "processed_audio.wav"
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+}
+
+useEffect(() => {
+  // This effect no longer resets isProcessingComplete.
+  // It's now reset at the start of processAudioAdjusterAction or handleFile.
+}, [targetDuration, silenceThreshold, minSilenceDuration, minSpacingDuration, preserveNaturalPacing])
+
+useEffect(() => {
+  let interval: NodeJS.Timeout | undefined
+  if (isProcessing) interval = setInterval(monitorMemory, 3000)
+  return () => {
+    if (interval) clearInterval(interval)
+  }
+}, [isProcessing])
+
+// == Effects and Handlers for Labs ==
+useEffect(() => {
+  encoderAudioRef.current = new Audio()
+  encoderAudioRef.current.preload = "none"
+  encoderAudioRef.current.volume = 0.7
+  if (encoderAudioRef.current) {
+    encoderAudioRef.current.onerror = (e) => console.warn("Encoder Audio error:", e)
+  }
+  return () => {
     if (encoderAudioRef.current) {
-      encoderAudioRef.current.onerror = (e) => console.warn("Encoder Audio error:", e)
+      encoderAudioRef.current.pause()
+      encoderAudioRef.current.src = ""
+      encoderAudioRef.current = null
     }
-    return () => {
-      if (encoderAudioRef.current) {
-        encoderAudioRef.current.pause()
-        encoderAudioRef.current.src = ""
-        encoderAudioRef.current = null
-      }
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-        mediaRecorderRef.current.stop()
-      }
-    }
-  }, [])
-
-  // Helper function to add events to timelineEvents without automatic spacing
-  const addEventToTimeline = useCallback((newEvent: TimelineEvent) => {
-    setTimelineEvents((prevEvents) => {
-      const updatedEvents = [...prevEvents, newEvent]
-      // Sort by current startTime to maintain chronological order for display
-      // Do NOT re-calculate or re-assign startTimes based on spacing.
-      return updatedEvents.sort((a, b) => {
-        if (a.startTime === b.startTime) {
-          // For events at the same time, maintain their relative order based on original array position
-          const aIndex = prevEvents.findIndex((e) => e.id === a.id)
-          const bIndex = prevEvents.findIndex((e) => e.id === b.id)
-          return aIndex - bIndex
-        }
-        return a.startTime - b.startTime
-      })
-    })
-  }, [])
-
-  const handleAddInstructionSoundEvent = () => {
-    const instructionTextToAdd = customInstructionText.trim()
-
-    if (!instructionTextToAdd) {
-      toast({
-        title: "Missing Instruction",
-        description: "Please enter an instruction.",
-        variant: "destructive",
-      })
-      return
-    }
-    if (!selectedSoundCue && selectedNotes.length === 0) {
-      toast({ title: "Missing Sound Cue", description: "Please select a sound cue.", variant: "destructive" })
-      return
-    }
-
-    // Calculate new startTime based on existing events
-    const maxExistingTime = timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
-    const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 10 : 0
-
-    let newEvent: TimelineEvent
-
-    if (multiNoteMode && selectedNotes.length > 0) {
-      newEvent = {
-        id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        type: "instruction_sound",
-        startTime: newStartTime,
-        instructionText: instructionTextToAdd,
-        soundCueId: `chord_${Date.now()}`,
-        soundCueName: selectedNotes.join(", "),
-        soundCueSrc: `musical:${selectedNotes.join("|")}`,
-        instrument: noteType,
-        color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length],
-      }
-    } else if (selectedSoundCue) {
-      newEvent = {
-        id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        type: "instruction_sound",
-        startTime: newStartTime,
-        instructionText: instructionTextToAdd,
-        soundCueId: selectedSoundCue.id,
-        soundCueName: selectedSoundCue.name,
-        soundCueSrc: selectedSoundCue.src,
-        instrument: noteType,
-        color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length],
-      }
-    } else {
-      return
-    }
-
-    addEventToTimeline(newEvent)
-    setCustomInstructionText("")
-    setSelectedNotes([])
-    setSelectedSoundCue(null)
-    toast({
-      title: "Event Added",
-      description: `"${instructionTextToAdd.substring(0, 30)}..." with ${newEvent.soundCueName} added.`,
-    })
-  }
-
-  const startRecording = async () => {
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-        const mimeType = MediaRecorder.isTypeSupported("audio/mp4;codecs=aac")
-          ? "audio/mp4;codecs=aac"
-          : MediaRecorder.isTypeSupported("audio/webm")
-            ? "audio/webm"
-            : ""
-
-        if (!mimeType) {
-          toast({
-            title: "Unsupported Audio Format",
-            description: "Your browser does not support a compatible audio recording format.",
-            variant: "destructive",
-          })
-          return
-        }
-
-        mediaRecorderRef.current = new MediaRecorder(stream, { mimeType })
-        const blobs: Blob[] = []
-
-        mediaRecorderRef.current.ondataavailable = (event) => {
-          if (event.data && event.data.size > 0) {
-            blobs.push(event.data)
-          }
-        }
-
-        mediaRecorderRef.current.onstop = async () => {
-          const blob = new Blob(blobs, { type: mimeType })
-          const url = URL.createObjectURL(blob)
-
-          // Create a temporary audio element to load metadata and get duration
-          const tempAudio = new Audio()
-          tempAudio.preload = "metadata"
-          tempAudio.src = url
-
-          tempAudio.onloadedmetadata = async () => {
-            let duration =
-              tempAudio.duration && !isNaN(tempAudio.duration) && isFinite(tempAudio.duration) ? tempAudio.duration : 0
-
-            if (!duration) {
-              try {
-                const arrayBuffer = await blob.arrayBuffer()
-                const audioBuffer = await getAudioContext().decodeAudioData(arrayBuffer)
-                duration = audioBuffer.duration
-              } catch (error) {
-                console.error("Error decoding audio for duration:", error)
-              }
-            }
-
-            setReadyToAddToTimelineRecording({
-              url,
-              duration,
-              label: recordingLabel.trim(),
-            })
-            setRecordedBlobs([blob]) // Keep the blob for potential future use if needed
-            toast({ title: "Recording Stopped", description: `Duration: ${formatTime(duration)}` })
-          }
-
-          tempAudio.onerror = (e) => {
-            console.error("Error loading recorded audio metadata:", e)
-            toast({
-              title: "Recording Error",
-              description: "Could not load recorded audio metadata. Try again.",
-              variant: "destructive",
-            })
-            URL.revokeObjectURL(url)
-            setReadyToAddToTimelineRecording(null)
-          }
-
-          // Stop all tracks to release microphone
-          if (mediaRecorderRef.current?.stream) {
-            mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop())
-          }
-        }
-
-        mediaRecorderRef.current.start()
-        setIsRecording(true)
-        if (readyToAddToTimelineRecording) {
-          URL.revokeObjectURL(readyToAddToTimelineRecording.url)
-        }
-        setReadyToAddToTimelineRecording(null) // Clear previous recording
-        setRecordedBlobs([])
-        toast({ title: "Recording Started" })
-      } catch (err) {
-        toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" })
-      }
-    } else {
-      toast({
-        title: "Unsupported",
-        description: "Audio recording not supported by your browser.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const stopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.stop()
-      setIsRecording(false)
     }
   }
+}, [])
 
-  const updateEventStartTime = (eventId: string, newTime: number) => {
-    setTimelineEvents((prev) => {
-      const index = prev.findIndex((e) => e.id === eventId)
-      if (index === -1) return prev
+// Helper function to add events to timelineEvents without automatic spacing
+const addEventToTimeline = useCallback((newEvent: TimelineEvent) => {
+  setTimelineEvents((prevEvents) => {
+    const updatedEvents = [...prevEvents, newEvent]
+    // Sort by current startTime to maintain chronological order for display
+    // Do NOT re-calculate or re-assign startTimes based on spacing.
+    return updatedEvents.sort((a, b) => {
+      if (a.startTime === b.startTime) {
+        // For events at the same time, maintain their relative order based on original array position
+        const aIndex = prevEvents.findIndex((e) => e.id === a.id)
+        const bIndex = prevEvents.findIndex((e) => e.id === b.id)
+        return aIndex - bIndex
+      }
+      return a.startTime - b.startTime
+    })
+  })
+}, [])
 
-      const event = prev[index]
-      const duration = event.duration || 0
-      let start = Math.max(0, Math.min(newTime, encoderTotalDuration - duration))
+const handleAddInstructionSoundEvent = () => {
+  const instructionTextToAdd = customInstructionText.trim()
 
-      if (event.type === "recorded_voice") {
-        const others = prev.filter((e) => e.id !== eventId && e.type === "recorded_voice")
+  if (!instructionTextToAdd) {
+    toast({
+      title: "Missing Instruction",
+      description: "Please enter an instruction.",
+      variant: "destructive",
+    })
+    return
+  }
+  if (!selectedSoundCue && selectedNotes.length === 0) {
+    toast({ title: "Missing Sound Cue", description: "Please select a sound cue.", variant: "destructive" })
+    return
+  }
 
-        const prevRecording = others
-          .filter((e) => e.startTime < start)
-          .sort((a, b) => b.startTime - a.startTime)[0]
-        const nextRecording = others
-          .filter((e) => e.startTime > start)
-          .sort((a, b) => a.startTime - b.startTime)[0]
+  // Calculate new startTime based on existing events
+  const maxExistingTime = timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
+  const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 10 : 0
 
-        if (prevRecording) {
-          const prevEnd = prevRecording.startTime + (prevRecording.duration || 0)
-          if (start < prevEnd) start = prevEnd
-        }
+  let newEvent: TimelineEvent
 
-        if (nextRecording) {
-          if (start + duration > nextRecording.startTime) {
-            start = nextRecording.startTime - duration
-          }
-        }
+  if (multiNoteMode && selectedNotes.length > 0) {
+    newEvent = {
+      id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      type: "instruction_sound",
+      startTime: newStartTime,
+      instructionText: instructionTextToAdd,
+      soundCueId: `chord_${Date.now()}`,
+      soundCueName: selectedNotes.join(", "),
+      soundCueSrc: `musical:${selectedNotes.join("|")}`,
+      instrument: noteType,
+      color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length],
+    }
+  } else if (selectedSoundCue) {
+    newEvent = {
+      id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      type: "instruction_sound",
+      startTime: newStartTime,
+      instructionText: instructionTextToAdd,
+      soundCueId: selectedSoundCue.id,
+      soundCueName: selectedSoundCue.name,
+      soundCueSrc: selectedSoundCue.src,
+      instrument: noteType,
+      color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length],
+    }
+  } else {
+    return
+  }
 
-        if (prevRecording) {
-          const prevEnd = prevRecording.startTime + (prevRecording.duration || 0)
-          if (start < prevEnd) start = prevEnd
-        }
+  addEventToTimeline(newEvent)
+  setCustomInstructionText("")
+  setSelectedNotes([])
+  setSelectedSoundCue(null)
+  toast({
+    title: "Event Added",
+    description: `"${instructionTextToAdd.substring(0, 30)}..." with ${newEvent.soundCueName} added.`,
+  })
+}
 
-        start = Math.max(0, Math.min(start, encoderTotalDuration - duration))
+const startRecording = async () => {
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mimeType = MediaRecorder.isTypeSupported("audio/mp4;codecs=aac")
+        ? "audio/mp4;codecs=aac"
+        : MediaRecorder.isTypeSupported("audio/webm")
+          ? "audio/webm"
+          : ""
+
+      if (!mimeType) {
+        toast({
+          title: "Unsupported Audio Format",
+          description: "Your browser does not support a compatible audio recording format.",
+          variant: "destructive",
+        })
+        return
       }
 
-      const updated = prev.map((e) => (e.id === eventId ? { ...e, startTime: start } : e))
+      mediaRecorderRef.current = new MediaRecorder(stream, { mimeType })
+      const blobs: Blob[] = []
 
-      // Simple sort by startTime, with stable sorting for events at the same time
-      return updated.sort((a, b) => {
-        if (a.startTime === b.startTime) {
-          // For events at the same time, maintain their relative order based on original array position
-          const aIndex = prev.findIndex((e) => e.id === a.id)
-          const bIndex = prev.findIndex((e) => e.id === b.id)
-          return aIndex - bIndex
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          blobs.push(event.data)
         }
-        return a.startTime - b.startTime
-      })
+      }
+
+      mediaRecorderRef.current.onstop = async () => {
+        const blob = new Blob(blobs, { type: mimeType })
+        const url = URL.createObjectURL(blob)
+
+        // Create a temporary audio element to load metadata and get duration
+        const tempAudio = new Audio()
+        tempAudio.preload = "metadata"
+        tempAudio.src = url
+
+        tempAudio.onloadedmetadata = async () => {
+          let duration =
+            tempAudio.duration && !isNaN(tempAudio.duration) && isFinite(tempAudio.duration) ? tempAudio.duration : 0
+
+          if (!duration) {
+            try {
+              const arrayBuffer = await blob.arrayBuffer()
+              const audioBuffer = await getAudioContext().decodeAudioData(arrayBuffer)
+              duration = audioBuffer.duration
+            } catch (error) {
+              console.error("Error decoding audio for duration:", error)
+            }
+          }
+
+          setReadyToAddToTimelineRecording({
+            url,
+            duration,
+            label: recordingLabel.trim(),
+          })
+          setRecordedBlobs([blob]) // Keep the blob for potential future use if needed
+          toast({ title: "Recording Stopped", description: `Duration: ${formatTime(duration)}` })
+        }
+
+        tempAudio.onerror = (e) => {
+          console.error("Error loading recorded audio metadata:", e)
+          toast({
+            title: "Recording Error",
+            description: "Could not load recorded audio metadata. Try again.",
+            variant: "destructive",
+          })
+          URL.revokeObjectURL(url)
+          setReadyToAddToTimelineRecording(null)
+        }
+
+        // Stop all tracks to release microphone
+        if (mediaRecorderRef.current?.stream) {
+          mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop())
+        }
+      }
+
+      mediaRecorderRef.current.start()
+      setIsRecording(true)
+      if (readyToAddToTimelineRecording) {
+        URL.revokeObjectURL(readyToAddToTimelineRecording.url)
+      }
+      setReadyToAddToTimelineRecording(null) // Clear previous recording
+      setRecordedBlobs([])
+      toast({ title: "Recording Started" })
+    } catch (err) {
+      toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" })
+    }
+  } else {
+    toast({
+      title: "Unsupported",
+      description: "Audio recording not supported by your browser.",
+      variant: "destructive",
     })
   }
+}
 
-  const removeTimelineEvent = (eventId: string) => {
-    setTimelineEvents((prev) => prev.filter((event) => event.id !== eventId))
-    toast({ title: "Event Removed" })
+const stopRecording = () => {
+  if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+    mediaRecorderRef.current.stop()
+    setIsRecording(false)
   }
+}
 
-  const handleDuplicateEvent = useCallback(
-    (eventToDuplicate: TimelineEvent) => {
-      const newEvent: TimelineEvent = {
-        ...eventToDuplicate,
-        id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, // New unique ID
-        startTime: eventToDuplicate.startTime + 5, // Offset by 5 seconds
-        // The color property is already copied by the spread operator
+const updateEventStartTime = (eventId: string, newTime: number) => {
+  setTimelineEvents((prev) => {
+    const index = prev.findIndex((e) => e.id === eventId)
+    if (index === -1) return prev
+
+    const event = prev[index]
+    const duration = event.duration || 0
+    let start = Math.max(0, Math.min(newTime, encoderTotalDuration - duration))
+
+    if (event.type === "recorded_voice") {
+      const others = prev.filter((e) => e.id !== eventId && e.type === "recorded_voice")
+
+      const prevRecording = others.filter((e) => e.startTime < start).sort((a, b) => b.startTime - a.startTime)[0]
+      const nextRecording = others.filter((e) => e.startTime > start).sort((a, b) => a.startTime - b.startTime)[0]
+
+      if (prevRecording) {
+        const prevEnd = prevRecording.startTime + (prevRecording.duration || 0)
+        if (start < prevEnd) start = prevEnd
       }
-      addEventToTimeline(newEvent)
-      toast({
-        title: "Event Duplicated",
-        description: `"${newEvent.instructionText || newEvent.recordedInstructionLabel}" duplicated.`,
+
+      if (nextRecording) {
+        if (start + duration > nextRecording.startTime) {
+          start = nextRecording.startTime - duration
+        }
+      }
+
+      if (prevRecording) {
+        const prevEnd = prevRecording.startTime + (prevRecording.duration || 0)
+        if (start < prevEnd) start = prevEnd
+      }
+
+      start = Math.max(0, Math.min(start, encoderTotalDuration - duration))
+    }
+
+    const updated = prev.map((e) => (e.id === eventId ? { ...e, startTime: start } : e))
+
+    // Simple sort by startTime, with stable sorting for events at the same time
+    return updated.sort((a, b) => {
+      if (a.startTime === b.startTime) {
+        // For events at the same time, maintain their relative order based on original array position
+        const aIndex = prev.findIndex((e) => e.id === a.id)
+        const bIndex = prev.findIndex((e) => e.id === b.id)
+        return aIndex - bIndex
+      }
+      return a.startTime - b.startTime
+    })
+  })
+}
+
+const removeTimelineEvent = (eventId: string) => {
+  setTimelineEvents((prev) => prev.filter((event) => event.id !== eventId))
+  toast({ title: "Event Removed" })
+}
+
+const handleDuplicateEvent = useCallback(
+  (eventToDuplicate: TimelineEvent) => {
+    const newEvent: TimelineEvent = {
+      ...eventToDuplicate,
+      id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, // New unique ID
+      startTime: eventToDuplicate.startTime + 5, // Offset by 5 seconds
+      // The color property is already copied by the spread operator
+    }
+    addEventToTimeline(newEvent)
+    toast({
+      title: "Event Duplicated",
+      description: `"${newEvent.instructionText || newEvent.recordedInstructionLabel}" duplicated.`,
+    })
+  },
+  [addEventToTimeline],
+)
+
+// Safe input handlers with validation
+const handleMeditationTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const value = e.target?.value
+  if (typeof value === "string") {
+    setMeditationTitle(value)
+  }
+}
+
+const handleCustomInstructionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const value = e.target?.value
+  if (typeof value === "string") {
+    setCustomInstructionText(value)
+    setSelectedLibraryInstruction(null)
+  }
+}
+
+const handleRecordingLabelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const value = e.target?.value
+  if (typeof value === "string") {
+    setRecordingLabel(value)
+  }
+}
+
+const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const value = e.target?.value
+  if (typeof value === "string" && !isNaN(Number(value))) {
+    setEncoderTotalDuration(Math.max(60, Number(value) * 60) || 60)
+  }
+}
+
+const playSingleNote = async (note: string, octave: number, noteType: string) => {
+  try {
+    console.log(`[v0] Playing ${noteType} note: ${note}${octave}`)
+    await startPianoAudio()
+
+    if (noteType === "piano") {
+      const noteString = `${note}${octave}`
+      await playPianoNote(noteString, 0.5, 0.9)
+    } else if (noteType === "synth") {
+      const Tone = await ensureTone()
+      const synth = new Tone.Synth({
+        oscillator: { type: "fatsawtooth" },
+        envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
+        filter: { frequency: 2000, type: "lowpass", rolloff: -12 },
+        filterEnvelope: { attack: 0.02, decay: 0.2, sustain: 0.5, release: 0.8, baseFrequency: 200, octaves: 4 },
       })
-    },
-    [addEventToTimeline],
-  )
 
-  // Safe input handlers with validation
-  const handleMeditationTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target?.value
-    if (typeof value === "string") {
-      setMeditationTitle(value)
+      const synthGain = new Tone.Gain(0.3).toDestination()
+      synth.connect(synthGain)
+
+      synth.triggerAttackRelease(`${note}${octave}`, 0.5)
+
+      setTimeout(() => {
+        synth.dispose()
+        synthGain.dispose()
+      }, 2000)
+    } else if (noteType === "harp") {
+      const Tone = await ensureTone()
+      const harp = new Tone.PluckSynth({
+        attackNoise: 1,
+        dampening: 4000,
+        resonance: 0.9,
+      })
+
+      const harpGain = new Tone.Gain(0.8).toDestination()
+      const harpReverb = new Tone.Reverb({ decay: 4, wet: 0.6 }).connect(harpGain)
+      harp.connect(harpReverb)
+
+      harp.triggerAttackRelease(`${note}${octave}`, 0.5)
+
+      setTimeout(() => {
+        harp.dispose()
+        harpReverb.dispose()
+        harpGain.dispose()
+      }, 3000)
     }
+  } catch (error) {
+    console.error(`[v0] Error playing ${noteType} note:`, error)
+  }
+}
+
+const playChordPreview = async (notes?: string[]) => {
+  const chordNotes = notes ?? selectedNotes
+
+  console.log("[v0] playChordPreview called with notes:", notes)
+  console.log("[v0] selectedNotes from state:", selectedNotes)
+  console.log("[v0] chordNotes to use:", chordNotes)
+  console.log("[v0] chordNotes is array:", Array.isArray(chordNotes))
+  console.log("[v0] chordNotes length:", chordNotes?.length)
+
+  if (!Array.isArray(chordNotes) || chordNotes.length === 0) {
+    console.log("[v0] No valid chord notes to play, returning early")
+    return
   }
 
-  const handleCustomInstructionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target?.value
-    if (typeof value === "string") {
-      setCustomInstructionText(value)
-      setSelectedLibraryInstruction(null)
-    }
-  }
+  console.log("[v0] Playing chord with notes:", chordNotes, "using", noteType)
 
-  const handleRecordingLabelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target?.value
-    if (typeof value === "string") {
-      setRecordingLabel(value)
-    }
-  }
+  try {
+    await Tone.start()
 
-  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target?.value
-    if (typeof value === "string" && !isNaN(Number(value))) {
-      setEncoderTotalDuration(Math.max(60, Number(value) * 60) || 60)
-    }
-  }
+    if (noteType === "piano") {
+      // Initialize piano if not already loaded
+      if (!sampler) {
+        console.log("[v0] Piano not loaded, initializing for chord...")
+        await loadPiano()
+      }
 
-  const playSingleNote = async (note: string, octave: number, noteType: string) => {
-    try {
-      console.log(`[v0] Playing ${noteType} note: ${note}${octave}`)
-      await startPianoAudio()
-
-      if (noteType === "piano") {
-        const noteString = `${note}${octave}`
-        await playPianoNote(noteString, 0.5, 0.9)
-      } else if (noteType === "synth") {
-        const Tone = await ensureTone()
+      if (sampler && isLoaded) {
+        // Play all notes simultaneously using the Salamander piano sampler
+        chordNotes.forEach((noteString) => {
+          console.log("[v0] Playing Salamander piano note in chord:", noteString)
+          sampler.triggerAttackRelease(noteString, 0.5)
+        })
+      } else {
+        console.error("[v0] Piano sampler not available for chord")
+      }
+    } else if (noteType === "synth") {
+      chordNotes.forEach(async (noteString) => {
         const synth = new Tone.Synth({
           oscillator: { type: "fatsawtooth" },
           envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
@@ -2121,14 +2212,16 @@ export default function Home() {
         const synthGain = new Tone.Gain(0.3).toDestination()
         synth.connect(synthGain)
 
-        synth.triggerAttackRelease(`${note}${octave}`, 0.5)
+        console.log("[v0] Playing synth note in chord:", noteString)
+        synth.triggerAttackRelease(noteString, 0.5)
 
         setTimeout(() => {
           synth.dispose()
           synthGain.dispose()
         }, 2000)
-      } else if (noteType === "harp") {
-        const Tone = await ensureTone()
+      })
+    } else if (noteType === "harp") {
+      chordNotes.forEach(async (noteString, index) => {
         const harp = new Tone.PluckSynth({
           attackNoise: 1,
           dampening: 4000,
@@ -2139,157 +2232,77 @@ export default function Home() {
         const harpReverb = new Tone.Reverb({ decay: 4, wet: 0.6 }).connect(harpGain)
         harp.connect(harpReverb)
 
-        harp.triggerAttackRelease(`${note}${octave}`, 0.5)
+        console.log("[v0] Playing harp note in chord:", noteString)
+        const startDelay = index * 0.01
+        const duration = 0.5 + startDelay
+        harp.triggerAttackRelease(noteString, duration, `+${startDelay}`)
 
         setTimeout(() => {
           harp.dispose()
           harpReverb.dispose()
           harpGain.dispose()
         }, 3000)
-      }
-    } catch (error) {
-      console.error(`[v0] Error playing ${noteType} note:`, error)
+      })
     }
+  } catch (error) {
+    console.error("[v0] Error playing chord:", error)
   }
+}
 
-  const playChordPreview = async (notes?: string[]) => {
-    const chordNotes = notes ?? selectedNotes
+const handleNoteSelection = async (note: any) => {
+  if (multiNoteMode) {
+    // Multi-note mode: toggle selection
+    setSelectedNotes((prev) => {
+      const noteString = `${note.note}${note.octave}`
+      if (prev.includes(noteString)) {
+        return prev.filter((n) => n !== noteString)
+      } else {
+        return [...prev, noteString]
+      }
+    })
+  } else {
+    // Single note mode: play immediately and set as selected sound cue
+    setSelectedSoundCue({
+      id: note.id,
+      name: note.name,
+      src: `musical:${note.note}${note.octave}`,
+    })
+    await playSingleNote(note.note, note.octave, noteType)
+  }
+}
 
-    console.log("[v0] playChordPreview called with notes:", notes)
-    console.log("[v0] selectedNotes from state:", selectedNotes)
-    console.log("[v0] chordNotes to use:", chordNotes)
-    console.log("[v0] chordNotes is array:", Array.isArray(chordNotes))
-    console.log("[v0] chordNotes length:", chordNotes?.length)
+const timelinePlaySingleNote = async (noteString: string) => {
+  try {
+    console.log(`[v0] Timeline playing single note: ${noteString} using ${noteType}`)
 
-    if (!Array.isArray(chordNotes) || chordNotes.length === 0) {
-      console.log("[v0] No valid chord notes to play, returning early")
+    // Parse note string (e.g., "C4" -> note="C", octave=4)
+    const match = noteString.match(/([A-G]#?)(\d)/)
+    if (!match) {
+      console.error("[v0] Invalid note string format:", noteString)
       return
     }
 
-    console.log("[v0] Playing chord with notes:", chordNotes, "using", noteType)
+    const note = match[1]
+    const octave = Number.parseInt(match[2])
 
-    try {
-      await Tone.start()
-
-      if (noteType === "piano") {
-        // Initialize piano if not already loaded
-        if (!sampler) {
-          console.log("[v0] Piano not loaded, initializing for chord...")
-          await loadPiano()
-        }
-
-        if (sampler && isLoaded) {
-          // Play all notes simultaneously using the Salamander piano sampler
-          chordNotes.forEach((noteString) => {
-            console.log("[v0] Playing Salamander piano note in chord:", noteString)
-            sampler.triggerAttackRelease(noteString, 0.5)
-          })
-        } else {
-          console.error("[v0] Piano sampler not available for chord")
-        }
-      } else if (noteType === "synth") {
-        chordNotes.forEach(async (noteString) => {
-          const synth = new Tone.Synth({
-            oscillator: { type: "fatsawtooth" },
-            envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
-            filter: { frequency: 2000, type: "lowpass", rolloff: -12 },
-            filterEnvelope: { attack: 0.02, decay: 0.2, sustain: 0.5, release: 0.8, baseFrequency: 200, octaves: 4 },
-          })
-
-          const synthGain = new Tone.Gain(0.3).toDestination()
-          synth.connect(synthGain)
-
-          console.log("[v0] Playing synth note in chord:", noteString)
-          synth.triggerAttackRelease(noteString, 0.5)
-
-          setTimeout(() => {
-            synth.dispose()
-            synthGain.dispose()
-          }, 2000)
-        })
-      } else if (noteType === "harp") {
-        chordNotes.forEach(async (noteString, index) => {
-          const harp = new Tone.PluckSynth({
-            attackNoise: 1,
-            dampening: 4000,
-            resonance: 0.9,
-          })
-
-          const harpGain = new Tone.Gain(0.8).toDestination()
-          const harpReverb = new Tone.Reverb({ decay: 4, wet: 0.6 }).connect(harpGain)
-          harp.connect(harpReverb)
-
-          console.log("[v0] Playing harp note in chord:", noteString)
-          const startDelay = index * 0.01
-          const duration = 0.5 + startDelay
-          harp.triggerAttackRelease(noteString, duration, `+${startDelay}`)
-
-          setTimeout(() => {
-            harp.dispose()
-            harpReverb.dispose()
-            harpGain.dispose()
-          }, 3000)
-        })
-      }
-    } catch (error) {
-      console.error("[v0] Error playing chord:", error)
-    }
+    // Use the same playSingleNote function as the sound cue section
+    await playSingleNote(note, octave, noteType)
+  } catch (error) {
+    console.error("[v0] Timeline single note error:", error)
   }
+}
 
-  const handleNoteSelection = async (note: any) => {
-    if (multiNoteMode) {
-      // Multi-note mode: toggle selection
-      setSelectedNotes((prev) => {
-        const noteString = `${note.note}${note.octave}`
-        if (prev.includes(noteString)) {
-          return prev.filter((n) => n !== noteString)
-        } else {
-          return [...prev, noteString]
-        }
-      })
-    } else {
-      // Single note mode: play immediately and set as selected sound cue
-      setSelectedSoundCue({
-        id: note.id,
-        name: note.name,
-        src: `musical:${note.note}${note.octave}`,
-      })
-      await playSingleNote(note.note, note.octave, noteType)
-    }
+const timelinePlayChordPreview = async (noteStrings: string[]) => {
+  try {
+    console.log(`[v0] Timeline playing chord: ${noteStrings} using ${noteType}`)
+    // Directly play the provided notes without modifying state
+    await playChordPreview(noteStrings)
+  } catch (error) {
+    console.error("[v0] Timeline chord preview error:", error)
   }
+}
 
-  const timelinePlaySingleNote = async (noteString: string) => {
-    try {
-      console.log(`[v0] Timeline playing single note: ${noteString} using ${noteType}`)
-
-      // Parse note string (e.g., "C4" -> note="C", octave=4)
-      const match = noteString.match(/([A-G]#?)(\d)/)
-      if (!match) {
-        console.error("[v0] Invalid note string format:", noteString)
-        return
-      }
-
-      const note = match[1]
-      const octave = Number.parseInt(match[2])
-
-      // Use the same playSingleNote function as the sound cue section
-      await playSingleNote(note, octave, noteType)
-    } catch (error) {
-      console.error("[v0] Timeline single note error:", error)
-    }
-  }
-
-  const timelinePlayChordPreview = async (noteStrings: string[]) => {
-    try {
-      console.log(`[v0] Timeline playing chord: ${noteStrings} using ${noteType}`)
-      // Directly play the provided notes without modifying state
-      await playChordPreview(noteStrings)
-    } catch (error) {
-      console.error("[v0] Timeline chord preview error:", error)
-    }
-  }
-
-  return (
+return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px]">
       <Navigation />
 
@@ -3354,4 +3367,5 @@ export default function Home() {
       </motion.div>
     </div>
   )
+\
 }
