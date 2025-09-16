@@ -2290,7 +2290,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px] dark:from-gray-950 dark:to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px]">
       <Navigation />
 
       {memoryWarning && activeMode === "adjuster" && (
@@ -2354,7 +2354,7 @@ export default function Home() {
 
               {/* Mode Switch */}
               <div className="flex justify-center items-center mb-4 space-y-4 flex-row my-[33px]">
-                <div className="flex mx-auto items-center p-1 font-serif text-gray-600 shadow-inner rounded-sm bg-stone-100 gap-1 w-fit">
+                <div className="flex mx-auto items-center p-1 font-serif text-gray-600 shadow-inner rounded-sm gap-1 w-fit bg-muted">
                   <button
                     onClick={() => setActiveMode("adjuster")}
                     className={cn(
