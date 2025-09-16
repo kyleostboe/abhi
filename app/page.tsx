@@ -2290,7 +2290,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px]">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px] dark:from-gray-950 dark:to-gray-900">
       <Navigation />
 
       {memoryWarning && activeMode === "adjuster" && (
