@@ -4,6 +4,9 @@ import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
+import { BookmarkPlus } from "lucide-react"
 import type { SpeechRecognition } from "web-speech-api"
 import * as Tone from "tone"
 
@@ -678,9 +681,7 @@ export default function EncoderPage() {
                 <p className="text-lg font-semibold text-gray-700 ">
                   {file ? file.name : "Drop your audio file here or click to browse"}
                 </p>
-                <p className="text-sm text-gray-500 ">
-                  Supports MP3, WAV, M4A, and other audio formats
-                </p>
+                <p className="text-sm text-gray-500 ">Supports MP3, WAV, M4A, and other audio formats</p>
               </div>
             </div>
           </Card>
@@ -770,12 +771,52 @@ export default function EncoderPage() {
             {multiNoteMode && selectedNotes.length > 0 && (
               <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600 ">
-                  Selected notes:{" "}
-                  <span className="font-semibold text-gray-800 ">{selectedNotes.join(", ")}</span>
+                  Selected notes: <span className="font-semibold text-gray-800 ">{selectedNotes.join(", ")}</span>
                 </p>
               </div>
             )}
           </Card>
+
+          {/* Encoded Audio Section */}
+          {encodedAudioUrl && (
+            <Card className="p-6 mb-6 bg-white shadow-lg border border-gray-200">
+              <h3 className="text-xl font-bold mb-4 text-gray-800">Encoded Audio</h3>
+              <div className="space-y-4">
+                <audio controls className="w-full" src={encodedAudioUrl} />
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    onClick={downloadEncodedAudio}
+                    className="flex-1 bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 hover:from-logo-teal-600 hover:to-logo-blue-500 text-white"
+                  >
+                    Download Encoded Audio
+                  </Button>
+                  <SaveMeditationDialog
+                    audioUrl={encodedAudioUrl}
+                    originalFileName={file?.name || "meditation"}
+                    duration={audioDuration}
+                    source="encoder"
+                    metadata={{
+                      instructionCount: mappedInstructions.length,
+                      soundCuesUsed: [...new Set(mappedInstructions.map((instr) => instr.soundId))],
+                    }}
+                  >
+                    <Button className="flex-1 bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white">
+                      <BookmarkPlus className="w-4 h-4 mr-2" />
+                      Save to Library
+                    </Button>
+                  </SaveMeditationDialog>
+                </div>
+                <div className="text-sm text-gray-600">
+                  <p>
+                    <strong>Instructions:</strong> {mappedInstructions.length}
+                  </p>
+                  <p>
+                    <strong>Duration:</strong> {formatTime(audioDuration)}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          )}
 
           {/* Status Messages */}
           {status && (

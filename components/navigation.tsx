@@ -25,12 +25,23 @@ export function Navigation() {
         </li>
         <li>
           <Link
+            href="/library"
+            className={cn(
+              "px-4 py-2 transition-colors font-black font-serif text-sm shadow-none rounded-sm",
+              pathname === "/library"
+                ? "bg-gradient-to-r from-gray-600 to-gray-500 text-white shadow-md "
+                : "text-gray-600 hover:bg-gray-100 ",
+            )}
+          >
+            Library
+          </Link>
+        </li>
+        <li>
+          <Link
             href="/contact"
             className={cn(
               "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-md",
-              pathname === "/contact"
-                ? "bg-gray-600 text-white shadow-md "
-                : "text-gray-600 hover:bg-gray-100 ",
+              pathname === "/contact" ? "bg-gray-600 text-white shadow-md " : "text-gray-600 hover:bg-gray-100 ",
             )}
           >
             Contact
@@ -41,9 +52,7 @@ export function Navigation() {
             href="/donate"
             className={cn(
               "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-md",
-              pathname === "/donate"
-                ? "bg-gray-600 text-white shadow-md "
-                : "text-gray-600 hover:bg-gray-100 ",
+              pathname === "/donate" ? "bg-gray-600 text-white shadow-md " : "text-gray-600 hover:bg-gray-100 ",
             )}
           >
             Donate

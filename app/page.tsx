@@ -17,6 +17,7 @@ import {
   Play,
   PlusCircle,
   CircleDotDashed,
+  BookmarkPlus,
 } from "lucide-react" // Import Copy icon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
@@ -35,6 +36,7 @@ import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Impor
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
 import * as Tone from "tone"
+import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
 
 interface RecorderSectionProps {
   className?: string
@@ -2008,12 +2010,8 @@ export default function Home() {
       if (event.type === "recorded_voice") {
         const others = prev.filter((e) => e.id !== eventId && e.type === "recorded_voice")
 
-        const prevRecording = others
-          .filter((e) => e.startTime < start)
-          .sort((a, b) => b.startTime - a.startTime)[0]
-        const nextRecording = others
-          .filter((e) => e.startTime > start)
-          .sort((a, b) => a.startTime - b.startTime)[0]
+        const prevRecording = others.filter((e) => e.startTime < start).sort((a, b) => b.startTime - a.startTime)[0]
+        const nextRecording = others.filter((e) => e.startTime > start).sort((a, b) => a.startTime - b.startTime)[0]
 
         if (prevRecording) {
           const prevEnd = prevRecording.startTime + (prevRecording.duration || 0)
@@ -2406,7 +2404,8 @@ export default function Home() {
                   className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                 >
                   <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs pb-1.5">
-                    Design custom guided meditations by pairing instructions with sound cues or using the recorder, then arranging events on the timeline.
+                    Design custom guided meditations by pairing instructions with sound cues or using the recorder, then
+                    arranging events on the timeline.
                   </p>
                 </motion.div>
               )}
@@ -2890,60 +2889,52 @@ export default function Home() {
                       </Card>
                     </motion.div>
                   )}
-                  {processedUrl && processedBufferState && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5 }}
-                    >
-                      <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
-                        <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 ">
-                          <h3 className="text-white font-black">Adjusted Audio</h3>
-                        </div>
-                        <div className="p-6 px-3.5 py-4">
-                          <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
-                            <audio controls className="w-full" src={processedUrl}></audio>
-                          </div>
-                          <div className="grid grid-cols-2 gap-3 mb-3.5">
-                            <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
-                              <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Duration</div>
-                              <div className="font-black text-gray-600 text-sm">
-                                {formatTime(actualDuration || 0)}
-                                {actualDuration && targetDuration && (
-                                  <div className="text-xs mt-1 text-gray-600">
-                                    {((actualDuration / (targetDuration * 60)) * 100).toFixed(1)}% of target
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
-                              <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">File Size</div>
-                              <div className="font-black text-sm text-gray-600">
-                                {formatFileSize(processedFileSize || 0)}
-                              </div>
-                            </div>
-                          </div>
+                  {isProcessingComplete && processedUrl && (
+                    <Card className="p-6 bg-white shadow-lg border border-gray-200">
+                      <h3 className="text-xl font-bold mb-4 text-gray-800">Processed Audio</h3>
+                      <div className="space-y-4">
+                        <audio controls className="w-full" src={processedUrl} />
+                        <div className="flex flex-col sm:flex-row gap-3">
                           <Button
-                            className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:shadow-none transition-shadow border-none "
-                            onClick={() => {
-                              if (generatedAudioUrl) {
-                                const a = document.createElement("a")
-                                a.href = generatedAudioUrl
-                                a.download = `${meditationTitle.replace(/\s/g, "_") || "meditation"}.wav`
-                                document.body.appendChild(a)
-                                a.click()
-                                document.body.removeChild(a)
-                              }
+                            onClick={downloadProcessedAudioAction}
+                            className="flex-1 bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 hover:from-logo-teal-600 hover:to-logo-blue-500 text-white"
+                          >
+                            Download Processed Audio
+                          </Button>
+                          <SaveMeditationDialog
+                            audioUrl={processedUrl}
+                            originalFileName={file?.name || "meditation"}
+                            duration={actualDuration || targetDuration * 60}
+                            source="adjuster"
+                            metadata={{
+                              targetDuration,
+                              pausesAdjusted,
                             }}
                           >
-                            <div className="flex items-center justify-center font-black">
-                              <Download className="mr-2 w-4 h-4" />
-                              Download
-                            </div>
-                          </Button>
+                            <Button className="flex-1 bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white">
+                              <BookmarkPlus className="w-4 h-4 mr-2" />
+                              Save to Library
+                            </Button>
+                          </SaveMeditationDialog>
                         </div>
-                      </Card>
-                    </motion.div>
+                        {actualDuration && (
+                          <div className="text-sm text-gray-600 space-y-1">
+                            <p>
+                              <strong>Actual Duration:</strong> {formatTime(actualDuration)}
+                            </p>
+                            <p>
+                              <strong>Target Duration:</strong> {formatTime(targetDuration * 60)}
+                            </p>
+                            <p>
+                              <strong>Pauses Adjusted:</strong> {pausesAdjusted}
+                            </p>
+                            <p>
+                              <strong>File Size:</strong> {(processedFileSize / (1024 * 1024)).toFixed(2)} MB
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
                   )}
                 </div>
               </>
