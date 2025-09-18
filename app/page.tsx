@@ -2866,7 +2866,7 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
                     >
-                      <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 ">
+                      <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
                         <div className="bg-gradient-to-r from-gray-600 to-gray-500 py-3 px-6 ">
                           <h3 className="text-white font-black">Original Audio</h3>
                         </div>
@@ -2896,7 +2896,7 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.5 }}
                     >
-                      <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 ">
+                      <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
                         <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 ">
                           <h3 className="text-white font-black">Adjusted Audio</h3>
                         </div>
