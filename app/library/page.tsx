@@ -129,10 +129,25 @@ export default function LibraryPage() {
             {/* Custom underline matching home page but larger */}
             <div className="flex justify-center mb-8">
               <div className="relative">
-                <h1 className="text-6xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal font-black md:text-7xl tracking-tighter">
+                <h1
+                  className="text-6xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal font-black md:text-7xl tracking-tighter"
+                  style={{
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
+                  }}
+                >
                   abhī
                 </h1>
-                <div className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal rounded-full"></div>
+                <div className="font-black text-logo-rose-600 font-serif mb-[7px] text-sm">Meditation Tool</div>
+                <div className="flex justify-center items-center space-x-[4px]">
+                  <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px]"></div>
+                  <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[11px] w-[11px]"></div>
+                  <div className="w-5 bg-gradient-to-br from-logo-amber to-orange-300 rounded-sm transform -rotate-6 h-[11px]"></div>
+                  <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-0 mx-0 rounded-sm w-[64px] text-logo-rose-600 border-0 bg-gray-600 h-[6px]"></div>
+                  <div className="w-5 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-sm transform rotate-6 h-[11px] pl-0 ml-2"></div>
+                  <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[11px] w-[11px]"></div>
+                  <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[16px] h-[16px]"></div>
+                </div>
               </div>
             </div>
           </div>

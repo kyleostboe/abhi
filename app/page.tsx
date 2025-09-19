@@ -9,7 +9,6 @@ import { Alert } from "@/components/ui/alert" // Import Alert component
 import {
   Volume2,
   Wand2,
-  Download,
   AlertTriangle,
   Music2,
   Mic,
@@ -28,7 +27,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { toast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { VisualTimeline } from "@/components/visual-timeline"
 import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFileSize } from "@/lib/utils"
 import { getAudioContext, bufferToWav } from "@/lib/audio-utils" // Import from audio-utils
@@ -72,118 +71,122 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
   setRecordedBlobs,
   setRecordingLabel,
   recordingPreviewRef,
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.4 }}
-    className={className}
-  >
-    <Card className="overflow-hidden border-none shadow-lg bg-white ">
-      <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 text-center">
-        <h3 className="text-white flex items-center font-serif font-black">
-          <Mic className="h-4 w-4 mr-2" />
-          Recorder
-        </h3>
-      </div>
-      <div className="p-6 space-y-4 pt-3.5">
-        <Input
-          id={inputId}
-          value={recordingLabel}
-          onChange={onRecordingLabelChange}
-          placeholder="Describe this recording..."
-          className="mt-1 text-sm font-black border-gray-500 focus-visible:border-gray-600 text-gray-500 shadow-md placeholder-gray-500"
-        />
-        <Button
-          onClick={isRecording ? stopRecording : startRecording}
-          variant={isRecording ? "destructive" : "default"}
-          disabled={!recordingLabel.trim() && !isRecording}
-          className={cn(
-            "w-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none font-serif font-black",
-            isRecording && "from-logo-rose-300 to-logo-rose-600",
-          )}
-        >
-          {isRecording ? (
-            <>
-              <StopCircle className="mr-2 h-4 w-4" />
-              <span className="font-black font-serif">Stop Recording</span>
-            </>
-          ) : (
-            <>
-              <Mic className="mr-2 h-4 w-4" />
-              <span className="font-black font-serif">Start Recording</span>
-            </>
-          )}
-        </Button>
-        <AnimatePresence>
-          {readyToAddToTimelineRecording && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="space-y-2 border-gray-100 border-t-0 pt-1"
-            >
-              <div className="space-y-2">
-                <audio
-                  key={readyToAddToTimelineRecording.url}
-                  ref={recordingPreviewRef}
-                  controls
-                  src={readyToAddToTimelineRecording.url}
-                  className="w-full"
-                  preload="metadata"
-                />
-                <p className="text-xs text-gray-600 text-center pb-1.5">
-                  Duration: {formatTime(readyToAddToTimelineRecording.duration)}
-                </p>
-              </div>
-              <Button
-                onClick={() => {
-                  if (!readyToAddToTimelineRecording?.label.trim()) {
-                    toast({
-                      title: "Missing Label",
-                      description: "Please provide a label for the recording.",
-                      variant: "destructive",
-                    })
-                    return
-                  }
+}) => {
+  const { toast } = useToast() // toast is now correctly initialized here
 
-                  const maxExistingTime =
-                    timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
-                  const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 10 : 0
-
-                  const newEvent: TimelineEvent = {
-                    id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-                    type: "recorded_voice",
-                    startTime: newStartTime,
-                    recordedAudioUrl: readyToAddToTimelineRecording.url,
-                    recordedInstructionLabel: readyToAddToTimelineRecording.label.trim(),
-                    duration: readyToAddToTimelineRecording.duration,
-                    color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length],
-                  }
-
-                  addEventToTimeline(newEvent)
-
-                  setReadyToAddToTimelineRecording(null)
-                  setRecordedBlobs([])
-                  setRecordingLabel("")
-
-                  toast({
-                    title: "Recording Added",
-                    description: `"${readyToAddToTimelineRecording.label.trim()}" added to timeline.`,
-                  })
-                }}
-                className="w-full bg-gradient-to-r from-logo-blue-400 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none font-black"
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.4 }}
+      className={className}
+    >
+      <Card className="overflow-hidden border-none shadow-lg bg-white ">
+        <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 text-center">
+          <h3 className="text-white flex items-center font-serif font-black">
+            <Mic className="h-4 w-4 mr-2" />
+            Recorder
+          </h3>
+        </div>
+        <div className="p-6 space-y-4 pt-3.5">
+          <Input
+            id={inputId}
+            value={recordingLabel}
+            onChange={onRecordingLabelChange}
+            placeholder="Describe this recording..."
+            className="mt-1 text-sm font-black border-gray-500 focus-visible:border-gray-600 text-gray-500 shadow-md placeholder-gray-500"
+          />
+          <Button
+            onClick={isRecording ? stopRecording : startRecording}
+            variant={isRecording ? "destructive" : "default"}
+            disabled={!recordingLabel.trim() && !isRecording}
+            className={cn(
+              "w-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none font-serif font-black",
+              isRecording && "from-logo-rose-300 to-logo-rose-600",
+            )}
+          >
+            {isRecording ? (
+              <>
+                <StopCircle className="mr-2 h-4 w-4" />
+                <span className="font-black font-serif">Stop Recording</span>
+              </>
+            ) : (
+              <>
+                <Mic className="mr-2 h-4 w-4" />
+                <span className="font-black font-serif">Start Recording</span>
+              </>
+            )}
+          </Button>
+          <AnimatePresence>
+            {readyToAddToTimelineRecording && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-2 border-gray-100 border-t-0 pt-1"
               >
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add to Timeline
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </Card>
-  </motion.div>
-)
+                <div className="space-y-2">
+                  <audio
+                    key={readyToAddToTimelineRecording.url}
+                    ref={recordingPreviewRef}
+                    controls
+                    src={readyToAddToTimelineRecording.url}
+                    className="w-full"
+                    preload="metadata"
+                  />
+                  <p className="text-xs text-gray-600 text-center pb-1.5">
+                    Duration: {formatTime(readyToAddToTimelineRecording.duration)}
+                  </p>
+                </div>
+                <Button
+                  onClick={() => {
+                    if (!readyToAddToTimelineRecording?.label.trim()) {
+                      toast({
+                        title: "Missing Label",
+                        description: "Please provide a label for the recording.",
+                        variant: "destructive",
+                      })
+                      return
+                    }
+
+                    const maxExistingTime =
+                      timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
+                    const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 10 : 0
+
+                    const newEvent: TimelineEvent = {
+                      id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+                      type: "recorded_voice",
+                      startTime: newStartTime,
+                      recordedAudioUrl: readyToAddToTimelineRecording.url,
+                      recordedInstructionLabel: readyToAddToTimelineRecording.label.trim(),
+                      duration: readyToAddToTimelineRecording.duration,
+                      color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length],
+                    }
+
+                    addEventToTimeline(newEvent)
+
+                    setReadyToAddToTimelineRecording(null)
+                    setRecordedBlobs([])
+                    setRecordingLabel("")
+
+                    toast({
+                      title: "Recording Added",
+                      description: `"${readyToAddToTimelineRecording.label.trim()}" added to timeline.`,
+                    })
+                  }}
+                  className="w-full bg-gradient-to-r from-logo-blue-400 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none font-black"
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add to Timeline
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </Card>
+    </motion.div>
+  )
+}
 
 interface TimelineItem {
   id: string
@@ -805,6 +808,8 @@ const playPianoNote = async (noteString: string, duration = 0.45, velocity = 0.9
 }
 
 export default function Home() {
+  const { toast } = useToast()
+
   const [activeMode, setActiveMode] = useState<"adjuster" | "encoder">("adjuster")
 
   // == States for Length Adjuster ==
@@ -835,7 +840,7 @@ export default function Home() {
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
   const [processedFileSize, setProcessedFileSize] = useState<number>(0)
   const isMobileDevice = useMobile() // Use the useMobile hook
-  const [memoryWarning, setMemoryWarning] = useState<boolean>("")
+  const [memoryWarning, setMemoryWarning] = useState<boolean>(false) // Corrected type to boolean
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadAreaRef = useRef<HTMLDivElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -2261,7 +2266,7 @@ export default function Home() {
       console.log(`[v0] Timeline playing single note: ${noteString} using ${noteType}`)
 
       // Parse note string (e.g., "C4" -> note="C", octave=4)
-      const match = noteString.match(/([A-G]#?)(\d)/)
+      const match = noteString.match(/([A-G])(\d)/)
       if (!match) {
         console.error("[v0] Invalid note string format:", noteString)
         return
@@ -2344,7 +2349,6 @@ export default function Home() {
                 <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[13px] h-[13px]"></div>
                 <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px]"></div>
                 <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-sm transform -rotate-6 h-[9px]"></div>
-                <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-0 mx-0 rounded-sm w-[51px] text-logo-rose-600 border-0 bg-gray-600 h-[5px]"></div>
                 <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-sm transform rotate-6 h-[9px] pl-0 ml-2"></div>
                 <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[9px] w-[9px]"></div>
                 <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[13px] h-[13px]"></div>
@@ -3329,11 +3333,37 @@ export default function Home() {
                             }
                           }}
                         >
-                          <div className="flex items-center justify-center font-black">
-                            <Download className="mr-2 w-4 h-4" />
-                            Download
-                          </div>
+                          <svg
+                            className="w-5 h-5 mr-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                          </svg>
+                          Download
                         </Button>
+                        <SaveMeditationDialog
+                          audioUrl={generatedAudioUrl}
+                          originalFileName={meditationTitle || "meditation"}
+                          duration={encoderTotalDuration}
+                          source="encoder"
+                          metadata={{
+                            instructionCount: timelineEvents.length,
+                            meditationTitle,
+                          }}
+                        >
+                          <Button className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white mt-3">
+                            <BookmarkPlus className="w-4 h-4 mr-2" />
+                            Save to Library
+                          </Button>
+                        </SaveMeditationDialog>
                       </div>
                     </Card>
                   </motion.div>
