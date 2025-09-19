@@ -23,6 +23,7 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
+import { PageCard } from "@/components/page-card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -2311,11 +2312,10 @@ export default function Home() {
         </div>
       )}
 
-      <motion.div
+      <PageCard
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
         style={{
           borderRadius: "4rem 3rem 2rem 1rem",
         }}
@@ -3373,7 +3373,7 @@ export default function Home() {
             )}
           </div>
         </div>
-      </motion.div>
+      </PageCard>
     </div>
   )
 }
