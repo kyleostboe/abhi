@@ -2,7 +2,6 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { Navigation } from "@/components/navigation"
 import { PageCard } from "@/components/page-card"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -641,7 +640,6 @@ export default function EncoderPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-0">
-      <Navigation />
 
       <PageCard style={{ borderRadius: "4rem 3rem 2rem 1rem" }}>
         <div className="relative overflow-hidden">

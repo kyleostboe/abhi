@@ -22,8 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { motion, AnimatePresence } from "framer-motion"
-import { Navigation } from "@/components/navigation"
-import { PageCard } from "@/components/page-card"
+import { HeroCardWrapper } from "@/components/hero-card-wrapper"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -2294,94 +2293,82 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-muted p-4 md:p-8 md:pt-[3px]">
-      <Navigation />
-
-      {memoryWarning && activeMode === "adjuster" && (
-        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-yellow-100 to-amber-50 border border-yellow-300 shadow-sm ">
-          <div className="flex items-start">
-            <AlertTriangle className="text-yellow-500 mr-3 flex-shrink-0 mt-0.5 w-5 h-5" />
-            <div>
-              <h3 className="text-yellow-700 mb-1 font-serif font-black text-sm">High Memory Usage Expected</h3>
-              <p className="text-yellow-600 font-serif font-black text-xs">
-                Large files or long target durations require significant memory. Processing may be slow or unstable on
-                devices with limited RAM.
-              </p>
+    <HeroCardWrapper
+      beforeContent={
+        memoryWarning && activeMode === "adjuster" ? (
+          <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-yellow-100 to-amber-50 border border-yellow-300 shadow-sm ">
+            <div className="flex items-start">
+              <AlertTriangle className="text-yellow-500 mr-3 flex-shrink-0 mt-0.5 w-5 h-5" />
+              <div>
+                <h3 className="text-yellow-700 mb-1 font-serif font-black text-sm">High Memory Usage Expected</h3>
+                <p className="text-yellow-600 font-serif font-black text-xs">
+                  Large files or long target durations require significant memory. Processing may be slow or unstable on
+                  devices with limited RAM.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-
-      <PageCard
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        style={{
-          borderRadius: "4rem 3rem 2rem 1rem",
-        }}
-        role="application"
-      >
-        <div className="relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 "></div>
-            <div className="absolute top-2 left-8 w-16 h-12 bg-gradient-to-br from-emerald-300/30 to-teal-400/25 rounded-full transform rotate-12 "></div>
-            <div className="absolute top-6 right-12 w-20 h-8 bg-gradient-to-bl from-rose-300/25 to-purple-400/20 rounded-full transform -rotate-6 "></div>
-            <div className="absolute top-1 left-1/3 w-12 h-16 bg-gradient-to-tr from-amber-300/20 to-orange-400/15 rounded-full transform rotate-45 "></div>
-            <div className="absolute top-8 right-1/4 w-14 h-10 bg-gradient-to-tl from-blue-300/25 to-indigo-400/20 rounded-full transform -rotate-12 "></div>
+        ) : null
+      }
+      hero={
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
+          <h1
+            className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter text-center mt-16"
+            style={{
+              fontFamily: 'Georgia, "Times New Roman", serif',
+              textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
+            }}
+          >
+            abhī
+          </h1>
+          <div className="font-black text-logo-rose-600 font-serif mb-[7px] text-xs">Meditation Tool</div>
+          <div className="flex justify-center items-center mb-4 space-x-[3px]">
+            <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[13px] h-[13px]"></div>
+            <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px]"></div>
+            <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-sm transform -rotate-6 h-[9px]"></div>
+            <div className="bg-gradient-to-r from-gray-600 to-gray-500 rounded-sm w-[48px] h-[4px]"></div>
+            <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-sm transform rotate-6 h-[9px] pl-0 ml-2"></div>
+            <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[9px] w-[9px]"></div>
+            <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[13px] h-[13px]"></div>
           </div>
-          <div className="relative text-center px-[69px]">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-            >
-              <h1
-                className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter text-center mt-16"
-                style={{
-                  fontFamily: 'Georgia, "Times New Roman", serif',
-                  textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
-                }}
+
+          {/* Mode Switch */}
+          <div className="flex justify-center items-center mb-4 space-y-4 flex-row my-[33px]">
+            <div className="flex mx-auto items-center p-1 font-serif text-gray-600 shadow-inner rounded-sm gap-1 w-fit bg-muted">
+              <button
+                onClick={() => setActiveMode("adjuster")}
+                className={cn(
+                  "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black py-3 tracking-tight text-sm",
+                  activeMode === "adjuster" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
+                )}
               >
-                abhī
-              </h1>
-              <div className="font-black text-logo-rose-600 font-serif mb-[7px] text-xs">Meditation Tool</div>
-              <div className="flex justify-center items-center mb-4 space-x-[3px]">
-                <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[13px] h-[13px]"></div>
-                <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px]"></div>
-                <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-sm transform -rotate-6 h-[9px]"></div>
-                <div className="bg-gradient-to-r from-gray-600 to-gray-500 rounded-sm w-[48px] h-[4px]"></div>
-                <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-sm transform rotate-6 h-[9px] pl-0 ml-2"></div>
-                <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[9px] w-[9px]"></div>
-                <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[13px] h-[13px]"></div>
-              </div>
-
-              {/* Mode Switch */}
-              <div className="flex justify-center items-center mb-4 space-y-4 flex-row my-[33px]">
-                <div className="flex mx-auto items-center p-1 font-serif text-gray-600 shadow-inner rounded-sm gap-1 w-fit bg-muted">
-                  <button
-                    onClick={() => setActiveMode("adjuster")}
-                    className={cn(
-                      "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black py-3 tracking-tight text-sm",
-                      activeMode === "adjuster" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
-                    )}
-                  >
-                    Adjuster
-                  </button>
-                  <button
-                    onClick={() => setActiveMode("encoder")}
-                    className={cn(
-                      "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm",
-                      activeMode === "encoder" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
-                    )}
-                  >
-                    Encoder
-                  </button>
-                </div>
-              </div>
-            </motion.div>
+                Adjuster
+              </button>
+              <button
+                onClick={() => setActiveMode("encoder")}
+                className={cn(
+                  "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm",
+                  activeMode === "encoder" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
+                )}
+              >
+                Encoder
+              </button>
+            </div>
           </div>
-
-          <div className="px-6 md:px-10 font-serif font-black pb-7">
+        </motion.div>
+      }
+      cardProps={{
+        initial: { opacity: 0, y: 20 },
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: 0.6 },
+        role: "application",
+      }}
+    >
+      <div className="font-serif font-black pb-7">
             {/* Mode Description Notes */}
             <AnimatePresence mode="wait">
               {activeMode === "adjuster" && (
@@ -3373,7 +3360,6 @@ export default function Home() {
             )}
           </div>
         </div>
-      </PageCard>
-    </div>
+      </HeroCardWrapper>
   )
 }
