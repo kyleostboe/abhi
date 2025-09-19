@@ -131,7 +131,6 @@ export default function LibraryPage() {
             <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20"></div>
           </div>
           <div className="relative text-center px-8 pt-16 pb-8">
-            {/* Custom underline matching home page but larger */}
             <div className="flex justify-center mb-8">
               <div className="relative">
                 <div className="flex justify-center items-center space-x-[4px]">
