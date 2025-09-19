@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { PageCard } from "@/components/page-card"
+import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
@@ -640,8 +640,9 @@ export default function EncoderPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-0">
+      <Navigation />
 
-      <PageCard style={{ borderRadius: "4rem 3rem 2rem 1rem" }}>
+      <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out">
         <div className="relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
             <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 "></div>
@@ -842,7 +843,7 @@ export default function EncoderPage() {
             </Card>
           )}
         </div>
-      </PageCard>
+      </div>
     </div>
   )
 }
