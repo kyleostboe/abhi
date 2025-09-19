@@ -1,8 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Navigation } from "@/components/navigation"
-import { PageCard } from "@/components/page-card"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,6 +12,7 @@ import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/me
 import { Trash2, Music, Clock, Calendar, FolderPlus, Edit2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
+import { HeroCardWrapper } from "@/components/hero-card-wrapper"
 
 export default function LibraryPage() {
   const [meditations, setMeditations] = useState<SavedMeditation[]>([])
@@ -118,119 +117,104 @@ export default function LibraryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-0">
-      <Navigation />
-
-      <PageCard
-        style={{
-          borderRadius: "4rem 3rem 2rem 1rem",
-        }}
-      >
-        <div className="relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20"></div>
-          </div>
-          <div className="relative text-center px-8 pt-16 pb-8">
-            {/* Custom underline matching home page but larger */}
-            <div className="flex justify-center mb-8">
-              <div className="relative">
-                <div className="flex justify-center items-center space-x-[4px]">
-                  <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px]"></div>
-                  <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[11px] w-[11px]"></div>
-                  <div className="w-5 bg-gradient-to-br from-logo-amber to-orange-300 rounded-sm transform -rotate-6 h-[11px]"></div>
-                  <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-0 mx-0 rounded-sm w-[64px] text-logo-rose-600 border-0 bg-gray-600 h-[6px]"></div>
-                  <div className="w-5 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-sm transform rotate-6 h-[11px] pl-0 ml-2"></div>
-                  <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[11px] w-[11px]"></div>
-                  <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[16px] h-[16px]"></div>
-                </div>
-              </div>
+    <HeroCardWrapper
+      hero={
+        <div className="flex justify-center mb-8">
+          <div className="relative">
+            <div className="flex justify-center items-center space-x-[4px]">
+              <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px]" />
+              <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[11px] w-[11px]" />
+              <div className="w-5 bg-gradient-to-br from-logo-amber to-orange-300 rounded-sm transform -rotate-6 h-[11px]" />
+              <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-0 mx-0 rounded-sm w-[64px] text-logo-rose-600 border-0 bg-gray-600 h-[6px]" />
+              <div className="w-5 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-sm transform rotate-6 h-[11px] pl-0 ml-2" />
+              <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[11px] w-[11px]" />
+              <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[16px] h-[16px]" />
             </div>
           </div>
+        </div>
+      }
+      heroClassName="relative text-center px-8 pt-16 pb-8"
+    >
+      {/* Tab Navigation */}
+      <div className="flex justify-center mb-6">
+        <div className="flex p-1 bg-muted rounded-lg">
+          <button
+            onClick={() => setActiveTab("meditations")}
+            className={`px-6 py-2 rounded-md font-semibold transition-all ${
+              activeTab === "meditations"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Meditations ({meditations.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("playlists")}
+            className={`px-6 py-2 rounded-md font-semibold transition-all ${
+              activeTab === "playlists" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Playlists ({playlists.length})
+          </button>
+        </div>
+      </div>
 
-          <div className="px-6 md:px-10 pb-10">
-            {/* Tab Navigation */}
-            <div className="flex justify-center mb-6">
-              <div className="flex p-1 bg-muted rounded-lg">
-                <button
-                  onClick={() => setActiveTab("meditations")}
-                  className={`px-6 py-2 rounded-md font-semibold transition-all ${
-                    activeTab === "meditations"
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  Meditations ({meditations.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab("playlists")}
-                  className={`px-6 py-2 rounded-md font-semibold transition-all ${
-                    activeTab === "playlists" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  Playlists ({playlists.length})
-                </button>
+      <AnimatePresence mode="wait">
+        {activeTab === "meditations" && (
+          <motion.div
+            key="meditations"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+          >
+            {/* Search and Filters */}
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+              <div className="flex-1">
+                <Input
+                  placeholder="Search meditations..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button variant={selectedPlaylist ? "default" : "outline"} onClick={() => setSelectedPlaylist(null)}>
+                  All Meditations
+                </Button>
+                {playlists.map((playlist) => (
+                  <Button
+                    key={playlist.id}
+                    variant={selectedPlaylist === playlist.id ? "default" : "outline"}
+                    onClick={() => setSelectedPlaylist(playlist.id)}
+                  >
+                    {playlist.name}
+                  </Button>
+                ))}
               </div>
             </div>
 
-            <AnimatePresence mode="wait">
-              {activeTab === "meditations" && (
-                <motion.div
-                  key="meditations"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {/* Search and Filters */}
-                  <div className="flex flex-col md:flex-row gap-4 mb-6">
-                    <div className="flex-1">
-                      <Input
-                        placeholder="Search meditations..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant={selectedPlaylist ? "default" : "outline"}
-                        onClick={() => setSelectedPlaylist(null)}
-                      >
-                        All Meditations
-                      </Button>
-                      {playlists.map((playlist) => (
-                        <Button
-                          key={playlist.id}
-                          variant={selectedPlaylist === playlist.id ? "default" : "outline"}
-                          onClick={() => setSelectedPlaylist(playlist.id)}
-                        >
-                          {playlist.name}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Meditations Grid */}
-                  {displayedMeditations.length === 0 ? (
-                    <Card className="p-12 text-center">
-                      <Music className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                      <h3 className="text-xl font-semibold text-gray-600 mb-2">
-                        {selectedPlaylist ? "No meditations in this playlist" : "No meditations saved yet"}
-                      </h3>
-                      <p className="text-gray-500 mb-4">
-                        {selectedPlaylist
-                          ? "Add some meditations to this playlist to get started."
-                          : "Create your first meditation using the Adjuster or Encoder tools."}
-                      </p>
-                      <Button asChild>
-                        <a href="/">Go to Tools</a>
-                      </Button>
-                    </Card>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {displayedMeditations.map((meditation) => (
-                        <Card key={meditation.id} className="hover:shadow-lg transition-shadow">
-                          {meditation.source === "adjuster" ? (
+            {/* Meditations Grid */}
+            {displayedMeditations.length === 0 ? (
+              <Card className="p-12 text-center">
+                <Music className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                  {selectedPlaylist ? "No meditations in this playlist" : "No meditations saved yet"}
+                </h3>
+                <p className="text-gray-500 mb-4">
+                  {selectedPlaylist
+                    ? "Add some meditations to this playlist to get started."
+                    : "Create your first meditation using the Adjuster or Encoder tools."}
+                </p>
+                <Button asChild>
+                  <a href="/">Go to Tools</a>
+                </Button>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {displayedMeditations.map((meditation) => (
+                  <Card key={meditation.id} className="hover:shadow-lg transition-shadow">
+                    {meditation.source === "adjuster" ? (
                             // Old processed audio card design with new features
                             <div className="p-6 bg-white shadow-lg border border-gray-200">
                               <div className="flex items-start justify-between mb-4">
