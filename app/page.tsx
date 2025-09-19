@@ -1,23 +1,26 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import type React from "react"
+
+import { useState, useRef, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Progress } from "@/components/ui/progress"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
-import { Music, Upload } from "lucide-react"
+import { Music, Upload, Play, Pause, Volume2, Download, BookmarkPlus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
 
 type NavigationPage = "home" | "library" | "contact" | "donate"
 
 export default function HomePage() {
   const [activePage, setActivePage] = useState<NavigationPage>("home")
 
-  // Existing home page state
   const [activeMode, setActiveMode] = useState<"adjuster" | "encoder">("adjuster")
   const [file, setFile] = useState<File | null>(null)
   const [targetDuration, setTargetDuration] = useState<number>(300)
@@ -30,6 +33,7 @@ export default function HomePage() {
   const [duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(1)
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null)
+  const [processingProgress, setProcessingProgress] = useState(0)
 
   // Library page state
   const [meditations, setMeditations] = useState<SavedMeditation[]>([])
@@ -42,6 +46,10 @@ export default function HomePage() {
   const [newPlaylistDescription, setNewPlaylistDescription] = useState("")
   const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null)
 
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const uploadAreaRef = useRef<HTMLDivElement>(null)
+  const audioRef = useRef<HTMLAudioElement>(null)
+
   const { toast } = useToast()
 
   useEffect(() => {
@@ -53,6 +61,153 @@ export default function HomePage() {
   const loadLibraryData = () => {
     setMeditations(MeditationLibrary.getAllMeditations())
     setPlaylists(MeditationLibrary.getAllPlaylists())
+  }
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0]
+    if (selectedFile) {
+      if (!selectedFile.type.startsWith("audio/")) {
+        toast({
+          title: "Invalid file type",
+          description: "Please select a valid audio file.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      setFile(selectedFile)
+      setProcessedAudio(null)
+      setOriginalDuration(null)
+      setAdjustmentsMade(0)
+
+      // Get audio duration
+      const audio = new Audio(URL.createObjectURL(selectedFile))
+      audio.addEventListener("loadedmetadata", () => {
+        setOriginalDuration(audio.duration)
+        setDuration(audio.duration)
+      })
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (uploadAreaRef.current) uploadAreaRef.current.classList.add("border-primary")
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
+    const files = e.dataTransfer.files
+    if (files.length > 0) {
+      const mockChangeEvent = {
+        target: {
+          files: files,
+        },
+      } as React.ChangeEvent<HTMLInputElement>
+      handleFileChange(mockChangeEvent)
+    }
+  }
+
+  const processAudio = async () => {
+    if (!file || !originalDuration) return
+
+    setIsProcessing(true)
+    setProcessingProgress(0)
+
+    // Simulate processing with progress updates
+    const progressInterval = setInterval(() => {
+      setProcessingProgress((prev) => {
+        if (prev >= 90) {
+          clearInterval(progressInterval)
+          return 90
+        }
+        return prev + 10
+      })
+    }, 200)
+
+    try {
+      // Simulate audio processing delay
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+
+      // Create processed audio URL (in real implementation, this would be actual audio processing)
+      const processedUrl = URL.createObjectURL(file)
+      setProcessedAudio(processedUrl)
+
+      // Calculate adjustments made
+      const ratio = targetDuration / originalDuration
+      const adjustments = Math.abs(1 - ratio) * 100
+      setAdjustmentsMade(Math.round(adjustments))
+
+      setProcessingProgress(100)
+      toast({
+        title: "Processing complete!",
+        description: `Audio adjusted to ${Math.round(targetDuration / 60)} minutes.`,
+      })
+    } catch (error) {
+      toast({
+        title: "Processing failed",
+        description: "There was an error processing your audio file.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsProcessing(false)
+      clearInterval(progressInterval)
+    }
+  }
+
+  const togglePlayPause = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause()
+      } else {
+        audioRef.current.play()
+      }
+      setIsPlaying(!isPlaying)
+    }
+  }
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime)
+    }
+  }
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = Number.parseFloat(e.target.value)
+    if (audioRef.current) {
+      audioRef.current.currentTime = time
+      setCurrentTime(time)
+    }
+  }
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const vol = Number.parseFloat(e.target.value)
+    setVolume(vol)
+    if (audioRef.current) {
+      audioRef.current.volume = vol
+    }
+  }
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    return `${mins}:${secs.toString().padStart(2, "0")}`
+  }
+
+  const downloadProcessedAudio = () => {
+    if (!processedAudio || !file) return
+
+    const a = document.createElement("a")
+    a.href = processedAudio
+    a.download = `${file.name.split(".")[0]}_adjusted.${file.name.split(".").pop()}`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
 
   const HomeContent = () => (
@@ -136,17 +291,172 @@ export default function HomePage() {
       </AnimatePresence>
 
       {/* Tool Content */}
-      <div className="max-w-2xl mx-auto">
-        <p className="text-center text-gray-600 mb-8 font-serif">
-          Upload an audio file to get started with your meditation practice.
-        </p>
+      <AnimatePresence mode="wait">
+        {activeMode === "adjuster" && (
+          <motion.div
+            key="adjuster-content"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="max-w-2xl mx-auto space-y-6"
+          >
+            {/* File Upload */}
+            <div
+              ref={uploadAreaRef}
+              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <input ref={fileInputRef} type="file" accept="audio/*" onChange={handleFileChange} className="hidden" />
+              <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-600 mb-4">
+                {file ? file.name : "Drag and drop your audio file here, or click to browse"}
+              </p>
+              <Button variant="outline">Choose File</Button>
+            </div>
 
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-          <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-600 mb-4">Drag and drop your audio file here, or click to browse</p>
-          <Button>Choose File</Button>
-        </div>
-      </div>
+            {/* Duration Settings */}
+            {file && originalDuration && (
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">Duration Settings</h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Original Duration: {formatTime(originalDuration)}</Label>
+                  </div>
+                  <div>
+                    <Label htmlFor="target-duration">Target Duration (seconds)</Label>
+                    <Input
+                      id="target-duration"
+                      type="number"
+                      value={targetDuration}
+                      onChange={(e) => setTargetDuration(Number.parseInt(e.target.value) || 300)}
+                      min="30"
+                      max="3600"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      Target: {formatTime(targetDuration)} ({Math.round(targetDuration / 60)} minutes)
+                    </p>
+                  </div>
+                  <Button onClick={processAudio} disabled={isProcessing} className="w-full">
+                    {isProcessing ? "Processing..." : "Adjust Audio"}
+                  </Button>
+                  {isProcessing && (
+                    <div className="space-y-2">
+                      <Progress value={processingProgress} />
+                      <p className="text-sm text-center text-gray-600">{processingProgress}% complete</p>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
+
+            {/* Audio Player */}
+            {processedAudio && (
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">Processed Audio</h3>
+                <div className="space-y-4">
+                  <audio
+                    ref={audioRef}
+                    src={processedAudio}
+                    onTimeUpdate={handleTimeUpdate}
+                    onLoadedMetadata={() => {
+                      if (audioRef.current) {
+                        setDuration(audioRef.current.duration)
+                      }
+                    }}
+                    className="hidden"
+                  />
+
+                  {/* Custom Player Controls */}
+                  <div className="flex items-center space-x-4">
+                    <Button onClick={togglePlayPause} size="sm">
+                      {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                    </Button>
+                    <div className="flex-1">
+                      <input
+                        type="range"
+                        min="0"
+                        max={duration}
+                        value={currentTime}
+                        onChange={handleSeek}
+                        className="w-full"
+                      />
+                    </div>
+                    <span className="text-sm text-gray-600">
+                      {formatTime(currentTime)} / {formatTime(duration)}
+                    </span>
+                  </div>
+
+                  {/* Volume Control */}
+                  <div className="flex items-center space-x-2">
+                    <Volume2 className="w-4 h-4" />
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={volume}
+                      onChange={handleVolumeChange}
+                      className="w-24"
+                    />
+                  </div>
+
+                  {/* Stats */}
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <p>Adjustments made: {adjustmentsMade}%</p>
+                    <p>New duration: {formatTime(targetDuration)}</p>
+                  </div>
+
+                  {/* Download and Save */}
+                  <div className="flex space-x-2">
+                    <Button onClick={downloadProcessedAudio} variant="outline" className="flex-1 bg-transparent">
+                      <Download className="w-4 h-4 mr-2" />
+                      Download
+                    </Button>
+                    <SaveMeditationDialog
+                      audioUrl={processedAudio}
+                      originalFileName={file?.name || "meditation"}
+                      duration={targetDuration}
+                      source="adjuster"
+                      metadata={{
+                        originalDuration,
+                        targetDuration,
+                        adjustmentsMade,
+                      }}
+                    >
+                      <Button className="flex-1">
+                        <BookmarkPlus className="w-4 h-4 mr-2" />
+                        Save to Library
+                      </Button>
+                    </SaveMeditationDialog>
+                  </div>
+                </div>
+              </Card>
+            )}
+          </motion.div>
+        )}
+
+        {activeMode === "encoder" && (
+          <motion.div
+            key="encoder-content"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="max-w-2xl mx-auto text-center"
+          >
+            <p className="text-gray-600 mb-8">
+              For advanced meditation creation with sound cues and timeline editing, visit the dedicated Encoder page.
+            </p>
+            <Button onClick={() => (window.location.href = "/encoder")} size="lg">
+              Go to Encoder
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 
