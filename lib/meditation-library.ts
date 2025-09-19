@@ -29,6 +29,33 @@ export class MeditationLibrary {
   private static STORAGE_KEY = "abhi_meditation_library"
   private static PLAYLISTS_KEY = "abhi_meditation_playlists"
 
+  private static parseStoredData<T>(key: string, rawValue: string): T | null {
+    const attemptParse = (value: string): { success: true; data: T } | { success: false } => {
+      try {
+        return { success: true, data: JSON.parse(value) as T }
+      } catch {
+        return { success: false }
+      }
+    }
+
+    const initial = attemptParse(rawValue)
+    if (initial.success) {
+      return initial.data
+    }
+
+    const sanitizedValue = rawValue.trim().replace(/;+$/, "")
+    if (sanitizedValue !== rawValue) {
+      const repaired = attemptParse(sanitizedValue)
+      if (repaired.success) {
+        localStorage.setItem(key, sanitizedValue)
+        return repaired.data
+      }
+    }
+
+    localStorage.removeItem(key)
+    return null
+  }
+
   static saveMeditation(meditation: Omit<SavedMeditation, "id" | "createdAt">): SavedMeditation {
     const savedMeditation: SavedMeditation = {
       ...meditation,
@@ -47,15 +74,15 @@ export class MeditationLibrary {
     const stored = localStorage.getItem(this.STORAGE_KEY)
     if (!stored) return []
 
-    try {
-      const parsed = JSON.parse(stored)
-      return parsed.map((med: any) => ({
-        ...med,
-        createdAt: new Date(med.createdAt),
-      }))
-    } catch {
+    const parsed = this.parseStoredData<any[]>(this.STORAGE_KEY, stored)
+    if (!parsed) {
       return []
     }
+
+    return parsed.map((med) => ({
+      ...med,
+      createdAt: new Date(med.createdAt),
+    }))
   }
 
   static getMeditation(id: string): SavedMeditation | null {
@@ -98,16 +125,16 @@ export class MeditationLibrary {
     const stored = localStorage.getItem(this.PLAYLISTS_KEY)
     if (!stored) return []
 
-    try {
-      const parsed = JSON.parse(stored)
-      return parsed.map((playlist: any) => ({
-        ...playlist,
-        createdAt: new Date(playlist.createdAt),
-        updatedAt: new Date(playlist.updatedAt),
-      }))
-    } catch {
+    const parsed = this.parseStoredData<any[]>(this.PLAYLISTS_KEY, stored)
+    if (!parsed) {
       return []
     }
+
+    return parsed.map((playlist) => ({
+      ...playlist,
+      createdAt: new Date(playlist.createdAt),
+      updatedAt: new Date(playlist.updatedAt),
+    }))
   }
 
   static getPlaylist(id: string): Playlist | null {
