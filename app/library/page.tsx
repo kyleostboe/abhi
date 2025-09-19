@@ -120,17 +120,21 @@ export default function LibraryPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-0">
       <Navigation />
 
-      <div className="relative max-w-6xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden">
-        {/* Header */}
+      <div className="relative max-w-6xl mx-auto bg-white/80 backdrop-blur-lg rounded-tl-3xl rounded-tr-3xl rounded-bl-3xl rounded-br-lg shadow-xl overflow-hidden">
         <div className="relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
             <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20"></div>
           </div>
           <div className="relative text-center px-8 pt-16 pb-8">
-            <h1 className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal font-black md:text-6xl mb-4 tracking-tighter">
-              My Library
-            </h1>
-            <p className="text-lg text-gray-600">Your personal collection of meditations and playlists</p>
+            {/* Custom underline matching home page but larger */}
+            <div className="flex justify-center mb-8">
+              <div className="relative">
+                <h1 className="text-6xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal font-black md:text-7xl tracking-tighter">
+                  abhī
+                </h1>
+                <div className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal rounded-full"></div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -214,55 +218,108 @@ export default function LibraryPage() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {displayedMeditations.map((meditation) => (
-                      <Card key={meditation.id} className="p-6 hover:shadow-lg transition-shadow">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-lg mb-1 line-clamp-2">{meditation.title}</h3>
-                            <p className="text-sm text-gray-500 mb-2">{meditation.originalFileName}</p>
-                            <div className="flex items-center gap-4 text-xs text-gray-500">
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {formatDuration(meditation.duration)}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                {formatDate(meditation.createdAt)}
-                              </span>
+                      <Card key={meditation.id} className="hover:shadow-lg transition-shadow">
+                        {meditation.source === "adjuster" ? (
+                          // Old processed audio card design with new features
+                          <div className="p-6 bg-white shadow-lg border border-gray-200">
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-lg mb-1 line-clamp-2">{meditation.title}</h3>
+                                <p className="text-sm text-gray-500 mb-2">{meditation.originalFileName}</p>
+                                <div className="flex items-center gap-4 text-xs text-gray-500">
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {formatDuration(meditation.duration)}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    {formatDate(meditation.createdAt)}
+                                  </span>
+                                </div>
+                              </div>
+                              <Badge variant="default">{meditation.source}</Badge>
+                            </div>
+
+                            <div className="space-y-3">
+                              <audio
+                                controls
+                                className="w-full"
+                                src={meditation.processedAudioUrl}
+                                onPlay={() => setCurrentlyPlaying(meditation.id)}
+                                onPause={() => setCurrentlyPlaying(null)}
+                              />
+
+                              <div className="flex justify-between items-center">
+                                <div className="text-xs text-gray-500">
+                                  {meditation.metadata.pausesAdjusted && (
+                                    <span>{meditation.metadata.pausesAdjusted} pauses adjusted</span>
+                                  )}
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDelete(meditation.id)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
-                          <Badge variant={meditation.source === "adjuster" ? "default" : "secondary"}>
-                            {meditation.source}
-                          </Badge>
-                        </div>
-
-                        <div className="space-y-3">
-                          <audio
-                            controls
-                            className="w-full"
-                            src={meditation.processedAudioUrl}
-                            onPlay={() => setCurrentlyPlaying(meditation.id)}
-                            onPause={() => setCurrentlyPlaying(null)}
-                          />
-
-                          <div className="flex justify-between items-center">
-                            <div className="text-xs text-gray-500">
-                              {meditation.source === "adjuster" && meditation.metadata.pausesAdjusted && (
-                                <span>{meditation.metadata.pausesAdjusted} pauses adjusted</span>
-                              )}
-                              {meditation.source === "encoder" && meditation.metadata.instructionCount && (
-                                <span>{meditation.metadata.instructionCount} instructions</span>
-                              )}
+                        ) : (
+                          // Generated audio card design with new features
+                          <div className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted">
+                            <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6">
+                              <div className="flex items-center justify-between">
+                                <h3 className="text-white font-black">{meditation.title}</h3>
+                                <Badge variant="secondary" className="bg-white/20 text-white">
+                                  {meditation.source}
+                                </Badge>
+                              </div>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(meditation.id)}
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <div className="p-6 px-3.5 py-4">
+                              <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
+                                <audio
+                                  controls
+                                  className="w-full"
+                                  src={meditation.processedAudioUrl}
+                                  onPlay={() => setCurrentlyPlaying(meditation.id)}
+                                  onPause={() => setCurrentlyPlaying(null)}
+                                />
+                              </div>
+                              <div className="grid grid-cols-2 gap-3 mb-3.5">
+                                <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
+                                  <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Duration</div>
+                                  <div className="font-black text-gray-600 text-sm">
+                                    {formatDuration(meditation.duration)}
+                                  </div>
+                                </div>
+                                <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
+                                  <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Created</div>
+                                  <div className="font-black text-sm text-gray-600">
+                                    {formatDate(meditation.createdAt)}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <div className="text-xs text-gray-500">
+                                  <p className="text-sm text-gray-600 mb-1">{meditation.originalFileName}</p>
+                                  {meditation.metadata.instructionCount && (
+                                    <span>{meditation.metadata.instructionCount} instructions</span>
+                                  )}
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDelete(meditation.id)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </Card>
                     ))}
                   </div>
