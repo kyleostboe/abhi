@@ -444,7 +444,7 @@ export default function HomePage() {
             key="encoder-content"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.2 }}
             className="max-w-2xl mx-auto text-center"
           >
@@ -485,6 +485,66 @@ export default function HomePage() {
       }).format(date)
     }
 
+    const playMeditation = (meditation: SavedMeditation) => {
+      if (currentlyPlaying === meditation.id) {
+        setCurrentlyPlaying(null)
+      } else {
+        setCurrentlyPlaying(meditation.id)
+      }
+    }
+
+    const deleteMeditation = (id: string) => {
+      MeditationLibrary.deleteMeditation(id)
+      loadLibraryData()
+      toast({
+        title: "Meditation deleted",
+        description: "The meditation has been removed from your library.",
+      })
+    }
+
+    const createPlaylist = () => {
+      if (!newPlaylistName.trim()) return
+
+      const playlist: Playlist = {
+        id: Date.now().toString(),
+        name: newPlaylistName,
+        description: newPlaylistDescription,
+        meditationIds: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+
+      MeditationLibrary.createPlaylist(playlist)
+      setNewPlaylistName("")
+      setNewPlaylistDescription("")
+      loadLibraryData()
+      toast({
+        title: "Playlist created",
+        description: `"${playlist.name}" has been added to your library.`,
+      })
+    }
+
+    const deletePlaylist = (id: string) => {
+      MeditationLibrary.deletePlaylist(id)
+      if (selectedPlaylist === id) {
+        setSelectedPlaylist(null)
+      }
+      loadLibraryData()
+      toast({
+        title: "Playlist deleted",
+        description: "The playlist has been removed from your library.",
+      })
+    }
+
+    const addToPlaylist = (meditationId: string, playlistId: string) => {
+      MeditationLibrary.addToPlaylist(playlistId, meditationId)
+      loadLibraryData()
+      toast({
+        title: "Added to playlist",
+        description: "The meditation has been added to the playlist.",
+      })
+    }
+
     return (
       <div className="px-6 md:px-10 pb-10">
         {/* Custom underline matching home page but larger */}
@@ -500,6 +560,16 @@ export default function HomePage() {
               <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[16px] h-[16px]"></div>
             </div>
           </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="max-w-md mx-auto mb-6">
+          <Input
+            placeholder="Search meditations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full"
+          />
         </div>
 
         {/* Tab Navigation */}
@@ -533,18 +603,184 @@ export default function HomePage() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.2 }}
             >
+              {/* Playlist Filter */}
+              {playlists.length > 0 && (
+                <div className="mb-6 flex justify-center">
+                  <select
+                    value={selectedPlaylist || ""}
+                    onChange={(e) => setSelectedPlaylist(e.target.value || null)}
+                    className="px-4 py-2 border rounded-md bg-white"
+                  >
+                    <option value="">All Meditations</option>
+                    {playlists.map((playlist) => (
+                      <option key={playlist.id} value={playlist.id}>
+                        {playlist.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {displayedMeditations.length === 0 ? (
                 <Card className="p-12 text-center">
                   <Music className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-600 mb-2">No meditations saved yet</h3>
+                  <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                    {searchQuery ? "No meditations found" : "No meditations saved yet"}
+                  </h3>
                   <p className="text-gray-500 mb-4">
-                    Create your first meditation using the Adjuster or Encoder tools.
+                    {searchQuery
+                      ? "Try adjusting your search terms."
+                      : "Create your first meditation using the Adjuster or Encoder tools."}
                   </p>
-                  <Button onClick={() => setActivePage("home")}>Go to Tools</Button>
+                  {!searchQuery && <Button onClick={() => setActivePage("home")}>Go to Tools</Button>}
                 </Card>
               ) : (
-                <div className="text-center">
-                  <p className="text-gray-600">Your meditation library will appear here.</p>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {displayedMeditations.map((meditation) => (
+                    <Card key={meditation.id} className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg mb-1">{meditation.title}</h3>
+                          <p className="text-sm text-gray-600 mb-2">{formatDuration(meditation.duration)}</p>
+                          <p className="text-xs text-gray-500">
+                            Created {formatDate(meditation.createdAt)} • {meditation.source}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Button size="sm" onClick={() => playMeditation(meditation)} className="flex-1">
+                          {currentlyPlaying === meditation.id ? (
+                            <Pause className="w-4 h-4 mr-2" />
+                          ) : (
+                            <Play className="w-4 h-4 mr-2" />
+                          )}
+                          {currentlyPlaying === meditation.id ? "Pause" : "Play"}
+                        </Button>
+
+                        {playlists.length > 0 && (
+                          <select
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                addToPlaylist(meditation.id, e.target.value)
+                                e.target.value = ""
+                              }
+                            }}
+                            className="px-2 py-1 text-xs border rounded"
+                          >
+                            <option value="">Add to...</option>
+                            {playlists.map((playlist) => (
+                              <option key={playlist.id} value={playlist.id}>
+                                {playlist.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+
+                        <Button size="sm" variant="destructive" onClick={() => deleteMeditation(meditation.id)}>
+                          Delete
+                        </Button>
+                      </div>
+
+                      {currentlyPlaying === meditation.id && (
+                        <div className="mt-4">
+                          <audio
+                            controls
+                            src={meditation.audioUrl}
+                            className="w-full"
+                            autoPlay
+                            onEnded={() => setCurrentlyPlaying(null)}
+                          />
+                        </div>
+                      )}
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {activeTab === "playlists" && (
+            <motion.div
+              key="playlists"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* Create Playlist Form */}
+              <Card className="p-6 mb-6">
+                <h3 className="text-lg font-semibold mb-4">Create New Playlist</h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="playlist-name">Playlist Name</Label>
+                    <Input
+                      id="playlist-name"
+                      value={newPlaylistName}
+                      onChange={(e) => setNewPlaylistName(e.target.value)}
+                      placeholder="Enter playlist name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="playlist-description">Description (optional)</Label>
+                    <Textarea
+                      id="playlist-description"
+                      value={newPlaylistDescription}
+                      onChange={(e) => setNewPlaylistDescription(e.target.value)}
+                      placeholder="Enter playlist description"
+                      rows={2}
+                    />
+                  </div>
+                  <Button onClick={createPlaylist} disabled={!newPlaylistName.trim()}>
+                    Create Playlist
+                  </Button>
+                </div>
+              </Card>
+
+              {/* Playlists List */}
+              {playlists.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <Music className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-600 mb-2">No playlists created yet</h3>
+                  <p className="text-gray-500">Create your first playlist using the form above.</p>
+                </Card>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {playlists.map((playlist) => {
+                    const playlistMeditations = MeditationLibrary.getPlaylistMeditations(playlist.id)
+                    const totalDuration = playlistMeditations.reduce((sum, med) => sum + med.duration, 0)
+
+                    return (
+                      <Card key={playlist.id} className="p-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-lg mb-2">{playlist.name}</h3>
+                            {playlist.description && <p className="text-gray-600 mb-2">{playlist.description}</p>}
+                            <p className="text-sm text-gray-500">
+                              {playlistMeditations.length} meditations • {formatDuration(totalDuration)}
+                            </p>
+                            <p className="text-xs text-gray-500">Created {formatDate(playlist.createdAt)}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setSelectedPlaylist(playlist.id)
+                              setActiveTab("meditations")
+                            }}
+                            className="flex-1"
+                          >
+                            View Meditations
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => deletePlaylist(playlist.id)}>
+                            Delete
+                          </Button>
+                        </div>
+                      </Card>
+                    )
+                  })}
                 </div>
               )}
             </motion.div>
