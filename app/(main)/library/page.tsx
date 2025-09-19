@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -117,20 +116,8 @@ export default function LibraryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-0">
-      <Navigation />
-
-      <div
-        className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
-        style={{
-          borderRadius: "4rem 3rem 2rem 1rem",
-        }}
-      >
-        <div className="relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20"></div>
-          </div>
-          <div className="relative text-center px-8 pt-16 pb-8">
+    <>
+      <div className="relative text-center px-8 pt-16 pb-8">
             {/* Custom underline matching home page but larger */}
             <div className="flex justify-center mb-8">
               <div className="relative">
@@ -501,6 +488,6 @@ export default function LibraryPage() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
