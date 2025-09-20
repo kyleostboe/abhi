@@ -1,7 +1,19 @@
 import * as Tone from "tone"
-import { sleep, formatFileSize } from "./utils"
 
-export { formatFileSize, formatTime } from "./utils"
+export const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return "0 Bytes"
+  const k = 1024
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${["Bytes", "KB", "MB", "GB"][i]}`
+}
+
+export const formatTime = (seconds: number): string => {
+  const min = Math.floor(seconds / 60)
+  const sec = Math.floor(seconds % 60)
+  return `${min.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`
+}
+
+export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export interface AudioAnalysis {
   totalSilence: number
