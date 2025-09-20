@@ -156,7 +156,7 @@ export default function LibraryPage() {
                   className={`transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600 ${
                     activeTab === "meditations"
                       ? "bg-white text-gray-600 shadow-sm"
-                      : "text-gray-600 hover:text-gray-900"
+                      : "text-gray-600 "
                   }`}
                 >
                   Meditations ({meditations.length})
@@ -164,7 +164,7 @@ export default function LibraryPage() {
                 <button
                   onClick={() => setActiveTab("playlists")}
                   className={`transition-all rounded-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600 ${
-                    activeTab === "playlists" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
+                    activeTab === "playlists" ? "bg-white text-gray-600 shadow-sm" : "text-gray-600 "
                   }`}
                 >
                   Playlists ({playlists.length})
