@@ -1406,10 +1406,28 @@ export default function Home() {
       return
     }
     if (!validateFileSize(selectedFile)) return
+
     if (!audioContextRef.current || audioContextRef.current.state === "closed") {
-      setStatus({ message: "Audio system not ready. Please refresh.", type: "error" })
-      return
+      try {
+        console.log("[v0] Reinitializing audio context for file upload...")
+        const ctx = getAudioContext()
+        audioContextRef.current = ctx
+
+        // Ensure the context is running
+        if (ctx.state === "suspended") {
+          await ctx.resume()
+        }
+
+        console.log("[v0] Audio context reinitialized successfully")
+      } catch (error) {
+        setStatus({
+          message: `Error initializing audio system: ${error instanceof Error ? error.message : "Unknown error"}`,
+          type: "error",
+        })
+        return
+      }
     }
+
     cleanupMemory()
     await sleep(100)
     setIsProcessingComplete(false) // Add this line
@@ -2349,7 +2367,7 @@ export default function Home() {
                 <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[13px] h-[13px]"></div>
                 <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px]"></div>
                 <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-sm transform -rotate-6 h-[9px]"></div>
-                <div className="bg-gradient-to-r from-gray-600 to-gray-500 rounded-sm w-[48px] h-[4px]"></div>
+                <div className="w-4 bg-gradient-to-r from-gray-600 to-gray-500 rounded-sm w-[48px] h-[4px]"></div>
                 <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-sm transform rotate-6 h-[9px] pl-0 ml-2"></div>
                 <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[9px] w-[9px]"></div>
                 <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[13px] h-[13px]"></div>
@@ -3239,7 +3257,7 @@ export default function Home() {
                         events={timelineEvents}
                         totalDuration={encoderTotalDuration}
                         onUpdateEvent={updateEventStartTime}
-                        onRemoveEvent={removeTimelineEvent}
+                        onRemoveEvent={removeTimelineItem}
                         onDuplicateEvent={handleDuplicateEvent}
                         selectedInstrument={noteType}
                         playSingleNote={timelinePlaySingleNote}
