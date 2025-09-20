@@ -1,63 +1,62 @@
 "use client"
 
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 
-interface NavigationProps {
-  activePage: "home" | "library" | "contact" | "donate"
-  setActivePage: (page: "home" | "library" | "contact" | "donate") => void
-}
+export function Navigation() {
+  const pathname = usePathname()
 
-export function Navigation({ activePage, setActivePage }: NavigationProps) {
   return (
     <nav className="flex justify-center py-4 mb-5">
       <ul className="flex space-x-4 bg-white/70 backdrop-blur-md px-6 py-3 shadow-2xl rounded-sm">
         <li>
-          <button
-            onClick={() => setActivePage("home")}
+          <Link
+            href="/"
             className={cn(
               "px-4 py-2 transition-colors font-black font-serif text-sm shadow-none rounded-sm",
-              activePage === "home"
+              pathname === "/"
                 ? "bg-gradient-to-r from-gray-600 to-gray-500 text-white shadow-md "
                 : "text-gray-600 hover:bg-gray-100 ",
             )}
           >
             Home
-          </button>
+          </Link>
         </li>
         <li>
-          <button
-            onClick={() => setActivePage("library")}
+          <Link
+            href="/library"
             className={cn(
               "px-4 py-2 transition-colors font-black font-serif text-sm shadow-none rounded-sm",
-              activePage === "library"
+              pathname === "/library"
                 ? "bg-gradient-to-r from-gray-600 to-gray-500 text-white shadow-md "
                 : "text-gray-600 hover:bg-gray-100 ",
             )}
           >
             Library
-          </button>
+          </Link>
         </li>
         <li>
-          <button
-            onClick={() => setActivePage("contact")}
+          <Link
+            href="/contact"
             className={cn(
               "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-md",
-              activePage === "contact" ? "bg-gray-600 text-white shadow-md " : "text-gray-600 hover:bg-gray-100 ",
+              pathname === "/contact" ? "bg-gray-600 text-white shadow-md " : "text-gray-600 hover:bg-gray-100 ",
             )}
           >
             Contact
-          </button>
+          </Link>
         </li>
         <li>
-          <button
-            onClick={() => setActivePage("donate")}
+          <Link
+            href="/donate"
             className={cn(
               "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-md",
-              activePage === "donate" ? "bg-gray-600 text-white shadow-md " : "text-gray-600 hover:bg-gray-100 ",
+              pathname === "/donate" ? "bg-gray-600 text-white shadow-md " : "text-gray-600 hover:bg-gray-100 ",
             )}
           >
             Donate
-          </button>
+          </Link>
         </li>
       </ul>
     </nav>
