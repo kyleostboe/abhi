@@ -4,16 +4,17 @@ import type React from "react"
 import { useState, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Mic, StopCircle, PlusCircle } from "lucide-react" // Import Copy icon
+import { Mic, StopCircle, PlusCircle, AlertTriangle } from "lucide-react" // moved AlertTriangle to lucide-react import
 import { motion, AnimatePresence } from "framer-motion"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { cn, formatTime } from "@/lib/utils"
+import { cn, formatTime, sleep } from "@/lib/utils" // moved sleep back to utils import
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
-import { Navigation, Alert, AlertTriangle, AlertTitle, AlertDescription } from "@/components"
-import { getAudioContext, sleep } from "@/lib/utils"
+import { Navigation } from "@/components/navigation"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import { getAudioContext } from "@/lib/audio-utils" // removed sleep from audio-utils import
 
 interface RecorderSectionProps {
   className?: string
