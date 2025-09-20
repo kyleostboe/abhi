@@ -150,10 +150,10 @@ export default function LibraryPage() {
           <div className="px-6 md:px-10 pb-10">
             {/* Tab Navigation */}
             <div className="flex justify-center mb-6">
-              <div className="flex p-1 bg-muted rounded-lg">
+              <div className="flex p-1 bg-muted flex-row rounded-sm shadow-inner">
                 <button
                   onClick={() => setActiveTab("meditations")}
-                  className={`px-6 py-2 rounded-md font-semibold transition-all ${
+                  className={`px-6 py-2 font-semibold transition-all rounded-sm ${
                     activeTab === "meditations"
                       ? "bg-white text-gray-900 shadow-sm"
                       : "text-gray-600 hover:text-gray-900"
@@ -163,7 +163,7 @@ export default function LibraryPage() {
                 </button>
                 <button
                   onClick={() => setActiveTab("playlists")}
-                  className={`px-6 py-2 rounded-md font-semibold transition-all ${
+                  className={`px-6 py-2 font-semibold transition-all rounded-sm ${
                     activeTab === "playlists" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
