@@ -130,7 +130,7 @@ export default function LibraryPage() {
           <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
             <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20"></div>
           </div>
-          <div className="relative text-center px-8 pt-16 pb-8">
+          <div className="relative text-center px-8 pt-16 pb-0">
             {/* Custom underline matching home page but larger */}
             <div className="flex justify-center mb-8">
               <div className="relative">
@@ -150,10 +150,10 @@ export default function LibraryPage() {
           <div className="px-6 md:px-10 pb-10">
             {/* Tab Navigation */}
             <div className="flex justify-center mb-6">
-              <div className="flex p-1 bg-muted flex-row rounded-sm shadow-inner">
+              <div className="flex p-1 bg-muted flex-row rounded-sm shadow-inner text-sm text-gray-600">
                 <button
                   onClick={() => setActiveTab("meditations")}
-                  className={`px-6 py-2 font-semibold transition-all rounded-sm ${
+                  className={`transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 ${
                     activeTab === "meditations"
                       ? "bg-white text-gray-900 shadow-sm"
                       : "text-gray-600 hover:text-gray-900"
@@ -163,7 +163,7 @@ export default function LibraryPage() {
                 </button>
                 <button
                   onClick={() => setActiveTab("playlists")}
-                  className={`px-6 py-2 font-semibold transition-all rounded-sm ${
+                  className={`transition-all rounded-sm tracking-tight font-black font-serif py-3 px-4 ${
                     activeTab === "playlists" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
