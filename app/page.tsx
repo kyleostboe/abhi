@@ -1399,130 +1399,80 @@ export default function Home() {
   )
 
   const loadAudioFile = useCallback(
-    async (fileToLoad: File) => {
-      const currentAudioContext = audioContextRef.current
-      if (!currentAudioContext) {
-        setStatus({ message: "Audio context not initialized.", type: "error" })
-        throw new Error("AudioContext not initialized")
-      }
-      let attempts = 0
-      const maxAttempts = 3
-      while (currentAudioContext.state !== "running" && attempts < maxAttempts) {
-        attempts++
-        if (currentAudioContext.state === "suspended") {
-          try {
-            await currentAudioContext.resume()
-            if (currentAudioContext.state !== "running") await sleep(50 * attempts)
-          } catch (err) {
-            break
-          }
-        } else if (currentAudioContext.state === "closed") {
-          setStatus({ message: "Audio system closed.", type: "error" })
-          throw new Error("AudioContext closed")
-        }
-        if (currentAudioContext.state !== "running" && currentAudioContext.state !== "closed" && attempts < maxAttempts)
-          await sleep(100 * attempts)
-      }
-      if (currentAudioContext.state !== "running") {
-        setStatus({ message: "Failed to start audio system.", type: "error" })
-        throw new Error(`AudioContext not running: ${currentAudioContext.state}`)
-      }
-      setProcessingStep("Reading file data...")
-      setProcessingProgress(10)
-      const arrayBuffer = await fileToLoad.arrayBuffer()
-      setProcessingStep("Decoding audio data...")
-      setProcessingProgress(50)
+    async (file: File): Promise<void> => {
+      console.log("[v0] Loading audio file:", file.name)
+
       try {
-        const decodePromise = currentAudioContext.decodeAudioData(arrayBuffer.slice(0))
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Audio decoding timeout (30s)")), 30000),
-        )
-        const buffer = await Promise.race([decodePromise, timeoutPromise])
-        setProcessingStep("Analyzing audio...")
-        setProcessingProgress(80)
-        await sleep(50)
-        setOriginalBuffer(buffer)
-        setProcessingStep("Creating audio player...")
-        setProcessingProgress(95)
-        if (originalUrl) URL.revokeObjectURL(originalUrl)
-        const blob = new Blob([fileToLoad], { type: fileToLoad.type })
-        const url = URL.createObjectURL(blob)
-        setOriginalUrl(url)
-        setProcessingProgress(100)
-        setProcessingStep("Load complete!")
-        setStatus({
-          message: `Audio loaded. Duration: ${formatTime(buffer.duration)}.`,
-          type: "success",
+        const audioContext = getAudioContext()
+        if (!audioContext || audioContext.state === "closed") {
+          console.log("[v0] Reinitializing audio context for file upload...")
+          await getAudioContext()
+          console.log("[v0] Audio context reinitialized successfully")
+        }
+
+        const arrayBuffer = await file.arrayBuffer()
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+
+        setOriginalBuffer(audioBuffer)
+        setFile(file)
+        setActualDuration(audioBuffer.duration)
+        setIsProcessing(false)
+        setProcessedUrl(null)
+
+        console.log("[v0] Audio file loaded successfully")
+      } catch (error) {
+        console.error("[v0] Error loading audio file:", error)
+        setIsProcessing(false)
+        toast({
+          title: "Error loading audio",
+          description: "Please try again with a different audio file.",
+          variant: "destructive",
         })
-      } catch (decodeError) {
-        setStatus({
-          message: `Error decoding: ${decodeError instanceof Error ? decodeError.message : "Unknown"}`,
-          type: "error",
-        })
-        throw decodeError
       }
     },
-    [originalUrl, isMobileDevice],
+    [toast],
   )
 
   const handleFile = useCallback(
-    async (selectedFile: File) => {
-      if (!selectedFile || !selectedFile.type) {
-        setStatus({ message: "Invalid file selected.", type: "error" })
-        return
-      }
+    async (file: File) => {
+      console.log("[v0] Handling file upload:", file.name)
 
-      if (!selectedFile.type.startsWith("audio/") && !selectedFile.name.toLowerCase().endsWith(".m4a")) {
-        setStatus({ message: "Please select a valid audio file.", type: "error" })
-        return
-      }
-      if (!validateFileSize(selectedFile)) return
-
-      if (!audioContextRef.current || audioContextRef.current.state === "closed") {
-        try {
-          console.log("[v0] Reinitializing audio context for file upload...")
-          const ctx = getAudioContext()
-          audioContextRef.current = ctx
-
-          // Ensure the context is running
-          if (ctx.state === "suspended") {
-            await ctx.resume()
-          }
-
-          console.log("[v0] Audio context reinitialized successfully")
-        } catch (error) {
-          setStatus({
-            message: `Error initializing audio system: ${error instanceof Error ? error.message : "Unknown error"}`,
-            type: "error",
-          })
-          return
-        }
-      }
-
-      cleanupMemory()
-      await sleep(100)
-      setIsProcessingComplete(false) // Add this line
-      setFile(selectedFile)
-      setProcessingProgress(0)
-      setProcessingStep("Initializing...")
-      setDurationLimits(null)
-      setAudioAnalysis(null)
-      setProcessedUrl("")
-      setProcessedBufferState(null)
-      setActualDuration(null)
-      setStatus(null)
-      try {
-        setStatus({ message: "Loading audio file...", type: "info" })
-        await loadAudioFile(selectedFile)
-      } catch (error) {
-        setStatus({
-          message: `Error loading audio: ${error instanceof Error ? error.message : "Unknown"}`,
-          type: "error",
+      if (!file.type.startsWith("audio/")) {
+        toast({
+          title: "Invalid file type",
+          description: "Please select an audio file.",
+          variant: "destructive",
         })
-        setOriginalBuffer(null)
+        return
+      }
+
+      setIsProcessing(true)
+      setProcessedUrl(null)
+      setActualDuration(null)
+
+      try {
+        const audioContext = getAudioContext()
+        if (!audioContext || audioContext.state === "closed") {
+          console.log("[v0] Reinitializing audio context for file upload...")
+          const newContext = await getAudioContext()
+          if (!newContext) {
+            throw new Error("Failed to initialize audio context")
+          }
+          console.log("[v0] Audio context reinitialized successfully")
+        }
+
+        await loadAudioFile(file)
+      } catch (error) {
+        console.error("[v0] Error in handleFile:", error)
+        setIsProcessing(false)
+        toast({
+          title: "Error processing file",
+          description: "Please try again with a different audio file.",
+          variant: "destructive",
+        })
       }
     },
-    [validateFileSize, cleanupMemory, isMobileDevice, loadAudioFile, originalUrl, processedUrl],
+    [loadAudioFile, toast],
   )
 
   const detectSilenceRegions = async (
@@ -2364,9 +2314,34 @@ export default function Home() {
     }
   }
 
+  const clearLibraryData = useCallback(() => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("abhi_meditation_library")
+      localStorage.removeItem("abhi_meditation_playlists")
+      localStorage.removeItem("abhi_adjuster_import")
+      toast({
+        title: "Library cleared",
+        description: "All meditation data has been cleared for testing.",
+      })
+    }
+  }, [toast])
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-muted p-4 md:p-8 md:pt-[3px]">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px]">
       <Navigation />
+
+      {process.env.NODE_ENV === "development" && (
+        <div className="fixed top-4 right-4 z-50">
+          <Button
+            onClick={clearLibraryData}
+            variant="outline"
+            size="sm"
+            className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+          >
+            Clear Library (Debug)
+          </Button>
+        </div>
+      )}
 
       {memoryWarning && activeMode === "adjuster" && (
         <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-yellow-100 to-amber-50 border border-yellow-300 shadow-sm ">
