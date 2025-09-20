@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
-import { Trash2, Music, Clock, Calendar, FolderPlus, Edit2 } from "lucide-react"
+import {
+  Trash2,
+  Music,
+  Clock,
+  Calendar,
+  FolderPlus,
+  Edit2,
+  SkipForward,
+  SkipBack,
+  Play,
+  Pause,
+  X,
+  ChevronRight,
+  SlidersHorizontal,
+} from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -19,11 +33,16 @@ export default function LibraryPage() {
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [activeTab, setActiveTab] = useState<"meditations" | "playlists">("meditations")
   const [searchQuery, setSearchQuery] = useState("")
-  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null)
   const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null)
   const [newPlaylistName, setNewPlaylistName] = useState("")
   const [newPlaylistDescription, setNewPlaylistDescription] = useState("")
   const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null)
+  const [selectedMeditation, setSelectedMeditation] = useState<SavedMeditation | null>(null)
+  const [isPlayerOpen, setIsPlayerOpen] = useState(false)
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false)
+  const [playerTime, setPlayerTime] = useState(0)
+  const [playerDuration, setPlayerDuration] = useState(0)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -45,17 +64,13 @@ export default function LibraryPage() {
     ? MeditationLibrary.getPlaylistMeditations(selectedPlaylist)
     : filteredMeditations
 
-  const handlePlay = (meditationId: string) => {
-    if (currentlyPlaying === meditationId) {
-      setCurrentlyPlaying(null)
-    } else {
-      setCurrentlyPlaying(meditationId)
-    }
-  }
-
   const handleDelete = (meditationId: string) => {
     MeditationLibrary.deleteMeditation(meditationId)
     loadData()
+    if (selectedMeditation?.id === meditationId) {
+      setIsPlayerOpen(false)
+      setSelectedMeditation(null)
+    }
     toast({
       title: "Meditation deleted",
       description: "The meditation has been removed from your library.",
@@ -108,6 +123,13 @@ export default function LibraryPage() {
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
+  const formatDetailedTime = (seconds: number) => {
+    if (!Number.isFinite(seconds)) return "0:00"
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    return `${mins}:${secs.toString().padStart(2, "0")}`
+  }
+
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("en-US", {
       month: "short",
@@ -115,6 +137,131 @@ export default function LibraryPage() {
       year: "numeric",
     }).format(date)
   }
+
+  const openMeditationPlayer = (meditation: SavedMeditation) => {
+    setSelectedMeditation(meditation)
+    setPlayerTime(0)
+    setPlayerDuration(meditation.duration)
+    setIsAudioPlaying(false)
+    setIsPlayerOpen(true)
+  }
+
+  const closeMeditationPlayer = () => {
+    setIsPlayerOpen(false)
+  }
+
+  const togglePlayback = () => {
+    const audio = audioRef.current
+    if (!audio) return
+    if (audio.paused) {
+      audio
+        .play()
+        .then(() => {
+          setIsAudioPlaying(true)
+        })
+        .catch(() => {
+          toast({
+            title: "Unable to play audio",
+            description: "Try reloading the page and playing the meditation again.",
+            variant: "destructive",
+          })
+        })
+    } else {
+      audio.pause()
+    }
+  }
+
+  const handleSkip = (amount: number) => {
+    const audio = audioRef.current
+    if (!audio) return
+    const newTime = Math.max(0, Math.min(audio.duration || 0, audio.currentTime + amount))
+    audio.currentTime = newTime
+    setPlayerTime(newTime)
+  }
+
+  const handlePlugIntoAdjuster = () => {
+    if (!selectedMeditation) return
+    const payload = {
+      id: selectedMeditation.id,
+      title: selectedMeditation.title,
+      originalFileName: selectedMeditation.originalFileName,
+      processedAudioUrl: selectedMeditation.processedAudioUrl,
+      duration: selectedMeditation.duration,
+      source: selectedMeditation.source,
+    }
+    try {
+      localStorage.setItem("abhi_adjuster_import", JSON.stringify(payload))
+      toast({
+        title: "Opening Adjuster",
+        description: `"${selectedMeditation.title}" will load in the Adjuster tool.`,
+      })
+      window.location.href = "/#adjuster"
+    } catch (error) {
+      toast({
+        title: "Unable to open Adjuster",
+        description: "We couldn't pass this meditation to the Adjuster.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    const handleTimeUpdate = () => setPlayerTime(audio.currentTime)
+    const handlePlayEvent = () => setIsAudioPlaying(true)
+    const handlePauseEvent = () => setIsAudioPlaying(false)
+    const handleLoadedMetadata = () => {
+      const duration = Number.isFinite(audio.duration) ? audio.duration : selectedMeditation?.duration ?? 0
+      setPlayerDuration(duration)
+      setPlayerTime(audio.currentTime)
+    }
+    const handleEndedEvent = () => {
+      setIsAudioPlaying(false)
+      setPlayerTime(0)
+    }
+
+    audio.addEventListener("timeupdate", handleTimeUpdate)
+    audio.addEventListener("play", handlePlayEvent)
+    audio.addEventListener("pause", handlePauseEvent)
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata)
+    audio.addEventListener("ended", handleEndedEvent)
+
+    if (selectedMeditation) {
+      audio.currentTime = 0
+      setPlayerTime(0)
+      setPlayerDuration(selectedMeditation.duration)
+    }
+
+    return () => {
+      audio.removeEventListener("timeupdate", handleTimeUpdate)
+      audio.removeEventListener("play", handlePlayEvent)
+      audio.removeEventListener("pause", handlePauseEvent)
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata)
+      audio.removeEventListener("ended", handleEndedEvent)
+    }
+  }, [selectedMeditation])
+
+  useEffect(() => {
+    if (isPlayerOpen) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+      const audio = audioRef.current
+      if (audio) {
+        audio.pause()
+        audio.currentTime = 0
+      }
+      setIsAudioPlaying(false)
+      setPlayerTime(0)
+    }
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [isPlayerOpen])
+
+  const playbackProgress = playerDuration ? Math.min(100, (playerTime / playerDuration) * 100) : 0
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px]">
@@ -227,111 +374,77 @@ export default function LibraryPage() {
                       </Button>
                     </Card>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="space-y-4">
                       {displayedMeditations.map((meditation) => (
-                        <Card key={meditation.id} className="hover:shadow-lg transition-shadow">
-                          {meditation.source === "adjuster" ? (
-                            // Old processed audio card design with new features
-                            <div className="p-6 bg-white shadow-lg border border-gray-200">
-                              <div className="flex items-start justify-between mb-4">
-                                <div className="flex-1">
-                                  <h3 className="font-semibold text-lg mb-1 line-clamp-2">{meditation.title}</h3>
-                                  <p className="text-sm text-gray-500 mb-2">{meditation.originalFileName}</p>
-                                  <div className="flex items-center gap-4 text-xs text-gray-500">
-                                    <span className="flex items-center gap-1">
-                                      <Clock className="w-3 h-3" />
-                                      {formatDuration(meditation.duration)}
-                                    </span>
-                                    <span className="flex items-center gap-1">
-                                      <Calendar className="w-3 h-3" />
-                                      {formatDate(meditation.createdAt)}
-                                    </span>
+                        <motion.button
+                          key={meditation.id}
+                          type="button"
+                          onClick={() => openMeditationPlayer(meditation)}
+                          className="group w-full text-left"
+                          whileHover={{ y: -2 }}
+                          whileTap={{ scale: 0.995 }}
+                        >
+                          <Card className="w-full overflow-hidden border border-gray-200/70 bg-white/90 backdrop-blur-sm transition-all duration-300 hover:border-logo-teal-400/60 hover:shadow-xl">
+                            <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+                              <div className="flex-1 space-y-2">
+                                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                                  <div>
+                                    <h3 className="text-lg font-semibold text-gray-800 group-hover:text-gray-900">
+                                      {meditation.title}
+                                    </h3>
+                                    <p className="text-sm text-gray-500">{meditation.originalFileName}</p>
                                   </div>
-                                </div>
-                                <Badge variant="default">{meditation.source}</Badge>
-                              </div>
-
-                              <div className="space-y-3">
-                                <audio
-                                  controls
-                                  className="w-full"
-                                  src={meditation.processedAudioUrl}
-                                  onPlay={() => setCurrentlyPlaying(meditation.id)}
-                                  onPause={() => setCurrentlyPlaying(null)}
-                                />
-
-                                <div className="flex justify-between items-center">
-                                  <div className="text-xs text-gray-500">
-                                    {meditation.metadata.pausesAdjusted && (
-                                      <span>{meditation.metadata.pausesAdjusted} pauses adjusted</span>
-                                    )}
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDelete(meditation.id)}
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  <Badge
+                                    variant="outline"
+                                    className="w-fit border-transparent bg-gradient-to-r from-logo-teal-500/10 to-logo-emerald-500/10 text-logo-teal-700"
                                   >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            // Generated audio card design with new features
-                            <div className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted">
-                              <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6">
-                                <div className="flex items-center justify-between">
-                                  <h3 className="text-white font-black">{meditation.title}</h3>
-                                  <Badge variant="secondary" className="bg-white/20 text-white">
-                                    {meditation.source}
+                                    {meditation.source === "adjuster" ? "Length Adjuster" : "Encoder"}
                                   </Badge>
                                 </div>
-                              </div>
-                              <div className="p-6 px-3.5 py-4">
-                                <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
-                                  <audio
-                                    controls
-                                    className="w-full"
-                                    src={meditation.processedAudioUrl}
-                                    onPlay={() => setCurrentlyPlaying(meditation.id)}
-                                    onPause={() => setCurrentlyPlaying(null)}
-                                  />
-                                </div>
-                                <div className="grid grid-cols-2 gap-3 mb-3.5">
-                                  <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
-                                    <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Duration</div>
-                                    <div className="font-black text-gray-600 text-sm">
-                                      {formatDuration(meditation.duration)}
-                                    </div>
-                                  </div>
-                                  <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
-                                    <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Created</div>
-                                    <div className="font-black text-sm text-gray-600">
-                                      {formatDate(meditation.createdAt)}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                  <div className="text-xs text-gray-500">
-                                    <p className="text-sm text-gray-600 mb-1">{meditation.originalFileName}</p>
-                                    {meditation.metadata.instructionCount && (
+                                <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-gray-500">
+                                  <span className="flex items-center gap-2">
+                                    <Clock className="h-4 w-4 text-logo-teal-500" />
+                                    <span>{formatDuration(meditation.duration)}</span>
+                                  </span>
+                                  <span className="flex items-center gap-2">
+                                    <Calendar className="h-4 w-4 text-logo-purple-500" />
+                                    <span>{formatDate(meditation.createdAt)}</span>
+                                  </span>
+                                  {meditation.metadata.pausesAdjusted ? (
+                                    <span className="flex items-center gap-2">
+                                      <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
+                                      <span>{meditation.metadata.pausesAdjusted} pauses adjusted</span>
+                                    </span>
+                                  ) : meditation.metadata.instructionCount ? (
+                                    <span className="flex items-center gap-2">
+                                      <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
                                       <span>{meditation.metadata.instructionCount} instructions</span>
-                                    )}
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDelete(meditation.id)}
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
+                                    </span>
+                                  ) : null}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between gap-4 md:flex-col md:items-end">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    handleDelete(meditation.id)
+                                  }}
+                                  aria-label="Delete meditation"
+                                >
+                                  <Trash2 className="h-5 w-5" />
+                                </Button>
+                                <div className="flex items-center gap-2 text-sm font-medium text-logo-teal-600">
+                                  Open player
+                                  <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                                 </div>
                               </div>
                             </div>
-                          )}
-                        </Card>
+                          </Card>
+                        </motion.button>
                       ))}
                     </div>
                   )}
@@ -501,6 +614,148 @@ export default function LibraryPage() {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {isPlayerOpen && selectedMeditation && (
+          <motion.div
+            key="meditation-player"
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={closeMeditationPlayer}
+          >
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/55 to-black/60 backdrop-blur-xl"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
+            <motion.div
+              className="relative z-10 w-full max-w-xl px-4"
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 260, damping: 24 }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Card className="relative overflow-hidden border-none bg-white/95 p-6 shadow-2xl backdrop-blur">
+                <button
+                  type="button"
+                  className="absolute right-4 top-4 rounded-full bg-gray-100/80 p-2 text-gray-500 transition hover:bg-gray-200 hover:text-gray-700"
+                  onClick={closeMeditationPlayer}
+                  aria-label="Close player"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <Badge
+                      variant="secondary"
+                      className="bg-gradient-to-r from-logo-teal-500/10 to-logo-emerald-500/10 text-logo-teal-700"
+                    >
+                      {selectedMeditation.source === "adjuster" ? "Length Adjuster" : "Encoder"}
+                    </Badge>
+                    <div>
+                      <h2 className="text-2xl font-semibold text-gray-900">{selectedMeditation.title}</h2>
+                      <p className="text-sm text-gray-500">{selectedMeditation.originalFileName}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                      <span className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-logo-teal-500" />
+                        <span>{formatDuration(selectedMeditation.duration)}</span>
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-logo-purple-500" />
+                        <span>{formatDate(selectedMeditation.createdAt)}</span>
+                      </span>
+                      {selectedMeditation.metadata.pausesAdjusted ? (
+                        <span className="flex items-center gap-2">
+                          <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
+                          <span>{selectedMeditation.metadata.pausesAdjusted} pauses adjusted</span>
+                        </span>
+                      ) : selectedMeditation.metadata.instructionCount ? (
+                        <span className="flex items-center gap-2">
+                          <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
+                          <span>{selectedMeditation.metadata.instructionCount} instructions</span>
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <audio
+                    ref={(node) => {
+                      audioRef.current = node
+                    }}
+                    src={selectedMeditation.processedAudioUrl}
+                    preload="auto"
+                    className="hidden"
+                  />
+
+                  <div className="space-y-4">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500"
+                        style={{ width: `${playbackProgress}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs font-medium text-gray-500">
+                      <span>{formatDetailedTime(playerTime)}</span>
+                      <span>{formatDetailedTime(playerDuration)}</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-4">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-12 w-12 rounded-full border border-transparent bg-gray-100/80 text-gray-700 transition hover:bg-gray-200"
+                        onClick={() => handleSkip(-15)}
+                        aria-label="Skip back 15 seconds"
+                      >
+                        <SkipBack className="h-5 w-5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        onClick={togglePlayback}
+                        className="h-14 w-14 rounded-full bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 text-white shadow-lg transition hover:from-logo-teal-600 hover:to-logo-emerald-600"
+                        aria-label={isAudioPlaying ? "Pause" : "Play"}
+                      >
+                        {isAudioPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-12 w-12 rounded-full border border-transparent bg-gray-100/80 text-gray-700 transition hover:bg-gray-200"
+                        onClick={() => handleSkip(15)}
+                        aria-label="Skip forward 15 seconds"
+                      >
+                        <SkipForward className="h-5 w-5" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <Button
+                      type="button"
+                      className="flex-1 bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 text-white shadow-lg hover:from-logo-purple-600 hover:to-logo-rose-500"
+                      onClick={handlePlugIntoAdjuster}
+                    >
+                      <SlidersHorizontal className="mr-2 h-4 w-4" /> Plug into Adjuster
+                    </Button>
+                    <Button type="button" variant="outline" className="flex-1" onClick={closeMeditationPlayer}>
+                      Close Player
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
