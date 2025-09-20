@@ -1568,16 +1568,13 @@ A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-muted p-4 md:p-8 md:pt-[3px]">
-      <Navigation />
+      <Navigation activePage={activePage} setActivePage={setActivePage} />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
-        style={{
-          borderRadius: "4rem 3rem 2rem 1rem",
-        }}
+        transition={{ duration: 0.3 }}
+        className="max-w-6xl mx-auto"
         role="application"
       >
         <AnimatePresence mode="wait">
