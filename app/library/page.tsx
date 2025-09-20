@@ -153,9 +153,9 @@ export default function LibraryPage() {
               <div className="flex p-1 bg-muted flex-row rounded-sm shadow-inner text-sm text-gray-600">
                 <button
                   onClick={() => setActiveTab("meditations")}
-                  className={`transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 ${
+                  className={`transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600 ${
                     activeTab === "meditations"
-                      ? "bg-white text-gray-900 shadow-sm"
+                      ? "bg-white text-gray-600 shadow-sm"
                       : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
@@ -163,7 +163,7 @@ export default function LibraryPage() {
                 </button>
                 <button
                   onClick={() => setActiveTab("playlists")}
-                  className={`transition-all rounded-sm tracking-tight font-black font-serif py-3 px-4 ${
+                  className={`transition-all rounded-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600 ${
                     activeTab === "playlists" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
