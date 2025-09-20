@@ -134,7 +134,7 @@ export default function LibraryPage() {
             {/* Custom underline matching home page but larger */}
             <div className="flex justify-center mb-8">
               <div className="relative">
-                <div className="flex justify-center items-center space-x-[4px]">
+                <div className="flex justify-center items-center space-x-[5px]">
                   <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px]"></div>
                   <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[11px] w-[11px]"></div>
                   <div className="w-5 bg-gradient-to-br from-logo-amber to-orange-300 rounded-sm transform -rotate-6 h-[11px]"></div>
