@@ -1378,12 +1378,13 @@ export default function Home() {
     if (isMobileDevice) setTimeout(() => forceGarbageCollection(), 100)
   }, [originalUrl, processedUrl, isMobileDevice])
 
-  const validateFileSize = (fileToValidate: File): boolean => {
-    const maxSize = isMobileDevice ? 50 * 1024 * 1024 : 500 * 1024 * 1024
-    if (fileToValidate.size > maxSize) {
-      setStatus({ message: `File too large. Max ${isMobileDevice ? "50MB" : "500MB"}.`, type: "error" })
-      return false
-    }
+  const validateFileSize = useCallback(
+    (fileToValidate: File): boolean => {
+      const maxSize = isMobileDevice ? 50 * 1024 * 1024 : 500 * 1024 * 1024
+      if (fileToValidate.size > maxSize) {
+        setStatus({ message: `File too large. Max ${isMobileDevice ? "50MB" : "500MB"}.`, type: "error" })
+        return false
+      }
     if (
       (isMobileDevice && fileToValidate.size > 20 * 1024 * 1024) ||
       (!isMobileDevice && fileToValidate.size > 150 * 1024 * 1024)
@@ -1392,14 +1393,17 @@ export default function Home() {
     } else {
       setMemoryWarning(false)
     }
-    return true
-  }
+      return true
+    },
+    [isMobileDevice],
+  )
 
-  const handleFile = async (selectedFile: File) => {
-    if (!selectedFile || !selectedFile.type) {
-      setStatus({ message: "Invalid file selected.", type: "error" })
-      return
-    }
+  const handleFile = useCallback(
+    async (selectedFile: File) => {
+      if (!selectedFile || !selectedFile.type) {
+        setStatus({ message: "Invalid file selected.", type: "error" })
+        return
+      }
 
     if (!selectedFile.type.startsWith("audio/") && !selectedFile.name.toLowerCase().endsWith(".m4a")) {
       setStatus({ message: "Please select a valid audio file.", type: "error" })
@@ -1440,17 +1444,26 @@ export default function Home() {
     setProcessedBufferState(null)
     setActualDuration(null)
     setStatus(null)
-    try {
-      setStatus({ message: "Loading audio file...", type: "info" })
-      await loadAudioFile(selectedFile)
-    } catch (error) {
-      setStatus({
-        message: `Error loading audio: ${error instanceof Error ? error.message : "Unknown"}`,
-        type: "error",
-      })
-      setOriginalBuffer(null)
-    }
-  }
+      try {
+        setStatus({ message: "Loading audio file...", type: "info" })
+        await loadAudioFile(selectedFile)
+      } catch (error) {
+        setStatus({
+          message: `Error loading audio: ${error instanceof Error ? error.message : "Unknown"}`,
+          type: "error",
+        })
+        setOriginalBuffer(null)
+      }
+    },
+    [
+      validateFileSize,
+      cleanupMemory,
+      isMobileDevice,
+      loadAudioFile,
+      originalUrl,
+      processedUrl,
+    ],
+  )
 
   const detectSilenceRegions = async (
     buffer: AudioBuffer,
@@ -1576,6 +1589,54 @@ export default function Home() {
   useEffect(() => {
     if (originalBuffer) analyzeAudioForLimits(originalBuffer, minSpacingDuration)
   }, [originalBuffer, silenceThreshold, minSilenceDuration, minSpacingDuration])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const stored = localStorage.getItem("abhi_adjuster_import")
+    if (!stored) return
+
+    localStorage.removeItem("abhi_adjuster_import")
+
+    try {
+      const parsed = JSON.parse(stored) as {
+        processedAudioUrl?: string
+        originalFileName?: string
+        title?: string
+      } | null
+
+      if (!parsed?.processedAudioUrl) return
+
+      const loadImportedMeditation = async () => {
+        try {
+          setActiveMode("adjuster")
+          const response = await fetch(parsed.processedAudioUrl)
+          if (!response.ok) throw new Error("Failed to retrieve saved audio")
+          const blob = await response.blob()
+          const inferredType = blob.type || "audio/wav"
+          const defaultExtension = inferredType.split("/")[1] ? `.${inferredType.split("/")[1]}` : ".wav"
+          const fileName = parsed.originalFileName || `${parsed.title || "meditation"}${defaultExtension}`
+          const importedFile = new File([blob], fileName, { type: inferredType })
+          await handleFile(importedFile)
+          toast({
+            title: "Loaded from Library",
+            description: `"${parsed.title || parsed.originalFileName || "Meditation"}" is ready in the Adjuster.`,
+          })
+        } catch (error) {
+          console.error("Failed to import meditation into Adjuster", error)
+          toast({
+            title: "Import failed",
+            description: "We couldn't load this meditation into the Adjuster.",
+            variant: "destructive",
+          })
+        }
+      }
+
+      void loadImportedMeditation()
+    } catch (error) {
+      console.error("Unable to parse Adjuster import payload", error)
+    }
+  }, [handleFile, toast])
 
   const processAudioAdjusterAction = async () => {
     setIsProcessingComplete(false) // Add this line
@@ -1772,7 +1833,7 @@ export default function Home() {
 
   const handleFileSelectAction = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
-    if (selectedFile) handleFile(selectedFile)
+    if (selectedFile) void handleFile(selectedFile)
     if (e.target) e.target.value = ""
   }
 
@@ -1790,7 +1851,7 @@ export default function Home() {
     e.preventDefault()
     if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
     const files = e.dataTransfer.files
-    if (files.length > 0) handleFile(files[0])
+    if (files.length > 0) void handleFile(files[0])
   }
 
   const downloadProcessedAudioAction = async () => {
