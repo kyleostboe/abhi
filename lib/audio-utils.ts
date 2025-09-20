@@ -1,7 +1,7 @@
 import * as Tone from "tone"
-import { sleep, formatFileSize } from "@/lib/utils"
+import { sleep, formatFileSize } from "./utils"
 
-export { formatFileSize, formatTime } from "@/lib/utils"
+export { formatFileSize, formatTime } from "./utils"
 
 export interface AudioAnalysis {
   totalSilence: number
