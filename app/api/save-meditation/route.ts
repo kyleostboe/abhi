@@ -26,20 +26,7 @@ export async function POST(request: NextRequest) {
     if (arrayBuffer.byteLength > maxSizeBytes) {
       console.log("[v0] File too large, compressing...")
 
-      // Simple compression: reduce file size by removing every nth byte
-      const compressionRatio = maxSizeBytes / arrayBuffer.byteLength
-      const sourceArray = new Uint8Array(arrayBuffer)
-      const targetSize = Math.floor(sourceArray.length * compressionRatio)
-      const compressedArray = new Uint8Array(targetSize)
-
-      // Sample every nth byte to maintain audio structure
-      const step = sourceArray.length / targetSize
-      for (let i = 0; i < targetSize; i++) {
-        const sourceIndex = Math.floor(i * step)
-        compressedArray[i] = sourceArray[sourceIndex]
-      }
-
-      finalBuffer = compressedArray.buffer
+      finalBuffer = await compressWAV(arrayBuffer, maxSizeBytes)
       console.log("[v0] Compressed from", arrayBuffer.byteLength, "to", finalBuffer.byteLength, "bytes")
     } else {
       console.log("[v0] File size OK, using original:", finalBuffer.byteLength, "bytes")
@@ -184,4 +171,224 @@ export async function POST(request: NextRequest) {
     console.error("[v0] Server error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
+}
+
+async function compressWAV(arrayBuffer: ArrayBuffer, maxSize: number): Promise<ArrayBuffer> {
+  const view = new DataView(arrayBuffer)
+
+  // Read WAV header
+  const riff = String.fromCharCode(...new Uint8Array(arrayBuffer, 0, 4))
+  if (riff !== "RIFF") {
+    throw new Error("Not a valid WAV file")
+  }
+
+  const fileSize = view.getUint32(4, true)
+  const wave = String.fromCharCode(...new Uint8Array(arrayBuffer, 8, 4))
+  if (wave !== "WAVE") {
+    throw new Error("Not a valid WAV file")
+  }
+
+  // Find fmt chunk
+  let offset = 12
+  while (offset < arrayBuffer.byteLength - 8) {
+    const chunkId = String.fromCharCode(...new Uint8Array(arrayBuffer, offset, 4))
+    const chunkSize = view.getUint32(offset + 4, true)
+
+    if (chunkId === "fmt ") {
+      // Read format data
+      const audioFormat = view.getUint16(offset + 8, true)
+      const numChannels = view.getUint16(offset + 10, true)
+      const sampleRate = view.getUint32(offset + 12, true)
+      const byteRate = view.getUint32(offset + 16, true)
+      const blockAlign = view.getUint16(offset + 20, true)
+      const bitsPerSample = view.getUint16(offset + 22, true)
+
+      console.log("[v0] Original WAV format:", {
+        channels: numChannels,
+        sampleRate,
+        bitsPerSample,
+      })
+
+      // Calculate compression ratio needed
+      const compressionRatio = maxSize / arrayBuffer.byteLength
+
+      // Reduce quality to achieve compression
+      let newSampleRate = sampleRate
+      let newBitsPerSample = bitsPerSample
+      let newChannels = numChannels
+
+      // First try reducing sample rate
+      if (compressionRatio < 0.5 && sampleRate > 22050) {
+        newSampleRate = 22050
+      } else if (compressionRatio < 0.7 && sampleRate > 32000) {
+        newSampleRate = 32000
+      }
+
+      // Then try reducing bit depth
+      if (compressionRatio < 0.6 && bitsPerSample > 8) {
+        newBitsPerSample = 8
+      }
+
+      // Finally convert to mono if still too large
+      if (compressionRatio < 0.8 && numChannels > 1) {
+        newChannels = 1
+      }
+
+      console.log("[v0] Compressed WAV format:", {
+        channels: newChannels,
+        sampleRate: newSampleRate,
+        bitsPerSample: newBitsPerSample,
+      })
+
+      // Find data chunk
+      let dataOffset = offset + 8 + chunkSize
+      while (dataOffset < arrayBuffer.byteLength - 8) {
+        const dataChunkId = String.fromCharCode(...new Uint8Array(arrayBuffer, dataOffset, 4))
+        const dataChunkSize = view.getUint32(dataOffset + 4, true)
+
+        if (dataChunkId === "data") {
+          // Process audio data
+          const audioData = new Uint8Array(arrayBuffer, dataOffset + 8, dataChunkSize)
+          const compressedAudioData = compressAudioData(
+            audioData,
+            numChannels,
+            newChannels,
+            sampleRate,
+            newSampleRate,
+            bitsPerSample,
+            newBitsPerSample,
+          )
+
+          // Create new WAV file
+          return createWAVFile(compressedAudioData, newChannels, newSampleRate, newBitsPerSample)
+        }
+
+        dataOffset += 8 + dataChunkSize
+      }
+
+      break
+    }
+
+    offset += 8 + chunkSize
+  }
+
+  // If we can't parse the WAV properly, fall back to simple downsampling
+  const compressionRatio = maxSize / arrayBuffer.byteLength
+  return simpleDownsample(arrayBuffer, compressionRatio)
+}
+
+function compressAudioData(
+  audioData: Uint8Array,
+  originalChannels: number,
+  newChannels: number,
+  originalSampleRate: number,
+  newSampleRate: number,
+  originalBitsPerSample: number,
+  newBitsPerSample: number,
+): Uint8Array {
+  const bytesPerSample = originalBitsPerSample / 8
+  const originalSamplesPerChannel = audioData.length / (originalChannels * bytesPerSample)
+
+  // Calculate new sample count
+  const sampleRateRatio = newSampleRate / originalSampleRate
+  const newSamplesPerChannel = Math.floor(originalSamplesPerChannel * sampleRateRatio)
+
+  const newBytesPerSample = newBitsPerSample / 8
+  const newAudioData = new Uint8Array(newSamplesPerChannel * newChannels * newBytesPerSample)
+
+  const view = new DataView(audioData.buffer, audioData.byteOffset)
+  const newView = new DataView(newAudioData.buffer)
+
+  for (let i = 0; i < newSamplesPerChannel; i++) {
+    const originalSampleIndex = Math.floor(i / sampleRateRatio)
+
+    for (let channel = 0; channel < newChannels; channel++) {
+      const originalChannel = Math.min(channel, originalChannels - 1)
+      const originalOffset = (originalSampleIndex * originalChannels + originalChannel) * bytesPerSample
+      const newOffset = (i * newChannels + channel) * newBytesPerSample
+
+      if (originalOffset + bytesPerSample <= audioData.length) {
+        let sample = 0
+
+        // Read original sample
+        if (originalBitsPerSample === 16) {
+          sample = view.getInt16(originalOffset, true)
+        } else if (originalBitsPerSample === 8) {
+          sample = view.getUint8(originalOffset) - 128
+        }
+
+        // Write new sample
+        if (newBitsPerSample === 8) {
+          newView.setUint8(newOffset, Math.max(0, Math.min(255, sample + 128)))
+        } else if (newBitsPerSample === 16) {
+          newView.setInt16(newOffset, Math.max(-32768, Math.min(32767, sample)), true)
+        }
+      }
+    }
+  }
+
+  return newAudioData
+}
+
+function createWAVFile(
+  audioData: Uint8Array,
+  channels: number,
+  sampleRate: number,
+  bitsPerSample: number,
+): ArrayBuffer {
+  const bytesPerSample = bitsPerSample / 8
+  const blockAlign = channels * bytesPerSample
+  const byteRate = sampleRate * blockAlign
+
+  const buffer = new ArrayBuffer(44 + audioData.length)
+  const view = new DataView(buffer)
+
+  // RIFF header
+  view.setUint32(0, 0x46464952, false) // "RIFF"
+  view.setUint32(4, 36 + audioData.length, true) // File size - 8
+  view.setUint32(8, 0x45564157, false) // "WAVE"
+
+  // fmt chunk
+  view.setUint32(12, 0x20746d66, false) // "fmt "
+  view.setUint32(16, 16, true) // Chunk size
+  view.setUint16(20, 1, true) // Audio format (PCM)
+  view.setUint16(22, channels, true) // Number of channels
+  view.setUint32(24, sampleRate, true) // Sample rate
+  view.setUint32(28, byteRate, true) // Byte rate
+  view.setUint16(32, blockAlign, true) // Block align
+  view.setUint16(34, bitsPerSample, true) // Bits per sample
+
+  // data chunk
+  view.setUint32(36, 0x61746164, false) // "data"
+  view.setUint32(40, audioData.length, true) // Data size
+
+  // Copy audio data
+  new Uint8Array(buffer, 44).set(audioData)
+
+  return buffer
+}
+
+function simpleDownsample(arrayBuffer: ArrayBuffer, ratio: number): ArrayBuffer {
+  const originalData = new Uint8Array(arrayBuffer)
+  const newSize = Math.floor(originalData.length * ratio)
+  const newData = new Uint8Array(newSize)
+
+  // Preserve WAV header (first 44 bytes)
+  for (let i = 0; i < Math.min(44, newSize); i++) {
+    newData[i] = originalData[i]
+  }
+
+  // Downsample audio data
+  const step = (originalData.length - 44) / (newSize - 44)
+  for (let i = 44; i < newSize; i++) {
+    const sourceIndex = Math.floor(44 + (i - 44) * step)
+    newData[i] = originalData[sourceIndex]
+  }
+
+  // Update file size in header
+  const view = new DataView(newData.buffer)
+  view.setUint32(4, newSize - 8, true)
+  view.setUint32(40, newSize - 44, true)
+
+  return newData.buffer
 }
