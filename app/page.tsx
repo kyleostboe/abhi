@@ -36,6 +36,7 @@ import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
 import * as Tone from "tone"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
+import * as MeditationLibrary from "@/lib/meditation-library" // Import MeditationLibrary
 
 interface RecorderSectionProps {
   className?: string
@@ -1288,6 +1289,30 @@ export default function Home() {
 
       console.log("Audio export completed successfully!")
       toast({ title: "Export Complete", description: "Timeline audio exported with sound cues included!" })
+
+      try {
+        console.log("[v0] Auto-saving processed meditation...")
+        const fileName = file?.name || "meditation"
+        const title = fileName.replace(/\.[^/.]+$/, "") + " (Processed)"
+
+        const savedMeditation = MeditationLibrary.saveMeditation({
+          title,
+          originalFileName: fileName,
+          processedAudioUrl: url,
+          duration: rendered.duration, // Use rendered duration for accuracy
+          source: "adjuster",
+          metadata: {
+            targetDuration,
+            pausesAdjusted,
+          },
+        })
+
+        console.log("[v0] Auto-save completed successfully:", savedMeditation.id)
+        setStatus({ message: "Audio processed and saved to library!", type: "success" })
+      } catch (saveError) {
+        console.error("[v0] Auto-save failed:", saveError)
+        setStatus({ message: "Audio processed but save failed. Use Save button to retry.", type: "warning" })
+      }
     } catch (error) {
       console.error("Audio export failed:", error)
       toast({
@@ -1406,6 +1431,30 @@ export default function Home() {
       setProcessingStep("Complete!")
       setStatus({ message: "Audio processing completed successfully!", type: "success" })
       setIsProcessingComplete(true)
+
+      try {
+        console.log("[v0] Auto-saving processed meditation...")
+        const fileName = file?.name || "meditation"
+        const title = fileName.replace(/\.[^/.]+$/, "") + " (Processed)"
+
+        const savedMeditation = MeditationLibrary.saveMeditation({
+          title,
+          originalFileName: fileName,
+          processedAudioUrl: url,
+          duration: processedAudioBuffer.duration,
+          source: "adjuster",
+          metadata: {
+            targetDuration,
+            pausesAdjusted,
+          },
+        })
+
+        console.log("[v0] Auto-save completed successfully:", savedMeditation.id)
+        setStatus({ message: "Audio processed and saved to library!", type: "success" })
+      } catch (saveError) {
+        console.error("[v0] Auto-save failed:", saveError)
+        setStatus({ message: "Audio processed but save failed. Use Save button to retry.", type: "warning" })
+      }
     } catch (error) {
       console.error("Error during audio processing:", error)
       setStatus({ message: `Processing error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
