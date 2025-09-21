@@ -2218,10 +2218,10 @@ export default function Home() {
       let bufferedStart = Math.max(0, region.start + wordEndingBuffer)
       const bufferedEnd = Math.min(buffer.duration, region.end - wordEndingBuffer)
 
-      // Ensure buffer doesn't create overlapping or invalid regions
-      if (i > 0) {
-        const prevRegion = bufferedRegions[i - 1]
-        bufferedStart = Math.max(bufferedStart, prevRegion.end)
+      // Ensure buffer doesn't create overlapping regions with the last added buffered region
+      if (bufferedRegions.length > 0) {
+        const lastBufferedRegion = bufferedRegions[bufferedRegions.length - 1]
+        bufferedStart = Math.max(bufferedStart, lastBufferedRegion.end)
       }
 
       // Only keep regions that are still long enough after buffering
@@ -2238,7 +2238,6 @@ export default function Home() {
       }
     }
 
-    console.log("[v0] Total silence regions after buffering:", bufferedRegions.length)
     return bufferedRegions
   }
 
