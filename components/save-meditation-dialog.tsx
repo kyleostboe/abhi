@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -36,8 +36,23 @@ export function SaveMeditationDialog({
   const [newPlaylistName, setNewPlaylistName] = useState("")
   const [newPlaylistDescription, setNewPlaylistDescription] = useState("")
   const [showNewPlaylist, setShowNewPlaylist] = useState(false)
-  const [playlists, setPlaylists] = useState<Playlist[]>(() => MeditationLibrary.getAllPlaylists())
+  const [playlists, setPlaylists] = useState<Playlist[]>([])
   const { toast } = useToast()
+
+  useEffect(() => {
+    if (open) {
+      const loadPlaylists = async () => {
+        try {
+          const allPlaylists = await MeditationLibrary.getAllPlaylists()
+          setPlaylists(allPlaylists)
+        } catch (error) {
+          console.error("[v0] Failed to load playlists:", error)
+          setPlaylists([])
+        }
+      }
+      loadPlaylists()
+    }
+  }, [open])
 
   const handleSave = async () => {
     console.log("[v0] Save button clicked - starting save process...")
@@ -173,15 +188,19 @@ export function SaveMeditationDialog({
       let playlistId = selectedPlaylist
       if (showNewPlaylist && newPlaylistName.trim()) {
         console.log("[v0] Creating new playlist:", newPlaylistName.trim())
-        const newPlaylist = MeditationLibrary.createPlaylist(newPlaylistName.trim(), newPlaylistDescription.trim())
+        const newPlaylist = await MeditationLibrary.createPlaylist(
+          newPlaylistName.trim(),
+          newPlaylistDescription.trim(),
+        )
         playlistId = newPlaylist.id
-        setPlaylists(MeditationLibrary.getAllPlaylists())
+        const updatedPlaylists = await MeditationLibrary.getAllPlaylists()
+        setPlaylists(updatedPlaylists)
         console.log("[v0] New playlist created with ID:", newPlaylist.id)
       }
 
       if (playlistId) {
         console.log("[v0] Adding meditation to playlist:", playlistId)
-        MeditationLibrary.addToPlaylist(playlistId, savedMeditation.id)
+        await MeditationLibrary.addToPlaylist(playlistId, savedMeditation.id)
         console.log("[v0] Added to playlist successfully")
       }
 
