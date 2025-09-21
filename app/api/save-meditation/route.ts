@@ -209,28 +209,26 @@ async function compressWAV(arrayBuffer: ArrayBuffer, maxSize: number): Promise<A
         bitsPerSample,
       })
 
-      // Calculate compression ratio needed
       const compressionRatio = maxSize / arrayBuffer.byteLength
+      console.log("[v0] Compression ratio needed:", compressionRatio)
 
-      // Reduce quality to achieve compression
+      // Apply aggressive compression for large files
       let newSampleRate = sampleRate
       let newBitsPerSample = bitsPerSample
       let newChannels = numChannels
 
-      // First try reducing sample rate
-      if (compressionRatio < 0.5 && sampleRate > 22050) {
-        newSampleRate = 22050
-      } else if (compressionRatio < 0.7 && sampleRate > 32000) {
-        newSampleRate = 32000
-      }
-
-      // Then try reducing bit depth
-      if (compressionRatio < 0.6 && bitsPerSample > 8) {
+      // For files over 50MB, be very aggressive
+      if (arrayBuffer.byteLength > 50 * 1024 * 1024) {
+        newSampleRate = 16000 // Very low sample rate for speech/meditation
+        newBitsPerSample = 8 // Low bit depth
+        newChannels = 1 // Mono
+      } else if (compressionRatio < 0.5) {
+        newSampleRate = Math.max(16000, sampleRate / 2)
         newBitsPerSample = 8
-      }
-
-      // Finally convert to mono if still too large
-      if (compressionRatio < 0.8 && numChannels > 1) {
+        newChannels = 1
+      } else if (compressionRatio < 0.7) {
+        newSampleRate = Math.max(22050, sampleRate / 1.5)
+        newBitsPerSample = Math.min(8, bitsPerSample)
         newChannels = 1
       }
 
@@ -272,8 +270,7 @@ async function compressWAV(arrayBuffer: ArrayBuffer, maxSize: number): Promise<A
     offset += 8 + chunkSize
   }
 
-  // If we can't parse the WAV properly, fall back to simple downsampling
-  const compressionRatio = maxSize / arrayBuffer.byteLength
+  const compressionRatio = Math.min(0.3, maxSize / arrayBuffer.byteLength) // Cap at 30% of original
   return simpleDownsample(arrayBuffer, compressionRatio)
 }
 
