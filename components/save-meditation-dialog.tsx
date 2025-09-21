@@ -68,24 +68,83 @@ export function SaveMeditationDialog({
     }
 
     try {
+      console.log("[v0] Starting client-side audio compression...")
+
+      // Fetch the audio blob
+      const response = await fetch(audioUrl)
+      const audioBlob = await response.blob()
+      const originalSize = audioBlob.size
+      console.log("[v0] Original audio size:", originalSize, "bytes")
+
+      let processedBlob = audioBlob
+
+      // Only compress if file is larger than 45MB to stay under 50MB limit
+      if (originalSize > 45 * 1024 * 1024) {
+        console.log("[v0] File too large, compressing on client...")
+
+        try {
+          // Use Web Audio API for proper compression
+          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+          const arrayBuffer = await audioBlob.arrayBuffer()
+          const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+
+          // Reduce quality: lower sample rate and convert to mono
+          const targetSampleRate = 22050 // Reduce from 44100 to 22050
+          const channels = 1 // Convert to mono
+
+          const length = Math.floor((audioBuffer.length * targetSampleRate) / audioBuffer.sampleRate)
+          const offlineContext = new OfflineAudioContext(channels, length, targetSampleRate)
+
+          const source = offlineContext.createBufferSource()
+          source.buffer = audioBuffer
+          source.connect(offlineContext.destination)
+          source.start()
+
+          const compressedBuffer = await offlineContext.startRendering()
+
+          // Convert back to WAV blob
+          const compressedBlob = await audioBufferToWav(compressedBuffer)
+
+          console.log("[v0] Compressed from", originalSize, "to", compressedBlob.size, "bytes")
+          processedBlob = compressedBlob
+
+          await audioContext.close()
+        } catch (compressionError) {
+          console.log("[v0] Client compression failed, using original:", compressionError)
+          // Fall back to original if compression fails
+        }
+      }
+
       console.log("[v0] Attempting to save meditation with data:", {
         title: title.trim(),
         originalFileName,
-        processedAudioUrl: audioUrl,
+        processedAudioUrl: "compressed-blob",
         duration,
         source,
         metadata,
       })
 
-      const savedMeditation = await MeditationLibrary.saveMeditation({
-        title: title.trim(),
-        originalFileName,
-        processedAudioUrl: audioUrl,
-        duration,
-        source,
-        metadata,
+      // Create form data with the processed blob
+      const formData = new FormData()
+      formData.append("audio", processedBlob, `${title.trim()}.wav`)
+      formData.append("title", title.trim())
+      formData.append("originalFileName", originalFileName)
+      formData.append("duration", duration.toString())
+      formData.append("source", source)
+      formData.append("metadata", JSON.stringify(metadata))
+
+      // Send to simplified API endpoint
+      const uploadResponse = await fetch("/api/save-meditation", {
+        method: "POST",
+        body: formData,
       })
 
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text()
+        throw new Error(`Upload failed: ${errorText}`)
+      }
+
+      const savedMeditation = await uploadResponse.json()
       console.log("[v0] Meditation saved successfully with ID:", savedMeditation.id)
 
       let playlistId = selectedPlaylist
@@ -130,6 +189,48 @@ export function SaveMeditationDialog({
         variant: "destructive",
       })
     }
+  }
+
+  const audioBufferToWav = async (buffer: AudioBuffer): Promise<Blob> => {
+    const length = buffer.length
+    const sampleRate = buffer.sampleRate
+    const channels = buffer.numberOfChannels
+
+    const arrayBuffer = new ArrayBuffer(44 + length * channels * 2)
+    const view = new DataView(arrayBuffer)
+
+    // WAV header
+    const writeString = (offset: number, string: string) => {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i))
+      }
+    }
+
+    writeString(0, "RIFF")
+    view.setUint32(4, 36 + length * channels * 2, true)
+    writeString(8, "WAVE")
+    writeString(12, "fmt ")
+    view.setUint32(16, 16, true)
+    view.setUint16(20, 1, true)
+    view.setUint16(22, channels, true)
+    view.setUint32(24, sampleRate, true)
+    view.setUint32(28, sampleRate * channels * 2, true)
+    view.setUint16(32, channels * 2, true)
+    view.setUint16(34, 16, true)
+    writeString(36, "data")
+    view.setUint32(40, length * channels * 2, true)
+
+    // Convert audio data
+    let offset = 44
+    for (let i = 0; i < length; i++) {
+      for (let channel = 0; channel < channels; channel++) {
+        const sample = Math.max(-1, Math.min(1, buffer.getChannelData(channel)[i]))
+        view.setInt16(offset, sample * 0x7fff, true)
+        offset += 2
+      }
+    }
+
+    return new Blob([arrayBuffer], { type: "audio/wav" })
   }
 
   return (
