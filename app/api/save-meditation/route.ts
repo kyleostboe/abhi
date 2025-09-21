@@ -122,32 +122,9 @@ export async function POST(request: NextRequest) {
 }
 
 async function compressAudio(audioBuffer: ArrayBuffer): Promise<ArrayBuffer> {
-  // For WAV files, we can reduce file size by reducing bit depth or sample rate
-  // For now, we'll implement a simple approach that reduces the file size
-  // while maintaining the WAV file structure
+  // In a real implementation, you'd use ffmpeg or similar for proper compression
+  // For now, we'll return the original file to avoid corruption
 
-  const originalSize = audioBuffer.byteLength
-
-  // Simple compression: reduce file size by removing every 4th byte
-  // This is a basic approach - in production you'd use proper audio compression
-  const targetSize = Math.floor(originalSize * 0.5) // Target 50% reduction
-  const step = Math.ceil(originalSize / targetSize)
-
-  const compressedData = new Uint8Array(targetSize)
-  let writeIndex = 0
-
-  const sourceData = new Uint8Array(audioBuffer)
-
-  // Copy header (first 44 bytes for WAV files) to preserve file structure
-  const headerSize = Math.min(44, originalSize)
-  for (let i = 0; i < headerSize && writeIndex < targetSize; i++) {
-    compressedData[writeIndex++] = sourceData[i]
-  }
-
-  // Compress the audio data portion
-  for (let i = headerSize; i < originalSize && writeIndex < targetSize; i += step) {
-    compressedData[writeIndex++] = sourceData[i]
-  }
-
-  return compressedData.buffer.slice(0, writeIndex)
+  console.log("[v0] Skipping compression to avoid file corruption")
+  return audioBuffer
 }
