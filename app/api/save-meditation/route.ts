@@ -32,6 +32,27 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient()
 
+    console.log("[v0] Checking if 'meditations' bucket exists...")
+    const { data: buckets, error: bucketError } = await supabase.storage.listBuckets()
+
+    if (bucketError) {
+      console.error("[v0] Error checking buckets:", bucketError)
+      return NextResponse.json({ error: "Storage service unavailable" }, { status: 500 })
+    }
+
+    const meditationsBucket = buckets?.find((bucket) => bucket.name === "meditations")
+    if (!meditationsBucket) {
+      console.error("[v0] 'meditations' bucket not found")
+      return NextResponse.json(
+        {
+          error: "Storage bucket 'meditations' not found. Please run the SQL script to create the bucket first.",
+        },
+        { status: 500 },
+      )
+    }
+
+    console.log("[v0] Bucket exists, proceeding with upload...")
+
     // Generate unique filename
     const timestamp = Date.now()
     const randomId = Math.random().toString(36).substring(2, 15)
@@ -39,11 +60,26 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Uploading to Supabase Storage:", filename)
 
-    const uploadResponse = await supabase.storage.from("meditations").upload(filename, arrayBuffer, {
-      contentType: "audio/wav",
-      cacheControl: "3600",
-      upsert: false,
-    })
+    let uploadResponse
+    try {
+      uploadResponse = await supabase.storage.from("meditations").upload(filename, arrayBuffer, {
+        contentType: "audio/wav",
+        cacheControl: "3600",
+        upsert: false,
+      })
+    } catch (uploadError: any) {
+      console.error("[v0] Upload threw exception:", uploadError)
+      // Handle cases where Supabase returns HTML instead of JSON
+      if (uploadError.message && uploadError.message.includes("Unexpected token")) {
+        return NextResponse.json(
+          {
+            error: "Storage service returned invalid response. Check bucket permissions and policies.",
+          },
+          { status: 500 },
+        )
+      }
+      throw uploadError
+    }
 
     if (uploadResponse.error) {
       const errorMessage = uploadResponse.error.message || "Unknown storage error"
@@ -113,6 +149,14 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("[v0] Server error:", error)
+    if (error instanceof Error && error.message.includes("Unexpected token")) {
+      return NextResponse.json(
+        {
+          error: "Storage service returned invalid response. Please check bucket configuration.",
+        },
+        { status: 500 },
+      )
+    }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
