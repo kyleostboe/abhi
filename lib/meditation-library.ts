@@ -93,11 +93,10 @@ export class MeditationLibrary {
         return []
       }
 
-      // Convert database format to our interface
       const meditations: SavedMeditation[] = data.map((row: any) => ({
         id: row.id,
         title: row.title,
-        originalFileName: row.description || "Unknown",
+        originalFileName: row.original_filename || row.description || "Unknown",
         processedAudioUrl: row.audio_url,
         duration: row.duration || 0,
         createdAt: new Date(row.created_at),
@@ -126,7 +125,7 @@ export class MeditationLibrary {
       return {
         id: data.id,
         title: data.title,
-        originalFileName: data.description || "Unknown",
+        originalFileName: data.original_filename || data.description || "Unknown",
         processedAudioUrl: data.audio_url,
         duration: data.duration || 0,
         createdAt: new Date(data.created_at),
@@ -395,7 +394,8 @@ export class MeditationLibrary {
             duration,
             created_at,
             source,
-            metadata
+            metadata,
+            original_filename
           )
         `)
         .eq("playlist_id", playlistId)
@@ -413,7 +413,7 @@ export class MeditationLibrary {
         .map((item: any) => ({
           id: item.meditations.id,
           title: item.meditations.title,
-          originalFileName: item.meditations.description || "Unknown",
+          originalFileName: item.meditations.original_filename || item.meditations.description || "Unknown",
           processedAudioUrl: item.meditations.audio_url,
           duration: item.meditations.duration || 0,
           createdAt: new Date(item.meditations.created_at),
