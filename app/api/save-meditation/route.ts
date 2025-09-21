@@ -48,10 +48,11 @@ export async function POST(request: NextRequest) {
     if (uploadResponse.error) {
       const errorMessage = uploadResponse.error.message || "Unknown storage error"
       console.error("[v0] Storage upload failed:", errorMessage)
+      console.error("[v0] Full error object:", JSON.stringify(uploadResponse.error, null, 2))
 
       if (errorMessage.includes("bucket")) {
         return NextResponse.json(
-          { error: "Storage bucket not found. Please run the storage setup script first." },
+          { error: "Storage bucket 'meditation-audio' not found. Please create the bucket in Supabase." },
           { status: 500 },
         )
       }
@@ -64,10 +65,15 @@ export async function POST(request: NextRequest) {
       }
 
       if (errorMessage.includes("permission") || errorMessage.includes("policy")) {
-        return NextResponse.json({ error: "Storage permission denied. Please check bucket policies." }, { status: 403 })
+        return NextResponse.json(
+          {
+            error: "Storage permission denied. Please check RLS policies for 'meditation-audio' bucket.",
+          },
+          { status: 403 },
+        )
       }
 
-      return NextResponse.json({ error: `Upload failed: ${errorMessage}` }, { status: 500 })
+      return NextResponse.json({ error: `Storage upload failed: ${errorMessage}` }, { status: 500 })
     }
 
     if (!uploadResponse.data) {

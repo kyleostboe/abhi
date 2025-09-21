@@ -78,41 +78,38 @@ export function SaveMeditationDialog({
 
       let processedBlob = audioBlob
 
-      // Only compress if file is larger than 45MB to stay under 50MB limit
-      if (originalSize > 45 * 1024 * 1024) {
-        console.log("[v0] File too large, compressing on client...")
+      console.log("[v0] Compressing audio to ensure valid format...")
 
-        try {
-          // Use Web Audio API for proper compression
-          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-          const arrayBuffer = await audioBlob.arrayBuffer()
-          const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+      try {
+        // Use Web Audio API for proper compression
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+        const arrayBuffer = await audioBlob.arrayBuffer()
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
 
-          // Reduce quality: lower sample rate and convert to mono
-          const targetSampleRate = 22050 // Reduce from 44100 to 22050
-          const channels = 1 // Convert to mono
+        // Reduce quality: lower sample rate and convert to mono
+        const targetSampleRate = originalSize > 10 * 1024 * 1024 ? 16000 : 22050 // More aggressive for larger files
+        const channels = 1 // Convert to mono
 
-          const length = Math.floor((audioBuffer.length * targetSampleRate) / audioBuffer.sampleRate)
-          const offlineContext = new OfflineAudioContext(channels, length, targetSampleRate)
+        const length = Math.floor((audioBuffer.length * targetSampleRate) / audioBuffer.sampleRate)
+        const offlineContext = new OfflineAudioContext(channels, length, targetSampleRate)
 
-          const source = offlineContext.createBufferSource()
-          source.buffer = audioBuffer
-          source.connect(offlineContext.destination)
-          source.start()
+        const source = offlineContext.createBufferSource()
+        source.buffer = audioBuffer
+        source.connect(offlineContext.destination)
+        source.start()
 
-          const compressedBuffer = await offlineContext.startRendering()
+        const compressedBuffer = await offlineContext.startRendering()
 
-          // Convert back to WAV blob
-          const compressedBlob = await audioBufferToWav(compressedBuffer)
+        // Convert back to WAV blob
+        const compressedBlob = await audioBufferToWav(compressedBuffer)
 
-          console.log("[v0] Compressed from", originalSize, "to", compressedBlob.size, "bytes")
-          processedBlob = compressedBlob
+        console.log("[v0] Compressed from", originalSize, "to", compressedBlob.size, "bytes")
+        processedBlob = compressedBlob
 
-          await audioContext.close()
-        } catch (compressionError) {
-          console.log("[v0] Client compression failed, using original:", compressionError)
-          // Fall back to original if compression fails
-        }
+        await audioContext.close()
+      } catch (compressionError) {
+        console.log("[v0] Client compression failed, using original:", compressionError)
+        // Fall back to original if compression fails
       }
 
       console.log("[v0] Attempting to save meditation with data:", {
@@ -140,8 +137,34 @@ export function SaveMeditationDialog({
       })
 
       if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text()
-        throw new Error(`Upload failed: ${errorText}`)
+        const contentType = uploadResponse.headers.get("content-type")
+        let errorMessage = "Upload failed"
+
+        if (contentType && contentType.includes("application/json")) {
+          try {
+            const errorData = await uploadResponse.json()
+            errorMessage = errorData.error || errorMessage
+          } catch (jsonError) {
+            console.log("[v0] Failed to parse JSON error response:", jsonError)
+            errorMessage = await uploadResponse.text()
+          }
+        } else {
+          // Handle HTML error responses
+          const errorText = await uploadResponse.text()
+          console.log("[v0] Received HTML error response:", errorText.substring(0, 200))
+
+          if (errorText.includes("bucket")) {
+            errorMessage = "Storage bucket not configured. Please set up Supabase storage."
+          } else if (errorText.includes("policy") || errorText.includes("permission")) {
+            errorMessage = "Storage permission denied. Please check bucket policies."
+          } else if (errorText.includes("size") || errorText.includes("too large")) {
+            errorMessage = "File too large for storage."
+          } else {
+            errorMessage = "Storage service error. Please try again."
+          }
+        }
+
+        throw new Error(errorMessage)
       }
 
       const savedMeditation = await uploadResponse.json()
