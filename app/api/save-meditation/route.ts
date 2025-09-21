@@ -56,10 +56,18 @@ export async function POST(request: NextRequest) {
       })
     } catch (uploadError: any) {
       console.error("[v0] Upload threw exception:", uploadError)
+      console.error("[v0] Error type:", typeof uploadError)
+      console.error("[v0] Error constructor:", uploadError.constructor.name)
+      console.error("[v0] Error message:", uploadError.message)
+      console.error("[v0] Full error object:", JSON.stringify(uploadError, null, 2))
+
       // Handle cases where Supabase returns HTML instead of JSON
       if (uploadError.message && uploadError.message.includes("Unexpected token")) {
         return NextResponse.json(
-          { error: "Storage service returned invalid response. Check bucket permissions and policies." },
+          {
+            error:
+              "Storage bucket is likely set to Private. Please set the 'meditations' bucket to Public in your Supabase dashboard.",
+          },
           { status: 500 },
         )
       }
