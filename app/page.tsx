@@ -2210,8 +2210,36 @@ export default function Home() {
       }
     }
 
-    console.log("[v0] Total silence regions found:", silenceRegions.length)
-    return silenceRegions
+    const wordEndingBuffer = 0.3 // 300ms buffer to preserve natural word decay
+    const bufferedRegions: { start: number; end: number }[] = []
+
+    for (let i = 0; i < silenceRegions.length; i++) {
+      const region = silenceRegions[i]
+      let bufferedStart = Math.max(0, region.start + wordEndingBuffer)
+      const bufferedEnd = Math.min(buffer.duration, region.end - wordEndingBuffer)
+
+      // Ensure buffer doesn't create overlapping or invalid regions
+      if (i > 0) {
+        const prevRegion = bufferedRegions[i - 1]
+        bufferedStart = Math.max(bufferedStart, prevRegion.end)
+      }
+
+      // Only keep regions that are still long enough after buffering
+      if (bufferedEnd - bufferedStart >= minDuration) {
+        bufferedRegions.push({ start: bufferedStart, end: bufferedEnd })
+        console.log("[v0] Buffered silence region:", bufferedStart.toFixed(2), "to", bufferedEnd.toFixed(2), "seconds")
+      } else {
+        console.log(
+          "[v0] Skipped silence region after buffering (too short):",
+          region.start.toFixed(2),
+          "to",
+          region.end.toFixed(2),
+        )
+      }
+    }
+
+    console.log("[v0] Total silence regions after buffering:", bufferedRegions.length)
+    return bufferedRegions
   }
 
   return (
