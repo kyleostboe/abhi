@@ -39,7 +39,7 @@ export function SaveMeditationDialog({
   const [playlists, setPlaylists] = useState<Playlist[]>(() => MeditationLibrary.getAllPlaylists())
   const { toast } = useToast()
 
-  const handleSave = () => {
+  const handleSave = async () => {
     console.log("[v0] Save button clicked - starting save process...")
     console.log("[v0] Audio URL exists:", !!audioUrl)
     console.log("[v0] Title:", title.trim())
@@ -77,7 +77,7 @@ export function SaveMeditationDialog({
         metadata,
       })
 
-      const savedMeditation = MeditationLibrary.saveMeditation({
+      const savedMeditation = await MeditationLibrary.saveMeditation({
         title: title.trim(),
         originalFileName,
         processedAudioUrl: audioUrl,
@@ -88,7 +88,6 @@ export function SaveMeditationDialog({
 
       console.log("[v0] Meditation saved successfully with ID:", savedMeditation.id)
 
-      // Create new playlist if needed
       let playlistId = selectedPlaylist
       if (showNewPlaylist && newPlaylistName.trim()) {
         console.log("[v0] Creating new playlist:", newPlaylistName.trim())
@@ -98,14 +97,13 @@ export function SaveMeditationDialog({
         console.log("[v0] New playlist created with ID:", newPlaylist.id)
       }
 
-      // Add to playlist if selected
       if (playlistId) {
         console.log("[v0] Adding meditation to playlist:", playlistId)
         MeditationLibrary.addToPlaylist(playlistId, savedMeditation.id)
         console.log("[v0] Added to playlist successfully")
       }
 
-      const allMeditations = MeditationLibrary.getAllMeditations()
+      const allMeditations = await MeditationLibrary.getAllMeditations()
       console.log("[v0] Verification: Total meditations after save:", allMeditations.length)
       console.log(
         "[v0] Verification: Can find saved meditation:",
@@ -118,7 +116,6 @@ export function SaveMeditationDialog({
         description: `"${title}" has been added to your library.`,
       })
 
-      // Reset form
       setTitle(originalFileName.replace(/\.[^/.]+$/, ""))
       setSelectedPlaylist("")
       setNewPlaylistName("")

@@ -42,16 +42,27 @@ export default function LibraryPage() {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const [playerTime, setPlayerTime] = useState(0)
   const [playerDuration, setPlayerDuration] = useState(0)
+  const [displayedMeditations, setDisplayedMeditations] = useState<SavedMeditation[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const { toast } = useToast()
+
+  const [playlistMeditationsMap, setPlaylistMeditationsMap] = useState<Record<string, SavedMeditation[]>>({})
 
   useEffect(() => {
     loadData()
   }, [])
 
-  const loadData = () => {
-    setMeditations(MeditationLibrary.getAllMeditations())
-    setPlaylists(MeditationLibrary.getAllPlaylists())
+  const loadData = async () => {
+    const meditationsData = await MeditationLibrary.getAllMeditations()
+    setMeditations(meditationsData)
+    const playlistsData = await MeditationLibrary.getAllPlaylists()
+    setPlaylists(playlistsData)
+    const playlistMeditationsPromises = playlistsData.map(async (playlist) => {
+      const meditations = await MeditationLibrary.getPlaylistMeditations(playlist.id)
+      return [playlist.id, meditations] as [string, SavedMeditation[]]
+    })
+    const playlistMeditationsMapData = Object.fromEntries(await Promise.all(playlistMeditationsPromises))
+    setPlaylistMeditationsMap(playlistMeditationsMapData)
   }
 
   const filteredMeditations = meditations.filter(
@@ -60,13 +71,20 @@ export default function LibraryPage() {
       med.originalFileName.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
-  const displayedMeditations = selectedPlaylist
-    ? MeditationLibrary.getPlaylistMeditations(selectedPlaylist)
-    : filteredMeditations
+  useEffect(() => {
+    const updateDisplayedMeditations = () => {
+      if (selectedPlaylist) {
+        setDisplayedMeditations(playlistMeditationsMap[selectedPlaylist] || [])
+      } else {
+        setDisplayedMeditations(filteredMeditations)
+      }
+    }
+    updateDisplayedMeditations()
+  }, [selectedPlaylist, filteredMeditations, playlistMeditationsMap])
 
-  const handleDelete = (meditationId: string) => {
-    MeditationLibrary.deleteMeditation(meditationId)
-    loadData()
+  const handleDelete = async (meditationId: string) => {
+    await MeditationLibrary.deleteMeditation(meditationId)
+    await loadData()
     if (selectedMeditation?.id === meditationId) {
       setIsPlayerOpen(false)
       setSelectedMeditation(null)
@@ -213,7 +231,7 @@ export default function LibraryPage() {
     const handlePlayEvent = () => setIsAudioPlaying(true)
     const handlePauseEvent = () => setIsAudioPlaying(false)
     const handleLoadedMetadata = () => {
-      const duration = Number.isFinite(audio.duration) ? audio.duration : selectedMeditation?.duration ?? 0
+      const duration = Number.isFinite(audio.duration) ? audio.duration : (selectedMeditation?.duration ?? 0)
       setPlayerDuration(duration)
       setPlayerTime(audio.currentTime)
     }
@@ -301,9 +319,7 @@ export default function LibraryPage() {
                 <button
                   onClick={() => setActiveTab("meditations")}
                   className={`transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600 ${
-                    activeTab === "meditations"
-                      ? "bg-white text-gray-600 shadow-sm"
-                      : "text-gray-600 "
+                    activeTab === "meditations" ? "bg-white text-gray-600 shadow-sm" : "text-gray-600 "
                   }`}
                 >
                   Meditations ({meditations.length})
@@ -511,7 +527,7 @@ export default function LibraryPage() {
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {playlists.map((playlist) => {
-                        const playlistMeditations = MeditationLibrary.getPlaylistMeditations(playlist.id)
+                        const playlistMeditations = playlistMeditationsMap[playlist.id] || []
                         const totalDuration = playlistMeditations.reduce((sum, med) => sum + med.duration, 0)
 
                         return (
@@ -746,7 +762,12 @@ export default function LibraryPage() {
                     >
                       <SlidersHorizontal className="mr-2 h-4 w-4" /> Plug into Adjuster
                     </Button>
-                    <Button type="button" variant="outline" className="flex-1" onClick={closeMeditationPlayer}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 bg-transparent"
+                      onClick={closeMeditationPlayer}
+                    >
                       Close Player
                     </Button>
                   </div>

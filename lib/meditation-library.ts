@@ -1,3 +1,5 @@
+import { createClient } from "@/lib/supabase/client"
+
 export interface SavedMeditation {
   id: string
   title: string
@@ -26,56 +28,43 @@ export interface Playlist {
 }
 
 export class MeditationLibrary {
-  private static STORAGE_KEY = "abhi_meditation_library"
-  private static PLAYLISTS_KEY = "abhi_meditation_playlists"
-
-  static saveMeditation(meditation: Omit<SavedMeditation, "id" | "createdAt">): SavedMeditation {
+  static async saveMeditation(meditation: Omit<SavedMeditation, "id" | "createdAt">): Promise<SavedMeditation> {
     console.log("[v0] MeditationLibrary.saveMeditation called with:", meditation)
 
     try {
+      const supabase = createClient()
+
+      const meditationData = {
+        title: meditation.title,
+        description: meditation.originalFileName,
+        audio_url: meditation.processedAudioUrl,
+        duration: meditation.duration,
+      }
+
+      console.log("[v0] Inserting into Supabase:", meditationData)
+
+      const { data, error } = await supabase.from("meditations").insert(meditationData).select().single()
+
+      if (error) {
+        console.error("[v0] Supabase insert error:", error)
+        throw error
+      }
+
+      console.log("[v0] Supabase insert successful:", data)
+
+      // Convert database format back to our interface
       const savedMeditation: SavedMeditation = {
-        ...meditation,
-        id: `med_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        createdAt: new Date(),
-      }
-      console.log("[v0] Created meditation object:", savedMeditation.id)
-
-      let existing: SavedMeditation[] = []
-      try {
-        const stored = localStorage.getItem(this.STORAGE_KEY)
-        console.log("[v0] Raw localStorage data:", stored ? `${stored.length} chars` : "null")
-
-        if (stored) {
-          const parsed = JSON.parse(stored)
-          if (Array.isArray(parsed)) {
-            existing = parsed.map((med: any) => ({
-              ...med,
-              createdAt: new Date(med.createdAt),
-            }))
-          }
-        }
-      } catch (error) {
-        console.error("[v0] Error reading existing meditations:", error)
-        existing = []
+        id: data.id,
+        title: data.title,
+        originalFileName: data.description || meditation.originalFileName,
+        processedAudioUrl: data.audio_url,
+        duration: data.duration,
+        createdAt: new Date(data.created_at),
+        source: meditation.source,
+        metadata: meditation.metadata,
       }
 
-      console.log("[v0] Current meditations count:", existing.length)
-
-      existing.push(savedMeditation)
-
-      const serialized = JSON.stringify(existing)
-      console.log("[v0] Serialized data size:", serialized.length, "characters")
-
-      localStorage.setItem(this.STORAGE_KEY, serialized)
-
-      // Immediate verification
-      const immediateCheck = localStorage.getItem(this.STORAGE_KEY)
-      if (!immediateCheck) {
-        throw new Error("localStorage.setItem failed - data not found immediately after save")
-      }
-
-      console.log("[v0] Saved to localStorage successfully, immediate verification passed")
-
+      console.log("[v0] Meditation saved successfully to database:", savedMeditation.id)
       return savedMeditation
     } catch (error) {
       console.error("[v0] Error in saveMeditation:", error)
@@ -83,53 +72,85 @@ export class MeditationLibrary {
     }
   }
 
-  static getAllMeditations(): SavedMeditation[] {
+  static async getAllMeditations(): Promise<SavedMeditation[]> {
     try {
-      const stored = localStorage.getItem(this.STORAGE_KEY)
-      console.log("[v0] getAllMeditations - raw data:", stored ? `Found ${stored.length} chars` : "No data found")
+      console.log("[v0] getAllMeditations - fetching from Supabase")
+      const supabase = createClient()
 
-      if (!stored) {
-        console.log("[v0] No stored meditations found")
+      const { data, error } = await supabase.from("meditations").select("*").order("created_at", { ascending: false })
+
+      if (error) {
+        console.error("[v0] Supabase select error:", error)
+        throw error
+      }
+
+      if (!data || data.length === 0) {
+        console.log("[v0] No meditations found in database")
         return []
       }
 
-      const parsed = JSON.parse(stored)
-      if (!Array.isArray(parsed)) {
-        console.log("[v0] Invalid stored data format, clearing")
-        localStorage.removeItem(this.STORAGE_KEY)
-        return []
-      }
-
-      const meditations = parsed.map((med: any) => ({
-        ...med,
-        createdAt: new Date(med.createdAt),
+      // Convert database format to our interface
+      const meditations: SavedMeditation[] = data.map((row: any) => ({
+        id: row.id,
+        title: row.title,
+        originalFileName: row.description || "Unknown",
+        processedAudioUrl: row.audio_url,
+        duration: row.duration || 0,
+        createdAt: new Date(row.created_at),
+        source: "adjuster" as const, // Default for now
+        metadata: {}, // Default empty metadata
       }))
-      console.log("[v0] Retrieved", meditations.length, "meditations from storage")
+
+      console.log("[v0] Retrieved", meditations.length, "meditations from database")
       return meditations
     } catch (error) {
-      console.error("[v0] Error parsing stored meditations:", error)
-      localStorage.removeItem(this.STORAGE_KEY)
+      console.error("[v0] Error fetching meditations:", error)
       return []
     }
   }
 
-  static getMeditation(id: string): SavedMeditation | null {
-    const all = this.getAllMeditations()
-    return all.find((med) => med.id === id) || null
+  static async getMeditation(id: string): Promise<SavedMeditation | null> {
+    try {
+      const supabase = createClient()
+
+      const { data, error } = await supabase.from("meditations").select("*").eq("id", id).single()
+
+      if (error || !data) {
+        return null
+      }
+
+      return {
+        id: data.id,
+        title: data.title,
+        originalFileName: data.description || "Unknown",
+        processedAudioUrl: data.audio_url,
+        duration: data.duration || 0,
+        createdAt: new Date(data.created_at),
+        source: "adjuster" as const,
+        metadata: {},
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching meditation:", error)
+      return null
+    }
   }
 
-  static deleteMeditation(id: string): void {
-    const existing = this.getAllMeditations()
-    const filtered = existing.filter((med) => med.id !== id)
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(filtered))
+  static async deleteMeditation(id: string): Promise<void> {
+    try {
+      const supabase = createClient()
 
-    // Also remove from playlists
-    const playlists = this.getAllPlaylists()
-    playlists.forEach((playlist) => {
-      if (playlist.meditationIds.includes(id)) {
-        this.removeFromPlaylist(playlist.id, id)
+      const { error } = await supabase.from("meditations").delete().eq("id", id)
+
+      if (error) {
+        console.error("[v0] Error deleting meditation:", error)
+        throw error
       }
-    })
+
+      console.log("[v0] Meditation deleted successfully:", id)
+    } catch (error) {
+      console.error("[v0] Error in deleteMeditation:", error)
+      throw error
+    }
   }
 
   static createPlaylist(name: string, description = ""): Playlist {
@@ -144,13 +165,13 @@ export class MeditationLibrary {
 
     const existing = this.getAllPlaylists()
     existing.push(playlist)
-    localStorage.setItem(this.PLAYLISTS_KEY, JSON.stringify(existing))
+    localStorage.setItem("abhi_meditation_playlists", JSON.stringify(existing))
 
     return playlist
   }
 
   static getAllPlaylists(): Playlist[] {
-    const stored = localStorage.getItem(this.PLAYLISTS_KEY)
+    const stored = localStorage.getItem("abhi_meditation_playlists")
     if (!stored) return []
 
     try {
@@ -180,14 +201,14 @@ export class MeditationLibrary {
         ...updates,
         updatedAt: new Date(),
       }
-      localStorage.setItem(this.PLAYLISTS_KEY, JSON.stringify(playlists))
+      localStorage.setItem("abhi_meditation_playlists", JSON.stringify(playlists))
     }
   }
 
   static deletePlaylist(id: string): void {
     const existing = this.getAllPlaylists()
     const filtered = existing.filter((playlist) => playlist.id !== id)
-    localStorage.setItem(this.PLAYLISTS_KEY, JSON.stringify(filtered))
+    localStorage.setItem("abhi_meditation_playlists", JSON.stringify(filtered))
   }
 
   static addToPlaylist(playlistId: string, meditationId: string): void {
@@ -197,7 +218,7 @@ export class MeditationLibrary {
     if (playlist && !playlist.meditationIds.includes(meditationId)) {
       playlist.meditationIds.push(meditationId)
       playlist.updatedAt = new Date()
-      localStorage.setItem(this.PLAYLISTS_KEY, JSON.stringify(playlists))
+      localStorage.setItem("abhi_meditation_playlists", JSON.stringify(playlists))
     }
   }
 
@@ -208,15 +229,15 @@ export class MeditationLibrary {
     if (playlist) {
       playlist.meditationIds = playlist.meditationIds.filter((id) => id !== meditationId)
       playlist.updatedAt = new Date()
-      localStorage.setItem(this.PLAYLISTS_KEY, JSON.stringify(playlists))
+      localStorage.setItem("abhi_meditation_playlists", JSON.stringify(playlists))
     }
   }
 
-  static getPlaylistMeditations(playlistId: string): SavedMeditation[] {
+  static async getPlaylistMeditations(playlistId: string): Promise<SavedMeditation[]> {
     const playlist = this.getPlaylist(playlistId)
     if (!playlist) return []
 
-    const allMeditations = this.getAllMeditations()
+    const allMeditations = await this.getAllMeditations()
     return playlist.meditationIds
       .map((id) => allMeditations.find((med) => med.id === id))
       .filter(Boolean) as SavedMeditation[]
