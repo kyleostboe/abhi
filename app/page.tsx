@@ -1410,19 +1410,27 @@ export default function Home() {
           console.log("[v0] Audio context reinitialized successfully")
         }
 
+        const originalFileUrl = URL.createObjectURL(file)
+        setOriginalUrl(originalFileUrl)
+        setFile(file)
+
+        setStatus({ message: `Loading ${file.name}...`, type: "info" })
+
         const arrayBuffer = await file.arrayBuffer()
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
 
         setOriginalBuffer(audioBuffer)
-        setFile(file)
         setActualDuration(audioBuffer.duration)
         setIsProcessing(false)
-        setProcessedUrl(null)
+        setProcessedUrl("")
+
+        setStatus({ message: `${file.name} loaded successfully`, type: "success" })
 
         console.log("[v0] Audio file loaded successfully")
       } catch (error) {
         console.error("[v0] Error loading audio file:", error)
         setIsProcessing(false)
+        setStatus({ message: "Error loading audio file", type: "error" })
         toast({
           title: "Error loading audio",
           description: "Please try again with a different audio file.",
@@ -2856,7 +2864,7 @@ export default function Home() {
                   </Tabs>
                 </motion.div>
 
-                {/* Gradient order: emerald/teal → pink → orange → gray-600 (center) → purple → sky → teal/emerald */}
+                {/* Process Audio Button */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
