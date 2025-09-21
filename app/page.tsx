@@ -2204,44 +2204,62 @@ export default function Home() {
     }
   }
 
-  // Placeholder for detectSilenceRegions function (needs to be implemented or imported)
   const detectSilenceRegions = async (
     buffer: AudioBuffer,
     threshold: number,
     minDuration: number,
   ): Promise<{ start: number; end: number }[]> => {
-    // This is a placeholder implementation. A real implementation would involve
-    // analyzing the audio buffer's channel data to find segments below the threshold.
-    // For now, it returns an empty array to avoid crashing.
-    console.warn("detectSilenceRegions is a placeholder and needs a proper implementation.")
-    // Example of how it might work (simplified):
+    console.log("[v0] Detecting silence regions with threshold:", threshold, "minDuration:", minDuration)
+
     const channelData = buffer.getChannelData(0) // Use the first channel
     const sampleRate = buffer.sampleRate
     const silenceRegions: { start: number; end: number }[] = []
     let inSilence = false
     let silenceStart = 0
 
-    for (let i = 0; i < channelData.length; i++) {
-      const amplitude = Math.abs(channelData[i])
-      if (amplitude < threshold && !inSilence) {
+    // Use RMS (Root Mean Square) for better amplitude detection
+    const windowSize = Math.floor(sampleRate * 0.01) // 10ms windows
+
+    for (let i = 0; i < channelData.length; i += windowSize) {
+      // Calculate RMS for this window
+      let rms = 0
+      const windowEnd = Math.min(i + windowSize, channelData.length)
+      for (let j = i; j < windowEnd; j++) {
+        rms += channelData[j] * channelData[j]
+      }
+      rms = Math.sqrt(rms / (windowEnd - i))
+
+      const timePosition = i / sampleRate
+
+      if (rms < threshold && !inSilence) {
         inSilence = true
-        silenceStart = i / sampleRate
-      } else if (amplitude >= threshold && inSilence) {
+        silenceStart = timePosition
+      } else if (rms >= threshold && inSilence) {
         inSilence = false
-        const silenceEnd = i / sampleRate
+        const silenceEnd = timePosition
         if (silenceEnd - silenceStart >= minDuration) {
           silenceRegions.push({ start: silenceStart, end: silenceEnd })
+          console.log("[v0] Found silence region:", silenceStart.toFixed(2), "to", silenceEnd.toFixed(2), "seconds")
         }
       }
     }
+
     // Handle case where silence extends to the end of the audio
     if (inSilence) {
       const silenceEnd = channelData.length / sampleRate
       if (silenceEnd - silenceStart >= minDuration) {
         silenceRegions.push({ start: silenceStart, end: silenceEnd })
+        console.log(
+          "[v0] Found silence region at end:",
+          silenceStart.toFixed(2),
+          "to",
+          silenceEnd.toFixed(2),
+          "seconds",
+        )
       }
     }
 
+    console.log("[v0] Total silence regions found:", silenceRegions.length)
     return silenceRegions
   }
 
