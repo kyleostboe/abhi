@@ -46,30 +46,28 @@ export async function POST(request: NextRequest) {
     })
 
     if (uploadResponse.error) {
-      console.error("[v0] Storage upload failed:", uploadResponse.error.message)
+      const errorMessage = uploadResponse.error.message || "Unknown storage error"
+      console.error("[v0] Storage upload failed:", errorMessage)
 
-      if (uploadResponse.error.message?.includes("bucket")) {
+      if (errorMessage.includes("bucket")) {
         return NextResponse.json(
           { error: "Storage bucket not found. Please run the storage setup script first." },
           { status: 500 },
         )
       }
 
-      if (uploadResponse.error.message?.includes("size") || uploadResponse.error.message?.includes("too large")) {
+      if (errorMessage.includes("size") || errorMessage.includes("too large")) {
         return NextResponse.json(
           { error: `File too large (${Math.round(arrayBuffer.byteLength / 1024 / 1024)}MB). Maximum is 50MB.` },
           { status: 413 },
         )
       }
 
-      if (uploadResponse.error.message?.includes("permission") || uploadResponse.error.message?.includes("policy")) {
+      if (errorMessage.includes("permission") || errorMessage.includes("policy")) {
         return NextResponse.json({ error: "Storage permission denied. Please check bucket policies." }, { status: 403 })
       }
 
-      return NextResponse.json(
-        { error: `Upload failed: ${uploadResponse.error.message || "Unknown storage error"}` },
-        { status: 500 },
-      )
+      return NextResponse.json({ error: `Upload failed: ${errorMessage}` }, { status: 500 })
     }
 
     if (!uploadResponse.data) {

@@ -211,21 +211,23 @@ export function SaveMeditationDialog({
     writeString(8, "WAVE")
     writeString(12, "fmt ")
     view.setUint32(16, 16, true)
-    view.setUint16(20, 1, true)
+    view.setUint16(20, 1, true) // PCM format
     view.setUint16(22, channels, true)
     view.setUint32(24, sampleRate, true)
-    view.setUint32(28, sampleRate * channels * 2, true)
-    view.setUint16(32, channels * 2, true)
-    view.setUint16(34, 16, true)
+    view.setUint32(28, sampleRate * channels * 2, true) // byte rate
+    view.setUint16(32, channels * 2, true) // block align
+    view.setUint16(34, 16, true) // bits per sample
     writeString(36, "data")
     view.setUint32(40, length * channels * 2, true)
 
-    // Convert audio data
     let offset = 44
     for (let i = 0; i < length; i++) {
       for (let channel = 0; channel < channels; channel++) {
-        const sample = Math.max(-1, Math.min(1, buffer.getChannelData(channel)[i]))
-        view.setInt16(offset, sample * 0x7fff, true)
+        // Get the float sample (-1 to 1) and convert to 16-bit integer
+        const floatSample = buffer.getChannelData(channel)[i]
+        const clampedSample = Math.max(-1, Math.min(1, floatSample))
+        const intSample = Math.round(clampedSample * 32767)
+        view.setInt16(offset, intSample, true)
         offset += 2
       }
     }
