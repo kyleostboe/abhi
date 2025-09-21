@@ -41,7 +41,8 @@ export class MeditationLibrary {
 
         // Create FormData for server upload
         const formData = new FormData()
-        formData.append("audio", audioBlob, "meditation.wav")
+        const sanitizedFileName = `${meditation.title.replace(/[^a-z0-9-_]+/gi, "_") || "meditation"}.wav`
+        formData.append("audio", audioBlob, sanitizedFileName)
         formData.append("title", meditation.title)
         formData.append("originalFileName", meditation.originalFileName)
         formData.append("duration", meditation.duration.toString())
@@ -55,8 +56,18 @@ export class MeditationLibrary {
         })
 
         if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json()
-          throw new Error(errorData.error || "Server upload failed")
+          const contentType = uploadResponse.headers.get("content-type")
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = await uploadResponse.json()
+            throw new Error(errorData.error || "Server upload failed")
+          }
+
+          const errorText = await uploadResponse.text()
+          if (errorText.includes("Request Entity Too Large")) {
+            throw new Error("File too large for upload. Please try exporting at a lower quality.")
+          }
+
+          throw new Error(errorText || "Server upload failed")
         }
 
         const savedMeditation = await uploadResponse.json()
@@ -163,21 +174,27 @@ export class MeditationLibrary {
       }
 
       // If the audio URL is from our storage, delete the file too
-      if (meditation?.audio_url && meditation.audio_url.includes("meditation-audio")) {
+      if (meditation?.audio_url) {
         try {
-          // Extract filename from the URL
-          const urlParts = meditation.audio_url.split("/")
-          const filename = urlParts[urlParts.length - 1]
+          const storageUrl = new URL(meditation.audio_url)
+          const pathSegments = storageUrl.pathname.split("/").filter(Boolean)
+          const publicIndex = pathSegments.findIndex((segment) => segment === "public")
 
-          console.log("[v0] Deleting audio file from storage:", filename)
+          if (publicIndex !== -1 && pathSegments.length > publicIndex + 2) {
+            const bucketName = pathSegments[publicIndex + 1]
+            const filePath = pathSegments.slice(publicIndex + 2).join("/")
 
-          const { error: storageError } = await supabase.storage.from("meditation-audio").remove([filename])
+            console.log(`[v0] Deleting audio file from storage bucket ${bucketName}:`, filePath)
 
-          if (storageError) {
-            console.warn("[v0] Warning: Could not delete audio file from storage:", storageError)
-            // Don't throw here - the database deletion was successful
+            const { error: storageError } = await supabase.storage.from(bucketName).remove([filePath])
+
+            if (storageError) {
+              console.warn("[v0] Warning: Could not delete audio file from storage:", storageError)
+            } else {
+              console.log("[v0] Audio file deleted from storage successfully")
+            }
           } else {
-            console.log("[v0] Audio file deleted from storage successfully")
+            console.warn("[v0] Unable to determine storage bucket from URL:", meditation.audio_url)
           }
         } catch (storageError) {
           console.warn("[v0] Warning: Error deleting audio file from storage:", storageError)

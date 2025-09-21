@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -39,20 +39,21 @@ export function SaveMeditationDialog({
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const { toast } = useToast()
 
+  const loadPlaylists = useCallback(async () => {
+    try {
+      const allPlaylists = await MeditationLibrary.getAllPlaylists()
+      setPlaylists(allPlaylists)
+    } catch (error) {
+      console.error("[v0] Failed to load playlists:", error)
+      setPlaylists([])
+    }
+  }, [])
+
   useEffect(() => {
     if (open) {
-      const loadPlaylists = async () => {
-        try {
-          const allPlaylists = await MeditationLibrary.getAllPlaylists()
-          setPlaylists(allPlaylists)
-        } catch (error) {
-          console.error("[v0] Failed to load playlists:", error)
-          setPlaylists([])
-        }
-      }
-      loadPlaylists()
+      void loadPlaylists()
     }
-  }, [open])
+  }, [open, loadPlaylists])
 
   const handleSave = async () => {
     console.log("[v0] Save button clicked - starting save process...")
@@ -85,7 +86,6 @@ export function SaveMeditationDialog({
     try {
       console.log("[v0] Starting client-side audio compression...")
 
-      // Fetch the audio blob
       const response = await fetch(audioUrl)
       const audioBlob = await response.blob()
       const originalSize = audioBlob.size
@@ -95,134 +95,91 @@ export function SaveMeditationDialog({
 
       console.log("[v0] Compressing audio to ensure valid format...")
 
+      let audioContext: AudioContext | null = null
       try {
-        // Use Web Audio API for proper compression
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+        audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
         const arrayBuffer = await audioBlob.arrayBuffer()
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
 
-        // Reduce quality: lower sample rate and convert to mono
-        const targetSampleRate = originalSize > 10 * 1024 * 1024 ? 16000 : 22050 // More aggressive for larger files
-        const channels = 1 // Convert to mono
+        const targetSampleRate = originalSize > 10 * 1024 * 1024 ? 16000 : 22050
+        const channels = 1
 
         const length = Math.floor((audioBuffer.length * targetSampleRate) / audioBuffer.sampleRate)
         const offlineContext = new OfflineAudioContext(channels, length, targetSampleRate)
 
-        const source = offlineContext.createBufferSource()
-        source.buffer = audioBuffer
-        source.connect(offlineContext.destination)
-        source.start()
+        const sourceNode = offlineContext.createBufferSource()
+        sourceNode.buffer = audioBuffer
+        sourceNode.connect(offlineContext.destination)
+        sourceNode.start()
 
         const compressedBuffer = await offlineContext.startRendering()
-
-        // Convert back to WAV blob
         const compressedBlob = await audioBufferToWav(compressedBuffer)
 
         console.log("[v0] Compressed from", originalSize, "to", compressedBlob.size, "bytes")
         processedBlob = compressedBlob
-
-        await audioContext.close()
       } catch (compressionError) {
         console.log("[v0] Client compression failed, using original:", compressionError)
-        // Fall back to original if compression fails
-      }
-
-      console.log("[v0] Attempting to save meditation with data:", {
-        title: title.trim(),
-        originalFileName,
-        processedAudioUrl: "compressed-blob",
-        duration,
-        source,
-        metadata,
-      })
-
-      // Create form data with the processed blob
-      const formData = new FormData()
-      formData.append("audio", processedBlob, `${title.trim()}.wav`)
-      formData.append("title", title.trim())
-      formData.append("originalFileName", originalFileName)
-      formData.append("duration", duration.toString())
-      formData.append("source", source)
-      formData.append("metadata", JSON.stringify(metadata))
-
-      // Send to simplified API endpoint
-      const uploadResponse = await fetch("/api/save-meditation", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (!uploadResponse.ok) {
-        const contentType = uploadResponse.headers.get("content-type")
-        let errorMessage = "Upload failed"
-
-        if (contentType && contentType.includes("application/json")) {
+      } finally {
+        if (audioContext) {
           try {
-            const errorData = await uploadResponse.json()
-            errorMessage = errorData.error || errorMessage
-          } catch (jsonError) {
-            console.log("[v0] Failed to parse JSON error response:", jsonError)
-            errorMessage = await uploadResponse.text()
-          }
-        } else {
-          // Handle HTML error responses
-          const errorText = await uploadResponse.text()
-          console.log("[v0] Received HTML error response:", errorText.substring(0, 200))
-
-          if (errorText.includes("bucket")) {
-            errorMessage = "Storage bucket not configured. Please set up Supabase storage."
-          } else if (errorText.includes("policy") || errorText.includes("permission")) {
-            errorMessage = "Storage permission denied. Please check bucket policies."
-          } else if (errorText.includes("size") || errorText.includes("too large")) {
-            errorMessage = "File too large for storage."
-          } else {
-            errorMessage = "Storage service error. Please try again."
+            await audioContext.close()
+          } catch (closeError) {
+            console.log("[v0] Error closing audio context:", closeError)
           }
         }
-
-        throw new Error(errorMessage)
       }
 
-      const savedMeditation = await uploadResponse.json()
-      console.log("[v0] Meditation saved successfully with ID:", savedMeditation.id)
+      let processedBlobUrl: string | null = null
+      try {
+        processedBlobUrl = URL.createObjectURL(processedBlob)
+        console.log("[v0] Attempting to save meditation via MeditationLibrary")
 
-      let playlistId = selectedPlaylist
-      if (showNewPlaylist && newPlaylistName.trim()) {
-        console.log("[v0] Creating new playlist:", newPlaylistName.trim())
-        const newPlaylist = await MeditationLibrary.createPlaylist(
-          newPlaylistName.trim(),
-          newPlaylistDescription.trim(),
-        )
-        playlistId = newPlaylist.id
-        const updatedPlaylists = await MeditationLibrary.getAllPlaylists()
-        setPlaylists(updatedPlaylists)
-        console.log("[v0] New playlist created with ID:", newPlaylist.id)
+        const savedMeditation = await MeditationLibrary.saveMeditation({
+          title: title.trim(),
+          originalFileName,
+          processedAudioUrl: processedBlobUrl,
+          duration,
+          source,
+          metadata,
+        })
+
+        let playlistId = selectedPlaylist
+        if (showNewPlaylist && newPlaylistName.trim()) {
+          console.log("[v0] Creating new playlist:", newPlaylistName.trim())
+          const newPlaylist = await MeditationLibrary.createPlaylist(
+            newPlaylistName.trim(),
+            newPlaylistDescription.trim(),
+          )
+          playlistId = newPlaylist.id
+          console.log("[v0] New playlist created with ID:", newPlaylist.id)
+        }
+
+        if (playlistId) {
+          console.log("[v0] Adding meditation to playlist:", playlistId)
+          await MeditationLibrary.addToPlaylist(playlistId, savedMeditation.id)
+          console.log("[v0] Added to playlist successfully")
+        }
+
+        await loadPlaylists()
+
+        console.log("[v0] Save process completed successfully")
+        toast({
+          title: "Meditation saved!",
+          description: `"${title}" has been added to your library.`,
+        })
+
+        setTitle(originalFileName.replace(/\.[^/.]+$/, ""))
+        setSelectedPlaylist("")
+        setNewPlaylistName("")
+        setNewPlaylistDescription("")
+        setShowNewPlaylist(false)
+        setOpen(false)
+      } finally {
+        if (processedBlobUrl) {
+          URL.revokeObjectURL(processedBlobUrl)
+        }
       }
 
-      if (playlistId) {
-        console.log("[v0] Adding meditation to playlist:", playlistId)
-        await MeditationLibrary.addToPlaylist(playlistId, savedMeditation.id)
-        console.log("[v0] Added to playlist successfully")
-      }
-
-      const allMeditations = await MeditationLibrary.getAllMeditations()
-      console.log("[v0] Verification: Total meditations after save:", allMeditations.length)
-      console.log(
-        "[v0] Verification: Can find saved meditation:",
-        allMeditations.some((m) => m.id === savedMeditation.id),
-      )
-
-      console.log("[v0] Save process completed successfully")
-      toast({
-        title: "Meditation saved!",
-        description: `"${title}" has been added to your library.`,
-      })
-
-      setTitle(originalFileName.replace(/\.[^/.]+$/, ""))
-      setSelectedPlaylist("")
-      setNewPlaylistName("")
-      setNewPlaylistDescription("")
-      setShowNewPlaylist(false)
-      setOpen(false)
     } catch (error) {
       console.error("[v0] Save failed with error:", error)
       toast({
@@ -322,7 +279,15 @@ export function SaveMeditationDialog({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setShowNewPlaylist(!showNewPlaylist)}
+                onClick={() =>
+                  setShowNewPlaylist((prev) => {
+                    const next = !prev
+                    if (next) {
+                      setSelectedPlaylist("")
+                    }
+                    return next
+                  })
+                }
                 className="w-full"
               >
                 <Plus className="w-4 h-4 mr-2" />
