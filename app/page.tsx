@@ -1325,17 +1325,6 @@ export default function Home() {
       setStatus({ message: "Original audio or audio system not ready.", type: "error" })
       return
     }
-
-    if (durationLimits && targetDuration < durationLimits.min) {
-      setStatus({
-        message: `Target duration of ${targetDuration} minutes is not achievable. Minimum possible duration is ${durationLimits.min} minutes due to content length.`,
-        type: "error",
-      })
-      setIsProcessing(false) // Ensure processing state is reset
-      return
-    }
-    // </CHANGE>
-
     setIsProcessing(true)
     setProcessingProgress(0)
     setProcessingStep("Starting processing...")
@@ -2650,34 +2639,27 @@ export default function Home() {
                             <h3 className="text-white flex items-center font-black text-base">Target Duration</h3>
                           </div>
                           <div className="p-6 py-6 px-11 pb-6">
-                            {/* Update slider to enforce minimum and show better messaging */}
                             <div className="mb-4">
                               <Slider
-                                value={[Math.max(targetDuration, durationLimits?.min || 5)]}
+                                value={[targetDuration]}
                                 min={durationLimits?.min || 5}
                                 max={durationLimits?.max || (isMobileDevice ? 60 : 120)}
                                 step={1}
-                                onValueChange={(value) =>
-                                  setTargetDuration(Math.max(value[0], durationLimits?.min || 5))
-                                }
+                                onValueChange={(value) => setTargetDuration(value[0])}
                                 disabled={!durationLimits}
                                 className="py-4"
                                 rangeClassName="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 "
                               />
                             </div>
                             <div className="text-center font-serif font-black">
-                              <span className="font-black text-xl text-gray-600">
-                                {Math.max(targetDuration, durationLimits?.min || 5)}
-                              </span>
+                              <span className="font-black text-xl text-gray-600">{targetDuration}</span>
                               <span className="ml-1 text-base text-gray-600">minutes</span>
                             </div>
                             {durationLimits && (
                               <div className="text-center text-sm mt-0 text-gray-500">
-                                Minimum: {durationLimits.min} min (content length) • Maximum:{" "}
-                                {isMobileDevice ? "1 hour" : "2 hours"}
+                                Range: {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
                               </div>
                             )}
-                            {/* </CHANGE> */}
                           </div>
                         </Card>
                         <Card className="overflow-hidden border-none shadow-lg bg-white ">

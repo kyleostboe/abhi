@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useMemo } from "react"
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -65,10 +65,14 @@ export default function LibraryPage() {
     setPlaylistMeditationsMap(playlistMeditationsMapData)
   }
 
-  const filteredMeditations = meditations.filter(
-    (med) =>
-      med.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      med.originalFileName.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredMeditations = useMemo(
+    () =>
+      meditations.filter(
+        (med) =>
+          med.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          med.originalFileName.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [meditations, searchQuery],
   )
 
   useEffect(() => {
