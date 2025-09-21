@@ -3030,40 +3030,42 @@ export default function Home() {
                               <AccordionTrigger className="text-gray-600 hover:no-underline py-3 font-serif font-black">
                                 <div className="flex items-center justify-between w-full">
                                   <span>Notes</span>
-                                  <div className="flex flex-col gap-2 mr-6" onClick={(e) => e.stopPropagation()}>
-                                    <div className="flex items-center gap-2 mb-[3px]">
-                                      <span className="text-xs text-gray-500">Type</span>
-                                      <select
-                                        value={noteType}
-                                        onChange={(e) => setNoteType(e.target.value as "piano" | "synth" | "harp")}
-                                        className="text-xs bg-white border border-gray-300 rounded px-2 py-1"
-                                      >
-                                        <option value="piano">Piano</option>
-                                        <option value="synth">Synth</option>
-                                        <option value="harp">Harp</option>
-                                      </select>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs text-gray-500">Multi-Note</span>
-                                      <button
-                                        onClick={() => {
-                                          setMultiNoteMode(!multiNoteMode)
-                                          setSelectedNotes([])
-                                        }}
-                                        className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
-                                          multiNoteMode ? "bg-gray-500" : "bg-gray-200"
-                                        }`}
-                                      >
-                                        <span
-                                          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                                            multiNoteMode ? "translate-x-[1.125rem]" : "translate-x-0.5"
-                                          }`}
-                                        />
-                                      </button>
-                                    </div>
-                                  </div>
                                 </div>
                               </AccordionTrigger>
+                              <div className="px-4 pb-2 border-b">
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center gap-2 mb-[3px]">
+                                    <span className="text-xs text-gray-500">Type</span>
+                                    <select
+                                      value={noteType}
+                                      onChange={(e) => setNoteType(e.target.value as "piano" | "synth" | "harp")}
+                                      className="text-xs bg-white border border-gray-300 rounded px-2 py-1"
+                                    >
+                                      <option value="piano">Piano</option>
+                                      <option value="synth">Synth</option>
+                                      <option value="harp">Harp</option>
+                                    </select>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500">Multi-Note</span>
+                                    <button
+                                      onClick={() => {
+                                        setMultiNoteMode(!multiNoteMode)
+                                        setSelectedNotes([])
+                                      }}
+                                      className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
+                                        multiNoteMode ? "bg-gray-500" : "bg-gray-200"
+                                      }`}
+                                    >
+                                      <span
+                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                                          multiNoteMode ? "translate-x-[1.125rem]" : "translate-x-0.5"
+                                        }`}
+                                      />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
                               <AccordionContent className="pb-4">
                                 {multiNoteMode && (
                                   <div className="p-3 bg-gray-50 rounded-sm mb-1.5 shadow-inner py-3 px-3">
