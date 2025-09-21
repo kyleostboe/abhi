@@ -38,26 +38,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient()
 
-    console.log(`[v0] Checking if '${MEDITATION_BUCKET}' bucket exists...`)
-    const { data: buckets, error: bucketError } = await supabase.storage.listBuckets()
-
-    if (bucketError) {
-      console.error("[v0] Error checking buckets:", bucketError)
-      return NextResponse.json({ error: "Storage service unavailable" }, { status: 500 })
-    }
-
-    const meditationsBucket = buckets?.find((bucket) => bucket.name === MEDITATION_BUCKET)
-    if (!meditationsBucket) {
-      console.error(`[v0] '${MEDITATION_BUCKET}' bucket not found`)
-      return NextResponse.json(
-        {
-          error: `Storage bucket '${MEDITATION_BUCKET}' not found. Please create it manually in your Supabase dashboard under Storage.`,
-        },
-        { status: 500 },
-      )
-    }
-
-    console.log("[v0] Bucket exists, proceeding with upload...")
+    console.log(`[v0] Attempting upload to '${MEDITATION_BUCKET}' bucket...`)
 
     // Generate unique filename
     const timestamp = Date.now()
@@ -90,9 +71,15 @@ export async function POST(request: NextRequest) {
       console.error("[v0] Storage upload failed:", errorMessage)
       console.error("[v0] Full error object:", JSON.stringify(uploadResponse.error, null, 2))
 
-      if (errorMessage.includes("bucket")) {
+      if (
+        errorMessage.includes("bucket") ||
+        errorMessage.includes("not found") ||
+        errorMessage.includes("does not exist")
+      ) {
         return NextResponse.json(
-          { error: `Storage bucket '${MEDITATION_BUCKET}' not found. Please create the bucket in Supabase.` },
+          {
+            error: `Storage bucket '${MEDITATION_BUCKET}' not found. Please create the bucket in your Supabase dashboard under Storage.`,
+          },
           { status: 500 },
         )
       }
