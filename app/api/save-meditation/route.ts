@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       (((arrayBuffer.byteLength - compressedBuffer.byteLength) / arrayBuffer.byteLength) * 100).toFixed(1) + "%",
     )
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Generate unique filename
     const timestamp = Date.now()
