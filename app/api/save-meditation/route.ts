@@ -41,16 +41,24 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Uploading compressed audio to Supabase Storage:", filename)
 
     try {
+      console.log("[v0] File details - Size:", compressedBuffer.byteLength, "Type: audio/wav")
+
       // Upload compressed audio to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("meditation-audio")
         .upload(filename, compressedBuffer, {
           contentType: "audio/wav",
           cacheControl: "3600",
+          upsert: false, // Don't overwrite existing files
         })
 
       if (uploadError) {
-        console.error("[v0] Storage upload error:", uploadError)
+        console.error("[v0] Storage upload error details:", {
+          message: uploadError.message,
+          statusCode: uploadError.statusCode,
+          error: uploadError.error,
+        })
+
         if (uploadError.message?.includes("bucket") || uploadError.message?.includes("not found")) {
           return NextResponse.json(
             {
@@ -59,6 +67,16 @@ export async function POST(request: NextRequest) {
             { status: 500 },
           )
         }
+
+        if (uploadError.message?.includes("size") || uploadError.message?.includes("too large")) {
+          return NextResponse.json(
+            {
+              error: `File too large (${Math.round(compressedBuffer.byteLength / 1024 / 1024)}MB). Try a shorter meditation.`,
+            },
+            { status: 413 },
+          )
+        }
+
         return NextResponse.json({ error: `Upload failed: ${uploadError.message}` }, { status: 500 })
       }
 
@@ -98,19 +116,29 @@ export async function POST(request: NextRequest) {
       })
     } catch (storageError) {
       console.error("[v0] Storage operation failed:", storageError)
+
       let errorMessage = "Unknown storage error"
       if (storageError instanceof Error) {
         errorMessage = storageError.message
-        // Check if it's a JSON parsing error (HTML response from missing bucket)
+        console.log("[v0] Full error message:", errorMessage)
+
+        // Check if it's a JSON parsing error (HTML response from Supabase)
         if (errorMessage.includes("Unexpected token") && errorMessage.includes("not valid JSON")) {
-          errorMessage =
-            "Storage bucket 'meditation-audio' not found. Please run scripts/002_create_storage_bucket.sql first."
+          // This usually means Supabase returned an HTML error page instead of JSON
+          console.log("[v0] Detected HTML error response from Supabase")
+
+          // Try to extract more info from the error
+          if (errorMessage.includes("Request En")) {
+            errorMessage =
+              "Supabase Storage returned an error page. This could be due to: 1) File format issues, 2) Storage bucket permissions, 3) File size limits, or 4) Authentication problems."
+          }
         }
       }
 
       return NextResponse.json(
         {
           error: `Storage error: ${errorMessage}`,
+          details: "The compressed audio file may have format issues. Try with a different audio file.",
         },
         { status: 500 },
       )
