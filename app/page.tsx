@@ -1431,12 +1431,14 @@ export default function Home() {
       const currentAudioContext = audioContextRef.current
       if (!currentAudioContext) throw new Error("Audio context not available for rebuild")
       onProgress(0)
+
       let dynamicScale = scaleFactorVal
       if (!preservePacing && regions.length > 0) {
         const currentTotalSilence = regions.reduce((sum, r) => sum + (r.end - r.start), 0)
         dynamicScale = currentTotalSilence > 0 ? targetTotalSilence / currentTotalSilence : 1
         if (!isFinite(dynamicScale) || dynamicScale <= 0) dynamicScale = 1
       }
+
       const processedRegions = regions.map((region) => {
         const duration = region.end - region.start
         const newDuration = preservePacing
@@ -1446,14 +1448,18 @@ export default function Home() {
             : minSpacingVal
         return { ...region, newDuration }
       })
+
       const audioContentDur = buffer.duration - regions.reduce((sum, r) => sum + (r.end - r.start), 0)
       const newSilenceDur = processedRegions.reduce((sum, r) => sum + r.newDuration, 0)
       const newTotalDur = audioContentDur + newSilenceDur
+
       if (newTotalDur <= 0) throw new Error("Calculated new total duration is zero or negative.")
+
       if (isMobileDevice && newTotalDur > 45 * 60) {
         console.warn(`Mobile device: Output duration ${formatTime(newTotalDur)} may cause issues.`)
         setMemoryWarning(true)
       }
+
       let newBuffer: AudioBuffer
       try {
         newBuffer = currentAudioContext.createBuffer(
@@ -1467,44 +1473,66 @@ export default function Home() {
           `Failed to create output buffer (duration: ${newTotalDur.toFixed(2)}s). Memory limit likely exceeded. Try a shorter target duration.`,
         )
       }
+
       onProgress(10)
+
       for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
         const originalData = buffer.getChannelData(channel)
         const newData = newBuffer.getChannelData(channel)
         let writeIndex = 0
         let readIndex = 0
         const totalSamples = originalData.length
+
+        // Copy initial content before first silence region
         if (regions.length > 0 && regions[0].start > 0) {
           const samplesToCopy = Math.floor(regions[0].start * buffer.sampleRate)
-          for (let i = 0; i < samplesToCopy; i++) newData[writeIndex++] = originalData[readIndex++]
+          for (let i = 0; i < samplesToCopy && writeIndex < newData.length; i++) {
+            newData[writeIndex++] = originalData[readIndex++]
+          }
         }
+
+        // Process each silence region and the content after it
         for (let i = 0; i < regions.length; i++) {
           if (i % (isMobileDevice ? 5 : 10) === 0) {
             await sleep(0)
             onProgress(10 + Math.floor((i / regions.length) * 80))
           }
+
           const region = regions[i]
           const processedReg = processedRegions[i]
+
+          // Skip to end of silence region
           readIndex = Math.floor(region.end * buffer.sampleRate)
+
+          // Add scaled silence
           const newSilenceLength = Math.floor(processedReg.newDuration * buffer.sampleRate)
-          for (let j = 0; j < newSilenceLength; j++) {
-            if (writeIndex < newData.length) newData[writeIndex++] = 0
+          for (let j = 0; j < newSilenceLength && writeIndex < newData.length; j++) {
+            newData[writeIndex++] = 0
           }
+
+          // Copy content until next silence region (or end of audio)
           const nextRegionStart =
             i < regions.length - 1 ? Math.floor(regions[i + 1].start * buffer.sampleRate) : totalSamples
-          const segmentLength = nextRegionStart - readIndex
-          for (let j = 0; j < segmentLength; j++) {
-            if (writeIndex < newData.length && readIndex + j < totalSamples) {
-              newData[writeIndex++] = originalData[readIndex + j]
-            }
+
+          // Ensure we don't go backwards or get stuck
+          const segmentStart = Math.max(readIndex, 0)
+          const segmentEnd = Math.min(nextRegionStart, totalSamples)
+
+          for (let j = segmentStart; j < segmentEnd && writeIndex < newData.length; j++) {
+            newData[writeIndex++] = originalData[j]
           }
-          readIndex = nextRegionStart
+
+          readIndex = segmentEnd
         }
-        if (readIndex < totalSamples && regions.length === 0) {
-          for (let i = readIndex; i < totalSamples; i++)
-            if (writeIndex < newData.length) newData[writeIndex++] = originalData[i]
+
+        // Copy any remaining audio if no regions were processed
+        if (regions.length === 0) {
+          for (let i = 0; i < totalSamples && writeIndex < newData.length; i++) {
+            newData[writeIndex++] = originalData[i]
+          }
         }
       }
+
       onProgress(100)
       return newBuffer
     },
