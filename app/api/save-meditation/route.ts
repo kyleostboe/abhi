@@ -61,7 +61,8 @@ export async function POST(request: NextRequest) {
       upsert: false,
     })
 
-    console.log("[v0] Upload response:", JSON.stringify(uploadResponse, null, 2))
+    console.log("[v0] Upload response - data:", uploadResponse.data)
+    console.log("[v0] Upload response - error:", uploadResponse.error?.name, uploadResponse.error?.message)
 
     if (uploadResponse.error) {
       console.error("[v0] Storage upload error:", uploadResponse.error.message || uploadResponse.error.name)
@@ -69,12 +70,56 @@ export async function POST(request: NextRequest) {
       const error = uploadResponse.error
 
       if (error.name === "StorageUnknownError") {
-        return NextResponse.json(
-          {
-            error: `Upload failed: File may be too large (${Math.round(finalBuffer.byteLength / 1024 / 1024)}MB). Try a smaller file.`,
-          },
-          { status: 413 },
-        )
+        console.log("[v0] Compression may have corrupted file, trying original...")
+
+        const originalUploadResponse = await supabase.storage
+          .from("meditation-audio")
+          .upload(`original_${filename}`, arrayBuffer, {
+            contentType: "audio/wav",
+            cacheControl: "3600",
+            upsert: false,
+          })
+
+        if (originalUploadResponse.error) {
+          return NextResponse.json(
+            {
+              error: `Upload failed: File too large (${Math.round(arrayBuffer.byteLength / 1024 / 1024)}MB). Maximum is 50MB.`,
+            },
+            { status: 413 },
+          )
+        }
+
+        // Use original file upload response
+        console.log("[v0] Original file upload successful")
+        const { data: urlData } = supabase.storage
+          .from("meditation-audio")
+          .getPublicUrl(originalUploadResponse.data.path)
+
+        // Save to database with original file
+        const meditationData = {
+          title,
+          description: originalFileName,
+          audio_url: urlData.publicUrl,
+          duration,
+        }
+
+        const { data, error: dbError } = await supabase.from("meditations").insert(meditationData).select().single()
+
+        if (dbError) {
+          console.error("[v0] Database insert error:", dbError)
+          return NextResponse.json({ error: `Database error: ${dbError.message}` }, { status: 500 })
+        }
+
+        return NextResponse.json({
+          id: data.id,
+          title: data.title,
+          originalFileName: data.description,
+          processedAudioUrl: data.audio_url,
+          duration: data.duration,
+          createdAt: data.created_at,
+          source: source,
+          metadata: metadata,
+        })
       }
 
       if (error.message?.includes("bucket") || error.message?.includes("not found")) {
