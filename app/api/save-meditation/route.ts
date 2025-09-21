@@ -48,25 +48,13 @@ export async function POST(request: NextRequest) {
 
     const meditationsBucket = buckets?.find((bucket) => bucket.name === MEDITATION_BUCKET)
     if (!meditationsBucket) {
-      console.log(`[v0] '${MEDITATION_BUCKET}' bucket not found, creating it...`)
-
-      const { data: newBucket, error: createError } = await supabase.storage.createBucket(MEDITATION_BUCKET, {
-        public: true,
-        allowedMimeTypes: ["audio/wav", "audio/mpeg", "audio/mp3"],
-        fileSizeLimit: 52428800, // 50MB
-      })
-
-      if (createError) {
-        console.error("[v0] Failed to create bucket:", createError)
-        return NextResponse.json(
-          {
-            error: `Failed to create storage bucket: ${createError.message}. Please create it manually in Supabase.`,
-          },
-          { status: 500 },
-        )
-      }
-
-      console.log(`[v0] Successfully created '${MEDITATION_BUCKET}' bucket`)
+      console.error(`[v0] '${MEDITATION_BUCKET}' bucket not found`)
+      return NextResponse.json(
+        {
+          error: `Storage bucket '${MEDITATION_BUCKET}' not found. Please create it manually in your Supabase dashboard under Storage.`,
+        },
+        { status: 500 },
+      )
     }
 
     console.log("[v0] Bucket exists, proceeding with upload...")
@@ -89,7 +77,10 @@ export async function POST(request: NextRequest) {
       console.error("[v0] Upload threw exception:", uploadError)
       // Handle cases where Supabase returns HTML instead of JSON
       if (uploadError.message && uploadError.message.includes("Unexpected token")) {
-        return NextResponse.json({ error: "Storage service returned invalid response. Check bucket permissions and policies." }, { status: 500 })
+        return NextResponse.json(
+          { error: "Storage service returned invalid response. Check bucket permissions and policies." },
+          { status: 500 },
+        )
       }
       throw uploadError
     }
@@ -100,7 +91,10 @@ export async function POST(request: NextRequest) {
       console.error("[v0] Full error object:", JSON.stringify(uploadResponse.error, null, 2))
 
       if (errorMessage.includes("bucket")) {
-        return NextResponse.json({ error: `Storage bucket '${MEDITATION_BUCKET}' not found. Please create the bucket in Supabase.` }, { status: 500 })
+        return NextResponse.json(
+          { error: `Storage bucket '${MEDITATION_BUCKET}' not found. Please create the bucket in Supabase.` },
+          { status: 500 },
+        )
       }
 
       if (errorMessage.includes("size") || errorMessage.includes("too large")) {
@@ -111,7 +105,10 @@ export async function POST(request: NextRequest) {
       }
 
       if (errorMessage.includes("permission") || errorMessage.includes("policy")) {
-        return NextResponse.json({ error: `Storage permission denied. Please check RLS policies for '${MEDITATION_BUCKET}' bucket.` }, { status: 403 })
+        return NextResponse.json(
+          { error: `Storage permission denied. Please check RLS policies for '${MEDITATION_BUCKET}' bucket.` },
+          { status: 403 },
+        )
       }
 
       return NextResponse.json({ error: `Storage upload failed: ${errorMessage}` }, { status: 500 })
