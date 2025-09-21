@@ -40,7 +40,25 @@ export class MeditationLibrary {
       }
       console.log("[v0] Created meditation object:", savedMeditation.id)
 
-      const existing = this.getAllMeditations()
+      let existing: SavedMeditation[] = []
+      try {
+        const stored = localStorage.getItem(this.STORAGE_KEY)
+        console.log("[v0] Raw localStorage data:", stored ? `${stored.length} chars` : "null")
+
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          if (Array.isArray(parsed)) {
+            existing = parsed.map((med: any) => ({
+              ...med,
+              createdAt: new Date(med.createdAt),
+            }))
+          }
+        }
+      } catch (error) {
+        console.error("[v0] Error reading existing meditations:", error)
+        existing = []
+      }
+
       console.log("[v0] Current meditations count:", existing.length)
 
       existing.push(savedMeditation)
@@ -49,17 +67,18 @@ export class MeditationLibrary {
       console.log("[v0] Serialized data size:", serialized.length, "characters")
 
       localStorage.setItem(this.STORAGE_KEY, serialized)
-      console.log("[v0] Saved to localStorage successfully")
 
-      setTimeout(() => {
-        const verification = this.getAllMeditations()
-        console.log("[v0] Verification: meditations count after save:", verification.length)
-      }, 10)
+      // Immediate verification
+      const immediateCheck = localStorage.getItem(this.STORAGE_KEY)
+      if (!immediateCheck) {
+        throw new Error("localStorage.setItem failed - data not found immediately after save")
+      }
+
+      console.log("[v0] Saved to localStorage successfully, immediate verification passed")
 
       return savedMeditation
     } catch (error) {
       console.error("[v0] Error in saveMeditation:", error)
-      localStorage.removeItem(this.STORAGE_KEY)
       throw error
     }
   }
@@ -67,6 +86,8 @@ export class MeditationLibrary {
   static getAllMeditations(): SavedMeditation[] {
     try {
       const stored = localStorage.getItem(this.STORAGE_KEY)
+      console.log("[v0] getAllMeditations - raw data:", stored ? `Found ${stored.length} chars` : "No data found")
+
       if (!stored) {
         console.log("[v0] No stored meditations found")
         return []
