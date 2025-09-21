@@ -193,93 +193,236 @@ export class MeditationLibrary {
     }
   }
 
-  static createPlaylist(name: string, description = ""): Playlist {
-    const playlist: Playlist = {
-      id: `playlist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      name,
-      description,
-      meditationIds: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+  static async createPlaylist(name: string, description = ""): Promise<Playlist> {
+    try {
+      const supabase = createClient()
+
+      const { data, error } = await supabase
+        .from("playlists")
+        .insert({
+          name,
+          description,
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error("[v0] Error creating playlist:", error)
+        throw error
+      }
+
+      return {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        meditationIds: [], // New playlist starts empty
+        createdAt: new Date(data.created_at),
+        updatedAt: new Date(data.updated_at),
+      }
+    } catch (error) {
+      console.error("[v0] Error in createPlaylist:", error)
+      throw error
     }
-
-    const existing = this.getAllPlaylists()
-    existing.push(playlist)
-    localStorage.setItem("abhi_meditation_playlists", JSON.stringify(existing))
-
-    return playlist
   }
 
-  static getAllPlaylists(): Playlist[] {
-    const stored = localStorage.getItem("abhi_meditation_playlists")
-    if (!stored) return []
-
+  static async getAllPlaylists(): Promise<Playlist[]> {
     try {
-      const parsed = JSON.parse(stored)
-      return parsed.map((playlist: any) => ({
-        ...playlist,
-        createdAt: new Date(playlist.createdAt),
-        updatedAt: new Date(playlist.updatedAt),
+      const supabase = createClient()
+
+      const { data, error } = await supabase
+        .from("playlists")
+        .select(`
+          *,
+          playlist_meditations (
+            meditation_id
+          )
+        `)
+        .order("created_at", { ascending: false })
+
+      if (error) {
+        console.error("[v0] Error fetching playlists:", error)
+        throw error
+      }
+
+      if (!data) return []
+
+      return data.map((playlist: any) => ({
+        id: playlist.id,
+        name: playlist.name,
+        description: playlist.description,
+        meditationIds: playlist.playlist_meditations.map((pm: any) => pm.meditation_id),
+        createdAt: new Date(playlist.created_at),
+        updatedAt: new Date(playlist.updated_at),
       }))
-    } catch {
+    } catch (error) {
+      console.error("[v0] Error in getAllPlaylists:", error)
       return []
     }
   }
 
-  static getPlaylist(id: string): Playlist | null {
-    const all = this.getAllPlaylists()
-    return all.find((playlist) => playlist.id === id) || null
-  }
+  static async getPlaylist(id: string): Promise<Playlist | null> {
+    try {
+      const supabase = createClient()
 
-  static updatePlaylist(id: string, updates: Partial<Pick<Playlist, "name" | "description">>): void {
-    const playlists = this.getAllPlaylists()
-    const index = playlists.findIndex((p) => p.id === id)
+      const { data, error } = await supabase
+        .from("playlists")
+        .select(`
+          *,
+          playlist_meditations (
+            meditation_id
+          )
+        `)
+        .eq("id", id)
+        .single()
 
-    if (index !== -1) {
-      playlists[index] = {
-        ...playlists[index],
-        ...updates,
-        updatedAt: new Date(),
+      if (error || !data) {
+        return null
       }
-      localStorage.setItem("abhi_meditation_playlists", JSON.stringify(playlists))
+
+      return {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        meditationIds: data.playlist_meditations.map((pm: any) => pm.meditation_id),
+        createdAt: new Date(data.created_at),
+        updatedAt: new Date(data.updated_at),
+      }
+    } catch (error) {
+      console.error("[v0] Error in getPlaylist:", error)
+      return null
     }
   }
 
-  static deletePlaylist(id: string): void {
-    const existing = this.getAllPlaylists()
-    const filtered = existing.filter((playlist) => playlist.id !== id)
-    localStorage.setItem("abhi_meditation_playlists", JSON.stringify(filtered))
-  }
+  static async updatePlaylist(id: string, updates: Partial<Pick<Playlist, "name" | "description">>): Promise<void> {
+    try {
+      const supabase = createClient()
 
-  static addToPlaylist(playlistId: string, meditationId: string): void {
-    const playlists = this.getAllPlaylists()
-    const playlist = playlists.find((p) => p.id === playlistId)
+      const { error } = await supabase
+        .from("playlists")
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
 
-    if (playlist && !playlist.meditationIds.includes(meditationId)) {
-      playlist.meditationIds.push(meditationId)
-      playlist.updatedAt = new Date()
-      localStorage.setItem("abhi_meditation_playlists", JSON.stringify(playlists))
+      if (error) {
+        console.error("[v0] Error updating playlist:", error)
+        throw error
+      }
+    } catch (error) {
+      console.error("[v0] Error in updatePlaylist:", error)
+      throw error
     }
   }
 
-  static removeFromPlaylist(playlistId: string, meditationId: string): void {
-    const playlists = this.getAllPlaylists()
-    const playlist = playlists.find((p) => p.id === playlistId)
+  static async deletePlaylist(id: string): Promise<void> {
+    try {
+      const supabase = createClient()
 
-    if (playlist) {
-      playlist.meditationIds = playlist.meditationIds.filter((id) => id !== meditationId)
-      playlist.updatedAt = new Date()
-      localStorage.setItem("abhi_meditation_playlists", JSON.stringify(playlists))
+      // Delete playlist (cascade will handle playlist_meditations)
+      const { error } = await supabase.from("playlists").delete().eq("id", id)
+
+      if (error) {
+        console.error("[v0] Error deleting playlist:", error)
+        throw error
+      }
+    } catch (error) {
+      console.error("[v0] Error in deletePlaylist:", error)
+      throw error
+    }
+  }
+
+  static async addToPlaylist(playlistId: string, meditationId: string): Promise<void> {
+    try {
+      const supabase = createClient()
+
+      const { error } = await supabase.from("playlist_meditations").insert({
+        playlist_id: playlistId,
+        meditation_id: meditationId,
+      })
+
+      if (error) {
+        // If it's a duplicate key error, ignore it (meditation already in playlist)
+        if (error.code !== "23505") {
+          console.error("[v0] Error adding to playlist:", error)
+          throw error
+        }
+      }
+
+      // Update playlist's updated_at timestamp
+      await supabase.from("playlists").update({ updated_at: new Date().toISOString() }).eq("id", playlistId)
+    } catch (error) {
+      console.error("[v0] Error in addToPlaylist:", error)
+      throw error
+    }
+  }
+
+  static async removeFromPlaylist(playlistId: string, meditationId: string): Promise<void> {
+    try {
+      const supabase = createClient()
+
+      const { error } = await supabase
+        .from("playlist_meditations")
+        .delete()
+        .eq("playlist_id", playlistId)
+        .eq("meditation_id", meditationId)
+
+      if (error) {
+        console.error("[v0] Error removing from playlist:", error)
+        throw error
+      }
+
+      // Update playlist's updated_at timestamp
+      await supabase.from("playlists").update({ updated_at: new Date().toISOString() }).eq("id", playlistId)
+    } catch (error) {
+      console.error("[v0] Error in removeFromPlaylist:", error)
+      throw error
     }
   }
 
   static async getPlaylistMeditations(playlistId: string): Promise<SavedMeditation[]> {
-    const playlist = this.getPlaylist(playlistId)
-    if (!playlist) return []
+    try {
+      const supabase = createClient()
 
-    const allMeditations = await this.getAllMeditations()
-    return playlist.meditationIds
-      .map((id) => allMeditations.find((med) => med.id === id))
-      .filter(Boolean) as SavedMeditation[]
+      const { data, error } = await supabase
+        .from("playlist_meditations")
+        .select(`
+          meditations (
+            id,
+            title,
+            description,
+            audio_url,
+            duration,
+            created_at,
+            source,
+            metadata
+          )
+        `)
+        .eq("playlist_id", playlistId)
+        .order("added_at", { ascending: true })
+
+      if (error) {
+        console.error("[v0] Error fetching playlist meditations:", error)
+        return []
+      }
+
+      if (!data) return []
+
+      return data
+        .filter((item: any) => item.meditations) // Filter out null meditations (deleted)
+        .map((item: any) => ({
+          id: item.meditations.id,
+          title: item.meditations.title,
+          originalFileName: item.meditations.description || "Unknown",
+          processedAudioUrl: item.meditations.audio_url,
+          duration: item.meditations.duration || 0,
+          createdAt: new Date(item.meditations.created_at),
+          source: item.meditations.source as "adjuster" | "encoder",
+          metadata: item.meditations.metadata || {},
+        }))
+    } catch (error) {
+      console.error("[v0] Error in getPlaylistMeditations:", error)
+      return []
+    }
   }
 }

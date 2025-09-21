@@ -99,44 +99,71 @@ export default function LibraryPage() {
     })
   }
 
-  const handleCreatePlaylist = () => {
+  const handleCreatePlaylist = async () => {
     if (!newPlaylistName.trim()) return
 
-    MeditationLibrary.createPlaylist(newPlaylistName.trim(), newPlaylistDescription.trim())
-    setNewPlaylistName("")
-    setNewPlaylistDescription("")
-    loadData()
-    toast({
-      title: "Playlist created",
-      description: `"${newPlaylistName}" has been added to your playlists.`,
-    })
+    try {
+      await MeditationLibrary.createPlaylist(newPlaylistName.trim(), newPlaylistDescription.trim())
+      setNewPlaylistName("")
+      setNewPlaylistDescription("")
+      await loadData()
+      toast({
+        title: "Playlist created",
+        description: `"${newPlaylistName}" has been added to your playlists.`,
+      })
+    } catch (error) {
+      console.error("[v0] Error creating playlist:", error)
+      toast({
+        title: "Error creating playlist",
+        description: "There was a problem creating your playlist. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleUpdatePlaylist = () => {
+  const handleUpdatePlaylist = async () => {
     if (!editingPlaylist || !editingPlaylist.name.trim()) return
 
-    MeditationLibrary.updatePlaylist(editingPlaylist.id, {
-      name: editingPlaylist.name,
-      description: editingPlaylist.description,
-    })
-    setEditingPlaylist(null)
-    loadData()
-    toast({
-      title: "Playlist updated",
-      description: "Your playlist has been updated successfully.",
-    })
+    try {
+      await MeditationLibrary.updatePlaylist(editingPlaylist.id, {
+        name: editingPlaylist.name,
+        description: editingPlaylist.description,
+      })
+      setEditingPlaylist(null)
+      await loadData()
+      toast({
+        title: "Playlist updated",
+        description: "Your playlist has been updated successfully.",
+      })
+    } catch (error) {
+      console.error("[v0] Error updating playlist:", error)
+      toast({
+        title: "Error updating playlist",
+        description: "There was a problem updating your playlist. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleDeletePlaylist = (playlistId: string) => {
-    MeditationLibrary.deletePlaylist(playlistId)
-    if (selectedPlaylist === playlistId) {
-      setSelectedPlaylist(null)
+  const handleDeletePlaylist = async (playlistId: string) => {
+    try {
+      await MeditationLibrary.deletePlaylist(playlistId)
+      if (selectedPlaylist === playlistId) {
+        setSelectedPlaylist(null)
+      }
+      await loadData()
+      toast({
+        title: "Playlist deleted",
+        description: "The playlist has been removed from your library.",
+      })
+    } catch (error) {
+      console.error("[v0] Error deleting playlist:", error)
+      toast({
+        title: "Error deleting playlist",
+        description: "There was a problem deleting your playlist. Please try again.",
+        variant: "destructive",
+      })
     }
-    loadData()
-    toast({
-      title: "Playlist deleted",
-      description: "The playlist has been removed from your library.",
-    })
   }
 
   const formatDuration = (seconds: number) => {
