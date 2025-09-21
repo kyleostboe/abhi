@@ -36,7 +36,6 @@ import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
 import * as Tone from "tone"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
-import * as MeditationLibrary from "@/lib/meditation-library" // Import MeditationLibrary
 
 interface RecorderSectionProps {
   className?: string
@@ -1289,30 +1288,6 @@ export default function Home() {
 
       console.log("Audio export completed successfully!")
       toast({ title: "Export Complete", description: "Timeline audio exported with sound cues included!" })
-
-      try {
-        console.log("[v0] Auto-saving processed meditation...")
-        const fileName = file?.name || "meditation"
-        const title = fileName.replace(/\.[^/.]+$/, "") + " (Processed)"
-
-        const savedMeditation = MeditationLibrary.saveMeditation({
-          title,
-          originalFileName: fileName,
-          processedAudioUrl: url,
-          duration: rendered.duration, // Use rendered duration for accuracy
-          source: "adjuster",
-          metadata: {
-            targetDuration,
-            pausesAdjusted,
-          },
-        })
-
-        console.log("[v0] Auto-save completed successfully:", savedMeditation.id)
-        setStatus({ message: "Audio processed and saved to library!", type: "success" })
-      } catch (saveError) {
-        console.error("[v0] Auto-save failed:", saveError)
-        setStatus({ message: "Audio processed but save failed. Use Save button to retry.", type: "warning" })
-      }
     } catch (error) {
       console.error("Audio export failed:", error)
       toast({
@@ -1382,18 +1357,18 @@ export default function Home() {
       setProcessingStep("Detecting silence regions (step 1/4)...")
       setProcessingProgress(10)
       await sleep(10)
+
       const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
+
       setProcessingStep("Calculating adjustments (step 2/4)...")
+      setProcessingProgress(25)
       await sleep(10)
-      await sleep(10)
-      const silenceRegions2 = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
-      setProcessingStep("Calculating adjustments (step 2/4)...")
-      await sleep(10)
-      const totalSilenceDuration = silenceRegions2.reduce((sum, region) => sum + (region.end - region.start), 0)
+
+      const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
       const audioContentDuration = originalBuffer.duration - totalSilenceDuration
       const availableSilenceDuration = Math.max(
         targetDurationSeconds - audioContentDuration,
-        silenceRegions2.length * minSpacingDuration,
+        silenceRegions.length * minSpacingDuration,
       )
       const scaleFactor = totalSilenceDuration > 0 ? availableSilenceDuration / totalSilenceDuration : 1
       setProcessingStep("Rebuilding audio (step 3/4)...")
@@ -1402,14 +1377,14 @@ export default function Home() {
 
       const processedAudioBuffer = await rebuildAudioWithScaledPauses(
         originalBuffer,
-        silenceRegions2,
+        silenceRegions,
         scaleFactor,
         minSpacingDuration,
         preserveNaturalPacing,
         availableSilenceDuration,
         (p) => setProcessingProgress(50 + Math.floor(p * 0.4)),
       )
-      setPausesAdjusted(silenceRegions2.length)
+      setPausesAdjusted(silenceRegions.length)
       setProcessingStep("Creating download file (step 4/4)...")
       setProcessingProgress(90)
       await sleep(10)
@@ -1431,30 +1406,6 @@ export default function Home() {
       setProcessingStep("Complete!")
       setStatus({ message: "Audio processing completed successfully!", type: "success" })
       setIsProcessingComplete(true)
-
-      try {
-        console.log("[v0] Auto-saving processed meditation...")
-        const fileName = file?.name || "meditation"
-        const title = fileName.replace(/\.[^/.]+$/, "") + " (Processed)"
-
-        const savedMeditation = MeditationLibrary.saveMeditation({
-          title,
-          originalFileName: fileName,
-          processedAudioUrl: url,
-          duration: processedAudioBuffer.duration,
-          source: "adjuster",
-          metadata: {
-            targetDuration,
-            pausesAdjusted,
-          },
-        })
-
-        console.log("[v0] Auto-save completed successfully:", savedMeditation.id)
-        setStatus({ message: "Audio processed and saved to library!", type: "success" })
-      } catch (saveError) {
-        console.error("[v0] Auto-save failed:", saveError)
-        setStatus({ message: "Audio processed but save failed. Use Save button to retry.", type: "warning" })
-      }
     } catch (error) {
       console.error("Error during audio processing:", error)
       setStatus({ message: `Processing error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
@@ -2448,7 +2399,7 @@ export default function Home() {
                         href="https://tasshin.com/guided-meditations/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-black font-serif hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm"
                       >
                         Tasshin &amp; friend's meditations
                       </a>
