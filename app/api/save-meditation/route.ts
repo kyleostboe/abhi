@@ -40,51 +40,63 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Uploading compressed audio to Supabase Storage:", filename)
 
-    // Upload compressed audio to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from("meditation-audio")
-      .upload(filename, compressedBuffer, {
-        contentType: "audio/wav",
-        cacheControl: "3600",
+    try {
+      // Upload compressed audio to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("meditation-audio")
+        .upload(filename, compressedBuffer, {
+          contentType: "audio/wav",
+          cacheControl: "3600",
+        })
+
+      if (uploadError) {
+        console.error("[v0] Storage upload error:", uploadError)
+        return NextResponse.json({ error: `Upload failed: ${uploadError.message}` }, { status: 500 })
+      }
+
+      console.log("[v0] Storage upload successful:", uploadData)
+
+      // Get public URL
+      const { data: urlData } = supabase.storage.from("meditation-audio").getPublicUrl(uploadData.path)
+
+      // Save to database
+      const meditationData = {
+        title,
+        description: originalFileName,
+        audio_url: urlData.publicUrl,
+        duration,
+        source,
+        metadata,
+      }
+
+      const { data, error } = await supabase.from("meditations").insert(meditationData).select().single()
+
+      if (error) {
+        console.error("[v0] Database insert error:", error)
+        return NextResponse.json({ error: `Database error: ${error.message}` }, { status: 500 })
+      }
+
+      console.log("[v0] Meditation saved successfully:", data.id)
+
+      return NextResponse.json({
+        id: data.id,
+        title: data.title,
+        originalFileName: data.description,
+        processedAudioUrl: data.audio_url,
+        duration: data.duration,
+        createdAt: data.created_at,
+        source: data.source,
+        metadata: data.metadata,
       })
-
-    if (uploadError) {
-      console.error("[v0] Storage upload error:", uploadError)
-      return NextResponse.json({ error: `Upload failed: ${uploadError.message}` }, { status: 500 })
+    } catch (storageError) {
+      console.error("[v0] Storage operation failed:", storageError)
+      return NextResponse.json(
+        {
+          error: `Storage error: ${storageError instanceof Error ? storageError.message : "Unknown storage error"}. Make sure the storage bucket exists.`,
+        },
+        { status: 500 },
+      )
     }
-
-    // Get public URL
-    const { data: urlData } = supabase.storage.from("meditation-audio").getPublicUrl(uploadData.path)
-
-    // Save to database
-    const meditationData = {
-      title,
-      description: originalFileName,
-      audio_url: urlData.publicUrl,
-      duration,
-      source,
-      metadata,
-    }
-
-    const { data, error } = await supabase.from("meditations").insert(meditationData).select().single()
-
-    if (error) {
-      console.error("[v0] Database insert error:", error)
-      return NextResponse.json({ error: `Database error: ${error.message}` }, { status: 500 })
-    }
-
-    console.log("[v0] Meditation saved successfully:", data.id)
-
-    return NextResponse.json({
-      id: data.id,
-      title: data.title,
-      originalFileName: data.description,
-      processedAudioUrl: data.audio_url,
-      duration: data.duration,
-      createdAt: data.created_at,
-      source: data.source,
-      metadata: data.metadata,
-    })
   } catch (error) {
     console.error("[v0] Server error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
