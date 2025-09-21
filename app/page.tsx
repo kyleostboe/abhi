@@ -2257,7 +2257,7 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px]">
       <Navigation />
 
-      {process.env.NODE_ENV === "development" && (
+      {typeof window !== "undefined" && window.location.hostname === "localhost" && (
         <div className="fixed top-4 right-4 z-50">
           <Button
             onClick={clearLibraryData}

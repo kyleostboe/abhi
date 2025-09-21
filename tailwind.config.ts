@@ -25,6 +25,8 @@ const config = {
         neutral: colors.neutral,
         gray: colors.gray,
         slate: colors.slate,
+        sky: colors.sky,
+        stone: colors.stone,
 
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
