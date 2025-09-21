@@ -2188,81 +2188,65 @@ export default function Home() {
     threshold: number,
     minDuration: number,
   ): Promise<{ start: number; end: number }[]> => {
-    console.log("[v0] Detecting silence regions with threshold:", threshold, "minDuration:", minDuration)
-
-    const channelData = buffer.getChannelData(0) // Use the first channel
+    const BUFFER_SECONDS = 0.3 // 300ms buffer to preserve word endings
     const sampleRate = buffer.sampleRate
-    const silenceRegions: { start: number; end: number }[] = []
-    let inSilence = false
-    let silenceStart = 0
-
-    // Use RMS (Root Mean Square) for better amplitude detection
+    const channelData = buffer.getChannelData(0)
     const windowSize = Math.floor(sampleRate * 0.01) // 10ms windows
+    const minSamples = Math.floor(minDuration * sampleRate)
+
+    const regions: { start: number; end: number }[] = []
+    let silenceStart = -1
 
     for (let i = 0; i < channelData.length; i += windowSize) {
-      // Calculate RMS for this window
-      let rms = 0
       const windowEnd = Math.min(i + windowSize, channelData.length)
+      let rms = 0
+
+      // Calculate RMS for this window
       for (let j = i; j < windowEnd; j++) {
         rms += channelData[j] * channelData[j]
       }
       rms = Math.sqrt(rms / (windowEnd - i))
 
-      const timePosition = i / sampleRate
+      const isSilent = rms < threshold
+      const timeSeconds = i / sampleRate
 
-      if (rms < threshold && !inSilence) {
-        inSilence = true
-        silenceStart = timePosition
-      } else if (rms >= threshold && inSilence) {
-        inSilence = false
-        const silenceEnd = timePosition
-        if (silenceEnd - silenceStart >= minDuration) {
-          silenceRegions.push({ start: silenceStart, end: silenceEnd })
-          console.log("[v0] Found silence region:", silenceStart.toFixed(2), "to", silenceEnd.toFixed(2), "seconds")
+      if (isSilent && silenceStart === -1) {
+        silenceStart = timeSeconds
+      } else if (!isSilent && silenceStart !== -1) {
+        const silenceDuration = timeSeconds - silenceStart
+        if (silenceDuration >= minDuration) {
+          regions.push({ start: silenceStart, end: timeSeconds })
         }
+        silenceStart = -1
       }
     }
 
-    // Handle case where silence extends to the end of the audio
-    if (inSilence) {
-      const silenceEnd = channelData.length / sampleRate
-      if (silenceEnd - silenceStart >= minDuration) {
-        silenceRegions.push({ start: silenceStart, end: silenceEnd })
-        console.log(
-          "[v0] Found silence region at end:",
-          silenceStart.toFixed(2),
-          "to",
-          silenceEnd.toFixed(2),
-          "seconds",
-        )
+    // Handle silence at the end
+    if (silenceStart !== -1) {
+      const endTime = buffer.duration
+      const silenceDuration = endTime - silenceStart
+      if (silenceDuration >= minDuration) {
+        regions.push({ start: silenceStart, end: endTime })
       }
     }
 
-    const wordEndingBuffer = 0.3 // 300ms buffer to preserve natural word decay
+    // Apply buffer to preserve word endings
     const bufferedRegions: { start: number; end: number }[] = []
 
-    for (let i = 0; i < silenceRegions.length; i++) {
-      const region = silenceRegions[i]
-      let bufferedStart = Math.max(0, region.start + wordEndingBuffer)
-      const bufferedEnd = Math.min(buffer.duration, region.end - wordEndingBuffer)
+    for (let i = 0; i < regions.length; i++) {
+      const region = regions[i]
+      let bufferedStart = region.start + BUFFER_SECONDS
+      const bufferedEnd = region.end - BUFFER_SECONDS
 
-      // Ensure buffer doesn't create overlapping regions with the last added buffered region
+      // Prevent overlap with previous region
       if (bufferedRegions.length > 0) {
-        const lastBufferedRegion = bufferedRegions[bufferedRegions.length - 1]
-        bufferedStart = Math.max(bufferedStart, lastBufferedRegion.end)
+        const prevRegion = bufferedRegions[bufferedRegions.length - 1]
+        bufferedStart = Math.max(bufferedStart, prevRegion.end + BUFFER_SECONDS)
       }
 
       // Only keep regions that are still long enough after buffering
-      if (bufferedEnd - bufferedStart >= minDuration) {
+      if (bufferedEnd > bufferedStart && bufferedEnd - bufferedStart >= minDuration) {
         bufferedRegions.push({ start: bufferedStart, end: bufferedEnd })
-        console.log("[v0] Buffered silence region:", bufferedStart.toFixed(2), "to", bufferedEnd.toFixed(2), "seconds")
-      } else {
-        console.log(
-          "[v0] Skipped silence region after buffering (too short):",
-          region.start.toFixed(2),
-          "to",
-          region.end.toFixed(2),
-        )
       }
     }
 
@@ -2446,7 +2430,7 @@ export default function Home() {
                         href="https://dharmaseed.org/teacher/210/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-black font-serif hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm"
                       >
                         Rob Burbea's talks &amp; retreats
                       </a>
