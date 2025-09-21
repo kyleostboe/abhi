@@ -71,11 +71,17 @@ export async function POST(request: NextRequest) {
       console.error("[v0] Storage upload failed:", errorMessage)
       console.error("[v0] Full error object:", JSON.stringify(uploadResponse.error, null, 2))
 
-      if (
-        errorMessage.includes("Request Entity Too Large") ||
-        errorMessage.includes("Payload Too Large") ||
-        (errorMessage.includes("Unexpected token") && errorMessage.includes("Request En"))
-      ) {
+      if (errorMessage.includes("Unexpected token") && errorMessage.includes("Request En")) {
+        return NextResponse.json(
+          {
+            error:
+              "Storage bucket access denied. Please check that the 'meditations' bucket exists and has proper RLS policies allowing uploads.",
+          },
+          { status: 403 },
+        )
+      }
+
+      if (errorMessage.includes("Request Entity Too Large") || errorMessage.includes("Payload Too Large")) {
         return NextResponse.json(
           {
             error: `File too large (${Math.round(arrayBuffer.byteLength / 1024 / 1024)}MB). Maximum is 50MB.`,
