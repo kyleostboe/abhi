@@ -51,6 +51,14 @@ export async function POST(request: NextRequest) {
 
       if (uploadError) {
         console.error("[v0] Storage upload error:", uploadError)
+        if (uploadError.message?.includes("bucket") || uploadError.message?.includes("not found")) {
+          return NextResponse.json(
+            {
+              error: `Storage bucket not found. Please run the storage setup script first: scripts/002_create_storage_bucket.sql`,
+            },
+            { status: 500 },
+          )
+        }
         return NextResponse.json({ error: `Upload failed: ${uploadError.message}` }, { status: 500 })
       }
 
@@ -90,9 +98,19 @@ export async function POST(request: NextRequest) {
       })
     } catch (storageError) {
       console.error("[v0] Storage operation failed:", storageError)
+      let errorMessage = "Unknown storage error"
+      if (storageError instanceof Error) {
+        errorMessage = storageError.message
+        // Check if it's a JSON parsing error (HTML response from missing bucket)
+        if (errorMessage.includes("Unexpected token") && errorMessage.includes("not valid JSON")) {
+          errorMessage =
+            "Storage bucket 'meditation-audio' not found. Please run scripts/002_create_storage_bucket.sql first."
+        }
+      }
+
       return NextResponse.json(
         {
-          error: `Storage error: ${storageError instanceof Error ? storageError.message : "Unknown storage error"}. Make sure the storage bucket exists.`,
+          error: `Storage error: ${errorMessage}`,
         },
         { status: 500 },
       )
