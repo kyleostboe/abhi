@@ -30,30 +30,55 @@ export class MeditationLibrary {
   private static PLAYLISTS_KEY = "abhi_meditation_playlists"
 
   static saveMeditation(meditation: Omit<SavedMeditation, "id" | "createdAt">): SavedMeditation {
-    const savedMeditation: SavedMeditation = {
-      ...meditation,
-      id: `med_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: new Date(),
+    console.log("[v0] MeditationLibrary.saveMeditation called with:", meditation)
+
+    try {
+      const savedMeditation: SavedMeditation = {
+        ...meditation,
+        id: `med_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        createdAt: new Date(),
+      }
+      console.log("[v0] Created meditation object:", savedMeditation.id)
+
+      const existing = this.getAllMeditations()
+      console.log("[v0] Current meditations count:", existing.length)
+
+      existing.push(savedMeditation)
+
+      const serialized = JSON.stringify(existing)
+      console.log("[v0] Serialized data size:", serialized.length, "characters")
+
+      localStorage.setItem(this.STORAGE_KEY, serialized)
+      console.log("[v0] Saved to localStorage successfully")
+
+      // Verify the save worked
+      const verification = this.getAllMeditations()
+      console.log("[v0] Verification: meditations count after save:", verification.length)
+
+      return savedMeditation
+    } catch (error) {
+      console.error("[v0] Error in saveMeditation:", error)
+      throw error
     }
-
-    const existing = this.getAllMeditations()
-    existing.push(savedMeditation)
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(existing))
-
-    return savedMeditation
   }
 
   static getAllMeditations(): SavedMeditation[] {
     const stored = localStorage.getItem(this.STORAGE_KEY)
-    if (!stored) return []
+    if (!stored) {
+      console.log("[v0] No stored meditations found")
+      return []
+    }
 
     try {
       const parsed = JSON.parse(stored)
-      return parsed.map((med: any) => ({
+      const meditations = parsed.map((med: any) => ({
         ...med,
         createdAt: new Date(med.createdAt),
       }))
-    } catch {
+      console.log("[v0] Retrieved", meditations.length, "meditations from storage")
+      return meditations
+    } catch (error) {
+      console.error("[v0] Error parsing stored meditations:", error)
       return []
     }
   }

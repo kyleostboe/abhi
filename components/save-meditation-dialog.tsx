@@ -40,7 +40,15 @@ export function SaveMeditationDialog({
   const { toast } = useToast()
 
   const handleSave = () => {
+    console.log("[v0] Starting save process...")
+    console.log("[v0] Audio URL:", audioUrl)
+    console.log("[v0] Title:", title.trim())
+    console.log("[v0] Duration:", duration)
+    console.log("[v0] Source:", source)
+    console.log("[v0] Metadata:", metadata)
+
     if (!title.trim()) {
+      console.log("[v0] Save failed: No title provided")
       toast({
         title: "Title required",
         description: "Please enter a title for your meditation.",
@@ -49,41 +57,56 @@ export function SaveMeditationDialog({
       return
     }
 
-    // Save the meditation
-    const savedMeditation = MeditationLibrary.saveMeditation({
-      title: title.trim(),
-      originalFileName,
-      processedAudioUrl: audioUrl,
-      duration,
-      source,
-      metadata,
-    })
+    try {
+      // Save the meditation
+      console.log("[v0] Attempting to save meditation...")
+      const savedMeditation = MeditationLibrary.saveMeditation({
+        title: title.trim(),
+        originalFileName,
+        processedAudioUrl: audioUrl,
+        duration,
+        source,
+        metadata,
+      })
+      console.log("[v0] Meditation saved successfully:", savedMeditation.id)
 
-    // Create new playlist if needed
-    let playlistId = selectedPlaylist
-    if (showNewPlaylist && newPlaylistName.trim()) {
-      const newPlaylist = MeditationLibrary.createPlaylist(newPlaylistName.trim(), newPlaylistDescription.trim())
-      playlistId = newPlaylist.id
-      setPlaylists(MeditationLibrary.getAllPlaylists())
+      // Create new playlist if needed
+      let playlistId = selectedPlaylist
+      if (showNewPlaylist && newPlaylistName.trim()) {
+        console.log("[v0] Creating new playlist:", newPlaylistName.trim())
+        const newPlaylist = MeditationLibrary.createPlaylist(newPlaylistName.trim(), newPlaylistDescription.trim())
+        playlistId = newPlaylist.id
+        setPlaylists(MeditationLibrary.getAllPlaylists())
+        console.log("[v0] New playlist created:", newPlaylist.id)
+      }
+
+      // Add to playlist if selected
+      if (playlistId) {
+        console.log("[v0] Adding to playlist:", playlistId)
+        MeditationLibrary.addToPlaylist(playlistId, savedMeditation.id)
+      }
+
+      console.log("[v0] Save process completed successfully")
+      toast({
+        title: "Meditation saved!",
+        description: `"${title}" has been added to your library.`,
+      })
+
+      // Reset form
+      setTitle(originalFileName.replace(/\.[^/.]+$/, ""))
+      setSelectedPlaylist("")
+      setNewPlaylistName("")
+      setNewPlaylistDescription("")
+      setShowNewPlaylist(false)
+      setOpen(false)
+    } catch (error) {
+      console.error("[v0] Save failed with error:", error)
+      toast({
+        title: "Save failed",
+        description: "There was an error saving your meditation. Please try again.",
+        variant: "destructive",
+      })
     }
-
-    // Add to playlist if selected
-    if (playlistId) {
-      MeditationLibrary.addToPlaylist(playlistId, savedMeditation.id)
-    }
-
-    toast({
-      title: "Meditation saved!",
-      description: `"${title}" has been added to your library.`,
-    })
-
-    // Reset form
-    setTitle(originalFileName.replace(/\.[^/.]+$/, ""))
-    setSelectedPlaylist("")
-    setNewPlaylistName("")
-    setNewPlaylistDescription("")
-    setShowNewPlaylist(false)
-    setOpen(false)
   }
 
   return (
