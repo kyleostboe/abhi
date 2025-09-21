@@ -40,8 +40,8 @@ export function SaveMeditationDialog({
   const { toast } = useToast()
 
   const handleSave = () => {
-    console.log("[v0] Starting save process...")
-    console.log("[v0] Audio URL:", audioUrl)
+    console.log("[v0] Save button clicked - starting save process...")
+    console.log("[v0] Audio URL exists:", !!audioUrl)
     console.log("[v0] Title:", title.trim())
     console.log("[v0] Duration:", duration)
     console.log("[v0] Source:", source)
@@ -57,9 +57,26 @@ export function SaveMeditationDialog({
       return
     }
 
+    if (!audioUrl) {
+      console.log("[v0] Save failed: No audio URL provided")
+      toast({
+        title: "No audio to save",
+        description: "There's no processed audio to save.",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
-      // Save the meditation
-      console.log("[v0] Attempting to save meditation...")
+      console.log("[v0] Attempting to save meditation with data:", {
+        title: title.trim(),
+        originalFileName,
+        processedAudioUrl: audioUrl,
+        duration,
+        source,
+        metadata,
+      })
+
       const savedMeditation = MeditationLibrary.saveMeditation({
         title: title.trim(),
         originalFileName,
@@ -68,7 +85,8 @@ export function SaveMeditationDialog({
         source,
         metadata,
       })
-      console.log("[v0] Meditation saved successfully:", savedMeditation.id)
+
+      console.log("[v0] Meditation saved successfully with ID:", savedMeditation.id)
 
       // Create new playlist if needed
       let playlistId = selectedPlaylist
@@ -77,14 +95,22 @@ export function SaveMeditationDialog({
         const newPlaylist = MeditationLibrary.createPlaylist(newPlaylistName.trim(), newPlaylistDescription.trim())
         playlistId = newPlaylist.id
         setPlaylists(MeditationLibrary.getAllPlaylists())
-        console.log("[v0] New playlist created:", newPlaylist.id)
+        console.log("[v0] New playlist created with ID:", newPlaylist.id)
       }
 
       // Add to playlist if selected
       if (playlistId) {
-        console.log("[v0] Adding to playlist:", playlistId)
+        console.log("[v0] Adding meditation to playlist:", playlistId)
         MeditationLibrary.addToPlaylist(playlistId, savedMeditation.id)
+        console.log("[v0] Added to playlist successfully")
       }
+
+      const allMeditations = MeditationLibrary.getAllMeditations()
+      console.log("[v0] Verification: Total meditations after save:", allMeditations.length)
+      console.log(
+        "[v0] Verification: Can find saved meditation:",
+        allMeditations.some((m) => m.id === savedMeditation.id),
+      )
 
       console.log("[v0] Save process completed successfully")
       toast({
@@ -103,7 +129,7 @@ export function SaveMeditationDialog({
       console.error("[v0] Save failed with error:", error)
       toast({
         title: "Save failed",
-        description: "There was an error saving your meditation. Please try again.",
+        description: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
         variant: "destructive",
       })
     }
