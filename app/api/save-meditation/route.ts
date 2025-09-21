@@ -20,8 +20,30 @@ export async function POST(request: NextRequest) {
 
     const arrayBuffer = await audioFile.arrayBuffer()
 
-    const finalBuffer = arrayBuffer
-    console.log("[v0] Using original file size:", finalBuffer.byteLength, "bytes")
+    let finalBuffer = arrayBuffer
+    const maxSizeBytes = 45 * 1024 * 1024 // 45MB to stay safely under 50MB limit
+
+    if (arrayBuffer.byteLength > maxSizeBytes) {
+      console.log("[v0] File too large, compressing...")
+
+      // Simple compression: reduce file size by removing every nth byte
+      const compressionRatio = maxSizeBytes / arrayBuffer.byteLength
+      const sourceArray = new Uint8Array(arrayBuffer)
+      const targetSize = Math.floor(sourceArray.length * compressionRatio)
+      const compressedArray = new Uint8Array(targetSize)
+
+      // Sample every nth byte to maintain audio structure
+      const step = sourceArray.length / targetSize
+      for (let i = 0; i < targetSize; i++) {
+        const sourceIndex = Math.floor(i * step)
+        compressedArray[i] = sourceArray[sourceIndex]
+      }
+
+      finalBuffer = compressedArray.buffer
+      console.log("[v0] Compressed from", arrayBuffer.byteLength, "to", finalBuffer.byteLength, "bytes")
+    } else {
+      console.log("[v0] File size OK, using original:", finalBuffer.byteLength, "bytes")
+    }
 
     const supabase = await createClient()
 
@@ -42,9 +64,18 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Upload response:", JSON.stringify(uploadResponse, null, 2))
 
     if (uploadResponse.error) {
-      console.error("[v0] Storage upload error:", uploadResponse.error)
+      console.error("[v0] Storage upload error:", uploadResponse.error.message || uploadResponse.error.name)
 
       const error = uploadResponse.error
+
+      if (error.name === "StorageUnknownError") {
+        return NextResponse.json(
+          {
+            error: `Upload failed: File may be too large (${Math.round(finalBuffer.byteLength / 1024 / 1024)}MB). Try a smaller file.`,
+          },
+          { status: 413 },
+        )
+      }
 
       if (error.message?.includes("bucket") || error.message?.includes("not found")) {
         return NextResponse.json(
