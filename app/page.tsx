@@ -1317,279 +1317,9 @@ export default function Home() {
     }
   }
 
-  const processAudioAdjuster = async () => {
-    // Placeholder function
-  }
-
-  const downloadProcessedAudioAdjuster = async () => {
-    // Placeholder function
-  }
-
-  // == Effects for Length Adjuster ==
-  useEffect(() => {
-    // Use the useMobile hook for initial detection
-    // The useMobile hook already handles window.innerWidth and user agent.
-    // No need for manual check here.
-    if (typeof navigator !== "undefined" && (navigator as any).deviceMemory) {
-      const deviceMemory = (navigator as any).deviceMemory
-      if (deviceMemory < 4) {
-        console.warn("Device memory less than 4GB, enabling memory warnings.")
-        setMemoryWarning(true)
-      }
-    }
-  }, []) // isMobileDevice is now a hook, no longer a dependency here
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-
-    // Use getAudioContext for consistent initialization
-    try {
-      const ctx = getAudioContext()
-      audioContextRef.current = ctx
-    } catch (error) {
-      setStatus({
-        message: `Error initializing audio system: ${error instanceof Error ? error.message : "Unknown error"}`,
-        type: "error",
-      })
-    }
-
-    return () => {
-      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-        audioContextRef.current
-          .close()
-          .catch((err) => console.warn("Error closing AudioContext in main useEffect cleanup:", err))
-        audioContextRef.current = null
-      }
-    }
-  }, []) // isMobileDevice removed from dependency array as it's handled by useMobile hook
-
-  const cleanupMemory = useCallback(() => {
-    setOriginalBuffer(null)
-    setProcessedBufferState(null)
-    if (originalUrl) {
-      URL.revokeObjectURL(originalUrl)
-      setOriginalUrl("")
-    }
-    if (processedUrl) {
-      URL.revokeObjectURL(processedUrl)
-      setProcessedUrl("")
-    }
-    forceGarbageCollection()
-    if (isMobileDevice) setTimeout(() => forceGarbageCollection(), 100)
-  }, [originalUrl, processedUrl, isMobileDevice])
-
-  const validateFileSize = useCallback(
-    (fileToValidate: File): boolean => {
-      const maxSize = isMobileDevice ? 50 * 1024 * 1024 : 500 * 1024 * 1024
-      if (fileToValidate.size > maxSize) {
-        setStatus({ message: `File too large. Max ${isMobileDevice ? "50MB" : "500MB"}.`, type: "error" })
-        return false
-      }
-      if (
-        (isMobileDevice && fileToValidate.size > 20 * 1024 * 1024) ||
-        (!isMobileDevice && fileToValidate.size > 150 * 1024 * 1024)
-      ) {
-        setMemoryWarning(true)
-      } else {
-        setMemoryWarning(false)
-      }
-      return true
-    },
-    [isMobileDevice],
-  )
-
-  const loadAudioFile = useCallback(
-    async (file: File): Promise<void> => {
-      console.log("[v0] Loading audio file:", file.name)
-
-      try {
-        const audioContext = getAudioContext()
-        if (!audioContext || audioContext.state === "closed") {
-          console.log("[v0] Reinitializing audio context for file upload...")
-          await getAudioContext()
-          console.log("[v0] Audio context reinitialized successfully")
-        }
-
-        const originalFileUrl = URL.createObjectURL(file)
-        setOriginalUrl(originalFileUrl)
-        setFile(file)
-
-        setStatus({ message: `Loading ${file.name}...`, type: "info" })
-
-        const arrayBuffer = await file.arrayBuffer()
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-
-        setOriginalBuffer(audioBuffer)
-        setActualDuration(audioBuffer.duration)
-        setIsProcessing(false)
-        setProcessedUrl("")
-
-        setStatus({ message: `${file.name} loaded successfully`, type: "success" })
-
-        console.log("[v0] Audio file loaded successfully")
-      } catch (error) {
-        console.error("[v0] Error loading audio file:", error)
-        setIsProcessing(false)
-        setStatus({ message: "Error loading audio file", type: "error" })
-        toast({
-          title: "Error loading audio",
-          description: "Please try again with a different audio file.",
-          variant: "destructive",
-        })
-      }
-    },
-    [toast],
-  )
-
-  const handleFile = useCallback(
-    async (file: File) => {
-      console.log("[v0] Handling file upload:", file.name)
-
-      if (!file.type.startsWith("audio/")) {
-        toast({
-          title: "Invalid file type",
-          description: "Please select an audio file.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      setProcessedUrl(null)
-      setActualDuration(null)
-
-      try {
-        const audioContext = getAudioContext()
-        if (!audioContext || audioContext.state === "closed") {
-          console.log("[v0] Reinitializing audio context for file upload...")
-          const newContext = await getAudioContext()
-          if (!newContext) {
-            throw new Error("Failed to initialize audio context")
-          }
-          console.log("[v0] Audio context reinitialized successfully")
-        }
-
-        await loadAudioFile(file)
-      } catch (error) {
-        console.error("[v0] Error in handleFile:", error)
-        setIsProcessing(false)
-        toast({
-          title: "Error processing file",
-          description: "Please try again with a different audio file.",
-          variant: "destructive",
-        })
-      }
-    },
-    [loadAudioFile, toast],
-  )
-
-  const detectSilenceRegions = async (
-    buffer: AudioBuffer,
-    threshold: number,
-    minSilenceDur: number,
-  ): Promise<{ start: number; end: number }[]> => {
-    const sampleRate = buffer.sampleRate
-    const channelData = buffer.getChannelData(0)
-    const silenceRegions: { start: number; end: number }[] = []
-    let silenceStart: number | null = null
-    let consecutiveSilentSamples = 0
-    const skipSamples = isMobileDevice ? 20 : 10
-
-    for (let i = 0; i < channelData.length; i += skipSamples) {
-      if (i % (sampleRate * (isMobileDevice ? 2 : 5)) === 0) {
-        await sleep(0)
-        setProcessingProgress(20 + Math.floor((i / channelData.length) * 10))
-      }
-      const amplitude = Math.abs(channelData[i])
-      if (amplitude < threshold) {
-        if (silenceStart === null) silenceStart = i
-        consecutiveSilentSamples++
-      } else {
-        if (silenceStart !== null && (consecutiveSilentSamples * skipSamples) / sampleRate >= minSilenceDur) {
-          silenceRegions.push({ start: silenceStart / sampleRate, end: i / sampleRate })
-        }
-        silenceStart = null
-        consecutiveSilentSamples = 0
-      }
-    }
-    if (silenceStart !== null && (consecutiveSilentSamples * skipSamples) / sampleRate >= minSilenceDur) {
-      silenceRegions.push({ start: silenceStart / sampleRate, end: channelData.length / sampleRate })
-    }
-    return silenceRegions
-  }
-
-  const analyzeAudioForLimits = async (buffer: AudioBuffer, minSpacing: number) => {
-    setProcessingStep("Analyzing audio for limits...")
-    const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
-    const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
-    const audioContentDuration = buffer.duration - totalSilenceDuration
-    const minRequiredSpacing = silenceRegions.length > 0 ? silenceRegions.length * minSpacing : 0
-    const minPossibleDuration = Math.max(1, Math.ceil((audioContentDuration + minRequiredSpacing) / 60))
-    const maxPossibleDuration = isMobileDevice ? 60 : 120
-    setDurationLimits({ min: minPossibleDuration, max: maxPossibleDuration })
-    setAudioAnalysis({
-      totalSilence: totalSilenceDuration,
-      contentDuration: audioContentDuration,
-      silenceRegions: silenceRegions.length,
-    })
-    if (targetDuration < minPossibleDuration) setTargetDuration(minPossibleDuration)
-    else if (targetDuration > maxPossibleDuration) setTargetDuration(maxPossibleDuration)
-    setProcessingStep("Analysis complete.")
-  }
-
-  useEffect(() => {
-    if (originalBuffer) analyzeAudioForLimits(originalBuffer, minSpacingDuration)
-  }, [originalBuffer, silenceThreshold, minSilenceDuration, minSpacingDuration])
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-
-    const stored = localStorage.getItem("abhi_adjuster_import")
-    if (!stored) return
-
-    localStorage.removeItem("abhi_adjuster_import")
-
-    try {
-      const parsed = JSON.parse(stored) as {
-        processedAudioUrl?: string
-        originalFileName?: string
-        title?: string
-      } | null
-
-      if (!parsed?.processedAudioUrl) return
-
-      const loadImportedMeditation = async () => {
-        try {
-          setActiveMode("adjuster")
-          const response = await fetch(parsed.processedAudioUrl)
-          if (!response.ok) throw new Error("Failed to retrieve saved audio")
-          const blob = await response.blob()
-          const inferredType = blob.type || "audio/wav"
-          const defaultExtension = inferredType.split("/")[1] ? `.${inferredType.split("/")[1]}` : ".wav"
-          const fileName = parsed.originalFileName || `${parsed.title || "meditation"}${defaultExtension}`
-          const importedFile = new File([blob], fileName, { type: inferredType })
-          await handleFile(importedFile)
-          toast({
-            title: "Loaded from Library",
-            description: `"${parsed.title || parsed.originalFileName || "Meditation"}" is ready in the Adjuster.`,
-          })
-        } catch (error) {
-          console.error("Failed to import meditation into Adjuster", error)
-          toast({
-            title: "Import failed",
-            description: "We couldn't load this meditation into the Adjuster.",
-            variant: "destructive",
-          })
-        }
-      }
-
-      void loadImportedMeditation()
-    } catch (error) {
-      console.error("Unable to parse Adjuster import payload", error)
-    }
-  }, [handleFile, toast])
-
   const processAudioAdjusterAction = async () => {
-    setIsProcessingComplete(false) // Add this line
+    console.log("[v0] Processing button clicked")
+    setIsProcessingComplete(false)
     const currentAudioContext = audioContextRef.current
     if (!originalBuffer || !currentAudioContext) {
       setStatus({ message: "Original audio or audio system not ready.", type: "error" })
@@ -2332,6 +2062,139 @@ export default function Home() {
       })
     }
   }, [toast])
+
+  // Helper function to handle file loading and initial analysis
+  const handleFile = async (selectedFile: File) => {
+    setFile(selectedFile)
+    setOriginalUrl("")
+    setProcessedUrl("")
+    setAudioAnalysis(null)
+    setActualDuration(null)
+    setProcessedBufferState(null)
+    setIsProcessingComplete(false)
+    setStatus(null)
+    setMemoryWarning(false)
+    setPausesAdjusted(0)
+    setProcessingProgress(0)
+    setProcessingStep("Loading audio...")
+
+    if (audioContextRef.current && audioContextRef.current.state === "running") {
+      try {
+        await audioContextRef.current.suspend()
+      } catch (e) {
+        console.warn("Error suspending AudioContext before loading new file:", e)
+      }
+    }
+
+    try {
+      const context = audioContextRef.current || new AudioContext()
+      audioContextRef.current = context
+
+      if (context.state === "suspended") {
+        await context.resume()
+      }
+
+      const reader = new FileReader()
+      reader.onload = async (event) => {
+        if (event.target?.result) {
+          try {
+            const arrayBuffer = event.target.result as ArrayBuffer
+            const buffer = await context.decodeAudioData(arrayBuffer)
+            setOriginalBuffer(buffer)
+            setOriginalUrl(URL.createObjectURL(selectedFile))
+            setProcessingStep("Analyzing audio...")
+
+            const url = URL.createObjectURL(selectedFile)
+            const tempAudio = new Audio(url)
+            tempAudio.preload = "metadata"
+            tempAudio.onloadedmetadata = () => {
+              const duration = tempAudio.duration
+              setActualDuration(duration)
+              URL.revokeObjectURL(url) // Clean up temporary URL
+            }
+            tempAudio.onerror = () => {
+              console.error("Error loading audio metadata for duration.")
+              URL.revokeObjectURL(url)
+            }
+
+            // Perform silence detection
+            const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
+            const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+            const contentDuration = buffer.duration - totalSilenceDuration
+            const maxPossibleDuration = isMobileDevice ? 60 * 60 : 120 * 60 // 1 hour for mobile, 2 hours for desktop
+            setDurationLimits({
+              min: Math.ceil(contentDuration / 60),
+              max: maxPossibleDuration / 60,
+            })
+            setAudioAnalysis({
+              totalSilence: totalSilenceDuration,
+              contentDuration: contentDuration,
+              silenceRegions: silenceRegions.length,
+            })
+            setProcessingStep("Ready to process.")
+            setStatus({ message: "Audio loaded and analyzed. Ready to adjust.", type: "success" })
+          } catch (error) {
+            console.error("Error decoding audio data:", error)
+            setStatus({
+              message: `Error loading audio: ${error instanceof Error ? error.message : "Unknown"}`,
+              type: "error",
+            })
+            setFile(null)
+            setOriginalBuffer(null)
+            setOriginalUrl("")
+          }
+        }
+      }
+      reader.readAsArrayBuffer(selectedFile)
+    } catch (error) {
+      console.error("Error accessing audio context:", error)
+      setStatus({ message: `Audio system error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
+      setFile(null)
+      setOriginalBuffer(null)
+      setOriginalUrl("")
+    }
+  }
+
+  // Placeholder for detectSilenceRegions function (needs to be implemented or imported)
+  const detectSilenceRegions = async (
+    buffer: AudioBuffer,
+    threshold: number,
+    minDuration: number,
+  ): Promise<{ start: number; end: number }[]> => {
+    // This is a placeholder implementation. A real implementation would involve
+    // analyzing the audio buffer's channel data to find segments below the threshold.
+    // For now, it returns an empty array to avoid crashing.
+    console.warn("detectSilenceRegions is a placeholder and needs a proper implementation.")
+    // Example of how it might work (simplified):
+    const channelData = buffer.getChannelData(0) // Use the first channel
+    const sampleRate = buffer.sampleRate
+    const silenceRegions: { start: number; end: number }[] = []
+    let inSilence = false
+    let silenceStart = 0
+
+    for (let i = 0; i < channelData.length; i++) {
+      const amplitude = Math.abs(channelData[i])
+      if (amplitude < threshold && !inSilence) {
+        inSilence = true
+        silenceStart = i / sampleRate
+      } else if (amplitude >= threshold && inSilence) {
+        inSilence = false
+        const silenceEnd = i / sampleRate
+        if (silenceEnd - silenceStart >= minDuration) {
+          silenceRegions.push({ start: silenceStart, end: silenceEnd })
+        }
+      }
+    }
+    // Handle case where silence extends to the end of the audio
+    if (inSilence) {
+      const silenceEnd = channelData.length / sampleRate
+      if (silenceEnd - silenceStart >= minDuration) {
+        silenceRegions.push({ start: silenceStart, end: silenceEnd })
+      }
+    }
+
+    return silenceRegions
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px]">

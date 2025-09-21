@@ -51,13 +51,15 @@ export class MeditationLibrary {
       localStorage.setItem(this.STORAGE_KEY, serialized)
       console.log("[v0] Saved to localStorage successfully")
 
-      // Verify the save worked
-      const verification = this.getAllMeditations()
-      console.log("[v0] Verification: meditations count after save:", verification.length)
+      setTimeout(() => {
+        const verification = this.getAllMeditations()
+        console.log("[v0] Verification: meditations count after save:", verification.length)
+      }, 10)
 
       return savedMeditation
     } catch (error) {
       console.error("[v0] Error in saveMeditation:", error)
+      localStorage.removeItem(this.STORAGE_KEY)
       throw error
     }
   }
@@ -71,6 +73,12 @@ export class MeditationLibrary {
       }
 
       const parsed = JSON.parse(stored)
+      if (!Array.isArray(parsed)) {
+        console.log("[v0] Invalid stored data format, clearing")
+        localStorage.removeItem(this.STORAGE_KEY)
+        return []
+      }
+
       const meditations = parsed.map((med: any) => ({
         ...med,
         createdAt: new Date(med.createdAt),
