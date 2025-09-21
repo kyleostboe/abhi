@@ -34,10 +34,49 @@ export class MeditationLibrary {
     try {
       const supabase = createClient()
 
+      // Convert the blob URL to actual blob data for upload
+      let audioUrl = meditation.processedAudioUrl
+
+      if (meditation.processedAudioUrl.startsWith("blob:")) {
+        console.log("[v0] Converting blob URL to file for storage upload")
+
+        // Fetch the blob data from the blob URL
+        const response = await fetch(meditation.processedAudioUrl)
+        const audioBlob = await response.blob()
+
+        // Generate a unique filename
+        const timestamp = Date.now()
+        const randomId = Math.random().toString(36).substring(2, 15)
+        const filename = `meditation_${timestamp}_${randomId}.wav`
+
+        console.log("[v0] Uploading audio file to Supabase Storage:", filename)
+
+        // Upload to Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("meditation-audio")
+          .upload(filename, audioBlob, {
+            contentType: "audio/wav",
+            cacheControl: "3600",
+          })
+
+        if (uploadError) {
+          console.error("[v0] Storage upload error:", uploadError)
+          throw new Error(`Failed to upload audio file: ${uploadError.message}`)
+        }
+
+        console.log("[v0] Audio file uploaded successfully:", uploadData.path)
+
+        // Get the public URL for the uploaded file
+        const { data: urlData } = supabase.storage.from("meditation-audio").getPublicUrl(uploadData.path)
+
+        audioUrl = urlData.publicUrl
+        console.log("[v0] Generated public URL:", audioUrl)
+      }
+
       const meditationData = {
         title: meditation.title,
         description: meditation.originalFileName,
-        audio_url: meditation.processedAudioUrl,
+        audio_url: audioUrl,
         duration: meditation.duration,
       }
 
@@ -97,8 +136,8 @@ export class MeditationLibrary {
         processedAudioUrl: row.audio_url,
         duration: row.duration || 0,
         createdAt: new Date(row.created_at),
-        source: "adjuster" as const, // Default for now
-        metadata: {}, // Default empty metadata
+        source: row.source as "adjuster" | "encoder",
+        metadata: row.metadata || {},
       }))
 
       console.log("[v0] Retrieved", meditations.length, "meditations from database")
@@ -126,8 +165,8 @@ export class MeditationLibrary {
         processedAudioUrl: data.audio_url,
         duration: data.duration || 0,
         createdAt: new Date(data.created_at),
-        source: "adjuster" as const,
-        metadata: {},
+        source: data.source as "adjuster" | "encoder",
+        metadata: data.metadata || {},
       }
     } catch (error) {
       console.error("[v0] Error fetching meditation:", error)
@@ -139,11 +178,47 @@ export class MeditationLibrary {
     try {
       const supabase = createClient()
 
-      const { error } = await supabase.from("meditations").delete().eq("id", id)
+      // First get the meditation to find the audio file path
+      const { data: meditation, error: fetchError } = await supabase
+        .from("meditations")
+        .select("audio_url")
+        .eq("id", id)
+        .single()
 
-      if (error) {
-        console.error("[v0] Error deleting meditation:", error)
-        throw error
+      if (fetchError) {
+        console.error("[v0] Error fetching meditation for deletion:", fetchError)
+        throw fetchError
+      }
+
+      // Delete from database first
+      const { error: deleteError } = await supabase.from("meditations").delete().eq("id", id)
+
+      if (deleteError) {
+        console.error("[v0] Error deleting meditation from database:", deleteError)
+        throw deleteError
+      }
+
+      // If the audio URL is from our storage, delete the file too
+      if (meditation?.audio_url && meditation.audio_url.includes("meditation-audio")) {
+        try {
+          // Extract filename from the URL
+          const urlParts = meditation.audio_url.split("/")
+          const filename = urlParts[urlParts.length - 1]
+
+          console.log("[v0] Deleting audio file from storage:", filename)
+
+          const { error: storageError } = await supabase.storage.from("meditation-audio").remove([filename])
+
+          if (storageError) {
+            console.warn("[v0] Warning: Could not delete audio file from storage:", storageError)
+            // Don't throw here - the database deletion was successful
+          } else {
+            console.log("[v0] Audio file deleted from storage successfully")
+          }
+        } catch (storageError) {
+          console.warn("[v0] Warning: Error deleting audio file from storage:", storageError)
+          // Don't throw here - the database deletion was successful
+        }
       }
 
       console.log("[v0] Meditation deleted successfully:", id)
