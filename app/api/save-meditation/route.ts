@@ -42,13 +42,25 @@ export async function POST(request: NextRequest) {
 
     const meditationsBucket = buckets?.find((bucket) => bucket.name === "meditations")
     if (!meditationsBucket) {
-      console.error("[v0] 'meditations' bucket not found")
-      return NextResponse.json(
-        {
-          error: "Storage bucket 'meditations' not found. Please run the SQL script to create the bucket first.",
-        },
-        { status: 500 },
-      )
+      console.log("[v0] 'meditations' bucket not found, creating it...")
+
+      const { data: newBucket, error: createError } = await supabase.storage.createBucket("meditations", {
+        public: true,
+        allowedMimeTypes: ["audio/wav", "audio/mpeg", "audio/mp3"],
+        fileSizeLimit: 52428800, // 50MB
+      })
+
+      if (createError) {
+        console.error("[v0] Failed to create bucket:", createError)
+        return NextResponse.json(
+          {
+            error: `Failed to create storage bucket: ${createError.message}. Please create it manually in Supabase.`,
+          },
+          { status: 500 },
+        )
+      }
+
+      console.log("[v0] Successfully created 'meditations' bucket")
     }
 
     console.log("[v0] Bucket exists, proceeding with upload...")
