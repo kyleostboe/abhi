@@ -32,79 +32,44 @@ export class MeditationLibrary {
     console.log("[v0] MeditationLibrary.saveMeditation called with:", meditation)
 
     try {
-      const supabase = createClient()
-
-      // Convert the blob URL to actual blob data for upload
-      let audioUrl = meditation.processedAudioUrl
-
       if (meditation.processedAudioUrl.startsWith("blob:")) {
-        console.log("[v0] Converting blob URL to file for storage upload")
+        console.log("[v0] Using server-side compression and upload")
 
-        // Fetch the blob data from the blob URL
+        // Fetch the blob data
         const response = await fetch(meditation.processedAudioUrl)
         const audioBlob = await response.blob()
 
-        // Generate a unique filename
-        const timestamp = Date.now()
-        const randomId = Math.random().toString(36).substring(2, 15)
-        const filename = `meditation_${timestamp}_${randomId}.wav`
+        // Create FormData for server upload
+        const formData = new FormData()
+        formData.append("audio", audioBlob, "meditation.wav")
+        formData.append("title", meditation.title)
+        formData.append("originalFileName", meditation.originalFileName)
+        formData.append("duration", meditation.duration.toString())
+        formData.append("source", meditation.source)
+        formData.append("metadata", JSON.stringify(meditation.metadata))
 
-        console.log("[v0] Uploading audio file to Supabase Storage:", filename)
+        // Send to server-side API
+        const uploadResponse = await fetch("/api/save-meditation", {
+          method: "POST",
+          body: formData,
+        })
 
-        // Upload to Supabase Storage
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("meditation-audio")
-          .upload(filename, audioBlob, {
-            contentType: "audio/wav",
-            cacheControl: "3600",
-          })
-
-        if (uploadError) {
-          console.error("[v0] Storage upload error:", uploadError)
-          throw new Error(`Failed to upload audio file: ${uploadError.message}`)
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json()
+          throw new Error(errorData.error || "Server upload failed")
         }
 
-        console.log("[v0] Audio file uploaded successfully:", uploadData.path)
+        const savedMeditation = await uploadResponse.json()
+        console.log("[v0] Server-side save successful:", savedMeditation.id)
 
-        // Get the public URL for the uploaded file
-        const { data: urlData } = supabase.storage.from("meditation-audio").getPublicUrl(uploadData.path)
-
-        audioUrl = urlData.publicUrl
-        console.log("[v0] Generated public URL:", audioUrl)
+        return {
+          ...savedMeditation,
+          createdAt: new Date(savedMeditation.createdAt),
+        }
       }
 
-      const meditationData = {
-        title: meditation.title,
-        description: meditation.originalFileName,
-        audio_url: audioUrl,
-        duration: meditation.duration,
-      }
-
-      console.log("[v0] Inserting into Supabase:", meditationData)
-
-      const { data, error } = await supabase.from("meditations").insert(meditationData).select().single()
-
-      if (error) {
-        console.error("[v0] Supabase insert error:", error)
-        throw error
-      }
-
-      console.log("[v0] Supabase insert successful:", data)
-
-      // Convert database format back to our interface
-      const savedMeditation: SavedMeditation = {
-        id: data.id,
-        title: data.title,
-        originalFileName: data.description || meditation.originalFileName,
-        processedAudioUrl: data.audio_url,
-        duration: data.duration,
-        createdAt: new Date(data.created_at),
-        source: meditation.source,
-        metadata: meditation.metadata,
-      }
-
-      console.log("[v0] Meditation saved successfully to database:", savedMeditation.id)
-      return savedMeditation
+      // Fallback for non-blob URLs (shouldn't happen in normal flow)
+      throw new Error("Invalid audio URL format")
     } catch (error) {
       console.error("[v0] Error in saveMeditation:", error)
       throw error
