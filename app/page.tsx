@@ -1446,7 +1446,6 @@ export default function Home() {
         return
       }
 
-      setIsProcessing(true)
       setProcessedUrl(null)
       setActualDuration(null)
 

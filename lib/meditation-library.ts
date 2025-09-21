@@ -63,13 +63,13 @@ export class MeditationLibrary {
   }
 
   static getAllMeditations(): SavedMeditation[] {
-    const stored = localStorage.getItem(this.STORAGE_KEY)
-    if (!stored) {
-      console.log("[v0] No stored meditations found")
-      return []
-    }
-
     try {
+      const stored = localStorage.getItem(this.STORAGE_KEY)
+      if (!stored) {
+        console.log("[v0] No stored meditations found")
+        return []
+      }
+
       const parsed = JSON.parse(stored)
       const meditations = parsed.map((med: any) => ({
         ...med,
@@ -79,6 +79,7 @@ export class MeditationLibrary {
       return meditations
     } catch (error) {
       console.error("[v0] Error parsing stored meditations:", error)
+      localStorage.removeItem(this.STORAGE_KEY)
       return []
     }
   }
