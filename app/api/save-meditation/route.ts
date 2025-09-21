@@ -72,6 +72,19 @@ export async function POST(request: NextRequest) {
       console.error("[v0] Full error object:", JSON.stringify(uploadResponse.error, null, 2))
 
       if (
+        errorMessage.includes("Request Entity Too Large") ||
+        errorMessage.includes("Payload Too Large") ||
+        (errorMessage.includes("Unexpected token") && errorMessage.includes("Request En"))
+      ) {
+        return NextResponse.json(
+          {
+            error: `File too large (${Math.round(arrayBuffer.byteLength / 1024 / 1024)}MB). Maximum is 50MB.`,
+          },
+          { status: 413 },
+        )
+      }
+
+      if (
         errorMessage.includes("bucket") ||
         errorMessage.includes("not found") ||
         errorMessage.includes("does not exist")
