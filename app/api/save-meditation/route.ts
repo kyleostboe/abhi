@@ -54,125 +54,79 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Uploading to Supabase Storage:", filename)
 
-    let uploadResponse
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+
+    console.log("[v0] Making direct HTTP request to Supabase Storage API...")
+
     try {
-      uploadResponse = await supabase.storage.from(MEDITATION_BUCKET).upload(filename, arrayBuffer, {
-        contentType: "audio/wav",
-        cacheControl: "3600",
-        upsert: false,
+      const uploadUrl = `${supabaseUrl}/storage/v1/object/${MEDITATION_BUCKET}/${filename}`
+      console.log("[v0] Upload URL:", uploadUrl)
+
+      const response = await fetch(uploadUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${supabaseKey}`,
+          "Content-Type": "audio/wav",
+          "Cache-Control": "3600",
+        },
+        body: arrayBuffer,
       })
-    } catch (uploadError: any) {
-      console.error("[v0] Upload threw exception:", uploadError)
-      console.error("[v0] Error type:", typeof uploadError)
-      console.error("[v0] Error constructor:", uploadError.constructor.name)
-      console.error("[v0] Error message:", uploadError.message)
-      console.error("[v0] Full error object:", JSON.stringify(uploadError, null, 2))
 
-      // Handle cases where Supabase returns HTML instead of JSON
-      if (uploadError.message && uploadError.message.includes("Unexpected token")) {
+      console.log("[v0] Raw response status:", response.status)
+      console.log("[v0] Raw response headers:", Object.fromEntries(response.headers.entries()))
+
+      const responseText = await response.text()
+      console.log("[v0] Raw response body:", responseText.substring(0, 500))
+
+      if (!response.ok) {
         return NextResponse.json(
-          {
-            error:
-              "Storage bucket is likely set to Private. Please set the 'meditations' bucket to Public in your Supabase dashboard.",
-          },
-          { status: 500 },
+          { error: `Storage API returned ${response.status}: ${responseText}` },
+          { status: response.status },
         )
       }
-      throw uploadError
+
+      // Parse the successful response
+      const uploadData = JSON.parse(responseText)
+      console.log("[v0] Upload successful, getting public URL...")
+
+      const { data: urlData } = supabase.storage.from(MEDITATION_BUCKET).getPublicUrl(uploadData.Key || filename)
+
+      // Save to database
+      const meditationData = {
+        title,
+        description: originalFileName,
+        audio_url: urlData.publicUrl,
+        duration,
+        source,
+        metadata,
+        original_filename: originalFileName,
+      }
+
+      const { data, error } = await supabase.from("meditations").insert(meditationData).select().single()
+
+      if (error) {
+        console.error("[v0] Database insert error:", error)
+        return NextResponse.json({ error: `Database error: ${error.message}` }, { status: 500 })
+      }
+
+      console.log("[v0] Meditation saved successfully:", data.id)
+
+      return NextResponse.json({
+        id: data.id,
+        title: data.title,
+        originalFileName: data.description,
+        processedAudioUrl: data.audio_url,
+        duration: data.duration,
+        createdAt: data.created_at,
+        source: source,
+        metadata: metadata,
+      })
+    } catch (rawError: any) {
+      console.error("[v0] Raw HTTP request failed:", rawError)
+      console.error("[v0] Error message:", rawError.message)
+      return NextResponse.json({ error: `Direct upload failed: ${rawError.message}` }, { status: 500 })
     }
-
-    if (uploadResponse.error) {
-      const errorMessage = uploadResponse.error.message || "Unknown storage error"
-      console.error("[v0] Storage upload failed:", errorMessage)
-      console.error("[v0] Full error object:", JSON.stringify(uploadResponse.error, null, 2))
-
-      if (errorMessage.includes("Unexpected token") && errorMessage.includes("Request En")) {
-        return NextResponse.json(
-          {
-            error:
-              "Storage bucket access denied. Please check that the 'meditations' bucket exists and has proper RLS policies allowing uploads.",
-          },
-          { status: 403 },
-        )
-      }
-
-      if (errorMessage.includes("Request Entity Too Large") || errorMessage.includes("Payload Too Large")) {
-        return NextResponse.json(
-          {
-            error: `File too large (${Math.round(arrayBuffer.byteLength / 1024 / 1024)}MB). Maximum is 50MB.`,
-          },
-          { status: 413 },
-        )
-      }
-
-      if (
-        errorMessage.includes("bucket") ||
-        errorMessage.includes("not found") ||
-        errorMessage.includes("does not exist")
-      ) {
-        return NextResponse.json(
-          {
-            error: `Storage bucket '${MEDITATION_BUCKET}' not found. Please create the bucket in your Supabase dashboard under Storage.`,
-          },
-          { status: 500 },
-        )
-      }
-
-      if (errorMessage.includes("size") || errorMessage.includes("too large")) {
-        return NextResponse.json(
-          { error: `File too large (${Math.round(arrayBuffer.byteLength / 1024 / 1024)}MB). Maximum is 50MB.` },
-          { status: 413 },
-        )
-      }
-
-      if (errorMessage.includes("permission") || errorMessage.includes("policy")) {
-        return NextResponse.json(
-          { error: `Storage permission denied. Please check RLS policies for '${MEDITATION_BUCKET}' bucket.` },
-          { status: 403 },
-        )
-      }
-
-      return NextResponse.json({ error: `Storage upload failed: ${errorMessage}` }, { status: 500 })
-    }
-
-    if (!uploadResponse.data) {
-      return NextResponse.json({ error: "Upload failed: No data returned" }, { status: 500 })
-    }
-
-    console.log("[v0] Storage upload successful")
-
-    const { data: urlData } = supabase.storage.from(MEDITATION_BUCKET).getPublicUrl(uploadResponse.data.path)
-
-    // Save to database
-    const meditationData = {
-      title,
-      description: originalFileName,
-      audio_url: urlData.publicUrl,
-      duration,
-      source,
-      metadata,
-      original_filename: originalFileName,
-    }
-
-    const { data, error } = await supabase.from("meditations").insert(meditationData).select().single()
-
-    if (error) {
-      console.error("[v0] Database insert error:", error)
-      return NextResponse.json({ error: `Database error: ${error.message}` }, { status: 500 })
-    }
-
-    console.log("[v0] Meditation saved successfully:", data.id)
-
-    return NextResponse.json({
-      id: data.id,
-      title: data.title,
-      originalFileName: data.description,
-      processedAudioUrl: data.audio_url,
-      duration: data.duration,
-      createdAt: data.created_at,
-      source: source,
-      metadata: metadata,
-    })
   } catch (error) {
     console.error("[v0] Server error:", error)
     if (error instanceof Error && error.message.includes("Unexpected token")) {
