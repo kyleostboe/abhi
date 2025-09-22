@@ -33,49 +33,77 @@ export class MeditationLibrary {
 
     try {
       if (meditation.processedAudioUrl.startsWith("blob:")) {
-        console.log("[v0] Using server-side compression and upload")
+        console.log("[v0] Using direct client-side upload to bypass function payload limits")
+
+        const supabase = createClient()
 
         // Fetch the blob data
         const response = await fetch(meditation.processedAudioUrl)
         const audioBlob = await response.blob()
 
-        // Create FormData for server upload
-        const formData = new FormData()
-        const sanitizedFileName = `${meditation.title.replace(/[^a-z0-9-_]+/gi, "_") || "meditation"}.wav`
-        formData.append("audio", audioBlob, sanitizedFileName)
-        formData.append("title", meditation.title)
-        formData.append("originalFileName", meditation.originalFileName)
-        formData.append("duration", meditation.duration.toString())
-        formData.append("source", meditation.source)
-        formData.append("metadata", JSON.stringify(meditation.metadata))
+        console.log("[v0] Audio blob size:", audioBlob.size, "bytes")
 
-        // Send to server-side API
-        const uploadResponse = await fetch("/api/save-meditation", {
-          method: "POST",
-          body: formData,
-        })
+        // Generate unique filename
+        const timestamp = Date.now()
+        const randomId = Math.random().toString(36).substring(2, 15)
+        const sanitizedTitle = meditation.title.replace(/[^a-z0-9-_]+/gi, "_") || "meditation"
+        const fileName = `meditation_${timestamp}_${randomId}.wav`
 
-        if (!uploadResponse.ok) {
-          const contentType = uploadResponse.headers.get("content-type")
-          if (contentType && contentType.includes("application/json")) {
-            const errorData = await uploadResponse.json()
-            throw new Error(errorData.error || "Server upload failed")
-          }
+        console.log("[v0] Uploading directly to Supabase Storage:", fileName)
 
-          const errorText = await uploadResponse.text()
-          if (errorText.includes("Request Entity Too Large")) {
-            throw new Error("File too large for upload. Please try exporting at a lower quality.")
-          }
+        // Upload directly to Supabase Storage from client
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("meditations")
+          .upload(fileName, audioBlob, {
+            contentType: "audio/wav",
+            upsert: false,
+          })
 
-          throw new Error(errorText || "Server upload failed")
+        if (uploadError) {
+          console.error("[v0] Direct upload error:", uploadError)
+          throw new Error(`Upload failed: ${uploadError.message}`)
         }
 
-        const savedMeditation = await uploadResponse.json()
-        console.log("[v0] Server-side save successful:", savedMeditation.id)
+        console.log("[v0] Upload successful:", uploadData.path)
+
+        // Get public URL
+        const { data: urlData } = supabase.storage.from("meditations").getPublicUrl(uploadData.path)
+
+        console.log("[v0] Public URL:", urlData.publicUrl)
+
+        // Save to database
+        const { data: dbData, error: dbError } = await supabase
+          .from("meditations")
+          .insert({
+            title: meditation.title,
+            description: `${meditation.source} meditation`,
+            audio_url: urlData.publicUrl,
+            duration: meditation.duration,
+            source: meditation.source,
+            metadata: meditation.metadata,
+            original_filename: meditation.originalFileName,
+          })
+          .select()
+          .single()
+
+        if (dbError) {
+          console.error("[v0] Database insert error:", dbError)
+          // Try to clean up uploaded file
+          await supabase.storage.from("meditations").remove([uploadData.path])
+          throw new Error(`Database save failed: ${dbError.message}`)
+        }
+
+        console.log("[v0] Client-side save successful:", dbData.id)
 
         return {
-          ...savedMeditation,
-          createdAt: new Date(savedMeditation.createdAt),
+          id: dbData.id,
+          title: dbData.title,
+          originalFileName: dbData.original_filename,
+          processedAudioUrl: dbData.audio_url,
+          duration: dbData.duration,
+          createdAt: new Date(dbData.created_at),
+          source: dbData.source as "adjuster" | "encoder",
+          metadata: dbData.metadata || {},
         }
       }
 
