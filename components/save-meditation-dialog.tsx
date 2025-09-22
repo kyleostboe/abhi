@@ -179,7 +179,6 @@ export function SaveMeditationDialog({
           URL.revokeObjectURL(processedBlobUrl)
         }
       }
-
     } catch (error) {
       console.error("[v0] Save failed with error:", error)
       toast({
@@ -244,10 +243,13 @@ export function SaveMeditationDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby="save-meditation-description">
         <DialogHeader>
           <DialogTitle>Save Meditation to Library</DialogTitle>
         </DialogHeader>
+        <div id="save-meditation-description" className="sr-only">
+          Save your processed meditation audio to your personal library with optional playlist organization
+        </div>
         <div className="space-y-4">
           <div>
             <Label htmlFor="title">Title</Label>
