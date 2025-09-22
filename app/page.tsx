@@ -3033,8 +3033,8 @@ export default function Home() {
                                 </div>
                               </AccordionTrigger>
                               <div className="px-4 pb-2 border-b">
-                                <div className="flex flex-col gap-2">
-                                  <div className="flex items-center gap-2 mb-[3px]">
+                                <div className="flex items-center gap-4">
+                                  <div className="flex items-center gap-2">
                                     <span className="text-xs text-gray-500">Type</span>
                                     <select
                                       value={noteType}
