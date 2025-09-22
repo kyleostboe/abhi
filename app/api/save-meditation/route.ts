@@ -5,6 +5,12 @@ const MEDITATION_BUCKET = "meditations"
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("[v0] Environment check:")
+    console.log("[v0] NEXT_PUBLIC_SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "SET" : "MISSING")
+    console.log("[v0] NEXT_PUBLIC_SUPABASE_ANON_KEY:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "SET" : "MISSING")
+    console.log("[v0] SUPABASE_URL:", process.env.SUPABASE_URL ? "SET" : "MISSING")
+    console.log("[v0] SUPABASE_ANON_KEY:", process.env.SUPABASE_ANON_KEY ? "SET" : "MISSING")
+
     const formData = await request.formData()
     const audioFile = formData.get("audio") as File
     const title = formData.get("title") as string
@@ -38,6 +44,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient()
 
+    console.log("[v0] Supabase client created successfully")
     console.log(`[v0] Attempting upload to '${MEDITATION_BUCKET}' bucket...`)
 
     // Generate unique filename
