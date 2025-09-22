@@ -423,13 +423,12 @@ export default function LibraryPage() {
                   ) : (
                     <div className="space-y-4">
                       {displayedMeditations.map((meditation) => (
-                        <motion.button
+                        <motion.div
                           key={meditation.id}
-                          type="button"
-                          onClick={() => openMeditationPlayer(meditation)}
-                          className="group w-full text-left"
+                          className="group w-full text-left cursor-pointer"
                           whileHover={{ y: -2 }}
                           whileTap={{ scale: 0.995 }}
+                          onClick={() => openMeditationPlayer(meditation)}
                         >
                           <Card className="w-full overflow-hidden border border-gray-200/70 bg-white/90 backdrop-blur-sm transition-all duration-300 hover:border-logo-teal-400/60 hover:shadow-xl">
                             <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
@@ -491,7 +490,7 @@ export default function LibraryPage() {
                               </div>
                             </div>
                           </Card>
-                        </motion.button>
+                        </motion.div>
                       ))}
                     </div>
                   )}

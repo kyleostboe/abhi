@@ -71,6 +71,8 @@ export class MeditationLibrary {
 
         console.log("[v0] Public URL:", urlData.publicUrl)
 
+        const durationInSeconds = Math.round(meditation.duration)
+
         // Save to database
         const { data: dbData, error: dbError } = await supabase
           .from("meditations")
@@ -78,7 +80,7 @@ export class MeditationLibrary {
             title: meditation.title,
             description: `${meditation.source} meditation`,
             audio_url: urlData.publicUrl,
-            duration: meditation.duration,
+            duration: durationInSeconds, // Use integer instead of float
             source: meditation.source,
             metadata: meditation.metadata,
             original_filename: meditation.originalFileName,
