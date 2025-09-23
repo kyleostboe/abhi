@@ -27,6 +27,7 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
+import { useRouter } from "next/navigation"
 
 export default function LibraryPage() {
   const [meditations, setMeditations] = useState<SavedMeditation[]>([])
@@ -45,6 +46,7 @@ export default function LibraryPage() {
   const [displayedMeditations, setDisplayedMeditations] = useState<SavedMeditation[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const { toast } = useToast()
+  const router = useRouter()
 
   const [playlistMeditationsMap, setPlaylistMeditationsMap] = useState<Record<string, SavedMeditation[]>>({})
 
@@ -244,7 +246,8 @@ export default function LibraryPage() {
         title: "Opening Adjuster",
         description: `"${selectedMeditation.title}" will load in the Adjuster tool.`,
       })
-      window.location.href = "/#adjuster"
+      setIsPlayerOpen(false)
+      router.push("/#adjuster")
     } catch (error) {
       toast({
         title: "Unable to open Adjuster",
@@ -416,29 +419,38 @@ export default function LibraryPage() {
                           ? "Add some meditations to this playlist to get started."
                           : "Create your first meditation using the Adjuster or Encoder tools."}
                       </p>
-                      <Button asChild>
-                        <a href="/">Go to Tools</a>
-                      </Button>
+                      <Button onClick={() => router.push("/")}>Go to Tools</Button>
                     </Card>
                   ) : (
                     <div className="space-y-4">
-                      {displayedMeditations.map((meditation) => (
-                        <motion.div
-                          key={meditation.id}
-                          className="group w-full text-left cursor-pointer"
-                          whileHover={{ y: -2 }}
-                          whileTap={{ scale: 0.995 }}
-                          onClick={() => openMeditationPlayer(meditation)}
-                        >
-                          <Card className="w-full overflow-hidden border border-gray-200/70 bg-white/90 backdrop-blur-sm transition-all duration-300 hover:border-logo-teal-400/60 hover:shadow-xl">
-                            <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
-                              <div className="flex-1 space-y-2">
-                                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                      {displayedMeditations.map((meditation) => {
+                        const trimmedTitle = meditation.title.trim()
+                        const trimmedOriginal = meditation.originalFileName.trim()
+                        const showOriginalFileName =
+                          trimmedOriginal.length > 0 &&
+                          trimmedOriginal.localeCompare(trimmedTitle, undefined, {
+                            sensitivity: "accent",
+                          }) !== 0
+
+                        return (
+                          <motion.div
+                            key={meditation.id}
+                            className="group w-full text-left cursor-pointer"
+                            whileHover={{ y: -2 }}
+                            whileTap={{ scale: 0.995 }}
+                            onClick={() => openMeditationPlayer(meditation)}
+                          >
+                            <Card className="w-full overflow-hidden border border-gray-200/70 bg-white/90 backdrop-blur-sm transition-all duration-300 hover:border-logo-teal-400/60 hover:shadow-xl">
+                              <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+                                <div className="flex-1 space-y-2">
+                                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                                   <div>
                                     <h3 className="text-lg font-black text-gray-800 group-hover:text-gray-900">
                                       {meditation.title}
                                     </h3>
-                                    <p className="text-sm text-gray-500">{meditation.originalFileName}</p>
+                                    {showOriginalFileName && (
+                                      <p className="text-sm text-gray-500">{meditation.originalFileName}</p>
+                                    )}
                                   </div>
                                   <Badge
                                     variant="outline"
@@ -488,10 +500,11 @@ export default function LibraryPage() {
                                   <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                                 </div>
                               </div>
-                            </div>
-                          </Card>
-                        </motion.div>
-                      ))}
+                              </div>
+                            </Card>
+                          </motion.div>
+                        )
+                      })}
                     </div>
                   )}
                 </motion.div>
@@ -706,7 +719,17 @@ export default function LibraryPage() {
                     </Badge>
                     <div>
                       <h2 className="text-2xl font-black text-gray-900">{selectedMeditation.title}</h2>
-                      <p className="text-sm text-gray-500">{selectedMeditation.originalFileName}</p>
+                      {(() => {
+                        const trimmedTitle = selectedMeditation.title.trim()
+                        const trimmedOriginal = selectedMeditation.originalFileName.trim()
+                        const showOriginalFileName =
+                          trimmedOriginal.length > 0 &&
+                          trimmedOriginal.localeCompare(trimmedTitle, undefined, {
+                            sensitivity: "accent",
+                          }) !== 0
+                        if (!showOriginalFileName) return null
+                        return <p className="text-sm text-gray-500">{selectedMeditation.originalFileName}</p>
+                      })()}
                     </div>
                     <div className="flex flex-wrap gap-4 text-sm text-gray-500">
                       <span className="flex items-center gap-2">
