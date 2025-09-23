@@ -2491,7 +2491,7 @@ export default function Home() {
                   onDrop={handleDropAction}
                 >
                   <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 border-0 py-1 shadow-lg rounded-sm px-[5px]">
-                    <div className="p-10 md:p-16 text-center md:py-14 bg-white border-white border-0 rounded-lg shadow-none">
+                    <div className="p-10 md:p-16 text-center bg-white rounded-lg shadow-none md:py-12 md:px-16 border-logo-rose-100 border-0">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -2989,7 +2989,7 @@ export default function Home() {
                       transition={{ delay: 0.2 }}
                       className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                     >
-                      <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 border-0 px-[5px] py-1 pl-1 pr-1 shadow-lg rounded-sm">
+                      <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 border-0 py-1 shadow-lg rounded-sm px-[5px]">
                         <div className="bg-white p-4 border-rose-200 border-0 rounded-sm shadow-nonee">
                           <div className="text-center">
                             <Textarea
