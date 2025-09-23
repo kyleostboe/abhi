@@ -455,12 +455,12 @@ export default function LibraryPage() {
                                   </div>
                                   <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-gray-500">
                                     <span className="flex items-center gap-2">
-                                      <Clock className="h-4 w-4 text-logo-teal-500" />
-                                      <span className="text-xs">{formatDuration(meditation.duration)}</span>
+                                      <Clock className="h-4 w-4 text-gray-600" />
+                                      <span className="text-xs text-gray-500">{formatDuration(meditation.duration)}</span>
                                     </span>
                                     <span className="flex items-center gap-2">
                                       <Calendar className="h-4 w-4 text-gray-600" />
-                                      <span className="text-xs">{formatDate(meditation.createdAt)}</span>
+                                      <span className="text-xs text-gray-500">{formatDate(meditation.createdAt)}</span>
                                     </span>
                                     {meditation.metadata.pausesAdjusted ? (
                                       <span className="flex items-center gap-2">
@@ -470,7 +470,7 @@ export default function LibraryPage() {
                                     ) : meditation.metadata.instructionCount ? (
                                       <span className="flex items-center gap-2">
                                         <SlidersHorizontal className="h-4 w-4 text-gray-600" />
-                                        <span className="text-xs">
+                                        <span className="text-xs text-gray-500">
                                           {meditation.metadata.instructionCount} instructions
                                         </span>
                                       </span>
