@@ -442,7 +442,7 @@ export default function LibraryPage() {
                                 <div className="flex-1 space-y-2">
                                   <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                                     <div>
-                                      <h3 className="text-lg font-black text-gray-800 group-hover:text-gray-900">
+                                      <h3 className="font-black text-gray-800 group-hover:text-gray-900 text-sm mb-[3px]">
                                         {meditation.title}
                                       </h3>
                                     </div>
@@ -456,11 +456,11 @@ export default function LibraryPage() {
                                   <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-gray-500">
                                     <span className="flex items-center gap-2">
                                       <Clock className="h-4 w-4 text-logo-teal-500" />
-                                      <span>{formatDuration(meditation.duration)}</span>
+                                      <span className="text-xs">{formatDuration(meditation.duration)}</span>
                                     </span>
                                     <span className="flex items-center gap-2">
                                       <Calendar className="h-4 w-4 text-logo-purple-500" />
-                                      <span>{formatDate(meditation.createdAt)}</span>
+                                      <span className="text-xs">{formatDate(meditation.createdAt)}</span>
                                     </span>
                                     {meditation.metadata.pausesAdjusted ? (
                                       <span className="flex items-center gap-2">
@@ -470,7 +470,7 @@ export default function LibraryPage() {
                                     ) : meditation.metadata.instructionCount ? (
                                       <span className="flex items-center gap-2">
                                         <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
-                                        <span>{meditation.metadata.instructionCount} instructions</span>
+                                        <span className="text-xs">{meditation.metadata.instructionCount} instructions</span>
                                       </span>
                                     ) : null}
                                   </div>
