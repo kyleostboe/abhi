@@ -22,7 +22,6 @@ import {
   Play,
   Pause,
   X,
-  ChevronRight,
   SlidersHorizontal,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
@@ -476,9 +475,6 @@ export default function LibraryPage() {
                                     ) : null}
                                   </div>
                                 </div>
-                              </div>
-
-                              <div className="flex items-center justify-between gap-4 md:flex-col md:items-end">
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -491,10 +487,6 @@ export default function LibraryPage() {
                                 >
                                   <Trash2 className="h-5 w-5" />
                                 </Button>
-                                <div className="flex items-center gap-2 text-sm font-black text-logo-teal-600">
-                                  Open player
-                                  <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                                </div>
                               </div>
                             </Card>
                           </motion.div>
