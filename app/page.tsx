@@ -2869,14 +2869,40 @@ export default function Home() {
                     </motion.div>
                   )}
                   {isProcessingComplete && processedUrl && (
-                    <Card className="p-6 bg-white shadow-lg border border-gray-200">
-                      <h3 className="text-xl font-bold mb-4 text-gray-800">Processed Audio</h3>
-                      <div className="space-y-4">
-                        <audio controls className="w-full" src={processedUrl} />
-                        <div className="flex flex-col sm:flex-row gap-3">
+                    <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
+                      <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 ">
+                        <h3 className="text-white font-black">Processed Audio</h3>
+                      </div>
+                      <div className="p-6 px-3.5 py-4 space-y-4">
+                        <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
+                          <audio controls className="w-full" src={processedUrl}></audio>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3.5">
+                          <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
+                            <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Actual Duration</div>
+                            <div className="font-black text-gray-600 text-sm">
+                              {actualDuration ? formatTime(actualDuration) : "--"}
+                            </div>
+                          </div>
+                          <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
+                            <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Target Duration</div>
+                            <div className="font-black text-gray-600 text-sm">{formatTime(targetDuration * 60)}</div>
+                          </div>
+                          <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
+                            <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Pauses Adjusted</div>
+                            <div className="font-black text-gray-600 text-sm">{pausesAdjusted}</div>
+                          </div>
+                          <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
+                            <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">File Size</div>
+                            <div className="font-black text-gray-600 text-sm">
+                              {(processedFileSize / (1024 * 1024)).toFixed(2)} MB
+                            </div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <Button
                             onClick={downloadProcessedAudioAction}
-                            className="flex-1 bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 hover:from-logo-teal-600 hover:to-logo-blue-500 text-white"
+                            className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:shadow-none transition-shadow border-none "
                           >
                             Download Processed Audio
                           </Button>
@@ -2890,28 +2916,12 @@ export default function Home() {
                               pausesAdjusted,
                             }}
                           >
-                            <Button className="flex-1 bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white">
+                            <Button className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white">
                               <BookmarkPlus className="w-4 h-4 mr-2" />
                               Save to Library
                             </Button>
                           </SaveMeditationDialog>
                         </div>
-                        {actualDuration && (
-                          <div className="text-sm text-gray-600 space-y-1">
-                            <p>
-                              <strong>Actual Duration:</strong> {formatTime(actualDuration)}
-                            </p>
-                            <p>
-                              <strong>Target Duration:</strong> {formatTime(targetDuration * 60)}
-                            </p>
-                            <p>
-                              <strong>Pauses Adjusted:</strong> {pausesAdjusted}
-                            </p>
-                            <p>
-                              <strong>File Size:</strong> {(processedFileSize / (1024 * 1024)).toFixed(2)} MB
-                            </p>
-                          </div>
-                        )}
                       </div>
                     </Card>
                   )}

@@ -313,7 +313,7 @@ export default function LibraryPage() {
   const playbackProgress = playerDuration ? Math.min(100, (playerTime / playerDuration) * 100) : 0
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px]">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px] font-serif font-black">
       <Navigation />
 
       <div
@@ -408,7 +408,7 @@ export default function LibraryPage() {
                   {displayedMeditations.length === 0 ? (
                     <Card className="p-12 text-center">
                       <Music className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                      <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                      <h3 className="text-xl font-black text-gray-600 mb-2">
                         {selectedPlaylist ? "No meditations in this playlist" : "No meditations saved yet"}
                       </h3>
                       <p className="text-gray-500 mb-4">
@@ -435,7 +435,7 @@ export default function LibraryPage() {
                               <div className="flex-1 space-y-2">
                                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                                   <div>
-                                    <h3 className="text-lg font-semibold text-gray-800 group-hover:text-gray-900">
+                                    <h3 className="text-lg font-black text-gray-800 group-hover:text-gray-900">
                                       {meditation.title}
                                     </h3>
                                     <p className="text-sm text-gray-500">{meditation.originalFileName}</p>
@@ -483,7 +483,7 @@ export default function LibraryPage() {
                                 >
                                   <Trash2 className="h-5 w-5" />
                                 </Button>
-                                <div className="flex items-center gap-2 text-sm font-medium text-logo-teal-600">
+                                <div className="flex items-center gap-2 text-sm font-black text-logo-teal-600">
                                   Open player
                                   <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                                 </div>
@@ -551,7 +551,7 @@ export default function LibraryPage() {
                   {playlists.length === 0 ? (
                     <Card className="p-12 text-center">
                       <FolderPlus className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                      <h3 className="text-xl font-semibold text-gray-600 mb-2">No playlists created yet</h3>
+                      <h3 className="text-xl font-black text-gray-600 mb-2">No playlists created yet</h3>
                       <p className="text-gray-500 mb-4">Create your first playlist to organize your meditations.</p>
                     </Card>
                   ) : (
@@ -564,7 +564,7 @@ export default function LibraryPage() {
                           <Card key={playlist.id} className="p-6 hover:shadow-lg transition-shadow">
                             <div className="flex items-start justify-between mb-4">
                               <div className="flex-1">
-                                <h3 className="font-semibold text-lg mb-1">{playlist.name}</h3>
+                                <h3 className="font-black text-lg mb-1">{playlist.name}</h3>
                                 {playlist.description && (
                                   <p className="text-sm text-gray-600 mb-2 line-clamp-2">{playlist.description}</p>
                                 )}
@@ -705,7 +705,7 @@ export default function LibraryPage() {
                       {selectedMeditation.source === "adjuster" ? "Length Adjuster" : "Encoder"}
                     </Badge>
                     <div>
-                      <h2 className="text-2xl font-semibold text-gray-900">{selectedMeditation.title}</h2>
+                      <h2 className="text-2xl font-black text-gray-900">{selectedMeditation.title}</h2>
                       <p className="text-sm text-gray-500">{selectedMeditation.originalFileName}</p>
                     </div>
                     <div className="flex flex-wrap gap-4 text-sm text-gray-500">
@@ -747,7 +747,7 @@ export default function LibraryPage() {
                         style={{ width: `${playbackProgress}%` }}
                       />
                     </div>
-                    <div className="flex justify-between text-xs font-medium text-gray-500">
+                    <div className="flex justify-between text-xs font-black text-gray-500">
                       <span>{formatDetailedTime(playerTime)}</span>
                       <span>{formatDetailedTime(playerDuration)}</span>
                     </div>
