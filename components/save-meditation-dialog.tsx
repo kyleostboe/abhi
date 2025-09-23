@@ -31,7 +31,14 @@ export function SaveMeditationDialog({
   children,
 }: SaveMeditationDialogProps) {
   const [open, setOpen] = useState(false)
-  const [title, setTitle] = useState(originalFileName.replace(/\.[^/.]+$/, ""))
+  const metadataWithTitle = metadata as { meditationTitle?: unknown }
+  const metadataTitleRaw =
+    typeof metadataWithTitle?.meditationTitle === "string" ? metadataWithTitle.meditationTitle : ""
+  const metadataTitle = metadataTitleRaw.trim()
+  const [title, setTitle] = useState(() => {
+    const baseTitle = metadataTitle || originalFileName
+    return baseTitle.replace(/\.[^/.]+$/, "")
+  })
   const [selectedPlaylist, setSelectedPlaylist] = useState<string>("")
   const [newPlaylistName, setNewPlaylistName] = useState("")
   const [newPlaylistDescription, setNewPlaylistDescription] = useState("")
@@ -54,6 +61,13 @@ export function SaveMeditationDialog({
       void loadPlaylists()
     }
   }, [open, loadPlaylists])
+
+  useEffect(() => {
+    if (open) {
+      const baseTitle = metadataTitle || originalFileName
+      setTitle(baseTitle.replace(/\.[^/.]+$/, ""))
+    }
+  }, [open, originalFileName, metadataTitle])
 
   const handleSave = async () => {
     console.log("[v0] Save button clicked - starting save process...")
@@ -168,7 +182,8 @@ export function SaveMeditationDialog({
           description: `"${title}" has been added to your library.`,
         })
 
-        setTitle(originalFileName.replace(/\.[^/.]+$/, ""))
+        const baseTitle = metadataTitle || originalFileName
+        setTitle(baseTitle.replace(/\.[^/.]+$/, ""))
         setSelectedPlaylist("")
         setNewPlaylistName("")
         setNewPlaylistDescription("")
