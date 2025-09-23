@@ -381,12 +381,16 @@ export default function LibraryPage() {
                   {/* Search and Filters */}
                   <div className="flex flex-col md:flex-row gap-4 mb-6">
                     <div className="flex-1">
-                      <Input
-                        placeholder="Search meditations..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full"
-                      />
+                      <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 rounded-sm shadow-lg">
+                        <div className="bg-white rounded-sm">
+                          <Input
+                            placeholder="Search meditations..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full border-none bg-transparent text-gray-600 placeholder-gray-400 focus-visible:ring-0 focus-visible:ring-offset-0"
+                          />
+                        </div>
+                      </div>
                     </div>
                     <div className="flex gap-2">
                       <Button
@@ -424,14 +428,6 @@ export default function LibraryPage() {
                   ) : (
                     <div className="space-y-4">
                       {displayedMeditations.map((meditation) => {
-                        const trimmedTitle = meditation.title.trim()
-                        const trimmedOriginal = meditation.originalFileName.trim()
-                        const showOriginalFileName =
-                          trimmedOriginal.length > 0 &&
-                          trimmedOriginal.localeCompare(trimmedTitle, undefined, {
-                            sensitivity: "accent",
-                          }) !== 0
-
                         return (
                           <motion.div
                             key={meditation.id}
@@ -440,7 +436,7 @@ export default function LibraryPage() {
                             whileTap={{ scale: 0.995 }}
                             onClick={() => openMeditationPlayer(meditation)}
                           >
-                            <Card className="w-full overflow-hidden border border-gray-200/70 bg-white/90 backdrop-blur-sm transition-all duration-300 hover:border-logo-teal-400/60 hover:shadow-xl">
+                            <Card className="w-full overflow-hidden border border-gray-200/70 bg-white/90 backdrop-blur-sm transition-all duration-300 hover:border-logo-teal-400/60 shadow-sm">
                               <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
                                 <div className="flex-1 space-y-2">
                                   <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -448,9 +444,6 @@ export default function LibraryPage() {
                                     <h3 className="text-lg font-black text-gray-800 group-hover:text-gray-900">
                                       {meditation.title}
                                     </h3>
-                                    {showOriginalFileName && (
-                                      <p className="text-sm text-gray-500">{meditation.originalFileName}</p>
-                                    )}
                                   </div>
                                   <Badge
                                     variant="outline"
