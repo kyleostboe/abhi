@@ -392,18 +392,20 @@ export default function LibraryPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 font-serif font-black text-xs text-gray-600">
                       <Button
-                        variant={selectedPlaylist ? "default" : "outline"}
+                        variant={selectedPlaylist ? "outline" : "outline"}
                         onClick={() => setSelectedPlaylist(null)}
+                        className="rounded-sm border-[3px] border-gray-500 font-serif font-black text-xs text-gray-600 hover:bg-gray-50"
                       >
                         All Meditations
                       </Button>
                       {playlists.map((playlist) => (
                         <Button
                           key={playlist.id}
-                          variant={selectedPlaylist === playlist.id ? "default" : "outline"}
+                          variant={selectedPlaylist === playlist.id ? "outline" : "outline"}
                           onClick={() => setSelectedPlaylist(playlist.id)}
+                          className="rounded-sm border-[3px] border-gray-500 font-serif font-black text-xs text-gray-600 hover:bg-gray-50"
                         >
                           {playlist.name}
                         </Button>
@@ -440,38 +442,39 @@ export default function LibraryPage() {
                               <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
                                 <div className="flex-1 space-y-2">
                                   <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                                  <div>
-                                    <h3 className="text-lg font-black text-gray-800 group-hover:text-gray-900">
-                                      {meditation.title}
-                                    </h3>
+                                    <div>
+                                      <h3 className="text-lg font-black text-gray-800 group-hover:text-gray-900">
+                                        {meditation.title}
+                                      </h3>
+                                    </div>
+                                    <Badge
+                                      variant="outline"
+                                      className="w-fit border-transparent bg-gradient-to-r from-logo-teal-500/10 to-logo-emerald-500/10 text-logo-teal-700"
+                                    >
+                                      {meditation.source === "adjuster" ? "Length Adjuster" : "Encoder"}
+                                    </Badge>
                                   </div>
-                                  <Badge
-                                    variant="outline"
-                                    className="w-fit border-transparent bg-gradient-to-r from-logo-teal-500/10 to-logo-emerald-500/10 text-logo-teal-700"
-                                  >
-                                    {meditation.source === "adjuster" ? "Length Adjuster" : "Encoder"}
-                                  </Badge>
-                                </div>
-                                <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-gray-500">
-                                  <span className="flex items-center gap-2">
-                                    <Clock className="h-4 w-4 text-logo-teal-500" />
-                                    <span>{formatDuration(meditation.duration)}</span>
-                                  </span>
-                                  <span className="flex items-center gap-2">
-                                    <Calendar className="h-4 w-4 text-logo-purple-500" />
-                                    <span>{formatDate(meditation.createdAt)}</span>
-                                  </span>
-                                  {meditation.metadata.pausesAdjusted ? (
+                                  <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-gray-500">
                                     <span className="flex items-center gap-2">
-                                      <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
-                                      <span>{meditation.metadata.pausesAdjusted} pauses adjusted</span>
+                                      <Clock className="h-4 w-4 text-logo-teal-500" />
+                                      <span>{formatDuration(meditation.duration)}</span>
                                     </span>
-                                  ) : meditation.metadata.instructionCount ? (
                                     <span className="flex items-center gap-2">
-                                      <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
-                                      <span>{meditation.metadata.instructionCount} instructions</span>
+                                      <Calendar className="h-4 w-4 text-logo-purple-500" />
+                                      <span>{formatDate(meditation.createdAt)}</span>
                                     </span>
-                                  ) : null}
+                                    {meditation.metadata.pausesAdjusted ? (
+                                      <span className="flex items-center gap-2">
+                                        <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
+                                        <span>{meditation.metadata.pausesAdjusted} pauses adjusted</span>
+                                      </span>
+                                    ) : meditation.metadata.instructionCount ? (
+                                      <span className="flex items-center gap-2">
+                                        <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
+                                        <span>{meditation.metadata.instructionCount} instructions</span>
+                                      </span>
+                                    ) : null}
+                                  </div>
                                 </div>
                               </div>
 
@@ -492,7 +495,6 @@ export default function LibraryPage() {
                                   Open player
                                   <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                                 </div>
-                              </div>
                               </div>
                             </Card>
                           </motion.div>
