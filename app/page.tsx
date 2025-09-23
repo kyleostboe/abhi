@@ -3181,7 +3181,7 @@ export default function Home() {
                             </AccordionItem>
                           </Accordion>
                         </div>
-                        <div className="h-[5px]"></div>
+                        <div className="h-px"></div>
                         <Button
                           className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-sm hover:shadow-none font-serif font-black mt-4"
                           onClick={handleAddInstructionSoundEvent}
