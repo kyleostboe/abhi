@@ -381,7 +381,7 @@ export default function LibraryPage() {
                   {/* Search and Filters */}
                   <div className="flex flex-col md:flex-row gap-4 mb-6">
                     <div className="flex-1">
-                      <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-rose-300 rounded-sm shadow-lg px-[3px] py-[3px]">
+                      <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-rose-300 rounded-sm shadow-lg px-1 py-[3px]">
                         <div className="bg-white rounded-sm">
                           <Input
                             placeholder="Search meditations..."
