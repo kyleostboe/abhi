@@ -437,8 +437,8 @@ export default function LibraryPage() {
                             whileTap={{ scale: 0.995 }}
                             onClick={() => openMeditationPlayer(meditation)}
                           >
-                            <Card className="w-full overflow-hidden border border-gray-200/70 bg-white/90 backdrop-blur-sm transition-all duration-300 hover:border-logo-teal-400/60 shadow-sm">
-                              <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+                            <Card className="w-full overflow-hidden border border-muted bg-white backdrop-blur-sm transition-all duration-300 hover:border-logo-teal-400/60 shadow-sm">
+                              <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between border-muted border-[3px] rounded-sm shadow-none">
                                 <div className="flex-1 space-y-2">
                                   <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                                     <div>
