@@ -395,7 +395,7 @@ export default function LibraryPage() {
                       <Button
                         variant={selectedPlaylist ? "outline" : "outline"}
                         onClick={() => setSelectedPlaylist(null)}
-                        className="rounded-sm border-[3px] border-gray-500 font-serif font-black text-xs text-gray-600 hover:bg-gray-50"
+                        className="rounded-sm border-[3px] border-gray-500 font-serif font-black text-xs text-gray-600 shadow-md hover:shadow-none"
                       >
                         All Meditations
                       </Button>
@@ -404,7 +404,7 @@ export default function LibraryPage() {
                           key={playlist.id}
                           variant={selectedPlaylist === playlist.id ? "outline" : "outline"}
                           onClick={() => setSelectedPlaylist(playlist.id)}
-                          className="rounded-sm border-[3px] border-gray-500 font-serif font-black text-xs text-gray-600 hover:bg-gray-50"
+                          className="rounded-sm border-[3px] border-gray-500 font-serif font-black text-xs text-gray-600 shadow-md hover:shadow-none"
                         >
                           {playlist.name}
                         </Button>
@@ -433,18 +433,14 @@ export default function LibraryPage() {
                           <motion.div
                             key={meditation.id}
                             className="group w-full text-left cursor-pointer"
-                            whileHover={{ y: -2 }}
-                            whileTap={{ scale: 0.995 }}
                             onClick={() => openMeditationPlayer(meditation)}
                           >
-                            <Card className="w-full overflow-hidden border border-muted bg-white backdrop-blur-sm transition-all duration-300 hover:border-logo-teal-400/60 shadow-md hover:shadow-none">
-                              <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between border-muted border-[3px] rounded-sm shadow-none">
+                            <Card className="w-full overflow-hidden border border-muted bg-white backdrop-blur-sm shadow-md">
+                              <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between border-muted border-[3px] rounded-sm">
                                 <div className="flex-1 space-y-2">
                                   <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                                     <div>
-                                      <h3 className="font-black text-gray-800 group-hover:text-gray-900 text-sm mb-[3px]">
-                                        {meditation.title}
-                                      </h3>
+                                      <h3 className="font-black text-gray-800 text-sm mb-[3px]">{meditation.title}</h3>
                                     </div>
                                     <Badge
                                       variant="outline"
