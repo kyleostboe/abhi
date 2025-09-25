@@ -392,26 +392,22 @@ export default function LibraryPage() {
                       </div>
                     </div>
                     <div className="flex gap-2 font-serif font-black text-xs text-gray-600">
-                      <Button
-                        variant="ghost"
+                      <button
                         onClick={() => setSelectedPlaylist(null)}
-                        className="bg-white border-2 border-gray-500 text-gray-600 font-serif font-black text-xs rounded-full px-5 py-1 hover:bg-gray-50 shadow-none"
+                        className="py-1 px-5 border-[3px] border-gray-500 rounded-sm font-serif font-black text-xs text-gray-600 bg-white hover:bg-gray-50"
                       >
                         All Meditations
-                      </Button>
+                      </button>
                       {playlists.map((playlist) => (
-                        <Button
+                        <button
                           key={playlist.id}
-                          variant="ghost"
                           onClick={() => setSelectedPlaylist(playlist.id)}
-                          className={`font-serif font-black text-xs rounded-full px-5 py-1 hover:bg-gray-50 shadow-none border-2 ${
-                            selectedPlaylist === playlist.id
-                              ? "bg-gray-100 border-gray-600 text-gray-700"
-                              : "bg-white border-gray-500 text-gray-600"
+                          className={`py-1 px-5 border-[3px] border-gray-500 rounded-sm font-serif font-black text-xs hover:bg-gray-50 ${
+                            selectedPlaylist === playlist.id ? "bg-gray-100 text-gray-700" : "bg-white text-gray-600"
                           }`}
                         >
                           {playlist.name}
-                        </Button>
+                        </button>
                       ))}
                     </div>
                   </div>
