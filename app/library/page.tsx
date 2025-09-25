@@ -395,7 +395,7 @@ export default function LibraryPage() {
                       <Button
                         variant={selectedPlaylist ? "outline" : "outline"}
                         onClick={() => setSelectedPlaylist(null)}
-                        className="rounded-sm border-[3px] border-gray-500 font-serif font-black text-xs text-gray-600 shadow-md hover:shadow-none"
+                        className="rounded-sm border-[3px] border-gray-500 font-serif font-black text-xs text-gray-600 py-1 px-5"
                       >
                         All Meditations
                       </Button>
@@ -404,7 +404,7 @@ export default function LibraryPage() {
                           key={playlist.id}
                           variant={selectedPlaylist === playlist.id ? "outline" : "outline"}
                           onClick={() => setSelectedPlaylist(playlist.id)}
-                          className="rounded-sm border-[3px] border-gray-500 font-serif font-black text-xs text-gray-600 shadow-md hover:shadow-none"
+                          className="rounded-sm border-[3px] border-gray-500 font-serif font-black text-xs text-gray-600 py-1 px-5"
                         >
                           {playlist.name}
                         </Button>
