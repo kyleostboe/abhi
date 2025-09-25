@@ -395,7 +395,7 @@ export default function LibraryPage() {
                       <Button
                         variant="ghost"
                         onClick={() => setSelectedPlaylist(null)}
-                        className="bg-gradient-to-r from-gray-600 to-gray-500 text-white font-serif font-black text-xs rounded-sm shadow-md hover:shadow-none px-5 py-1 border-0"
+                        className="bg-white border-2 border-gray-500 text-gray-600 font-serif font-black text-xs rounded-full px-5 py-1 hover:bg-gray-50 shadow-none"
                       >
                         All Meditations
                       </Button>
@@ -404,10 +404,10 @@ export default function LibraryPage() {
                           key={playlist.id}
                           variant="ghost"
                           onClick={() => setSelectedPlaylist(playlist.id)}
-                          className={`font-serif font-black text-xs rounded-sm shadow-md hover:shadow-none px-5 py-1 border-0 ${
+                          className={`font-serif font-black text-xs rounded-full px-5 py-1 hover:bg-gray-50 shadow-none border-2 ${
                             selectedPlaylist === playlist.id
-                              ? "bg-white shadow-md border-2 border-gray-500 text-gray-600"
-                              : "bg-gradient-to-r from-gray-600 to-gray-500 text-white"
+                              ? "bg-gray-100 border-gray-600 text-gray-700"
+                              : "bg-white border-gray-500 text-gray-600"
                           }`}
                         >
                           {playlist.name}
