@@ -88,7 +88,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
             Recorder
           </h3>
         </div>
-        <div className="p-6 space-y-4 pt-3.5">
+        <div className="p-6 pt-3.5 space-y-[22px]">
           <Input
             id={inputId}
             value={recordingLabel}
@@ -3034,7 +3034,7 @@ export default function Home() {
                           Sound Cues
                         </h3>
                       </div>
-                      <div className="p-6 pt-[5px] flex flex-col space-y-4">
+                      <div className="p-6 flex flex-col space-y-4 pt-1">
                         <div className="flex-1 h-auto">
                           <Accordion type="single" collapsible className="w-full">
                             <AccordionItem value="musical-notes">
