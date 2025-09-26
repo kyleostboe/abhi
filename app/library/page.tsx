@@ -364,6 +364,8 @@ export default function LibraryPage() {
   }, [isPlayerOpen])
 
   const playbackProgress = playerDuration ? Math.min(100, (playerTime / playerDuration) * 100) : 0
+  const totalFilterButtons = playlists.length + 1
+  const shouldStackFilters = totalFilterButtons >= 5
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px] font-serif font-black">
@@ -429,8 +431,14 @@ export default function LibraryPage() {
                   transition={{ duration: 0.2 }}
                 >
                   {/* Search and Filters */}
-                  <div className="flex flex-col md:flex-row gap-4 mb-6">
-                    <div className="flex-1">
+                  <div
+                    className={`grid gap-4 mb-6 grid-cols-1 ${
+                      shouldStackFilters
+                        ? "md:grid-cols-1"
+                        : "md:[grid-template-columns:minmax(0,1.15fr)_minmax(0,1fr)] md:items-start"
+                    }`}
+                  >
+                    <div className={`${shouldStackFilters ? "" : "md:[grid-row:span_2]"}`}>
                       <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-rose-300 rounded-sm shadow-lg py-1 px-[5px]">
                         <div className="bg-white rounded-sm">
                           <Input
@@ -442,10 +450,10 @@ export default function LibraryPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-2 font-serif font-black text-xs text-gray-600">
+                    <div className="flex flex-wrap gap-2 font-serif font-black text-xs text-gray-600 md:justify-start md:items-start">
                       <button
                         onClick={() => setSelectedPlaylist(null)}
-                        className="h-6 flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm py-3 bg-white"
+                        className="flex items-center justify-center font-black text-gray-600 px-5 py-2 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm bg-white"
                       >
                         All Meditations
                       </button>
@@ -453,7 +461,7 @@ export default function LibraryPage() {
                         <button
                           key={playlist.id}
                           onClick={() => setSelectedPlaylist(playlist.id)}
-                          className={`h-6 flex items-center justify-center font-black px-5 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm py-3 bg-white text-gray-600 ${
+                          className={`flex items-center justify-center font-black px-5 py-2 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm bg-white text-gray-600 ${
                             selectedPlaylist === playlist.id ? "bg-gray-100 text-gray-700" : "text-gray-600"
                           }`}
                         >
