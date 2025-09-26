@@ -474,14 +474,12 @@ export default function LibraryPage() {
                   {/* Meditations Grid */}
                   {displayedMeditations.length === 0 ? (
                     <Card className="p-12 text-center">
-                      <Music className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                      <h3 className="text-xl font-black text-gray-600 mb-2">
-                        {selectedPlaylist ? "No meditations in this playlist" : "No meditations saved yet"}
-                      </h3>
-                      <p className="text-gray-500 mb-4">
+                      
+                      
+                      <p className="text-gray-500 mb-4 text-base">
                         {selectedPlaylist
-                          ? "Add some meditations to this playlist to get started."
-                          : "Create your first meditation using the Adjuster or Encoder tools."}
+                          ? "This playlist is empty. Add a meditation to get started :)"
+                          : "Create your meditation with the Adjuster or Encoder."}
                       </p>
                       <Button onClick={() => router.push("/")}>Go to Tools</Button>
                     </Card>
@@ -498,7 +496,7 @@ export default function LibraryPage() {
                               <div className="relative flex items-center justify-between p-4 border-muted border-[3px] rounded-sm overflow-visible">
                                 <Badge
                                   variant="outline"
-                                  className="absolute -top-2 -right-2 translate-x-[5px] -translate-y-[5px] z-10 border-transparent bg-gradient-to-r from-logo-teal-500/90 to-logo-emerald-500/90 text-white text-xs font-black shadow-md"
+                                  className="absolute -top-2 -right-2 translate-x-[7px] -translate-y-[5px] z-10 border-transparent bg-gradient-to-r from-logo-teal-500/90 to-logo-emerald-500/90 rounded-sm text-white text-xs font-black shadow-md"
                                 >
                                   {meditation.source === "adjuster" ? "Adjuster" : "Encoder"}
                                 </Badge>
