@@ -501,13 +501,13 @@ export default function LibraryPage() {
                         onClick={() => handleSourceFilterChange("adjuster")}
                         className={`${baseFilterButtonClasses} ${!selectedPlaylist && sourceFilter === "adjuster" ? "bg-gray-100" : "bg-white"}`}
                       >
-                        Adjuster Meditations
+                        Adjuster 
                       </button>
                       <button
                         onClick={() => handleSourceFilterChange("encoder")}
                         className={`${baseFilterButtonClasses} ${!selectedPlaylist && sourceFilter === "encoder" ? "bg-gray-100" : "bg-white"}`}
                       >
-                        Encoder Meditations
+                        Encoder 
                       </button>
                       {playlists.map((playlist) => (
                         <button
