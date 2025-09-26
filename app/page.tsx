@@ -88,7 +88,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
             Recorder
           </h3>
         </div>
-        <div className="p-6 pt-3.5 space-y-[22px]">
+        <div className="p-6 pt-3.5 space-y-[18px]">
           <Input
             id={inputId}
             value={recordingLabel}
@@ -2944,7 +2944,7 @@ export default function Home() {
                 >
                   <Card className="overflow-hidden bg-white max-w-2xl mx-auto rounded-2xl shadow-none">
                     <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none">
-                      <div className="grid md:grid-cols-2 text-gray-600 pb-2 gap-[13px]">
+                      <div className="grid md:grid-cols-2 text-gray-600 pb-2 gap-4">
                         <div className="text-center">
                           <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
                             Title:
