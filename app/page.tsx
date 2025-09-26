@@ -2990,7 +2990,7 @@ export default function Home() {
                       className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                     >
                       <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 border-0 py-1 shadow-lg rounded-sm px-[5px]">
-                        <div className="bg-white p-4 border-rose-200 border-0 rounded-sm shadow-nonee">
+                        <div className="bg-white p-4 border-rose-200 border-0 rounded-sm shadow-nonee pt-[9px]">
                           <div className="text-center">
                             <Textarea
                               id="custom-instruction"
