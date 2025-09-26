@@ -512,7 +512,7 @@ export default function LibraryPage() {
                       <Button onClick={() => router.push("/")}>Go to Tools</Button>
                     </Card>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                       {displayedMeditations.map((meditation) => {
                         return (
                           <motion.div
