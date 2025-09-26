@@ -47,6 +47,7 @@ export default function LibraryPage() {
   const [playerTime, setPlayerTime] = useState(0)
   const [playerDuration, setPlayerDuration] = useState(0)
   const [displayedMeditations, setDisplayedMeditations] = useState<SavedMeditation[]>([])
+  const [isWideLayout, setIsWideLayout] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const { toast } = useToast()
   const router = useRouter()
@@ -70,6 +71,26 @@ export default function LibraryPage() {
     setPlaylistMeditationsMap(playlistMeditationsMapData)
   }
 
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const mediaQuery = window.matchMedia("(min-width: 1024px)")
+
+    const updateLayout = () => {
+      setIsWideLayout(mediaQuery.matches)
+    }
+
+    updateLayout()
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", updateLayout)
+      return () => mediaQuery.removeEventListener("change", updateLayout)
+    }
+
+    mediaQuery.addListener(updateLayout)
+    return () => mediaQuery.removeListener(updateLayout)
+  }, [])
+
   const filteredMeditations = useMemo(
     () =>
       meditations.filter(
@@ -90,6 +111,13 @@ export default function LibraryPage() {
     }
     updateDisplayedMeditations()
   }, [selectedPlaylist, filteredMeditations, playlistMeditationsMap])
+
+  const handleSelectPlaylist = (playlistId: string | null) => {
+    setSelectedPlaylist(playlistId)
+    if (searchQuery) {
+      setSearchQuery("")
+    }
+  }
 
   const handleDelete = async (meditationId: string) => {
     await MeditationLibrary.deleteMeditation(meditationId)
@@ -452,7 +480,7 @@ export default function LibraryPage() {
                     </div>
                     <div className="flex flex-wrap font-serif font-black text-xs text-gray-600 md:justify-start md:items-start gap-[5px] justify-center">
                       <button
-                        onClick={() => setSelectedPlaylist(null)}
+                        onClick={() => handleSelectPlaylist(null)}
                         className="flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm bg-white py-1"
                       >
                         All Meditations
@@ -460,7 +488,7 @@ export default function LibraryPage() {
                       {playlists.map((playlist) => (
                         <button
                           key={playlist.id}
-                          onClick={() => setSelectedPlaylist(playlist.id)}
+                          onClick={() => handleSelectPlaylist(playlist.id)}
                           className={`flex items-center justify-center font-black px-5 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm bg-white text-gray-600 py-1 ${
                             selectedPlaylist === playlist.id ? "bg-white text-gray-600" : "text-gray-600"
                           }`}
@@ -496,7 +524,11 @@ export default function LibraryPage() {
                               <div className="relative flex items-center justify-between p-4 border-muted border-[3px] rounded-sm overflow-visible">
                                 <Badge
                                   variant="outline"
-                                  className="absolute -top-2 -right-2 translate-x-[7px] -translate-y-[5px] z-10 border-transparent bg-gradient-to-r from-logo-teal-500/90 to-logo-emerald-500/90 rounded-sm text-white text-xs font-black shadow-md"
+                                  className={`absolute -top-2 -right-2 translate-x-[7px] -translate-y-[5px] z-10 !border-0 !px-3 !py-1 shadow-md text-white text-xs font-black rounded-[6px] bg-gradient-to-r ${
+                                    meditation.source === "adjuster"
+                                      ? "from-logo-emerald-500/90 to-logo-rose-300/90"
+                                      : "from-logo-blue-400/90 to-logo-amber-300/90"
+                                  }`}
                                 >
                                   {meditation.source === "adjuster" ? "Adjuster" : "Encoder"}
                                 </Badge>
@@ -505,55 +537,73 @@ export default function LibraryPage() {
                                   <div className="flex items-center gap-3 mb-2">
                                     <h3 className="font-black text-gray-800 text-sm truncate">{meditation.title}</h3>
                                   </div>
-                                  <div className="flex items-center gap-4">
+                                  <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
                                     <span className="flex items-center gap-1">
                                       <Clock className="h-4 w-4 text-gray-600" />
-                                      <span className="text-xs text-gray-500">
-                                        {formatDuration(meditation.duration)}
-                                      </span>
+                                      <span>{formatDuration(meditation.duration)}</span>
                                     </span>
+                                    {isWideLayout && (
+                                      <>
+                                        <span className="flex items-center gap-1">
+                                          <Calendar className="h-4 w-4 text-gray-600" />
+                                          <span>{formatDate(meditation.createdAt)}</span>
+                                        </span>
+                                        {meditation.metadata.pausesAdjusted ? (
+                                          <span className="flex items-center gap-1">
+                                            <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
+                                            <span>{meditation.metadata.pausesAdjusted} pauses adjusted</span>
+                                          </span>
+                                        ) : meditation.metadata.instructionCount ? (
+                                          <span className="flex items-center gap-1">
+                                            <SlidersHorizontal className="h-4 w-4 text-gray-600" />
+                                            <span>{meditation.metadata.instructionCount} instructions</span>
+                                          </span>
+                                        ) : null}
+                                      </>
+                                    )}
                                   </div>
                                 </div>
 
                                 <div className="flex items-center gap-2 ml-3">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                                        onClick={(event) => event.stopPropagation()}
-                                        aria-label="View details"
+                                  {!isWideLayout && (
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                                          onClick={(event) => event.stopPropagation()}
+                                          aria-label="View details"
+                                        >
+                                          <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent
+                                        align="end"
+                                        className="rounded-sm border-muted border-2 text-xs font-serif font-black w-40 text-gray-500"
                                       >
-                                        <MoreVertical className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                      align="end"
-                                      className="rounded-sm border-muted border-2 text-xs font-serif font-black w-40 text-gray-500"
-                                    >
-                                      <DropdownMenuItem className="flex items-center gap-2 cursor-default">
-                                        <Calendar className="h-4 w-4 text-gray-600" />
-                                        <span className="text-sm">{formatDate(meditation.createdAt)}</span>
-                                      </DropdownMenuItem>
-                                      {meditation.metadata.pausesAdjusted ? (
                                         <DropdownMenuItem className="flex items-center gap-2 cursor-default">
-                                          <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
-                                          <span className="text-sm">
-                                            {meditation.metadata.pausesAdjusted} pauses adjusted
-                                          </span>
+                                          <Calendar className="h-4 w-4 text-gray-600" />
+                                          <span className="text-sm">{formatDate(meditation.createdAt)}</span>
                                         </DropdownMenuItem>
-                                      ) : meditation.metadata.instructionCount ? (
-                                        <DropdownMenuItem className="flex items-center gap-2 cursor-default">
-                                          <SlidersHorizontal className="h-4 w-4 text-gray-600" />
-                                          <span className="text-sm">
-                                            {meditation.metadata.instructionCount} instructions
-                                          </span>
-                                        </DropdownMenuItem>
-                                      ) : null}
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-
+                                        {meditation.metadata.pausesAdjusted ? (
+                                          <DropdownMenuItem className="flex items-center gap-2 cursor-default">
+                                            <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
+                                            <span className="text-sm">
+                                              {meditation.metadata.pausesAdjusted} pauses adjusted
+                                            </span>
+                                          </DropdownMenuItem>
+                                        ) : meditation.metadata.instructionCount ? (
+                                          <DropdownMenuItem className="flex items-center gap-2 cursor-default">
+                                            <SlidersHorizontal className="h-4 w-4 text-gray-600" />
+                                            <span className="text-sm">
+                                              {meditation.metadata.instructionCount} instructions
+                                            </span>
+                                          </DropdownMenuItem>
+                                        ) : null}
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  )}
                                   <Button
                                     variant="ghost"
                                     size="icon"
