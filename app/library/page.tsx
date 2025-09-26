@@ -11,21 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
-import {
-  Trash2,
-  Music,
-  Clock,
-  Calendar,
-  FolderPlus,
-  Edit2,
-  X,
-  SlidersHorizontal,
-  MoreVertical,
-  SkipBack,
-  SkipForward,
-  Play,
-  Pause,
-} from "lucide-react"
+import { Trash2, Music, Clock, Calendar, FolderPlus, Edit2, X, SlidersHorizontal, MoreVertical } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
@@ -437,8 +423,8 @@ export default function LibraryPage() {
                             className="group w-full text-left cursor-pointer"
                             onClick={() => openMeditationPlayer(meditation)}
                           >
-                            <Card className="w-full overflow-hidden border border-muted bg-white backdrop-blur-sm shadow-md">
-                              <div className="relative flex items-center justify-between p-4 border-muted border-[3px] rounded-sm">
+                            <Card className="w-full border border-muted bg-white backdrop-blur-sm shadow-md">
+                              <div className="relative flex items-center justify-between p-4 border-muted border-[3px] rounded-sm overflow-visible">
                                 <Badge
                                   variant="outline"
                                   className="absolute -top-2 -right-2 z-10 border-transparent bg-gradient-to-r from-logo-teal-500/90 to-logo-emerald-500/90 text-white text-xs font-black shadow-md"
@@ -782,60 +768,4 @@ export default function LibraryPage() {
                         style={{ width: `${playbackProgress}%` }}
                       />
                     </div>
-                    <div className="flex justify-between text-xs font-black text-gray-500">
-                      <span>{formatDetailedTime(playerTime)}</span>
-                      <span>{formatDetailedTime(playerDuration)}</span>
-                    </div>
-                    <div className="flex items-center justify-center gap-4">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleSkip(-10)}
-                        className="h-12 w-12 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        aria-label="Skip back 10 seconds"
-                      >
-                        <SkipBack className="h-5 w-5" />
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={togglePlayback}
-                        className="h-16 w-16 rounded-full bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 text-white hover:from-logo-teal-600 hover:to-logo-emerald-600"
-                        aria-label={isAudioPlaying ? "Pause" : "Play"}
-                      >
-                        {isAudioPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleSkip(10)}
-                        className="h-12 w-12 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        aria-label="Skip forward 10 seconds"
-                      >
-                        <SkipForward className="h-5 w-5" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={handlePlugIntoAdjuster}
-                      className="flex-1 bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white"
-                    >
-                      <SlidersHorizontal className="w-4 h-4 mr-2" />
-                      Plug into Adjuster
-                    </Button>
-                    <Button variant="outline" onClick={closeMeditationPlayer}>
-                      Close
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
+                    <div className="flex justify-between text-xs font-black text-gray-500">\
