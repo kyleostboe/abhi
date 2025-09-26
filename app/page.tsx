@@ -3212,7 +3212,7 @@ export default function Home() {
                   recordingPreviewRef={recordingPreviewRef}
                 />
 
-                {/* Timeline Editor for Labs */}
+                {/* Timeline Editor for encoder */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
                   <Card className="overflow-hidden border-none shadow-lg bg-white ">
                     <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 py-3">
