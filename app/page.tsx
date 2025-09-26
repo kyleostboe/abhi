@@ -88,7 +88,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
             Recorder
           </h3>
         </div>
-        <div className="p-6 pt-3.5 space-y-[18px]">
+        <div className="p-6 pt-3.5 space-y-[21px]">
           <Input
             id={inputId}
             value={recordingLabel}
