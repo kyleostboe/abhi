@@ -7,23 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
-import {
-  Trash2,
-  Music,
-  Clock,
-  Calendar,
-  FolderPlus,
-  Edit2,
-  SkipForward,
-  SkipBack,
-  Play,
-  Pause,
-  X,
-  SlidersHorizontal,
-} from "lucide-react"
+import { Trash2, Music, Clock, Calendar, FolderPlus, Edit2, X, SlidersHorizontal, MoreVertical } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
@@ -436,57 +424,72 @@ export default function LibraryPage() {
                             onClick={() => openMeditationPlayer(meditation)}
                           >
                             <Card className="w-full overflow-hidden border border-muted bg-white backdrop-blur-sm shadow-md">
-                              <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between border-muted border-[3px] rounded-sm">
-                                <div className="flex-1 space-y-2">
-                                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                                    <div>
-                                      <h3 className="font-black text-gray-800 text-sm mb-[3px]">{meditation.title}</h3>
-                                    </div>
+                              <div className="flex items-center justify-between p-4 border-muted border-[3px] rounded-sm">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <h3 className="font-black text-gray-800 text-sm truncate">{meditation.title}</h3>
                                     <Badge
                                       variant="outline"
-                                      className="w-fit border-transparent bg-gradient-to-r from-logo-teal-500/10 to-logo-emerald-500/10 text-logo-teal-700"
+                                      className="flex-shrink-0 border-transparent bg-gradient-to-r from-logo-teal-500/10 to-logo-emerald-500/10 text-logo-teal-700 text-xs"
                                     >
                                       {meditation.source === "adjuster" ? "Length Adjuster" : "Encoder"}
                                     </Badge>
                                   </div>
-                                  <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-gray-500">
-                                    <span className="flex items-center gap-2">
+                                  <div className="flex items-center gap-4">
+                                    <span className="flex items-center gap-1">
                                       <Clock className="h-4 w-4 text-gray-600" />
                                       <span className="text-xs text-gray-500">
                                         {formatDuration(meditation.duration)}
                                       </span>
                                     </span>
-                                    <span className="flex items-center gap-2">
-                                      <Calendar className="h-4 w-4 text-gray-600" />
-                                      <span className="text-xs text-gray-500">{formatDate(meditation.createdAt)}</span>
-                                    </span>
-                                    {meditation.metadata.pausesAdjusted ? (
-                                      <span className="flex items-center gap-2">
-                                        <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
-                                        <span>{meditation.metadata.pausesAdjusted} pauses adjusted</span>
-                                      </span>
-                                    ) : meditation.metadata.instructionCount ? (
-                                      <span className="flex items-center gap-2">
-                                        <SlidersHorizontal className="h-4 w-4 text-gray-600" />
-                                        <span className="text-xs text-gray-500">
-                                          {meditation.metadata.instructionCount} instructions
-                                        </span>
-                                      </span>
-                                    ) : null}
                                   </div>
                                 </div>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-red-500 transition hover:bg-red-50 hover:text-red-600"
-                                  onClick={(event) => {
-                                    event.stopPropagation()
-                                    handleDelete(meditation.id)
-                                  }}
-                                  aria-label="Delete meditation"
-                                >
-                                  <Trash2 className="h-5 w-5" />
-                                </Button>
+                                
+                                <div className="flex items-center gap-2 ml-3">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                                        onClick={(event) => event.stopPropagation()}
+                                        aria-label="View details"
+                                      >
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-56">
+                                      <DropdownMenuItem className="flex items-center gap-2 cursor-default">
+                                        <Calendar className="h-4 w-4 text-gray-600" />
+                                        <span className="text-sm">{formatDate(meditation.createdAt)}</span>
+                                      </DropdownMenuItem>
+                                      {meditation.metadata.pausesAdjusted ? (
+                                        <DropdownMenuItem className="flex items-center gap-2 cursor-default">
+                                          <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
+                                          <span className="text-sm">{meditation.metadata.pausesAdjusted} pauses adjusted</span>
+                                        </DropdownMenuItem>
+                                      ) : meditation.metadata.instructionCount ? (
+                                        <DropdownMenuItem className="flex items-center gap-2 cursor-default">
+                                          <SlidersHorizontal className="h-4 w-4 text-gray-600" />
+                                          <span className="text-sm">{meditation.metadata.instructionCount} instructions</span>
+                                        </DropdownMenuItem>
+                                      ) : null}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                  
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                                    onClick={(event) => {
+                                      event.stopPropagation()
+                                      handleDelete(meditation.id)
+                                    }}
+                                    aria-label="Delete meditation"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </div>
                             </Card>
                           </motion.div>
@@ -765,58 +768,4 @@ export default function LibraryPage() {
                       <Button
                         type="button"
                         variant="ghost"
-                        size="icon"
-                        className="h-12 w-12 rounded-full border border-transparent bg-gray-100/80 text-gray-700 transition hover:bg-gray-200"
-                        onClick={() => handleSkip(-15)}
-                        aria-label="Skip back 15 seconds"
-                      >
-                        <SkipBack className="h-5 w-5" />
-                      </Button>
-                      <Button
-                        type="button"
-                        size="icon"
-                        onClick={togglePlayback}
-                        className="h-14 w-14 rounded-full bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 text-white shadow-lg transition hover:from-logo-teal-600 hover:to-logo-emerald-600"
-                        aria-label={isAudioPlaying ? "Pause" : "Play"}
-                      >
-                        {isAudioPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-12 w-12 rounded-full border border-transparent bg-gray-100/80 text-gray-700 transition hover:bg-gray-200"
-                        onClick={() => handleSkip(15)}
-                        aria-label="Skip forward 15 seconds"
-                      >
-                        <SkipForward className="h-5 w-5" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <Button
-                      type="button"
-                      className="flex-1 bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 text-white shadow-lg hover:from-logo-purple-600 hover:to-logo-rose-500"
-                      onClick={handlePlugIntoAdjuster}
-                    >
-                      <SlidersHorizontal className="mr-2 h-4 w-4" /> Plug into Adjuster
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="flex-1 bg-transparent"
-                      onClick={closeMeditationPlayer}
-                    >
-                      Close Player
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
+                        size="icon"\
