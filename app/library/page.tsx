@@ -458,7 +458,7 @@ export default function LibraryPage() {
                                         <MoreVertical className="h-4 w-4" />
                                       </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-56">
+                                    <DropdownMenuContent align="end" className="rounded-sm border-muted border-2 text-xs font-serif font-black w-40 text-gray-500">
                                       <DropdownMenuItem className="flex items-center gap-2 cursor-default">
                                         <Calendar className="h-4 w-4 text-gray-600" />
                                         <span className="text-sm">{formatDate(meditation.createdAt)}</span>
