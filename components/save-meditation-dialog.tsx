@@ -44,6 +44,7 @@ export function SaveMeditationDialog({
   const [newPlaylistDescription, setNewPlaylistDescription] = useState("")
   const [showNewPlaylist, setShowNewPlaylist] = useState(false)
   const [playlists, setPlaylists] = useState<Playlist[]>([])
+  const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
 
   const loadPlaylists = useCallback(async () => {
@@ -70,6 +71,10 @@ export function SaveMeditationDialog({
   }, [open, originalFileName, metadataTitle])
 
   const handleSave = async () => {
+    if (isSaving) {
+      return
+    }
+
     console.log("[v0] Save button clicked - starting save process...")
     console.log("[v0] Audio URL exists:", !!audioUrl)
     console.log("[v0] Title:", title.trim())
@@ -96,6 +101,8 @@ export function SaveMeditationDialog({
       })
       return
     }
+
+    setIsSaving(true)
 
     try {
       console.log("[v0] Starting client-side audio compression...")
@@ -201,6 +208,8 @@ export function SaveMeditationDialog({
         description: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
         variant: "destructive",
       })
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -341,7 +350,9 @@ export function SaveMeditationDialog({
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>Save Meditation</Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save Meditation"}
+            </Button>
           </div>
         </div>
       </DialogContent>

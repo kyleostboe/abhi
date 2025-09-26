@@ -38,6 +38,7 @@ export default function LibraryPage() {
   const [activeTab, setActiveTab] = useState<"meditations" | "playlists">("meditations")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null)
+  const [sourceFilter, setSourceFilter] = useState<"all" | "adjuster" | "encoder">("all")
   const [newPlaylistName, setNewPlaylistName] = useState("")
   const [newPlaylistDescription, setNewPlaylistDescription] = useState("")
   const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null)
@@ -93,12 +94,15 @@ export default function LibraryPage() {
 
   const filteredMeditations = useMemo(
     () =>
-      meditations.filter(
-        (med) =>
+      meditations.filter((med) => {
+        const matchesSearch =
           med.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          med.originalFileName.toLowerCase().includes(searchQuery.toLowerCase()),
-      ),
-    [meditations, searchQuery],
+          med.originalFileName.toLowerCase().includes(searchQuery.toLowerCase())
+        const matchesSource = sourceFilter === "all" || med.source === sourceFilter
+
+        return matchesSearch && matchesSource
+      }),
+    [meditations, searchQuery, sourceFilter],
   )
 
   useEffect(() => {
@@ -114,9 +118,15 @@ export default function LibraryPage() {
 
   const handleSelectPlaylist = (playlistId: string | null) => {
     setSelectedPlaylist(playlistId)
+    setSourceFilter("all")
     if (searchQuery) {
       setSearchQuery("")
     }
+  }
+
+  const handleSourceFilterChange = (filter: "all" | "adjuster" | "encoder") => {
+    setSourceFilter(filter)
+    setSelectedPlaylist(null)
   }
 
   const handleDelete = async (meditationId: string) => {
@@ -392,8 +402,10 @@ export default function LibraryPage() {
   }, [isPlayerOpen])
 
   const playbackProgress = playerDuration ? Math.min(100, (playerTime / playerDuration) * 100) : 0
-  const totalFilterButtons = playlists.length + 1
+  const totalFilterButtons = playlists.length + 3
   const shouldStackFilters = totalFilterButtons >= 5
+  const baseFilterButtonClasses =
+    "flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm py-1"
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px] font-serif font-black">
@@ -480,18 +492,28 @@ export default function LibraryPage() {
                     </div>
                     <div className="flex flex-wrap font-serif font-black text-xs text-gray-600 md:justify-start md:items-start gap-[5px] justify-center">
                       <button
-                        onClick={() => handleSelectPlaylist(null)}
-                        className="flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm bg-white py-1"
+                        onClick={() => handleSourceFilterChange("all")}
+                        className={`${baseFilterButtonClasses} ${!selectedPlaylist && sourceFilter === "all" ? "bg-gray-100" : "bg-white"}`}
                       >
                         All Meditations
+                      </button>
+                      <button
+                        onClick={() => handleSourceFilterChange("adjuster")}
+                        className={`${baseFilterButtonClasses} ${!selectedPlaylist && sourceFilter === "adjuster" ? "bg-gray-100" : "bg-white"}`}
+                      >
+                        Adjuster Meditations
+                      </button>
+                      <button
+                        onClick={() => handleSourceFilterChange("encoder")}
+                        className={`${baseFilterButtonClasses} ${!selectedPlaylist && sourceFilter === "encoder" ? "bg-gray-100" : "bg-white"}`}
+                      >
+                        Encoder Meditations
                       </button>
                       {playlists.map((playlist) => (
                         <button
                           key={playlist.id}
                           onClick={() => handleSelectPlaylist(playlist.id)}
-                          className={`flex items-center justify-center font-black px-5 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm bg-white text-gray-600 py-1 ${
-                            selectedPlaylist === playlist.id ? "bg-white text-gray-600" : "text-gray-600"
-                          }`}
+                          className={`${baseFilterButtonClasses} ${selectedPlaylist === playlist.id ? "bg-gray-100" : "bg-white"}`}
                         >
                           {playlist.name}
                         </button>
