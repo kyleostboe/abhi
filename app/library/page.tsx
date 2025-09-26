@@ -12,7 +12,22 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
-import { Trash2, Music, Clock, Calendar, FolderPlus, Edit2, X, SlidersHorizontal, MoreVertical } from "lucide-react"
+import {
+  Trash2,
+  Music,
+  Clock,
+  Calendar,
+  FolderPlus,
+  Edit2,
+  X,
+  SlidersHorizontal,
+  MoreVertical,
+  SkipBack,
+  SkipForward,
+  Play,
+  Pause,
+  Download,
+} from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
@@ -774,4 +789,78 @@ export default function LibraryPage() {
                             sensitivity: "accent",
                           }) !== 0
                         if (!showOriginalFileName) return null
-                        return <p className="text-sm text-gray-500\">{selectedMeditation.originalFileName}</
+                        return <p className="text-sm text-gray-500">{selectedMeditation.originalFileName}</p>
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Player Content */}
+                  <audio
+                    ref={audioRef}
+                    src={selectedMeditation.processedAudioUrl}
+                    preload="metadata"
+                    className="hidden"
+                  />
+
+                  <div className="space-y-4">
+                    <div className="relative h-2 bg-gray-200 rounded-full cursor-pointer" onClick={handleSeek}>
+                      <div
+                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 rounded-full transition-all duration-150"
+                        style={{ width: `${playbackProgress}%` }}
+                      />
+                    </div>
+
+                    <div className="flex justify-between text-xs font-black text-gray-600">
+                      <span>{formatDetailedTime(playerTime)}</span>
+                      <span>{formatDetailedTime(playerDuration)}</span>
+                    </div>
+
+                    <div className="flex items-center justify-center gap-4">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleSkip(-10)}
+                        className="h-10 w-10 text-gray-600 hover:text-gray-800"
+                      >
+                        <SkipBack className="h-5 w-5" />
+                      </Button>
+
+                      <Button
+                        onClick={togglePlayback}
+                        className="h-12 w-12 rounded-full bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:from-logo-teal-600 hover:to-logo-emerald-600 text-white"
+                      >
+                        {isAudioPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-0.5" />}
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleSkip(10)}
+                        className="h-10 w-10 text-gray-600 hover:text-gray-800"
+                      >
+                        <SkipForward className="h-5 w-5" />
+                      </Button>
+                    </div>
+
+                    <div className="flex gap-2 pt-4">
+                      <Button variant="outline" onClick={handleDownloadMeditation} className="flex-1 bg-transparent">
+                        <Download className="h-4 w-4 mr-2" />
+                        Download
+                      </Button>
+                      <Button
+                        onClick={handleOpenInTool}
+                        className="flex-1 bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white"
+                      >
+                        Open in {selectedMeditation.source === "adjuster" ? "Adjuster" : "Encoder"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
