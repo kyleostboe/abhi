@@ -2084,6 +2084,7 @@ export default function Home() {
       localStorage.removeItem("abhi_meditation_library")
       localStorage.removeItem("abhi_meditation_playlists")
       localStorage.removeItem("abhi_adjuster_import")
+      localStorage.removeItem("abhi_encoder_import")
       toast({
         title: "Library cleared",
         description: "All meditation data has been cleared for testing.",

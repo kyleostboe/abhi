@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, useMemo } from "react"
+import type { MouseEvent } from "react"
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,7 +12,23 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
-import { Trash2, Music, Clock, Calendar, FolderPlus, Edit2, X, SlidersHorizontal, MoreVertical } from "lucide-react"
+import {
+  Trash2,
+  Music,
+  Clock,
+  Calendar,
+  FolderPlus,
+  Edit2,
+  X,
+  SlidersHorizontal,
+  MoreVertical,
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Download,
+  ExternalLink,
+} from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
@@ -206,6 +223,7 @@ export default function LibraryPage() {
         })
     } else {
       audio.pause()
+      setIsAudioPlaying(false)
     }
   }
 
@@ -217,7 +235,7 @@ export default function LibraryPage() {
     setPlayerTime(newTime)
   }
 
-  const handlePlugIntoAdjuster = () => {
+  const handleOpenInTool = () => {
     if (!selectedMeditation) return
     const payload = {
       id: selectedMeditation.id,
@@ -227,21 +245,66 @@ export default function LibraryPage() {
       duration: selectedMeditation.duration,
       source: selectedMeditation.source,
     }
+
     try {
-      localStorage.setItem("abhi_adjuster_import", JSON.stringify(payload))
-      toast({
-        title: "Opening Adjuster",
-        description: `"${selectedMeditation.title}" will load in the Adjuster tool.`,
-      })
-      setIsPlayerOpen(false)
-      router.push("/#adjuster")
+      if (selectedMeditation.source === "adjuster") {
+        localStorage.setItem("abhi_adjuster_import", JSON.stringify(payload))
+        toast({
+          title: "Opening Adjuster",
+          description: `"${selectedMeditation.title}" will load in the Adjuster tool.`,
+        })
+        setIsPlayerOpen(false)
+        router.push("/#adjuster")
+      } else {
+        localStorage.setItem("abhi_encoder_import", JSON.stringify(payload))
+        toast({
+          title: "Opening Encoder",
+          description: `"${selectedMeditation.title}" will load in the Encoder tool.`,
+        })
+        setIsPlayerOpen(false)
+        router.push("/#encoder")
+      }
     } catch (error) {
       toast({
-        title: "Unable to open Adjuster",
-        description: "We couldn't pass this meditation to the Adjuster.",
+        title: "Unable to open tool",
+        description: "We couldn't pass this meditation to the selected tool.",
         variant: "destructive",
       })
     }
+  }
+
+  const handleDownloadMeditation = () => {
+    if (!selectedMeditation) return
+
+    try {
+      const link = document.createElement("a")
+      link.href = selectedMeditation.processedAudioUrl
+      const safeTitle = selectedMeditation.title.trim().replace(/\s+/g, "_") || "meditation"
+      link.download = `${safeTitle}.wav`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (error) {
+      console.error("[v0] Error downloading meditation:", error)
+      toast({
+        title: "Unable to download",
+        description: "We couldn't download this meditation. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleSeek = (event: MouseEvent<HTMLDivElement>) => {
+    const audio = audioRef.current
+    if (!audio || !(audio.duration || playerDuration)) return
+
+    const rect = event.currentTarget.getBoundingClientRect()
+    const clickPosition = event.clientX - rect.left
+    const ratio = Math.min(Math.max(clickPosition / rect.width, 0), 1)
+    const duration = Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : playerDuration
+    const newTime = ratio * duration
+    audio.currentTime = newTime
+    setPlayerTime(newTime)
   }
 
   useEffect(() => {
@@ -268,6 +331,7 @@ export default function LibraryPage() {
     audio.addEventListener("ended", handleEndedEvent)
 
     if (selectedMeditation) {
+      audio.load()
       audio.currentTime = 0
       setPlayerTime(0)
       setPlayerDuration(selectedMeditation.duration)
@@ -427,7 +491,7 @@ export default function LibraryPage() {
                               <div className="relative flex items-center justify-between p-4 border-muted border-[3px] rounded-sm overflow-visible">
                                 <Badge
                                   variant="outline"
-                                  className="absolute -top-2 -right-2 z-10 border-transparent bg-gradient-to-r from-logo-teal-500/90 to-logo-emerald-500/90 text-white text-xs font-black shadow-md"
+                                  className="absolute -top-2 -right-2 translate-x-[5px] -translate-y-[5px] z-10 border-transparent bg-gradient-to-r from-logo-teal-500/90 to-logo-emerald-500/90 text-white text-xs font-black shadow-md"
                                 >
                                   {meditation.source === "adjuster" ? "Adjuster" : "Encoder"}
                                 </Badge>
@@ -762,10 +826,81 @@ export default function LibraryPage() {
                   />
 
                   <div className="space-y-4">
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+                    <div
+                      className="h-1.5 w-full cursor-pointer overflow-hidden rounded-full bg-gray-200"
+                      onClick={handleSeek}
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={playerDuration || 0}
+                      aria-valuenow={playerTime}
+                    >
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500"
                         style={{ width: `${playbackProgress}%` }}
                       />
                     </div>
-                    <div className="flex justify-between text-xs font-black text-gray-500">\
+                    <div className="flex justify-between text-xs font-black text-gray-500">
+                      <span>{formatDetailedTime(playerTime)}</span>
+                      <span>{formatDetailedTime(playerDuration)}</span>
+                    </div>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center justify-center gap-2 sm:gap-3">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-11 w-11 rounded-full border-2 border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-100 hover:text-gray-900"
+                          onClick={() => handleSkip(-15)}
+                          aria-label="Skip backward 15 seconds"
+                        >
+                          <SkipBack className="h-5 w-5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          className="h-14 w-14 rounded-full bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 text-white shadow-lg transition hover:from-logo-teal-600 hover:to-logo-emerald-600"
+                          onClick={togglePlayback}
+                          aria-label={isAudioPlaying ? "Pause meditation" : "Play meditation"}
+                        >
+                          {isAudioPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-11 w-11 rounded-full border-2 border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-100 hover:text-gray-900"
+                          onClick={() => handleSkip(15)}
+                          aria-label="Skip forward 15 seconds"
+                        >
+                          <SkipForward className="h-5 w-5" />
+                        </Button>
+                      </div>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="font-black text-gray-600"
+                          onClick={handleDownloadMeditation}
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          Download
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="font-black text-logo-teal-600 hover:text-logo-teal-700 hover:bg-logo-teal-50"
+                          onClick={handleOpenInTool}
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          {selectedMeditation.source === "adjuster" ? "Open in Adjuster" : "Open in Encoder"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  </div>
+)
+}
