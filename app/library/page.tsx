@@ -11,7 +11,21 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
-import { Trash2, Music, Clock, Calendar, FolderPlus, Edit2, X, SlidersHorizontal, MoreVertical } from "lucide-react"
+import {
+  Trash2,
+  Music,
+  Clock,
+  Calendar,
+  FolderPlus,
+  Edit2,
+  X,
+  SlidersHorizontal,
+  MoreVertical,
+  SkipBack,
+  SkipForward,
+  Play,
+  Pause,
+} from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
@@ -424,16 +438,17 @@ export default function LibraryPage() {
                             onClick={() => openMeditationPlayer(meditation)}
                           >
                             <Card className="w-full overflow-hidden border border-muted bg-white backdrop-blur-sm shadow-md">
-                              <div className="flex items-center justify-between p-4 border-muted border-[3px] rounded-sm">
+                              <div className="relative flex items-center justify-between p-4 border-muted border-[3px] rounded-sm">
+                                <Badge
+                                  variant="outline"
+                                  className="absolute -top-2 -right-2 z-10 border-transparent bg-gradient-to-r from-logo-teal-500/90 to-logo-emerald-500/90 text-white text-xs font-black shadow-md"
+                                >
+                                  {meditation.source === "adjuster" ? "Adjuster" : "Encoder"}
+                                </Badge>
+
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-3 mb-2">
                                     <h3 className="font-black text-gray-800 text-sm truncate">{meditation.title}</h3>
-                                    <Badge
-                                      variant="outline"
-                                      className="flex-shrink-0 border-transparent bg-gradient-to-r from-logo-teal-500/10 to-logo-emerald-500/10 text-logo-teal-700 text-xs"
-                                    >
-                                      {meditation.source === "adjuster" ? "Length Adjuster" : "Encoder"}
-                                    </Badge>
                                   </div>
                                   <div className="flex items-center gap-4">
                                     <span className="flex items-center gap-1">
@@ -444,7 +459,7 @@ export default function LibraryPage() {
                                     </span>
                                   </div>
                                 </div>
-                                
+
                                 <div className="flex items-center gap-2 ml-3">
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -458,7 +473,10 @@ export default function LibraryPage() {
                                         <MoreVertical className="h-4 w-4" />
                                       </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="rounded-sm border-muted border-2 text-xs font-serif font-black w-40 text-gray-500">
+                                    <DropdownMenuContent
+                                      align="end"
+                                      className="rounded-sm border-muted border-2 text-xs font-serif font-black w-40 text-gray-500"
+                                    >
                                       <DropdownMenuItem className="flex items-center gap-2 cursor-default">
                                         <Calendar className="h-4 w-4 text-gray-600" />
                                         <span className="text-sm">{formatDate(meditation.createdAt)}</span>
@@ -466,17 +484,21 @@ export default function LibraryPage() {
                                       {meditation.metadata.pausesAdjusted ? (
                                         <DropdownMenuItem className="flex items-center gap-2 cursor-default">
                                           <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
-                                          <span className="text-sm">{meditation.metadata.pausesAdjusted} pauses adjusted</span>
+                                          <span className="text-sm">
+                                            {meditation.metadata.pausesAdjusted} pauses adjusted
+                                          </span>
                                         </DropdownMenuItem>
                                       ) : meditation.metadata.instructionCount ? (
                                         <DropdownMenuItem className="flex items-center gap-2 cursor-default">
                                           <SlidersHorizontal className="h-4 w-4 text-gray-600" />
-                                          <span className="text-sm">{meditation.metadata.instructionCount} instructions</span>
+                                          <span className="text-sm">
+                                            {meditation.metadata.instructionCount} instructions
+                                          </span>
                                         </DropdownMenuItem>
                                       ) : null}
                                     </DropdownMenuContent>
                                   </DropdownMenu>
-                                  
+
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -768,4 +790,52 @@ export default function LibraryPage() {
                       <Button
                         type="button"
                         variant="ghost"
-                        size="icon"\
+                        size="icon"
+                        onClick={() => handleSkip(-10)}
+                        className="h-12 w-12 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        aria-label="Skip back 10 seconds"
+                      >
+                        <SkipBack className="h-5 w-5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={togglePlayback}
+                        className="h-16 w-16 rounded-full bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 text-white hover:from-logo-teal-600 hover:to-logo-emerald-600"
+                        aria-label={isAudioPlaying ? "Pause" : "Play"}
+                      >
+                        {isAudioPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleSkip(10)}
+                        className="h-12 w-12 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        aria-label="Skip forward 10 seconds"
+                      >
+                        <SkipForward className="h-5 w-5" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={handlePlugIntoAdjuster}
+                      className="flex-1 bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white"
+                    >
+                      <SlidersHorizontal className="w-4 h-4 mr-2" />
+                      Plug into Adjuster
+                    </Button>
+                    <Button variant="outline" onClick={closeMeditationPlayer}>
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
