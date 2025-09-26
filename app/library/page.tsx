@@ -450,10 +450,10 @@ export default function LibraryPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2 font-serif font-black text-xs text-gray-600 md:justify-start md:items-start">
+                    <div className="flex flex-wrap font-serif font-black text-xs text-gray-600 md:justify-start md:items-start gap-[5px]">
                       <button
                         onClick={() => setSelectedPlaylist(null)}
-                        className="flex items-center justify-center font-black text-gray-600 px-5 py-2 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm bg-white"
+                        className="flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm bg-white py-1"
                       >
                         All Meditations
                       </button>
@@ -461,7 +461,7 @@ export default function LibraryPage() {
                         <button
                           key={playlist.id}
                           onClick={() => setSelectedPlaylist(playlist.id)}
-                          className={`flex items-center justify-center font-black px-5 py-2 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm bg-white text-gray-600 ${
+                          className={`flex items-center justify-center font-black px-5 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm bg-white text-gray-600 py-1 ${
                             selectedPlaylist === playlist.id ? "bg-gray-100 text-gray-700" : "text-gray-600"
                           }`}
                         >
