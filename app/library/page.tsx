@@ -408,7 +408,7 @@ export default function LibraryPage() {
                     activeTab === "meditations" ? "bg-white text-gray-600 shadow-sm" : "text-gray-600 "
                   }`}
                 >
-                  Meditations ({meditations.length})
+                  Meditations 
                 </button>
                 <button
                   onClick={() => setActiveTab("playlists")}
@@ -416,7 +416,7 @@ export default function LibraryPage() {
                     activeTab === "playlists" ? "bg-white text-gray-600 shadow-sm" : "text-gray-600 "
                   }`}
                 >
-                  Playlists ({playlists.length})
+                  Playlists
                 </button>
               </div>
             </div>
