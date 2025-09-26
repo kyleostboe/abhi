@@ -383,7 +383,7 @@ export default function LibraryPage() {
           </div>
           <div className="relative text-center px-8 pt-16 pb-0">
             {/* Custom underline matching home page but larger */}
-            <div className="flex justify-center mb-4">
+            <div className="flex justify-center mb-[25px]">
               <div className="relative">
                 <div className="flex justify-center items-center space-x-[5px]">
                   <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px]"></div>
@@ -400,7 +400,7 @@ export default function LibraryPage() {
 
           <div className="px-6 md:px-10 pb-10">
             {/* Tab Navigation */}
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center mb-[21px]">
               <div className="flex p-1 bg-muted flex-row rounded-sm shadow-inner text-sm text-gray-600">
                 <button
                   onClick={() => setActiveTab("meditations")}
