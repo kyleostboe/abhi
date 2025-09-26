@@ -400,7 +400,7 @@ export default function LibraryPage() {
 
           <div className="px-6 md:px-10 pb-10">
             {/* Tab Navigation */}
-            <div className="flex justify-center mb-[21px]">
+            <div className="flex justify-center mb-[25px]">
               <div className="flex p-1 bg-muted flex-row rounded-sm shadow-inner text-sm text-gray-600">
                 <button
                   onClick={() => setActiveTab("meditations")}
@@ -432,7 +432,7 @@ export default function LibraryPage() {
                 >
                   {/* Search and Filters */}
                   <div
-                    className={`grid gap-4 mb-6 grid-cols-1 ${
+                    className={`grid grid-cols-1 gap-4 mb-[27px] ${
                       shouldStackFilters
                         ? "md:grid-cols-1"
                         : "md:[grid-template-columns:minmax(0,1.15fr)_minmax(0,1fr)] md:items-start"
@@ -450,7 +450,7 @@ export default function LibraryPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-wrap font-serif font-black text-xs text-gray-600 md:justify-start md:items-start gap-[5px]">
+                    <div className="flex flex-wrap font-serif font-black text-xs text-gray-600 md:justify-start md:items-start gap-[5px] justify-center">
                       <button
                         onClick={() => setSelectedPlaylist(null)}
                         className="flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm bg-white py-1"
@@ -462,7 +462,7 @@ export default function LibraryPage() {
                           key={playlist.id}
                           onClick={() => setSelectedPlaylist(playlist.id)}
                           className={`flex items-center justify-center font-black px-5 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm bg-white text-gray-600 py-1 ${
-                            selectedPlaylist === playlist.id ? "bg-gray-100 text-gray-700" : "text-gray-600"
+                            selectedPlaylist === playlist.id ? "bg-white text-gray-600" : "text-gray-600"
                           }`}
                         >
                           {playlist.name}

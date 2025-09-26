@@ -421,7 +421,7 @@ export function VisualTimeline({
               className="text-center py-8 text-gray-500 "
             >
               <div className="mb-2 text-base">No events added yet</div>
-              <div className="text-sm">Add instructions and sound cues to build your meditation timeline</div>
+              <div className="text-sm">Add instruction-cue pairs or recordings to build your meditation timeline :) </div>
             </motion.div>
           ) : (
             events

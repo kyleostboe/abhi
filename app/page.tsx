@@ -2945,10 +2945,10 @@ export default function Home() {
                 >
                   <Card className="overflow-hidden bg-white max-w-2xl mx-auto rounded-2xl shadow-none">
                     <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none">
-                      <div className="grid md:grid-cols-2 gap-6 text-gray-600 pb-2">
+                      <div className="grid md:grid-cols-2 text-gray-600 pb-2 gap-[13px]">
                         <div className="text-center">
-                          <Label htmlFor="meditation-title" className="text-gray-600 font-black">
-                            Meditation Title
+                          <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
+                            Title:
                           </Label>
                           <Input
                             id="meditation-title"
@@ -2956,12 +2956,12 @@ export default function Home() {
                             value={meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
-                            className="mt-1 text-xs border-gray-500 focus-visible:border-gray-600 placeholder:text-gray-500 font-black text-gray-500 shadow-md"
+                            className="mt-1 text-sm border-gray-500 focus-visible:border-gray-600 placeholder:text-gray-500 font-black text-gray-500 shadow-md"
                           />
                         </div>
                         <div className="text-center">
-                          <Label htmlFor="encoder-duration" className="text-gray-600 font-black">
-                            Duration (minutes)
+                          <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
+                            Duration:
                           </Label>
                           <Input
                             id="encoder-duration"
@@ -2969,7 +2969,7 @@ export default function Home() {
                             value={encoderTotalDuration / 60}
                             onChange={handleDurationChange}
                             min="1"
-                            className="mt-1 text-xs font-black border-gray-500 focus-visible:border-gray-600 text-gray-500 shadow-md"
+                            className="mt-1 text-sm font-black border-gray-500 focus-visible:border-gray-600 text-gray-500 shadow-md"
                           />
                         </div>
                       </div>
