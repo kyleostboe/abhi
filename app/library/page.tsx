@@ -495,7 +495,7 @@ export default function LibraryPage() {
                         onClick={() => handleSourceFilterChange("all")}
                         className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-sm py-1 ${
                           !selectedPlaylist && sourceFilter === "all"
-                            ? "bg-gray-100 border-muted"
+                            ? " border-stone-300"
                             : "bg-white border-gray-500 hover:shadow-none"
                         }`}
                       >
@@ -505,7 +505,7 @@ export default function LibraryPage() {
                         onClick={() => handleSourceFilterChange("adjuster")}
                         className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-sm py-1 ${
                           !selectedPlaylist && sourceFilter === "adjuster"
-                            ? "bg-gray-100 border-muted"
+                            ? " border-stone-300"
                             : "bg-white border-gray-500 hover:shadow-none"
                         }`}
                       >
@@ -515,7 +515,7 @@ export default function LibraryPage() {
                         onClick={() => handleSourceFilterChange("encoder")}
                         className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-sm py-1 ${
                           !selectedPlaylist && sourceFilter === "encoder"
-                            ? "bg-gray-100 border-muted"
+                            ? " border-stone-300"
                             : "bg-white border-gray-500 hover:shadow-none"
                         }`}
                       >
@@ -527,7 +527,7 @@ export default function LibraryPage() {
                           onClick={() => handleSelectPlaylist(playlist.id)}
                           className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-sm py-1 ${
                             selectedPlaylist === playlist.id
-                              ? "bg-gray-100 border-muted"
+                              ? " border-stone-300"
                               : "bg-white border-gray-500 hover:shadow-none"
                           }`}
                         >
