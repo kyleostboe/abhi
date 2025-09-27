@@ -547,7 +547,7 @@ export default function LibraryPage() {
                       </p>
                       <Button
                         onClick={() => router.push("/")}
-                        className="font-serif font-black bg-gradient-to-r from-purple-300 to-orange-300 shadow-md hover:shadow-none text-white"
+                        className="font-serif font-black bg-gradient-to-r from-purple-300 to-orange-300 bg-clip-text text-transparent shadow-md hover:shadow-none"
                       >
                         Go to Tools
                       </Button>
