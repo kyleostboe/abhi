@@ -14,7 +14,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
 import {
   Trash2,
-  Music,
   Clock,
   Calendar,
   FolderPlus,
@@ -338,7 +337,8 @@ export default function LibraryPage() {
     const rect = event.currentTarget.getBoundingClientRect()
     const clickPosition = event.clientX - rect.left
     const ratio = Math.min(Math.max(clickPosition / rect.width, 0), 1)
-    const duration = Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : playerDuration
+    const duration =
+      Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : (selectedMeditation?.duration ?? 0)
     const newTime = ratio * duration
     audio.currentTime = newTime
     setPlayerTime(newTime)
@@ -448,7 +448,7 @@ export default function LibraryPage() {
                     activeTab === "meditations" ? "bg-white text-gray-600 shadow-sm" : "text-gray-600 "
                   }`}
                 >
-                  Meditations 
+                  Meditations
                 </button>
                 <button
                   onClick={() => setActiveTab("playlists")}
@@ -493,27 +493,43 @@ export default function LibraryPage() {
                     <div className="flex flex-wrap font-serif font-black text-xs text-gray-600 md:justify-start md:items-start gap-[5px] justify-center">
                       <button
                         onClick={() => handleSourceFilterChange("all")}
-                        className={`${baseFilterButtonClasses} ${!selectedPlaylist && sourceFilter === "all" ? "bg-gray-100" : "bg-white"}`}
+                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-sm py-1 ${
+                          !selectedPlaylist && sourceFilter === "all"
+                            ? "bg-gray-100 border-muted"
+                            : "bg-white border-gray-500 hover:shadow-none"
+                        }`}
                       >
                         All Meditations
                       </button>
                       <button
                         onClick={() => handleSourceFilterChange("adjuster")}
-                        className={`${baseFilterButtonClasses} ${!selectedPlaylist && sourceFilter === "adjuster" ? "bg-gray-100" : "bg-white"}`}
+                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-sm py-1 ${
+                          !selectedPlaylist && sourceFilter === "adjuster"
+                            ? "bg-gray-100 border-muted"
+                            : "bg-white border-gray-500 hover:shadow-none"
+                        }`}
                       >
-                        Adjuster 
+                        Adjuster
                       </button>
                       <button
                         onClick={() => handleSourceFilterChange("encoder")}
-                        className={`${baseFilterButtonClasses} ${!selectedPlaylist && sourceFilter === "encoder" ? "bg-gray-100" : "bg-white"}`}
+                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-sm py-1 ${
+                          !selectedPlaylist && sourceFilter === "encoder"
+                            ? "bg-gray-100 border-muted"
+                            : "bg-white border-gray-500 hover:shadow-none"
+                        }`}
                       >
-                        Encoder 
+                        Encoder
                       </button>
                       {playlists.map((playlist) => (
                         <button
                           key={playlist.id}
                           onClick={() => handleSelectPlaylist(playlist.id)}
-                          className={`${baseFilterButtonClasses} ${selectedPlaylist === playlist.id ? "bg-gray-100" : "bg-white"}`}
+                          className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-sm py-1 ${
+                            selectedPlaylist === playlist.id
+                              ? "bg-gray-100 border-muted"
+                              : "bg-white border-gray-500 hover:shadow-none"
+                          }`}
                         >
                           {playlist.name}
                         </button>
@@ -524,8 +540,6 @@ export default function LibraryPage() {
                   {/* Meditations Grid */}
                   {displayedMeditations.length === 0 ? (
                     <Card className="p-12 text-center">
-                      
-                      
                       <p className="text-gray-500 mb-4 text-base">
                         {selectedPlaylist
                           ? "This playlist is empty. Add a meditation to get started :)"
