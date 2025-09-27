@@ -543,7 +543,7 @@ export default function LibraryPage() {
                       <p className="text-gray-500 mb-4 text-base">
                         {selectedPlaylist
                           ? "This playlist is empty. Add a meditation to get started :)"
-                          : "No meditations yet ;) "}
+                          : "No meditations yet "}
                       </p>
                       <Button onClick={() => router.push("/")}>Go to Tools</Button>
                     </Card>
