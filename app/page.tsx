@@ -2297,6 +2297,13 @@ export default function Home() {
         role="application"
       >
         <div className="relative overflow-hidden">
+          <div
+            className="absolute inset-0 opacity-[0.015] pointer-events-none mix-blend-multiply"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+              backgroundSize: "128px 128px",
+            }}
+          ></div>
           <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
             <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 "></div>
             <div className="absolute top-2 left-8 w-16 h-12 bg-gradient-to-br from-emerald-300/30 to-teal-400/25 rounded-full transform rotate-12 "></div>
@@ -2384,7 +2391,8 @@ export default function Home() {
                   className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                 >
                   <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs pb-1.5">
-                    Design custom guided meditations by pairing instructions with sound cues and/or using the recorder, then arranging events on the timeline.
+                    Design custom guided meditations by pairing instructions with sound cues and/or using the recorder,
+                    then arranging events on the timeline.
                   </p>
                 </motion.div>
               )}
@@ -2894,7 +2902,7 @@ export default function Home() {
                           </div>
                           <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
                             <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">File Size</div>
-                            <div className="font-black text-gray-600 text-sm">
+                            <div className="font-black text-sm text-gray-600">
                               {(processedFileSize / (1024 * 1024)).toFixed(2)} MB
                             </div>
                           </div>
