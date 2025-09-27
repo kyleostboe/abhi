@@ -9,15 +9,15 @@ export function Navigation() {
 
   return (
     <nav className="flex justify-center py-4 mb-5">
-      <ul className="flex bg-white/70 backdrop-blur-md px-6 py-3 shadow-2xl rounded-sm space-x-3">
+      <ul className="flex backdrop-blur-md shadow-2xl rounded-sm bg-white px-[9px] py-3.5 space-x-[9px]">
         <li>
           <Link
             href="/"
             className={cn(
               "px-4 py-2 transition-colors font-black font-serif text-sm shadow-none rounded-sm",
               pathname === "/"
-                ? "bg-gradient-to-r from-gray-600 to-gray-500 text-white shadow-md "
-                : "text-gray-600 hover:bg-gray-100 ",
+                ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md "
+                : "text-gray-600 hover:bg-muted hover:shadow-inner ",
             )}
           >
             Home
@@ -29,8 +29,8 @@ export function Navigation() {
             className={cn(
               "px-4 py-2 transition-colors font-black font-serif text-sm shadow-none rounded-sm",
               pathname === "/library"
-                ? "bg-gradient-to-r from-gray-600 to-gray-500 text-white shadow-md "
-                : "text-gray-600 hover:bg-gray-100 ",
+                ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md "
+                : "text-gray-600 hover:bg-muted hover:shadow-inner ",
             )}
           >
             Library
@@ -40,8 +40,8 @@ export function Navigation() {
           <Link
             href="/contact"
             className={cn(
-              "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-md",
-              pathname === "/contact" ? "bg-gray-600 text-white shadow-md " : "text-gray-600 hover:bg-gray-100 ",
+              "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-sm",
+              pathname === "/contact" ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md " : "text-gray-600 hover:bg-muted hover:shadow-inner ",
             )}
           >
             Contact
@@ -51,8 +51,8 @@ export function Navigation() {
           <Link
             href="/donate"
             className={cn(
-              "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-md",
-              pathname === "/donate" ? "bg-gray-600 text-white shadow-md " : "text-gray-600 hover:bg-gray-100 ",
+              "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-sm",
+              pathname === "/donate" ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md " : "text-gray-600 hover:bg-muted hover:shadow-inner ",
             )}
           >
             Donate

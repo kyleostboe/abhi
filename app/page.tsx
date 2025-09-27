@@ -2311,7 +2311,7 @@ export default function Home() {
               transition={{ delay: 0.2, duration: 0.5 }}
             >
               <h1
-                className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose via-logo-purple to-logo-teal transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter text-center mt-16"
+                className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose to-logo-purple transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter text-center mt-16"
                 style={{
                   fontFamily: 'Georgia, "Times New Roman", serif',
                   textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
@@ -2319,12 +2319,12 @@ export default function Home() {
               >
                 abhī
               </h1>
-              <div className="font-black text-logo-rose-600 font-serif mb-[7px] text-xs">Meditation Tool</div>
+              <div className="font-black font-serif mb-[7px] text-logo-rose-600 text-xs">Meditation Tool</div>
               <div className="flex justify-center items-center mb-4 space-x-[3px]">
                 <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[13px] h-[13px]"></div>
                 <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px]"></div>
-                <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-sm transform  h-[9px]"></div>
-                <div className="w-4 bg-gradient-to-r from-gray-600 to-gray-500 rounded-sm w-[48px] h-[4px]"></div>
+                <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-sm transform h-[9px]"></div>
+                <div className="w-4 bg-gradient-to-r from-gray-600 to-gray-500 border-2 w-[9px] h-[33px] rounded-none"></div>
                 <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-sm transform  h-[9px] pl-0 ml-2"></div>
                 <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[9px] w-[9px]"></div>
                 <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[13px] h-[13px]"></div>

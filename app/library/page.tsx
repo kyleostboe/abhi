@@ -429,7 +429,7 @@ export default function LibraryPage() {
                   <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px]"></div>
                   <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[11px] w-[11px]"></div>
                   <div className="w-5 bg-gradient-to-br from-logo-amber to-orange-300 rounded-sm transform  h-[11px]"></div>
-                  <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-0 mx-0 rounded-sm text-logo-rose-600 border-[3px] bg-muted w-11 h-2.5"></div>
+                  <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-0 mx-0 border-[3px] bg-muted h-11 w-3 rounded"></div>
                   <div className="w-5 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-sm transform  h-[11px] pl-0 ml-2"></div>
                   <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[11px] w-[11px]"></div>
                   <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[16px] h-[16px]"></div>
