@@ -2490,7 +2490,7 @@ export default function Home() {
                   onDragLeave={handleDragLeaveAction}
                   onDrop={handleDropAction}
                 >
-                  <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 border-0 py-1 shadow-lg rounded-sm px-[5px]">
+                  <div className="p-0.5 bg-gradient-to-r from-logo-purple-300 to-logo-teal-500 py-1 shadow-lg rounded-sm px-[5px]">
                     <div className="p-10 md:p-16 text-center bg-white rounded-lg shadow-none md:py-12 md:px-16 border-logo-rose-100 border-0">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
@@ -2522,7 +2522,7 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-logo-amber-300 to-logo-purple-300 py-1 px-[5px] shadow-md rounded-sm pr-1 pl-1"
+                      className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-gray-600 to-gray-500 py-1 shadow-md rounded-sm px-[5px]"
                     >
                       <div className="bg-white p-5 py-4 rounded-sm">
                         <div className="flex items-center">
@@ -2576,7 +2576,7 @@ export default function Home() {
                             <div className="text-lg font-black text-gray-600">Audio Analysis</div>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 px-[3px] rounded-sm pl-1 pr-1">
+                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
                               <div className="bg-white p-3 text-center min-h-[76px] rounded-sm">
                                 <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
                                 <div className="font-black text-gray-600">
@@ -2584,19 +2584,19 @@ export default function Home() {
                                 </div>
                               </div>
                             </div>
-                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 px-[3px] rounded-sm pl-1 pr-1">
+                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
                               <div className="bg-white p-3 text-center min-h-[76px] rounded-sm">
                                 <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
                                 <div className="font-black text-gray-600">{formatTime(audioAnalysis.totalSilence)}</div>
                               </div>
                             </div>
-                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 px-[3px] rounded-sm pr-1 pl-1 shadow-md">
+                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
                               <div className="bg-white p-3 text-center min-h-[76px] rounded-sm">
                                 <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Pauses:</div>
                                 <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
                               </div>
                             </div>
-                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 px-[3px] rounded-sm pr-1 pl-1">
+                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
                               <div className="bg-white p-3 text-center min-h-[76px] rounded-sm">
                                 <div className="text-xs uppercase tracking-wide text-gray-600 mb-1.5">Range:</div>
                                 <div className="uppercase text-gray-600 text-xs tracking-wide">
@@ -2621,13 +2621,13 @@ export default function Home() {
                     <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted p-1 rounded-sm ">
                       <TabsTrigger
                         value="basic"
-                        className="data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-sm rounded-sm "
+                        className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-sm "
                       >
                         Basic Settings
                       </TabsTrigger>
                       <TabsTrigger
                         value="advanced"
-                        className="data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-sm rounded-sm "
+                        className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-sm "
                       >
                         Advanced Settings
                       </TabsTrigger>
@@ -3042,7 +3042,7 @@ export default function Home() {
                                   <span>Notes</span>
                                 </div>
                               </AccordionTrigger>
-                              <div className="px-4 pb-2 border-b">
+                              <div className="px-4 pb-2 border-b-0">
                                 <div className="flex items-center gap-4">
                                   <div className="flex items-center gap-2">
                                     <span className="text-xs text-gray-500">Type</span>
@@ -3181,7 +3181,7 @@ export default function Home() {
                             </AccordionItem>
                           </Accordion>
                         </div>
-                        <div className="h-px"></div>
+                        <div className="h-[5px]"></div>
                         <Button
                           className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-sm hover:shadow-none font-serif font-black mt-4"
                           onClick={handleAddInstructionSoundEvent}
