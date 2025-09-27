@@ -426,13 +426,13 @@ export default function LibraryPage() {
             <div className="flex justify-center mb-[25px]">
               <div className="relative">
                 <div className="flex justify-center items-center space-x-[5px]">
-                  <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px]"></div>
-                  <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[11px] w-[11px]"></div>
-                  <div className="w-5 bg-gradient-to-br from-logo-amber to-orange-300 rounded-sm transform  h-[11px]"></div>
-                  <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-0 mx-0 border-[3px] bg-muted h-11 w-3 rounded"></div>
-                  <div className="w-5 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-sm transform  h-[11px] pl-0 ml-2"></div>
-                  <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[11px] w-[11px]"></div>
-                  <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[16px] h-[16px]"></div>
+                  <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px] shadow-md"></div>
+                  <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[11px] w-[11px] shadow"></div>
+                  <div className="w-5 bg-gradient-to-br from-logo-amber to-orange-300 rounded-sm transform h-[11px] shadow-sm"></div>
+                  <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-0 mx-0 border-[3px] bg-muted h-11 w-3 rounded border-stone-200 shadow-md"></div>
+                  <div className="w-5 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-sm transform h-[11px] pl-0 ml-2 shadow-sm"></div>
+                  <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[11px] w-[11px] shadow"></div>
+                  <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[16px] h-[16px] shadow-md"></div>
                 </div>
               </div>
             </div>
@@ -479,7 +479,7 @@ export default function LibraryPage() {
                     }`}
                   >
                     <div className={`${shouldStackFilters ? "" : "md:[grid-row:span_2]"}`}>
-                      <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-rose-300 rounded-sm shadow-lg py-1 px-[5px]">
+                      <div className="p-0.5 bg-gradient-to-r from-logo-blue-300 to-logo-rose-300 rounded-sm shadow-lg py-1 px-[5px]">
                         <div className="bg-white rounded-sm">
                           <Input
                             placeholder="Search meditations..."

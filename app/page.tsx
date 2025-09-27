@@ -2321,13 +2321,13 @@ export default function Home() {
               </h1>
               <div className="font-black font-serif mb-[7px] text-logo-rose-600 text-xs">Meditation Tool</div>
               <div className="flex justify-center items-center mb-4 space-x-[3px]">
-                <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[13px] h-[13px]"></div>
-                <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px]"></div>
-                <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-sm transform h-[9px]"></div>
-                <div className="w-4 bg-gradient-to-r from-gray-600 to-gray-500 border-2 w-[9px] h-[33px] rounded-none"></div>
-                <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-sm transform  h-[9px] pl-0 ml-2"></div>
-                <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[9px] w-[9px]"></div>
-                <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[13px] h-[13px]"></div>
+                <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[13px] h-[13px] shadow-md"></div>
+                <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px] shadow"></div>
+                <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-sm transform h-[9px] shadow-sm"></div>
+                <div className="w-4 bg-gradient-to-r from-gray-600 to-gray-500 border-2 w-[9px] rounded-none border-stone-200 h-[34px] shadow-md"></div>
+                <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-sm transform h-[9px] pl-0 ml-2 shadow-sm"></div>
+                <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[9px] w-[9px] shadow"></div>
+                <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[13px] h-[13px] shadow-md"></div>
               </div>
 
               {/* Mode Switch */}
@@ -2490,7 +2490,7 @@ export default function Home() {
                   onDragLeave={handleDragLeaveAction}
                   onDrop={handleDropAction}
                 >
-                  <div className="p-0.5 bg-gradient-to-r from-logo-purple-300 to-logo-teal-500 py-1 shadow-lg rounded-sm px-[5px]">
+                  <div className="p-0.5 bg-gradient-to-r from-logo-blue-400 to-logo-teal-500 py-1 shadow-lg rounded-sm px-[5px]">
                     <div className="p-10 md:p-16 text-center bg-white rounded-lg shadow-none md:py-12 md:px-16 border-logo-rose-100 border-0">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
@@ -2989,7 +2989,7 @@ export default function Home() {
                       transition={{ delay: 0.2 }}
                       className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                     >
-                      <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-purple-300 border-indigo-200 border-0 py-1 shadow-lg rounded-sm px-[5px]">
+                      <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-blue-400  py-1 shadow-lg rounded-sm px-[5px]">
                         <div className="bg-white p-4 border-rose-200 border-0 rounded-sm shadow-nonee pt-[9px]">
                           <div className="text-center">
                             <Textarea
