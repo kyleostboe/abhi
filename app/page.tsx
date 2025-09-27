@@ -2522,7 +2522,7 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-gray-600 to-gray-500 py-1 shadow-md rounded-sm px-[5px]"
+                      className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-purple-300 to-orange-300 py-1 shadow-md rounded-sm px-[5px]"
                     >
                       <div className="bg-white p-5 py-4 rounded-sm">
                         <div className="flex items-center">
@@ -2577,7 +2577,7 @@ export default function Home() {
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-[3px]">
                                 <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
                                 <div className="font-black text-gray-600">
                                   {formatTime(audioAnalysis.contentDuration)}
@@ -2585,19 +2585,19 @@ export default function Home() {
                               </div>
                             </div>
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-border border-[3px]">
                                 <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
                                 <div className="font-black text-gray-600">{formatTime(audioAnalysis.totalSilence)}</div>
                               </div>
                             </div>
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-[3px]">
                                 <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Pauses:</div>
                                 <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
                               </div>
                             </div>
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-[3px]">
                                 <div className="text-xs uppercase tracking-wide text-gray-600 mb-1.5">Range:</div>
                                 <div className="uppercase text-gray-600 text-xs tracking-wide">
                                   {durationLimits.min} min - {isMobileDevice ? "1 hour" : "2 hours"}
