@@ -545,7 +545,12 @@ export default function LibraryPage() {
                           ? "This playlist is empty. Add a meditation to get started :)"
                           : "No meditations yet "}
                       </p>
-                      <Button onClick={() => router.push("/")}>Go to Tools</Button>
+                      <Button
+                        onClick={() => router.push("/")}
+                        className="font-serif font-black bg-gradient-to-r from-purple-300 to-orange-300 shadow-md hover:shadow-none text-white"
+                      >
+                        Go to Tools
+                      </Button>
                     </Card>
                   ) : (
                     <div className="space-y-5">
