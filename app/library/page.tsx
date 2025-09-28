@@ -876,7 +876,7 @@ export default function LibraryPage() {
                       {selectedMeditation.source === "adjuster" ? "Adjuster" : "Encoder"}
                     </button>
                     <div>
-                      <h2 className="text-2xl font-black text-gray-600">{selectedMeditation.title}</h2>
+                      <h2 className="text-2xl font-black text-gray-600 text-left">{selectedMeditation.title}</h2>
                       {(() => {
                         const trimmedTitle = selectedMeditation.title.trim()
                         const trimmedOriginal = selectedMeditation.originalFileName.trim()
@@ -886,7 +886,7 @@ export default function LibraryPage() {
                             sensitivity: "accent",
                           }) !== 0
                         if (!showOriginalFileName) return null
-                        return <p className="text-sm text-logo-rose-300">{selectedMeditation.originalFileName}</p>
+                        return null
                       })()}
                     </div>
                   </div>
@@ -939,7 +939,7 @@ export default function LibraryPage() {
                       </Button>
                     </div>
 
-                    <div className="flex gap-[7px] pt-[27px]">
+                    <div className="flex pt-[27px] gap-3.5">
                       <Button  onClick={handleDownloadMeditation} className="flex-1 shadow-md bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 rounded-sm hover:shadow-none text-white font-black text-xs">
                         <Download className="h-4 w-4 mr-2" />
                         Download
