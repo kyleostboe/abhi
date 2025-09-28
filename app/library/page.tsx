@@ -547,7 +547,7 @@ export default function LibraryPage() {
                       </p>
                       <Button
                         onClick={() => router.push("/")}
-                        className="font-serif font-black bg-gradient-to-r from-purple-300 to-orange-300 bg-clip-text text-transparent shadow-md hover:shadow-none"
+                        className="font-serif font-black bg-gradient-to-r from-purple-300 to-orange-300 shadow-md hover:shadow-none text-white"
                       >
                         Go to Tools
                       </Button>
@@ -857,26 +857,26 @@ export default function LibraryPage() {
               transition={{ type: "spring", stiffness: 260, damping: 24 }}
               onClick={(event) => event.stopPropagation()}
             >
-              <Card className="relative overflow-hidden border-none bg-white/95 p-6 shadow-2xl backdrop-blur">
+              <Card className="relative overflow-hidden border-none bg-white p-6 shadow-2xl backdrop-blur">
                 <button
                   type="button"
-                  className="absolute right-4 top-4 rounded-full bg-gray-100/80 p-2 text-gray-500 transition hover:bg-gray-200 hover:text-gray-700"
+                  className="absolute right-4 top-4 rounded-full  p-2 text-gray-500 transition hover:text-gray-700"
                   onClick={closeMeditationPlayer}
                   aria-label="Close player"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-[16px] w-[16px]" />
                 </button>
 
                 <div className="space-y-6">
                   <div className="space-y-3">
-                    <Badge
-                      variant="secondary"
-                      className="bg-gradient-to-r from-logo-teal-500/10 to-logo-emerald-500/10 text-logo-teal-700"
+                    <button
+                    
+                      className="bg-gradient-to-r rounded-sm from-muted to-stone-200 text-xs font-serif text-gray-500 shadow-inner py-[5px] px-[13px]"
                     >
-                      {selectedMeditation.source === "adjuster" ? "Length Adjuster" : "Encoder"}
-                    </Badge>
+                      {selectedMeditation.source === "adjuster" ? "Adjuster" : "Encoder"}
+                    </button>
                     <div>
-                      <h2 className="text-2xl font-black text-gray-900">{selectedMeditation.title}</h2>
+                      <h2 className="text-2xl font-black text-gray-600">{selectedMeditation.title}</h2>
                       {(() => {
                         const trimmedTitle = selectedMeditation.title.trim()
                         const trimmedOriginal = selectedMeditation.originalFileName.trim()
@@ -886,7 +886,7 @@ export default function LibraryPage() {
                             sensitivity: "accent",
                           }) !== 0
                         if (!showOriginalFileName) return null
-                        return <p className="text-sm text-gray-500">{selectedMeditation.originalFileName}</p>
+                        return <p className="text-sm text-logo-rose-300">{selectedMeditation.originalFileName}</p>
                       })()}
                     </div>
                   </div>
@@ -900,7 +900,7 @@ export default function LibraryPage() {
                   />
 
                   <div className="space-y-4">
-                    <div className="relative h-2 bg-gray-200 rounded-full cursor-pointer" onClick={handleSeek}>
+                    <div className="relative h-2 rounded-full cursor-pointer shadow-inner bg-muted" onClick={handleSeek}>
                       <div
                         className="absolute top-0 left-0 h-full bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 rounded-full transition-all duration-150"
                         style={{ width: `${playbackProgress}%` }}
@@ -924,9 +924,9 @@ export default function LibraryPage() {
 
                       <Button
                         onClick={togglePlayback}
-                        className="h-12 w-12 rounded-full bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:from-logo-teal-600 hover:to-logo-emerald-600 text-white"
+                        className="h-12 w-12 rounded-full shadow-md bg-gradient-to-r from-gray-500 to-gray-600  hover:shadow-none text-white"
                       >
-                        {isAudioPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-0.5" />}
+                        {isAudioPlaying ? <Pause className="h-10 w-10" /> : <Play className="ml-0.5 h-10 w-10" />}
                       </Button>
 
                       <Button
@@ -940,13 +940,13 @@ export default function LibraryPage() {
                     </div>
 
                     <div className="flex gap-2 pt-4">
-                      <Button variant="outline" onClick={handleDownloadMeditation} className="flex-1 bg-transparent">
+                      <Button  onClick={handleDownloadMeditation} className="flex-1 bg-gradient-to-r shadow-md from-logo-blue-400 to-logo-amber-300 hover:shadow-none text-white font-black text-sm">
                         <Download className="h-4 w-4 mr-2" />
                         Download
                       </Button>
                       <Button
                         onClick={handleOpenInTool}
-                        className="flex-1 bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white"
+                        className="flex-1 bg-gradient-to-r shadow-md from-logo-amber-300 to-logo-teal-500 hover:shadow-none text-white font-black text-sm"
                       >
                         Open in {selectedMeditation.source === "adjuster" ? "Adjuster" : "Encoder"}
                       </Button>
