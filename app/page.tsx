@@ -101,7 +101,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
             variant={isRecording ? "destructive" : "default"}
             disabled={!recordingLabel.trim() && !isRecording}
             className={cn(
-              "w-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none font-serif font-black",
+              "w-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-[11px] hover:shadow-none font-serif font-black",
               isRecording && "from-logo-rose-300 to-logo-rose-600",
             )}
           >
@@ -2323,9 +2323,9 @@ export default function Home() {
               <div className="flex justify-center items-center mb-4 space-x-[3px]">
                 <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[13px] h-[13px] shadow-md"></div>
                 <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px] shadow"></div>
-                <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-sm transform h-[9px] shadow-sm"></div>
+                <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-[3px] transform h-[9px] shadow-sm"></div>
                 <div className="w-4 bg-gradient-to-r from-gray-600 to-gray-500 border-2 w-[9px] rounded-none border-stone-200 h-[34px] shadow-md"></div>
-                <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-sm transform h-[9px] pl-0 ml-2 shadow-sm"></div>
+                <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[3px] transform h-[9px] pl-0 ml-2 shadow-sm"></div>
                 <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[9px] w-[9px] shadow"></div>
                 <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[13px] h-[13px] shadow-md"></div>
               </div>
@@ -2422,7 +2422,7 @@ export default function Home() {
                         href="https://dharmaseed.org/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm"
+                        className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
                       >
                         Dharma Seed
                       </a>
@@ -2430,7 +2430,7 @@ export default function Home() {
                         href="https://dharmaseed.org/teacher/210/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
                       >
                         Rob Burbea's talks &amp; retreats
                       </a>
@@ -2438,7 +2438,7 @@ export default function Home() {
                         href="https://tasshin.com/guided-meditations/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
                       >
                         Tasshin &amp; friend's meditations
                       </a>
@@ -2446,7 +2446,7 @@ export default function Home() {
                         href="https://www.tarabrach.com/guided-meditations/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-sm"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
                       >
                         Tara Brach's meditations
                       </a>
@@ -2454,7 +2454,7 @@ export default function Home() {
                         href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDDo3?usp=drive_link"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-sm"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
                       >
                         Toby Sola's meditations
                       </a>
@@ -2462,7 +2462,7 @@ export default function Home() {
                         href="https://meditofoundation.org/meditations"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-sm"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
                       >
                         Medito Foundation
                       </a>
@@ -2470,7 +2470,7 @@ export default function Home() {
                         href="https://www.freebuddhistaudio.com"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm"
+                        className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
                       >
                         freebuddhistaudio
                       </a>
@@ -2490,7 +2490,7 @@ export default function Home() {
                   onDragLeave={handleDragLeaveAction}
                   onDrop={handleDropAction}
                 >
-                  <div className="p-0.5 bg-gradient-to-r from-logo-blue-400 to-logo-teal-500 py-1 shadow-lg rounded-sm px-[5px]">
+                  <div className="p-0.5 bg-gradient-to-r from-logo-blue-400 to-gray-500 py-1 shadow-lg rounded-sm px-[5px]">
                     <div className="p-10 md:p-16 text-center bg-white rounded-lg shadow-none md:py-12 md:px-16 border-logo-rose-100 border-0">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
@@ -2621,13 +2621,13 @@ export default function Home() {
                     <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted p-1 rounded-sm ">
                       <TabsTrigger
                         value="basic"
-                        className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-sm "
+                        className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-[10px] "
                       >
                         Basic Settings
                       </TabsTrigger>
                       <TabsTrigger
                         value="advanced"
-                        className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-sm "
+                        className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-[10px] "
                       >
                         Advanced Settings
                       </TabsTrigger>
@@ -3183,7 +3183,7 @@ export default function Home() {
                         </div>
                         <div className="h-[5px]"></div>
                         <Button
-                          className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-sm hover:shadow-none font-serif font-black mt-4"
+                          className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-[11px] hover:shadow-none font-serif font-black mt-4"
                           onClick={handleAddInstructionSoundEvent}
                           disabled={!customInstructionText.trim() || (!selectedSoundCue && selectedNotes.length === 0)}
                         >

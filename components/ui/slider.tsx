@@ -16,7 +16,7 @@ const Slider = React.forwardRef<
     className={cn("relative flex w-full touch-none select-none items-center", className)}
     {...props}
   >
-    <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full shadow-inner bg-muted">
+    <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-[3px] shadow-inner bg-muted">
       {/* Ensure rangeClassName is always a string before passing to cn */}
       <SliderPrimitive.Range className={cn("absolute h-full shadow-inner", rangeClassName || "")} />
     </SliderPrimitive.Track>

@@ -17,7 +17,7 @@ export function Navigation() {
               "px-4 py-2 transition-colors font-black font-serif text-sm shadow-none rounded-sm",
               pathname === "/"
                 ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md "
-                : "text-gray-600 hover:bg-muted hover:shadow-inner ",
+                : "text-gray-600 rounded-[10px] hover:bg-muted hover:shadow-inner ",
             )}
           >
             Home
@@ -30,7 +30,7 @@ export function Navigation() {
               "px-4 py-2 transition-colors font-black font-serif text-sm shadow-none rounded-sm",
               pathname === "/library"
                 ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md "
-                : "text-gray-600 hover:bg-muted hover:shadow-inner ",
+                : "text-gray-600 rounded-[10px] hover:bg-muted hover:shadow-inner ",
             )}
           >
             Library
@@ -41,7 +41,7 @@ export function Navigation() {
             href="/contact"
             className={cn(
               "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-sm",
-              pathname === "/contact" ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md " : "text-gray-600 hover:bg-muted hover:shadow-inner ",
+              pathname === "/contact" ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md " : "text-gray-600 rounded-[10px] hover:bg-muted hover:shadow-inner ",
             )}
           >
             Contact
@@ -52,7 +52,7 @@ export function Navigation() {
             href="/donate"
             className={cn(
               "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-sm",
-              pathname === "/donate" ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md " : "text-gray-600 hover:bg-muted hover:shadow-inner ",
+              pathname === "/donate" ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md " : "text-gray-600 rounded-[10px] hover:bg-muted hover:shadow-inner ",
             )}
           >
             Donate

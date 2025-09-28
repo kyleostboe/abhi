@@ -493,7 +493,7 @@ export default function LibraryPage() {
                     <div className="flex flex-wrap font-serif font-black text-xs text-gray-600 md:justify-start md:items-start gap-[5px] justify-center">
                       <button
                         onClick={() => handleSourceFilterChange("all")}
-                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-sm py-1 ${
+                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
                           !selectedPlaylist && sourceFilter === "all"
                             ? " border-stone-300"
                             : "bg-white border-gray-500 hover:shadow-none"
@@ -503,7 +503,7 @@ export default function LibraryPage() {
                       </button>
                       <button
                         onClick={() => handleSourceFilterChange("adjuster")}
-                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-sm py-1 ${
+                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
                           !selectedPlaylist && sourceFilter === "adjuster"
                             ? " border-stone-300"
                             : "bg-white border-gray-500 hover:shadow-none"
@@ -513,7 +513,7 @@ export default function LibraryPage() {
                       </button>
                       <button
                         onClick={() => handleSourceFilterChange("encoder")}
-                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-sm py-1 ${
+                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
                           !selectedPlaylist && sourceFilter === "encoder"
                             ? " border-stone-300"
                             : "bg-white border-gray-500 hover:shadow-none"
@@ -525,7 +525,7 @@ export default function LibraryPage() {
                         <button
                           key={playlist.id}
                           onClick={() => handleSelectPlaylist(playlist.id)}
-                          className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-sm py-1 ${
+                          className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
                             selectedPlaylist === playlist.id
                               ? " border-stone-300"
                               : "bg-white border-gray-500 hover:shadow-none"
@@ -846,7 +846,7 @@ export default function LibraryPage() {
             <motion.div
               className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/55 to-black/60 backdrop-blur-xl"
               initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              animate={{ opacity: .9 }}
               exit={{ opacity: 0 }}
             />
             <motion.div
@@ -871,7 +871,7 @@ export default function LibraryPage() {
                   <div className="space-y-3">
                     <button
                     
-                      className="bg-gradient-to-r rounded-sm from-muted to-stone-200 text-xs font-serif text-gray-500 shadow-inner py-[5px] px-[13px] mb-[9px]"
+                      className="bg-gradient-to-r rounded-[7px] from-muted to-stone-200 text-xs font-serif text-gray-500 shadow-inner py-[5px] px-[13px] mb-[9px]"
                     >
                       {selectedMeditation.source === "adjuster" ? "Adjuster" : "Encoder"}
                     </button>
@@ -940,13 +940,13 @@ export default function LibraryPage() {
                     </div>
 
                     <div className="flex pt-[27px] gap-3.5">
-                      <Button  onClick={handleDownloadMeditation} className="flex-1 shadow-md bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 rounded-sm hover:shadow-none text-white font-black text-xs">
+                      <Button  onClick={handleDownloadMeditation} className="flex-1 shadow-md bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 rounded-[11px] hover:shadow-none text-white font-black text-xs">
                         <Download className="h-4 w-4 mr-2" />
                         Download
                       </Button>
                       <Button
                         onClick={handleOpenInTool}
-                        className="flex-1 shadow-md bg-gradient-to-r from-logo-amber-300 to-logo-teal-500 rounded-sm hover:shadow-none text-white font-black text-xs"
+                        className="flex-1 shadow-md bg-gradient-to-r from-logo-amber-300 to-logo-teal-500 rounded-[11px] hover:shadow-none text-white font-black text-xs"
                       >
                         Open in {selectedMeditation.source === "adjuster" ? "Adjuster" : "Encoder"}
                       </Button>
