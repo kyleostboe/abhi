@@ -926,7 +926,7 @@ export default function LibraryPage() {
                         onClick={togglePlayback}
                         className="h-12 w-12 rounded-full shadow-md bg-gradient-to-r from-gray-500 to-gray-600  hover:shadow-none text-white"
                       >
-                        {isAudioPlaying ? <Pause className="h-10 w-10" /> : <Play className="ml-0.5 h-10 w-10" />}
+                        {isAudioPlaying ? <Pause className="h-10 w-10" /> : <Play className="ml-0.5 w-10 h-10" />}
                       </Button>
 
                       <Button
