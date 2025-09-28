@@ -871,7 +871,7 @@ export default function LibraryPage() {
                   <div className="space-y-3">
                     <button
                     
-                      className="bg-gradient-to-r rounded-sm from-muted to-stone-200 text-xs font-serif text-gray-500 shadow-inner py-[5px] px-[13px]"
+                      className="bg-gradient-to-r rounded-sm from-muted to-stone-200 text-xs font-serif text-gray-500 shadow-inner py-[5px] px-[13px] mb-[9px]"
                     >
                       {selectedMeditation.source === "adjuster" ? "Adjuster" : "Encoder"}
                     </button>
@@ -902,7 +902,7 @@ export default function LibraryPage() {
                   <div className="space-y-4">
                     <div className="relative h-2 rounded-full cursor-pointer shadow-inner bg-muted" onClick={handleSeek}>
                       <div
-                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 rounded-full transition-all duration-150"
+                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-gray-500 to-gray-600 rounded-full transition-all duration-150"
                         style={{ width: `${playbackProgress}%` }}
                       />
                     </div>
