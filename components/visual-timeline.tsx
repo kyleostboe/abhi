@@ -351,7 +351,7 @@ export function VisualTimeline({
                   exit={{ opacity: 0 }}
                   className={cn(
                     "absolute top-1/2 -translate-y-1/2 shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-white",
-                    isRecording ? "h-9 rounded-sm" : "rounded-full w-9 h-9",
+                    isRecording ? "h-9 rounded-[9px]" : "rounded-full w-9 h-9",
                     draggedEvent === event.id ? "z-30 shadow-lg ring-2 ring-white/50" : "z-10",
                     getEventColor(event),
                   )}
@@ -445,7 +445,7 @@ export function VisualTimeline({
                         <div
                           className={cn(
                             "flex items-center justify-center text-white shadow-sm h-9 w-9 flex-shrink-0",
-                            event.type === "recorded_voice" ? "rounded-sm" : "rounded-full",
+                            event.type === "recorded_voice" ? "rounded-[9px]" : "rounded-full",
                             getEventColor(event),
                           )}
                         >
