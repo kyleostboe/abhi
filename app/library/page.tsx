@@ -867,7 +867,7 @@ export default function LibraryPage() {
                   <X className="h-[16px] w-[16px]" />
                 </button>
 
-                <div className="space-y-6">
+                <div className="space-y-6 my-[3px] mx-[7px]">
                   <div className="space-y-3">
                     <button
                     
