@@ -788,7 +788,12 @@ const playPianoNote = async (noteString: string, duration = 0.45, velocity = 0.9
   try {
     await startPianoAudio()
 
-    if (!isLoaded) {
+    // Wait for any ongoing loading to complete
+    while (isLoading) {
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    }
+
+    if (!isLoaded || !sampler || !sampler.loaded) {
       console.log("[v0] Piano not loaded, initializing...")
       await loadPiano()
     }
@@ -802,7 +807,7 @@ const playPianoNote = async (noteString: string, duration = 0.45, velocity = 0.9
     sampler.triggerAttackRelease(noteString, duration, Tone.now(), velocity)
   } catch (error) {
     console.error("[v0] Error playing piano note:", error)
-    isLoaded = false
+    // Don't reset isLoaded here to avoid constant reloading
     throw error
   }
 }
@@ -2384,7 +2389,8 @@ export default function Home() {
                   className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                 >
                   <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs pb-1.5">
-                    Design custom guided meditations by pairing instructions with sound cues and/or using the recorder, then arranging events on the timeline.
+                    Design custom guided meditations by pairing instructions with sound cues and/or using the recorder,
+                    then arranging events on the timeline.
                   </p>
                 </motion.div>
               )}
@@ -2894,7 +2900,7 @@ export default function Home() {
                           </div>
                           <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
                             <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">File Size</div>
-                            <div className="font-black text-gray-600 text-sm">
+                            <div className="font-black text-sm text-gray-600">
                               {(processedFileSize / (1024 * 1024)).toFixed(2)} MB
                             </div>
                           </div>
@@ -3130,14 +3136,14 @@ export default function Home() {
                                                 className="flex items-center gap-2 font-black font-serif"
                                               >
                                                 <Button
-                                                  variant={isSingleSelected ? "default" : "ghost"}
+                                                  variant="ghost"
                                                   size="sm"
-                                                  className={`flex-1 justify-start rounded-[10px] font-black font-serif text-gray-600 ${
+                                                  className={`flex-1 justify-start rounded-[10px] font-black font-serif text-gray-600 hover:bg-gray-50 ${
                                                     isSelected
-                                                      ? "bg-white shadow-md border-2 border-gray-500 "
+                                                      ? "bg-white shadow-md border-2 border-gray-500"
                                                       : isSingleSelected
-                                                        ? "bg-white shadow-md text-gray-600 border-gray-500 border-2  "
-                                                        
+                                                        ? "bg-white shadow-md text-gray-600 border-gray-500 border-2"
+                                                        : "hover:bg-gray-50"
                                                   }`}
                                                   onClick={() => handleNoteSelection(note)}
                                                 >
