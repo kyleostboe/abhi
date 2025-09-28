@@ -939,14 +939,14 @@ export default function LibraryPage() {
                       </Button>
                     </div>
 
-                    <div className="flex gap-2 pt-4">
-                      <Button  onClick={handleDownloadMeditation} className="flex-1 bg-gradient-to-r shadow-md from-logo-blue-400 to-logo-amber-300 hover:shadow-none text-white font-black text-sm">
+                    <div className="flex gap-[7px] pt-[27px]">
+                      <Button  onClick={handleDownloadMeditation} className="flex-1 shadow-md bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 rounded-sm hover:shadow-none text-white font-black text-xs">
                         <Download className="h-4 w-4 mr-2" />
                         Download
                       </Button>
                       <Button
                         onClick={handleOpenInTool}
-                        className="flex-1 bg-gradient-to-r shadow-md from-logo-amber-300 to-logo-teal-500 hover:shadow-none text-white font-black text-sm"
+                        className="flex-1 shadow-md bg-gradient-to-r from-logo-amber-300 to-logo-teal-500 rounded-sm hover:shadow-none text-white font-black text-xs"
                       >
                         Open in {selectedMeditation.source === "adjuster" ? "Adjuster" : "Encoder"}
                       </Button>
