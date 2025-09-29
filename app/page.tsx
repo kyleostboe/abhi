@@ -33,10 +33,7 @@ import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFil
 import { getAudioContext, bufferToWav } from "@/lib/audio-utils" // Import from audio-utils
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
 import type { SavedMeditation } from "@/lib/meditation-library"
-import {
-  createEncoderSnapshotFromTimeline,
-  reconstructTimelineFromSnapshot,
-} from "@/lib/encoder-reconstruction"
+import { createEncoderSnapshotFromTimeline, reconstructTimelineFromSnapshot } from "@/lib/encoder-reconstruction"
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
 import * as Tone from "tone"
@@ -1069,13 +1066,14 @@ export default function Home() {
     setGenerationStep("Initializing...")
 
     try {
-      console.log("Starting audio export with events:", timelineEvents)
-
       // Calculate the maximum end time needed for the OfflineAudioContext
-      const maxAudioDuration = encoderTotalDuration // Start with the user-defined total duration
+      const maxAudioDuration = Math.max(
+        encoderTotalDuration,
+        ...timelineEvents.map((e) => e.startTime + (e.duration || 0)),
+      )
 
       const ctx = new OfflineAudioContext({
-        numberOfChannels: 1,
+        numberOfChannels: 2, // Changed to stereo
         sampleRate: 44100,
         length: Math.ceil(maxAudioDuration * 44100), // Ensure length is an integer
       })
@@ -1086,7 +1084,7 @@ export default function Home() {
       // Prepare instrument instances for offline rendering
       let pianoSampler: any = null
       let pianoReverb: any = null
-      const loadPiano = async () => {
+      const loadPianoForExport = async () => {
         if (!pianoSampler) {
           pianoSampler = new Tone.Sampler({
             urls: {
@@ -1208,7 +1206,7 @@ export default function Home() {
 
                 try {
                   if (instrument === "piano") {
-                    await loadPiano()
+                    await loadPianoForExport()
                     pianoSampler.triggerAttackRelease(noteString, 0.8, eventStartTime, 0.9)
                   } else if (instrument === "synth") {
                     await loadSynth()
@@ -2625,14 +2623,6 @@ export default function Home() {
                         Rob Burbea's talks &amp; retreats
                       </a>
                       <a
-                        href="https://tasshin.com/guided-meditations/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
-                      >
-                        Tasshin &amp; friend's meditations
-                      </a>
-                      <a
                         href="https://www.tarabrach.com/guided-meditations/"
                         target="_blank"
                         rel="noopener noreferrer"
@@ -3529,17 +3519,17 @@ export default function Home() {
                           </svg>
                           Download
                         </Button>
-                          <SaveMeditationDialog
-                            audioUrl={generatedAudioUrl}
-                            originalFileName={meditationTitle || "meditation"}
-                            duration={encoderTotalDuration}
-                            source="encoder"
-                            metadata={{
-                              instructionCount: timelineEvents.length,
-                              meditationTitle,
-                              encoderReconstruction: encoderSnapshot,
-                            }}
-                          >
+                        <SaveMeditationDialog
+                          audioUrl={generatedAudioUrl}
+                          originalFileName={meditationTitle || "meditation"}
+                          duration={encoderTotalDuration}
+                          source="encoder"
+                          metadata={{
+                            instructionCount: timelineEvents.length,
+                            meditationTitle,
+                            encoderReconstruction: encoderSnapshot,
+                          }}
+                        >
                           <Button className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white mt-3">
                             <BookmarkPlus className="w-4 h-4 mr-2" />
                             Save to Library
