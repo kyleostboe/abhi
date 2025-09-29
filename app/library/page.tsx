@@ -26,6 +26,7 @@ import {
   Play,
   Pause,
   Download,
+  ChevronDown,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
@@ -271,8 +272,11 @@ export default function LibraryPage() {
     setPlayerTime(newTime)
   }
 
-  const handleOpenInTool = (tool: "adjuster" | "encoder") => {
+  const handleOpenInTool = (tool?: "adjuster" | "encoder") => {
     if (!selectedMeditation) return
+
+    // Determine target tool - use parameter if provided, otherwise use original logic
+    const targetTool = tool || (selectedMeditation.source === "adjuster" ? "adjuster" : "encoder")
 
     const payload = {
       id: selectedMeditation.id,
@@ -282,19 +286,27 @@ export default function LibraryPage() {
       duration: selectedMeditation.duration,
       source: selectedMeditation.source,
       metadata: selectedMeditation.metadata,
+      crossToolOpening: targetTool !== selectedMeditation.source,
     }
 
     try {
-      const storageKey = tool === "adjuster" ? "abhi_adjuster_import" : "abhi_encoder_import"
-      localStorage.setItem(storageKey, JSON.stringify(payload))
-
-      toast({
-        title: `Opening ${tool === "adjuster" ? "Adjuster" : "Encoder"}`,
-        description: `"${selectedMeditation.title}" will load in the ${tool === "adjuster" ? "Adjuster" : "Encoder"} tool.`,
-      })
-
-      setIsPlayerOpen(false)
-      router.push(tool === "adjuster" ? "/#adjuster" : "/#encoder")
+      if (targetTool === "adjuster") {
+        localStorage.setItem("abhi_adjuster_import", JSON.stringify(payload))
+        toast({
+          title: "Opening Adjuster",
+          description: `"${selectedMeditation.title}" will load in the Adjuster tool.`,
+        })
+        setIsPlayerOpen(false)
+        router.push("/#adjuster")
+      } else {
+        localStorage.setItem("abhi_encoder_import", JSON.stringify(payload))
+        toast({
+          title: "Opening Encoder",
+          description: `"${selectedMeditation.title}" will load in the Encoder tool.`,
+        })
+        setIsPlayerOpen(false)
+        router.push("/#encoder")
+      }
     } catch (error) {
       toast({
         title: "Unable to open tool",
@@ -841,7 +853,7 @@ export default function LibraryPage() {
             <motion.div
               className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/55 to-black/60 backdrop-blur-xl"
               initial={{ opacity: 0 }}
-              animate={{ opacity: .9 }}
+              animate={{ opacity: 0.9 }}
               exit={{ opacity: 0 }}
             />
             <motion.div
@@ -864,10 +876,7 @@ export default function LibraryPage() {
 
                 <div className="space-y-6 my-[3px] mx-[7px]">
                   <div className="space-y-3">
-                    <button
-                    
-                      className="bg-gradient-to-r rounded-[7px] from-muted to-stone-200 text-xs font-serif text-gray-500 shadow-inner py-[5px] px-[13px] mb-[9px]"
-                    >
+                    <button className="bg-gradient-to-r rounded-[7px] from-muted to-stone-200 text-xs font-serif text-gray-500 shadow-inner py-[5px] px-[13px] mb-[9px]">
                       {selectedMeditation.source === "adjuster" ? "Adjuster" : "Encoder"}
                     </button>
                     <div>
@@ -895,7 +904,10 @@ export default function LibraryPage() {
                   />
 
                   <div className="space-y-4">
-                    <div className="relative h-2 rounded-full cursor-pointer shadow-inner bg-muted" onClick={handleSeek}>
+                    <div
+                      className="relative h-2 rounded-full cursor-pointer shadow-inner bg-muted"
+                      onClick={handleSeek}
+                    >
                       <div
                         className="absolute top-0 left-0 h-full bg-gradient-to-r from-gray-500 to-gray-600 rounded-full transition-all duration-150"
                         style={{ width: `${playbackProgress}%` }}
@@ -934,27 +946,33 @@ export default function LibraryPage() {
                       </Button>
                     </div>
 
-                    <div className="flex pt-[27px] gap-3.5 items-center">
+                    <div className="flex pt-[27px] gap-3.5">
+                      <Button
+                        onClick={handleDownloadMeditation}
+                        variant="ghost"
+                        size="icon"
+                        className="h-10 w-10 text-gray-600 hover:text-gray-800 shadow-md hover:shadow-none"
+                        title="Download"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button className="flex-1 shadow-md bg-gradient-to-r from-logo-amber-300 to-logo-teal-500 rounded-[11px] hover:shadow-none text-white font-black text-xs">
                             Open In
+                            <ChevronDown className="h-4 w-4 ml-2" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="font-black text-gray-600 text-xs">
-                          <DropdownMenuItem onClick={() => handleOpenInTool("adjuster")}>Adjuster</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleOpenInTool("encoder")}>Encoder</DropdownMenuItem>
+                        <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuItem onClick={() => handleOpenInTool("adjuster")} className="cursor-pointer">
+                            Adjuster
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleOpenInTool("encoder")} className="cursor-pointer">
+                            Encoder
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handleDownloadMeditation}
-                        className="h-10 w-10 text-gray-600 hover:text-gray-800"
-                        aria-label="Download meditation"
-                      >
-                        <Download className="h-5 w-5" />
-                      </Button>
                     </div>
                   </div>
                 </div>

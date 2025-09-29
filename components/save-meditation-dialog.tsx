@@ -105,7 +105,7 @@ export function SaveMeditationDialog({
     setIsSaving(true)
 
     try {
-      console.log("[v0] Starting client-side audio compression...")
+      console.log("[v0] Starting enhanced audio compression...")
 
       const response = await fetch(audioUrl)
       const audioBlob = await response.blob()
@@ -114,17 +114,36 @@ export function SaveMeditationDialog({
 
       let processedBlob = audioBlob
 
-      console.log("[v0] Compressing audio to ensure valid format...")
-
       let audioContext: AudioContext | null = null
       try {
         audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
         const arrayBuffer = await audioBlob.arrayBuffer()
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
 
-        const targetSampleRate = originalSize > 10 * 1024 * 1024 ? 16000 : 22050
-        const channels = 1
+        // Determine compression level based on original size
+        let targetSampleRate: number
+        let targetBitDepth: number
 
+        if (originalSize > 100 * 1024 * 1024) {
+          // > 100MB
+          targetSampleRate = 8000 // Very aggressive
+          targetBitDepth = 8
+        } else if (originalSize > 75 * 1024 * 1024) {
+          // > 75MB
+          targetSampleRate = 11025 // Aggressive
+          targetBitDepth = 8
+        } else if (originalSize > 50 * 1024 * 1024) {
+          // > 50MB
+          targetSampleRate = 16000 // Moderate
+          targetBitDepth = 8
+        } else {
+          targetSampleRate = 22050 // Light compression
+          targetBitDepth = 16
+        }
+
+        console.log(`[v0] Applying compression: ${targetSampleRate}Hz, ${targetBitDepth}-bit`)
+
+        const channels = 1 // Force mono for maximum compression
         const length = Math.floor((audioBuffer.length * targetSampleRate) / audioBuffer.sampleRate)
         const offlineContext = new OfflineAudioContext(channels, length, targetSampleRate)
 
@@ -134,12 +153,53 @@ export function SaveMeditationDialog({
         sourceNode.start()
 
         const compressedBuffer = await offlineContext.startRendering()
-        const compressedBlob = await audioBufferToWav(compressedBuffer)
+        const compressedBlob = await audioBufferToWav(compressedBuffer, targetBitDepth)
 
         console.log("[v0] Compressed from", originalSize, "to", compressedBlob.size, "bytes")
-        processedBlob = compressedBlob
+
+        // If still too large, apply additional compression
+        if (compressedBlob.size > 45 * 1024 * 1024) {
+          // Leave 5MB buffer under 50MB limit
+          console.log("[v0] File still too large, applying additional compression...")
+
+          // Try even more aggressive settings
+          const ultraLength = Math.floor(length * 0.8) // Reduce length by 20%
+          const ultraContext = new OfflineAudioContext(1, ultraLength, 8000)
+
+          const ultraSource = ultraContext.createBufferSource()
+          ultraSource.buffer = compressedBuffer
+          ultraSource.connect(ultraContext.destination)
+          ultraSource.start()
+
+          const ultraCompressed = await ultraContext.startRendering()
+          const ultraBlob = await audioBufferToWav(ultraCompressed, 8)
+
+          console.log("[v0] Ultra-compressed to", ultraBlob.size, "bytes")
+          processedBlob = ultraBlob
+        } else {
+          processedBlob = compressedBlob
+        }
+
+        // Final check - if still too large, reject with helpful message
+        if (processedBlob.size > 48 * 1024 * 1024) {
+          // 48MB hard limit
+          throw new Error(
+            `File too large (${Math.round(processedBlob.size / 1024 / 1024)}MB). Maximum size is 48MB. Try processing a shorter meditation or contact support for larger file limits.`,
+          )
+        }
       } catch (compressionError) {
-        console.log("[v0] Client compression failed, using original:", compressionError)
+        console.log("[v0] Compression failed:", compressionError)
+        if (compressionError instanceof Error && compressionError.message.includes("File too large")) {
+          throw compressionError // Re-throw size limit errors
+        }
+        console.log("[v0] Using original file due to compression failure")
+
+        // Check if original is too large
+        if (originalSize > 48 * 1024 * 1024) {
+          throw new Error(
+            `Original file too large (${Math.round(originalSize / 1024 / 1024)}MB). Maximum size is 48MB.`,
+          )
+        }
       } finally {
         if (audioContext) {
           try {
@@ -213,12 +273,13 @@ export function SaveMeditationDialog({
     }
   }
 
-  const audioBufferToWav = async (buffer: AudioBuffer): Promise<Blob> => {
+  const audioBufferToWav = async (buffer: AudioBuffer, bitDepth = 16): Promise<Blob> => {
     const length = buffer.length
     const sampleRate = buffer.sampleRate
     const channels = buffer.numberOfChannels
+    const bytesPerSample = bitDepth / 8
 
-    const arrayBuffer = new ArrayBuffer(44 + length * channels * 2)
+    const arrayBuffer = new ArrayBuffer(44 + length * channels * bytesPerSample)
     const view = new DataView(arrayBuffer)
 
     // WAV header
@@ -229,28 +290,36 @@ export function SaveMeditationDialog({
     }
 
     writeString(0, "RIFF")
-    view.setUint32(4, 36 + length * channels * 2, true)
+    view.setUint32(4, 36 + length * channels * bytesPerSample, true)
     writeString(8, "WAVE")
     writeString(12, "fmt ")
     view.setUint32(16, 16, true)
     view.setUint16(20, 1, true) // PCM format
     view.setUint16(22, channels, true)
     view.setUint32(24, sampleRate, true)
-    view.setUint32(28, sampleRate * channels * 2, true) // byte rate
-    view.setUint16(32, channels * 2, true) // block align
-    view.setUint16(34, 16, true) // bits per sample
+    view.setUint32(28, sampleRate * channels * bytesPerSample, true) // byte rate
+    view.setUint16(32, channels * bytesPerSample, true) // block align
+    view.setUint16(34, bitDepth, true) // bits per sample
     writeString(36, "data")
-    view.setUint32(40, length * channels * 2, true)
+    view.setUint32(40, length * channels * bytesPerSample, true)
 
     let offset = 44
     for (let i = 0; i < length; i++) {
       for (let channel = 0; channel < channels; channel++) {
-        // Get the float sample (-1 to 1) and convert to 16-bit integer
         const floatSample = buffer.getChannelData(channel)[i]
         const clampedSample = Math.max(-1, Math.min(1, floatSample))
-        const intSample = Math.round(clampedSample * 32767)
-        view.setInt16(offset, intSample, true)
-        offset += 2
+
+        if (bitDepth === 8) {
+          // 8-bit unsigned
+          const intSample = Math.round((clampedSample + 1) * 127.5)
+          view.setUint8(offset, intSample)
+          offset += 1
+        } else {
+          // 16-bit signed
+          const intSample = Math.round(clampedSample * 32767)
+          view.setInt16(offset, intSample, true)
+          offset += 2
+        }
       }
     }
 

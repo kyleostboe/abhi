@@ -1,14 +1,12 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect, useCallback, useMemo } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
 import { Alert } from "@/components/ui/alert" // Import Alert component
 import {
-  Volume2,
-  Wand2,
   AlertTriangle,
   Music2,
   Mic,
@@ -17,6 +15,8 @@ import {
   PlusCircle,
   CircleDotDashed,
   BookmarkPlus,
+  Wand2,
+  Volume2,
 } from "lucide-react" // Import Copy icon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
@@ -32,8 +32,6 @@ import { VisualTimeline } from "@/components/visual-timeline"
 import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFileSize } from "@/lib/utils"
 import { getAudioContext, bufferToWav } from "@/lib/audio-utils" // Import from audio-utils
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
-import type { SavedMeditation } from "@/lib/meditation-library"
-import { createEncoderSnapshotFromTimeline, reconstructTimelineFromSnapshot } from "@/lib/encoder-reconstruction"
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
 import * as Tone from "tone"
@@ -192,15 +190,18 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
 
 interface TimelineItem {
   id: string
-  type: "instruction" | "sound"
+  type: "instruction" | "sound" | "recorded_voice" | "instruction_sound" | "recording" | "recorded"
   duration: number // in seconds
-  content: Instruction | SoundCue
-}
-
-interface LibraryImportContext {
-  meditationId: string
-  originalSource: "adjuster" | "encoder"
-  metadata: SavedMeditation["metadata"]
+  content?: Instruction | SoundCue | { url: string; label: string; duration: number }
+  instructionText?: string
+  soundCueId?: string
+  soundCueName?: string
+  soundCueSrc?: string
+  instrument?: string
+  recordedAudioUrl?: string
+  recordedInstructionLabel?: string
+  color?: string
+  startTime: number
 }
 
 const INSTRUCTIONS_LIBRARY = [
@@ -599,7 +600,13 @@ const INSTRUCTIONS_LIBRARY = [
   },
 ]
 
-const SOUND_CUES_LIBRARY = []
+const SOUND_CUES_LIBRARY: SoundCue[] = [
+  { id: "ambient-forest", name: "Forest Ambiance", src: "/sounds/forest.mp3", duration: 60 },
+  { id: "ocean-waves", name: "Ocean Waves", src: "/sounds/ocean.mp3", duration: 60 },
+  { id: "gentle-rain", name: "Gentle Rain", src: "/sounds/rain.mp3", duration: 60 },
+  { id: "singing-bowl", name: "Singing Bowl", src: "/sounds/singing_bowl.mp3", duration: 15 },
+  { id: "chimes", name: "Wind Chimes", src: "/sounds/chimes.mp3", duration: 30 },
+]
 
 const NOTE_FREQUENCIES = {
   C3: 130.81,
@@ -824,6 +831,7 @@ export default function Home() {
   const { toast } = useToast()
 
   const [activeMode, setActiveMode] = useState<"adjuster" | "encoder">("adjuster")
+  const [activeTab, setActiveTab] = useState<"adjuster" | "encoder">("adjuster") // State for tab navigation
 
   // == States for Length Adjuster ==
   const [file, setFile] = useState<File | null>(null)
@@ -862,7 +870,6 @@ export default function Home() {
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
   const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(600)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
-  const [libraryImportContext, setLibraryImportContext] = useState<LibraryImportContext | null>(null)
   const [selectedLibraryInstruction, setSelectedLibraryInstruction] = useState<Instruction | null>(null)
   const [customInstructionText, setCustomInstructionText] = useState<string>("")
   const [selectedSoundCue, setSelectedSoundCue] = useState<SoundCue | null>(null)
@@ -876,7 +883,6 @@ export default function Home() {
   const [recordedBlobs, setRecordedBlobs] = useState<Blob[]>([])
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const encoderAudioRef = useRef<HTMLAudioElement | null>(null)
-  const handleFileRef = useRef<((file: File) => Promise<void> | void) | null>(null)
   const instructionCategories = Array.from(new Set(INSTRUCTIONS_LIBRARY.map((instr) => instr.category)))
   const [recordingLabel, setRecordingLabel] = useState<string>("")
 
@@ -886,7 +892,6 @@ export default function Home() {
   const [generationStep, setGenerationStep] = useState<string>("")
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
   const [generatedAudioFileSize, setGeneratedAudioFileSize] = useState<number>(0)
-  const [isReconstructingImport, setIsReconstructingImport] = useState<boolean>(false)
 
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
   const [currentTab, setCurrentTab] = useState<string>("instructions")
@@ -904,10 +909,6 @@ export default function Home() {
   const [noteType, setNoteType] = useState<"piano" | "synth" | "harp">("piano")
 
   const totalDuration = timeline.reduce((sum, item) => sum + item.duration, 0)
-  const encoderSnapshot = useMemo(
-    () => createEncoderSnapshotFromTimeline(timelineEvents, encoderTotalDuration),
-    [timelineEvents, encoderTotalDuration],
-  )
 
   const addTimelineItem = useCallback((item: Instruction | SoundCue, type: "instruction" | "sound") => {
     const newItem: TimelineItem = {
@@ -915,6 +916,7 @@ export default function Home() {
       type,
       duration: type === "instruction" ? 60 : 5, // Default duration: 60s for instruction, 5s for sound
       content: item,
+      startTime: 0, // Will be set by addEventToTimeline
     }
     setTimeline((prev) => [...prev, newItem])
   }, [])
@@ -956,11 +958,11 @@ export default function Home() {
       }
 
       try {
-        toast({
-          title: "Sound Playback",
-          description: "Sound cues are currently disabled.",
-          variant: "default",
-        })
+        // Play the sound cue using the audio element
+        if (encoderAudioRef.current) {
+          encoderAudioRef.current.src = soundCue.src
+          encoderAudioRef.current.play().catch((e) => console.error("Error playing sound cue:", e))
+        }
       } catch (error) {
         console.error("Error playing encoder sound:", error)
         toast({
@@ -991,7 +993,7 @@ export default function Home() {
             if (activeItemIndex !== i) {
               setActiveItemIndex(i)
               // Play sound cue when it becomes active
-              if (item.type === "sound") {
+              if (item.type === "sound" && item.content && typeof item.content.src === "string") {
                 playEncoderSound(item.content.src) // Pass src string to playLabsSound
               }
             }
@@ -1066,14 +1068,13 @@ export default function Home() {
     setGenerationStep("Initializing...")
 
     try {
+      console.log("Starting audio export with events:", timelineEvents)
+
       // Calculate the maximum end time needed for the OfflineAudioContext
-      const maxAudioDuration = Math.max(
-        encoderTotalDuration,
-        ...timelineEvents.map((e) => e.startTime + (e.duration || 0)),
-      )
+      const maxAudioDuration = encoderTotalDuration // Start with the user-defined total duration
 
       const ctx = new OfflineAudioContext({
-        numberOfChannels: 2, // Changed to stereo
+        numberOfChannels: 1,
         sampleRate: 44100,
         length: Math.ceil(maxAudioDuration * 44100), // Ensure length is an integer
       })
@@ -1084,7 +1085,7 @@ export default function Home() {
       // Prepare instrument instances for offline rendering
       let pianoSampler: any = null
       let pianoReverb: any = null
-      const loadPianoForExport = async () => {
+      const loadPiano = async () => {
         if (!pianoSampler) {
           pianoSampler = new Tone.Sampler({
             urls: {
@@ -1206,7 +1207,7 @@ export default function Home() {
 
                 try {
                   if (instrument === "piano") {
-                    await loadPianoForExport()
+                    await loadPiano()
                     pianoSampler.triggerAttackRelease(noteString, 0.8, eventStartTime, 0.9)
                   } else if (instrument === "synth") {
                     await loadSynth()
@@ -1265,6 +1266,27 @@ export default function Home() {
           } catch (error) {
             console.warn(`Could not load recorded audio: ${event.recordedAudioUrl}`, error)
           }
+        } else if (event.type === "recording" && event.content?.url) {
+          setGenerationStep(`Adding recorded block: ${event.content.label || "Untitled"}`)
+          console.log(`Processing recorded block: ${event.content.url}`)
+
+          try {
+            const response = await fetch(event.content.url)
+            const arrayBuffer = await response.arrayBuffer()
+            const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+            const source = ctx.createBufferSource()
+            const gainNode = ctx.createGain()
+
+            source.buffer = audioBuffer
+            source.connect(gainNode)
+            gainNode.connect(ctx.destination)
+            gainNode.gain.setValueAtTime(0.8, eventStartTime) // Higher volume for voice
+            source.start(eventStartTime)
+
+            console.log(`Successfully added recorded block at ${eventStartTime}`)
+          } catch (error) {
+            console.warn(`Could not load recorded block audio: ${event.content.url}`, error)
+          }
         }
 
         processedEventsCount++
@@ -1321,22 +1343,714 @@ export default function Home() {
     }
   }
 
-  // Define the missing functions
-  const handleDragOverLocal = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-  }
-
-  const handleDragLeaveLocal = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-  }
-
-  const handleDropLocal = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
-      const droppedFile = event.dataTransfer.files[0]
-      setFile(droppedFile)
+  // Safe input handlers with validation
+  const handleMeditationTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target?.value
+    if (typeof value === "string") {
+      setMeditationTitle(value)
     }
   }
+
+  const handleCustomInstructionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target?.value
+    if (typeof value === "string") {
+      setCustomInstructionText(value)
+      setSelectedLibraryInstruction(null)
+    }
+  }
+
+  const handleRecordingLabelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target?.value
+    if (typeof value === "string") {
+      setRecordingLabel(value)
+    }
+  }
+
+  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target?.value
+    if (typeof value === "string" && !isNaN(Number(value))) {
+      setEncoderTotalDuration(Math.max(60, Number(value) * 60) || 60)
+    }
+  }
+
+  const playSingleNote = async (note: string, octave: number, noteType: string) => {
+    try {
+      console.log(`[v0] Playing ${noteType} note: ${note}${octave}`)
+      await startPianoAudio()
+
+      const noteString = `${note}${octave}`
+
+      if (noteType === "piano") {
+        await playPianoNote(noteString, 0.5, 0.9)
+      } else if (noteType === "synth") {
+        const Tone = await ensureTone()
+        const synth = new Tone.Synth({
+          oscillator: { type: "fatsawtooth" },
+          envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
+          filter: { frequency: 2000, type: "lowpass", rolloff: -12 },
+          filterEnvelope: { attack: 0.02, decay: 0.2, sustain: 0.5, release: 0.8, baseFrequency: 200, octaves: 4 },
+        })
+
+        const synthGain = new Tone.Gain(0.3).toDestination()
+        synth.connect(synthGain)
+
+        synth.triggerAttackRelease(noteString, 0.5)
+
+        setTimeout(() => {
+          synth.dispose()
+          synthGain.dispose()
+        }, 2000)
+      } else if (noteType === "harp") {
+        const Tone = await ensureTone()
+        const harp = new Tone.PluckSynth({
+          attackNoise: 1,
+          dampening: 4000,
+          resonance: 0.9,
+        })
+
+        const harpGain = new Tone.Gain(0.8).toDestination()
+        const harpReverb = new Tone.Reverb({ decay: 4, wet: 0.6 }).connect(harpGain)
+        harp.connect(harpReverb)
+
+        harp.triggerAttackRelease(noteString, 0.5)
+
+        setTimeout(() => {
+          harp.dispose()
+          harpReverb.dispose()
+          harpGain.dispose()
+        }, 3000)
+      }
+    } catch (error) {
+      console.error(`[v0] Error playing ${noteType} note:`, error)
+    }
+  }
+
+  const playChordPreview = useCallback(
+    async (notes?: string[]) => {
+      const chordNotes = notes ?? selectedNotes
+
+      console.log("[v0] playChordPreview called with notes:", notes)
+      console.log("[v0] selectedNotes from state:", selectedNotes)
+      console.log("[v0] chordNotes to use:", chordNotes)
+      console.log("[v0] chordNotes is array:", Array.isArray(chordNotes))
+      console.log("[v0] chordNotes length:", chordNotes?.length)
+
+      if (!Array.isArray(chordNotes) || chordNotes.length === 0) {
+        console.log("[v0] No valid chord notes to play, returning early")
+        return
+      }
+
+      console.log("[v0] Playing chord with notes:", chordNotes, "using", noteType)
+
+      try {
+        await Tone.start()
+
+        if (noteType === "piano") {
+          // Initialize piano if not already loaded
+          if (!sampler) {
+            console.log("[v0] Piano not loaded, initializing for chord...")
+            await loadPiano()
+          }
+
+          if (sampler && isLoaded) {
+            // Play all notes simultaneously using the Salamander piano sampler
+            chordNotes.forEach((noteString) => {
+              console.log("[v0] Playing Salamander piano note in chord:", noteString)
+              sampler.triggerAttackRelease(noteString, 0.5)
+            })
+          } else {
+            console.error("[v0] Piano sampler not available for chord")
+          }
+        } else if (noteType === "synth") {
+          chordNotes.forEach(async (noteString) => {
+            const synth = new Tone.Synth({
+              oscillator: { type: "fatsawtooth" },
+              envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
+              filter: { frequency: 2000, type: "lowpass", rolloff: -12 },
+              filterEnvelope: { attack: 0.02, decay: 0.2, sustain: 0.5, release: 0.8, baseFrequency: 200, octaves: 4 },
+            })
+
+            const synthGain = new Tone.Gain(0.3).toDestination()
+            synth.connect(synthGain)
+
+            console.log("[v0] Playing synth note in chord:", noteString)
+            synth.triggerAttackRelease(noteString, 0.5)
+
+            setTimeout(() => {
+              synth.dispose()
+              synthGain.dispose()
+            }, 2000)
+          })
+        } else if (noteType === "harp") {
+          chordNotes.forEach(async (noteString, index) => {
+            const harp = new Tone.PluckSynth({
+              attackNoise: 1,
+              dampening: 4000,
+              resonance: 0.9,
+            })
+
+            const harpGain = new Tone.Gain(0.8).toDestination()
+            const harpReverb = new Tone.Reverb({ decay: 4, wet: 0.6 }).connect(harpGain)
+            harp.connect(harpReverb)
+
+            console.log("[v0] Playing harp note in chord:", noteString)
+            const startDelay = index * 0.01
+            const duration = 0.5 + startDelay
+            harp.triggerAttackRelease(noteString, duration, `+${startDelay}`)
+
+            setTimeout(() => {
+              harp.dispose()
+              harpReverb.dispose()
+              harpGain.dispose()
+            }, 3000)
+          })
+        }
+      } catch (error) {
+        console.error("[v0] Error playing chord:", error)
+      }
+    },
+    [selectedNotes, noteType],
+  )
+
+  const handleNoteSelection = async (note: any) => {
+    if (multiNoteMode) {
+      // Multi-note mode: toggle selection
+      setSelectedNotes((prev) => {
+        const noteString = `${note.note}${note.octave}`
+        if (prev.includes(noteString)) {
+          return prev.filter((n) => n !== noteString)
+        } else {
+          return [...prev, noteString]
+        }
+      })
+    } else {
+      // Single note mode: play immediately and set as selected sound cue
+      setSelectedSoundCue({
+        id: note.id,
+        name: note.name,
+        src: `musical:${note.note}${note.octave}`,
+      })
+      await playSingleNote(note.note, note.octave, noteType)
+    }
+  }
+
+  const timelinePlaySingleNote = async (noteString: string) => {
+    try {
+      console.log(`[v0] Timeline playing single note: ${noteString} using ${noteType}`)
+
+      // Parse note string (e.g., "C4" -> note="C", octave=4)
+      const match = noteString.match(/([A-G])(\d)/)
+      if (!match) {
+        console.error("[v0] Invalid note string format:", noteString)
+        return
+      }
+
+      const note = match[1]
+      const octave = Number.parseInt(match[2])
+
+      // Use the same playSingleNote function as the sound cue section
+      await playSingleNote(note, octave, noteType)
+    } catch (error) {
+      console.error("[v0] Timeline single note error:", error)
+    }
+  }
+
+  const timelinePlayChordPreview = async (noteStrings: string[]) => {
+    try {
+      console.log(`[v0] Timeline playing chord: ${noteStrings} using ${noteType}`)
+      // Directly play the provided notes without modifying state
+      await playChordPreview(noteStrings)
+    } catch (error) {
+      console.error("[v0] Timeline chord preview error:", error)
+    }
+  }
+
+  const clearLibraryData = useCallback(() => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("abhi_meditation_library")
+      localStorage.removeItem("abhi_meditation_playlists")
+      localStorage.removeItem("abhi_adjuster_import")
+      localStorage.removeItem("abhi_encoder_import")
+      toast({
+        title: "Library cleared",
+        description: "All meditation data has been cleared for testing.",
+      })
+    }
+  }, [toast])
+
+  // Helper function to handle file loading and initial analysis
+  const handleFile = async (selectedFile: File) => {
+    setFile(selectedFile)
+    setOriginalUrl("")
+    setProcessedUrl("")
+    setAudioAnalysis(null)
+    setActualDuration(null)
+    setProcessedBufferState(null)
+    setIsProcessingComplete(false)
+    setStatus(null)
+    setMemoryWarning(false)
+    setPausesAdjusted(0)
+    setProcessingProgress(0)
+    setProcessingStep("Loading audio...")
+
+    if (audioContextRef.current && audioContextRef.current.state === "running") {
+      try {
+        await audioContextRef.current.suspend()
+      } catch (e) {
+        console.warn("Error suspending AudioContext before loading new file:", e)
+      }
+    }
+
+    try {
+      const context = audioContextRef.current || new AudioContext()
+      audioContextRef.current = context
+
+      if (context.state === "suspended") {
+        await context.resume()
+      }
+
+      const reader = new FileReader()
+      reader.onload = async (event) => {
+        if (event.target?.result) {
+          try {
+            const arrayBuffer = event.target.result as ArrayBuffer
+            const buffer = await context.decodeAudioData(arrayBuffer)
+            setOriginalBuffer(buffer)
+            setOriginalUrl(URL.createObjectURL(selectedFile))
+            setProcessingStep("Analyzing audio...")
+
+            const url = URL.createObjectURL(selectedFile)
+            const tempAudio = new Audio(url)
+            tempAudio.preload = "metadata"
+            tempAudio.onloadedmetadata = () => {
+              const duration = tempAudio.duration
+              setActualDuration(duration)
+              URL.revokeObjectURL(url) // Clean up temporary URL
+            }
+            tempAudio.onerror = () => {
+              console.error("Error loading audio metadata for duration.")
+              URL.revokeObjectURL(url)
+            }
+
+            // Perform silence detection
+            const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
+            const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+            const contentDuration = buffer.duration - totalSilenceDuration
+            const maxPossibleDuration = isMobileDevice ? 60 * 60 : 120 * 60 // 1 hour for mobile, 2 hours for desktop
+            setDurationLimits({
+              min: Math.ceil(contentDuration / 60),
+              max: maxPossibleDuration / 60,
+            })
+            setAudioAnalysis({
+              totalSilence: totalSilenceDuration,
+              contentDuration: contentDuration,
+              silenceRegions: silenceRegions.length,
+            })
+            setProcessingStep("Ready to process.")
+            setStatus({ message: "Audio loaded and analyzed. Ready to adjust.", type: "success" })
+          } catch (error) {
+            console.error("Error decoding audio data:", error)
+            setStatus({
+              message: `Error loading audio: ${error instanceof Error ? error.message : "Unknown"}`,
+              type: "error",
+            })
+            setFile(null)
+            setOriginalBuffer(null)
+            setOriginalUrl("")
+          }
+        }
+      }
+      reader.readAsArrayBuffer(selectedFile)
+    } catch (error) {
+      console.error("Error accessing audio context:", error)
+      setStatus({ message: `Audio system error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
+      setFile(null)
+      setOriginalBuffer(null)
+      setOriginalUrl("")
+    }
+  }
+
+  const detectSilenceRegions = useCallback(
+    async (buffer: AudioBuffer, threshold: number, minDuration: number): Promise<{ start: number; end: number }[]> => {
+      const BUFFER_SECONDS = 0.3 // 300ms buffer to preserve word endings
+      const sampleRate = buffer.sampleRate
+      const channelData = buffer.getChannelData(0)
+      const windowSize = Math.floor(sampleRate * 0.01) // 10ms windows
+      const minSamples = Math.floor(minDuration * sampleRate)
+
+      const regions: { start: number; end: number }[] = []
+      let silenceStart = -1
+
+      for (let i = 0; i < channelData.length; i += windowSize) {
+        const windowEnd = Math.min(i + windowSize, channelData.length)
+        let rms = 0
+
+        // Calculate RMS for this window
+        for (let j = i; j < windowEnd; j++) {
+          rms += channelData[j] * channelData[j]
+        }
+        rms = Math.sqrt(rms / (windowEnd - i))
+
+        const isSilent = rms < threshold
+        const timeSeconds = i / sampleRate
+
+        if (isSilent && silenceStart === -1) {
+          silenceStart = timeSeconds
+        } else if (!isSilent && silenceStart !== -1) {
+          const silenceDuration = timeSeconds - silenceStart
+          if (silenceDuration >= minDuration) {
+            regions.push({ start: silenceStart, end: timeSeconds })
+          }
+          silenceStart = -1
+        }
+      }
+
+      // Handle silence at the end
+      if (silenceStart !== -1) {
+        const endTime = buffer.duration
+        const silenceDuration = endTime - silenceStart
+        if (silenceDuration >= minDuration) {
+          regions.push({ start: silenceStart, end: endTime })
+        }
+      }
+
+      // Apply buffer to preserve word endings
+      const bufferedRegions: { start: number; end: number }[] = []
+
+      for (let i = 0; i < regions.length; i++) {
+        const region = regions[i]
+        let bufferedStart = region.start + BUFFER_SECONDS
+        const bufferedEnd = region.end - BUFFER_SECONDS
+
+        // Prevent overlap with previous region
+        if (bufferedRegions.length > 0) {
+          const prevRegion = bufferedRegions[bufferedRegions.length - 1]
+          bufferedStart = Math.max(bufferedStart, prevRegion.end + BUFFER_SECONDS)
+        }
+
+        // Only keep regions that are still long enough after buffering
+        if (bufferedEnd > bufferedStart && bufferedEnd - bufferedStart >= minDuration) {
+          bufferedRegions.push({ start: bufferedStart, end: bufferedEnd })
+        }
+      }
+
+      return bufferedRegions
+    },
+    [silenceThreshold, minSilenceDuration], // Dependencies: threshold and minDuration
+  )
+
+  const importIntoAdjuster = useCallback(
+    async (importData: any) => {
+      console.log("[v0] Importing meditation into adjuster:", importData)
+
+      try {
+        // Reset all state like normal file upload
+        setFile(null)
+        setOriginalUrl("")
+        setProcessedUrl("")
+        setAudioAnalysis(null)
+        setActualDuration(null)
+        setProcessedBufferState(null)
+        setIsProcessingComplete(false)
+        setStatus(null)
+        setMemoryWarning(false)
+        setPausesAdjusted(0)
+        setProcessingProgress(0)
+        setProcessingStep("Loading audio...")
+
+        if (audioContextRef.current && audioContextRef.current.state === "running") {
+          try {
+            await audioContextRef.current.suspend()
+          } catch (e) {
+            console.warn("Error suspending AudioContext before loading imported file:", e)
+          }
+        }
+
+        const context = audioContextRef.current || new AudioContext()
+        audioContextRef.current = context
+
+        if (context.state === "suspended") {
+          await context.resume()
+        }
+
+        // Fetch the audio file from the URL
+        const response = await fetch(importData.processedAudioUrl)
+        if (!response.ok) {
+          throw new Error(`Failed to fetch audio: ${response.statusText}`)
+        }
+
+        const arrayBuffer = await response.arrayBuffer()
+        const buffer = await context.decodeAudioData(arrayBuffer)
+
+        // Set up the audio like normal file upload
+        setOriginalBuffer(buffer)
+        setOriginalUrl(importData.processedAudioUrl)
+        setProcessingStep("Analyzing audio...")
+        setActualDuration(importData.duration)
+
+        // Create a fake file object for consistency
+        const blob = new Blob([arrayBuffer], { type: "audio/wav" })
+        const fakeFile = new File([blob], importData.originalFileName, { type: "audio/wav" })
+        setFile(fakeFile)
+
+        // Perform silence detection like normal upload
+        const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
+        const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+        const contentDuration = buffer.duration - totalSilenceDuration
+        const maxPossibleDuration = isMobileDevice ? 60 * 60 : 120 * 60 // 1 hour for mobile, 2 hours for desktop
+
+        setDurationLimits({
+          min: Math.ceil(contentDuration / 60),
+          max: maxPossibleDuration / 60,
+        })
+
+        setAudioAnalysis({
+          totalSilence: totalSilenceDuration,
+          contentDuration: contentDuration,
+          silenceRegions: silenceRegions.length,
+        })
+
+        setProcessingStep("Ready to process.")
+        setStatus({ message: "Meditation loaded and analyzed. Ready to adjust.", type: "success" })
+      } catch (error) {
+        console.error("[v0] Error importing into adjuster:", error)
+        setStatus({
+          message: `Failed to load meditation: ${error instanceof Error ? error.message : "Unknown error"}`,
+          type: "error",
+        })
+        setFile(null)
+        setOriginalBuffer(null)
+        setOriginalUrl("")
+      }
+    },
+    [silenceThreshold, minSilenceDuration, isMobileDevice, detectSilenceRegions, setStatus],
+  )
+
+  const reconstructEncoderMeditation = useCallback(
+    async (importData: any) => {
+      console.log("[v0] Reconstructing encoder meditation with original cues:", importData)
+
+      try {
+        // Load the audio for analysis
+        const response = await fetch(importData.processedAudioUrl)
+        const audioBlob = await response.blob()
+        const audioFile = new File([audioBlob], importData.originalFileName, { type: "audio/wav" })
+
+        // Set the file for encoder
+        setFile(audioFile)
+        setOriginalUrl(URL.createObjectURL(audioFile))
+
+        // Simulate audio analysis to reconstruct timeline
+        // This would normally involve actual audio analysis, but for now we'll create a basic structure
+        const reconstructedEvents: TimelineEvent[] = []
+
+        // If we have metadata about instructions, create placeholder events
+        if (importData.metadata?.instructionCount) {
+          const eventDuration = importData.duration / importData.metadata.instructionCount
+
+          for (let i = 0; i < importData.metadata.instructionCount; i++) {
+            reconstructedEvents.push({
+              id: `reconstructed_${i}`,
+              type: "instruction",
+              startTime: i * eventDuration,
+              duration: Math.min(eventDuration * 0.8, 60), // Max 60s per instruction
+              content: { text: `Reconstructed instruction ${i + 1}`, category: "General" }, // Placeholder content
+              instructionText: `Reconstructed instruction ${i + 1}`,
+            })
+
+            // Add sound cue after each instruction
+            if (i < importData.metadata.instructionCount - 1) {
+              reconstructedEvents.push({
+                id: `sound_${i}`,
+                type: "instruction_sound",
+                startTime: i * eventDuration + eventDuration * 0.8,
+                duration: 3,
+                soundCueId: SOUND_CUES_LIBRARY[0]?.id || "default_sound", // Default sound cue
+                soundCueName: SOUND_CUES_LIBRARY[0]?.name || "Default Sound",
+                soundCueSrc: SOUND_CUES_LIBRARY[0]?.src || "",
+                instructionText: "Background sound", // Placeholder instruction text
+              })
+            }
+          }
+        }
+
+        setTimelineEvents(reconstructedEvents)
+        setEncoderTotalDuration(importData.duration) // Set total duration from imported data
+        setStatus({
+          message: `Reconstructed "${importData.title}" with ${reconstructedEvents.length} timeline events.`,
+          type: "success",
+        })
+      } catch (error) {
+        console.error("[v0] Error reconstructing encoder meditation:", error)
+        setStatus({
+          message: "Failed to reconstruct meditation timeline. Loading as basic audio file.",
+          type: "error",
+        })
+
+        // Fallback to basic import
+        const response = await fetch(importData.processedAudioUrl)
+        const audioBlob = await response.blob()
+        const audioFile = new File([audioBlob], importData.originalFileName, { type: "audio/wav" })
+        setFile(audioFile)
+        setOriginalUrl(URL.createObjectURL(audioFile))
+      }
+    },
+    [setFile, setOriginalUrl, setTimelineEvents, setEncoderTotalDuration, setStatus],
+  )
+
+  const importAsRecordedBlock = useCallback(
+    async (importData: any) => {
+      console.log("[v0] Importing meditation as recorded block:", importData)
+
+      try {
+        // Load the audio
+        const response = await fetch(importData.processedAudioUrl)
+        const audioBlob = await response.blob()
+        const audioFile = new File([audioBlob], importData.originalFileName, { type: "audio/wav" })
+
+        setFile(audioFile)
+        setOriginalUrl(URL.createObjectURL(audioFile))
+
+        // Decode audio buffer for analysis
+        const arrayBuffer = await audioFile.arrayBuffer()
+        const buffer = await audioContextRef.current!.decodeAudioData(arrayBuffer)
+        setOriginalBuffer(buffer)
+
+        // Perform the same analysis as normal file upload
+        setProcessingStep("Analyzing imported audio...")
+
+        const url = URL.createObjectURL(audioFile)
+        const tempAudio = new Audio(url)
+        tempAudio.preload = "metadata"
+        tempAudio.onloadedmetadata = () => {
+          const duration = tempAudio.duration
+          setActualDuration(duration)
+          URL.revokeObjectURL(url)
+        }
+        tempAudio.onerror = () => {
+          console.error("Error loading audio metadata for duration.")
+          URL.revokeObjectURL(url)
+        }
+
+        // Perform silence detection
+        const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
+        const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+        const contentDuration = buffer.duration - totalSilenceDuration
+        const maxPossibleDuration = isMobileDevice ? 60 * 60 : 120 * 60
+        setDurationLimits({
+          min: Math.ceil(contentDuration / 60),
+          max: maxPossibleDuration / 60,
+        })
+        setAudioAnalysis({
+          totalSilence: totalSilenceDuration,
+          contentDuration: contentDuration,
+          silenceRegions: silenceRegions.length,
+        })
+        setProcessingStep("Ready to process.")
+
+        // Create a single recorded block event for encoder
+        const recordedEvent: TimelineEvent = {
+          id: `imported_${Date.now()}`,
+          type: "recorded",
+          startTime: 0,
+          duration: importData.duration,
+          content: { text: importData.title, category: "Imported" },
+          instructionText: importData.title,
+        }
+
+        setTimelineEvents([recordedEvent])
+        setEncoderTotalDuration(importData.duration)
+        setStatus({
+          message: `Imported and analyzed "${importData.title}" - ready to adjust or encode.`,
+          type: "success",
+        })
+      } catch (error) {
+        console.error("[v0] Error importing as recorded block:", error)
+        setStatus({
+          message: "Failed to import meditation. Please try again.",
+          type: "error",
+        })
+      }
+    },
+    [
+      setFile,
+      setOriginalUrl,
+      setOriginalBuffer,
+      setProcessingStep,
+      setActualDuration,
+      setDurationLimits,
+      setAudioAnalysis,
+      setTimelineEvents,
+      setEncoderTotalDuration,
+      setStatus,
+      silenceThreshold,
+      minSilenceDuration,
+      isMobileDevice,
+      detectSilenceRegions,
+    ],
+  )
+
+  const handleImportedMeditation = useCallback(
+    async (importData: any, sourceTab: "adjuster" | "encoder") => {
+      console.log("[v0] Handling imported meditation:", importData, "from tab:", sourceTab)
+
+      try {
+        if (sourceTab === "encoder" && !importData.crossToolOpening) {
+          // Encoder meditation reopened in encoder - reconstruct cues/recordings
+          await reconstructEncoderMeditation(importData)
+        } else if (sourceTab === "adjuster" || importData.crossToolOpening) {
+          await importIntoAdjuster(importData)
+        } else {
+          // Fallback to recorded block for encoder cross-tool opening
+          await importAsRecordedBlock(importData)
+        }
+      } catch (error) {
+        console.error("[v0] Error handling imported meditation:", error)
+        setStatus({
+          message: "Failed to load meditation from library. Please try again.",
+          type: "error",
+        })
+      }
+    },
+    [reconstructEncoderMeditation, importIntoAdjuster, importAsRecordedBlock, setStatus],
+  )
+
+  useEffect(() => {
+    // Check for hash-based navigation
+    const handleHashChange = () => {
+      const hash = window.location.hash.substring(1)
+      if (hash === "adjuster" || hash === "encoder") {
+        setActiveTab(hash as "adjuster" | "encoder")
+        setActiveMode(hash as "adjuster" | "encoder")
+      }
+    }
+
+    // Check for imported meditations instead
+    const checkForImports = () => {
+      const adjusterImport = localStorage.getItem("abhi_adjuster_import")
+      if (adjusterImport) {
+        try {
+          const importData = JSON.parse(adjusterImport)
+          console.log("[v0] Loading meditation from library into adjuster:", importData)
+          handleImportedMeditation(importData, "adjuster")
+          localStorage.removeItem("abhi_adjuster_import")
+        } catch (error) {
+          console.error("[v0] Error loading adjuster import:", error)
+          localStorage.removeItem("abhi_adjuster_import")
+        }
+      }
+    }
+
+    handleHashChange()
+    checkForImports()
+
+    // Listen for hash changes
+    window.addEventListener("hashchange", handleHashChange)
+
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange)
+    }
+  }, [toast, handleImportedMeditation]) // handleImportedMeditation is now stable due to useCallback
 
   const processAudioAdjusterAction = async () => {
     console.log("[v0] Processing button clicked")
@@ -1557,7 +2271,7 @@ export default function Home() {
       onProgress(100)
       return newBuffer
     },
-    [isMobileDevice],
+    [isMobileDevice, setMemoryWarning],
   )
 
   const handleFileSelectAction = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1647,7 +2361,7 @@ export default function Home() {
     })
   }, [])
 
-  const handleAddInstructionSoundEvent = () => {
+  const handleAddInstructionSoundEvent = useCallback(() => {
     const instructionTextToAdd = customInstructionText.trim()
 
     if (!instructionTextToAdd) {
@@ -1680,6 +2394,7 @@ export default function Home() {
         soundCueSrc: `musical:${selectedNotes.join("|")}`,
         instrument: noteType,
         color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length],
+        duration: 5, // Default duration for a chord
       }
     } else if (selectedSoundCue) {
       newEvent = {
@@ -1692,6 +2407,7 @@ export default function Home() {
         soundCueSrc: selectedSoundCue.src,
         instrument: noteType,
         color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length],
+        duration: selectedSoundCue.duration || 5, // Use sound cue duration or default
       }
     } else {
       return
@@ -1705,9 +2421,18 @@ export default function Home() {
       title: "Event Added",
       description: `"${instructionTextToAdd.substring(0, 30)}..." with ${newEvent.soundCueName} added.`,
     })
-  }
+  }, [
+    customInstructionText,
+    selectedSoundCue,
+    selectedNotes,
+    multiNoteMode,
+    noteType,
+    timelineEvents.length,
+    addEventToTimeline,
+    toast,
+  ]) // Added all relevant dependencies
 
-  const startRecording = async () => {
+  const startRecording = useCallback(async () => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -1802,68 +2527,29 @@ export default function Home() {
         variant: "destructive",
       })
     }
-  }
+  }, [
+    recordingLabel,
+    isRecording,
+    readyToAddToTimelineRecording,
+    setReadyToAddToTimelineRecording,
+    setRecordedBlobs,
+    toast,
+  ]) // Added all relevant dependencies
 
-  const stopRecording = () => {
+  const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.stop()
       setIsRecording(false)
     }
-  }
+  }, [])
 
-  const updateEventStartTime = (eventId: string, newTime: number) => {
-    setTimelineEvents((prev) => {
-      const index = prev.findIndex((e) => e.id === eventId)
-      if (index === -1) return prev
-
-      const event = prev[index]
-      const duration = event.duration || 0
-      let start = Math.max(0, Math.min(newTime, encoderTotalDuration - duration))
-
-      if (event.type === "recorded_voice") {
-        const others = prev.filter((e) => e.id !== eventId && e.type === "recorded_voice")
-
-        const prevRecording = others.filter((e) => e.startTime < start).sort((a, b) => b.startTime - a.startTime)[0]
-        const nextRecording = others.filter((e) => e.startTime > start).sort((a, b) => a.startTime - b.startTime)[0]
-
-        if (prevRecording) {
-          const prevEnd = prevRecording.startTime + (prevRecording.duration || 0)
-          if (start < prevEnd) start = prevEnd
-        }
-
-        if (nextRecording) {
-          if (start + duration > nextRecording.startTime) {
-            start = nextRecording.startTime - duration
-          }
-        }
-
-        if (prevRecording) {
-          const prevEnd = prevRecording.startTime + (prevRecording.duration || 0)
-          if (start < prevEnd) start = prevEnd
-        }
-
-        start = Math.max(0, Math.min(start, encoderTotalDuration - duration))
-      }
-
-      const updated = prev.map((e) => (e.id === eventId ? { ...e, startTime: start } : e))
-
-      // Simple sort by startTime, with stable sorting for events at the same time
-      return updated.sort((a, b) => {
-        if (a.startTime === b.startTime) {
-          // For events at the same time, maintain their relative order based on original array position
-          const aIndex = prev.findIndex((e) => e.id === a.id)
-          const bIndex = prev.findIndex((e) => e.id === b.id)
-          return aIndex - bIndex
-        }
-        return a.startTime - b.startTime
-      })
-    })
-  }
-
-  const removeTimelineEvent = (eventId: string) => {
-    setTimelineEvents((prev) => prev.filter((event) => event.id !== eventId))
-    toast({ title: "Event Removed" })
-  }
+  const removeTimelineEvent = useCallback(
+    (eventId: string) => {
+      setTimelineEvents((prev) => prev.filter((event) => event.id !== eventId))
+      toast({ title: "Event Removed" })
+    },
+    [toast],
+  )
 
   const handleDuplicateEvent = useCallback(
     (eventToDuplicate: TimelineEvent) => {
@@ -1876,565 +2562,37 @@ export default function Home() {
       addEventToTimeline(newEvent)
       toast({
         title: "Event Duplicated",
-        description: `"${newEvent.instructionText || newEvent.recordedInstructionLabel}" duplicated.`,
+        description: `"${newEvent.instructionText || newEvent.recordedInstructionLabel || newEvent.content?.label}" duplicated.`,
       })
     },
-    [addEventToTimeline],
+    [addEventToTimeline, toast],
   )
 
-  // Safe input handlers with validation
-  const handleMeditationTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target?.value
-    if (typeof value === "string") {
-      setMeditationTitle(value)
-    }
-  }
+  const handleDragOverLocal = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+  }, [])
 
-  const handleCustomInstructionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target?.value
-    if (typeof value === "string") {
-      setCustomInstructionText(value)
-      setSelectedLibraryInstruction(null)
-    }
-  }
+  const handleDragLeaveLocal = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+  }, [])
 
-  const handleRecordingLabelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target?.value
-    if (typeof value === "string") {
-      setRecordingLabel(value)
-    }
-  }
-
-  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target?.value
-    if (typeof value === "string" && !isNaN(Number(value))) {
-      setEncoderTotalDuration(Math.max(60, Number(value) * 60) || 60)
-    }
-  }
-
-  const playSingleNote = async (note: string, octave: number, noteType: string) => {
-    try {
-      console.log(`[v0] Playing ${noteType} note: ${note}${octave}`)
-      await startPianoAudio()
-
-      if (noteType === "piano") {
-        const noteString = `${note}${octave}`
-        await playPianoNote(noteString, 0.5, 0.9)
-      } else if (noteType === "synth") {
-        const Tone = await ensureTone()
-        const synth = new Tone.Synth({
-          oscillator: { type: "fatsawtooth" },
-          envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
-          filter: { frequency: 2000, type: "lowpass", rolloff: -12 },
-          filterEnvelope: { attack: 0.02, decay: 0.2, sustain: 0.5, release: 0.8, baseFrequency: 200, octaves: 4 },
-        })
-
-        const synthGain = new Tone.Gain(0.3).toDestination()
-        synth.connect(synthGain)
-
-        synth.triggerAttackRelease(`${note}${octave}`, 0.5)
-
-        setTimeout(() => {
-          synth.dispose()
-          synthGain.dispose()
-        }, 2000)
-      } else if (noteType === "harp") {
-        const Tone = await ensureTone()
-        const harp = new Tone.PluckSynth({
-          attackNoise: 1,
-          dampening: 4000,
-          resonance: 0.9,
-        })
-
-        const harpGain = new Tone.Gain(0.8).toDestination()
-        const harpReverb = new Tone.Reverb({ decay: 4, wet: 0.6 }).connect(harpGain)
-        harp.connect(harpReverb)
-
-        harp.triggerAttackRelease(`${note}${octave}`, 0.5)
-
-        setTimeout(() => {
-          harp.dispose()
-          harpReverb.dispose()
-          harpGain.dispose()
-        }, 3000)
-      }
-    } catch (error) {
-      console.error(`[v0] Error playing ${noteType} note:`, error)
-    }
-  }
-
-  const playChordPreview = async (notes?: string[]) => {
-    const chordNotes = notes ?? selectedNotes
-
-    console.log("[v0] playChordPreview called with notes:", notes)
-    console.log("[v0] selectedNotes from state:", selectedNotes)
-    console.log("[v0] chordNotes to use:", chordNotes)
-    console.log("[v0] chordNotes is array:", Array.isArray(chordNotes))
-    console.log("[v0] chordNotes length:", chordNotes?.length)
-
-    if (!Array.isArray(chordNotes) || chordNotes.length === 0) {
-      console.log("[v0] No valid chord notes to play, returning early")
-      return
-    }
-
-    console.log("[v0] Playing chord with notes:", chordNotes, "using", noteType)
-
-    try {
-      await Tone.start()
-
-      if (noteType === "piano") {
-        // Initialize piano if not already loaded
-        if (!sampler) {
-          console.log("[v0] Piano not loaded, initializing for chord...")
-          await loadPiano()
-        }
-
-        if (sampler && isLoaded) {
-          // Play all notes simultaneously using the Salamander piano sampler
-          chordNotes.forEach((noteString) => {
-            console.log("[v0] Playing Salamander piano note in chord:", noteString)
-            sampler.triggerAttackRelease(noteString, 0.5)
-          })
-        } else {
-          console.error("[v0] Piano sampler not available for chord")
-        }
-      } else if (noteType === "synth") {
-        chordNotes.forEach(async (noteString) => {
-          const synth = new Tone.Synth({
-            oscillator: { type: "fatsawtooth" },
-            envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
-            filter: { frequency: 2000, type: "lowpass", rolloff: -12 },
-            filterEnvelope: { attack: 0.02, decay: 0.2, sustain: 0.5, release: 0.8, baseFrequency: 200, octaves: 4 },
-          })
-
-          const synthGain = new Tone.Gain(0.3).toDestination()
-          synth.connect(synthGain)
-
-          console.log("[v0] Playing synth note in chord:", noteString)
-          synth.triggerAttackRelease(noteString, 0.5)
-
-          setTimeout(() => {
-            synth.dispose()
-            synthGain.dispose()
-          }, 2000)
-        })
-      } else if (noteType === "harp") {
-        chordNotes.forEach(async (noteString, index) => {
-          const harp = new Tone.PluckSynth({
-            attackNoise: 1,
-            dampening: 4000,
-            resonance: 0.9,
-          })
-
-          const harpGain = new Tone.Gain(0.8).toDestination()
-          const harpReverb = new Tone.Reverb({ decay: 4, wet: 0.6 }).connect(harpGain)
-          harp.connect(harpReverb)
-
-          console.log("[v0] Playing harp note in chord:", noteString)
-          const startDelay = index * 0.01
-          const duration = 0.5 + startDelay
-          harp.triggerAttackRelease(noteString, duration, `+${startDelay}`)
-
-          setTimeout(() => {
-            harp.dispose()
-            harpReverb.dispose()
-            harpGain.dispose()
-          }, 3000)
-        })
-      }
-    } catch (error) {
-      console.error("[v0] Error playing chord:", error)
-    }
-  }
-
-  const handleNoteSelection = async (note: any) => {
-    if (multiNoteMode) {
-      // Multi-note mode: toggle selection
-      setSelectedNotes((prev) => {
-        const noteString = `${note.note}${note.octave}`
-        if (prev.includes(noteString)) {
-          return prev.filter((n) => n !== noteString)
-        } else {
-          return [...prev, noteString]
-        }
-      })
-    } else {
-      // Single note mode: play immediately and set as selected sound cue
-      setSelectedSoundCue({
-        id: note.id,
-        name: note.name,
-        src: `musical:${note.note}${note.octave}`,
-      })
-      await playSingleNote(note.note, note.octave, noteType)
-    }
-  }
-
-  const timelinePlaySingleNote = async (noteString: string) => {
-    try {
-      console.log(`[v0] Timeline playing single note: ${noteString} using ${noteType}`)
-
-      // Parse note string (e.g., "C4" -> note="C", octave=4)
-      const match = noteString.match(/([A-G])(\d)/)
-      if (!match) {
-        console.error("[v0] Invalid note string format:", noteString)
-        return
-      }
-
-      const note = match[1]
-      const octave = Number.parseInt(match[2])
-
-      // Use the same playSingleNote function as the sound cue section
-      await playSingleNote(note, octave, noteType)
-    } catch (error) {
-      console.error("[v0] Timeline single note error:", error)
-    }
-  }
-
-  const timelinePlayChordPreview = async (noteStrings: string[]) => {
-    try {
-      console.log(`[v0] Timeline playing chord: ${noteStrings} using ${noteType}`)
-      // Directly play the provided notes without modifying state
-      await playChordPreview(noteStrings)
-    } catch (error) {
-      console.error("[v0] Timeline chord preview error:", error)
-    }
-  }
-
-  const clearLibraryData = useCallback(() => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("abhi_meditation_library")
-      localStorage.removeItem("abhi_meditation_playlists")
-      localStorage.removeItem("abhi_adjuster_import")
-      localStorage.removeItem("abhi_encoder_import")
-      toast({
-        title: "Library cleared",
-        description: "All meditation data has been cleared for testing.",
-      })
-    }
-  }, [toast])
-
-  // Helper function to handle file loading and initial analysis
-  const handleFile = async (selectedFile: File) => {
-    setFile(selectedFile)
-    setOriginalUrl("")
-    setProcessedUrl("")
-    setAudioAnalysis(null)
-    setActualDuration(null)
-    setProcessedBufferState(null)
-    setIsProcessingComplete(false)
-    setStatus(null)
-    setMemoryWarning(false)
-    setPausesAdjusted(0)
-    setProcessingProgress(0)
-    setProcessingStep("Loading audio...")
-    setLibraryImportContext(null)
-
-    if (audioContextRef.current && audioContextRef.current.state === "running") {
-      try {
-        await audioContextRef.current.suspend()
-      } catch (e) {
-        console.warn("Error suspending AudioContext before loading new file:", e)
-      }
-    }
-
-    try {
-      const context = audioContextRef.current || new AudioContext()
-      audioContextRef.current = context
-
-      if (context.state === "suspended") {
-        await context.resume()
-      }
-
-      const reader = new FileReader()
-      reader.onload = async (event) => {
-        if (event.target?.result) {
-          try {
-            const arrayBuffer = event.target.result as ArrayBuffer
-            const buffer = await context.decodeAudioData(arrayBuffer)
-            setOriginalBuffer(buffer)
-            setOriginalUrl(URL.createObjectURL(selectedFile))
-            setProcessingStep("Analyzing audio...")
-
-            const url = URL.createObjectURL(selectedFile)
-            const tempAudio = new Audio(url)
-            tempAudio.preload = "metadata"
-            tempAudio.onloadedmetadata = () => {
-              const duration = tempAudio.duration
-              setActualDuration(duration)
-              URL.revokeObjectURL(url) // Clean up temporary URL
-            }
-            tempAudio.onerror = () => {
-              console.error("Error loading audio metadata for duration.")
-              URL.revokeObjectURL(url)
-            }
-
-            // Perform silence detection
-            const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
-            const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
-            const contentDuration = buffer.duration - totalSilenceDuration
-            const maxPossibleDuration = isMobileDevice ? 60 * 60 : 120 * 60 // 1 hour for mobile, 2 hours for desktop
-            setDurationLimits({
-              min: Math.ceil(contentDuration / 60),
-              max: maxPossibleDuration / 60,
-            })
-            setAudioAnalysis({
-              totalSilence: totalSilenceDuration,
-              contentDuration: contentDuration,
-              silenceRegions: silenceRegions.length,
-            })
-            setProcessingStep("Ready to process.")
-            setStatus({ message: "Audio loaded and analyzed. Ready to adjust.", type: "success" })
-          } catch (error) {
-            console.error("Error decoding audio data:", error)
-            setStatus({
-              message: `Error loading audio: ${error instanceof Error ? error.message : "Unknown"}`,
-              type: "error",
-            })
-            setFile(null)
-            setOriginalBuffer(null)
-            setOriginalUrl("")
-          }
-        }
-      }
-      reader.readAsArrayBuffer(selectedFile)
-    } catch (error) {
-      console.error("Error accessing audio context:", error)
-      setStatus({ message: `Audio system error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
-      setFile(null)
-      setOriginalBuffer(null)
-      setOriginalUrl("")
-    }
-  }
-
-  handleFileRef.current = handleFile
-
-  const processAdjusterImport = useCallback(
-    async (meditation: SavedMeditation) => {
-      try {
-        const response = await fetch(meditation.processedAudioUrl)
-        if (!response.ok) {
-          throw new Error(`Failed to load audio (${response.status})`)
-        }
-
-        const blob = await response.blob()
-        const fileName = meditation.originalFileName || `${meditation.title || "meditation"}.wav`
-        const file = new File([blob], fileName, { type: blob.type || "audio/wav" })
-
-        setActiveMode("adjuster")
-
-        if (handleFileRef.current) {
-          await handleFileRef.current(file)
-        }
-
-        setProcessedUrl(meditation.processedAudioUrl)
-        setIsProcessingComplete(true)
-        setActualDuration(meditation.duration || null)
-
-        if (typeof meditation.metadata?.targetDuration === "number") {
-          setTargetDuration(meditation.metadata.targetDuration)
-        }
-        if (typeof meditation.metadata?.pausesAdjusted === "number") {
-          setPausesAdjusted(meditation.metadata.pausesAdjusted)
-        }
-
-        setLibraryImportContext({
-          meditationId: meditation.id,
-          originalSource: meditation.source,
-          metadata: meditation.metadata || {},
-        })
-
-        toast({
-          title: "Meditation ready in Adjuster",
-          description: `"${meditation.title}" loaded from your library.`,
-        })
-      } catch (error) {
-        console.error("[v0] Failed to import meditation into Adjuster:", error)
-        toast({
-          title: "Import failed",
-          description: "We couldn't load this meditation into the Adjuster.",
-          variant: "destructive",
-        })
+  const handleDropLocal = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault()
+      if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+        const droppedFile = event.dataTransfer.files[0]
+        setFile(droppedFile)
       }
     },
-    [toast],
+    [setFile],
   )
 
-  const processEncoderImport = useCallback(
-    async (meditation: SavedMeditation) => {
-      try {
-        setActiveMode("encoder")
-        setIsReconstructingImport(true)
-
-        setLibraryImportContext({
-          meditationId: meditation.id,
-          originalSource: meditation.source,
-          metadata: meditation.metadata || {},
-        })
-
-        const derivedTitle =
-          (typeof meditation.metadata?.meditationTitle === "string" && meditation.metadata.meditationTitle.trim()) ||
-          meditation.title ||
-          "Imported Meditation"
-        setMeditationTitle(derivedTitle)
-
-        setIsPlaying(false)
-        setCurrentPlaybackTime(0)
-        setActiveItemIndex(null)
-        setReadyToAddToTimelineRecording(null)
-
-        const reconstruction = meditation.metadata?.encoderReconstruction
-
-        if (reconstruction && reconstruction.events.length > 0) {
-          const { events, duration } = await reconstructTimelineFromSnapshot(
-            meditation.processedAudioUrl,
-            reconstruction,
-          )
-          setTimelineEvents(events)
-          setEncoderTotalDuration(duration)
-          toast({
-            title: "Timeline reconstructed",
-            description: `Restored ${events.length} timeline events from the Encoder analysis.`,
-          })
-        } else {
-          const fallbackEvent: TimelineEvent = {
-            id: `import_block_${Date.now()}`,
-            type: "recorded_voice",
-            startTime: 0,
-            duration: meditation.duration,
-            recordedAudioUrl: meditation.processedAudioUrl,
-            recordedInstructionLabel: meditation.title || "Imported Audio",
-            color: EVENT_COLORS[0],
-          }
-          setTimelineEvents([fallbackEvent])
-          setEncoderTotalDuration(meditation.duration)
-          toast({
-            title: "Ready to encode",
-            description: "This meditation has been added as a single recorded block.",
-          })
-        }
-
-        setGeneratedAudioUrl(meditation.processedAudioUrl)
-      } catch (error) {
-        console.error("[v0] Failed to import meditation into Encoder:", error)
-        toast({
-          title: "Import failed",
-          description: "We couldn't load this meditation into the Encoder.",
-          variant: "destructive",
-        })
-      } finally {
-        setIsReconstructingImport(false)
-      }
-    },
-    [toast],
-  )
-
-  const detectSilenceRegions = async (
-    buffer: AudioBuffer,
-    threshold: number,
-    minDuration: number,
-  ): Promise<{ start: number; end: number }[]> => {
-    const BUFFER_SECONDS = 0.3 // 300ms buffer to preserve word endings
-    const sampleRate = buffer.sampleRate
-    const channelData = buffer.getChannelData(0)
-    const windowSize = Math.floor(sampleRate * 0.01) // 10ms windows
-    const minSamples = Math.floor(minDuration * sampleRate)
-
-    const regions: { start: number; end: number }[] = []
-    let silenceStart = -1
-
-    for (let i = 0; i < channelData.length; i += windowSize) {
-      const windowEnd = Math.min(i + windowSize, channelData.length)
-      let rms = 0
-
-      // Calculate RMS for this window
-      for (let j = i; j < windowEnd; j++) {
-        rms += channelData[j] * channelData[j]
-      }
-      rms = Math.sqrt(rms / (windowEnd - i))
-
-      const isSilent = rms < threshold
-      const timeSeconds = i / sampleRate
-
-      if (isSilent && silenceStart === -1) {
-        silenceStart = timeSeconds
-      } else if (!isSilent && silenceStart !== -1) {
-        const silenceDuration = timeSeconds - silenceStart
-        if (silenceDuration >= minDuration) {
-          regions.push({ start: silenceStart, end: timeSeconds })
-        }
-        silenceStart = -1
-      }
-    }
-
-    // Handle silence at the end
-    if (silenceStart !== -1) {
-      const endTime = buffer.duration
-      const silenceDuration = endTime - silenceStart
-      if (silenceDuration >= minDuration) {
-        regions.push({ start: silenceStart, end: endTime })
-      }
-    }
-
-    // Apply buffer to preserve word endings
-    const bufferedRegions: { start: number; end: number }[] = []
-
-    for (let i = 0; i < regions.length; i++) {
-      const region = regions[i]
-      let bufferedStart = region.start + BUFFER_SECONDS
-      const bufferedEnd = region.end - BUFFER_SECONDS
-
-      // Prevent overlap with previous region
-      if (bufferedRegions.length > 0) {
-        const prevRegion = bufferedRegions[bufferedRegions.length - 1]
-        bufferedStart = Math.max(bufferedStart, prevRegion.end + BUFFER_SECONDS)
-      }
-
-      // Only keep regions that are still long enough after buffering
-      if (bufferedEnd > bufferedStart && bufferedEnd - bufferedStart >= minDuration) {
-        bufferedRegions.push({ start: bufferedStart, end: bufferedEnd })
-      }
-    }
-
-    return bufferedRegions
-  }
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return
-    }
-
-    const adjusterRaw = window.localStorage.getItem("abhi_adjuster_import")
-    if (adjusterRaw) {
-      window.localStorage.removeItem("abhi_adjuster_import")
-      try {
-        const meditation = JSON.parse(adjusterRaw) as SavedMeditation
-        void processAdjusterImport(meditation)
-      } catch (error) {
-        console.error("[v0] Failed to parse adjuster import payload:", error)
-        toast({
-          title: "Import failed",
-          description: "We couldn't read the Adjuster import data.",
-          variant: "destructive",
-        })
-      }
-    }
-
-    const encoderRaw = window.localStorage.getItem("abhi_encoder_import")
-    if (encoderRaw) {
-      window.localStorage.removeItem("abhi_encoder_import")
-      try {
-        const meditation = JSON.parse(encoderRaw) as SavedMeditation
-        void processEncoderImport(meditation)
-      } catch (error) {
-        console.error("[v0] Failed to parse encoder import payload:", error)
-        toast({
-          title: "Import failed",
-          description: "We couldn't read the Encoder import data.",
-          variant: "destructive",
-        })
-      }
-    }
-  }, [processAdjusterImport, processEncoderImport, toast])
+  // Helper function to update event start times in the timeline
+  const updateEventStartTime = useCallback((eventId: string, newStartTime: number) => {
+    setTimelineEvents((prevEvents) =>
+      prevEvents.map((event) => (event.id === eventId ? { ...event, startTime: Math.max(0, newStartTime) } : event)),
+    )
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px]">
@@ -2516,7 +2674,10 @@ export default function Home() {
               <div className="flex justify-center items-center mb-4 space-y-4 flex-row my-[33px]">
                 <div className="flex mx-auto items-center p-1 font-serif text-gray-600 shadow-inner rounded-sm gap-1 w-fit bg-muted">
                   <button
-                    onClick={() => setActiveMode("adjuster")}
+                    onClick={() => {
+                      setActiveMode("adjuster")
+                      setActiveTab("adjuster")
+                    }}
                     className={cn(
                       "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black py-3 tracking-tight text-sm",
                       activeMode === "adjuster" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
@@ -2525,7 +2686,10 @@ export default function Home() {
                     Adjuster
                   </button>
                   <button
-                    onClick={() => setActiveMode("encoder")}
+                    onClick={() => {
+                      setActiveMode("encoder")
+                      setActiveTab("encoder")
+                    }}
                     className={cn(
                       "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm",
                       activeMode === "encoder" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
@@ -2548,7 +2712,7 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
+                  className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                 >
                   <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs">
                     Change the length of your guided meditations. Upload an audio file, set your target duration, and
@@ -2563,7 +2727,7 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-solid text-logo-rose-600 border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
+                  className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                 >
                   <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs pb-1.5">
                     Design custom guided meditations by pairing instructions with sound cues and/or using the recorder,
@@ -2572,11 +2736,6 @@ export default function Home() {
                 </motion.div>
               )}
             </AnimatePresence>
-            {activeMode === "encoder" && isReconstructingImport && (
-              <div className="max-w-2xl mx-auto mb-4 text-center text-xs font-black text-gray-600">
-                Reconstructing timeline from saved audio...
-              </div>
-            )}
             {/* Conditional Rendering based on activeMode */}
             {activeMode === "adjuster" ? (
               // == Length Adjuster UI ==
@@ -2621,6 +2780,14 @@ export default function Home() {
                         className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
                       >
                         Rob Burbea's talks &amp; retreats
+                      </a>
+                      <a
+                        href="https://tasshin.com/guided-meditations/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
+                      >
+                        Tasshin &amp; friend's meditations
                       </a>
                       <a
                         href="https://www.tarabrach.com/guided-meditations/"
@@ -2758,7 +2925,7 @@ export default function Home() {
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
                               <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-[3px]">
-                                <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
+                                <div className="uppercase tracking-wide mb-1 text-gray-600">Content:</div>
                                 <div className="font-black text-gray-600">
                                   {formatTime(audioAnalysis.contentDuration)}
                                 </div>
@@ -2795,24 +2962,31 @@ export default function Home() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="mb-8"
+                  className="mb-6"
                 >
-                  <Tabs defaultValue="basic" className="w-full font-serif font-black">
+                  <Tabs defaultValue={activeTab} className="w-full font-serif font-black">
                     <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted p-1 rounded-sm ">
                       <TabsTrigger
-                        value="basic"
+                        value="adjuster"
+                        onClick={() => {
+                          setActiveMode("adjuster")
+                          setActiveTab("adjuster")
+                        }}
                         className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-[10px] "
                       >
                         Basic Settings
                       </TabsTrigger>
                       <TabsTrigger
-                        value="advanced"
+                        value="encoder"
+                        onClick={() => {
+                          setActiveTab("encoder") // Only change the tab, not the mode
+                        }}
                         className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-[10px] "
                       >
                         Advanced Settings
                       </TabsTrigger>
                     </TabsList>
-                    <TabsContent value="basic" className="mt-0 space-y-6">
+                    <TabsContent value="adjuster" className="mt-0 space-y-6">
                       <div className="grid md:grid-cols-2 gap-6">
                         <Card className="overflow-hidden border-none shadow-lg bg-white ">
                           <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-cyan-500">
@@ -2863,12 +3037,12 @@ export default function Home() {
                                 {silenceThreshold.toFixed(3)}
                               </span>
                             </div>
-                            <div className="text-center text-sm mt-0 text-gray-500">Lower = more sensitive</div>
+                            <div className="text-center mt-0 text-sm text-gray-500">Lower = more sensitive</div>
                           </div>
                         </Card>
                       </div>
                     </TabsContent>
-                    <TabsContent value="advanced" className="mt-0 space-y-6">
+                    <TabsContent value="encoder" className="mt-0 space-y-6">
                       <div className="grid md:grid-cols-2 gap-6 font-serif font-black">
                         <Card className="overflow-hidden border-none shadow-lg bg-white ">
                           <div className="bg-gradient-to-r from-logo-purple-300 to-logo-emerald-500 py-3 px-6 ">
@@ -3094,9 +3268,6 @@ export default function Home() {
                             metadata={{
                               targetDuration,
                               pausesAdjusted,
-                              ...(libraryImportContext?.metadata?.encoderReconstruction
-                                ? { encoderReconstruction: libraryImportContext.metadata.encoderReconstruction }
-                                : {}),
                             }}
                           >
                             <Button className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white">
@@ -3315,7 +3486,7 @@ export default function Home() {
                                                 <Button
                                                   variant="ghost"
                                                   size="sm"
-                                                  className={`flex-1 justify-start rounded-[10px] font-black font-serif text-gray-600 hover:bg-white ${
+                                                  className={`flex-1 justify-start rounded-[10px] font-black font-serif text-gray-600 ${
                                                     isSelected
                                                       ? "bg-white shadow-md border-[3px] border-gray-500 "
                                                       : isSingleSelected
@@ -3408,7 +3579,7 @@ export default function Home() {
                         events={timelineEvents}
                         totalDuration={encoderTotalDuration}
                         onUpdateEvent={updateEventStartTime}
-                        onRemoveEvent={removeTimelineItem}
+                        onRemoveEvent={removeTimelineEvent}
                         onDuplicateEvent={handleDuplicateEvent}
                         selectedInstrument={noteType}
                         playSingleNote={timelinePlaySingleNote}
@@ -3527,7 +3698,6 @@ export default function Home() {
                           metadata={{
                             instructionCount: timelineEvents.length,
                             meditationTitle,
-                            encoderReconstruction: encoderSnapshot,
                           }}
                         >
                           <Button className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white mt-3">
