@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
-import { Alert } from "@/components/ui/alert" // Import Alert component
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert" // Import Alert component
 import {
   AlertTriangle,
   Music2,
@@ -30,7 +30,11 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useToast } from "@/hooks/use-toast"
 import { VisualTimeline } from "@/components/visual-timeline"
 import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFileSize } from "@/lib/utils"
-import { getAudioContext, bufferToWav } from "@/lib/audio-utils" // Import from audio-utils
+import {
+  getAudioContext,
+  bufferToWav,
+  type BufferToWavMetadata,
+} from "@/lib/audio-utils" // Import from audio-utils
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
@@ -837,6 +841,7 @@ export default function Home() {
   const [file, setFile] = useState<File | null>(null)
   const [originalBuffer, setOriginalBuffer] = useState<AudioBuffer | null>(null)
   const [processedBufferState, setProcessedBufferState] = useState<AudioBuffer | null>(null)
+  const [processedAudioMetadata, setProcessedAudioMetadata] = useState<BufferToWavMetadata | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null) // Still needed for Adjuster's specific context management
   const [targetDuration, setTargetDuration] = useState<number>(20)
   const [silenceThreshold, setSilenceThreshold] = useState<number>(0.01)
@@ -892,6 +897,7 @@ export default function Home() {
   const [generationStep, setGenerationStep] = useState<string>("")
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
   const [generatedAudioFileSize, setGeneratedAudioFileSize] = useState<number>(0)
+  const [generatedAudioMetadata, setGeneratedAudioMetadata] = useState<BufferToWavMetadata | null>(null)
 
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
   const [currentTab, setCurrentTab] = useState<string>("instructions")
@@ -909,6 +915,12 @@ export default function Home() {
   const [noteType, setNoteType] = useState<"piano" | "synth" | "harp">("piano")
 
   const totalDuration = timeline.reduce((sum, item) => sum + item.duration, 0)
+  const processedQualityWarning =
+    processedAudioMetadata &&
+    (processedAudioMetadata.bitDepth === 8 || processedAudioMetadata.sampleRate <= 16000)
+  const generatedQualityWarning =
+    generatedAudioMetadata &&
+    (generatedAudioMetadata.bitDepth === 8 || generatedAudioMetadata.sampleRate <= 16000)
 
   const addTimelineItem = useCallback((item: Instruction | SoundCue, type: "instruction" | "sound") => {
     const newItem: TimelineItem = {
@@ -1066,6 +1078,7 @@ export default function Home() {
     setIsGeneratingAudio(true)
     setGenerationProgress(0)
     setGenerationStep("Initializing...")
+    setGeneratedAudioMetadata(null)
 
     try {
       console.log("Starting audio export with events:", timelineEvents)
@@ -1304,16 +1317,18 @@ export default function Home() {
         throw new Error("Rendered audio buffer is empty. No audio content was generated.")
       }
 
-      const wavBlob = await bufferToWav(
-        rendered,
-        compatibilityMode === "high",
-        (p) => setProcessingProgress(90 + Math.floor(p * 0.1)),
-        isMobileDevice,
-      )
-      if (wavBlob.size === 0) {
+      const wavResult = await bufferToWav(rendered, {
+        preferCompatibility: compatibilityMode === "high",
+        maxBytes: 48 * 1024 * 1024,
+        onProgress: (p) => setProcessingProgress(90 + Math.floor((p / 100) * 10)),
+        isMobile: isMobileDevice,
+      })
+      if (wavResult.blob.size === 0) {
         throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
       }
 
+      const { blob: wavBlob, ...metadata } = wavResult
+      setGeneratedAudioMetadata(metadata)
       setGeneratedAudioFileSize(wavBlob.size)
 
       const url = URL.createObjectURL(wavBlob)
@@ -1586,12 +1601,14 @@ export default function Home() {
     setAudioAnalysis(null)
     setActualDuration(null)
     setProcessedBufferState(null)
+    setProcessedAudioMetadata(null)
     setIsProcessingComplete(false)
     setStatus(null)
     setMemoryWarning(false)
     setPausesAdjusted(0)
     setProcessingProgress(0)
     setProcessingStep("Loading audio...")
+    setGeneratedAudioMetadata(null)
 
     if (audioContextRef.current && audioContextRef.current.state === "running") {
       try {
@@ -1751,12 +1768,14 @@ export default function Home() {
         setAudioAnalysis(null)
         setActualDuration(null)
         setProcessedBufferState(null)
+        setProcessedAudioMetadata(null)
         setIsProcessingComplete(false)
         setStatus(null)
         setMemoryWarning(false)
         setPausesAdjusted(0)
         setProcessingProgress(0)
         setProcessingStep("Loading audio...")
+        setGeneratedAudioMetadata(null)
 
         if (audioContextRef.current && audioContextRef.current.state === "running") {
           try {
@@ -1812,6 +1831,7 @@ export default function Home() {
 
         setProcessingStep("Ready to process.")
         setStatus({ message: "Meditation loaded and analyzed. Ready to adjust.", type: "success" })
+        setProcessedAudioMetadata(importData.metadata?.wav ?? null)
       } catch (error) {
         console.error("[v0] Error importing into adjuster:", error)
         setStatus({
@@ -1880,6 +1900,7 @@ export default function Home() {
           message: `Reconstructed "${importData.title}" with ${reconstructedEvents.length} timeline events.`,
           type: "success",
         })
+        setGeneratedAudioMetadata(importData.metadata?.wav ?? null)
       } catch (error) {
         console.error("[v0] Error reconstructing encoder meditation:", error)
         setStatus({
@@ -1960,6 +1981,7 @@ export default function Home() {
 
         setTimelineEvents([recordedEvent])
         setEncoderTotalDuration(importData.duration)
+        setGeneratedAudioMetadata(importData.metadata?.wav ?? null)
         setStatus({
           message: `Imported and analyzed "${importData.title}" - ready to adjust or encode.`,
           type: "success",
@@ -2063,6 +2085,7 @@ export default function Home() {
     setIsProcessing(true)
     setProcessingProgress(0)
     setProcessingStep("Starting processing...")
+    setProcessedAudioMetadata(null)
     if (currentAudioContext.state === "suspended") {
       try {
         await currentAudioContext.resume()
@@ -2123,20 +2146,22 @@ export default function Home() {
       setProcessingStep("Creating download file (step 4/4)...")
       setProcessingProgress(90)
       await sleep(10)
-      const wavBlob = await bufferToWav(
-        processedAudioBuffer,
-        compatibilityMode === "high",
-        (p) => setProcessingProgress(90 + Math.floor(p * 0.1)),
-        isMobileDevice,
-      )
-      if (wavBlob.size === 0) {
+      const wavResult = await bufferToWav(processedAudioBuffer, {
+        preferCompatibility: compatibilityMode === "high",
+        maxBytes: 48 * 1024 * 1024,
+        onProgress: (p) => setProcessingProgress(90 + Math.floor((p / 100) * 10)),
+        isMobile: isMobileDevice,
+      })
+      if (wavResult.blob.size === 0) {
         throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
       }
+      const { blob: wavBlob, ...metadata } = wavResult
       const url = URL.createObjectURL(wavBlob)
       setProcessedUrl(url)
       setActualDuration(processedAudioBuffer.duration)
       setProcessedBufferState(processedAudioBuffer)
       setProcessedFileSize(wavBlob.size)
+      setProcessedAudioMetadata(metadata)
       setProcessingProgress(100)
       setProcessingStep("Complete!")
       setStatus({ message: "Audio processing completed successfully!", type: "success" })
@@ -3252,7 +3277,27 @@ export default function Home() {
                               {(processedFileSize / (1024 * 1024)).toFixed(2)} MB
                             </div>
                           </div>
+                          {processedAudioMetadata && (
+                            <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5 sm:col-span-2">
+                              <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Output Format</div>
+                              <div className="font-black text-sm text-gray-600">
+                                Mono • {processedAudioMetadata.sampleRate.toLocaleString()} Hz • {processedAudioMetadata.bitDepth}
+                                -bit
+                              </div>
+                            </div>
+                          )}
                         </div>
+                        {processedQualityWarning && (
+                          <Alert className="bg-amber-50 border-amber-200 text-amber-700">
+                            <AlertTitle className="font-black text-sm">Reduced quality export</AlertTitle>
+                            <AlertDescription className="text-xs">
+                              Exported audio was downsampled to {processedAudioMetadata?.sampleRate.toLocaleString()} Hz and
+                              {" "}
+                              {processedAudioMetadata?.bitDepth}-bit mono to meet the size cap. Consider shorter sessions for
+                              higher fidelity.
+                            </AlertDescription>
+                          </Alert>
+                        )}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <Button
                             onClick={downloadProcessedAudioAction}
@@ -3268,6 +3313,7 @@ export default function Home() {
                             metadata={{
                               targetDuration,
                               pausesAdjusted,
+                              wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
                             }}
                           >
                             <Button className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white">
@@ -3660,7 +3706,26 @@ export default function Home() {
                               {formatFileSize(generatedAudioFileSize || 0)}
                             </div>
                           </div>
+                          {generatedAudioMetadata && (
+                            <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5 col-span-2">
+                              <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Output Format</div>
+                              <div className="font-black text-sm text-gray-600">
+                                Mono • {generatedAudioMetadata.sampleRate.toLocaleString()} Hz • {generatedAudioMetadata.bitDepth}-bit
+                              </div>
+                            </div>
+                          )}
                         </div>
+                        {generatedQualityWarning && (
+                          <Alert className="bg-amber-50 border-amber-200 text-amber-700 mb-3">
+                            <AlertTitle className="font-black text-sm">Reduced quality export</AlertTitle>
+                            <AlertDescription className="text-xs">
+                              Output audio was downsampled to {generatedAudioMetadata?.sampleRate.toLocaleString()} Hz and
+                              {" "}
+                              {generatedAudioMetadata?.bitDepth}-bit mono to respect the file size limit. Shorter meditations will
+                              export at higher fidelity.
+                            </AlertDescription>
+                          </Alert>
+                        )}
                         <Button
                           className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:shadow-none transition-shadow border-none "
                           onClick={() => {
@@ -3698,6 +3763,7 @@ export default function Home() {
                           metadata={{
                             instructionCount: timelineEvents.length,
                             meditationTitle,
+                            wav: generatedAudioMetadata ? { ...generatedAudioMetadata } : undefined,
                           }}
                         >
                           <Button className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white mt-3">

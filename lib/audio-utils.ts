@@ -31,63 +31,143 @@ export const getAudioContext = (): AudioContext => {
   return Tone.context.rawContext as AudioContext
 }
 
+export interface BufferToWavOptions {
+  maxBytes?: number
+  preferCompatibility?: boolean
+  isMobile?: boolean
+  onProgress?: (progress: number) => void
+}
+
+export interface BufferToWavMetadata {
+  sampleRate: number
+  bitDepth: 8 | 16
+  channels: number
+}
+
+export interface BufferToWavResult extends BufferToWavMetadata {
+  blob: Blob
+}
+
 export const bufferToWav = async (
   buffer: AudioBuffer,
-  highCompatibility = true,
-  onProgress: (progress: number) => void,
-  isMobileDevice: boolean,
-): Promise<Blob> => {
+  {
+    maxBytes = Number.POSITIVE_INFINITY,
+    preferCompatibility = true,
+    isMobile = false,
+    onProgress = () => {},
+  }: BufferToWavOptions = {},
+): Promise<BufferToWavResult> => {
   const currentAudioContext = Tone.context.rawContext as AudioContext
   if (!currentAudioContext) throw new Error("Audio context not available for WAV conversion")
+
   onProgress(0)
 
-  let targetSampleRate = highCompatibility ? 44100 : buffer.sampleRate
-  if (isMobileDevice && highCompatibility && buffer.duration > 15 * 60) {
-    targetSampleRate = Math.min(targetSampleRate, 22050)
+  const candidateRates = (() => {
+    const base = preferCompatibility
+      ? [44100, 32000, 22050, 16000, 12000, 11025, 8000]
+      : [buffer.sampleRate, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000]
+
+    const normalized = base
+      .map((rate) => Math.max(1, Math.round(rate)))
+      .map((rate) => {
+        if (buffer.sampleRate <= 0) return rate
+        return rate > buffer.sampleRate ? buffer.sampleRate : rate
+      })
+
+    const unique = Array.from(new Set(normalized)).sort((a, b) => b - a)
+    if (!unique.length) {
+      return [buffer.sampleRate || 44100]
+    }
+    return unique
+  })()
+
+  const bitDepths: Array<8 | 16> = [16, 8]
+
+  const monoBuffer = await (async () => {
+    if (buffer.numberOfChannels === 1) {
+      return buffer
+    }
+
+    const mono = currentAudioContext.createBuffer(1, buffer.length, buffer.sampleRate)
+    const output = mono.getChannelData(0)
+    const totalChannels = buffer.numberOfChannels
+    for (let i = 0; i < buffer.length; i++) {
+      if (i % (buffer.sampleRate * (isMobile ? 1 : 2)) === 0) {
+        await sleep(0)
+        onProgress(Math.min(10, Math.floor((i / buffer.length) * 10)))
+      }
+      let sum = 0
+      for (let channel = 0; channel < totalChannels; channel++) {
+        sum += buffer.getChannelData(channel)[i]
+      }
+      output[i] = sum / totalChannels
+    }
+    return mono
+  })()
+
+  onProgress(10)
+
+  let selectedSampleRate = monoBuffer.sampleRate
+  let selectedBitDepth: 8 | 16 = 16
+  let estimatedSize = 44 + monoBuffer.length * (selectedBitDepth / 8)
+  let foundCombination = false
+
+  outer: for (const depth of bitDepths) {
+    for (const rate of candidateRates) {
+      const ratio = rate / monoBuffer.sampleRate
+      const estimatedSamples = Math.max(1, Math.floor(monoBuffer.length * ratio))
+      const bytesPerSample = depth / 8
+      const estimate = 44 + estimatedSamples * bytesPerSample
+
+      if (estimate <= maxBytes) {
+        selectedSampleRate = rate
+        selectedBitDepth = depth
+        estimatedSize = estimate
+        foundCombination = true
+        break outer
+      }
+    }
   }
 
-  let resampledBuffer = buffer
-  if (buffer.sampleRate !== targetSampleRate) {
-    const ratio = targetSampleRate / buffer.sampleRate
-    const newLength = Math.floor(buffer.length * ratio)
+  if (!foundCombination && estimatedSize > maxBytes) {
+    throw new Error(
+      `Unable to fit WAV under ${formatFileSize(maxBytes)} even at ${candidateRates.at(-1) || monoBuffer.sampleRate}Hz / 8-bit.`,
+    )
+  }
+
+  let resampledBuffer = monoBuffer
+  if (monoBuffer.sampleRate !== selectedSampleRate) {
+    const ratio = selectedSampleRate / monoBuffer.sampleRate
+    const newLength = Math.max(1, Math.floor(monoBuffer.length * ratio))
     try {
-      resampledBuffer = currentAudioContext.createBuffer(buffer.numberOfChannels, newLength, targetSampleRate)
+      resampledBuffer = currentAudioContext.createBuffer(1, newLength, selectedSampleRate)
     } catch (e) {
-      // forceGarbageCollection() // This should be handled by the caller if needed
       throw new Error(
-        `Failed to create resample buffer (target SR: ${targetSampleRate}Hz). Memory limit likely exceeded.`,
+        `Failed to create resample buffer (target SR: ${selectedSampleRate}Hz). Memory limit likely exceeded.`,
       )
     }
-    onProgress(10)
-    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-      const oldData = buffer.getChannelData(channel)
-      const newData = resampledBuffer.getChannelData(channel)
-      for (let i = 0; i < newLength; i++) {
-        if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
-          await sleep(0)
-          onProgress(
-            10 +
-              Math.floor(
-                ((channel * (newLength / buffer.numberOfChannels) + i) / (newLength * buffer.numberOfChannels)) * 40,
-              ),
-          )
-        }
-        const oldIndex = i / ratio
-        const index = Math.floor(oldIndex)
-        const frac = oldIndex - index
-        const samp1 = oldData[Math.min(index, oldData.length - 1)]
-        const samp2 = oldData[Math.min(index + 1, oldData.length - 1)]
-        newData[i] = samp1 + (samp2 - samp1) * frac
+    onProgress(15)
+    const oldData = monoBuffer.getChannelData(0)
+    const newData = resampledBuffer.getChannelData(0)
+    for (let i = 0; i < newLength; i++) {
+      if (i % (selectedSampleRate * (isMobile ? 1 : 2)) === 0) {
+        await sleep(0)
+        onProgress(15 + Math.floor((i / newLength) * 35))
       }
+      const oldIndex = i / ratio
+      const index = Math.floor(oldIndex)
+      const frac = oldIndex - index
+      const samp1 = oldData[Math.min(index, oldData.length - 1)]
+      const samp2 = oldData[Math.min(index + 1, oldData.length - 1)]
+      newData[i] = samp1 + (samp2 - samp1) * frac
     }
   } else {
     onProgress(50)
   }
 
   const numSamples = resampledBuffer.length
-  const numberOfChannels = resampledBuffer.numberOfChannels
-  const bytesPerSample = 2
-  const dataSize = numSamples * numberOfChannels * bytesPerSample
+  const bytesPerSample = selectedBitDepth / 8
+  const dataSize = numSamples * bytesPerSample
   const fileSize = 44 + dataSize
 
   let finalArrayBuffer: ArrayBuffer
@@ -98,6 +178,7 @@ export const bufferToWav = async (
       `Failed to create WAV data buffer (size: ${formatFileSize(fileSize)}). Memory limit likely exceeded.`,
     )
   }
+
   const view = new DataView(finalArrayBuffer)
 
   const writeString = (offset: number, string: string) => {
@@ -110,26 +191,41 @@ export const bufferToWav = async (
   writeString(12, "fmt ")
   view.setUint32(16, 16, true)
   view.setUint16(20, 1, true)
-  view.setUint16(22, numberOfChannels, true)
-  view.setUint32(24, targetSampleRate, true)
-  view.setUint32(28, targetSampleRate * numberOfChannels * bytesPerSample, true)
-  view.setUint16(32, numberOfChannels * bytesPerSample, true)
-  view.setUint16(34, 16, true)
+  view.setUint16(22, 1, true)
+  view.setUint32(24, selectedSampleRate, true)
+  view.setUint32(28, selectedSampleRate * bytesPerSample, true)
+  view.setUint16(32, bytesPerSample, true)
+  view.setUint16(34, selectedBitDepth, true)
   writeString(36, "data")
   view.setUint32(40, dataSize, true)
 
+  const channelData = resampledBuffer.getChannelData(0)
   let offset = 44
   for (let i = 0; i < numSamples; i++) {
-    if (i % (targetSampleRate * (isMobileDevice ? 1 : 2)) === 0) {
+    if (i % (selectedSampleRate * (isMobile ? 1 : 2)) === 0) {
       await sleep(0)
       onProgress(50 + Math.floor((i / numSamples) * 50))
     }
-    for (let channel = 0; channel < numberOfChannels; channel++) {
-      const sample = Math.max(-1, Math.min(1, resampledBuffer.getChannelData(channel)[i]))
+    const sample = Math.max(-1, Math.min(1, channelData[i]))
+    if (selectedBitDepth === 16) {
       view.setInt16(offset, sample * 0x7fff, true)
-      offset += bytesPerSample
+    } else {
+      const intSample = Math.max(0, Math.min(255, Math.round((sample + 1) * 127.5)))
+      view.setUint8(offset, intSample)
     }
+    offset += bytesPerSample
   }
+
   onProgress(100)
-  return new Blob([finalArrayBuffer], { type: "audio/wav" })
+
+  const metadata: BufferToWavMetadata = {
+    sampleRate: selectedSampleRate,
+    bitDepth: selectedBitDepth,
+    channels: 1,
+  }
+
+  return {
+    ...metadata,
+    blob: new Blob([finalArrayBuffer], { type: "audio/wav" }),
+  }
 }

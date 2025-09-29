@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client"
+import type { BufferToWavMetadata } from "./audio-utils"
 
 export interface SavedMeditation {
   id: string
@@ -15,6 +16,8 @@ export interface SavedMeditation {
     // For encoder meditations
     instructionCount?: number
     soundCuesUsed?: string[]
+    // Shared audio export metadata
+    wav?: BufferToWavMetadata
   }
 }
 
