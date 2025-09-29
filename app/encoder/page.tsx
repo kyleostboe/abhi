@@ -9,6 +9,8 @@ import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
 import { BookmarkPlus } from "lucide-react"
 import type { SpeechRecognition } from "web-speech-api"
 import * as Tone from "tone"
+import { bufferToWav, type BufferToWavMetadata } from "@/lib/audio-utils"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 interface Instruction {
   id: string
@@ -75,6 +77,7 @@ export default function EncoderPage() {
   const [isEncoding, setIsEncoding] = useState<boolean>(false)
   const [encodingProgress, setEncodingProgress] = useState(0)
   const [encodedAudioUrl, setEncodedAudioUrl] = useState<string>("")
+  const [encodedAudioMetadata, setEncodedAudioMetadata] = useState<BufferToWavMetadata | null>(null)
   const [status, setStatus] = useState<{ message: string; type: "info" | "success" | "error" } | null>(null)
   const [fullTranscript, setFullTranscript] = useState<string>("")
   const [isListening, setIsListening] = useState(false)
@@ -90,6 +93,10 @@ export default function EncoderPage() {
   const audioRef = useRef<HTMLAudioElement>(null)
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const originalAudioBufferRef = useRef<AudioBuffer | null>(null)
+
+  const encodedQualityWarning =
+    encodedAudioMetadata &&
+    (encodedAudioMetadata.bitDepth === 8 || encodedAudioMetadata.sampleRate <= 16000)
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -573,48 +580,13 @@ export default function EncoderPage() {
     Tone.setContext(audioCtx)
 
     // Convert to WAV blob
-    const wavBlob = await bufferToWav(renderedBuffer)
-    return URL.createObjectURL(wavBlob)
-  }
-
-  // Helper function to convert AudioBuffer to WAV blob
-  const bufferToWav = async (buffer: AudioBuffer): Promise<Blob> => {
-    const length = buffer.length
-    const numberOfChannels = buffer.numberOfChannels
-    const sampleRate = buffer.sampleRate
-    const arrayBuffer = new ArrayBuffer(44 + length * numberOfChannels * 2)
-    const view = new DataView(arrayBuffer)
-
-    const writeString = (offset: number, string: string) => {
-      for (let i = 0; i < string.length; i++) {
-        view.setUint8(offset + i, string.charCodeAt(i))
-      }
-    }
-
-    writeString(0, "RIFF")
-    view.setUint32(4, 36 + length * numberOfChannels * 2, true)
-    writeString(8, "WAVE")
-    writeString(12, "fmt ")
-    view.setUint32(16, 16, true)
-    view.setUint16(20, 1, true)
-    view.setUint16(22, numberOfChannels, true)
-    view.setUint32(24, sampleRate, true)
-    view.setUint32(28, sampleRate * numberOfChannels * 2, true)
-    view.setUint16(32, numberOfChannels * 2, true)
-    view.setUint16(34, 16, true)
-    writeString(36, "data")
-    view.setUint32(40, length * numberOfChannels * 2, true)
-
-    let offset = 44
-    for (let i = 0; i < length; i++) {
-      for (let channel = 0; channel < numberOfChannels; channel++) {
-        const sample = Math.max(-1, Math.min(1, buffer.getChannelData(channel)[i]))
-        view.setInt16(offset, sample * 0x7fff, true)
-        offset += 2
-      }
-    }
-
-    return new Blob([arrayBuffer], { type: "audio/wav" })
+    const wavResult = await bufferToWav(renderedBuffer, {
+      preferCompatibility: true,
+      maxBytes: 48 * 1024 * 1024,
+    })
+    const { blob, ...metadata } = wavResult
+    setEncodedAudioMetadata(metadata)
+    return URL.createObjectURL(blob)
   }
 
   const handleEncoding = async () => {
@@ -626,6 +598,7 @@ export default function EncoderPage() {
     setIsEncoding(true)
     setEncodingProgress(0)
     setStatus({ message: "Encoding audio with sound cues...", type: "info" })
+    setEncodedAudioMetadata(null)
 
     try {
       const progressInterval = setInterval(() => {
@@ -689,6 +662,7 @@ export default function EncoderPage() {
       const audioBuffer = await audioContextRef.current!.decodeAudioData(arrayBuffer)
       originalAudioBufferRef.current = audioBuffer
       setAudioDuration(audioBuffer.duration)
+      setEncodedAudioMetadata(importData.metadata?.wav ?? null)
 
       if (importData.source === "encoder" && !importData.crossToolOpening) {
         // Reconstruct original cues/recordings structure
@@ -979,6 +953,7 @@ export default function EncoderPage() {
                     metadata={{
                       instructionCount: mappedInstructions.length,
                       soundCuesUsed: [...new Set(mappedInstructions.map((instr) => instr.soundId))],
+                      wav: encodedAudioMetadata ? { ...encodedAudioMetadata } : undefined,
                     }}
                   >
                     <Button className="flex-1 bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white">
@@ -994,7 +969,25 @@ export default function EncoderPage() {
                   <p>
                     <strong>Duration:</strong> {formatTime(audioDuration)}
                   </p>
+                  {encodedAudioMetadata && (
+                    <p>
+                      <strong>Output Format:</strong> Mono • {encodedAudioMetadata.sampleRate.toLocaleString()} Hz •
+                      {" "}
+                      {encodedAudioMetadata.bitDepth}-bit
+                    </p>
+                  )}
                 </div>
+                {encodedQualityWarning && (
+                  <Alert className="bg-amber-50 border-amber-200 text-amber-700 text-sm">
+                    <AlertTitle className="font-semibold text-sm">Reduced quality export</AlertTitle>
+                    <AlertDescription className="text-xs">
+                      The encoded audio was compressed to {encodedAudioMetadata?.sampleRate.toLocaleString()} Hz and
+                      {" "}
+                      {encodedAudioMetadata?.bitDepth}-bit mono to stay under the 48 MiB limit. Shorter sessions will keep higher
+                      fidelity.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
             </Card>
           )}
