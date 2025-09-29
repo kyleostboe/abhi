@@ -278,11 +278,19 @@ export default function LibraryPage() {
     // Determine target tool - use parameter if provided, otherwise use original logic
     const targetTool = tool || (selectedMeditation.source === "adjuster" ? "adjuster" : "encoder")
 
+    const audioUrlToUse = selectedMeditation.sourceAudioUrl || selectedMeditation.processedAudioUrl
+
+    console.log("[v0] Opening meditation in tool:", {
+      tool: targetTool,
+      hasSourceAudio: !!selectedMeditation.sourceAudioUrl,
+      usingSourceAudio: audioUrlToUse === selectedMeditation.sourceAudioUrl,
+    })
+
     const payload = {
       id: selectedMeditation.id,
       title: selectedMeditation.title,
       originalFileName: selectedMeditation.originalFileName,
-      processedAudioUrl: selectedMeditation.processedAudioUrl,
+      processedAudioUrl: audioUrlToUse, // Use high-quality source for re-adjustment
       duration: selectedMeditation.duration,
       source: selectedMeditation.source,
       metadata: selectedMeditation.metadata,
@@ -294,7 +302,7 @@ export default function LibraryPage() {
         localStorage.setItem("abhi_adjuster_import", JSON.stringify(payload))
         toast({
           title: "Opening Adjuster",
-          description: `"${selectedMeditation.title}" will load in the Adjuster tool.`,
+          description: `"${selectedMeditation.title}" will load in the Adjuster tool${selectedMeditation.sourceAudioUrl ? " (using high-quality source)" : ""}.`,
         })
         setIsPlayerOpen(false)
         router.push("/#adjuster")
@@ -302,7 +310,7 @@ export default function LibraryPage() {
         localStorage.setItem("abhi_encoder_import", JSON.stringify(payload))
         toast({
           title: "Opening Encoder",
-          description: `"${selectedMeditation.title}" will load in the Encoder tool.`,
+          description: `"${selectedMeditation.title}" will load in the Encoder tool${selectedMeditation.sourceAudioUrl ? " (using high-quality source)" : ""}.`,
         })
         setIsPlayerOpen(false)
         router.push("/#encoder")
