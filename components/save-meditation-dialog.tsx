@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
-import { bufferToWav } from "@/lib/audio-utils"
+import { bufferToMp3 } from "@/lib/audio-utils"
 import { BookmarkPlus, Plus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
@@ -104,100 +104,38 @@ export function SaveMeditationDialog({
       let processedBlob = audioBlob
       let processedDuration = duration
 
-      if (audioBlob.size > maxSizeBytes) {
-        let audioContext: AudioContext | null = null
-        try {
-          audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-          const arrayBuffer = await audioBlob.arrayBuffer()
-          const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer)
+      let audioContext: AudioContext | null = null
+      try {
+        audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+        const arrayBuffer = await audioBlob.arrayBuffer()
+        const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer)
 
-          const toMono = (buffer: AudioBuffer) => {
-            if (buffer.numberOfChannels === 1) {
-              return buffer
-            }
+        console.log("[v0] Starting MP3 encoding...")
+        const mp3Result = await bufferToMp3(decodedBuffer, {
+          bitrate: 96, // 96kbps is great for voice, smaller files
+          onProgress: (progress) => {
+            console.log(`[v0] MP3 encoding progress: ${Math.round(progress)}%`)
+          },
+        })
 
-            const monoBuffer = new AudioBuffer({
-              length: buffer.length,
-              sampleRate: buffer.sampleRate,
-              numberOfChannels: 1,
-            })
-            const output = monoBuffer.getChannelData(0)
-            for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-              const channelData = buffer.getChannelData(channel)
-              for (let i = 0; i < buffer.length; i++) {
-                output[i] += channelData[i] / buffer.numberOfChannels
-              }
-            }
-            return monoBuffer
-          }
+        processedBlob = mp3Result.blob
+        processedDuration = decodedBuffer.duration
 
-          const renderAtSampleRate = async (buffer: AudioBuffer, targetSampleRate: number) => {
-            if (buffer.sampleRate === targetSampleRate) {
-              return buffer
-            }
-            const offlineContext = new OfflineAudioContext(1, Math.ceil(buffer.duration * targetSampleRate), targetSampleRate)
-            const sourceNode = offlineContext.createBufferSource()
-            sourceNode.buffer = buffer
-            sourceNode.connect(offlineContext.destination)
-            sourceNode.start(0)
-            return offlineContext.startRendering()
-          }
+        console.log(
+          `[v0] MP3 encoding complete. Original: ${Math.round(audioBlob.size / 1024 / 1024)}MB, Compressed: ${Math.round(mp3Result.blob.size / 1024 / 1024)}MB`,
+        )
 
-          const monoBuffer = toMono(decodedBuffer)
-          const candidateRates = [
-            monoBuffer.sampleRate,
-            44100,
-            32000,
-            24000,
-            22050,
-            16000,
-            12000,
-            11025,
-            8000,
-          ]
-            .filter((rate) => rate > 0 && rate <= monoBuffer.sampleRate)
-            .filter((rate, index, arr) => arr.indexOf(rate) === index)
-            .sort((a, b) => b - a)
-
-          const isMobileDevice = typeof navigator !== "undefined" && /Mobi|Android/i.test(navigator.userAgent)
-
-          let compressionSucceeded = false
-          let helperError: Error | null = null
-          let lastAttemptSize = audioBlob.size
-
-          for (const rate of candidateRates) {
-            try {
-              const renderedBuffer = await renderAtSampleRate(monoBuffer, rate)
-              const wavBlob = await bufferToWav(renderedBuffer, false, () => {}, isMobileDevice)
-
-              if (wavBlob.size <= maxSizeBytes) {
-                processedBlob = wavBlob
-                processedDuration = renderedBuffer.duration
-                compressionSucceeded = true
-                break
-              }
-              lastAttemptSize = wavBlob.size
-            } catch (error) {
-              helperError = error instanceof Error ? error : new Error("Unable to finalize WAV conversion.")
-              break
-            }
-          }
-
-          if (!compressionSucceeded) {
-            if (helperError) {
-              throw helperError
-            }
-            throw new Error(
-              `File too large (${Math.round(lastAttemptSize / 1024 / 1024)}MB). Unable to reduce below the 48MB library limit.`,
-            )
-          }
-        } finally {
-          if (audioContext) {
-            try {
-              await audioContext.close()
-            } catch (closeError) {
-              console.warn("[v0] Error closing audio context:", closeError)
-            }
+        if (mp3Result.blob.size > maxSizeBytes) {
+          throw new Error(
+            `File too large (${Math.round(mp3Result.blob.size / 1024 / 1024)}MB) even after MP3 compression. Unable to reduce below the 48MB library limit.`,
+          )
+        }
+      } finally {
+        if (audioContext) {
+          try {
+            await audioContext.close()
+          } catch (closeError) {
+            console.warn("[v0] Error closing audio context:", closeError)
           }
         }
       }

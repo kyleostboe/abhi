@@ -1,5 +1,6 @@
 import * as Tone from "tone"
 import { sleep, formatFileSize } from "./utils"
+import type { BufferToMp3Options as Mp3EncoderOptions } from "./workers/mp3-encoder.worker.ts"
 
 // Initialize Tone.js
 export const initializeTone = async (): Promise<void> => {
@@ -228,4 +229,84 @@ export const bufferToWav = async (
     ...metadata,
     blob: new Blob([finalArrayBuffer], { type: "audio/wav" }),
   }
+}
+
+export interface Mp3EncoderMetadata {
+  sampleRate: number
+  bitrate: number
+  channels: number
+}
+
+/**
+ * Convert AudioBuffer to MP3 using lamejs encoder
+ * Uses Web Worker for background processing to avoid blocking UI
+ */
+export const bufferToMp3 = async (
+  buffer: AudioBuffer,
+  { bitrate = 96, onProgress = () => {} }: Mp3EncoderOptions = {},
+): Promise<{ blob: Blob; sampleRate: number; bitrate: number; channels: number }> => {
+  onProgress(0)
+
+  const monoBuffer = await (async () => {
+    if (buffer.numberOfChannels === 1) {
+      return buffer
+    }
+
+    const currentAudioContext = Tone.context.rawContext as AudioContext
+    const mono = currentAudioContext.createBuffer(1, buffer.length, buffer.sampleRate)
+    const output = mono.getChannelData(0)
+    const totalChannels = buffer.numberOfChannels
+
+    for (let i = 0; i < buffer.length; i++) {
+      if (i % (buffer.sampleRate * 2) === 0) {
+        await sleep(0)
+        onProgress(Math.min(10, Math.floor((i / buffer.length) * 10)))
+      }
+      let sum = 0
+      for (let channel = 0; channel < totalChannels; channel++) {
+        sum += buffer.getChannelData(channel)[i]
+      }
+      output[i] = sum / totalChannels
+    }
+    return mono
+  })()
+
+  onProgress(10)
+
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL("../workers/mp3-encoder.worker.ts", import.meta.url))
+
+    const channelData = monoBuffer.getChannelData(0)
+
+    worker.onmessage = (e) => {
+      if (e.data.type === "progress") {
+        onProgress(10 + Math.floor(e.data.progress * 0.9))
+      } else if (e.data.type === "complete") {
+        const mp3Blob = new Blob(e.data.mp3Data, { type: "audio/mp3" })
+        worker.terminate()
+        onProgress(100)
+        resolve({
+          blob: mp3Blob,
+          sampleRate: monoBuffer.sampleRate,
+          bitrate,
+          channels: 1,
+        })
+      } else if (e.data.type === "error") {
+        worker.terminate()
+        reject(new Error(e.data.message))
+      }
+    }
+
+    worker.onerror = (error) => {
+      worker.terminate()
+      reject(error)
+    }
+
+    // Send audio data to worker
+    worker.postMessage({
+      channelData: Array.from(channelData),
+      sampleRate: monoBuffer.sampleRate,
+      bitrate,
+    })
+  })
 }
