@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
+import { bufferToWav } from "@/lib/audio-utils"
 import { BookmarkPlus, Plus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
@@ -75,15 +76,7 @@ export function SaveMeditationDialog({
       return
     }
 
-    console.log("[v0] Save button clicked - starting save process...")
-    console.log("[v0] Audio URL exists:", !!audioUrl)
-    console.log("[v0] Title:", title.trim())
-    console.log("[v0] Duration:", duration)
-    console.log("[v0] Source:", source)
-    console.log("[v0] Metadata:", metadata)
-
     if (!title.trim()) {
-      console.log("[v0] Save failed: No title provided")
       toast({
         title: "Title required",
         description: "Please enter a title for your meditation.",
@@ -93,7 +86,6 @@ export function SaveMeditationDialog({
     }
 
     if (!audioUrl) {
-      console.log("[v0] Save failed: No audio URL provided")
       toast({
         title: "No audio to save",
         description: "There's no processed audio to save.",
@@ -105,148 +97,161 @@ export function SaveMeditationDialog({
     setIsSaving(true)
 
     try {
-      console.log("[v0] Starting enhanced audio compression...")
-
       const response = await fetch(audioUrl)
       const audioBlob = await response.blob()
-      const originalSize = audioBlob.size
-      console.log("[v0] Original audio size:", originalSize, "bytes")
-
+      const maxSizeBytes = 48 * 1024 * 1024
+      const metadataForSave: Record<string, unknown> = { ...metadata }
       let processedBlob = audioBlob
+      let processedDuration = duration
 
-      let audioContext: AudioContext | null = null
-      try {
-        audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-        const arrayBuffer = await audioBlob.arrayBuffer()
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+      if (audioBlob.size > maxSizeBytes) {
+        let audioContext: AudioContext | null = null
+        try {
+          audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+          const arrayBuffer = await audioBlob.arrayBuffer()
+          const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer)
 
-        // Determine compression level based on original size
-        let targetSampleRate: number
-        let targetBitDepth: number
+          const toMono = (buffer: AudioBuffer) => {
+            if (buffer.numberOfChannels === 1) {
+              return buffer
+            }
 
-        if (originalSize > 100 * 1024 * 1024) {
-          // > 100MB
-          targetSampleRate = 8000 // Very aggressive
-          targetBitDepth = 8
-        } else if (originalSize > 75 * 1024 * 1024) {
-          // > 75MB
-          targetSampleRate = 11025 // Aggressive
-          targetBitDepth = 8
-        } else if (originalSize > 50 * 1024 * 1024) {
-          // > 50MB
-          targetSampleRate = 16000 // Moderate
-          targetBitDepth = 8
-        } else {
-          targetSampleRate = 22050 // Light compression
-          targetBitDepth = 16
-        }
+            const monoBuffer = new AudioBuffer({
+              length: buffer.length,
+              sampleRate: buffer.sampleRate,
+              numberOfChannels: 1,
+            })
+            const output = monoBuffer.getChannelData(0)
+            for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+              const channelData = buffer.getChannelData(channel)
+              for (let i = 0; i < buffer.length; i++) {
+                output[i] += channelData[i] / buffer.numberOfChannels
+              }
+            }
+            return monoBuffer
+          }
 
-        console.log(`[v0] Applying compression: ${targetSampleRate}Hz, ${targetBitDepth}-bit`)
+          const renderAtSampleRate = async (buffer: AudioBuffer, targetSampleRate: number) => {
+            if (buffer.sampleRate === targetSampleRate) {
+              return buffer
+            }
+            const offlineContext = new OfflineAudioContext(1, Math.ceil(buffer.duration * targetSampleRate), targetSampleRate)
+            const sourceNode = offlineContext.createBufferSource()
+            sourceNode.buffer = buffer
+            sourceNode.connect(offlineContext.destination)
+            sourceNode.start(0)
+            return offlineContext.startRendering()
+          }
 
-        const channels = 1 // Force mono for maximum compression
-        const length = Math.floor((audioBuffer.length * targetSampleRate) / audioBuffer.sampleRate)
-        const offlineContext = new OfflineAudioContext(channels, length, targetSampleRate)
+          const monoBuffer = toMono(decodedBuffer)
+          const candidateRates = [
+            monoBuffer.sampleRate,
+            44100,
+            32000,
+            24000,
+            22050,
+            16000,
+            12000,
+            11025,
+            8000,
+          ]
+            .filter((rate) => rate > 0 && rate <= monoBuffer.sampleRate)
+            .filter((rate, index, arr) => arr.indexOf(rate) === index)
+            .sort((a, b) => b - a)
 
-        const sourceNode = offlineContext.createBufferSource()
-        sourceNode.buffer = audioBuffer
-        sourceNode.connect(offlineContext.destination)
-        sourceNode.start()
+          const isMobileDevice = typeof navigator !== "undefined" && /Mobi|Android/i.test(navigator.userAgent)
 
-        const compressedBuffer = await offlineContext.startRendering()
-        const compressedBlob = await audioBufferToWav(compressedBuffer, targetBitDepth)
+          let compressionSucceeded = false
+          let helperError: Error | null = null
+          let lastAttemptSize = audioBlob.size
 
-        console.log("[v0] Compressed from", originalSize, "to", compressedBlob.size, "bytes")
+          for (const rate of candidateRates) {
+            try {
+              const renderedBuffer = await renderAtSampleRate(monoBuffer, rate)
+              const wavBlob = await bufferToWav(renderedBuffer, false, () => {}, isMobileDevice)
 
-        // If still too large, apply additional compression
-        if (compressedBlob.size > 45 * 1024 * 1024) {
-          // Leave 5MB buffer under 50MB limit
-          console.log("[v0] File still too large, applying additional compression...")
+              if (wavBlob.size <= maxSizeBytes) {
+                processedBlob = wavBlob
+                processedDuration = renderedBuffer.duration
+                compressionSucceeded = true
+                break
+              }
+              lastAttemptSize = wavBlob.size
+            } catch (error) {
+              helperError = error instanceof Error ? error : new Error("Unable to finalize WAV conversion.")
+              break
+            }
+          }
 
-          // Try even more aggressive settings
-          const ultraLength = Math.floor(length * 0.8) // Reduce length by 20%
-          const ultraContext = new OfflineAudioContext(1, ultraLength, 8000)
-
-          const ultraSource = ultraContext.createBufferSource()
-          ultraSource.buffer = compressedBuffer
-          ultraSource.connect(ultraContext.destination)
-          ultraSource.start()
-
-          const ultraCompressed = await ultraContext.startRendering()
-          const ultraBlob = await audioBufferToWav(ultraCompressed, 8)
-
-          console.log("[v0] Ultra-compressed to", ultraBlob.size, "bytes")
-          processedBlob = ultraBlob
-        } else {
-          processedBlob = compressedBlob
-        }
-
-        // Final check - if still too large, reject with helpful message
-        if (processedBlob.size > 48 * 1024 * 1024) {
-          // 48MB hard limit
-          throw new Error(
-            `File too large (${Math.round(processedBlob.size / 1024 / 1024)}MB). Maximum size is 48MB. Try processing a shorter meditation or contact support for larger file limits.`,
-          )
-        }
-      } catch (compressionError) {
-        console.log("[v0] Compression failed:", compressionError)
-        if (compressionError instanceof Error && compressionError.message.includes("File too large")) {
-          throw compressionError // Re-throw size limit errors
-        }
-        console.log("[v0] Using original file due to compression failure")
-
-        // Check if original is too large
-        if (originalSize > 48 * 1024 * 1024) {
-          throw new Error(
-            `Original file too large (${Math.round(originalSize / 1024 / 1024)}MB). Maximum size is 48MB.`,
-          )
-        }
-      } finally {
-        if (audioContext) {
-          try {
-            await audioContext.close()
-          } catch (closeError) {
-            console.log("[v0] Error closing audio context:", closeError)
+          if (!compressionSucceeded) {
+            if (helperError) {
+              throw helperError
+            }
+            throw new Error(
+              `File too large (${Math.round(lastAttemptSize / 1024 / 1024)}MB). Unable to reduce below the 48MB library limit.`,
+            )
+          }
+        } finally {
+          if (audioContext) {
+            try {
+              await audioContext.close()
+            } catch (closeError) {
+              console.warn("[v0] Error closing audio context:", closeError)
+            }
           }
         }
+      }
+
+      if (typeof metadataForSave.duration === "number") {
+        metadataForSave.duration = processedDuration
+      }
+      if (typeof metadataForSave.durationSeconds === "number") {
+        metadataForSave.durationSeconds = processedDuration
+      }
+      if (typeof metadataForSave.durationMs === "number") {
+        metadataForSave.durationMs = processedDuration * 1000
+      }
+      if (typeof metadataForSave.fileSize === "number") {
+        metadataForSave.fileSize = processedBlob.size
+      }
+      if (typeof metadataForSave.size === "number") {
+        metadataForSave.size = processedBlob.size
+      }
+      if (typeof metadataForSave.blobSize === "number") {
+        metadataForSave.blobSize = processedBlob.size
       }
 
       let processedBlobUrl: string | null = null
       try {
         processedBlobUrl = URL.createObjectURL(processedBlob)
-        console.log("[v0] Attempting to save meditation via MeditationLibrary")
 
         const savedMeditation = await MeditationLibrary.saveMeditation({
           title: title.trim(),
           originalFileName,
           processedAudioUrl: processedBlobUrl,
-          duration,
+          duration: processedDuration,
           source,
-          metadata,
+          metadata: metadataForSave as SavedMeditation["metadata"],
         })
 
         let playlistId = selectedPlaylist
         if (showNewPlaylist && newPlaylistName.trim()) {
-          console.log("[v0] Creating new playlist:", newPlaylistName.trim())
           const newPlaylist = await MeditationLibrary.createPlaylist(
             newPlaylistName.trim(),
             newPlaylistDescription.trim(),
           )
           playlistId = newPlaylist.id
-          console.log("[v0] New playlist created with ID:", newPlaylist.id)
         }
 
         if (playlistId) {
-          console.log("[v0] Adding meditation to playlist:", playlistId)
           await MeditationLibrary.addToPlaylist(playlistId, savedMeditation.id)
-          console.log("[v0] Added to playlist successfully")
         }
 
         await loadPlaylists()
 
-        console.log("[v0] Save process completed successfully")
         toast({
-          title: "Meditation saved!",
-          description: `"${title}" has been added to your library.`,
+          title: "Meditation saved",
+          description: `"${title.trim()}" is now available in your library.`,
         })
 
         const baseTitle = metadataTitle || originalFileName
@@ -265,65 +270,12 @@ export function SaveMeditationDialog({
       console.error("[v0] Save failed with error:", error)
       toast({
         title: "Save failed",
-        description: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        description: error instanceof Error ? error.message : "An unknown error occurred while saving your meditation.",
         variant: "destructive",
       })
     } finally {
       setIsSaving(false)
     }
-  }
-
-  const audioBufferToWav = async (buffer: AudioBuffer, bitDepth = 16): Promise<Blob> => {
-    const length = buffer.length
-    const sampleRate = buffer.sampleRate
-    const channels = buffer.numberOfChannels
-    const bytesPerSample = bitDepth / 8
-
-    const arrayBuffer = new ArrayBuffer(44 + length * channels * bytesPerSample)
-    const view = new DataView(arrayBuffer)
-
-    // WAV header
-    const writeString = (offset: number, string: string) => {
-      for (let i = 0; i < string.length; i++) {
-        view.setUint8(offset + i, string.charCodeAt(i))
-      }
-    }
-
-    writeString(0, "RIFF")
-    view.setUint32(4, 36 + length * channels * bytesPerSample, true)
-    writeString(8, "WAVE")
-    writeString(12, "fmt ")
-    view.setUint32(16, 16, true)
-    view.setUint16(20, 1, true) // PCM format
-    view.setUint16(22, channels, true)
-    view.setUint32(24, sampleRate, true)
-    view.setUint32(28, sampleRate * channels * bytesPerSample, true) // byte rate
-    view.setUint16(32, channels * bytesPerSample, true) // block align
-    view.setUint16(34, bitDepth, true) // bits per sample
-    writeString(36, "data")
-    view.setUint32(40, length * channels * bytesPerSample, true)
-
-    let offset = 44
-    for (let i = 0; i < length; i++) {
-      for (let channel = 0; channel < channels; channel++) {
-        const floatSample = buffer.getChannelData(channel)[i]
-        const clampedSample = Math.max(-1, Math.min(1, floatSample))
-
-        if (bitDepth === 8) {
-          // 8-bit unsigned
-          const intSample = Math.round((clampedSample + 1) * 127.5)
-          view.setUint8(offset, intSample)
-          offset += 1
-        } else {
-          // 16-bit signed
-          const intSample = Math.round(clampedSample * 32767)
-          view.setInt16(offset, intSample, true)
-          offset += 2
-        }
-      }
-    }
-
-    return new Blob([arrayBuffer], { type: "audio/wav" })
   }
 
   return (
