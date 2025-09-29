@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client"
+import type { EncoderReconstructionMetadata } from "@/lib/encoder-reconstruction"
 
 export interface SavedMeditation {
   id: string
@@ -15,6 +16,8 @@ export interface SavedMeditation {
     // For encoder meditations
     instructionCount?: number
     soundCuesUsed?: string[]
+    meditationTitle?: string
+    encoderReconstruction?: EncoderReconstructionMetadata
   }
 }
 

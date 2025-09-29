@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
@@ -32,6 +32,11 @@ import { VisualTimeline } from "@/components/visual-timeline"
 import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFileSize } from "@/lib/utils"
 import { getAudioContext, bufferToWav } from "@/lib/audio-utils" // Import from audio-utils
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
+import type { SavedMeditation } from "@/lib/meditation-library"
+import {
+  createEncoderSnapshotFromTimeline,
+  reconstructTimelineFromSnapshot,
+} from "@/lib/encoder-reconstruction"
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
 import * as Tone from "tone"
@@ -193,6 +198,12 @@ interface TimelineItem {
   type: "instruction" | "sound"
   duration: number // in seconds
   content: Instruction | SoundCue
+}
+
+interface LibraryImportContext {
+  meditationId: string
+  originalSource: "adjuster" | "encoder"
+  metadata: SavedMeditation["metadata"]
 }
 
 const INSTRUCTIONS_LIBRARY = [
@@ -854,6 +865,7 @@ export default function Home() {
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
   const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(600)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
+  const [libraryImportContext, setLibraryImportContext] = useState<LibraryImportContext | null>(null)
   const [selectedLibraryInstruction, setSelectedLibraryInstruction] = useState<Instruction | null>(null)
   const [customInstructionText, setCustomInstructionText] = useState<string>("")
   const [selectedSoundCue, setSelectedSoundCue] = useState<SoundCue | null>(null)
@@ -867,6 +879,7 @@ export default function Home() {
   const [recordedBlobs, setRecordedBlobs] = useState<Blob[]>([])
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const encoderAudioRef = useRef<HTMLAudioElement | null>(null)
+  const handleFileRef = useRef<((file: File) => Promise<void> | void) | null>(null)
   const instructionCategories = Array.from(new Set(INSTRUCTIONS_LIBRARY.map((instr) => instr.category)))
   const [recordingLabel, setRecordingLabel] = useState<string>("")
 
@@ -876,6 +889,7 @@ export default function Home() {
   const [generationStep, setGenerationStep] = useState<string>("")
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
   const [generatedAudioFileSize, setGeneratedAudioFileSize] = useState<number>(0)
+  const [isReconstructingImport, setIsReconstructingImport] = useState<boolean>(false)
 
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
   const [currentTab, setCurrentTab] = useState<string>("instructions")
@@ -893,6 +907,10 @@ export default function Home() {
   const [noteType, setNoteType] = useState<"piano" | "synth" | "harp">("piano")
 
   const totalDuration = timeline.reduce((sum, item) => sum + item.duration, 0)
+  const encoderSnapshot = useMemo(
+    () => createEncoderSnapshotFromTimeline(timelineEvents, encoderTotalDuration),
+    [timelineEvents, encoderTotalDuration],
+  )
 
   const addTimelineItem = useCallback((item: Instruction | SoundCue, type: "instruction" | "sound") => {
     const newItem: TimelineItem = {
@@ -2111,6 +2129,7 @@ export default function Home() {
     setPausesAdjusted(0)
     setProcessingProgress(0)
     setProcessingStep("Loading audio...")
+    setLibraryImportContext(null)
 
     if (audioContextRef.current && audioContextRef.current.state === "running") {
       try {
@@ -2189,6 +2208,128 @@ export default function Home() {
     }
   }
 
+  handleFileRef.current = handleFile
+
+  const processAdjusterImport = useCallback(
+    async (meditation: SavedMeditation) => {
+      try {
+        const response = await fetch(meditation.processedAudioUrl)
+        if (!response.ok) {
+          throw new Error(`Failed to load audio (${response.status})`)
+        }
+
+        const blob = await response.blob()
+        const fileName = meditation.originalFileName || `${meditation.title || "meditation"}.wav`
+        const file = new File([blob], fileName, { type: blob.type || "audio/wav" })
+
+        setActiveMode("adjuster")
+
+        if (handleFileRef.current) {
+          await handleFileRef.current(file)
+        }
+
+        setProcessedUrl(meditation.processedAudioUrl)
+        setIsProcessingComplete(true)
+        setActualDuration(meditation.duration || null)
+
+        if (typeof meditation.metadata?.targetDuration === "number") {
+          setTargetDuration(meditation.metadata.targetDuration)
+        }
+        if (typeof meditation.metadata?.pausesAdjusted === "number") {
+          setPausesAdjusted(meditation.metadata.pausesAdjusted)
+        }
+
+        setLibraryImportContext({
+          meditationId: meditation.id,
+          originalSource: meditation.source,
+          metadata: meditation.metadata || {},
+        })
+
+        toast({
+          title: "Meditation ready in Adjuster",
+          description: `"${meditation.title}" loaded from your library.`,
+        })
+      } catch (error) {
+        console.error("[v0] Failed to import meditation into Adjuster:", error)
+        toast({
+          title: "Import failed",
+          description: "We couldn't load this meditation into the Adjuster.",
+          variant: "destructive",
+        })
+      }
+    },
+    [toast],
+  )
+
+  const processEncoderImport = useCallback(
+    async (meditation: SavedMeditation) => {
+      try {
+        setActiveMode("encoder")
+        setIsReconstructingImport(true)
+
+        setLibraryImportContext({
+          meditationId: meditation.id,
+          originalSource: meditation.source,
+          metadata: meditation.metadata || {},
+        })
+
+        const derivedTitle =
+          (typeof meditation.metadata?.meditationTitle === "string" && meditation.metadata.meditationTitle.trim()) ||
+          meditation.title ||
+          "Imported Meditation"
+        setMeditationTitle(derivedTitle)
+
+        setIsPlaying(false)
+        setCurrentPlaybackTime(0)
+        setActiveItemIndex(null)
+        setReadyToAddToTimelineRecording(null)
+
+        const reconstruction = meditation.metadata?.encoderReconstruction
+
+        if (reconstruction && reconstruction.events.length > 0) {
+          const { events, duration } = await reconstructTimelineFromSnapshot(
+            meditation.processedAudioUrl,
+            reconstruction,
+          )
+          setTimelineEvents(events)
+          setEncoderTotalDuration(duration)
+          toast({
+            title: "Timeline reconstructed",
+            description: `Restored ${events.length} timeline events from the Encoder analysis.`,
+          })
+        } else {
+          const fallbackEvent: TimelineEvent = {
+            id: `import_block_${Date.now()}`,
+            type: "recorded_voice",
+            startTime: 0,
+            duration: meditation.duration,
+            recordedAudioUrl: meditation.processedAudioUrl,
+            recordedInstructionLabel: meditation.title || "Imported Audio",
+            color: EVENT_COLORS[0],
+          }
+          setTimelineEvents([fallbackEvent])
+          setEncoderTotalDuration(meditation.duration)
+          toast({
+            title: "Ready to encode",
+            description: "This meditation has been added as a single recorded block.",
+          })
+        }
+
+        setGeneratedAudioUrl(meditation.processedAudioUrl)
+      } catch (error) {
+        console.error("[v0] Failed to import meditation into Encoder:", error)
+        toast({
+          title: "Import failed",
+          description: "We couldn't load this meditation into the Encoder.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsReconstructingImport(false)
+      }
+    },
+    [toast],
+  )
+
   const detectSilenceRegions = async (
     buffer: AudioBuffer,
     threshold: number,
@@ -2258,6 +2399,44 @@ export default function Home() {
 
     return bufferedRegions
   }
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return
+    }
+
+    const adjusterRaw = window.localStorage.getItem("abhi_adjuster_import")
+    if (adjusterRaw) {
+      window.localStorage.removeItem("abhi_adjuster_import")
+      try {
+        const meditation = JSON.parse(adjusterRaw) as SavedMeditation
+        void processAdjusterImport(meditation)
+      } catch (error) {
+        console.error("[v0] Failed to parse adjuster import payload:", error)
+        toast({
+          title: "Import failed",
+          description: "We couldn't read the Adjuster import data.",
+          variant: "destructive",
+        })
+      }
+    }
+
+    const encoderRaw = window.localStorage.getItem("abhi_encoder_import")
+    if (encoderRaw) {
+      window.localStorage.removeItem("abhi_encoder_import")
+      try {
+        const meditation = JSON.parse(encoderRaw) as SavedMeditation
+        void processEncoderImport(meditation)
+      } catch (error) {
+        console.error("[v0] Failed to parse encoder import payload:", error)
+        toast({
+          title: "Import failed",
+          description: "We couldn't read the Encoder import data.",
+          variant: "destructive",
+        })
+      }
+    }
+  }, [processAdjusterImport, processEncoderImport, toast])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px]">
@@ -2395,6 +2574,11 @@ export default function Home() {
                 </motion.div>
               )}
             </AnimatePresence>
+            {activeMode === "encoder" && isReconstructingImport && (
+              <div className="max-w-2xl mx-auto mb-4 text-center text-xs font-black text-gray-600">
+                Reconstructing timeline from saved audio...
+              </div>
+            )}
             {/* Conditional Rendering based on activeMode */}
             {activeMode === "adjuster" ? (
               // == Length Adjuster UI ==
@@ -2920,6 +3104,9 @@ export default function Home() {
                             metadata={{
                               targetDuration,
                               pausesAdjusted,
+                              ...(libraryImportContext?.metadata?.encoderReconstruction
+                                ? { encoderReconstruction: libraryImportContext.metadata.encoderReconstruction }
+                                : {}),
                             }}
                           >
                             <Button className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white">
@@ -3342,16 +3529,17 @@ export default function Home() {
                           </svg>
                           Download
                         </Button>
-                        <SaveMeditationDialog
-                          audioUrl={generatedAudioUrl}
-                          originalFileName={meditationTitle || "meditation"}
-                          duration={encoderTotalDuration}
-                          source="encoder"
-                          metadata={{
-                            instructionCount: timelineEvents.length,
-                            meditationTitle,
-                          }}
-                        >
+                          <SaveMeditationDialog
+                            audioUrl={generatedAudioUrl}
+                            originalFileName={meditationTitle || "meditation"}
+                            duration={encoderTotalDuration}
+                            source="encoder"
+                            metadata={{
+                              instructionCount: timelineEvents.length,
+                              meditationTitle,
+                              encoderReconstruction: encoderSnapshot,
+                            }}
+                          >
                           <Button className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white mt-3">
                             <BookmarkPlus className="w-4 h-4 mr-2" />
                             Save to Library

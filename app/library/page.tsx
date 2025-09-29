@@ -271,8 +271,9 @@ export default function LibraryPage() {
     setPlayerTime(newTime)
   }
 
-  const handleOpenInTool = () => {
+  const handleOpenInTool = (tool: "adjuster" | "encoder") => {
     if (!selectedMeditation) return
+
     const payload = {
       id: selectedMeditation.id,
       title: selectedMeditation.title,
@@ -280,26 +281,20 @@ export default function LibraryPage() {
       processedAudioUrl: selectedMeditation.processedAudioUrl,
       duration: selectedMeditation.duration,
       source: selectedMeditation.source,
+      metadata: selectedMeditation.metadata,
     }
 
     try {
-      if (selectedMeditation.source === "adjuster") {
-        localStorage.setItem("abhi_adjuster_import", JSON.stringify(payload))
-        toast({
-          title: "Opening Adjuster",
-          description: `"${selectedMeditation.title}" will load in the Adjuster tool.`,
-        })
-        setIsPlayerOpen(false)
-        router.push("/#adjuster")
-      } else {
-        localStorage.setItem("abhi_encoder_import", JSON.stringify(payload))
-        toast({
-          title: "Opening Encoder",
-          description: `"${selectedMeditation.title}" will load in the Encoder tool.`,
-        })
-        setIsPlayerOpen(false)
-        router.push("/#encoder")
-      }
+      const storageKey = tool === "adjuster" ? "abhi_adjuster_import" : "abhi_encoder_import"
+      localStorage.setItem(storageKey, JSON.stringify(payload))
+
+      toast({
+        title: `Opening ${tool === "adjuster" ? "Adjuster" : "Encoder"}`,
+        description: `"${selectedMeditation.title}" will load in the ${tool === "adjuster" ? "Adjuster" : "Encoder"} tool.`,
+      })
+
+      setIsPlayerOpen(false)
+      router.push(tool === "adjuster" ? "/#adjuster" : "/#encoder")
     } catch (error) {
       toast({
         title: "Unable to open tool",
@@ -939,16 +934,26 @@ export default function LibraryPage() {
                       </Button>
                     </div>
 
-                    <div className="flex pt-[27px] gap-3.5">
-                      <Button  onClick={handleDownloadMeditation} className="flex-1 shadow-md bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 rounded-[11px] hover:shadow-none text-white font-black text-xs">
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </Button>
+                    <div className="flex pt-[27px] gap-3.5 items-center">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button className="flex-1 shadow-md bg-gradient-to-r from-logo-amber-300 to-logo-teal-500 rounded-[11px] hover:shadow-none text-white font-black text-xs">
+                            Open In
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="font-black text-gray-600 text-xs">
+                          <DropdownMenuItem onClick={() => handleOpenInTool("adjuster")}>Adjuster</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleOpenInTool("encoder")}>Encoder</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       <Button
-                        onClick={handleOpenInTool}
-                        className="flex-1 shadow-md bg-gradient-to-r from-logo-amber-300 to-logo-teal-500 rounded-[11px] hover:shadow-none text-white font-black text-xs"
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleDownloadMeditation}
+                        className="h-10 w-10 text-gray-600 hover:text-gray-800"
+                        aria-label="Download meditation"
                       >
-                        Open in {selectedMeditation.source === "adjuster" ? "Adjuster" : "Encoder"}
+                        <Download className="h-5 w-5" />
                       </Button>
                     </div>
                   </div>
