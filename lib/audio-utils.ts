@@ -1,6 +1,6 @@
 import * as Tone from "tone"
 import { sleep, formatFileSize } from "./utils"
-import type { BufferToMp3Options as Mp3EncoderOptions } from "./workers/mp3-encoder.worker.ts"
+import lamejs from "lamejs"
 
 // Initialize Tone.js
 export const initializeTone = async (): Promise<void> => {
@@ -237,13 +237,18 @@ export interface Mp3EncoderMetadata {
   channels: number
 }
 
+export interface BufferToMp3Options {
+  bitrate?: number
+  onProgress?: (progress: number) => void
+}
+
 /**
  * Convert AudioBuffer to MP3 using lamejs encoder
- * Uses Web Worker for background processing to avoid blocking UI
+ * Encodes directly on main thread (no Web Worker to avoid module import issues)
  */
 export const bufferToMp3 = async (
   buffer: AudioBuffer,
-  { bitrate = 96, onProgress = () => {} }: Mp3EncoderOptions = {},
+  { bitrate = 96, onProgress = () => {} }: BufferToMp3Options = {},
 ): Promise<{ blob: Blob; sampleRate: number; bitrate: number; channels: number }> => {
   onProgress(0)
 
@@ -273,40 +278,52 @@ export const bufferToMp3 = async (
 
   onProgress(10)
 
-  return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL("../workers/mp3-encoder.worker.ts", import.meta.url))
+  const channelData = monoBuffer.getChannelData(0)
+  const samples = new Int16Array(channelData.length)
 
-    const channelData = monoBuffer.getChannelData(0)
+  for (let i = 0; i < channelData.length; i++) {
+    if (i % (monoBuffer.sampleRate * 2) === 0) {
+      await sleep(0)
+      onProgress(10 + Math.floor((i / channelData.length) * 20))
+    }
+    // Convert float [-1.0, 1.0] to int16 [-32768, 32767]
+    const s = Math.max(-1, Math.min(1, channelData[i]))
+    samples[i] = s < 0 ? s * 0x8000 : s * 0x7fff
+  }
 
-    worker.onmessage = (e) => {
-      if (e.data.type === "progress") {
-        onProgress(10 + Math.floor(e.data.progress * 0.9))
-      } else if (e.data.type === "complete") {
-        const mp3Blob = new Blob(e.data.mp3Data, { type: "audio/mp3" })
-        worker.terminate()
-        onProgress(100)
-        resolve({
-          blob: mp3Blob,
-          sampleRate: monoBuffer.sampleRate,
-          bitrate,
-          channels: 1,
-        })
-      } else if (e.data.type === "error") {
-        worker.terminate()
-        reject(new Error(e.data.message))
-      }
+  onProgress(30)
+
+  const mp3encoder = new lamejs.Mp3Encoder(1, monoBuffer.sampleRate, bitrate)
+  const mp3Data: Int8Array[] = []
+  const sampleBlockSize = 1152 // Standard MP3 frame size
+
+  for (let i = 0; i < samples.length; i += sampleBlockSize) {
+    if (i % (sampleBlockSize * 10) === 0) {
+      await sleep(0)
+      onProgress(30 + Math.floor((i / samples.length) * 60))
     }
 
-    worker.onerror = (error) => {
-      worker.terminate()
-      reject(error)
-    }
+    const sampleChunk = samples.subarray(i, i + sampleBlockSize)
+    const mp3buf = mp3encoder.encodeBuffer(sampleChunk)
 
-    // Send audio data to worker
-    worker.postMessage({
-      channelData: Array.from(channelData),
-      sampleRate: monoBuffer.sampleRate,
-      bitrate,
-    })
-  })
+    if (mp3buf.length > 0) {
+      mp3Data.push(new Int8Array(mp3buf))
+    }
+  }
+
+  const mp3buf = mp3encoder.flush()
+  if (mp3buf.length > 0) {
+    mp3Data.push(new Int8Array(mp3buf))
+  }
+
+  onProgress(100)
+
+  const mp3Blob = new Blob(mp3Data, { type: "audio/mp3" })
+
+  return {
+    blob: mp3Blob,
+    sampleRate: monoBuffer.sampleRate,
+    bitrate,
+    channels: 1,
+  }
 }
