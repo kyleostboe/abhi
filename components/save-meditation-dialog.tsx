@@ -107,7 +107,7 @@ export function SaveMeditationDialog({
     setIsSaving(true)
 
     try {
-      console.log("[v0] Starting client-side audio compression...")
+      console.log("[v0] Fetching audio for save...")
 
       const response = await fetch(audioUrl)
       const audioBlob = await response.blob()
@@ -116,38 +116,46 @@ export function SaveMeditationDialog({
 
       let processedBlob = audioBlob
 
-      console.log("[v0] Compressing audio to ensure valid format...")
+      // Check if audio is already compressed by looking at the source
+      const isReAdjustment = source === "adjuster" && audioUrl.includes("blob.vercel-storage.com")
 
-      let audioContext: AudioContext | null = null
-      try {
-        audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-        const arrayBuffer = await audioBlob.arrayBuffer()
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+      if (isReAdjustment) {
+        console.log("[v0] Re-adjustment detected - skipping compression to preserve quality")
+        processedBlob = audioBlob
+      } else {
+        console.log("[v0] Fresh upload - applying compression...")
 
-        const targetSampleRate = originalSize > 10 * 1024 * 1024 ? 16000 : 22050
-        const channels = 1
+        let audioContext: AudioContext | null = null
+        try {
+          audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+          const arrayBuffer = await audioBlob.arrayBuffer()
+          const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
 
-        const length = Math.floor((audioBuffer.length * targetSampleRate) / audioBuffer.sampleRate)
-        const offlineContext = new OfflineAudioContext(channels, length, targetSampleRate)
+          const targetSampleRate = originalSize > 10 * 1024 * 1024 ? 16000 : 22050
+          const channels = 1
 
-        const sourceNode = offlineContext.createBufferSource()
-        sourceNode.buffer = audioBuffer
-        sourceNode.connect(offlineContext.destination)
-        sourceNode.start()
+          const length = Math.floor((audioBuffer.length * targetSampleRate) / audioBuffer.sampleRate)
+          const offlineContext = new OfflineAudioContext(channels, length, targetSampleRate)
 
-        const compressedBuffer = await offlineContext.startRendering()
-        const compressedBlob = await audioBufferToWav(compressedBuffer)
+          const sourceNode = offlineContext.createBufferSource()
+          sourceNode.buffer = audioBuffer
+          sourceNode.connect(offlineContext.destination)
+          sourceNode.start()
 
-        console.log("[v0] Compressed from", originalSize, "to", compressedBlob.size, "bytes")
-        processedBlob = compressedBlob
-      } catch (compressionError) {
-        console.log("[v0] Client compression failed, using original:", compressionError)
-      } finally {
-        if (audioContext) {
-          try {
-            await audioContext.close()
-          } catch (closeError) {
-            console.log("[v0] Error closing audio context:", closeError)
+          const compressedBuffer = await offlineContext.startRendering()
+          const compressedBlob = await audioBufferToWav(compressedBuffer)
+
+          console.log("[v0] Compressed from", originalSize, "to", compressedBlob.size, "bytes")
+          processedBlob = compressedBlob
+        } catch (compressionError) {
+          console.log("[v0] Client compression failed, using original:", compressionError)
+        } finally {
+          if (audioContext) {
+            try {
+              await audioContext.close()
+            } catch (closeError) {
+              console.log("[v0] Error closing audio context:", closeError)
+            }
           }
         }
       }
@@ -161,7 +169,6 @@ export function SaveMeditationDialog({
           title: title.trim(),
           originalFileName,
           processedAudioUrl: processedBlobUrl,
-          originalAudioUrl: originalAudioUrl, // Store the uncompressed original
           duration,
           source,
           metadata,
