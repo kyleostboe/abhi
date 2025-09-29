@@ -3138,12 +3138,12 @@ export default function Home() {
                                                 <Button
                                                   variant="ghost"
                                                   size="sm"
-                                                  className={`flex-1 justify-start rounded-[10px] font-black font-serif text-gray-600 hover:bg-gray-50 ${
+                                                  className={`flex-1 justify-start rounded-[10px] font-black font-serif text-gray-600 hover:bg-white ${
                                                     isSelected
-                                                      ? "bg-white shadow-md border-2 border-gray-500"
+                                                      ? "bg-white shadow-md border-[3px] border-gray-500 "
                                                       : isSingleSelected
-                                                        ? "bg-white shadow-md text-gray-600 border-gray-500 border-2"
-                                                        : "hover:bg-gray-50"
+                                                        ? "bg-white shadow-md text-gray-600 border-gray-500 border-[3px]"
+                                                        : "hover:bg-white "
                                                   }`}
                                                   onClick={() => handleNoteSelection(note)}
                                                 >
