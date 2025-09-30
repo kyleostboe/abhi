@@ -508,7 +508,7 @@ export default function LibraryPage() {
                             placeholder="Search meditations..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full border-[3px] border-stone-200 bg-transparent text-gray-600 placeholder-gray-400 focus-visible:ring-0 focus-visible:ring-offset-0"
+                            className="w-full border-[3px] border-stone-200 bg-transparent text-gray-600 placeholder-gray-400 
                           />
                         </div>
                       </div>
