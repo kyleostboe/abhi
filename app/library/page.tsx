@@ -962,7 +962,8 @@ export default function LibraryPage() {
                     <div className="space-y-3">
                       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                         <p className="text-xs text-amber-800 font-black">
-                          Timeline data not available for this meditation. Re-encode and save it again to see the timeline events.
+                          Timeline data not available for this meditation. Re-encode and save it again to see the
+                          timeline events.
                         </p>
                       </div>
                     </div>
@@ -1042,10 +1043,10 @@ export default function LibraryPage() {
                   </div>
                 </Card>
               </motion.div>
-            )}
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
-  )\
+  )
 }
