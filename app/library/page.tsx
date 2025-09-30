@@ -852,8 +852,6 @@ export default function LibraryPage() {
               )}
             </AnimatePresence>
           </div>
-        </div>
-      </div>
 
       <AnimatePresence>
         {isPlayerOpen && selectedMeditation && (
@@ -1041,12 +1039,14 @@ export default function LibraryPage() {
                       </DropdownMenu>
                     </div>
                   </div>
+                </div>
                 </Card>
               </motion.div>
             </motion.div>
-          </motion.div>
         )}
       </AnimatePresence>
-    </div>
+          </div>
+        </div>
+      </div>
   )
 }
