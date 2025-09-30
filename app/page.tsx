@@ -33,6 +33,7 @@ import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFil
 import {
   getAudioContext,
   bufferToWav,
+  bufferToMp3, // Import bufferToMp3
   type BufferToWavMetadata,
 } from "@/lib/audio-utils" // Import from audio-utils
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
@@ -870,6 +871,7 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadAreaRef = useRef<HTMLDivElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [processedMp3Blob, setProcessedMp3Blob] = useState<Blob | null>(null)
 
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
@@ -916,11 +918,9 @@ export default function Home() {
 
   const totalDuration = timeline.reduce((sum, item) => sum + item.duration, 0)
   const processedQualityWarning =
-    processedAudioMetadata &&
-    (processedAudioMetadata.bitDepth === 8 || processedAudioMetadata.sampleRate <= 16000)
+    processedAudioMetadata && (processedAudioMetadata.bitDepth === 8 || processedAudioMetadata.sampleRate <= 16000)
   const generatedQualityWarning =
-    generatedAudioMetadata &&
-    (generatedAudioMetadata.bitDepth === 8 || generatedAudioMetadata.sampleRate <= 16000)
+    generatedAudioMetadata && (generatedAudioMetadata.bitDepth === 8 || generatedAudioMetadata.sampleRate <= 16000)
 
   const addTimelineItem = useCallback((item: Instruction | SoundCue, type: "instruction" | "sound") => {
     const newItem: TimelineItem = {
@@ -1317,6 +1317,19 @@ export default function Home() {
         throw new Error("Rendered audio buffer is empty. No audio content was generated.")
       }
 
+      setProcessingStep("Creating MP3 file (step 4a/5)...")
+      setProcessingProgress(80)
+      await sleep(10)
+
+      const mp3Result = await bufferToMp3(rendered, {
+        bitrate: 96,
+        onProgress: (p) => setProcessingProgress(80 + Math.floor(p * 0.1)),
+      })
+      setProcessedMp3Blob(mp3Result.blob)
+
+      setProcessingStep("Creating playback file (step 4b/5)...")
+      setProcessingProgress(90)
+      await sleep(10)
       const wavResult = await bufferToWav(rendered, {
         preferCompatibility: compatibilityMode === "high",
         maxBytes: 48 * 1024 * 1024,
@@ -1328,21 +1341,16 @@ export default function Home() {
       }
 
       const { blob: wavBlob, ...metadata } = wavResult
-      setGeneratedAudioMetadata(metadata)
-      setGeneratedAudioFileSize(wavBlob.size)
-
       const url = URL.createObjectURL(wavBlob)
-      setGeneratedAudioUrl(url)
-
-      // Directly assign to the audio element for immediate playback readiness
-      if (encoderAudioRef.current) {
-        encoderAudioRef.current.src = url
-        encoderAudioRef.current.volume = volume / 100
-      }
-
-      setIsGeneratingAudio(false)
-      setGenerationProgress(100)
-      setGenerationStep("Export Complete")
+      setProcessedUrl(url)
+      setActualDuration(rendered.duration)
+      setProcessedBufferState(rendered)
+      setProcessedFileSize(mp3Result.blob.size) // Show MP3 size, not WAV
+      setProcessedAudioMetadata(metadata)
+      setProcessingProgress(100)
+      setProcessingStep("Complete!")
+      setStatus({ message: "Audio processing completed successfully!", type: "success" })
+      setIsProcessingComplete(true)
 
       console.log("Audio export completed successfully!")
       toast({ title: "Export Complete", description: "Timeline audio exported with sound cues included!" })
@@ -1609,6 +1617,7 @@ export default function Home() {
     setProcessingProgress(0)
     setProcessingStep("Loading audio...")
     setGeneratedAudioMetadata(null)
+    setProcessedMp3Blob(null)
 
     if (audioContextRef.current && audioContextRef.current.state === "running") {
       try {
@@ -1776,6 +1785,7 @@ export default function Home() {
         setProcessingProgress(0)
         setProcessingStep("Loading audio...")
         setGeneratedAudioMetadata(null)
+        setProcessedMp3Blob(null)
 
         if (audioContextRef.current && audioContextRef.current.state === "running") {
           try {
@@ -2086,6 +2096,8 @@ export default function Home() {
     setProcessingProgress(0)
     setProcessingStep("Starting processing...")
     setProcessedAudioMetadata(null)
+    setProcessedMp3Blob(null)
+
     if (currentAudioContext.state === "suspended") {
       try {
         await currentAudioContext.resume()
@@ -2112,13 +2124,13 @@ export default function Home() {
     try {
       setStatus({ message: "Processing audio...", type: "info" })
       const targetDurationSeconds = targetDuration * 60
-      setProcessingStep("Detecting silence regions (step 1/4)...")
+      setProcessingStep("Detecting silence regions (step 1/5)...")
       setProcessingProgress(10)
       await sleep(10)
 
       const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
 
-      setProcessingStep("Calculating adjustments (step 2/4)...")
+      setProcessingStep("Calculating adjustments (step 2/5)...")
       setProcessingProgress(25)
       await sleep(10)
 
@@ -2129,7 +2141,7 @@ export default function Home() {
         silenceRegions.length * minSpacingDuration,
       )
       const scaleFactor = totalSilenceDuration > 0 ? availableSilenceDuration / totalSilenceDuration : 1
-      setProcessingStep("Rebuilding audio (step 3/4)...")
+      setProcessingStep("Rebuilding audio (step 3/5)...")
       setProcessingProgress(50)
       await sleep(10)
 
@@ -2140,10 +2152,21 @@ export default function Home() {
         minSpacingDuration,
         preserveNaturalPacing,
         availableSilenceDuration,
-        (p) => setProcessingProgress(50 + Math.floor(p * 0.4)),
+        (p) => setProcessingProgress(50 + Math.floor(p * 0.3)),
       )
       setPausesAdjusted(silenceRegions.length)
-      setProcessingStep("Creating download file (step 4/4)...")
+
+      setProcessingStep("Creating MP3 file (step 4a/5)...")
+      setProcessingProgress(80)
+      await sleep(10)
+
+      const mp3Result = await bufferToMp3(processedAudioBuffer, {
+        bitrate: 96,
+        onProgress: (p) => setProcessingProgress(80 + Math.floor(p * 0.1)),
+      })
+      setProcessedMp3Blob(mp3Result.blob)
+
+      setProcessingStep("Creating playback file (step 4b/5)...")
       setProcessingProgress(90)
       await sleep(10)
       const wavResult = await bufferToWav(processedAudioBuffer, {
@@ -2160,7 +2183,7 @@ export default function Home() {
       setProcessedUrl(url)
       setActualDuration(processedAudioBuffer.duration)
       setProcessedBufferState(processedAudioBuffer)
-      setProcessedFileSize(wavBlob.size)
+      setProcessedFileSize(mp3Result.blob.size) // Show MP3 size, not WAV
       setProcessedAudioMetadata(metadata)
       setProcessingProgress(100)
       setProcessingStep("Complete!")
@@ -3281,7 +3304,8 @@ export default function Home() {
                             <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5 sm:col-span-2">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Output Format</div>
                               <div className="font-black text-sm text-gray-600">
-                                Mono • {processedAudioMetadata.sampleRate.toLocaleString()} Hz • {processedAudioMetadata.bitDepth}
+                                Mono • {processedAudioMetadata.sampleRate.toLocaleString()} Hz •{" "}
+                                {processedAudioMetadata.bitDepth}
                                 -bit
                               </div>
                             </div>
@@ -3291,10 +3315,9 @@ export default function Home() {
                           <Alert className="bg-amber-50 border-amber-200 text-amber-700">
                             <AlertTitle className="font-black text-sm">Reduced quality export</AlertTitle>
                             <AlertDescription className="text-xs">
-                              Exported audio was downsampled to {processedAudioMetadata?.sampleRate.toLocaleString()} Hz and
-                              {" "}
-                              {processedAudioMetadata?.bitDepth}-bit mono to meet the size cap. Consider shorter sessions for
-                              higher fidelity.
+                              Exported audio was downsampled to {processedAudioMetadata?.sampleRate.toLocaleString()} Hz
+                              and {processedAudioMetadata?.bitDepth}-bit mono to meet the size cap. Consider shorter
+                              sessions for higher fidelity.
                             </AlertDescription>
                           </Alert>
                         )}
@@ -3307,6 +3330,7 @@ export default function Home() {
                           </Button>
                           <SaveMeditationDialog
                             audioUrl={processedUrl}
+                            mp3Blob={processedMp3Blob} // Pass pre-created MP3 blob
                             originalFileName={file?.name || "meditation"}
                             duration={actualDuration || targetDuration * 60}
                             source="adjuster"
@@ -3710,7 +3734,8 @@ export default function Home() {
                             <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5 col-span-2">
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Output Format</div>
                               <div className="font-black text-sm text-gray-600">
-                                Mono • {generatedAudioMetadata.sampleRate.toLocaleString()} Hz • {generatedAudioMetadata.bitDepth}-bit
+                                Mono • {generatedAudioMetadata.sampleRate.toLocaleString()} Hz •{" "}
+                                {generatedAudioMetadata.bitDepth}-bit
                               </div>
                             </div>
                           )}
@@ -3719,10 +3744,9 @@ export default function Home() {
                           <Alert className="bg-amber-50 border-amber-200 text-amber-700 mb-3">
                             <AlertTitle className="font-black text-sm">Reduced quality export</AlertTitle>
                             <AlertDescription className="text-xs">
-                              Output audio was downsampled to {generatedAudioMetadata?.sampleRate.toLocaleString()} Hz and
-                              {" "}
-                              {generatedAudioMetadata?.bitDepth}-bit mono to respect the file size limit. Shorter meditations will
-                              export at higher fidelity.
+                              Output audio was downsampled to {generatedAudioMetadata?.sampleRate.toLocaleString()} Hz
+                              and {generatedAudioMetadata?.bitDepth}-bit mono to respect the file size limit. Shorter
+                              meditations will export at higher fidelity.
                             </AlertDescription>
                           </Alert>
                         )}

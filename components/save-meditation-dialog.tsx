@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast"
 
 interface SaveMeditationDialogProps {
   audioUrl: string
+  mp3Blob?: Blob | null // Add optional pre-created MP3 blob
   originalFileName: string
   duration: number
   source: "adjuster" | "encoder"
@@ -25,6 +26,7 @@ interface SaveMeditationDialogProps {
 
 export function SaveMeditationDialog({
   audioUrl,
+  mp3Blob, // Accept pre-created MP3
   originalFileName,
   duration,
   source,
@@ -97,81 +99,61 @@ export function SaveMeditationDialog({
     setIsSaving(true)
 
     try {
-      const response = await fetch(audioUrl)
-      const audioBlob = await response.blob()
-      const maxSizeBytes = 48 * 1024 * 1024
-      const metadataForSave: Record<string, unknown> = { ...metadata }
-
       let distributionBlob: Blob
-      let sourceBlob: Blob
-      let processedDuration = duration
 
-      let audioContext: AudioContext | null = null
-      try {
-        audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-        const arrayBuffer = await audioBlob.arrayBuffer()
-        const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer)
+      if (mp3Blob) {
+        console.log("[v0] Using pre-created MP3 blob")
+        distributionBlob = mp3Blob
+      } else {
+        console.log("[v0] No pre-created MP3, encoding now...")
+        const response = await fetch(audioUrl)
+        const audioBlob = await response.blob()
 
-        console.log("[v0] Creating dual-quality MP3 files...")
+        let audioContext: AudioContext | null = null
+        try {
+          audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+          const arrayBuffer = await audioBlob.arrayBuffer()
+          const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer)
 
-        console.log("[v0] Encoding high-quality source (192kbps)...")
-        const sourceResult = await bufferToMp3(decodedBuffer, {
-          bitrate: 192,
-          onProgress: (progress) => {
-            console.log(`[v0] Source encoding progress: ${Math.round(progress)}%`)
-          },
-        })
-        sourceBlob = sourceResult.blob
-
-        console.log("[v0] Encoding distribution quality (96kbps)...")
-        const distributionResult = await bufferToMp3(decodedBuffer, {
-          bitrate: 96,
-          onProgress: (progress) => {
-            console.log(`[v0] Distribution encoding progress: ${Math.round(progress)}%`)
-          },
-        })
-        distributionBlob = distributionResult.blob
-
-        processedDuration = decodedBuffer.duration
-
-        console.log(
-          `[v0] Encoding complete. Original: ${Math.round(audioBlob.size / 1024 / 1024)}MB, Source (192kbps): ${Math.round(sourceBlob.size / 1024 / 1024)}MB, Distribution (96kbps): ${Math.round(distributionBlob.size / 1024 / 1024)}MB`,
-        )
-
-        if (distributionBlob.size > maxSizeBytes) {
-          throw new Error(
-            `Distribution file too large (${Math.round(distributionBlob.size / 1024 / 1024)}MB). Unable to reduce below the 48MB library limit.`,
-          )
-        }
-
-        if (sourceBlob.size > maxSizeBytes) {
-          console.warn("[v0] Source file exceeds 48MB, will not be saved")
-          sourceBlob = distributionBlob // Fallback to distribution quality
-        }
-      } finally {
-        if (audioContext) {
-          try {
-            await audioContext.close()
-          } catch (closeError) {
-            console.warn("[v0] Error closing audio context:", closeError)
+          const mp3Result = await bufferToMp3(decodedBuffer, {
+            bitrate: 96,
+            onProgress: (progress) => {
+              console.log(`[v0] MP3 encoding progress: ${Math.round(progress)}%`)
+            },
+          })
+          distributionBlob = mp3Result.blob
+        } finally {
+          if (audioContext) {
+            try {
+              await audioContext.close()
+            } catch (closeError) {
+              console.warn("[v0] Error closing audio context:", closeError)
+            }
           }
         }
       }
 
-      // ... existing code for metadata updates ...
+      const maxSizeBytes = 48 * 1024 * 1024
+      if (distributionBlob.size > maxSizeBytes) {
+        throw new Error(
+          `File too large (${Math.round(distributionBlob.size / 1024 / 1024)}MB). Unable to reduce below the 48MB library limit.`,
+        )
+      }
+
+      console.log(`[v0] Saving meditation. File size: ${Math.round(distributionBlob.size / 1024 / 1024)}MB`)
+
+      const metadataForSave: Record<string, unknown> = { ...metadata }
 
       let distributionBlobUrl: string | null = null
-      let sourceBlobUrl: string | null = null
       try {
         distributionBlobUrl = URL.createObjectURL(distributionBlob)
-        sourceBlobUrl = URL.createObjectURL(sourceBlob)
 
         const savedMeditation = await MeditationLibrary.saveMeditation({
           title: title.trim(),
           originalFileName,
           processedAudioUrl: distributionBlobUrl,
-          sourceAudioUrl: sourceBlobUrl,
-          duration: processedDuration,
+          sourceAudioUrl: distributionBlobUrl, // TODO: Save master file separately on upload
+          duration,
           source,
           metadata: metadataForSave as SavedMeditation["metadata"],
         })
@@ -193,7 +175,7 @@ export function SaveMeditationDialog({
 
         toast({
           title: "Meditation saved",
-          description: `"${title.trim()}" is now available in your library with high-quality source for re-adjustments.`,
+          description: `"${title.trim()}" is now available in your library.`,
         })
 
         const baseTitle = metadataTitle || originalFileName
@@ -206,9 +188,6 @@ export function SaveMeditationDialog({
       } finally {
         if (distributionBlobUrl) {
           URL.revokeObjectURL(distributionBlobUrl)
-        }
-        if (sourceBlobUrl) {
-          URL.revokeObjectURL(sourceBlobUrl)
         }
       }
     } catch (error) {

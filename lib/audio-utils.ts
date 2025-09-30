@@ -231,12 +231,6 @@ export const bufferToWav = async (
   }
 }
 
-export interface Mp3EncoderMetadata {
-  sampleRate: number
-  bitrate: number
-  channels: number
-}
-
 export interface BufferToMp3Options {
   bitrate?: number
   onProgress?: (progress: number) => void
@@ -252,6 +246,7 @@ export const bufferToMp3 = async (
 ): Promise<{ blob: Blob; sampleRate: number; bitrate: number; channels: number }> => {
   onProgress(0)
 
+  // Convert to mono if needed
   const monoBuffer = await (async () => {
     if (buffer.numberOfChannels === 1) {
       return buffer
@@ -278,6 +273,7 @@ export const bufferToMp3 = async (
 
   onProgress(10)
 
+  // Convert float samples to Int16
   const channelData = monoBuffer.getChannelData(0)
   const samples = new Int16Array(channelData.length)
 
@@ -286,7 +282,6 @@ export const bufferToMp3 = async (
       await sleep(0)
       onProgress(10 + Math.floor((i / channelData.length) * 20))
     }
-    // Convert float [-1.0, 1.0] to int16 [-32768, 32767]
     const s = Math.max(-1, Math.min(1, channelData[i]))
     samples[i] = s < 0 ? s * 0x8000 : s * 0x7fff
   }
@@ -295,7 +290,7 @@ export const bufferToMp3 = async (
 
   const mp3encoder = new lamejs.Mp3Encoder(1, monoBuffer.sampleRate, bitrate)
   const mp3Data: Int8Array[] = []
-  const sampleBlockSize = 1152 // Standard MP3 frame size
+  const sampleBlockSize = 1152
 
   for (let i = 0; i < samples.length; i += sampleBlockSize) {
     if (i % (sampleBlockSize * 10) === 0) {
@@ -319,6 +314,10 @@ export const bufferToMp3 = async (
   onProgress(100)
 
   const mp3Blob = new Blob(mp3Data, { type: "audio/mp3" })
+
+  console.log(
+    `[v0] MP3 encoding complete. Original size: ${Math.round((buffer.length * buffer.numberOfChannels * 4) / 1024 / 1024)}MB (uncompressed), MP3 size: ${Math.round(mp3Blob.size / 1024 / 1024)}MB (${bitrate}kbps)`,
+  )
 
   return {
     blob: mp3Blob,
