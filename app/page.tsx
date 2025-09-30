@@ -30,12 +30,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useToast } from "@/hooks/use-toast"
 import { VisualTimeline } from "@/components/visual-timeline"
 import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFileSize } from "@/lib/utils"
-import {
-  getAudioContext,
-  bufferToWav,
-  bufferToWebM, // Import bufferToWebM
-  type BufferToWavMetadata,
-} from "@/lib/audio-utils" // Import from audio-utils
+import { getAudioContext, bufferToWav, type BufferToWavMetadata } from "@/lib/audio-utils" // Import from audio-utils
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
@@ -1317,35 +1312,29 @@ export default function Home() {
         throw new Error("Rendered audio buffer is empty. No audio content was generated.")
       }
 
-      setProcessingStep("Creating compressed file (step 4/5)...")
+      setProcessingStep("Creating audio file (step 4/4)...")
       setProcessingProgress(80)
       await sleep(10)
 
-      const webmResult = await bufferToWebM(rendered, {
-        bitrate: 96000, // 96kbps
-        onProgress: (p) => setProcessingProgress(80 + Math.floor(p * 0.15)),
-      })
-      setProcessedMp3Blob(webmResult.blob)
-
-      setProcessingStep("Creating playback file (step 5/5)...")
-      setProcessingProgress(95)
-      await sleep(10)
       const wavResult = await bufferToWav(rendered, {
         preferCompatibility: compatibilityMode === "high",
-        maxBytes: 48 * 1024 * 1024,
-        onProgress: (p) => setProcessingProgress(95 + Math.floor((p / 100) * 5)),
+        maxBytes: 48 * 1024 * 1024, // 48MB limit (under 50MB)
+        onProgress: (p) => setProcessingProgress(80 + Math.floor((p / 100) * 20)),
         isMobile: isMobileDevice,
       })
+
       if (wavResult.blob.size === 0) {
         throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
       }
 
       const { blob: wavBlob, ...metadata } = wavResult
       const url = URL.createObjectURL(wavBlob)
+
       setProcessedUrl(url)
+      setProcessedMp3Blob(wavBlob) // This is the file that will be saved
       setActualDuration(rendered.duration)
       setProcessedBufferState(rendered)
-      setProcessedFileSize(webmResult.blob.size) // Show WebM size, not WAV
+      setProcessedFileSize(wavBlob.size)
       setProcessedAudioMetadata(metadata)
       setProcessingProgress(100)
       setProcessingStep("Complete!")
@@ -2124,13 +2113,13 @@ export default function Home() {
     try {
       setStatus({ message: "Processing audio...", type: "info" })
       const targetDurationSeconds = targetDuration * 60
-      setProcessingStep("Detecting silence regions (step 1/5)...")
+      setProcessingStep("Detecting silence regions (step 1/4)...")
       setProcessingProgress(10)
       await sleep(10)
 
       const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
 
-      setProcessingStep("Calculating adjustments (step 2/5)...")
+      setProcessingStep("Calculating adjustments (step 2/4)...")
       setProcessingProgress(25)
       await sleep(10)
 
@@ -2141,7 +2130,7 @@ export default function Home() {
         silenceRegions.length * minSpacingDuration,
       )
       const scaleFactor = totalSilenceDuration > 0 ? availableSilenceDuration / totalSilenceDuration : 1
-      setProcessingStep("Rebuilding audio (step 3/5)...")
+      setProcessingStep("Rebuilding audio (step 3/4)...")
       setProcessingProgress(50)
       await sleep(10)
 
@@ -2156,34 +2145,29 @@ export default function Home() {
       )
       setPausesAdjusted(silenceRegions.length)
 
-      setProcessingStep("Creating compressed file (step 4/5)...")
+      setProcessingStep("Creating audio file (step 4/4)...")
       setProcessingProgress(80)
       await sleep(10)
 
-      const webmResult = await bufferToWebM(processedAudioBuffer, {
-        bitrate: 96000, // 96kbps
-        onProgress: (p) => setProcessingProgress(80 + Math.floor(p * 0.15)),
-      })
-      setProcessedMp3Blob(webmResult.blob)
-
-      setProcessingStep("Creating playback file (step 5/5)...")
-      setProcessingProgress(95)
-      await sleep(10)
       const wavResult = await bufferToWav(processedAudioBuffer, {
         preferCompatibility: compatibilityMode === "high",
-        maxBytes: 48 * 1024 * 1024,
-        onProgress: (p) => setProcessingProgress(95 + Math.floor((p / 100) * 5)),
+        maxBytes: 48 * 1024 * 1024, // 48MB limit (under 50MB)
+        onProgress: (p) => setProcessingProgress(80 + Math.floor((p / 100) * 20)),
         isMobile: isMobileDevice,
       })
+
       if (wavResult.blob.size === 0) {
         throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
       }
+
       const { blob: wavBlob, ...metadata } = wavResult
       const url = URL.createObjectURL(wavBlob)
+
       setProcessedUrl(url)
+      setProcessedMp3Blob(wavBlob) // This is the file that will be saved
       setActualDuration(processedAudioBuffer.duration)
       setProcessedBufferState(processedAudioBuffer)
-      setProcessedFileSize(webmResult.blob.size) // Show WebM size, not WAV
+      setProcessedFileSize(wavBlob.size)
       setProcessedAudioMetadata(metadata)
       setProcessingProgress(100)
       setProcessingStep("Complete!")
