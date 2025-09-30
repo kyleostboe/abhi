@@ -1,6 +1,6 @@
 import * as Tone from "tone"
 import { sleep, formatFileSize } from "./utils"
-import lamejs from "lamejs"
+import lamejs from "@breezystack/lamejs"
 
 // Initialize Tone.js
 export const initializeTone = async (): Promise<void> => {
