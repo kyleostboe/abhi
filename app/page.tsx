@@ -893,6 +893,7 @@ export default function Home() {
   const [generationProgress, setGenerationProgress] = useState<number>(0)
   const [generationStep, setGenerationStep] = useState<string>("")
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
+  const [generatedAudioBlob, setGeneratedAudioBlob] = useState<Blob | null>(null) // Added for encoder audio blob
   const [generatedAudioFileSize, setGeneratedAudioFileSize] = useState<number>(0)
   const [generatedAudioMetadata, setGeneratedAudioMetadata] = useState<BufferToWavMetadata | null>(null)
 
@@ -1312,14 +1313,14 @@ export default function Home() {
         throw new Error("Rendered audio buffer is empty. No audio content was generated.")
       }
 
-      setProcessingStep("Creating audio file (step 4/4)...")
-      setProcessingProgress(80)
+      setGenerationStep("Creating audio file...")
+      setGenerationProgress(80)
       await sleep(10)
 
       const wavResult = await bufferToWav(rendered, {
         preferCompatibility: compatibilityMode === "high",
         maxBytes: 48 * 1024 * 1024, // 48MB limit (under 50MB)
-        onProgress: (p) => setProcessingProgress(80 + Math.floor((p / 100) * 20)),
+        onProgress: (p) => setGenerationProgress(80 + Math.floor((p / 100) * 20)),
         isMobile: isMobileDevice,
       })
 
@@ -1330,16 +1331,11 @@ export default function Home() {
       const { blob: wavBlob, ...metadata } = wavResult
       const url = URL.createObjectURL(wavBlob)
 
-      setProcessedUrl(url)
-      setProcessedMp3Blob(wavBlob) // This is the file that will be saved
-      setActualDuration(rendered.duration)
-      setProcessedBufferState(rendered)
-      setProcessedFileSize(wavBlob.size)
-      setProcessedAudioMetadata(metadata)
-      setProcessingProgress(100)
-      setProcessingStep("Complete!")
-      setStatus({ message: "Audio processing completed successfully!", type: "success" })
-      setIsProcessingComplete(true)
+      setGeneratedAudioUrl(url)
+      setGeneratedAudioBlob(wavBlob)
+      setGeneratedAudioMetadata(metadata)
+      setGenerationProgress(100)
+      setGenerationStep("Complete!")
 
       console.log("Audio export completed successfully!")
       toast({ title: "Export Complete", description: "Timeline audio exported with sound cues included!" })
@@ -3289,7 +3285,7 @@ export default function Home() {
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Output Format</div>
                               <div className="font-black text-sm text-gray-600">
                                 Mono • {processedAudioMetadata.sampleRate.toLocaleString()} Hz •{" "}
-                                {processedAudioMetadata.bitDepth}
+                                {processedAudioMetadata.bitDepth.toLocaleString()}
                                 -bit
                               </div>
                             </div>
@@ -3719,7 +3715,8 @@ export default function Home() {
                               <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Output Format</div>
                               <div className="font-black text-sm text-gray-600">
                                 Mono • {generatedAudioMetadata.sampleRate.toLocaleString()} Hz •{" "}
-                                {generatedAudioMetadata.bitDepth}-bit
+                                {generatedAudioMetadata.bitDepth.toLocaleString()}
+                                -bit
                               </div>
                             </div>
                           )}
