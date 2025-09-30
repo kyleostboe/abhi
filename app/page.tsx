@@ -2866,7 +2866,7 @@ export default function Home() {
                   onDrop={handleDropAction}
                 >
                   <div className="p-0.5 bg-gradient-to-r from-gray-600 to-gray-500 py-1 shadow-lg rounded-sm px-[5px]">
-                    <div className="p-10 md:p-16 text-center bg-white rounded-lg shadow-none md:py-12 md:px-16 border-logo-rose-100 border-0">
+                    <div className="p-10 md:p-16 text-center bg-white rounded-lg md:py-12 md:px-16 border-stone-200 border-[3px] shadow-none">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -2952,8 +2952,8 @@ export default function Home() {
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-[3px]">
-                                <div className="uppercase tracking-wide mb-1 text-gray-600">Content:</div>
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-[3px] border-stone-200">
+                                <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
                                 <div className="font-black text-gray-600">
                                   {formatTime(audioAnalysis.contentDuration)}
                                 </div>

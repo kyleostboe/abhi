@@ -41,5 +41,3 @@ A meditation tool that allows users to adjust the length of guided meditations b
 -   `lib/`: Utility functions and data, including audio processing logic and meditation data.
 -   `public/`: Static assets like images and sounds.
 -   `styles/`: Global CSS.
-
-
