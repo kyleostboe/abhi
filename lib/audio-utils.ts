@@ -234,6 +234,7 @@ export const bufferToWav = async (
 export interface BufferToMp3Options {
   bitrate?: number
   onProgress?: (progress: number) => void
+  signal?: AbortSignal
 }
 
 export interface BufferToWebMOptions {
@@ -339,8 +340,12 @@ export const bufferToWebM = async (
  */
 export const bufferToMp3 = async (
   buffer: AudioBuffer,
-  { bitrate = 96, onProgress = () => {} }: BufferToMp3Options = {},
+  { bitrate = 96, onProgress = () => {}, signal }: BufferToMp3Options = {},
 ): Promise<{ blob: Blob; sampleRate: number; bitrate: number; channels: number }> => {
+  if (signal?.aborted) {
+    throw new Error("Encoding aborted")
+  }
+
   onProgress(0)
 
   // Convert to mono if needed
@@ -355,6 +360,10 @@ export const bufferToMp3 = async (
     const totalChannels = buffer.numberOfChannels
 
     for (let i = 0; i < buffer.length; i++) {
+      if (signal?.aborted) {
+        throw new Error("Encoding aborted")
+      }
+
       if (i % (buffer.sampleRate * 2) === 0) {
         await sleep(0)
         onProgress(Math.min(10, Math.floor((i / buffer.length) * 10)))
@@ -375,6 +384,10 @@ export const bufferToMp3 = async (
   const samples = new Int16Array(channelData.length)
 
   for (let i = 0; i < channelData.length; i++) {
+    if (signal?.aborted) {
+      throw new Error("Encoding aborted")
+    }
+
     if (i % (monoBuffer.sampleRate * 2) === 0) {
       await sleep(0)
       onProgress(10 + Math.floor((i / channelData.length) * 20))
@@ -390,6 +403,10 @@ export const bufferToMp3 = async (
   const sampleBlockSize = 1152
 
   for (let i = 0; i < samples.length; i += sampleBlockSize) {
+    if (signal?.aborted) {
+      throw new Error("Encoding aborted")
+    }
+
     if (i % (sampleBlockSize * 10) === 0) {
       await sleep(0)
       onProgress(30 + Math.floor((i / samples.length) * 60))

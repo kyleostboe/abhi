@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -49,6 +49,15 @@ export function SaveMeditationDialog({
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
+  const abortControllerRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [])
 
   const loadPlaylists = useCallback(async () => {
     try {
@@ -97,6 +106,7 @@ export function SaveMeditationDialog({
     }
 
     setIsSaving(true)
+    abortControllerRef.current = new AbortController()
 
     try {
       let distributionBlob: Blob
@@ -118,10 +128,13 @@ export function SaveMeditationDialog({
           const mp3Result = await bufferToMp3(decodedBuffer, {
             bitrate: 96,
             onProgress: (progress) => {
-              console.log(`[v0] MP3 encoding progress: ${Math.round(progress)}%`)
+              // Progress tracking without console spam
             },
+            signal: abortControllerRef.current.signal,
           })
           distributionBlob = mp3Result.blob
+
+          console.log("[v0] MP3 encoding complete")
         } finally {
           if (audioContext) {
             try {
@@ -191,6 +204,11 @@ export function SaveMeditationDialog({
         }
       }
     } catch (error) {
+      if (error instanceof Error && error.message === "Encoding aborted") {
+        console.log("[v0] Encoding was cancelled")
+        return
+      }
+
       console.error("[v0] Save failed with error:", error)
       toast({
         title: "Save failed",
@@ -199,6 +217,7 @@ export function SaveMeditationDialog({
       })
     } finally {
       setIsSaving(false)
+      abortControllerRef.current = null
     }
   }
 
