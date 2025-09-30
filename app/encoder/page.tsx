@@ -7,10 +7,55 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
 import { BookmarkPlus } from "lucide-react"
-import type { SpeechRecognition } from "web-speech-api"
 import * as Tone from "tone"
 import { bufferToWav, type BufferToWavMetadata } from "@/lib/audio-utils"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+
+type SpeechRecognitionAlternative = {
+  transcript: string
+  confidence: number
+}
+
+type SpeechRecognitionResult = {
+  readonly isFinal: boolean
+  readonly length: number
+  item(index: number): SpeechRecognitionAlternative
+  [index: number]: SpeechRecognitionAlternative
+}
+
+type SpeechRecognitionResultList = {
+  readonly length: number
+  item(index: number): SpeechRecognitionResult
+  [index: number]: SpeechRecognitionResult
+}
+
+type SpeechRecognitionEvent = Event & {
+  resultIndex: number
+  results: SpeechRecognitionResultList
+}
+
+type SpeechRecognitionErrorEvent = Event & {
+  error: string
+}
+
+type BrowserSpeechRecognition = {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  start: () => void
+  stop: () => void
+  abort: () => void
+  onresult: ((event: SpeechRecognitionEvent) => void) | null
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null
+  onend: (() => void) | null
+}
+
+type SpeechRecognitionConstructor = new () => BrowserSpeechRecognition
+
+type SpeechRecognitionWindow = Window & {
+  SpeechRecognition?: SpeechRecognitionConstructor
+  webkitSpeechRecognition?: SpeechRecognitionConstructor
+}
 
 interface Instruction {
   id: string
@@ -91,7 +136,7 @@ export default function EncoderPage() {
   const audioContextRef = useRef<AudioContext | null>(null)
   const uploadAreaRef = useRef<HTMLDivElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
-  const recognitionRef = useRef<SpeechRecognition | null>(null)
+  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null)
   const originalAudioBufferRef = useRef<AudioBuffer | null>(null)
 
   const encodedQualityWarning =
@@ -103,11 +148,16 @@ export default function EncoderPage() {
 
       // Initialize Speech Recognition if available
       if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-        recognitionRef.current = new SpeechRecognition()
-        recognitionRef.current.continuous = true
-        recognitionRef.current.interimResults = true
-        recognitionRef.current.lang = "en-US"
+        const speechWindow = window as SpeechRecognitionWindow
+        const SpeechRecognitionClass =
+          speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition
+
+        if (SpeechRecognitionClass) {
+          recognitionRef.current = new SpeechRecognitionClass()
+          recognitionRef.current.continuous = true
+          recognitionRef.current.interimResults = true
+          recognitionRef.current.lang = "en-US"
+        }
       }
     }
     return () => {
