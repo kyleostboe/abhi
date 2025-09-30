@@ -703,7 +703,7 @@ export default function LibraryPage() {
                   <div className="mb-6">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button className="bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white">
+                        <Button className="bg-gradient-to-r from-logo-amber-300 to-logo-teal-500 rounded-[8px] shadow-md hover:shadow-none text-white text-sm font-black">
                           <FolderPlus className="w-4 h-4 mr-2" />
                           Create Playlist
                         </Button>
