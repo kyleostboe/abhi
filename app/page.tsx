@@ -33,7 +33,7 @@ import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFil
 import {
   getAudioContext,
   bufferToWav,
-  bufferToMp3, // Import bufferToMp3
+  bufferToWebM, // Import bufferToWebM
   type BufferToWavMetadata,
 } from "@/lib/audio-utils" // Import from audio-utils
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
@@ -871,7 +871,7 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadAreaRef = useRef<HTMLDivElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const [processedMp3Blob, setProcessedMp3Blob] = useState<Blob | null>(null)
+  const [processedMp3Blob, setProcessedMp3Blob] = useState<Blob | null>(null) // Renamed to processedMp3Blob for clarity, but will store WebM
 
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
@@ -1317,23 +1317,23 @@ export default function Home() {
         throw new Error("Rendered audio buffer is empty. No audio content was generated.")
       }
 
-      setProcessingStep("Creating MP3 file (step 4a/5)...")
+      setProcessingStep("Creating compressed file (step 4/5)...")
       setProcessingProgress(80)
       await sleep(10)
 
-      const mp3Result = await bufferToMp3(rendered, {
-        bitrate: 96,
-        onProgress: (p) => setProcessingProgress(80 + Math.floor(p * 0.1)),
+      const webmResult = await bufferToWebM(rendered, {
+        bitrate: 96000, // 96kbps
+        onProgress: (p) => setProcessingProgress(80 + Math.floor(p * 0.15)),
       })
-      setProcessedMp3Blob(mp3Result.blob)
+      setProcessedMp3Blob(webmResult.blob)
 
-      setProcessingStep("Creating playback file (step 4b/5)...")
-      setProcessingProgress(90)
+      setProcessingStep("Creating playback file (step 5/5)...")
+      setProcessingProgress(95)
       await sleep(10)
       const wavResult = await bufferToWav(rendered, {
         preferCompatibility: compatibilityMode === "high",
         maxBytes: 48 * 1024 * 1024,
-        onProgress: (p) => setProcessingProgress(90 + Math.floor((p / 100) * 10)),
+        onProgress: (p) => setProcessingProgress(95 + Math.floor((p / 100) * 5)),
         isMobile: isMobileDevice,
       })
       if (wavResult.blob.size === 0) {
@@ -1345,7 +1345,7 @@ export default function Home() {
       setProcessedUrl(url)
       setActualDuration(rendered.duration)
       setProcessedBufferState(rendered)
-      setProcessedFileSize(mp3Result.blob.size) // Show MP3 size, not WAV
+      setProcessedFileSize(webmResult.blob.size) // Show WebM size, not WAV
       setProcessedAudioMetadata(metadata)
       setProcessingProgress(100)
       setProcessingStep("Complete!")
@@ -2156,23 +2156,23 @@ export default function Home() {
       )
       setPausesAdjusted(silenceRegions.length)
 
-      setProcessingStep("Creating MP3 file (step 4a/5)...")
+      setProcessingStep("Creating compressed file (step 4/5)...")
       setProcessingProgress(80)
       await sleep(10)
 
-      const mp3Result = await bufferToMp3(processedAudioBuffer, {
-        bitrate: 96,
-        onProgress: (p) => setProcessingProgress(80 + Math.floor(p * 0.1)),
+      const webmResult = await bufferToWebM(processedAudioBuffer, {
+        bitrate: 96000, // 96kbps
+        onProgress: (p) => setProcessingProgress(80 + Math.floor(p * 0.15)),
       })
-      setProcessedMp3Blob(mp3Result.blob)
+      setProcessedMp3Blob(webmResult.blob)
 
-      setProcessingStep("Creating playback file (step 4b/5)...")
-      setProcessingProgress(90)
+      setProcessingStep("Creating playback file (step 5/5)...")
+      setProcessingProgress(95)
       await sleep(10)
       const wavResult = await bufferToWav(processedAudioBuffer, {
         preferCompatibility: compatibilityMode === "high",
         maxBytes: 48 * 1024 * 1024,
-        onProgress: (p) => setProcessingProgress(90 + Math.floor((p / 100) * 10)),
+        onProgress: (p) => setProcessingProgress(95 + Math.floor((p / 100) * 5)),
         isMobile: isMobileDevice,
       })
       if (wavResult.blob.size === 0) {
@@ -2183,7 +2183,7 @@ export default function Home() {
       setProcessedUrl(url)
       setActualDuration(processedAudioBuffer.duration)
       setProcessedBufferState(processedAudioBuffer)
-      setProcessedFileSize(mp3Result.blob.size) // Show MP3 size, not WAV
+      setProcessedFileSize(webmResult.blob.size) // Show WebM size, not WAV
       setProcessedAudioMetadata(metadata)
       setProcessingProgress(100)
       setProcessingStep("Complete!")
@@ -3330,7 +3330,7 @@ export default function Home() {
                           </Button>
                           <SaveMeditationDialog
                             audioUrl={processedUrl}
-                            mp3Blob={processedMp3Blob} // Pass pre-created MP3 blob
+                            mp3Blob={processedMp3Blob} // Pass pre-created WebM blob
                             originalFileName={file?.name || "meditation"}
                             duration={actualDuration || targetDuration * 60}
                             source="adjuster"

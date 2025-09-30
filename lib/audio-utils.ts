@@ -236,9 +236,106 @@ export interface BufferToMp3Options {
   onProgress?: (progress: number) => void
 }
 
+export interface BufferToWebMOptions {
+  bitrate?: number
+  onProgress?: (progress: number) => void
+}
+
+/**
+ * Convert AudioBuffer to WebM/Opus using browser's native MediaRecorder
+ * This is MUCH faster than MP3 encoding and produces smaller files
+ */
+export const bufferToWebM = async (
+  buffer: AudioBuffer,
+  { bitrate = 96000, onProgress = () => {} }: BufferToWebMOptions = {},
+): Promise<{ blob: Blob; sampleRate: number; bitrate: number; channels: number }> => {
+  onProgress(0)
+
+  // Create an offline audio context to render the buffer
+  const offlineContext = new OfflineAudioContext(1, buffer.length, buffer.sampleRate)
+
+  // Create a buffer source
+  const source = offlineContext.createBufferSource()
+  source.buffer = buffer
+  source.connect(offlineContext.destination)
+  source.start(0)
+
+  onProgress(10)
+
+  // Render the audio
+  const renderedBuffer = await offlineContext.startRendering()
+
+  onProgress(30)
+
+  // Create a MediaStreamDestination to capture audio
+  const audioContext = Tone.context.rawContext as AudioContext
+  const destination = audioContext.createMediaStreamDestination()
+
+  // Create a buffer source for the rendered audio
+  const playbackSource = audioContext.createBufferSource()
+  playbackSource.buffer = renderedBuffer
+  playbackSource.connect(destination)
+
+  onProgress(50)
+
+  // Create MediaRecorder with WebM/Opus codec
+  const mediaRecorder = new MediaRecorder(destination.stream, {
+    mimeType: "audio/webm;codecs=opus",
+    audioBitsPerSecond: bitrate,
+  })
+
+  const chunks: Blob[] = []
+
+  return new Promise((resolve, reject) => {
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) {
+        chunks.push(e.data)
+      }
+    }
+
+    mediaRecorder.onstop = () => {
+      onProgress(100)
+      const blob = new Blob(chunks, { type: "audio/webm" })
+
+      console.log(
+        `[v0] WebM encoding complete. Original size: ${Math.round((buffer.length * buffer.numberOfChannels * 4) / 1024 / 1024)}MB (uncompressed), WebM size: ${Math.round(blob.size / 1024 / 1024)}MB (${Math.round(bitrate / 1000)}kbps)`,
+      )
+
+      resolve({
+        blob,
+        sampleRate: buffer.sampleRate,
+        bitrate: Math.round(bitrate / 1000),
+        channels: 1,
+      })
+    }
+
+    mediaRecorder.onerror = (e) => {
+      reject(new Error(`MediaRecorder error: ${e}`))
+    }
+
+    // Start recording
+    mediaRecorder.start()
+    onProgress(70)
+
+    // Play the audio (this triggers recording)
+    playbackSource.start(0)
+
+    // Stop recording after the audio duration
+    setTimeout(
+      () => {
+        mediaRecorder.stop()
+        playbackSource.stop()
+        onProgress(90)
+      },
+      renderedBuffer.duration * 1000 + 100,
+    )
+  })
+}
+
 /**
  * Convert AudioBuffer to MP3 using lamejs encoder
  * Encodes directly on main thread (no Web Worker to avoid module import issues)
+ * NOTE: This is SLOW - prefer bufferToWebM for faster encoding
  */
 export const bufferToMp3 = async (
   buffer: AudioBuffer,
