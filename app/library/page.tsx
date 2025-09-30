@@ -27,6 +27,8 @@ import {
   Pause,
   Download,
   ChevronDown,
+  Music,
+  Volume2,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
@@ -228,6 +230,12 @@ export default function LibraryPage() {
       day: "numeric",
       year: "numeric",
     }).format(date)
+  }
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
   const openMeditationPlayer = (meditation: SavedMeditation) => {
@@ -910,6 +918,45 @@ export default function LibraryPage() {
                     preload="metadata"
                     className="hidden"
                   />
+
+                  {selectedMeditation.source === "encoder" && selectedMeditation.metadata.timeline && (
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-black text-gray-700 uppercase tracking-wide">Timeline Events</h3>
+                      <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
+                        {selectedMeditation.metadata.timeline.map((event, index) => (
+                          <div
+                            key={event.id}
+                            className="bg-gradient-to-r from-gray-50 to-stone-50 rounded-lg p-3 border border-gray-200 shadow-sm"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-black text-gray-800 truncate">{event.text}</p>
+                                <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-600">
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {formatTime(event.startTime)}
+                                  </span>
+                                  {event.keepOriginal && (
+                                    <span className="flex items-center gap-1">
+                                      <Volume2 className="h-3 w-3 text-logo-rose-500" />
+                                      <span className="text-logo-rose-500">Recording</span>
+                                    </span>
+                                  )}
+                                  <span className="flex items-center gap-1">
+                                    <Music className="h-3 w-3 text-logo-teal-500" />
+                                    <span className="text-logo-teal-500">Cue</span>
+                                  </span>
+                                </div>
+                              </div>
+                              <span className="text-xs font-black text-gray-500 bg-white px-2 py-1 rounded border border-gray-200">
+                                #{index + 1}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="space-y-4">
                     <div

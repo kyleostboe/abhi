@@ -17,6 +17,16 @@ export interface SavedMeditation {
     // For encoder meditations
     instructionCount?: number
     soundCuesUsed?: string[]
+    timeline?: Array<{
+      id: string
+      text: string
+      startTime: number
+      endTime: number
+      soundId: string
+      keepOriginal: boolean
+      originalVolume: number
+      soundVolume: number
+    }>
     // Shared audio export metadata
     wav?: BufferToWavMetadata
   }

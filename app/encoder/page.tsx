@@ -95,8 +95,7 @@ export default function EncoderPage() {
   const originalAudioBufferRef = useRef<AudioBuffer | null>(null)
 
   const encodedQualityWarning =
-    encodedAudioMetadata &&
-    (encodedAudioMetadata.bitDepth === 8 || encodedAudioMetadata.sampleRate <= 16000)
+    encodedAudioMetadata && (encodedAudioMetadata.bitDepth === 8 || encodedAudioMetadata.sampleRate <= 16000)
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -953,6 +952,16 @@ export default function EncoderPage() {
                     metadata={{
                       instructionCount: mappedInstructions.length,
                       soundCuesUsed: [...new Set(mappedInstructions.map((instr) => instr.soundId))],
+                      timeline: mappedInstructions.map((instr) => ({
+                        id: instr.id,
+                        text: instr.text,
+                        startTime: instr.startTime,
+                        endTime: instr.endTime,
+                        soundId: instr.soundId,
+                        keepOriginal: instr.keepOriginal,
+                        originalVolume: instr.originalVolume,
+                        soundVolume: instr.soundVolume,
+                      })),
                       wav: encodedAudioMetadata ? { ...encodedAudioMetadata } : undefined,
                     }}
                   >
@@ -971,8 +980,7 @@ export default function EncoderPage() {
                   </p>
                   {encodedAudioMetadata && (
                     <p>
-                      <strong>Output Format:</strong> Mono • {encodedAudioMetadata.sampleRate.toLocaleString()} Hz •
-                      {" "}
+                      <strong>Output Format:</strong> Mono • {encodedAudioMetadata.sampleRate.toLocaleString()} Hz •{" "}
                       {encodedAudioMetadata.bitDepth}-bit
                     </p>
                   )}
@@ -981,10 +989,9 @@ export default function EncoderPage() {
                   <Alert className="bg-amber-50 border-amber-200 text-amber-700 text-sm">
                     <AlertTitle className="font-semibold text-sm">Reduced quality export</AlertTitle>
                     <AlertDescription className="text-xs">
-                      The encoded audio was compressed to {encodedAudioMetadata?.sampleRate.toLocaleString()} Hz and
-                      {" "}
-                      {encodedAudioMetadata?.bitDepth}-bit mono to stay under the 48 MiB limit. Shorter sessions will keep higher
-                      fidelity.
+                      The encoded audio was compressed to {encodedAudioMetadata?.sampleRate.toLocaleString()} Hz and{" "}
+                      {encodedAudioMetadata?.bitDepth}-bit mono to stay under the 48 MiB limit. Shorter sessions will
+                      keep higher fidelity.
                     </AlertDescription>
                   </Alert>
                 )}
