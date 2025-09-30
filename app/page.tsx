@@ -2865,8 +2865,8 @@ export default function Home() {
                   onDragLeave={handleDragLeaveAction}
                   onDrop={handleDropAction}
                 >
-                  <div className="p-0.5 bg-gradient-to-r from-gray-600 to-gray-500 py-1 shadow-lg rounded-sm px-[5px]">
-                    <div className="p-10 md:p-16 text-center bg-white rounded-lg md:py-12 md:px-16 border-stone-200 border-[3px] shadow-none">
+                  <div className="p-0.5 bg-gradient-to-r from-logo-blue-400 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
+                    <div className="p-10 md:p-16 text-center bg-white rounded-lg md:py-12 md:px-16 border-stone-200 border-[3px] shadow">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -2899,7 +2899,7 @@ export default function Home() {
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
                       className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-purple-300 to-orange-300 py-1 shadow-md rounded-sm px-[5px]"
                     >
-                      <div className="bg-white p-5 py-4 rounded-sm">
+                      <div className="bg-white p-5 py-4 rounded-sm border-stone-200 border-[3px] shadow">
                         <div className="flex items-center">
                           <motion.div
                             initial={{ scale: 0 }}
@@ -3393,8 +3393,8 @@ export default function Home() {
                       transition={{ delay: 0.2 }}
                       className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                     >
-                      <div className="p-0.5 bg-gradient-to-r from-logo-teal-500 to-logo-blue-400  py-1 shadow-lg rounded-sm px-[5px]">
-                        <div className="bg-white p-4 border-rose-200 border-0 rounded-sm shadow-nonee pt-[9px]">
+                      <div className="p-0.5 bg-gradient-to-r from-stone-300 to-logo-blue-400  py-1 shadow-lg rounded-sm px-[5px]">
+                        <div className="bg-white p-4 rounded-sm shadow-nonee pt-[9px] border-stone-200 border-[3px] shadow">
                           <div className="text-center">
                             <Textarea
                               id="custom-instruction"

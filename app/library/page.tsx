@@ -502,13 +502,13 @@ export default function LibraryPage() {
                     }`}
                   >
                     <div className={`${shouldStackFilters ? "" : "md:[grid-row:span_2]"}`}>
-                      <div className="p-0.5 bg-gradient-to-r from-muted to-stone-200 rounded-sm shadow-lg py-1 px-[5px]">
+                      <div className="p-0.5 bg-gradient-to-r from-logo-rose-300 to-stone-300 rounded-sm shadow-lg py-1 px-[5px]">
                         <div className="bg-white rounded-sm">
                           <Input
                             placeholder="Search meditations..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full border-none bg-transparent text-gray-600 placeholder-gray-400 focus-visible:ring-0 focus-visible:ring-offset-0"
+                            className="w-full border-[3px] border-stone-200 bg-transparent text-gray-600 placeholder-gray-400 focus-visible:ring-0 focus-visible:ring-offset-0"
                           />
                         </div>
                       </div>
