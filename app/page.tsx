@@ -897,6 +897,7 @@ export default function Home() {
         recordingLabel: event.recordedInstructionLabel,
         duration,
         eventType: event.type,
+        color: event.color,
       }
     })
   }, [timelineEvents])
@@ -1924,7 +1925,9 @@ export default function Home() {
               const duration = Math.max(0, rawEndTime - startTime)
               lastKnownEnd = Math.max(lastKnownEnd, rawEndTime)
 
-              const color = EVENT_COLORS[index % EVENT_COLORS.length]
+              const color = (typeof entry.color === "string" && entry.color.trim())
+                ? entry.color
+                : EVENT_COLORS[index % EVENT_COLORS.length]
               const instructionText = entry.text ?? `Instruction ${index + 1}`
               const keepOriginal = Boolean(entry.keepOriginal)
               const id = entry.id ?? `timeline_${index}`
@@ -1935,13 +1938,21 @@ export default function Home() {
                   type: "recorded_voice",
                   startTime,
                   instructionText,
-                  recordedInstructionLabel: instructionText,
+                  recordedInstructionLabel: entry.recordingLabel ?? instructionText,
+                  recordedAudioUrl:
+                    typeof entry.recordingUrl === "string" && entry.recordingUrl.trim()
+                      ? entry.recordingUrl
+                      : undefined,
                   color,
                   keepOriginal,
                 }
 
                 if (duration > 0) {
                   recordedEvent.duration = duration
+                }
+
+                if (entry.recordingStoragePath) {
+                  recordedEvent.recordingStoragePath = entry.recordingStoragePath
                 }
 
                 return recordedEvent
@@ -1958,7 +1969,10 @@ export default function Home() {
                 instructionText,
                 soundCueId: matchingCue?.id ?? entry.soundId,
                 soundCueName: matchingCue?.name ?? entry.soundId ?? "Sound Cue",
-                soundCueSrc: matchingCue?.src ?? (entry.soundId ? `synthetic:${entry.soundId}` : undefined),
+                soundCueSrc:
+                  entry.soundSrc && entry.soundSrc.trim()
+                    ? entry.soundSrc
+                    : matchingCue?.src ?? (entry.soundId ? `synthetic:${entry.soundId}` : undefined),
                 color,
                 keepOriginal,
               }

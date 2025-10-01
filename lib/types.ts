@@ -41,4 +41,5 @@ export interface TimelineEvent {
   duration?: number // Duration of the recorded audio in seconds
   color?: string // Added color property
   keepOriginal?: boolean
+  recordingStoragePath?: string
 }
