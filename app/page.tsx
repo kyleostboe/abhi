@@ -1854,42 +1854,111 @@ export default function Home() {
         setFile(audioFile)
         setOriginalUrl(URL.createObjectURL(audioFile))
 
-        // Simulate audio analysis to reconstruct timeline
-        // This would normally involve actual audio analysis, but for now we'll create a basic structure
-        const reconstructedEvents: TimelineEvent[] = []
+        const timelineMetadata = Array.isArray(importData.metadata?.timeline)
+          ? (importData.metadata.timeline as Array<{
+              id?: string
+              text?: string
+              startTime?: number
+              endTime?: number
+              soundId?: string
+              keepOriginal?: boolean
+            }>)
+          : null
 
-        // If we have metadata about instructions, create placeholder events
-        if (importData.metadata?.instructionCount) {
-          const eventDuration = importData.duration / importData.metadata.instructionCount
+        let reconstructedEvents: TimelineEvent[] = []
 
-          for (let i = 0; i < importData.metadata.instructionCount; i++) {
-            reconstructedEvents.push({
-              id: `reconstructed_${i}`,
-              type: "instruction",
-              startTime: i * eventDuration,
-              duration: Math.min(eventDuration * 0.8, 60), // Max 60s per instruction
-              content: { text: `Reconstructed instruction ${i + 1}`, category: "General" }, // Placeholder content
-              instructionText: `Reconstructed instruction ${i + 1}`,
-            })
+        if (timelineMetadata && timelineMetadata.length > 0) {
+          let lastKnownEnd = 0
 
-            // Add sound cue after each instruction
-            if (i < importData.metadata.instructionCount - 1) {
-              reconstructedEvents.push({
-                id: `sound_${i}`,
+          reconstructedEvents = timelineMetadata
+            .map((entry, index) => {
+              const hasStartTime = typeof entry.startTime === "number" && Number.isFinite(entry.startTime)
+              const startTime = hasStartTime ? entry.startTime! : lastKnownEnd
+              const hasEndTime = typeof entry.endTime === "number" && Number.isFinite(entry.endTime)
+              const rawEndTime = hasEndTime ? entry.endTime! : startTime
+              const duration = Math.max(0, rawEndTime - startTime)
+              lastKnownEnd = Math.max(lastKnownEnd, rawEndTime)
+
+              const color = EVENT_COLORS[index % EVENT_COLORS.length]
+              const instructionText = entry.text ?? `Instruction ${index + 1}`
+              const keepOriginal = Boolean(entry.keepOriginal)
+              const id = entry.id ?? `timeline_${index}`
+
+              if (keepOriginal) {
+                const recordedEvent: TimelineEvent = {
+                  id,
+                  type: "recorded_voice",
+                  startTime,
+                  instructionText,
+                  recordedInstructionLabel: instructionText,
+                  color,
+                  keepOriginal,
+                }
+
+                if (duration > 0) {
+                  recordedEvent.duration = duration
+                }
+
+                return recordedEvent
+              }
+
+              const matchingCue = SOUND_CUES_LIBRARY.find(
+                (cue) => cue.id === entry.soundId || cue.name === entry.soundId,
+              )
+
+              const instructionEvent: TimelineEvent = {
+                id,
                 type: "instruction_sound",
-                startTime: i * eventDuration + eventDuration * 0.8,
-                duration: 3,
-                soundCueId: SOUND_CUES_LIBRARY[0]?.id || "default_sound", // Default sound cue
+                startTime,
+                instructionText,
+                soundCueId: matchingCue?.id ?? entry.soundId,
+                soundCueName: matchingCue?.name ?? entry.soundId ?? "Sound Cue",
+                soundCueSrc: matchingCue?.src ?? (entry.soundId ? `synthetic:${entry.soundId}` : undefined),
+                color,
+                keepOriginal,
+              }
+
+              if (duration > 0) {
+                instructionEvent.duration = duration
+              } else if (matchingCue?.duration) {
+                instructionEvent.duration = matchingCue.duration
+              }
+
+              return instructionEvent
+            })
+            .filter((event): event is TimelineEvent => Boolean(event))
+
+          reconstructedEvents.sort((a, b) => a.startTime - b.startTime)
+        } else {
+          // Fallback for older saves without explicit timeline metadata
+          if (importData.metadata?.instructionCount) {
+            const eventDuration = importData.duration / importData.metadata.instructionCount
+
+            for (let i = 0; i < importData.metadata.instructionCount; i++) {
+              reconstructedEvents.push({
+                id: `reconstructed_${i}`,
+                type: "instruction_sound",
+                startTime: i * eventDuration,
+                duration: Math.min(eventDuration * 0.8, 60),
+                instructionText: `Reconstructed instruction ${i + 1}`,
+                soundCueId: SOUND_CUES_LIBRARY[0]?.id || "default_sound",
                 soundCueName: SOUND_CUES_LIBRARY[0]?.name || "Default Sound",
                 soundCueSrc: SOUND_CUES_LIBRARY[0]?.src || "",
-                instructionText: "Background sound", // Placeholder instruction text
+                color: EVENT_COLORS[i % EVENT_COLORS.length],
               })
             }
           }
         }
 
         setTimelineEvents(reconstructedEvents)
-        setEncoderTotalDuration(importData.duration) // Set total duration from imported data
+
+        const reconstructedEnd = reconstructedEvents.reduce(
+          (max, event) => Math.max(max, event.startTime + (event.duration ?? 0)),
+          0,
+        )
+        const totalDuration = Math.max(importData.duration ?? 0, reconstructedEnd)
+        setEncoderTotalDuration(totalDuration)
+
         setStatus({
           message: `Reconstructed "${importData.title}" with ${reconstructedEvents.length} timeline events.`,
           type: "success",
