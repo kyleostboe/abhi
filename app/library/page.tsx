@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
+import { cn } from "@/lib/utils"
 import {
   Trash2,
   Clock,
@@ -34,6 +35,8 @@ import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
 
+type LibraryTimelineEntry = NonNullable<SavedMeditation["metadata"]["timeline"]>[number]
+
 export default function LibraryPage() {
   const [meditations, setMeditations] = useState<SavedMeditation[]>([])
   const [playlists, setPlaylists] = useState<Playlist[]>([])
@@ -51,7 +54,9 @@ export default function LibraryPage() {
   const [playerDuration, setPlayerDuration] = useState(0)
   const [displayedMeditations, setDisplayedMeditations] = useState<SavedMeditation[]>([])
   const [isWideLayout, setIsWideLayout] = useState(false)
+  const [playingTimelineEventId, setPlayingTimelineEventId] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const timelineAudioRef = useRef<HTMLAudioElement | null>(null)
   const { toast } = useToast()
   const router = useRouter()
 
@@ -247,6 +252,11 @@ export default function LibraryPage() {
   }
 
   const closeMeditationPlayer = () => {
+    if (timelineAudioRef.current) {
+      timelineAudioRef.current.pause()
+      timelineAudioRef.current = null
+    }
+    setPlayingTimelineEventId(null)
     setIsPlayerOpen(false)
   }
 
@@ -278,6 +288,92 @@ export default function LibraryPage() {
     const newTime = Math.max(0, Math.min(audio.duration || 0, audio.currentTime + amount))
     audio.currentTime = newTime
     setPlayerTime(newTime)
+  }
+
+  const handlePlayTimelineEvent = (timelineEvent: LibraryTimelineEntry) => {
+    if (!selectedMeditation) return
+
+    const stopCurrentTimelineAudio = () => {
+      if (timelineAudioRef.current) {
+        timelineAudioRef.current.pause()
+        timelineAudioRef.current = null
+      }
+      setPlayingTimelineEventId(null)
+    }
+
+    if (timelineEvent.eventType === "recorded_voice" && timelineEvent.recordingUrl) {
+      if (playingTimelineEventId === timelineEvent.id) {
+        stopCurrentTimelineAudio()
+        return
+      }
+
+      stopCurrentTimelineAudio()
+      const audio = audioRef.current
+      if (audio && !audio.paused) {
+        audio.pause()
+        setIsAudioPlaying(false)
+      }
+
+      try {
+        const playback = new Audio(timelineEvent.recordingUrl)
+        playback.onended = () => {
+          stopCurrentTimelineAudio()
+        }
+        playback.onerror = () => {
+          stopCurrentTimelineAudio()
+          toast({
+            title: "Unable to play recording",
+            description: "The stored recording could not be loaded.",
+            variant: "destructive",
+          })
+        }
+        timelineAudioRef.current = playback
+        playback
+          .play()
+          .then(() => {
+            setPlayingTimelineEventId(timelineEvent.id)
+          })
+          .catch((error) => {
+            console.error("[v0] Failed to play timeline recording:", error)
+            stopCurrentTimelineAudio()
+            toast({
+              title: "Unable to play recording",
+              description: "Try reloading the page and playing the event again.",
+              variant: "destructive",
+            })
+          })
+      } catch (error) {
+        console.error("[v0] Error playing timeline recording:", error)
+        stopCurrentTimelineAudio()
+        toast({
+          title: "Unable to play recording",
+          description: "The recording could not be initialized for playback.",
+          variant: "destructive",
+        })
+      }
+      return
+    }
+
+    stopCurrentTimelineAudio()
+
+    const audio = audioRef.current
+    if (!audio) return
+
+    const targetTime = Number.isFinite(timelineEvent.startTime) ? timelineEvent.startTime : 0
+    audio.currentTime = Math.max(0, Math.min(audio.duration || targetTime, targetTime))
+    audio
+      .play()
+      .then(() => {
+        setIsAudioPlaying(true)
+      })
+      .catch((error) => {
+        console.error("[v0] Failed to play main audio from timeline event:", error)
+        toast({
+          title: "Unable to play event",
+          description: "Try reloading the page and playing the meditation again.",
+          variant: "destructive",
+        })
+      })
   }
 
   const handleOpenInTool = (tool?: "adjuster" | "encoder") => {
@@ -407,6 +503,23 @@ export default function LibraryPage() {
   }, [selectedMeditation])
 
   useEffect(() => {
+    if (!selectedMeditation && timelineAudioRef.current) {
+      timelineAudioRef.current.pause()
+      timelineAudioRef.current = null
+      setPlayingTimelineEventId(null)
+    }
+  }, [selectedMeditation])
+
+  useEffect(() => {
+    return () => {
+      if (timelineAudioRef.current) {
+        timelineAudioRef.current.pause()
+        timelineAudioRef.current = null
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     if (isPlayerOpen) {
       document.body.style.overflow = "hidden"
     } else {
@@ -416,6 +529,11 @@ export default function LibraryPage() {
         audio.pause()
         audio.currentTime = 0
       }
+      if (timelineAudioRef.current) {
+        timelineAudioRef.current.pause()
+        timelineAudioRef.current = null
+      }
+      setPlayingTimelineEventId(null)
       setIsAudioPlaying(false)
       setPlayerTime(0)
     }
@@ -921,37 +1039,75 @@ export default function LibraryPage() {
                     <div className="space-y-3">
                       <h3 className="text-sm font-black text-gray-700 uppercase tracking-wide">Timeline Events</h3>
                       <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
-                        {selectedMeditation.metadata.timeline.map((event, index) => (
-                          <div
-                            key={event.id}
-                            className="bg-gradient-to-r from-gray-50 to-stone-50 rounded-lg p-3 border border-gray-200 shadow-sm"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-black text-gray-800 truncate">{event.text}</p>
-                                <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-600">
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {formatTime(event.startTime)}
-                                  </span>
-                                  {event.keepOriginal && (
+                        {selectedMeditation.metadata.timeline.map((timelineEvent, index) => {
+                          const colorClass =
+                            typeof timelineEvent.color === "string" && timelineEvent.color.trim().length > 0
+                              ? timelineEvent.color
+                              : "bg-gradient-to-br from-gray-300 to-gray-400"
+                          const isRecording =
+                            timelineEvent.eventType === "recorded_voice" || Boolean(timelineEvent.keepOriginal)
+                          const isRecordingPlaying = playingTimelineEventId === timelineEvent.id && isRecording
+                          const durationLabel =
+                            typeof timelineEvent.duration === "number" && Number.isFinite(timelineEvent.duration)
+                              ? formatTime(timelineEvent.duration)
+                              : null
+
+                          return (
+                            <div
+                              key={timelineEvent.id}
+                              className="bg-gradient-to-r from-gray-50 to-stone-50 rounded-lg p-3 border border-gray-200 shadow-sm"
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="mt-0.5">
+                                  <div
+                                    className={cn(
+                                      "w-2.5 h-12 rounded-full shadow-sm",
+                                      colorClass,
+                                      colorClass.includes("bg-gradient") ? "" : "bg-gradient-to-b",
+                                    )}
+                                    aria-hidden="true"
+                                  />
+                                </div>
+                                <div className="flex-1 min-w-0 space-y-1">
+                                  <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-500">
+                                    <span className="font-black">#{index + 1}</span>
+                                    <span>at {formatTime(timelineEvent.startTime ?? 0)}</span>
+                                    {durationLabel && <span>• {durationLabel}</span>}
+                                  </div>
+                                  <p className="text-xs font-black text-gray-800 truncate">{timelineEvent.text}</p>
+                                  <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-600">
+                                    {isRecording && (
+                                      <span className="flex items-center gap-1">
+                                        <Volume2 className="h-3 w-3 text-logo-rose-500" />
+                                        <span className="text-logo-rose-500 font-semibold">
+                                          {timelineEvent.recordingLabel?.trim() || "Recording"}
+                                        </span>
+                                      </span>
+                                    )}
                                     <span className="flex items-center gap-1">
-                                      <Volume2 className="h-3 w-3 text-logo-rose-500" />
-                                      <span className="text-logo-rose-500">Recording</span>
+                                      <Music className="h-3 w-3 text-logo-teal-500" />
+                                      <span className="text-logo-teal-500 font-semibold">Cue</span>
                                     </span>
-                                  )}
-                                  <span className="flex items-center gap-1">
-                                    <Music className="h-3 w-3 text-logo-teal-500" />
-                                    <span className="text-logo-teal-500">Cue</span>
-                                  </span>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col items-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                                    onClick={(event) => {
+                                      event.stopPropagation()
+                                      handlePlayTimelineEvent(timelineEvent)
+                                    }}
+                                    aria-label="Play timeline event"
+                                  >
+                                    {isRecordingPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                                  </Button>
                                 </div>
                               </div>
-                              <span className="text-xs font-black text-gray-500 bg-white px-2 py-1 rounded border border-gray-200">
-                                #{index + 1}
-                              </span>
                             </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </div>
                   )}

@@ -33,6 +33,8 @@ export interface SavedMeditation {
       recordingLabel?: string
       duration?: number
       eventType?: "instruction_sound" | "recorded_voice"
+      color?: string
+      recordingStoragePath?: string
     }>
     // Shared audio export metadata
     wav?: BufferToWavMetadata
@@ -94,6 +96,75 @@ export class MeditationLibrary {
         console.log("[v0] Public URL:", urlData.publicUrl)
 
         let sourcePublicUrl: string | undefined
+        const metadataToSave: SavedMeditation["metadata"] = { ...meditation.metadata }
+
+        const inferExtensionFromMime = (mimeType?: string): string => {
+          if (!mimeType) {
+            return "webm"
+          }
+
+          if (mimeType.includes("mpeg")) {
+            return "mp3"
+          }
+          if (mimeType.includes("wav") || mimeType.includes("wave")) {
+            return "wav"
+          }
+          if (mimeType.includes("ogg")) {
+            return "ogg"
+          }
+          if (mimeType.includes("m4a") || mimeType.includes("mp4")) {
+            return "m4a"
+          }
+
+          const subtype = mimeType.split("/")[1]
+          return subtype || "webm"
+        }
+
+        if (Array.isArray(metadataToSave.timeline) && metadataToSave.timeline.length > 0) {
+          const processedTimeline = [] as NonNullable<SavedMeditation["metadata"]["timeline"]>
+
+          for (const event of metadataToSave.timeline) {
+            const processedEvent = { ...event }
+
+            if (
+              processedEvent.recordingUrl &&
+              (processedEvent.recordingUrl.startsWith("blob:") || processedEvent.recordingUrl.startsWith("data:"))
+            ) {
+              try {
+                const response = await fetch(processedEvent.recordingUrl)
+                const recordingBlob = await response.blob()
+                const extension = inferExtensionFromMime(recordingBlob.type)
+                const recordingFileName = `timeline_recordings/${timestamp}_${Math.random()
+                  .toString(36)
+                  .slice(2)}_${processedEvent.id || "event"}.${extension}`
+
+                const { data: recordingUploadData, error: recordingUploadError } = await supabase.storage
+                  .from("meditations")
+                  .upload(recordingFileName, recordingBlob, {
+                    contentType: recordingBlob.type || "audio/webm",
+                    upsert: false,
+                  })
+
+                if (recordingUploadError) {
+                  console.error("[v0] Timeline recording upload error:", recordingUploadError)
+                } else if (recordingUploadData?.path) {
+                  const { data: recordingUrlData } = supabase.storage
+                    .from("meditations")
+                    .getPublicUrl(recordingUploadData.path)
+
+                  processedEvent.recordingUrl = recordingUrlData.publicUrl
+                  processedEvent.recordingStoragePath = recordingUploadData.path
+                }
+              } catch (error) {
+                console.error("[v0] Failed to upload timeline recording:", error)
+              }
+            }
+
+            processedTimeline.push(processedEvent)
+          }
+
+          metadataToSave.timeline = processedTimeline
+        }
         if (meditation.sourceAudioUrl && meditation.sourceAudioUrl.startsWith("blob:")) {
           console.log("[v0] Uploading high-quality source file:", sourceFileName)
 
@@ -130,7 +201,7 @@ export class MeditationLibrary {
             source_audio_url: sourcePublicUrl,
             duration: durationInSeconds,
             source: meditation.source,
-            metadata: meditation.metadata,
+            metadata: metadataToSave,
             original_filename: meditation.originalFileName,
           })
           .select()
@@ -156,7 +227,7 @@ export class MeditationLibrary {
           duration: dbData.duration,
           createdAt: new Date(dbData.created_at),
           source: dbData.source as "adjuster" | "encoder",
-          metadata: dbData.metadata || {},
+          metadata: dbData.metadata || metadataToSave || {},
         }
       }
 
@@ -237,7 +308,7 @@ export class MeditationLibrary {
 
       const { data: meditation, error: fetchError } = await supabase
         .from("meditations")
-        .select("audio_url, source_audio_url")
+        .select("audio_url, source_audio_url, metadata")
         .eq("id", id)
         .single()
 
@@ -283,6 +354,16 @@ export class MeditationLibrary {
           }
         } catch (error) {
           console.warn("[v0] Could not parse source_audio_url:", error)
+        }
+      }
+
+      const timelineMetadata = Array.isArray(meditation?.metadata?.timeline)
+        ? (meditation.metadata.timeline as Array<{ recordingStoragePath?: string }>)
+        : []
+
+      for (const event of timelineMetadata) {
+        if (event.recordingStoragePath) {
+          filesToDelete.push(event.recordingStoragePath)
         }
       }
 
