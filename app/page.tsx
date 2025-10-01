@@ -23,7 +23,6 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -89,12 +88,12 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
           </h3>
         </div>
         <div className="p-6 pt-3.5 space-y-[21px]">
-          <Input
+          <input
             id={inputId}
             value={recordingLabel}
             onChange={onRecordingLabelChange}
             placeholder="Describe this recording..."
-            className="mt-1 text-sm font-black border-gray-500 focus-visible:border-gray-600 text-gray-500 shadow-md placeholder-gray-500"
+            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none focus-visible:border-[3px] focus-visible:border-gray-600 disabled:cursor-not-allowed disabled:border-gray-500 md:text-xs border-[3px] rounded-[10px] bg-white py-4 px-4 h-11 border-stone-200 mt-1 text-sm font-black text-gray-500 border-gray-500 shadow-md placeholder-gray-500"
           />
           <Button
             onClick={isRecording ? stopRecording : startRecording}
@@ -3353,26 +3352,26 @@ export default function Home() {
                           <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
                             Title:
                           </Label>
-                          <Input
+                          <input
                             id="meditation-title"
                             type="text"
                             value={meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
-                            className="mt-1 text-sm border-gray-500 focus-visible:border-gray-600 placeholder:text-gray-500 font-black text-gray-500 shadow-md"
+                            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none focus-visible:border-[3px] focus-visible:border-gray-600 disabled:cursor-not-allowed disabled:border-gray-500 md:text-xs border-[3px] rounded-[10px] bg-white py-4 px-4 h-11 border-stone-200 mt-1 text-sm font-black text-gray-500 border-gray-500 shadow-md"
                           />
                         </div>
                         <div className="text-center">
                           <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
                             Duration:
                           </Label>
-                          <Input
+                          <input
                             id="encoder-duration"
                             type="number"
                             value={encoderTotalDuration / 60}
                             onChange={handleDurationChange}
                             min="1"
-                            className="mt-1 text-sm font-black border-gray-500 focus-visible:border-gray-600 text-gray-500 shadow-md"
+                            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none focus-visible:border-[3px] focus-visible:border-gray-600 disabled:cursor-not-allowed disabled:border-gray-500 md:text-xs border-[3px] rounded-[10px] bg-white py-4 px-4 h-11 border-stone-200 mt-1 text-sm font-black text-gray-500 border-gray-500 shadow-md"
                           />
                         </div>
                       </div>
