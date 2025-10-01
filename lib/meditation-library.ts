@@ -22,10 +22,17 @@ export interface SavedMeditation {
       text: string
       startTime: number
       endTime: number
-      soundId: string
+      soundId?: string
+      soundName?: string
+      soundSrc?: string
+      instrument?: string
       keepOriginal: boolean
       originalVolume: number
       soundVolume: number
+      recordingUrl?: string
+      recordingLabel?: string
+      duration?: number
+      eventType?: "instruction_sound" | "recorded_voice"
     }>
     // Shared audio export metadata
     wav?: BufferToWavMetadata

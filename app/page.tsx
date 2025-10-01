@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
@@ -871,6 +871,51 @@ export default function Home() {
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
   const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(600)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
+
+  const encoderTimelineMetadata = useMemo(() => {
+    return timelineEvents.map((event) => {
+      const isRecording = event.type === "recorded_voice"
+      const duration = event.duration ?? 0
+      const endTime = event.startTime + duration
+      const text = isRecording
+        ? event.recordedInstructionLabel?.trim() || "Recorded Instruction"
+        : event.instructionText?.trim() || "Instruction"
+
+      return {
+        id: event.id,
+        text,
+        startTime: event.startTime,
+        endTime,
+        soundId: isRecording ? event.recordedAudioUrl ?? event.id : event.soundCueId ?? event.id,
+        soundName: event.soundCueName,
+        soundSrc: event.soundCueSrc,
+        instrument: event.instrument,
+        keepOriginal: isRecording,
+        originalVolume: isRecording ? 100 : 0,
+        soundVolume: !isRecording ? 100 : 0,
+        recordingUrl: event.recordedAudioUrl,
+        recordingLabel: event.recordedInstructionLabel,
+        duration,
+        eventType: event.type,
+      }
+    })
+  }, [timelineEvents])
+
+  const encoderSoundCuesUsed = useMemo(() => {
+    const cues = new Set<string>()
+
+    for (const event of timelineEvents) {
+      if (event.type === "instruction_sound") {
+        if (event.soundCueName?.trim()) {
+          cues.add(event.soundCueName.trim())
+        } else if (event.soundCueId?.trim()) {
+          cues.add(event.soundCueId.trim())
+        }
+      }
+    }
+
+    return Array.from(cues)
+  }, [timelineEvents])
   const [selectedLibraryInstruction, setSelectedLibraryInstruction] = useState<Instruction | null>(null)
   const [customInstructionText, setCustomInstructionText] = useState<string>("")
   const [selectedSoundCue, setSelectedSoundCue] = useState<SoundCue | null>(null)
@@ -3837,6 +3882,10 @@ export default function Home() {
                             instructionCount: timelineEvents.length,
                             meditationTitle,
                             wav: generatedAudioMetadata ? { ...generatedAudioMetadata } : undefined,
+                            timeline:
+                              encoderTimelineMetadata.length > 0 ? encoderTimelineMetadata : undefined,
+                            soundCuesUsed:
+                              encoderSoundCuesUsed.length > 0 ? encoderSoundCuesUsed : undefined,
                           }}
                         >
                           <Button className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white mt-3">
