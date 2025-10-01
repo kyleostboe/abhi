@@ -3358,7 +3358,7 @@ export default function Home() {
                             value={meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
-                            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 h-11 border-gray-500 mt-1 text-sm font-black text-gray-500 shadow-md border-[3px]"
+                            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 h-11 border-gray-500 mt-1 text-sm font-black text-gray-500 border-[3px] shadow-lg"
                           />
                         </div>
                         <div className="text-center">
@@ -3371,7 +3371,7 @@ export default function Home() {
                             value={encoderTotalDuration / 60}
                             onChange={handleDurationChange}
                             min="1"
-                            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none focus-visible:border-[3px] focus-visible:border-gray-600 disabled:cursor-not-allowed disabled:border-gray-500 md:text-xs border-[3px] rounded-[10px] bg-white py-4 px-4 h-11 mt-1 text-sm font-black text-gray-500 border-gray-500 shadow-md border-gray-500"
+                            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none focus-visible:border-[3px] focus-visible:border-gray-600 disabled:cursor-not-allowed disabled:border-gray-500 md:text-xs border-[3px] rounded-[10px] bg-white py-4 px-4 h-11 mt-1 text-sm font-black text-gray-500 border-gray-500 border-gray-500 shadow-lg"
                           />
                         </div>
                       </div>
