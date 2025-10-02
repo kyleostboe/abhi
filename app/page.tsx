@@ -912,7 +912,9 @@ export default function Home() {
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
   const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(600)
+  const [encoderTimelineOriginalDuration, setEncoderTimelineOriginalDuration] = useState<number | null>(null)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
+  const lastEncoderDurationAdjustmentRef = useRef<number | null>(null)
 
   const encoderTimelineMetadata = useMemo(() => {
     return timelineEvents.map((event) => {
@@ -2105,6 +2107,8 @@ export default function Home() {
         )
         const totalDuration = Math.max(importData.duration ?? 0, reconstructedEnd)
         setEncoderTotalDuration(totalDuration)
+        setEncoderTimelineOriginalDuration(totalDuration)
+        lastEncoderDurationAdjustmentRef.current = totalDuration
 
         setStatus({
           message: `Reconstructed "${importData.title}" with ${reconstructedEvents.length} timeline events.`,
@@ -2126,9 +2130,19 @@ export default function Home() {
         setFile(audioFile)
         setOriginalUrl(URL.createObjectURL(audioFile))
         setDisplayedFileName(fallbackFileName)
+        setEncoderTimelineOriginalDuration(null)
+        lastEncoderDurationAdjustmentRef.current = null
       }
     },
-    [setFile, setOriginalUrl, setMeditationTitle, setTimelineEvents, setEncoderTotalDuration, setStatus],
+    [
+      setFile,
+      setOriginalUrl,
+      setMeditationTitle,
+      setTimelineEvents,
+      setEncoderTotalDuration,
+      setStatus,
+      setEncoderTimelineOriginalDuration,
+    ],
   )
 
   const importAsRecordedBlock = useCallback(
@@ -2195,6 +2209,8 @@ export default function Home() {
 
         setTimelineEvents([recordedEvent])
         setEncoderTotalDuration(importData.duration)
+        setEncoderTimelineOriginalDuration(importData.duration)
+        lastEncoderDurationAdjustmentRef.current = importData.duration
         setGeneratedAudioMetadata(importData.metadata?.wav ?? null)
         setStatus({
           message: `Imported and analyzed "${importData.title}" - ready to adjust or encode.`,
@@ -2218,6 +2234,7 @@ export default function Home() {
       setAudioAnalysis,
       setTimelineEvents,
       setEncoderTotalDuration,
+      setEncoderTimelineOriginalDuration,
       setStatus,
       silenceThreshold,
       minSilenceDuration,
@@ -2712,6 +2729,63 @@ export default function Home() {
       if (interval) clearInterval(interval)
     }
   }, [isProcessing])
+
+  useEffect(() => {
+    if (
+      actualDuration === null ||
+      timelineEvents.length === 0 ||
+      encoderTimelineOriginalDuration === null
+    ) {
+      return
+    }
+
+    const normalizedActualDuration = Number(actualDuration)
+    const normalizedOriginalDuration = Number(encoderTimelineOriginalDuration)
+
+    if (!Number.isFinite(normalizedActualDuration) || !Number.isFinite(normalizedOriginalDuration)) {
+      return
+    }
+
+    const previousDuration =
+      lastEncoderDurationAdjustmentRef.current ?? normalizedOriginalDuration
+
+    if (!Number.isFinite(previousDuration) || previousDuration <= 0) {
+      return
+    }
+
+    if (Math.abs(normalizedActualDuration - previousDuration) < 0.01) {
+      return
+    }
+
+    const ratio = normalizedActualDuration / previousDuration
+
+    if (!Number.isFinite(ratio) || ratio <= 0) {
+      return
+    }
+
+    const rescaledEvents = timelineEvents.map((event) => {
+      const updatedEvent: TimelineEvent = {
+        ...event,
+        startTime: event.startTime * ratio,
+      }
+
+      if (typeof event.duration === "number" && Number.isFinite(event.duration)) {
+        updatedEvent.duration = event.duration * ratio
+      }
+
+      return updatedEvent
+    })
+
+    lastEncoderDurationAdjustmentRef.current = normalizedActualDuration
+    setTimelineEvents(rescaledEvents)
+    setEncoderTotalDuration(normalizedActualDuration)
+  }, [
+    actualDuration,
+    encoderTimelineOriginalDuration,
+    timelineEvents,
+    setTimelineEvents,
+    setEncoderTotalDuration,
+  ])
 
   // == Effects and Handlers for Labs ==
   useEffect(() => {
