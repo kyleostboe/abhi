@@ -916,20 +916,25 @@ export default function Home() {
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
   const lastEncoderDurationAdjustmentRef = useRef<number | null>(null)
 
-  const encoderTimelineMetadata = useMemo(() => {
+  const exportableTimelineMetadata = useMemo(() => {
     return timelineEvents.map((event) => {
       const isRecording = event.type === "recorded_voice"
-      const duration = event.duration ?? 0
-      const endTime = event.startTime + duration
       const text = isRecording
         ? event.recordedInstructionLabel?.trim() || "Recorded Instruction"
         : event.instructionText?.trim() || "Instruction"
 
+      const safeStartTime = Number.isFinite(event.startTime) ? event.startTime : 0
+      const rawDuration =
+        typeof event.duration === "number" && Number.isFinite(event.duration) ? event.duration : 0
+      const duration = rawDuration >= 0 ? rawDuration : 0
+      const endTime = safeStartTime + duration
+
       return {
         id: event.id,
         text,
-        startTime: event.startTime,
+        startTime: safeStartTime,
         endTime,
+        soundCueId: !isRecording ? event.soundCueId : undefined,
         soundId: isRecording ? event.recordedAudioUrl ?? event.id : event.soundCueId ?? event.id,
         soundName: event.soundCueName,
         soundSrc: event.soundCueSrc,
@@ -2045,6 +2050,7 @@ export default function Home() {
 
               const matchingCue = SOUND_CUES_LIBRARY.find(
                 (cue) =>
+                  (entry.soundCueId && cue.id === entry.soundCueId) ||
                   (entry.soundId && cue.id === entry.soundId) ||
                   (entry.soundName && cue.name === entry.soundName) ||
                   (entry.soundSrc && cue.src === entry.soundSrc),
@@ -2057,7 +2063,7 @@ export default function Home() {
                 type: "instruction_sound",
                 startTime,
                 instructionText: text || `Instruction ${index + 1}`,
-                soundCueId: entry.soundId ?? matchingCue?.id ?? undefined,
+                soundCueId: entry.soundCueId ?? entry.soundId ?? matchingCue?.id ?? undefined,
                 soundCueName,
                 soundCueSrc: entry.soundSrc ?? matchingCue?.src ?? undefined,
                 instrument: entry.instrument ?? undefined,
@@ -3754,6 +3760,10 @@ export default function Home() {
                               targetDuration,
                               pausesAdjusted,
                               wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
+                              timeline:
+                                exportableTimelineMetadata.length > 0
+                                  ? exportableTimelineMetadata
+                                  : undefined,
                             }}
                           >
                             <Button className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white">
@@ -4206,7 +4216,7 @@ export default function Home() {
                             meditationTitle,
                             wav: generatedAudioMetadata ? { ...generatedAudioMetadata } : undefined,
                             timeline:
-                              encoderTimelineMetadata.length > 0 ? encoderTimelineMetadata : undefined,
+                              exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                             soundCuesUsed:
                               encoderSoundCuesUsed.length > 0 ? encoderSoundCuesUsed : undefined,
                           }}
