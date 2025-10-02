@@ -429,7 +429,7 @@ export default function LibraryPage() {
           description: `"${selectedMeditation.title}" will load in the Adjuster tool${selectedMeditation.sourceAudioUrl ? " (using high-quality source)" : ""}.`,
         })
         setIsPlayerOpen(false)
-        router.push("/#adjuster")
+        router.push("/#adjuster", { scroll: false })
       } else {
         localStorage.setItem("abhi_encoder_import", JSON.stringify(payload))
         toast({
@@ -437,7 +437,7 @@ export default function LibraryPage() {
           description: `"${selectedMeditation.title}" will load in the Encoder tool${selectedMeditation.sourceAudioUrl ? " (using high-quality source)" : ""}.`,
         })
         setIsPlayerOpen(false)
-        router.push("/#encoder")
+        router.push("/#encoder", { scroll: false })
       }
     } catch (error) {
       toast({
