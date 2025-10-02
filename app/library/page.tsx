@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, useMemo } from "react"
+import { createPortal } from "react-dom"
 import type { MouseEvent } from "react"
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
@@ -55,6 +56,7 @@ export default function LibraryPage() {
   const [displayedMeditations, setDisplayedMeditations] = useState<SavedMeditation[]>([])
   const [isWideLayout, setIsWideLayout] = useState(false)
   const [playingTimelineEventId, setPlayingTimelineEventId] = useState<string | null>(null)
+  const [playerPortalElement, setPlayerPortalElement] = useState<HTMLElement | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const timelineAudioRef = useRef<HTMLAudioElement | null>(null)
   const { toast } = useToast()
@@ -64,6 +66,13 @@ export default function LibraryPage() {
 
   useEffect(() => {
     loadData()
+  }, [])
+
+  useEffect(() => {
+    setPlayerPortalElement(document.body)
+    return () => {
+      setPlayerPortalElement(null)
+    }
   }, [])
 
   const loadData = async () => {
@@ -971,236 +980,240 @@ export default function LibraryPage() {
             </AnimatePresence>
           </div>
 
-      <AnimatePresence>
-        {isPlayerOpen && selectedMeditation && (
-          <motion.div
-            key="meditation-player"
-            className="fixed inset-0 z-50 flex items-center justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={closeMeditationPlayer}
-          >
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/55 to-black/60 backdrop-blur-xl"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.9 }}
-              exit={{ opacity: 0 }}
-            />
-            <motion.div
-              className="relative z-10 w-full max-w-xl px-4"
-              initial={{ opacity: 0, y: 30, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 30, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 260, damping: 24 }}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <Card className="relative overflow-hidden border-none bg-white p-6 shadow-2xl backdrop-blur">
-                <button
-                  type="button"
-                  className="absolute right-4 top-4 rounded-full  p-2 text-gray-500 transition hover:text-gray-700"
-                  onClick={closeMeditationPlayer}
-                  aria-label="Close player"
+      {playerPortalElement &&
+        createPortal(
+          <AnimatePresence>
+            {isPlayerOpen && selectedMeditation && (
+              <motion.div
+                key="meditation-player"
+                className="fixed inset-0 z-50 flex items-center justify-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={closeMeditationPlayer}
+              >
+                <motion.div
+                  className="absolute inset-0 bg-black/70 backdrop-blur-2xl"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                />
+                <motion.div
+                  className="relative z-10 w-full max-w-xl px-4"
+                  initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 30, scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 24 }}
+                  onClick={(event) => event.stopPropagation()}
                 >
-                  <X className="h-[16px] w-[16px]" />
-                </button>
-
-                <div className="space-y-6 my-[3px] mx-[7px]">
-                  <div className="space-y-3">
-                    <button className="bg-gradient-to-r rounded-[7px] from-muted to-stone-200 text-xs font-serif text-gray-500 shadow-inner py-[5px] px-[13px] mb-[9px]">
-                      {selectedMeditation.source === "adjuster" ? "Adjuster" : "Encoder"}
-                    </button>
-                    <div>
-                      <h2 className="text-2xl font-black text-gray-600 text-left">{selectedMeditation.title}</h2>
-                      {(() => {
-                        const trimmedTitle = selectedMeditation.title.trim()
-                        const trimmedOriginal = selectedMeditation.originalFileName.trim()
-                        const showOriginalFileName =
-                          trimmedOriginal.length > 0 &&
-                          trimmedOriginal.localeCompare(trimmedTitle, undefined, {
-                            sensitivity: "accent",
-                          }) !== 0
-                        if (!showOriginalFileName) return null
-                        return null
-                      })()}
-                    </div>
-                  </div>
-
-                  {/* Player Content */}
-                  <audio
-                    ref={audioRef}
-                    src={selectedMeditation.processedAudioUrl}
-                    preload="metadata"
-                    className="hidden"
-                  />
-
-                  {selectedMeditation.source === "encoder" && selectedMeditation.metadata.timeline && (
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-black text-gray-700 uppercase tracking-wide">Timeline Events</h3>
-                      <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
-                        {selectedMeditation.metadata.timeline.map((timelineEvent, index) => {
-                          const colorClass =
-                            typeof timelineEvent.color === "string" && timelineEvent.color.trim().length > 0
-                              ? timelineEvent.color
-                              : "bg-gradient-to-br from-gray-300 to-gray-400"
-                          const isRecording =
-                            timelineEvent.eventType === "recorded_voice" || Boolean(timelineEvent.keepOriginal)
-                          const isRecordingPlaying = playingTimelineEventId === timelineEvent.id && isRecording
-                          const durationLabel =
-                            typeof timelineEvent.duration === "number" && Number.isFinite(timelineEvent.duration)
-                              ? formatTime(timelineEvent.duration)
-                              : null
-
-                          return (
-                            <div
-                              key={timelineEvent.id}
-                              className="bg-gradient-to-r from-gray-50 to-stone-50 rounded-lg p-3 border border-gray-200 shadow-sm"
-                            >
-                              <div className="flex items-start gap-3">
-                                <div className="mt-0.5">
-                                  <div
-                                    className={cn(
-                                      "w-2.5 h-12 rounded-full shadow-sm",
-                                      colorClass,
-                                      colorClass.includes("bg-gradient") ? "" : "bg-gradient-to-b",
-                                    )}
-                                    aria-hidden="true"
-                                  />
-                                </div>
-                                <div className="flex-1 min-w-0 space-y-1">
-                                  <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-500">
-                                    <span className="font-black">#{index + 1}</span>
-                                    <span>at {formatTime(timelineEvent.startTime ?? 0)}</span>
-                                    {durationLabel && <span>• {durationLabel}</span>}
-                                  </div>
-                                  <p className="text-xs font-black text-gray-800 truncate">{timelineEvent.text}</p>
-                                  <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-600">
-                                    {isRecording && (
-                                      <span className="flex items-center gap-1">
-                                        <Volume2 className="h-3 w-3 text-logo-rose-500" />
-                                        <span className="text-logo-rose-500 font-semibold">
-                                          {timelineEvent.recordingLabel?.trim() || "Recording"}
-                                        </span>
-                                      </span>
-                                    )}
-                                    <span className="flex items-center gap-1">
-                                      <Music className="h-3 w-3 text-logo-teal-500" />
-                                      <span className="text-logo-teal-500 font-semibold">Cue</span>
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="flex flex-col items-end gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                                    onClick={(event) => {
-                                      event.stopPropagation()
-                                      handlePlayTimelineEvent(timelineEvent)
-                                    }}
-                                    aria-label="Play timeline event"
-                                  >
-                                    {isRecordingPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedMeditation.source === "encoder" && !selectedMeditation.metadata.timeline && (
-                    <div className="space-y-3">
-                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                        <p className="text-xs text-amber-800 font-black">
-                          Timeline data not available for this meditation. Re-encode and save it again to see the
-                          timeline events.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-4">
-                    <div
-                      className="relative h-2 rounded-full cursor-pointer shadow-inner bg-muted"
-                      onClick={handleSeek}
+                  <Card className="relative overflow-hidden border-none bg-white p-6 shadow-2xl backdrop-blur">
+                    <button
+                      type="button"
+                      className="absolute right-4 top-4 rounded-full  p-2 text-gray-500 transition hover:text-gray-700"
+                      onClick={closeMeditationPlayer}
+                      aria-label="Close player"
                     >
-                      <div
-                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-gray-500 to-gray-600 rounded-full transition-all duration-150"
-                        style={{ width: `${playbackProgress}%` }}
+                      <X className="h-[16px] w-[16px]" />
+                    </button>
+
+                    <div className="space-y-6 my-[3px] mx-[7px]">
+                      <div className="space-y-3">
+                        <button className="bg-gradient-to-r rounded-[7px] from-muted to-stone-200 text-xs font-serif text-gray-500 shadow-inner py-[5px] px-[13px] mb-[9px]">
+                          {selectedMeditation.source === "adjuster" ? "Adjuster" : "Encoder"}
+                        </button>
+                        <div>
+                          <h2 className="text-2xl font-black text-gray-600 text-left">{selectedMeditation.title}</h2>
+                          {(() => {
+                            const trimmedTitle = selectedMeditation.title.trim()
+                            const trimmedOriginal = selectedMeditation.originalFileName.trim()
+                            const showOriginalFileName =
+                              trimmedOriginal.length > 0 &&
+                              trimmedOriginal.localeCompare(trimmedTitle, undefined, {
+                                sensitivity: "accent",
+                              }) !== 0
+                            if (!showOriginalFileName) return null
+                            return null
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* Player Content */}
+                      <audio
+                        ref={audioRef}
+                        src={selectedMeditation.processedAudioUrl}
+                        preload="metadata"
+                        className="hidden"
                       />
-                    </div>
 
-                    <div className="flex justify-between text-xs font-black text-gray-600">
-                      <span>{formatDetailedTime(playerTime)}</span>
-                      <span>{formatDetailedTime(playerDuration)}</span>
-                    </div>
+                      {selectedMeditation.source === "encoder" && selectedMeditation.metadata.timeline && (
+                        <div className="space-y-3">
+                          <h3 className="text-sm font-black text-gray-700 uppercase tracking-wide">Timeline Events</h3>
+                          <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
+                            {selectedMeditation.metadata.timeline.map((timelineEvent, index) => {
+                              const colorClass =
+                                typeof timelineEvent.color === "string" && timelineEvent.color.trim().length > 0
+                                  ? timelineEvent.color
+                                  : "bg-gradient-to-br from-gray-300 to-gray-400"
+                              const isRecording =
+                                timelineEvent.eventType === "recorded_voice" || Boolean(timelineEvent.keepOriginal)
+                              const isRecordingPlaying = playingTimelineEventId === timelineEvent.id && isRecording
+                              const durationLabel =
+                                typeof timelineEvent.duration === "number" && Number.isFinite(timelineEvent.duration)
+                                  ? formatTime(timelineEvent.duration)
+                                  : null
 
-                    <div className="flex items-center justify-center gap-4">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleSkip(-10)}
-                        className="h-10 w-10 text-gray-600 hover:text-gray-800"
-                      >
-                        <SkipBack className="h-5 w-5" />
-                      </Button>
+                              return (
+                                <div
+                                  key={timelineEvent.id}
+                                  className="bg-gradient-to-r from-gray-50 to-stone-50 rounded-lg p-3 border border-gray-200 shadow-sm"
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <div className="mt-0.5">
+                                      <div
+                                        className={cn(
+                                          "w-2.5 h-12 rounded-full shadow-sm",
+                                          colorClass,
+                                          colorClass.includes("bg-gradient") ? "" : "bg-gradient-to-b",
+                                        )}
+                                        aria-hidden="true"
+                                      />
+                                    </div>
+                                    <div className="flex-1 min-w-0 space-y-1">
+                                      <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-500">
+                                        <span className="font-black">#{index + 1}</span>
+                                        <span>at {formatTime(timelineEvent.startTime ?? 0)}</span>
+                                        {durationLabel && <span>• {durationLabel}</span>}
+                                      </div>
+                                      <p className="text-xs font-black text-gray-800 truncate">{timelineEvent.text}</p>
+                                      <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-600">
+                                        {isRecording && (
+                                          <span className="flex items-center gap-1">
+                                            <Volume2 className="h-3 w-3 text-logo-rose-500" />
+                                            <span className="text-logo-rose-500 font-semibold">
+                                              {timelineEvent.recordingLabel?.trim() || "Recording"}
+                                            </span>
+                                          </span>
+                                        )}
+                                        <span className="flex items-center gap-1">
+                                          <Music className="h-3 w-3 text-logo-teal-500" />
+                                          <span className="text-logo-teal-500 font-semibold">Cue</span>
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                                        onClick={(event) => {
+                                          event.stopPropagation()
+                                          handlePlayTimelineEvent(timelineEvent)
+                                        }}
+                                        aria-label="Play timeline event"
+                                      >
+                                        {isRecordingPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
 
-                      <Button
-                        onClick={togglePlayback}
-                        className="h-12 w-12 rounded-full shadow-md bg-gradient-to-r from-gray-500 to-gray-600  hover:shadow-none text-white"
-                      >
-                        {isAudioPlaying ? <Pause className="h-10 w-10" /> : <Play className="ml-0.5 w-10 h-10" />}
-                      </Button>
+                      {selectedMeditation.source === "encoder" && !selectedMeditation.metadata.timeline && (
+                        <div className="space-y-3">
+                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                            <p className="text-xs text-amber-800 font-black">
+                              Timeline data not available for this meditation. Re-encode and save it again to see the
+                              timeline events.
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleSkip(10)}
-                        className="h-10 w-10 text-gray-600 hover:text-gray-800"
-                      >
-                        <SkipForward className="h-5 w-5" />
-                      </Button>
-                    </div>
+                      <div className="space-y-4">
+                        <div
+                          className="relative h-2 rounded-full cursor-pointer shadow-inner bg-muted"
+                          onClick={handleSeek}
+                        >
+                          <div
+                            className="absolute top-0 left-0 h-full bg-gradient-to-r from-gray-500 to-gray-600 rounded-full transition-all duration-150"
+                            style={{ width: `${playbackProgress}%` }}
+                          />
+                        </div>
 
-                    <div className="flex pt-[27px] gap-3.5">
-                      <Button
-                        onClick={handleDownloadMeditation}
-                        variant="ghost"
-                        size="icon"
-                        className="h-10 w-10 text-gray-600 hover:text-gray-800 shadow-md hover:shadow-none"
-                        title="Download"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
+                        <div className="flex justify-between text-xs font-black text-gray-600">
+                          <span>{formatDetailedTime(playerTime)}</span>
+                          <span>{formatDetailedTime(playerDuration)}</span>
+                        </div>
 
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button className="flex-1 shadow-md bg-gradient-to-r from-logo-amber-300 to-logo-teal-500 rounded-[11px] hover:shadow-none text-white font-black text-xs">
-                            Open In
-                            <ChevronDown className="h-4 w-4 ml-2" />
+                        <div className="flex items-center justify-center gap-4">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleSkip(-10)}
+                            className="h-10 w-10 text-gray-600 hover:text-gray-800"
+                          >
+                            <SkipBack className="h-5 w-5" />
                           </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40">
-                          <DropdownMenuItem onClick={() => handleOpenInTool("adjuster")} className="cursor-pointer">
-                            Adjuster
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleOpenInTool("encoder")} className="cursor-pointer">
-                            Encoder
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+
+                          <Button
+                            onClick={togglePlayback}
+                            className="h-12 w-12 rounded-full shadow-md bg-gradient-to-r from-gray-500 to-gray-600  hover:shadow-none text-white"
+                          >
+                            {isAudioPlaying ? <Pause className="h-10 w-10" /> : <Play className="ml-0.5 w-10 h-10" />}
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleSkip(10)}
+                            className="h-10 w-10 text-gray-600 hover:text-gray-800"
+                          >
+                            <SkipForward className="h-5 w-5" />
+                          </Button>
+                        </div>
+
+                        <div className="flex pt-[27px] gap-3.5">
+                          <Button
+                            onClick={handleDownloadMeditation}
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 text-gray-600 hover:text-gray-800 shadow-md hover:shadow-none"
+                            title="Download"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button className="flex-1 shadow-md bg-gradient-to-r from-logo-amber-300 to-logo-teal-500 rounded-[11px] hover:shadow-none text-white font-black text-xs">
+                                Open In
+                                <ChevronDown className="h-4 w-4 ml-2" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuItem onClick={() => handleOpenInTool("adjuster")} className="cursor-pointer">
+                                Adjuster
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenInTool("encoder")} className="cursor-pointer">
+                                Encoder
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-                </Card>
+                  </Card>
+                </motion.div>
               </motion.div>
-            </motion.div>
+            )}
+          </AnimatePresence>,
+          playerPortalElement,
         )}
-      </AnimatePresence>
           </div>
         </div>
       </div>
