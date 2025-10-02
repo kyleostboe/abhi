@@ -2219,6 +2219,25 @@ export default function Home() {
           localStorage.removeItem("abhi_adjuster_import")
         }
       }
+
+      const encoderImport = localStorage.getItem("abhi_encoder_import")
+      if (encoderImport) {
+        try {
+          const importData = JSON.parse(encoderImport)
+          console.log("[v0] Loading meditation from library into encoder:", importData)
+          if (activeTab !== "encoder") {
+            setActiveTab("encoder")
+          }
+          if (activeMode !== "encoder") {
+            setActiveMode("encoder")
+          }
+          handleImportedMeditation(importData, "encoder")
+          localStorage.removeItem("abhi_encoder_import")
+        } catch (error) {
+          console.error("[v0] Error loading encoder import:", error)
+          localStorage.removeItem("abhi_encoder_import")
+        }
+      }
     }
 
     handleHashChange()
@@ -2230,7 +2249,7 @@ export default function Home() {
     return () => {
       window.removeEventListener("hashchange", handleHashChange)
     }
-  }, [toast, handleImportedMeditation]) // handleImportedMeditation is now stable due to useCallback
+  }, [toast, handleImportedMeditation, activeTab, activeMode]) // handleImportedMeditation is now stable due to useCallback
 
   const processAudioAdjusterAction = async () => {
     console.log("[v0] Processing button clicked")
