@@ -206,6 +206,21 @@ const deriveMeditationTitle = (meditation: any): string => {
   return metadataTitle ?? savedTitle ?? originalFileName ?? "My Custom Meditation"
 }
 
+const deriveMeditationFileName = (meditation: any): string => {
+  const providedName =
+    typeof meditation?.originalFileName === "string" && meditation.originalFileName.trim().length > 0
+      ? meditation.originalFileName.trim()
+      : null
+
+  if (providedName) return providedName
+
+  const derivedTitle = deriveMeditationTitle(meditation).trim() || "Imported Meditation"
+  const lower = derivedTitle.toLowerCase()
+  const hasExtension = [".wav", ".mp3", ".m4a", ".ogg"].some((ext) => lower.endsWith(ext))
+
+  return hasExtension ? derivedTitle : `${derivedTitle}.wav`
+}
+
 interface TimelineItem {
   id: string
   type: "instruction" | "sound" | "recorded_voice" | "instruction_sound" | "recording" | "recorded"
@@ -853,6 +868,7 @@ export default function Home() {
 
   // == States for Length Adjuster ==
   const [file, setFile] = useState<File | null>(null)
+  const [displayedFileName, setDisplayedFileName] = useState<string | null>(null)
   const [originalBuffer, setOriginalBuffer] = useState<AudioBuffer | null>(null)
   const [processedBufferState, setProcessedBufferState] = useState<AudioBuffer | null>(null)
   const [processedAudioMetadata, setProcessedAudioMetadata] = useState<BufferToWavMetadata | null>(null)
@@ -883,6 +899,7 @@ export default function Home() {
   const [memoryWarning, setMemoryWarning] = useState<boolean>(false) // Corrected type to boolean
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadAreaRef = useRef<HTMLDivElement>(null)
+  const timelineEditorRef = useRef<HTMLDivElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [processedMp3Blob, setProcessedMp3Blob] = useState<Blob | null>(null) // Renamed to processedMp3Blob for clarity, but will store WebM
 
@@ -1654,6 +1671,7 @@ export default function Home() {
   // Helper function to handle file loading and initial analysis
   const handleFile = async (selectedFile: File) => {
     setFile(selectedFile)
+    setDisplayedFileName(selectedFile.name)
     setOriginalUrl("")
     setProcessedUrl("")
     setAudioAnalysis(null)
@@ -1731,6 +1749,7 @@ export default function Home() {
               type: "error",
             })
             setFile(null)
+            setDisplayedFileName(null)
             setOriginalBuffer(null)
             setOriginalUrl("")
           }
@@ -1741,6 +1760,7 @@ export default function Home() {
       console.error("Error accessing audio context:", error)
       setStatus({ message: `Audio system error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
       setFile(null)
+      setDisplayedFileName(null)
       setOriginalBuffer(null)
       setOriginalUrl("")
     }
@@ -1822,6 +1842,7 @@ export default function Home() {
       try {
         // Reset all state like normal file upload
         setFile(null)
+        setDisplayedFileName(null)
         setOriginalUrl("")
         setProcessedUrl("")
         setAudioAnalysis(null)
@@ -1869,8 +1890,10 @@ export default function Home() {
 
         // Create a fake file object for consistency
         const blob = new Blob([arrayBuffer], { type: "audio/wav" })
-        const fakeFile = new File([blob], importData.originalFileName, { type: "audio/wav" })
+        const fakeFileName = deriveMeditationFileName(importData)
+        const fakeFile = new File([blob], fakeFileName, { type: "audio/wav" })
         setFile(fakeFile)
+        setDisplayedFileName(fakeFileName)
         setMeditationTitle(deriveMeditationTitle(importData))
 
         // Perform silence detection like normal upload
@@ -1900,6 +1923,7 @@ export default function Home() {
           type: "error",
         })
         setFile(null)
+        setDisplayedFileName(null)
         setOriginalBuffer(null)
         setOriginalUrl("")
       }
@@ -1922,11 +1946,13 @@ export default function Home() {
         // Load the audio for analysis
         const response = await fetch(importData.processedAudioUrl)
         const audioBlob = await response.blob()
-        const audioFile = new File([audioBlob], importData.originalFileName, { type: "audio/wav" })
+        const reconstructedFileName = deriveMeditationFileName(importData)
+        const audioFile = new File([audioBlob], reconstructedFileName, { type: "audio/wav" })
 
         // Set the file for encoder
         setFile(audioFile)
         setOriginalUrl(URL.createObjectURL(audioFile))
+        setDisplayedFileName(reconstructedFileName)
 
         setMeditationTitle(deriveMeditationTitle(importData))
 
@@ -2085,9 +2111,11 @@ export default function Home() {
         // Fallback to basic import
         const response = await fetch(importData.processedAudioUrl)
         const audioBlob = await response.blob()
-        const audioFile = new File([audioBlob], importData.originalFileName, { type: "audio/wav" })
+        const fallbackFileName = deriveMeditationFileName(importData)
+        const audioFile = new File([audioBlob], fallbackFileName, { type: "audio/wav" })
         setFile(audioFile)
         setOriginalUrl(URL.createObjectURL(audioFile))
+        setDisplayedFileName(fallbackFileName)
       }
     },
     [setFile, setOriginalUrl, setMeditationTitle, setTimelineEvents, setEncoderTotalDuration, setStatus],
@@ -2101,9 +2129,11 @@ export default function Home() {
         // Load the audio
         const response = await fetch(importData.processedAudioUrl)
         const audioBlob = await response.blob()
-        const audioFile = new File([audioBlob], importData.originalFileName, { type: "audio/wav" })
+        const recordedBlockFileName = deriveMeditationFileName(importData)
+        const audioFile = new File([audioBlob], recordedBlockFileName, { type: "audio/wav" })
 
         setFile(audioFile)
+        setDisplayedFileName(recordedBlockFileName)
         setOriginalUrl(URL.createObjectURL(audioFile))
 
         // Decode audio buffer for analysis
@@ -2194,11 +2224,26 @@ export default function Home() {
         if (sourceTab === "encoder" && !importData.crossToolOpening) {
           // Encoder meditation reopened in encoder - reconstruct cues/recordings
           await reconstructEncoderMeditation(importData)
+          if (typeof window !== "undefined") {
+            requestAnimationFrame(() => {
+              timelineEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+            })
+          }
         } else if (sourceTab === "adjuster" || importData.crossToolOpening) {
           await importIntoAdjuster(importData)
+          if (typeof window !== "undefined") {
+            requestAnimationFrame(() => {
+              uploadAreaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+            })
+          }
         } else {
           // Fallback to recorded block for encoder cross-tool opening
           await importAsRecordedBlock(importData)
+          if (typeof window !== "undefined") {
+            requestAnimationFrame(() => {
+              timelineEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+            })
+          }
         }
       } catch (error) {
         console.error("[v0] Error handling imported meditation:", error)
@@ -3114,7 +3159,7 @@ export default function Home() {
                               transition={{ delay: 0.2 }}
                               className="mb-1 font-black text-gray-600 text-xs"
                             >
-                              {file.name}
+                              {displayedFileName ?? file.name}
                             </motion.div>
                             <motion.div
                               initial={{ opacity: 0, x: -5 }}
@@ -3815,7 +3860,7 @@ export default function Home() {
 
                 {/* Timeline Editor for encoder */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                  <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                  <Card ref={timelineEditorRef} className="overflow-hidden border-none shadow-lg bg-white ">
                     <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 py-3">
                       <h3 className="text-white flex items-center font-black text-base">
                         <CircleDotDashed className="h-5 w-5 mr-2" />
