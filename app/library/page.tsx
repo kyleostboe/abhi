@@ -726,10 +726,10 @@ export default function LibraryPage() {
                               <div className="relative flex items-center justify-between p-4 border-muted border-[3px] rounded-sm overflow-visible">
                                 <Badge
                                   variant="outline"
-                                  className={`absolute -top-2 -right-2 translate-x-[7px] -translate-y-[5px] z-10 !border-0 !px-3 !py-1 shadow-md text-white text-xs font-black rounded-[6px] bg-gradient-to-r ${
+                                  className={`absolute -top-2 -right-2 translate-x-[7px] -translate-y-[5px] z-10 !border-0 !px-3 !py-1 shadow-inner text-gray-500 text-xs font-black rounded-[6px] bg-gradient-to-r ${
                                     meditation.source === "adjuster"
-                                      ? "from-logo-emerald-500/90 to-logo-rose-300/90"
-                                      : "from-logo-blue-400/90 to-logo-amber-300/90"
+                                      ? "bg-gradient-to-r from-muted to-stone-200"
+                                      : "bg-gradient-to-r from-muted to-stone-200"
                                   }`}
                                 >
                                   {meditation.source === "adjuster" ? "Adjuster" : "Encoder"}
@@ -1030,7 +1030,7 @@ export default function LibraryPage() {
 
                     <div className="space-y-6 my-[3px] mx-[7px]">
                       <div className="space-y-3">
-                        <button className="bg-gradient-to-r rounded-[7px] from-muted to-stone-200 text-xs font-serif text-gray-500 shadow-inner py-[5px] px-[13px] mb-[9px]">
+                        <button className="bg-gradient-to-r from-muted to-stone-200 text-xs font-serif rounded-[7px] font-black text-gray-500 shadow-inner py-[5px] px-[13px] mb-[9px]">
                           {selectedMeditation.source === "adjuster" ? "Adjuster" : "Encoder"}
                         </button>
                         <div>

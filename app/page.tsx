@@ -4009,7 +4009,7 @@ export default function Home() {
                     className={cn(
                       "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
                       "shadow-lg hover:shadow-none active:shadow-none text-white",
-                      "bg-gradient-to-r from-logo-purple-300 via-logo-teal-500 to-logo-amber-300",
+                      "bg-gradient-to-r from-purple-300 via-logo-teal-500 to-logo-amber-300",
                       "",
                       "hover:brightness-[1.06] active:brightness-95",
                     )}
