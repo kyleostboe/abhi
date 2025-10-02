@@ -899,6 +899,7 @@ export default function Home() {
   const [memoryWarning, setMemoryWarning] = useState<boolean>(false) // Corrected type to boolean
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadAreaRef = useRef<HTMLDivElement>(null)
+  const adjusterSectionRef = useRef<HTMLDivElement>(null)
   const timelineEditorRef = useRef<HTMLDivElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [processedMp3Blob, setProcessedMp3Blob] = useState<Blob | null>(null) // Renamed to processedMp3Blob for clarity, but will store WebM
@@ -2216,6 +2217,27 @@ export default function Home() {
     ],
   )
 
+  const scrollToAdjusterSection = useCallback(() => {
+    if (typeof window === "undefined") {
+      return
+    }
+
+    const target = adjusterSectionRef.current ?? uploadAreaRef.current
+
+    if (!target) {
+      return
+    }
+
+    requestAnimationFrame(() => {
+      target.scrollIntoView({ behavior: "smooth", block: "start" })
+
+      // Ensure the scroll happens even if layout shifts after the first frame
+      window.setTimeout(() => {
+        target.scrollIntoView({ behavior: "smooth", block: "start" })
+      }, 120)
+    })
+  }, [])
+
   const handleImportedMeditation = useCallback(
     async (importData: any, sourceTab: "adjuster" | "encoder") => {
       console.log("[v0] Handling imported meditation:", importData, "from tab:", sourceTab)
@@ -2230,12 +2252,10 @@ export default function Home() {
             })
           }
         } else if (sourceTab === "adjuster" || importData.crossToolOpening) {
+          setActiveTab("adjuster")
+          setActiveMode("adjuster")
           await importIntoAdjuster(importData)
-          if (typeof window !== "undefined") {
-            requestAnimationFrame(() => {
-              uploadAreaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-            })
-          }
+          scrollToAdjusterSection()
         } else {
           // Fallback to recorded block for encoder cross-tool opening
           await importAsRecordedBlock(importData)
@@ -2253,7 +2273,7 @@ export default function Home() {
         })
       }
     },
-    [reconstructEncoderMeditation, importIntoAdjuster, importAsRecordedBlock, setStatus],
+    [reconstructEncoderMeditation, importIntoAdjuster, importAsRecordedBlock, scrollToAdjusterSection, setStatus],
   )
 
   useEffect(() => {
@@ -2273,6 +2293,12 @@ export default function Home() {
         try {
           const importData = JSON.parse(adjusterImport)
           console.log("[v0] Loading meditation from library into adjuster:", importData)
+          if (activeTab !== "adjuster") {
+            setActiveTab("adjuster")
+          }
+          if (activeMode !== "adjuster") {
+            setActiveMode("adjuster")
+          }
           handleImportedMeditation(importData, "adjuster")
           localStorage.removeItem("abhi_adjuster_import")
         } catch (error) {
@@ -3010,7 +3036,7 @@ export default function Home() {
             {/* Conditional Rendering based on activeMode */}
             {activeMode === "adjuster" ? (
               // == Length Adjuster UI ==
-              <>
+              <div ref={adjusterSectionRef} className="space-y-6">
                 {/* Note and Resources sections - moved to proper position */}
                 <div className="space-y-4 mb-[27px]">
                   <div className="p-4 max-w-2xl text-center mx-auto rounded-md border-logo-rose-500 border-0 shadow-none pt-0 pb-1">
@@ -3573,7 +3599,7 @@ export default function Home() {
                     </Card>
                   )}
                 </div>
-              </>
+              </div>
             ) : (
               // == Encoder UI ==
               <motion.div

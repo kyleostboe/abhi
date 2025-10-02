@@ -399,6 +399,17 @@ export default function LibraryPage() {
       usingSourceAudio: audioUrlToUse === selectedMeditation.sourceAudioUrl,
     })
 
+    const metadataForPayload: SavedMeditation["metadata"] & { meditationTitle?: string } = {
+      ...selectedMeditation.metadata,
+    }
+
+    if (
+      typeof metadataForPayload.meditationTitle !== "string" ||
+      metadataForPayload.meditationTitle.trim().length === 0
+    ) {
+      metadataForPayload.meditationTitle = selectedMeditation.title
+    }
+
     const payload = {
       id: selectedMeditation.id,
       title: selectedMeditation.title,
@@ -406,7 +417,7 @@ export default function LibraryPage() {
       processedAudioUrl: audioUrlToUse, // Use high-quality source for re-adjustment
       duration: selectedMeditation.duration,
       source: selectedMeditation.source,
-      metadata: selectedMeditation.metadata,
+      metadata: metadataForPayload,
       crossToolOpening: targetTool !== selectedMeditation.source,
     }
 

@@ -11,6 +11,8 @@ export interface SavedMeditation {
   createdAt: Date
   source: "adjuster" | "encoder"
   metadata: {
+    // Shared metadata
+    meditationTitle?: string
     // For adjuster meditations
     targetDuration?: number
     pausesAdjusted?: number
