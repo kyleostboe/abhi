@@ -30,6 +30,7 @@ import { useToast } from "@/hooks/use-toast"
 import { VisualTimeline } from "@/components/visual-timeline"
 import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFileSize } from "@/lib/utils"
 import { getAudioContext, bufferToWav, type BufferToWavMetadata } from "@/lib/audio-utils" // Import from audio-utils
+import type { SavedMeditation } from "@/lib/meditation-library"
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
@@ -186,6 +187,8 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
     </motion.div>
   )
 }
+
+type SavedTimelineEntry = NonNullable<SavedMeditation["metadata"]["timeline"]>[number]
 
 interface TimelineItem {
   id: string
@@ -898,6 +901,7 @@ export default function Home() {
         duration,
         eventType: event.type,
         color: event.color,
+        recordingStoragePath: event.recordingStoragePath,
       }
     })
   }, [timelineEvents])
@@ -1900,55 +1904,82 @@ export default function Home() {
         setFile(audioFile)
         setOriginalUrl(URL.createObjectURL(audioFile))
 
+        const importedTitle =
+          typeof importData.metadata?.meditationTitle === "string" && importData.metadata.meditationTitle.trim().length > 0
+            ? importData.metadata.meditationTitle.trim()
+            : typeof importData.title === "string" && importData.title.trim().length > 0
+              ? importData.title.trim()
+              : typeof importData.originalFileName === "string"
+                ? importData.originalFileName.replace(/\.[^/.]+$/, "").trim()
+                : "My Custom Meditation"
+        setMeditationTitle(importedTitle)
+
         const timelineMetadata = Array.isArray(importData.metadata?.timeline)
-          ? (importData.metadata.timeline as Array<{
-              id?: string
-              text?: string
-              startTime?: number
-              endTime?: number
-              soundId?: string
-              keepOriginal?: boolean
-            }>)
+          ? (importData.metadata.timeline as SavedTimelineEntry[])
           : null
 
         let reconstructedEvents: TimelineEvent[] = []
 
         if (timelineMetadata && timelineMetadata.length > 0) {
+          const parseNumber = (value: unknown): number | undefined => {
+            if (typeof value === "number" && Number.isFinite(value)) {
+              return value
+            }
+            if (typeof value === "string" && value.trim() !== "") {
+              const parsed = Number(value)
+              if (Number.isFinite(parsed)) {
+                return parsed
+              }
+            }
+            return undefined
+          }
+
           let lastKnownEnd = 0
 
           reconstructedEvents = timelineMetadata
             .map((entry, index) => {
-              const hasStartTime = typeof entry.startTime === "number" && Number.isFinite(entry.startTime)
-              const startTime = hasStartTime ? entry.startTime! : lastKnownEnd
-              const hasEndTime = typeof entry.endTime === "number" && Number.isFinite(entry.endTime)
-              const rawEndTime = hasEndTime ? entry.endTime! : startTime
-              const duration = Math.max(0, rawEndTime - startTime)
-              lastKnownEnd = Math.max(lastKnownEnd, rawEndTime)
+              const id = typeof entry.id === "string" && entry.id.trim() ? entry.id : `timeline_${index}`
+              const startTime = parseNumber(entry.startTime) ?? lastKnownEnd
+              const explicitDuration = parseNumber(entry.duration)
+              const endTimeFromMetadata = parseNumber(entry.endTime)
+              const computedDuration =
+                explicitDuration ??
+                (endTimeFromMetadata !== undefined ? Math.max(0, endTimeFromMetadata - startTime) : undefined)
+              const duration = computedDuration !== undefined && computedDuration > 0 ? computedDuration : undefined
+              const endTime = startTime + (duration ?? 0)
+              lastKnownEnd = Math.max(lastKnownEnd, endTime)
 
-              const color = (typeof entry.color === "string" && entry.color.trim())
-                ? entry.color
-                : EVENT_COLORS[index % EVENT_COLORS.length]
-              const instructionText = entry.text ?? `Instruction ${index + 1}`
-              const keepOriginal = Boolean(entry.keepOriginal)
-              const id = entry.id ?? `timeline_${index}`
+              const color =
+                typeof entry.color === "string" && entry.color.trim()
+                  ? entry.color
+                  : EVENT_COLORS[index % EVENT_COLORS.length]
+              const text = entry.text?.trim()
+              const derivedType: TimelineEvent["type"] =
+                entry.eventType === "recorded_voice" || entry.eventType === "instruction_sound"
+                  ? entry.eventType
+                  : entry.keepOriginal
+                    ? "recorded_voice"
+                    : "instruction_sound"
 
-              if (keepOriginal) {
+              if (derivedType === "recorded_voice") {
+                const label = entry.recordingLabel?.trim() || text || `Recording ${index + 1}`
+                const recordingUrl =
+                  typeof entry.recordingUrl === "string" && entry.recordingUrl.trim().length > 0
+                    ? entry.recordingUrl
+                    : typeof entry.soundSrc === "string" && entry.soundSrc.trim().length > 0
+                      ? entry.soundSrc
+                      : undefined
+
                 const recordedEvent: TimelineEvent = {
                   id,
                   type: "recorded_voice",
                   startTime,
-                  instructionText,
-                  recordedInstructionLabel: entry.recordingLabel ?? instructionText,
-                  recordedAudioUrl:
-                    typeof entry.recordingUrl === "string" && entry.recordingUrl.trim()
-                      ? entry.recordingUrl
-                      : undefined,
+                  duration: duration ?? explicitDuration ?? 0,
+                  instructionText: text || label,
+                  recordedInstructionLabel: label,
+                  recordedAudioUrl: recordingUrl,
                   color,
-                  keepOriginal,
-                }
-
-                if (duration > 0) {
-                  recordedEvent.duration = duration
+                  keepOriginal: true,
                 }
 
                 if (entry.recordingStoragePath) {
@@ -1959,26 +1990,31 @@ export default function Home() {
               }
 
               const matchingCue = SOUND_CUES_LIBRARY.find(
-                (cue) => cue.id === entry.soundId || cue.name === entry.soundId,
+                (cue) =>
+                  (entry.soundId && cue.id === entry.soundId) ||
+                  (entry.soundName && cue.name === entry.soundName) ||
+                  (entry.soundSrc && cue.src === entry.soundSrc),
               )
 
+              const soundCueName =
+                entry.soundName?.trim() || matchingCue?.name || entry.soundId || `Sound Cue ${index + 1}`
               const instructionEvent: TimelineEvent = {
                 id,
                 type: "instruction_sound",
                 startTime,
-                instructionText,
-                soundCueId: matchingCue?.id ?? entry.soundId,
-                soundCueName: matchingCue?.name ?? entry.soundId ?? "Sound Cue",
-                soundCueSrc:
-                  entry.soundSrc && entry.soundSrc.trim()
-                    ? entry.soundSrc
-                    : matchingCue?.src ?? (entry.soundId ? `synthetic:${entry.soundId}` : undefined),
+                instructionText: text || `Instruction ${index + 1}`,
+                soundCueId: entry.soundId ?? matchingCue?.id ?? undefined,
+                soundCueName,
+                soundCueSrc: entry.soundSrc ?? matchingCue?.src ?? undefined,
+                instrument: entry.instrument ?? undefined,
                 color,
-                keepOriginal,
+                keepOriginal: Boolean(entry.keepOriginal),
               }
 
-              if (duration > 0) {
+              if (duration !== undefined) {
                 instructionEvent.duration = duration
+              } else if (explicitDuration !== undefined) {
+                instructionEvent.duration = explicitDuration
               } else if (matchingCue?.duration) {
                 instructionEvent.duration = matchingCue.duration
               }
@@ -2038,7 +2074,7 @@ export default function Home() {
         setOriginalUrl(URL.createObjectURL(audioFile))
       }
     },
-    [setFile, setOriginalUrl, setTimelineEvents, setEncoderTotalDuration, setStatus],
+    [setFile, setOriginalUrl, setMeditationTitle, setTimelineEvents, setEncoderTotalDuration, setStatus],
   )
 
   const importAsRecordedBlock = useCallback(
