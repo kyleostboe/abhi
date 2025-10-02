@@ -3882,9 +3882,9 @@ export default function Home() {
                                 className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
                                 aria-label="Hours"
                               />
-                              <span className="text-[10px] uppercase tracking-wide text-gray-400">Hr</span>
+                              
                             </div>
-                            <span className="text-gray-400 font-black">:</span>
+                            
                             <div className="flex flex-col items-center">
                               <input
                                 type="number"
@@ -3896,9 +3896,7 @@ export default function Home() {
                                 className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
                                 aria-label="Minutes"
                               />
-                              <span className="text-[10px] uppercase tracking-wide text-gray-400">Min</span>
-                            </div>
-                            <span className="text-gray-400 font-black">:</span>
+                              
                             <div className="flex flex-col items-center">
                               <input
                                 type="number"
@@ -3910,10 +3908,7 @@ export default function Home() {
                                 className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
                                 aria-label="Seconds"
                               />
-                              <span className="text-[10px] uppercase tracking-wide text-gray-400">Sec</span>
-                            </div>
-                          </div>
-                        </div>
+                                           </div>
                       </div>
                     </div>
                   </Card>
