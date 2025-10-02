@@ -194,6 +194,21 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
 
 type SavedTimelineEntry = NonNullable<SavedMeditation["metadata"]["timeline"]>[number]
 
+type DurationFields = {
+  hours: number
+  minutes: number
+  seconds: number
+}
+
+const createDurationFieldsFromTotal = (totalSeconds: number): DurationFields => {
+  const safeTotal = Math.max(0, Math.floor(totalSeconds))
+  const hours = Math.floor(safeTotal / 3600)
+  const minutes = Math.floor((safeTotal % 3600) / 60)
+  const seconds = safeTotal % 60
+
+  return { hours, minutes, seconds }
+}
+
 const deriveMeditationTitle = (meditation: any): string => {
   const metadataTitle =
     typeof meditation?.metadata?.meditationTitle === "string" && meditation.metadata.meditationTitle.trim().length > 0
@@ -911,8 +926,20 @@ export default function Home() {
 
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
-  const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(600)
+  const [encoderTotalDuration, setEncoderTotalDurationState] = useState<number>(600)
+  const [encoderDurationFields, setEncoderDurationFields] = useState<DurationFields>(() =>
+    createDurationFieldsFromTotal(600),
+  )
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
+
+  const updateEncoderTotalDuration = useCallback(
+    (totalSeconds: number) => {
+      const safeTotal = Math.max(1, Math.floor(totalSeconds))
+      setEncoderTotalDurationState(safeTotal)
+      setEncoderDurationFields(createDurationFieldsFromTotal(safeTotal))
+    },
+    [setEncoderTotalDurationState, setEncoderDurationFields],
+  )
 
   const encoderTimelineMetadata = useMemo(() => {
     return timelineEvents.map((event) => {
@@ -1462,10 +1489,20 @@ export default function Home() {
     }
   }
 
-  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDurationFieldChange = (field: keyof DurationFields) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target?.value
-    if (typeof value === "string" && !isNaN(Number(value))) {
-      setEncoderTotalDuration(Math.max(60, Number(value) * 60) || 60)
+    if (typeof value === "string") {
+      const parsedValue = Number(value)
+      if (!Number.isNaN(parsedValue)) {
+        const numericValue = Math.max(0, Math.floor(parsedValue))
+        const nextFields = {
+          ...encoderDurationFields,
+          [field]: numericValue,
+        }
+        const totalSeconds =
+          nextFields.hours * 3600 + nextFields.minutes * 60 + nextFields.seconds
+        updateEncoderTotalDuration(totalSeconds)
+      }
     }
   }
 
@@ -2104,7 +2141,7 @@ export default function Home() {
           0,
         )
         const totalDuration = Math.max(importData.duration ?? 0, reconstructedEnd)
-        setEncoderTotalDuration(totalDuration)
+        updateEncoderTotalDuration(totalDuration)
 
         setStatus({
           message: `Reconstructed "${importData.title}" with ${reconstructedEvents.length} timeline events.`,
@@ -2128,7 +2165,7 @@ export default function Home() {
         setDisplayedFileName(fallbackFileName)
       }
     },
-    [setFile, setOriginalUrl, setMeditationTitle, setTimelineEvents, setEncoderTotalDuration, setStatus],
+    [setFile, setOriginalUrl, setMeditationTitle, setTimelineEvents, updateEncoderTotalDuration, setStatus],
   )
 
   const importAsRecordedBlock = useCallback(
@@ -2194,7 +2231,7 @@ export default function Home() {
         }
 
         setTimelineEvents([recordedEvent])
-        setEncoderTotalDuration(importData.duration)
+        updateEncoderTotalDuration(importData.duration)
         setGeneratedAudioMetadata(importData.metadata?.wav ?? null)
         setStatus({
           message: `Imported and analyzed "${importData.title}" - ready to adjust or encode.`,
@@ -2217,7 +2254,7 @@ export default function Home() {
       setDurationLimits,
       setAudioAnalysis,
       setTimelineEvents,
-      setEncoderTotalDuration,
+      updateEncoderTotalDuration,
       setStatus,
       silenceThreshold,
       minSilenceDuration,
@@ -3725,17 +3762,46 @@ export default function Home() {
                           />
                         </div>
                         <div className="text-center">
-                          <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
+                          <Label htmlFor="encoder-duration-hours" className="text-gray-600 text-sm font-black">
                             Duration:
                           </Label>
-                          <input
-                            id="encoder-duration"
-                            type="number"
-                            value={encoderTotalDuration / 60}
-                            onChange={handleDurationChange}
-                            min="1"
-                            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none focus-visible:border-[3px] focus-visible:border-gray-600 disabled:cursor-not-allowed disabled:border-gray-500 md:text-xs border-[3px] rounded-[10px] bg-white py-4 px-4 h-11 mt-1 text-sm font-black text-gray-500 border-gray-500 border-gray-500 shadow-lg"
-                          />
+                          <div className="mt-1 flex w-full items-center justify-center gap-2">
+                            <div className="flex flex-col items-center gap-1 text-xs font-black text-gray-500">
+                              <span>H</span>
+                              <input
+                                id="encoder-duration-hours"
+                                type="number"
+                                min={0}
+                                value={encoderDurationFields.hours}
+                                onChange={handleDurationFieldChange("hours")}
+                                className="flex w-16 ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none focus-visible:border-[3px] focus-visible:border-gray-600 disabled:cursor-not-allowed disabled:border-gray-500 md:text-xs border-[3px] rounded-[10px] bg-white py-3 px-3 text-sm font-black text-gray-500 border-gray-500 shadow-lg"
+                              />
+                            </div>
+                            <span className="text-lg font-black text-gray-500">:</span>
+                            <div className="flex flex-col items-center gap-1 text-xs font-black text-gray-500">
+                              <span>M</span>
+                              <input
+                                id="encoder-duration-minutes"
+                                type="number"
+                                min={0}
+                                value={encoderDurationFields.minutes}
+                                onChange={handleDurationFieldChange("minutes")}
+                                className="flex w-16 ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none focus-visible:border-[3px] focus-visible:border-gray-600 disabled:cursor-not-allowed disabled:border-gray-500 md:text-xs border-[3px] rounded-[10px] bg-white py-3 px-3 text-sm font-black text-gray-500 border-gray-500 shadow-lg"
+                              />
+                            </div>
+                            <span className="text-lg font-black text-gray-500">:</span>
+                            <div className="flex flex-col items-center gap-1 text-xs font-black text-gray-500">
+                              <span>S</span>
+                              <input
+                                id="encoder-duration-seconds"
+                                type="number"
+                                min={0}
+                                value={encoderDurationFields.seconds}
+                                onChange={handleDurationFieldChange("seconds")}
+                                className="flex w-16 ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none focus-visible:border-[3px] focus-visible:border-gray-600 disabled:cursor-not-allowed disabled:border-gray-500 md:text-xs border-[3px] rounded-[10px] bg-white py-3 px-3 text-sm font-black text-gray-500 border-gray-500 shadow-lg"
+                              />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
