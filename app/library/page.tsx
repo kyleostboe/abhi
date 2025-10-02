@@ -575,7 +575,7 @@ export default function LibraryPage() {
       <div
         className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
         style={{
-          borderRadius: "3.1rem 3.1rem 1.6rem 1.6rem",
+          borderRadius: "5rem 3rem 2rem 1rem",
         }}
       >
         <div className="relative overflow-hidden">
