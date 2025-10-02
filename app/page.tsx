@@ -37,6 +37,10 @@ import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
 import * as Tone from "tone"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
 
+const ADJUSTER_SESSION_KEY = "abhi_last_adjuster_session"
+const ENCODER_SESSION_KEY = "abhi_last_encoder_session"
+const ACTIVE_MODE_SESSION_KEY = "abhi_last_active_mode"
+
 interface RecorderSectionProps {
   className?: string
   inputId: string
@@ -864,6 +868,7 @@ export default function Home() {
   const { toast } = useToast()
 
   const [activeMode, setActiveMode] = useState<"adjuster" | "encoder">("adjuster")
+  const [shouldScrollToAdjuster, setShouldScrollToAdjuster] = useState(false)
   const [activeTab, setActiveTab] = useState<"adjuster" | "encoder">("adjuster") // State for tab navigation
 
   // == States for Length Adjuster ==
@@ -1688,6 +1693,10 @@ export default function Home() {
     setGeneratedAudioMetadata(null)
     setProcessedMp3Blob(null)
 
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem(ADJUSTER_SESSION_KEY)
+    }
+
     if (audioContextRef.current && audioContextRef.current.state === "running") {
       try {
         await audioContextRef.current.suspend()
@@ -2218,24 +2227,46 @@ export default function Home() {
   )
 
   const scrollToAdjusterSection = useCallback(() => {
+    if (typeof window === "undefined" || isMobileDevice) {
+      return
+    }
+
+    const attemptScroll = (attempt = 0) => {
+      const target = adjusterSectionRef.current ?? uploadAreaRef.current
+
+      if (!target) {
+        if (attempt < 5) {
+          window.setTimeout(() => attemptScroll(attempt + 1), 120)
+        }
+        return
+      }
+
+      requestAnimationFrame(() => {
+        target.scrollIntoView({ behavior: "smooth", block: "start" })
+        window.setTimeout(() => {
+          target.scrollIntoView({ behavior: "smooth", block: "start" })
+        }, 160)
+      })
+    }
+
+    attemptScroll()
+  }, [isMobileDevice])
+
+  const persistSessionForMode = useCallback((mode: "adjuster" | "encoder", importData: any) => {
     if (typeof window === "undefined") {
       return
     }
 
-    const target = adjusterSectionRef.current ?? uploadAreaRef.current
-
-    if (!target) {
-      return
+    try {
+      window.sessionStorage.setItem(ACTIVE_MODE_SESSION_KEY, mode)
+      if (mode === "adjuster") {
+        window.sessionStorage.setItem(ADJUSTER_SESSION_KEY, JSON.stringify(importData))
+      } else {
+        window.sessionStorage.setItem(ENCODER_SESSION_KEY, JSON.stringify(importData))
+      }
+    } catch (error) {
+      console.error("[v0] Error persisting tool session:", error)
     }
-
-    requestAnimationFrame(() => {
-      target.scrollIntoView({ behavior: "smooth", block: "start" })
-
-      // Ensure the scroll happens even if layout shifts after the first frame
-      window.setTimeout(() => {
-        target.scrollIntoView({ behavior: "smooth", block: "start" })
-      }, 120)
-    })
   }, [])
 
   const handleImportedMeditation = useCallback(
@@ -2246,6 +2277,7 @@ export default function Home() {
         if (sourceTab === "encoder" && !importData.crossToolOpening) {
           // Encoder meditation reopened in encoder - reconstruct cues/recordings
           await reconstructEncoderMeditation(importData)
+          persistSessionForMode("encoder", importData)
           if (typeof window !== "undefined") {
             requestAnimationFrame(() => {
               timelineEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
@@ -2255,10 +2287,14 @@ export default function Home() {
           setActiveTab("adjuster")
           setActiveMode("adjuster")
           await importIntoAdjuster(importData)
-          scrollToAdjusterSection()
+          persistSessionForMode("adjuster", importData)
+          if (importData.crossToolOpening && !isMobileDevice) {
+            setShouldScrollToAdjuster(true)
+          }
         } else {
           // Fallback to recorded block for encoder cross-tool opening
           await importAsRecordedBlock(importData)
+          persistSessionForMode("encoder", importData)
           if (typeof window !== "undefined") {
             requestAnimationFrame(() => {
               timelineEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
@@ -2273,11 +2309,42 @@ export default function Home() {
         })
       }
     },
-    [reconstructEncoderMeditation, importIntoAdjuster, importAsRecordedBlock, scrollToAdjusterSection, setStatus],
+    [
+      reconstructEncoderMeditation,
+      importIntoAdjuster,
+      importAsRecordedBlock,
+      persistSessionForMode,
+      isMobileDevice,
+      setStatus,
+    ],
   )
 
   useEffect(() => {
-    // Check for hash-based navigation
+    if (!shouldScrollToAdjuster || activeMode !== "adjuster") {
+      return
+    }
+
+    scrollToAdjusterSection()
+    setShouldScrollToAdjuster(false)
+  }, [shouldScrollToAdjuster, activeMode, scrollToAdjusterSection])
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return
+    }
+
+    try {
+      window.sessionStorage.setItem(ACTIVE_MODE_SESSION_KEY, activeMode)
+    } catch (error) {
+      console.error("[v0] Unable to persist active mode:", error)
+    }
+  }, [activeMode])
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return
+    }
+
     const handleHashChange = () => {
       const hash = window.location.hash.substring(1)
       if (hash === "adjuster" || hash === "encoder") {
@@ -2286,57 +2353,83 @@ export default function Home() {
       }
     }
 
-    // Check for imported meditations instead
     const checkForImports = () => {
-      const adjusterImport = localStorage.getItem("abhi_adjuster_import")
+      let handled = false
+
+      const adjusterImport = window.localStorage.getItem("abhi_adjuster_import")
       if (adjusterImport) {
         try {
           const importData = JSON.parse(adjusterImport)
           console.log("[v0] Loading meditation from library into adjuster:", importData)
-          if (activeTab !== "adjuster") {
-            setActiveTab("adjuster")
-          }
-          if (activeMode !== "adjuster") {
-            setActiveMode("adjuster")
-          }
-          handleImportedMeditation(importData, "adjuster")
-          localStorage.removeItem("abhi_adjuster_import")
+          setActiveTab("adjuster")
+          setActiveMode("adjuster")
+          void handleImportedMeditation(importData, "adjuster")
         } catch (error) {
           console.error("[v0] Error loading adjuster import:", error)
-          localStorage.removeItem("abhi_adjuster_import")
+        } finally {
+          window.localStorage.removeItem("abhi_adjuster_import")
         }
+        handled = true
       }
 
-      const encoderImport = localStorage.getItem("abhi_encoder_import")
+      const encoderImport = window.localStorage.getItem("abhi_encoder_import")
       if (encoderImport) {
         try {
           const importData = JSON.parse(encoderImport)
           console.log("[v0] Loading meditation from library into encoder:", importData)
-          if (activeTab !== "encoder") {
-            setActiveTab("encoder")
-          }
-          if (activeMode !== "encoder") {
-            setActiveMode("encoder")
-          }
-          handleImportedMeditation(importData, "encoder")
-          localStorage.removeItem("abhi_encoder_import")
+          setActiveTab("encoder")
+          setActiveMode("encoder")
+          void handleImportedMeditation(importData, "encoder")
         } catch (error) {
           console.error("[v0] Error loading encoder import:", error)
-          localStorage.removeItem("abhi_encoder_import")
+        } finally {
+          window.localStorage.removeItem("abhi_encoder_import")
         }
+        handled = true
+      }
+
+      if (handled) {
+        return
+      }
+
+      try {
+        const lastMode = window.sessionStorage.getItem(ACTIVE_MODE_SESSION_KEY) as
+          | "adjuster"
+          | "encoder"
+          | null
+
+        if (lastMode === "adjuster") {
+          const persistedAdjuster = window.sessionStorage.getItem(ADJUSTER_SESSION_KEY)
+          if (persistedAdjuster) {
+            const importData = JSON.parse(persistedAdjuster)
+            console.log("[v0] Restoring persisted adjuster meditation:", importData)
+            setActiveTab("adjuster")
+            setActiveMode("adjuster")
+            void handleImportedMeditation(importData, "adjuster")
+          }
+        } else if (lastMode === "encoder") {
+          const persistedEncoder = window.sessionStorage.getItem(ENCODER_SESSION_KEY)
+          if (persistedEncoder) {
+            const importData = JSON.parse(persistedEncoder)
+            console.log("[v0] Restoring persisted encoder meditation:", importData)
+            setActiveTab("encoder")
+            setActiveMode("encoder")
+            void handleImportedMeditation(importData, "encoder")
+          }
+        }
+      } catch (error) {
+        console.error("[v0] Error restoring persisted meditation:", error)
       }
     }
 
     handleHashChange()
     checkForImports()
 
-    // Listen for hash changes
     window.addEventListener("hashchange", handleHashChange)
-
     return () => {
       window.removeEventListener("hashchange", handleHashChange)
     }
-  }, [toast, handleImportedMeditation, activeTab, activeMode]) // handleImportedMeditation is now stable due to useCallback
+  }, [handleImportedMeditation])
 
   const processAudioAdjusterAction = async () => {
     console.log("[v0] Processing button clicked")
