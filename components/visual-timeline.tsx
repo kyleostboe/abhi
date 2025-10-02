@@ -54,6 +54,49 @@ export function VisualTimeline({
   const [playingEventId, setPlayingEventId] = useState<string | null>(null)
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
 
+  const parseFlexibleTimeInput = useCallback((value: string): number | null => {
+    if (!value) {
+      return null
+    }
+
+    const trimmedParts = value
+      .split(":")
+      .map((part) => part.trim())
+      .filter((part) => part.length > 0)
+
+    if (trimmedParts.length === 0) {
+      return null
+    }
+
+    const numericParts = trimmedParts.map((part) => Number(part))
+
+    if (numericParts.some((part) => Number.isNaN(part) || !Number.isFinite(part) || part < 0)) {
+      return null
+    }
+
+    if (numericParts.length === 3) {
+      const [hours, minutes, seconds] = numericParts
+      if (minutes >= 60 || seconds >= 60) {
+        return null
+      }
+      return hours * 3600 + minutes * 60 + seconds
+    }
+
+    if (numericParts.length === 2) {
+      const [minutes, seconds] = numericParts
+      if (seconds >= 60) {
+        return null
+      }
+      return minutes * 60 + seconds
+    }
+
+    if (numericParts.length === 1) {
+      return numericParts[0]
+    }
+
+    return null
+  }, [])
+
   useEffect(() => {
     return () => {
       currentAudio?.pause()
@@ -195,9 +238,20 @@ export function VisualTimeline({
   }
 
   const handleTimeSave = (eventId: string) => {
-    const [minutes, seconds] = editingTime.split(":").map(Number)
-    const newTime = minutes * 60 + seconds
-    onUpdateEvent(eventId, newTime)
+    const event = events.find((timelineEvent) => timelineEvent.id === eventId)
+    const parsedTime = parseFlexibleTimeInput(editingTime)
+
+    if (parsedTime === null || parsedTime === undefined) {
+      if (event) {
+        setEditingTime(formatTime(event.startTime))
+        if (event.type === "recorded_voice" && event.duration) {
+          setEditingDuration(formatTime(event.duration))
+        }
+      }
+      return
+    }
+
+    onUpdateEvent(eventId, parsedTime)
     setEditingEventId(null)
     setEditingTime("")
     setEditingDuration("")
@@ -462,9 +516,8 @@ export function VisualTimeline({
                                 <Input
                                   value={editingTime}
                                   onChange={(e) => setEditingTime(e.target.value)}
-                                  placeholder="MM:SS"
+                                  placeholder="HH:MM:SS"
                                   className="w-20 h-6 text-xs"
-                                  pattern="[0-9]{1,2}:[0-9]{2}"
                                 />
                                 {event.type === "recorded_voice" && (
                                   <>
