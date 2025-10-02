@@ -3259,7 +3259,7 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-purple-300 to-orange-300 py-1 shadow-md rounded-sm px-[5px]"
+                      className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-purple-300 to-logo-amber-300 py-1 shadow-md rounded-sm px-[5px]"
                     >
                       <div className="bg-white p-5 py-4 rounded-sm border-stone-200 border-[3px] shadow">
                         <div className="flex items-center">
@@ -3540,7 +3540,7 @@ export default function Home() {
                       "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
                       "shadow-lg hover:shadow-none active:shadow-none text-white",
                       // Multi-stop gradient
-                      "bg-gradient-to-r from-logo-purple-300 via-logo-teal-500 to-orange-300",
+                      "bg-gradient-to-r from-purple-300 via-logo-teal-500 to-logo-amber-300",
                       "",
                       "hover:brightness-[1.06] active:brightness-95",
                     )}
