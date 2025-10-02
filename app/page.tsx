@@ -3022,7 +3022,7 @@ export default function Home() {
         transition={{ duration: 0.6 }}
         className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
         style={{
-          borderRadius: "3rem 3rem 1rem 1rem",
+          borderRadius: "3.1rem 3.1rem 1.6rem 1.6rem",
         }}
         role="application"
       >
