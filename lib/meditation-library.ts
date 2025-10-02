@@ -24,6 +24,7 @@ export interface SavedMeditation {
       text: string
       startTime: number
       endTime: number
+      soundCueId?: string
       soundId?: string
       soundName?: string
       soundSrc?: string
