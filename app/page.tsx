@@ -190,6 +190,22 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
 
 type SavedTimelineEntry = NonNullable<SavedMeditation["metadata"]["timeline"]>[number]
 
+const deriveMeditationTitle = (meditation: any): string => {
+  const metadataTitle =
+    typeof meditation?.metadata?.meditationTitle === "string" && meditation.metadata.meditationTitle.trim().length > 0
+      ? meditation.metadata.meditationTitle.trim()
+      : null
+
+  const savedTitle = typeof meditation?.title === "string" && meditation.title.trim().length > 0 ? meditation.title.trim() : null
+
+  const originalFileName =
+    typeof meditation?.originalFileName === "string" && meditation.originalFileName.trim().length > 0
+      ? meditation.originalFileName.replace(/\.[^/.]+$/, "").trim()
+      : null
+
+  return metadataTitle ?? savedTitle ?? originalFileName ?? "My Custom Meditation"
+}
+
 interface TimelineItem {
   id: string
   type: "instruction" | "sound" | "recorded_voice" | "instruction_sound" | "recording" | "recorded"
@@ -1855,6 +1871,7 @@ export default function Home() {
         const blob = new Blob([arrayBuffer], { type: "audio/wav" })
         const fakeFile = new File([blob], importData.originalFileName, { type: "audio/wav" })
         setFile(fakeFile)
+        setMeditationTitle(deriveMeditationTitle(importData))
 
         // Perform silence detection like normal upload
         const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
@@ -1887,7 +1904,14 @@ export default function Home() {
         setOriginalUrl("")
       }
     },
-    [silenceThreshold, minSilenceDuration, isMobileDevice, detectSilenceRegions, setStatus],
+    [
+      silenceThreshold,
+      minSilenceDuration,
+      isMobileDevice,
+      detectSilenceRegions,
+      setStatus,
+      setMeditationTitle,
+    ],
   )
 
   const reconstructEncoderMeditation = useCallback(
@@ -1904,15 +1928,7 @@ export default function Home() {
         setFile(audioFile)
         setOriginalUrl(URL.createObjectURL(audioFile))
 
-        const importedTitle =
-          typeof importData.metadata?.meditationTitle === "string" && importData.metadata.meditationTitle.trim().length > 0
-            ? importData.metadata.meditationTitle.trim()
-            : typeof importData.title === "string" && importData.title.trim().length > 0
-              ? importData.title.trim()
-              : typeof importData.originalFileName === "string"
-                ? importData.originalFileName.replace(/\.[^/.]+$/, "").trim()
-                : "My Custom Meditation"
-        setMeditationTitle(importedTitle)
+        setMeditationTitle(deriveMeditationTitle(importData))
 
         const timelineMetadata = Array.isArray(importData.metadata?.timeline)
           ? (importData.metadata.timeline as SavedTimelineEntry[])
