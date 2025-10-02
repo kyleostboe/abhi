@@ -142,9 +142,43 @@ export default function EncoderPage() {
   const encodedQualityWarning =
     encodedAudioMetadata && (encodedAudioMetadata.bitDepth === 8 || encodedAudioMetadata.sampleRate <= 16000)
 
+  const ensureAudioContext = async (): Promise<AudioContext | null> => {
+    if (typeof window === "undefined") return null
+
+    let context = audioContextRef.current
+
+    if (!context) {
+      const AudioContextClass = window.AudioContext ?? (window as any).webkitAudioContext
+
+      if (!AudioContextClass) {
+        console.error("[v0] AudioContext is not supported in this browser")
+        return null
+      }
+
+      context = new AudioContextClass()
+      audioContextRef.current = context
+    }
+
+    if (context.state === "suspended") {
+      try {
+        await context.resume()
+      } catch (error) {
+        console.error("[v0] Failed to resume AudioContext:", error)
+        return null
+      }
+    }
+
+    return context
+  }
+
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
+    if (typeof window === "undefined") return
+
+    let isMounted = true
+
+    const setupAudio = async () => {
+      const context = await ensureAudioContext()
+      if (!context || !isMounted) return
 
       // Initialize Speech Recognition if available
       if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
@@ -160,7 +194,11 @@ export default function EncoderPage() {
         }
       }
     }
+
+    void setupAudio()
+
     return () => {
+      isMounted = false
       audioContextRef.current?.close()
     }
   }, [])
@@ -415,8 +453,14 @@ export default function EncoderPage() {
 
       // Load audio buffer for encoding
       try {
+        const context = await ensureAudioContext()
+        if (!context) {
+          setStatus({ message: "Audio playback is not supported in this browser.", type: "error" })
+          return
+        }
+
         const arrayBuffer = await selectedFile.arrayBuffer()
-        const audioBuffer = await audioContextRef.current!.decodeAudioData(arrayBuffer)
+        const audioBuffer = await context.decodeAudioData(arrayBuffer)
         originalAudioBufferRef.current = audioBuffer
         setAudioDuration(audioBuffer.duration)
       } catch (error) {
@@ -585,7 +629,7 @@ export default function EncoderPage() {
     // Simulate processing time
     await new Promise((resolve) => setTimeout(resolve, 2000))
 
-    const audioCtx = audioContextRef.current
+    const audioCtx = await ensureAudioContext()
     const originalBuffer = originalAudioBufferRef.current
     if (!audioCtx || !originalBuffer) throw new Error("AudioContext or original audio not available")
 
@@ -708,7 +752,12 @@ export default function EncoderPage() {
 
       // Load audio buffer for encoding
       const arrayBuffer = await audioFile.arrayBuffer()
-      const audioBuffer = await audioContextRef.current!.decodeAudioData(arrayBuffer)
+      const context = await ensureAudioContext()
+      if (!context) {
+        throw new Error("AudioContext not available")
+      }
+
+      const audioBuffer = await context.decodeAudioData(arrayBuffer)
       originalAudioBufferRef.current = audioBuffer
       setAudioDuration(audioBuffer.duration)
       setEncodedAudioMetadata(importData.metadata?.wav ?? null)
