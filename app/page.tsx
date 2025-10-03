@@ -2044,7 +2044,12 @@ export default function Home() {
         const fakeFileName = deriveMeditationFileName(importData)
         const fakeFile = new File([blob], fakeFileName, { type: "audio/wav" })
         setFile(fakeFile)
-        setDisplayedFileName(fakeFileName)
+
+        const libraryTitle =
+          typeof importData.title === "string" && importData.title.trim().length > 0
+            ? importData.title.trim()
+            : null
+        setDisplayedFileName(libraryTitle ?? fakeFileName)
         setMeditationTitle(deriveMeditationTitle(importData))
 
         // Perform silence detection like normal upload
@@ -2354,8 +2359,14 @@ export default function Home() {
       console.log("[v0] Handling imported meditation:", importData, "from tab:", sourceTab)
 
       try {
-        if (sourceTab === "encoder" && !importData.crossToolOpening) {
+        const hasTimelineMetadata = Array.isArray(importData.metadata?.timeline)
+          ? importData.metadata.timeline.length > 0
+          : false
+
+        if (sourceTab === "encoder" && (!importData.crossToolOpening || hasTimelineMetadata)) {
           // Encoder meditation reopened in encoder - reconstruct cues/recordings
+          setActiveMode("encoder")
+          setActiveTab("encoder")
           await reconstructEncoderMeditation(importData)
           persistSessionForMode("encoder", importData)
           if (typeof window !== "undefined") {
@@ -2395,6 +2406,8 @@ export default function Home() {
       importAsRecordedBlock,
       persistSessionForMode,
       isMobileDevice,
+      setActiveMode,
+      setActiveTab,
       setStatus,
     ],
   )
