@@ -93,26 +93,12 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
           </h3>
         </div>
         <div className="p-6 pt-3.5 space-y-[21px]">
-          <input
-            id={inputId}
-            value={recordingLabel}
-            onChange={onRecordingLabelChange}
-            placeholder="Describe this recording..."
-            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-logo-rose-300 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 h-11 mt-1 text-xs focus-visible: text-logo-rose-400 font-black text-gray-500 border-stone-300 border-[3px] shadow-md"
-          />
+             />
           <Button
             onClick={isRecording ? stopRecording : startRecording}
             variant={isRecording ? "destructive" : "default"}
             disabled={!recordingLabel.trim() && !isRecording}
-            className={cn(
-              "w-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-[11px] hover:shadow-none font-serif font-black",
-              isRecording && "from-logo-rose-300 to-logo-rose-600",
-            )}
-          >
-            {isRecording ? (
-              <>
-                <StopCircle className="mr-2 h-4 w-4" />
-                <span className="font-black font-serif">Stop Recording</span>
+            className={flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-logo-rose-300 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 mt-1 text-xs focus-visible: text-logo-rose-400 font-black text-gray-500 border-stone-300 border-[3px] shadow-md h-[42px]       <span className="font-black font-serif">Stop Recording</span>
               </>
             ) : (
               <>
@@ -3857,7 +3843,7 @@ export default function Home() {
                             value={meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
-                            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 h-11 border-gray-500 mt-1 text-sm font-black text-gray-500 border-[3px] shadow-lg"
+                            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-sm font-black text-gray-500 border-[3px] shadow-lg h-11"
                           />
                         </div>
                         <div className="text-center">
@@ -3871,11 +3857,7 @@ export default function Home() {
                             <div className="flex items-center">
                               <input
                                 type="number"
-                                min={0}
-                                step={1}
-                                value={encoderDurationParts.hours}
-                                onChange={(event) => handleDurationPartChange("hours", Number(event.target.value))}
-                                className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
+                                min={0}flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-sm font-black text-gray-500 border-[3px] shadow-lg h-[42px]rent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
                                 aria-label="Hours"
                               />
                             </div>
@@ -3884,10 +3866,7 @@ export default function Home() {
                               <input
                                 type="number"
                                 min={0}
-                                max={59}
-                                step={1}
-                                value={encoderDurationParts.minutes}
-                                onChange={(event) => handleDurationPartChange("minutes", Number(event.target.value))}
+                                max={59flex w-full items-center justify-center gap-3 mt-1 border-[3px] border-gray-500 rounded-[10px] bg-white px-4 shadow-lg py-[9px] text-center pr-1 h-[42px] h-[] h-11 h-12 h-11 h-14 h-11 h-10 h-11 h-2.5 h-px h-11 h-11 h-3.5onChange={(event) => handleDurationPartChange("minutes", Number(event.target.value))}
                                 className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
                                 aria-label="Minutes"
                               />
