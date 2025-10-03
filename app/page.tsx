@@ -3261,9 +3261,8 @@ export default function Home() {
                         Note:
                       </strong>
                       Depending on the audio, users may need to tweak the advanced settings for optimal results. Only
-                      pauses are adjusted, spoken instruction is preserved. Any guided meditation{" "}
-                      {"under " + (isMobileDevice ? "50MB" : "500MB") + ""} should be compatible. Teachers, please feel
-                      free to
+                      pauses are adjusted, spoken instruction is preserved. Any guided meditation under{" "}
+                      {isMobileDevice ? "50MB" : "500MB"} should be compatible. Teachers, please feel free to
                       <a
                         href="/contact"
                         className=" underline px-1 rounded transition-colors transition-shadow font-black text-sm text-logo-purple-300"
@@ -3830,7 +3829,7 @@ export default function Home() {
                   className="text-gray-600"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
+                  transition={{ delay: 0.2 }}
                 >
                   <Card className="overflow-visible bg-white max-w-2xl mx-auto rounded-2xl shadow-none">
                     <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none">
@@ -3898,7 +3897,7 @@ export default function Home() {
                           </div>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   </motion.div>
                 </motion.div>
 
