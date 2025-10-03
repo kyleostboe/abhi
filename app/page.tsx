@@ -3866,7 +3866,7 @@ export default function Home() {
                               <input
                                 type="number"
                                 min={0}
-                                max={59flex w-full items-center justify-center gap-3 mt-1 border-[3px] border-gray-500 rounded-[10px] bg-white px-4 shadow-lg text-center py-1hange={(event) => handleDurationPartChange("minutes", Number(event.target.value))}
+                                max={59flex w-full items-center justify-center gap-3 mt-1 border-[3px] border-gray-500 rounded-[10px] bg-white px-4 shadow-lg text-center py-2eDurationPartChange("minutes", Number(event.target.value))}
                                 className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
                                 aria-label="Minutes"
                               />
