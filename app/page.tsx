@@ -200,7 +200,8 @@ const deriveMeditationTitle = (meditation: any): string => {
       ? meditation.metadata.meditationTitle.trim()
       : null
 
-  const savedTitle = typeof meditation?.title === "string" && meditation.title.trim().length > 0 ? meditation.title.trim() : null
+  const savedTitle =
+    typeof meditation?.title === "string" && meditation.title.trim().length > 0 ? meditation.title.trim() : null
 
   const originalFileName =
     typeof meditation?.originalFileName === "string" && meditation.originalFileName.trim().length > 0
@@ -935,8 +936,7 @@ export default function Home() {
         : event.instructionText?.trim() || "Instruction"
 
       const safeStartTime = Number.isFinite(event.startTime) ? event.startTime : 0
-      const rawDuration =
-        typeof event.duration === "number" && Number.isFinite(event.duration) ? event.duration : 0
+      const rawDuration = typeof event.duration === "number" && Number.isFinite(event.duration) ? event.duration : 0
       const duration = rawDuration >= 0 ? rawDuration : 0
       const endTime = safeStartTime + duration
 
@@ -946,7 +946,7 @@ export default function Home() {
         startTime: safeStartTime,
         endTime,
         soundCueId: !isRecording ? event.soundCueId : undefined,
-        soundId: isRecording ? event.recordedAudioUrl ?? event.id : event.soundCueId ?? event.id,
+        soundId: isRecording ? (event.recordedAudioUrl ?? event.id) : (event.soundCueId ?? event.id),
         soundName: event.soundCueName,
         soundSrc: event.soundCueSrc,
         instrument: event.instrument,
@@ -1480,21 +1480,24 @@ export default function Home() {
     }
   }
 
-  const handleDurationPartChange = useCallback((part: "hours" | "minutes" | "seconds", rawValue: number) => {
-    setEncoderTotalDuration((previousTotal) => {
-      const { hours, minutes, seconds } = convertSecondsToParts(previousTotal)
+  const handleDurationPartChange = useCallback(
+    (part: "hours" | "minutes" | "seconds", rawValue: number) => {
+      setEncoderTotalDuration((previousTotal) => {
+        const { hours, minutes, seconds } = convertSecondsToParts(previousTotal)
 
-      const sanitizedValue = Math.max(0, Math.floor(Number.isFinite(rawValue) ? rawValue : 0))
+        const sanitizedValue = Math.max(0, Math.floor(Number.isFinite(rawValue) ? rawValue : 0))
 
-      const nextHours = part === "hours" ? sanitizedValue : hours
-      const nextMinutes = part === "minutes" ? Math.min(59, sanitizedValue) : minutes
-      const nextSeconds = part === "seconds" ? Math.min(59, sanitizedValue) : seconds
+        const nextHours = part === "hours" ? sanitizedValue : hours
+        const nextMinutes = part === "minutes" ? Math.min(59, sanitizedValue) : minutes
+        const nextSeconds = part === "seconds" ? Math.min(59, sanitizedValue) : seconds
 
-      const total = nextHours * 3600 + nextMinutes * 60 + nextSeconds
+        const total = nextHours * 3600 + nextMinutes * 60 + nextSeconds
 
-      return Math.max(1, total)
-    })
-  }, [convertSecondsToParts])
+        return Math.max(1, total)
+      })
+    },
+    [convertSecondsToParts],
+  )
 
   const playSingleNote = async (note: string, octave: number, noteType: string) => {
     try {
@@ -1872,115 +1875,113 @@ export default function Home() {
     [silenceThreshold, minSilenceDuration], // Dependencies: threshold and minDuration
   )
 
-  const parseTimelineMetadata = useCallback(
-    (timelineMetadata: SavedTimelineEntry[]): TimelineEvent[] => {
-      const parseNumber = (value: unknown): number | undefined => {
-        if (typeof value === "number" && Number.isFinite(value)) {
-          return value
-        }
-        if (typeof value === "string" && value.trim() !== "") {
-          const parsed = Number(value)
-          if (Number.isFinite(parsed)) {
-            return parsed
-          }
-        }
-        return undefined
+  const parseTimelineMetadata = useCallback((timelineMetadata: SavedTimelineEntry[]): TimelineEvent[] => {
+    const parseNumber = (value: unknown): number | undefined => {
+      if (typeof value === "number" && Number.isFinite(value)) {
+        return value
       }
+      if (typeof value === "string" && value.trim() !== "") {
+        const parsed = Number(value)
+        if (Number.isFinite(parsed)) {
+          return parsed
+        }
+      }
+      return undefined
+    }
 
-      let lastKnownEnd = 0
+    let lastKnownEnd = 0
 
-      const events = timelineMetadata
-        .map((entry, index) => {
-          const id = typeof entry.id === "string" && entry.id.trim() ? entry.id : `timeline_${index}`
-          const startTime = parseNumber(entry.startTime) ?? lastKnownEnd
-          const explicitDuration = parseNumber(entry.duration)
-          const endTimeFromMetadata = parseNumber(entry.endTime)
-          const computedDuration =
-            explicitDuration ?? (endTimeFromMetadata !== undefined ? Math.max(0, endTimeFromMetadata - startTime) : undefined)
-          const duration = computedDuration !== undefined && computedDuration > 0 ? computedDuration : undefined
-          const endTime = startTime + (duration ?? 0)
-          lastKnownEnd = Math.max(lastKnownEnd, endTime)
+    const events = timelineMetadata
+      .map((entry, index) => {
+        const id = typeof entry.id === "string" && entry.id.trim() ? entry.id : `timeline_${index}`
+        const startTime = parseNumber(entry.startTime) ?? lastKnownEnd
+        const explicitDuration = parseNumber(entry.duration)
+        const endTimeFromMetadata = parseNumber(entry.endTime)
+        const computedDuration =
+          explicitDuration ??
+          (endTimeFromMetadata !== undefined ? Math.max(0, endTimeFromMetadata - startTime) : undefined)
+        const duration = computedDuration !== undefined && computedDuration > 0 ? computedDuration : undefined
+        const endTime = startTime + (duration ?? 0)
+        lastKnownEnd = Math.max(lastKnownEnd, endTime)
 
-          const color =
-            typeof entry.color === "string" && entry.color.trim()
-              ? entry.color
-              : EVENT_COLORS[index % EVENT_COLORS.length]
+        const color =
+          typeof entry.color === "string" && entry.color.trim()
+            ? entry.color
+            : EVENT_COLORS[index % EVENT_COLORS.length]
 
-          const text = entry.text?.trim()
-          const derivedType: TimelineEvent["type"] =
-            entry.eventType === "recorded_voice" || entry.eventType === "instruction_sound"
-              ? entry.eventType
-              : entry.keepOriginal
-                  ? "recorded_voice"
-                  : "instruction_sound"
+        const text = entry.text?.trim()
+        const derivedType: TimelineEvent["type"] =
+          entry.eventType === "recorded_voice" || entry.eventType === "instruction_sound"
+            ? entry.eventType
+            : entry.keepOriginal
+              ? "recorded_voice"
+              : "instruction_sound"
 
-          if (derivedType === "recorded_voice") {
-            const label = entry.recordingLabel?.trim() || text || `Recording ${index + 1}`
-            const recordingUrl =
-              typeof entry.recordingUrl === "string" && entry.recordingUrl.trim().length > 0
-                ? entry.recordingUrl
-                : typeof entry.soundSrc === "string" && entry.soundSrc.trim().length > 0
-                  ? entry.soundSrc
-                  : undefined
+        if (derivedType === "recorded_voice") {
+          const label = entry.recordingLabel?.trim() || text || `Recording ${index + 1}`
+          const recordingUrl =
+            typeof entry.recordingUrl === "string" && entry.recordingUrl.trim().length > 0
+              ? entry.recordingUrl
+              : typeof entry.soundSrc === "string" && entry.soundSrc.trim().length > 0
+                ? entry.soundSrc
+                : undefined
 
-            const recordedEvent: TimelineEvent = {
-              id,
-              type: "recorded_voice",
-              startTime,
-              duration: duration ?? explicitDuration ?? 0,
-              instructionText: text || label,
-              recordedInstructionLabel: label,
-              recordedAudioUrl: recordingUrl,
-              color,
-              keepOriginal: true,
-            }
-
-            if (entry.recordingStoragePath) {
-              recordedEvent.recordingStoragePath = entry.recordingStoragePath
-            }
-
-            return recordedEvent
-          }
-
-          const matchingCue = SOUND_CUES_LIBRARY.find(
-            (cue) =>
-              (entry.soundCueId && cue.id === entry.soundCueId) ||
-              (entry.soundId && cue.id === entry.soundId) ||
-              (entry.soundName && cue.name === entry.soundName) ||
-              (entry.soundSrc && cue.src === entry.soundSrc),
-          )
-
-          const soundCueName = entry.soundName?.trim() || matchingCue?.name || entry.soundId || `Sound Cue ${index + 1}`
-
-          const instructionEvent: TimelineEvent = {
+          const recordedEvent: TimelineEvent = {
             id,
-            type: "instruction_sound",
+            type: "recorded_voice",
             startTime,
-            instructionText: text || `Instruction ${index + 1}`,
-            soundCueId: entry.soundCueId ?? entry.soundId ?? matchingCue?.id ?? undefined,
-            soundCueName,
-            soundCueSrc: entry.soundSrc ?? matchingCue?.src ?? undefined,
-            instrument: entry.instrument ?? undefined,
+            duration: duration ?? explicitDuration ?? 0,
+            instructionText: text || label,
+            recordedInstructionLabel: label,
+            recordedAudioUrl: recordingUrl,
             color,
-            keepOriginal: Boolean(entry.keepOriginal),
+            keepOriginal: true,
           }
 
-          if (duration !== undefined) {
-            instructionEvent.duration = duration
-          } else if (explicitDuration !== undefined) {
-            instructionEvent.duration = explicitDuration
-          } else if (matchingCue?.duration) {
-            instructionEvent.duration = matchingCue.duration
+          if (entry.recordingStoragePath) {
+            recordedEvent.recordingStoragePath = entry.recordingStoragePath
           }
 
-          return instructionEvent
-        })
-        .filter((event): event is TimelineEvent => Boolean(event))
+          return recordedEvent
+        }
 
-      return events.sort((a, b) => a.startTime - b.startTime)
-    },
-    [],
-  )
+        const matchingCue = SOUND_CUES_LIBRARY.find(
+          (cue) =>
+            (entry.soundCueId && cue.id === entry.soundCueId) ||
+            (entry.soundId && cue.id === entry.soundId) ||
+            (entry.soundName && cue.name === entry.soundName) ||
+            (entry.soundSrc && cue.src === entry.soundSrc),
+        )
+
+        const soundCueName = entry.soundName?.trim() || matchingCue?.name || entry.soundId || `Sound Cue ${index + 1}`
+
+        const instructionEvent: TimelineEvent = {
+          id,
+          type: "instruction_sound",
+          startTime,
+          instructionText: text || `Instruction ${index + 1}`,
+          soundCueId: entry.soundCueId ?? entry.soundId ?? matchingCue?.id ?? undefined,
+          soundCueName,
+          soundCueSrc: entry.soundSrc ?? matchingCue?.src ?? undefined,
+          instrument: entry.instrument ?? undefined,
+          color,
+          keepOriginal: Boolean(entry.keepOriginal),
+        }
+
+        if (duration !== undefined) {
+          instructionEvent.duration = duration
+        } else if (explicitDuration !== undefined) {
+          instructionEvent.duration = explicitDuration
+        } else if (matchingCue?.duration) {
+          instructionEvent.duration = matchingCue.duration
+        }
+
+        return instructionEvent
+      })
+      .filter((event): event is TimelineEvent => Boolean(event))
+
+    return events.sort((a, b) => a.startTime - b.startTime)
+  }, [])
 
   const importIntoAdjuster = useCallback(
     async (importData: any) => {
@@ -2472,10 +2473,7 @@ export default function Home() {
       }
 
       try {
-        const lastMode = window.sessionStorage.getItem(ACTIVE_MODE_SESSION_KEY) as
-          | "adjuster"
-          | "encoder"
-          | null
+        const lastMode = window.sessionStorage.getItem(ACTIVE_MODE_SESSION_KEY) as "adjuster" | "encoder" | null
 
         if (lastMode === "adjuster") {
           const persistedAdjuster = window.sessionStorage.getItem(ADJUSTER_SESSION_KEY)
@@ -2793,11 +2791,7 @@ export default function Home() {
   }, [isProcessing])
 
   useEffect(() => {
-    if (
-      actualDuration === null ||
-      timelineEvents.length === 0 ||
-      encoderTimelineOriginalDuration === null
-    ) {
+    if (actualDuration === null || timelineEvents.length === 0 || encoderTimelineOriginalDuration === null) {
       return
     }
 
@@ -2808,8 +2802,7 @@ export default function Home() {
       return
     }
 
-    const previousDuration =
-      lastEncoderDurationAdjustmentRef.current ?? normalizedOriginalDuration
+    const previousDuration = lastEncoderDurationAdjustmentRef.current ?? normalizedOriginalDuration
 
     if (!Number.isFinite(previousDuration) || previousDuration <= 0) {
       return
@@ -2841,13 +2834,7 @@ export default function Home() {
     lastEncoderDurationAdjustmentRef.current = normalizedActualDuration
     setTimelineEvents(rescaledEvents)
     setEncoderTotalDuration(normalizedActualDuration)
-  }, [
-    actualDuration,
-    encoderTimelineOriginalDuration,
-    timelineEvents,
-    setTimelineEvents,
-    setEncoderTotalDuration,
-  ])
+  }, [actualDuration, encoderTimelineOriginalDuration, timelineEvents, setTimelineEvents, setEncoderTotalDuration])
 
   // == Effects and Handlers for Labs ==
   useEffect(() => {
@@ -3816,10 +3803,7 @@ export default function Home() {
                               targetDuration,
                               pausesAdjusted,
                               wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
-                              timeline:
-                                exportableTimelineMetadata.length > 0
-                                  ? exportableTimelineMetadata
-                                  : undefined,
+                              timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                             }}
                           >
                             <Button className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white">
@@ -3882,9 +3866,9 @@ export default function Home() {
                                 className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
                                 aria-label="Hours"
                               />
-                              
+                              <span className="text-xs font-black text-gray-500">Hours</span>
                             </div>
-                            
+
                             <div className="flex flex-col items-center">
                               <input
                                 type="number"
@@ -3896,7 +3880,8 @@ export default function Home() {
                                 className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
                                 aria-label="Minutes"
                               />
-                              
+                              <span className="text-xs font-black text-gray-500">Minutes</span>
+                            </div>
                             <div className="flex flex-col items-center">
                               <input
                                 type="number"
@@ -3908,10 +3893,13 @@ export default function Home() {
                                 className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
                                 aria-label="Seconds"
                               />
-                                           </div>
+                              <span className="text-xs font-black text-gray-500">Seconds</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </Card>
+                    </Card>
+                  </motion.div>
                 </motion.div>
 
                 <motion.div
@@ -4303,10 +4291,7 @@ export default function Home() {
                             instructionCount: timelineEvents.length,
                             meditationTitle,
                             wav: generatedAudioMetadata ? { ...generatedAudioMetadata } : undefined,
-                            timeline:
-                              exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
-                            soundCuesUsed:
-                              encoderSoundCuesUsed.length > 0 ? encoderSoundCuesUsed : undefined,
+                            timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                           }}
                         >
                           <Button className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white mt-3">
