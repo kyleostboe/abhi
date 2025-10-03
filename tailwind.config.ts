@@ -1,5 +1,7 @@
 import type { Config } from "tailwindcss"
-import colors from "tailwindcss/colors"
+import tailwindColors from "tailwindcss/colors"
+
+const { slate, gray, sky, stone, neutral } = tailwindColors
 
 const config = {
   // Removed: darkMode: ["class"],
@@ -22,11 +24,11 @@ const config = {
     extend: {
       colors: {
         // Tailwind CSS v3 color name updates
-        neutral: colors.neutral,
-        gray: colors.gray,
-        slate: colors.slate,
-        sky: colors.sky,
-        stone: colors.stone,
+        neutral,
+        gray,
+        slate,
+        sky,
+        stone,
 
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
