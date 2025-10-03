@@ -3855,7 +3855,7 @@ export default function Home() {
                             id="encoder-duration"
                             className="flex w-full items-center justify-center gap-3 mt-1 border-[3px] border-gray-500 rounded-[10px] bg-white py-3 px-4 shadow-lg"
                           >
-                            <div className="flex flex-col items-center">
+                            <div className="flex items-center">
                               <input
                                 type="number"
                                 min={0}
@@ -3865,10 +3865,9 @@ export default function Home() {
                                 className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
                                 aria-label="Hours"
                               />
-                              <span className="text-xs font-black text-gray-500">Hours</span>
                             </div>
 
-                            <div className="flex flex-col items-center">
+                            <div className="flex items-center">
                               <input
                                 type="number"
                                 min={0}
@@ -3879,9 +3878,8 @@ export default function Home() {
                                 className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
                                 aria-label="Minutes"
                               />
-                              <span className="text-xs font-black text-gray-500">Minutes</span>
                             </div>
-                            <div className="flex flex-col items-center">
+                            <div className="flex items-center">
                               <input
                                 type="number"
                                 min={0}
@@ -3892,7 +3890,6 @@ export default function Home() {
                                 className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
                                 aria-label="Seconds"
                               />
-                              <span className="text-xs font-black text-gray-500">Seconds</span>
                             </div>
                           </div>
                         </div>
