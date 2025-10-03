@@ -204,6 +204,22 @@ export default function LibraryPage() {
     }
   }
 
+  const timelineEvents = useMemo(() => {
+    if (!selectedMeditation) {
+      return []
+    }
+
+    const rawTimeline = selectedMeditation.metadata?.timeline
+
+    if (!Array.isArray(rawTimeline)) {
+      return []
+    }
+
+    return rawTimeline as LibraryTimelineEntry[]
+  }, [selectedMeditation])
+
+  const hasTimelineEvents = timelineEvents.length > 0
+
   const handleDeletePlaylist = async (playlistId: string) => {
     try {
       await MeditationLibrary.deletePlaylist(playlistId)
@@ -1057,11 +1073,11 @@ export default function LibraryPage() {
                         className="hidden"
                       />
 
-                      {selectedMeditation.source === "encoder" && selectedMeditation.metadata.timeline && (
+                      {hasTimelineEvents && (
                         <div className="space-y-3">
                           <h3 className="text-sm font-black text-gray-700 uppercase tracking-wide">Timeline Events</h3>
                           <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
-                            {selectedMeditation.metadata.timeline.map((timelineEvent, index) => {
+                            {timelineEvents.map((timelineEvent, index) => {
                               const colorClass =
                                 typeof timelineEvent.color === "string" && timelineEvent.color.trim().length > 0
                                   ? timelineEvent.color
@@ -1134,7 +1150,7 @@ export default function LibraryPage() {
                         </div>
                       )}
 
-                      {selectedMeditation.source === "encoder" && !selectedMeditation.metadata.timeline && (
+                      {!hasTimelineEvents && selectedMeditation.source === "encoder" && (
                         <div className="space-y-3">
                           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                             <p className="text-xs text-amber-800 font-black">
