@@ -10,13 +10,13 @@ import {
   AlertTriangle,
   Music2,
   Mic,
+  StopCircle,
   Play,
   PlusCircle,
   CircleDotDashed,
   BookmarkPlus,
   Wand2,
   Volume2,
-  Square,
 } from "lucide-react" // Import Copy icon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
@@ -93,25 +93,12 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
           </h3>
         </div>
         <div className="p-6 pt-3.5 space-y-[21px]">
-          <input
-            id={inputId}
-            type="text"
-            value={recordingLabel}
-            onChange={onRecordingLabelChange}
-            placeholder="Recording label..."
-            disabled={isRecording}
-            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-logo-rose-300 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-stone-300 mt-1 text-sm font-black text-logo-rose-400 border-[3px] shadow-md h-[42px]"
-          />
+             />
           <Button
             onClick={isRecording ? stopRecording : startRecording}
             variant={isRecording ? "destructive" : "default"}
             disabled={!recordingLabel.trim() && !isRecording}
-            className="w-full h-[42px] font-black font-serif"
-          >
-            {isRecording ? (
-              <>
-                <Square className="mr-2 h-4 w-4" />
-                <span className="font-black font-serif">Stop Recording</span>
+            className={flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-logo-rose-300 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 mt-1 text-xs focus-visible: text-logo-rose-400 font-black text-gray-500 border-stone-300 border-[3px] shadow-md h-[42px]       <span className="font-black font-serif">Stop Recording</span>
               </>
             ) : (
               <>
@@ -2045,7 +2032,9 @@ export default function Home() {
         setFile(fakeFile)
 
         const libraryTitle =
-          typeof importData.title === "string" && importData.title.trim().length > 0 ? importData.title.trim() : null
+          typeof importData.title === "string" && importData.title.trim().length > 0
+            ? importData.title.trim()
+            : null
         setDisplayedFileName(libraryTitle ?? fakeFileName)
         setMeditationTitle(deriveMeditationTitle(importData))
 
@@ -2757,17 +2746,17 @@ export default function Home() {
     if (e.target) e.target.value = ""
   }
 
-  const handleDragOverAction = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOverAction = (e: React.DragEvent) => {
     e.preventDefault()
     if (uploadAreaRef.current) uploadAreaRef.current.classList.add("border-primary")
   }
 
-  const handleDragLeaveAction = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragLeaveAction = (e: React.DragEvent) => {
     e.preventDefault()
     if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
   }
 
-  const handleDropAction = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDropAction = (e: React.DragEvent) => {
     e.preventDefault()
     if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
     const files = e.dataTransfer.files
@@ -3873,36 +3862,36 @@ export default function Home() {
                             value={meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
-                            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-sm font-black text-gray-500 border-[3px] shadow-lg h-[42px]"
+                            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-sm font-black text-gray-500 border-[3px] shadow-lg h-11"
                           />
                         </div>
                         <div className="text-center">
                           <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
-                            Duration(h/m/s):
+                            Duration(h-m-s):
                           </Label>
                           <div
                             id="encoder-duration"
-                            className="flex w-full items-center border-[3px] border-gray-500 rounded-[10px] bg-white px-4 shadow-lg py-2 text-center h-[42px] pr-4 justify-center mt-1 gap-[9px]"
+                            className="flex w-full items-center justify-center gap-3 mt-1 border-[3px] border-gray-500 rounded-[10px] bg-white px-4 shadow-lg py-2 text-center"
                           >
                             <input
                               type="number"
                               min={0}
                               value={encoderDurationParts.hours}
                               onChange={(event) => handleDurationPartChange("hours", Number(event.target.value))}
-                              className="text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500 h-[42px] w-[33px]"
+                              className="w-16 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500 h-[42px]"
                               aria-label="Hours"
                             />
-                            
+                            <span className="text-gray-400">:</span>
                             <input
                               type="number"
                               min={0}
                               max={59}
                               value={encoderDurationParts.minutes}
                               onChange={(event) => handleDurationPartChange("minutes", Number(event.target.value))}
-                              className="text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500 h-[42px] pr-0 w-[33px]"
+                              className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500 h-[42px]"
                               aria-label="Minutes"
                             />
-                            
+                            <span className="text-gray-400">:</span>
                             <input
                               type="number"
                               min={0}
@@ -3910,7 +3899,7 @@ export default function Home() {
                               step={1}
                               value={encoderDurationParts.seconds}
                               onChange={(event) => handleDurationPartChange("seconds", Number(event.target.value))}
-                              className="text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500 h-[42px] w-[33px]"
+                              className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500 h-[42px]"
                               aria-label="Seconds"
                             />
                           </div>
