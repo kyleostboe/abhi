@@ -10,13 +10,13 @@ import {
   AlertTriangle,
   Music2,
   Mic,
-  StopCircle,
   Play,
   PlusCircle,
   CircleDotDashed,
   BookmarkPlus,
   Wand2,
   Volume2,
+  Square,
 } from "lucide-react" // Import Copy icon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
@@ -93,12 +93,25 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
           </h3>
         </div>
         <div className="p-6 pt-3.5 space-y-[21px]">
-             />
+          <input
+            id={inputId}
+            type="text"
+            value={recordingLabel}
+            onChange={onRecordingLabelChange}
+            placeholder="Recording label..."
+            disabled={isRecording}
+            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-sm font-black text-gray-500 border-[3px] shadow-lg h-[42px]"
+          />
           <Button
             onClick={isRecording ? stopRecording : startRecording}
             variant={isRecording ? "destructive" : "default"}
             disabled={!recordingLabel.trim() && !isRecording}
-            className={flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-logo-rose-300 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 mt-1 text-xs focus-visible: text-logo-rose-400 font-black text-gray-500 border-stone-300 border-[3px] shadow-md h-[42px]       <span className="font-black font-serif">Stop Recording</span>
+            className="w-full h-[42px] font-black font-serif"
+          >
+            {isRecording ? (
+              <>
+                <Square className="mr-2 h-4 w-4" />
+                <span className="font-black font-serif">Stop Recording</span>
               </>
             ) : (
               <>
@@ -2032,9 +2045,7 @@ export default function Home() {
         setFile(fakeFile)
 
         const libraryTitle =
-          typeof importData.title === "string" && importData.title.trim().length > 0
-            ? importData.title.trim()
-            : null
+          typeof importData.title === "string" && importData.title.trim().length > 0 ? importData.title.trim() : null
         setDisplayedFileName(libraryTitle ?? fakeFileName)
         setMeditationTitle(deriveMeditationTitle(importData))
 
@@ -2746,17 +2757,17 @@ export default function Home() {
     if (e.target) e.target.value = ""
   }
 
-  const handleDragOverAction = (e: React.DragEvent) => {
+  const handleDragOverAction = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     if (uploadAreaRef.current) uploadAreaRef.current.classList.add("border-primary")
   }
 
-  const handleDragLeaveAction = (e: React.DragEvent) => {
+  const handleDragLeaveAction = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
   }
 
-  const handleDropAction = (e: React.DragEvent) => {
+  const handleDropAction = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
     const files = e.dataTransfer.files
