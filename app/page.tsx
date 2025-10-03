@@ -3849,11 +3849,11 @@ export default function Home() {
                         </div>
                         <div className="text-center">
                           <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
-                            Duration:
+                            Duration(h-m-s):
                           </Label>
                           <div
                             id="encoder-duration"
-                            className="flex w-full items-center justify-center gap-3 mt-1 border-[3px] border-gray-500 rounded-[10px] bg-white py-3 px-4 shadow-lg"
+                            className="flex w-full items-center justify-center gap-3 mt-1 border-[3px] border-gray-500 rounded-[10px] bg-white px-4 shadow-lg py-[9px]"
                           >
                             <div className="flex items-center">
                               <input
