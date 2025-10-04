@@ -99,7 +99,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
             value={recordingLabel}
             onChange={onRecordingLabelChange}
             placeholder="Describe this recording..."
-            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-logo-rose-300 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 h-11 mt-1 text-xs focus-visible: text-logo-rose-400 font-black text-gray-500 border-stone-300 border-[3px] shadow-md"
+            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-logo-rose-300 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 mt-1 text-xs focus-visible: text-logo-rose-400 font-black text-gray-500 border-stone-300 border-[3px] shadow-md h-[42px]"
           />
           <Button
             onClick={isRecording ? stopRecording : startRecording}
@@ -4019,7 +4019,7 @@ export default function Home() {
                             value={meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
-                            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 h-11 border-gray-500 mt-1 text-sm font-black text-gray-500 border-[3px] shadow-lg"
+                            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-sm font-black text-gray-500 shadow-lg border-4 h-[42px]"
                           />
                         </div>
                         <div className="text-center">
@@ -4028,7 +4028,7 @@ export default function Home() {
                           </Label>
                           <div
                             id="encoder-duration"
-                            className="flex w-full items-center justify-center gap-3 mt-1 border-[3px] border-gray-500 rounded-[10px] bg-white px-4 shadow-lg py-[9px] pr-1"
+                            className="flex w-full items-center justify-center gap-3 mt-1 border-gray-500 rounded-[10px] bg-white px-4 shadow-lg py-[9px] pr-1 border-4 h-[42px]"
                           >
                             <div className="flex items-center">
                               <input
@@ -4087,7 +4087,7 @@ export default function Home() {
                       className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                     >
                       <div className="p-0.5 bg-gradient-to-r from-stone-300 to-logo-blue-400  py-1 shadow-lg rounded-sm px-[5px]">
-                        <div className="bg-white p-4 rounded-sm shadow-nonee pt-[9px] border-stone-200 border-[3px] shadow">
+                        <div className="bg-white p-4 rounded-sm shadow-nonee pt-[9px] border-stone-200 border-[3px] shadow pb-3">
                           <div className="text-center">
                             <Textarea
                               id="custom-instruction"
