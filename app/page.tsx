@@ -36,6 +36,7 @@ import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
 import * as Tone from "tone"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
+import { Input } from "@/components/ui/input"
 
 const ADJUSTER_SESSION_KEY = "abhi_last_adjuster_session"
 const ENCODER_SESSION_KEY = "abhi_last_encoder_session"
@@ -93,16 +94,34 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
           </h3>
         </div>
         <div className="p-6 pt-3.5 space-y-[21px]">
-             />
+          <Input
+            id={inputId}
+            type="text"
+            value={recordingLabel}
+            onChange={onRecordingLabelChange}
+            placeholder="Recording label..."
+            disabled={isRecording}
+            className="mt-1 h-[42px] rounded-[10px] border-[3px] border-stone-300 bg-white px-4 font-black text-sm text-logo-rose-400 placeholder:text-logo-rose-300 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-rose-400 disabled:cursor-not-allowed"
+          />
           <Button
             onClick={isRecording ? stopRecording : startRecording}
             variant={isRecording ? "destructive" : "default"}
             disabled={!recordingLabel.trim() && !isRecording}
-            className={flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-logo-rose-300 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 mt-1 text-xs focus-visible: text-logo-rose-400 font-black text-gray-500 border-stone-300 border-[3px] shadow-md h-[42px]       <span className="font-black font-serif">Stop Recording</span>
+            className={cn(
+              "flex h-[42px] w-full items-center justify-center gap-2 rounded-[10px] border-[3px] border-stone-300 font-serif font-black shadow-md transition-colors",
+              isRecording
+                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                : "bg-white text-gray-700 hover:bg-gray-100"
+            )}
+          >
+            {isRecording ? (
+              <>
+                <StopCircle className="mr-1 h-4 w-4" />
+                <span className="font-black font-serif">Stop Recording</span>
               </>
             ) : (
               <>
-                <Mic className="mr-2 h-4 w-4" />
+                <Mic className="mr-1 h-4 w-4" />
                 <span className="font-black font-serif">Start Recording</span>
               </>
             )}
