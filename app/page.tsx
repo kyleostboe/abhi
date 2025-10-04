@@ -36,7 +36,6 @@ import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
 import * as Tone from "tone"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
-import { Input } from "@/components/ui/input"
 
 const ADJUSTER_SESSION_KEY = "abhi_last_adjuster_session"
 const ENCODER_SESSION_KEY = "abhi_last_encoder_session"
@@ -94,34 +93,30 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
           </h3>
         </div>
         <div className="p-6 pt-3.5 space-y-[21px]">
-          <Input
+          <input
             id={inputId}
-            type="text"
             value={recordingLabel}
             onChange={onRecordingLabelChange}
-            placeholder="Recording label..."
-            disabled={isRecording}
-            className="mt-1 h-[42px] rounded-[10px] border-[3px] border-stone-300 bg-white px-4 font-black text-sm text-logo-rose-400 placeholder:text-logo-rose-300 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-rose-400 disabled:cursor-not-allowed"
+            placeholder="Describe this recording..."
+            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-logo-rose-300 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 h-11 mt-1 text-xs focus-visible: text-logo-rose-400 font-black text-gray-500 border-stone-300 border-[3px] shadow-md"
           />
           <Button
             onClick={isRecording ? stopRecording : startRecording}
             variant={isRecording ? "destructive" : "default"}
             disabled={!recordingLabel.trim() && !isRecording}
             className={cn(
-              "flex h-[42px] w-full items-center justify-center gap-2 rounded-[10px] border-[3px] border-stone-300 font-serif font-black shadow-md transition-colors",
-              isRecording
-                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                : "bg-white text-gray-700 hover:bg-gray-100"
+              "w-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-[11px] hover:shadow-none font-serif font-black",
+              isRecording && "from-logo-rose-300 to-logo-rose-600",
             )}
           >
             {isRecording ? (
               <>
-                <StopCircle className="mr-1 h-4 w-4" />
+                <StopCircle className="mr-2 h-4 w-4" />
                 <span className="font-black font-serif">Stop Recording</span>
               </>
             ) : (
               <>
-                <Mic className="mr-1 h-4 w-4" />
+                <Mic className="mr-2 h-4 w-4" />
                 <span className="font-black font-serif">Start Recording</span>
               </>
             )}
@@ -2860,26 +2855,7 @@ export default function Home() {
     encoderAudioRef.current.preload = "none"
     encoderAudioRef.current.volume = 0.7
     if (encoderAudioRef.current) {
-      encoderAudioRef.current.onerror = (event) => {
-        const audioElement = event.currentTarget as HTMLAudioElement | null
-        const mediaError = audioElement?.error
-
-        if (mediaError) {
-          const errorType: Record<number, string> = {
-            1: "MEDIA_ERR_ABORTED",
-            2: "MEDIA_ERR_NETWORK",
-            3: "MEDIA_ERR_DECODE",
-            4: "MEDIA_ERR_SRC_NOT_SUPPORTED",
-          }
-
-          console.warn(
-            `[v0] Encoder audio playback error (${errorType[mediaError.code] ?? mediaError.code}).` +
-              (mediaError.message ? ` Details: ${mediaError.message}` : ""),
-          )
-        } else {
-          console.warn("[v0] Encoder audio playback error: Unknown media error event.")
-        }
-      }
+      encoderAudioRef.current.onerror = (e) => console.warn("Encoder Audio error:", e)
     }
     return () => {
       if (encoderAudioRef.current) {
@@ -3881,7 +3857,7 @@ export default function Home() {
                             value={meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
-                            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-sm font-black text-gray-500 border-[3px] shadow-lg h-11"
+                            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 h-11 border-gray-500 mt-1 text-sm font-black text-gray-500 border-[3px] shadow-lg"
                           />
                         </div>
                         <div className="text-center">
@@ -3890,37 +3866,44 @@ export default function Home() {
                           </Label>
                           <div
                             id="encoder-duration"
-                            className="flex w-full items-center justify-center gap-3 mt-1 border-[3px] border-gray-500 rounded-[10px] bg-white px-4 shadow-lg py-2 text-center"
+                            className="flex w-full items-center justify-center gap-3 mt-1 border-[3px] border-gray-500 rounded-[10px] bg-white px-4 shadow-lg py-[9px]"
                           >
-                            <input
-                              type="number"
-                              min={0}
-                              value={encoderDurationParts.hours}
-                              onChange={(event) => handleDurationPartChange("hours", Number(event.target.value))}
-                              className="w-16 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500 h-[42px]"
-                              aria-label="Hours"
-                            />
-                            <span className="text-gray-400">:</span>
-                            <input
-                              type="number"
-                              min={0}
-                              max={59}
-                              value={encoderDurationParts.minutes}
-                              onChange={(event) => handleDurationPartChange("minutes", Number(event.target.value))}
-                              className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500 h-[42px]"
-                              aria-label="Minutes"
-                            />
-                            <span className="text-gray-400">:</span>
-                            <input
-                              type="number"
-                              min={0}
-                              max={59}
-                              step={1}
-                              value={encoderDurationParts.seconds}
-                              onChange={(event) => handleDurationPartChange("seconds", Number(event.target.value))}
-                              className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500 h-[42px]"
-                              aria-label="Seconds"
-                            />
+                            <div className="flex items-center">
+                              <input
+                                type="number"
+                                min={0}
+                                step={1}
+                                value={encoderDurationParts.hours}
+                                onChange={(event) => handleDurationPartChange("hours", Number(event.target.value))}
+                                className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
+                                aria-label="Hours"
+                              />
+                            </div>
+
+                            <div className="flex items-center">
+                              <input
+                                type="number"
+                                min={0}
+                                max={59}
+                                step={1}
+                                value={encoderDurationParts.minutes}
+                                onChange={(event) => handleDurationPartChange("minutes", Number(event.target.value))}
+                                className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
+                                aria-label="Minutes"
+                              />
+                            </div>
+                            <div className="flex items-center">
+                              <input
+                                type="number"
+                                min={0}
+                                max={59}
+                                step={1}
+                                value={encoderDurationParts.seconds}
+                                onChange={(event) => handleDurationPartChange("seconds", Number(event.target.value))}
+                                className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
+                                aria-label="Seconds"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
