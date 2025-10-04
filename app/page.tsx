@@ -3603,7 +3603,7 @@ export default function Home() {
                       className="mb-6 mt-4"
                     >
                       <Alert className="bg-white p-0 border-0 shadow-none">
-                        <div className="p-3 text-center min-h-[76px] rounded-sm shadow-none bg-transparent pb-0.5 pt-0">
+                        <div className="p-3 text-center min-h-[76px] rounded-sm shadow-none bg-transparent pb-0.5 pt-0
                           <div className="flex items-center mb-2 justify-center">
                             {/* Removed the Info icon div */}
                             <div className="text-lg font-black text-gray-600">Audio Analysis</div>
@@ -4010,7 +4010,7 @@ export default function Home() {
                       <div className="grid md:grid-cols-2 text-gray-600 pb-2 gap-4">
                         <div className="text-center">
                           <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
-                            Title:
+                            Title
                           </Label>
                           <input
                             id="meditation-title"
@@ -4023,7 +4023,7 @@ export default function Home() {
                         </div>
                         <div className="text-center">
                           <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
-                            Duration(h-m-s):
+                            Duration (h:m:s)
                           </Label>
                           <div
                             id="encoder-duration"
