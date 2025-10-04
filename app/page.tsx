@@ -2048,9 +2048,7 @@ export default function Home() {
         setFile(fakeFile)
 
         const libraryTitle =
-          typeof importData.title === "string" && importData.title.trim().length > 0
-            ? importData.title.trim()
-            : null
+          typeof importData.title === "string" && importData.title.trim().length > 0 ? importData.title.trim() : null
         setDisplayedFileName(libraryTitle ?? fakeFileName)
         setMeditationTitle(deriveMeditationTitle(importData))
 
@@ -2233,7 +2231,7 @@ export default function Home() {
 
         // Decode audio buffer for analysis
         const arrayBuffer = await audioFile.arrayBuffer()
-        const buffer = await audioContextRef.current!.decodeAudioData(arrayBuffer)
+        const buffer = await getAudioContext().decodeAudioData(arrayBuffer)
         setOriginalBuffer(buffer)
 
         // Perform the same analysis as normal file upload
@@ -2271,7 +2269,8 @@ export default function Home() {
         // Create a single recorded block event for encoder
         const rawDurationCandidate =
           Number.isFinite(importData.duration) && importData.duration > 0 ? importData.duration : buffer.duration
-        const safeDuration = Number.isFinite(rawDurationCandidate) && rawDurationCandidate > 0 ? rawDurationCandidate : 1
+        const safeDuration =
+          Number.isFinite(rawDurationCandidate) && rawDurationCandidate > 0 ? rawDurationCandidate : 1
         const recordedLabel =
           typeof importData.title === "string" && importData.title.trim().length > 0
             ? importData.title.trim()
@@ -2784,17 +2783,17 @@ export default function Home() {
     if (e.target) e.target.value = ""
   }
 
-  const handleDragOverAction = (e: React.DragEvent) => {
+  const handleDragOverAction = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     if (uploadAreaRef.current) uploadAreaRef.current.classList.add("border-primary")
   }
 
-  const handleDragLeaveAction = (e: React.DragEvent) => {
+  const handleDragLeaveAction = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
   }
 
-  const handleDropAction = (e: React.DragEvent) => {
+  const handleDropAction = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
     const files = e.dataTransfer.files
@@ -2970,8 +2969,7 @@ export default function Home() {
 
         const safeDuration = duration
         const existingEventCount = timelineEvents.length
-        const maxExistingTime =
-          existingEventCount > 0 ? Math.max(...timelineEvents.map((event) => event.startTime)) : 0
+        const maxExistingTime = existingEventCount > 0 ? Math.max(...timelineEvents.map((event) => event.startTime)) : 0
         const newStartTime = existingEventCount > 0 ? maxExistingTime + 10 : 0
         const labelBase = file.name.replace(/\.[^/.]+$/, "").trim()
         objectUrl = objectUrl ?? URL.createObjectURL(file)
@@ -3023,19 +3021,12 @@ export default function Home() {
         }
         toast({
           title: "Upload failed",
-          description:
-            error instanceof Error ? error.message : "We couldn't add that meditation to the timeline.",
+          description: error instanceof Error ? error.message : "We couldn't add that meditation to the timeline.",
           variant: "destructive",
         })
       }
     },
-    [
-      addEventToTimeline,
-      timelineEvents,
-      setEncoderTotalDuration,
-      setEncoderTimelineOriginalDuration,
-      toast,
-    ],
+    [addEventToTimeline, timelineEvents, setEncoderTotalDuration, setEncoderTimelineOriginalDuration, toast],
   )
 
   const handleTimelineUploadChange = useCallback(
