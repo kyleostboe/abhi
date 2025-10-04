@@ -73,34 +73,6 @@ export class MeditationLibrary {
         const timestamp = Date.now()
         const randomId = Math.random().toString(36).substring(2, 15)
         const sanitizedTitle = meditation.title.replace(/[^a-z0-9-_]+/gi, "_") || "meditation"
-        const fileName = `meditation_${timestamp}_${randomId}.mp3`
-        const sourceFileName = `meditation_${timestamp}_${randomId}_source.mp3`
-
-        console.log("[v0] Uploading directly to Supabase Storage:", fileName)
-
-        // Upload distribution quality file
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("meditations")
-          .upload(fileName, audioBlob, {
-            contentType: "audio/mp3",
-            upsert: false,
-          })
-
-        if (uploadError) {
-          console.error("[v0] Direct upload error:", uploadError)
-          throw new Error(`Upload failed: ${uploadError.message}`)
-        }
-
-        console.log("[v0] Upload successful:", uploadData.path)
-
-        // Get public URL for distribution file
-        const { data: urlData } = supabase.storage.from("meditations").getPublicUrl(uploadData.path)
-
-        console.log("[v0] Public URL:", urlData.publicUrl)
-
-        let sourcePublicUrl: string | undefined
-        const metadataToSave: SavedMeditation["metadata"] = { ...meditation.metadata }
-
         const inferExtensionFromMime = (mimeType?: string): string => {
           if (!mimeType) {
             return "webm"
@@ -122,6 +94,38 @@ export class MeditationLibrary {
           const subtype = mimeType.split("/")[1]
           return subtype || "webm"
         }
+
+        const distributionExtension = inferExtensionFromMime(audioBlob.type)
+        const distributionContentType = audioBlob.type || `audio/${distributionExtension}`
+        const fileBase = `${sanitizedTitle}_${timestamp}_${randomId}`
+        const fileName = `${fileBase}.${distributionExtension}`
+        const sourceFileBase = `${fileBase}_source`
+
+        console.log("[v0] Uploading directly to Supabase Storage:", fileName)
+
+        // Upload distribution quality file
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("meditations")
+          .upload(fileName, audioBlob, {
+            contentType: distributionContentType,
+            upsert: false,
+          })
+
+        if (uploadError) {
+          console.error("[v0] Direct upload error:", uploadError)
+          throw new Error(`Upload failed: ${uploadError.message}`)
+        }
+
+        console.log("[v0] Upload successful:", uploadData.path)
+
+        // Get public URL for distribution file
+        const { data: urlData } = supabase.storage.from("meditations").getPublicUrl(uploadData.path)
+
+        console.log("[v0] Public URL:", urlData.publicUrl)
+
+        let sourcePublicUrl: string | undefined
+        let sourceStoragePath: string | undefined
+        const metadataToSave: SavedMeditation["metadata"] = { ...meditation.metadata }
 
         if (Array.isArray(metadataToSave.timeline) && metadataToSave.timeline.length > 0) {
           const processedTimeline = [] as NonNullable<SavedMeditation["metadata"]["timeline"]>
@@ -169,17 +173,21 @@ export class MeditationLibrary {
           metadataToSave.timeline = processedTimeline
         }
         if (meditation.sourceAudioUrl && meditation.sourceAudioUrl.startsWith("blob:")) {
-          console.log("[v0] Uploading high-quality source file:", sourceFileName)
-
           const sourceResponse = await fetch(meditation.sourceAudioUrl)
           const sourceBlob = await sourceResponse.blob()
 
           console.log("[v0] Source audio blob size:", sourceBlob.size, "bytes")
 
+          const sourceExtension = inferExtensionFromMime(sourceBlob.type)
+          const sourceContentType = sourceBlob.type || `audio/${sourceExtension}`
+          const sourceFileName = `${sourceFileBase}.${sourceExtension}`
+
+          console.log("[v0] Uploading high-quality source file:", sourceFileName)
+
           const { data: sourceUploadData, error: sourceUploadError } = await supabase.storage
             .from("meditations")
             .upload(sourceFileName, sourceBlob, {
-              contentType: "audio/mp3",
+              contentType: sourceContentType,
               upsert: false,
             })
 
@@ -189,6 +197,7 @@ export class MeditationLibrary {
           } else {
             const { data: sourceUrlData } = supabase.storage.from("meditations").getPublicUrl(sourceUploadData.path)
             sourcePublicUrl = sourceUrlData.publicUrl
+            sourceStoragePath = sourceUploadData.path
             console.log("[v0] Source public URL:", sourcePublicUrl)
           }
         }
@@ -213,8 +222,8 @@ export class MeditationLibrary {
         if (dbError) {
           console.error("[v0] Database insert error:", dbError)
           await supabase.storage.from("meditations").remove([uploadData.path])
-          if (sourcePublicUrl) {
-            await supabase.storage.from("meditations").remove([sourceFileName])
+          if (sourceStoragePath) {
+            await supabase.storage.from("meditations").remove([sourceStoragePath])
           }
           throw new Error(`Database save failed: ${dbError.message}`)
         }

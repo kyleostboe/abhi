@@ -3911,7 +3911,7 @@ export default function Home() {
                   )}
                   {isProcessingComplete && processedUrl && (
                     <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
-                      <div className="bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 py-3 px-6 ">
+                      <div className="bg-gradient-to-r from-logo-teal-500 via-logo-amber-300 to-purple-300 py-3 px-6 ">
                         <h3 className="text-white font-black">Processed Audio</h3>
                       </div>
                       <div className="p-6 px-3.5 py-4 space-y-4">
