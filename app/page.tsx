@@ -1325,10 +1325,12 @@ export default function Home() {
                 try {
                   if (instrument === "piano") {
                     await loadPiano()
-                    pianoSampler.triggerAttackRelease(noteString, 0.8, eventStartTime, 0.9)
+                    const startDelay = noteIndex * 0.01
+                    pianoSampler.triggerAttackRelease(noteString, 0.8, eventStartTime + startDelay, 0.9)
                   } else if (instrument === "synth") {
                     await loadSynth()
-                    synth.triggerAttackRelease(noteString, 0.8, eventStartTime)
+                    const startDelay = noteIndex * 0.01
+                    synth.triggerAttackRelease(noteString, 0.8, eventStartTime + startDelay)
                   } else if (instrument === "harp") {
                     await loadHarp()
                     const startDelay = noteIndex * 0.01
@@ -3663,7 +3665,7 @@ export default function Home() {
                       <TabsTrigger
                         value="encoder"
                         onClick={() => {
-                          setActiveTab("encoder") // Only change the tab, not the mode
+                          setActiveTab("adjuster") // Only change the tab, not the mode
                         }}
                         className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-[10px] "
                       >
