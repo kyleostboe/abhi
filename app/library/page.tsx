@@ -471,39 +471,7 @@ export default function LibraryPage() {
       const link = document.createElement("a")
       link.href = selectedMeditation.processedAudioUrl
       const safeTitle = selectedMeditation.title.trim().replace(/\s+/g, "_") || "meditation"
-
-      const extractExtension = (url: string) => {
-        const getExtensionFromPath = (path: string) => {
-          const filename = path.split("/").pop() || ""
-          const match = filename.match(/\.([\w-]+)$/)
-          return match?.[1]?.toLowerCase() ?? null
-        }
-
-        try {
-          const parsedUrl = new URL(url, typeof window !== "undefined" ? window.location.href : undefined)
-          const extensionFromUrl = getExtensionFromPath(parsedUrl.pathname)
-          if (extensionFromUrl) {
-            return extensionFromUrl
-          }
-        } catch (error) {
-          console.warn("[v0] Unable to parse processedAudioUrl for extension:", error)
-        }
-
-        const extensionFromDirectPath = getExtensionFromPath(url)
-        if (extensionFromDirectPath) {
-          return extensionFromDirectPath
-        }
-
-        const originalExtension = selectedMeditation.originalFileName.split(".").pop()?.toLowerCase()
-        if (originalExtension && originalExtension !== selectedMeditation.originalFileName) {
-          return originalExtension
-        }
-
-        return "wav"
-      }
-
-      const fileExtension = extractExtension(selectedMeditation.processedAudioUrl)
-      link.download = `${safeTitle}.${fileExtension}`
+      link.download = `${safeTitle}.wav`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
