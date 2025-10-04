@@ -17,6 +17,7 @@ import {
   BookmarkPlus,
   Wand2,
   Volume2,
+  Upload,
 } from "lucide-react" // Import Copy icon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
@@ -907,6 +908,7 @@ export default function Home() {
   const uploadAreaRef = useRef<HTMLDivElement>(null)
   const adjusterSectionRef = useRef<HTMLDivElement>(null)
   const timelineEditorRef = useRef<HTMLDivElement>(null)
+  const timelineUploadInputRef = useRef<HTMLInputElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [processedMp3Blob, setProcessedMp3Blob] = useState<Blob | null>(null) // Renamed to processedMp3Blob for clarity, but will store WebM
 
@@ -2223,10 +2225,11 @@ export default function Home() {
         const audioBlob = await response.blob()
         const recordedBlockFileName = deriveMeditationFileName(importData)
         const audioFile = new File([audioBlob], recordedBlockFileName, { type: "audio/wav" })
+        const objectUrl = URL.createObjectURL(audioFile)
 
         setFile(audioFile)
         setDisplayedFileName(recordedBlockFileName)
-        setOriginalUrl(URL.createObjectURL(audioFile))
+        setOriginalUrl(objectUrl)
 
         // Decode audio buffer for analysis
         const arrayBuffer = await audioFile.arrayBuffer()
@@ -2236,17 +2239,17 @@ export default function Home() {
         // Perform the same analysis as normal file upload
         setProcessingStep("Analyzing imported audio...")
 
-        const url = URL.createObjectURL(audioFile)
-        const tempAudio = new Audio(url)
+        const metadataUrl = URL.createObjectURL(audioFile)
+        const tempAudio = new Audio(metadataUrl)
         tempAudio.preload = "metadata"
         tempAudio.onloadedmetadata = () => {
           const duration = tempAudio.duration
           setActualDuration(duration)
-          URL.revokeObjectURL(url)
+          URL.revokeObjectURL(metadataUrl)
         }
         tempAudio.onerror = () => {
           console.error("Error loading audio metadata for duration.")
-          URL.revokeObjectURL(url)
+          URL.revokeObjectURL(metadataUrl)
         }
 
         // Perform silence detection
@@ -2266,19 +2269,28 @@ export default function Home() {
         setProcessingStep("Ready to process.")
 
         // Create a single recorded block event for encoder
+        const rawDurationCandidate =
+          Number.isFinite(importData.duration) && importData.duration > 0 ? importData.duration : buffer.duration
+        const safeDuration = Number.isFinite(rawDurationCandidate) && rawDurationCandidate > 0 ? rawDurationCandidate : 1
+        const recordedLabel =
+          typeof importData.title === "string" && importData.title.trim().length > 0
+            ? importData.title.trim()
+            : "Imported Meditation"
+
         const recordedEvent: TimelineEvent = {
           id: `imported_${Date.now()}`,
-          type: "recorded",
+          type: "recorded_voice",
           startTime: 0,
-          duration: importData.duration,
-          content: { text: importData.title, category: "Imported" },
-          instructionText: importData.title,
+          duration: safeDuration,
+          recordedAudioUrl: objectUrl,
+          recordedInstructionLabel: recordedLabel,
+          color: EVENT_COLORS[0],
         }
 
         setTimelineEvents([recordedEvent])
-        setEncoderTotalDuration(importData.duration)
-        setEncoderTimelineOriginalDuration(importData.duration)
-        lastEncoderDurationAdjustmentRef.current = importData.duration
+        setEncoderTotalDuration(safeDuration)
+        setEncoderTimelineOriginalDuration(safeDuration)
+        lastEncoderDurationAdjustmentRef.current = safeDuration
         setGeneratedAudioMetadata(importData.metadata?.wav ?? null)
         setStatus({
           message: `Imported and analyzed "${importData.title}" - ready to adjust or encode.`,
@@ -2363,7 +2375,19 @@ export default function Home() {
           ? importData.metadata.timeline.length > 0
           : false
 
-        if (sourceTab === "encoder" && (!importData.crossToolOpening || hasTimelineMetadata)) {
+        const shouldOpenAsRecordedBlock = sourceTab === "encoder" && importData?.source === "adjuster"
+
+        if (shouldOpenAsRecordedBlock) {
+          setActiveMode("encoder")
+          setActiveTab("encoder")
+          await importAsRecordedBlock(importData)
+          persistSessionForMode("encoder", importData)
+          if (typeof window !== "undefined") {
+            requestAnimationFrame(() => {
+              timelineEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+            })
+          }
+        } else if (sourceTab === "encoder" && (!importData.crossToolOpening || hasTimelineMetadata)) {
           // Encoder meditation reopened in encoder - reconstruct cues/recordings
           setActiveMode("encoder")
           setActiveTab("encoder")
@@ -2885,6 +2909,150 @@ export default function Home() {
         return a.startTime - b.startTime
       })
     })
+  }, [])
+
+  const handleTimelineRecordingUpload = useCallback(
+    async (file: File) => {
+      let objectUrl: string | null = null
+      let eventAdded = false
+
+      try {
+        const arrayBuffer = await file.arrayBuffer()
+
+        let duration = 0
+
+        try {
+          const audioContext = getAudioContext()
+          if (audioContext.state === "suspended") {
+            try {
+              await audioContext.resume()
+            } catch (resumeError) {
+              console.warn("[v0] Unable to resume audio context for upload:", resumeError)
+            }
+          }
+
+          const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0))
+          duration = decodedBuffer.duration
+        } catch (decodeError) {
+          console.warn("[v0] Failed to decode uploaded meditation for duration:", decodeError)
+
+          objectUrl = objectUrl ?? URL.createObjectURL(file)
+          duration = await new Promise<number>((resolve, reject) => {
+            const probe = new Audio()
+            probe.preload = "metadata"
+            probe.src = objectUrl as string
+
+            const cleanup = () => {
+              probe.onloadedmetadata = null
+              probe.onerror = null
+            }
+
+            probe.onloadedmetadata = () => {
+              cleanup()
+              const metadataDuration = Number.isFinite(probe.duration) ? probe.duration : 0
+              resolve(metadataDuration)
+            }
+
+            probe.onerror = () => {
+              cleanup()
+              reject(new Error("Unable to load audio metadata from uploaded file."))
+            }
+          })
+        }
+
+        if (!Number.isFinite(duration) || duration <= 0) {
+          if (objectUrl) {
+            URL.revokeObjectURL(objectUrl)
+            objectUrl = null
+          }
+          throw new Error("Unable to determine the audio duration from the uploaded meditation.")
+        }
+
+        const safeDuration = duration
+        const existingEventCount = timelineEvents.length
+        const maxExistingTime =
+          existingEventCount > 0 ? Math.max(...timelineEvents.map((event) => event.startTime)) : 0
+        const newStartTime = existingEventCount > 0 ? maxExistingTime + 10 : 0
+        const labelBase = file.name.replace(/\.[^/.]+$/, "").trim()
+        objectUrl = objectUrl ?? URL.createObjectURL(file)
+        const newEvent: TimelineEvent = {
+          id: `uploaded_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+          type: "recorded_voice",
+          startTime: newStartTime,
+          recordedAudioUrl: objectUrl,
+          recordedInstructionLabel: labelBase || "Uploaded Meditation",
+          duration: safeDuration,
+          color: EVENT_COLORS[existingEventCount % EVENT_COLORS.length],
+        }
+
+        addEventToTimeline(newEvent)
+        eventAdded = true
+
+        const eventEndTime = newStartTime + safeDuration
+
+        setEncoderTotalDuration((previousTotal) => {
+          if (existingEventCount === 0) {
+            return Math.max(1, eventEndTime)
+          }
+          return Math.max(previousTotal, eventEndTime)
+        })
+
+        setEncoderTimelineOriginalDuration((previousOriginal) => {
+          if (existingEventCount === 0) {
+            return Math.max(1, eventEndTime)
+          }
+          if (previousOriginal === null) {
+            return previousOriginal
+          }
+          return Math.max(previousOriginal, eventEndTime)
+        })
+
+        if (existingEventCount === 0) {
+          lastEncoderDurationAdjustmentRef.current = Math.max(1, eventEndTime)
+        }
+
+        toast({
+          title: "Recording block added",
+          description: `"${labelBase || file.name}" was added to the timeline.`,
+        })
+      } catch (error) {
+        console.error("[v0] Error uploading meditation to timeline:", error)
+        if (objectUrl && !eventAdded) {
+          URL.revokeObjectURL(objectUrl)
+          objectUrl = null
+        }
+        toast({
+          title: "Upload failed",
+          description:
+            error instanceof Error ? error.message : "We couldn't add that meditation to the timeline.",
+          variant: "destructive",
+        })
+      }
+    },
+    [
+      addEventToTimeline,
+      timelineEvents,
+      setEncoderTotalDuration,
+      setEncoderTimelineOriginalDuration,
+      toast,
+    ],
+  )
+
+  const handleTimelineUploadChange = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0]
+      if (!file) {
+        return
+      }
+
+      await handleTimelineRecordingUpload(file)
+      event.target.value = ""
+    },
+    [handleTimelineRecordingUpload],
+  )
+
+  const handleTimelineUploadClick = useCallback(() => {
+    timelineUploadInputRef.current?.click()
   }, [])
 
   const handleAddInstructionSoundEvent = useCallback(() => {
@@ -4149,11 +4317,30 @@ export default function Home() {
                 {/* Timeline Editor for encoder */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
                   <Card ref={timelineEditorRef} className="overflow-hidden border-none shadow-lg bg-white ">
-                    <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 py-3">
+                    <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 py-3 flex items-center justify-between gap-3">
                       <h3 className="text-white flex items-center font-black text-base">
                         <CircleDotDashed className="h-5 w-5 mr-2" />
                         Timeline Editor
                       </h3>
+                      <div className="flex items-center gap-2">
+                        <input
+                          ref={timelineUploadInputRef}
+                          type="file"
+                          accept="audio/*"
+                          className="hidden"
+                          onChange={handleTimelineUploadChange}
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={handleTimelineUploadClick}
+                          className="bg-white/10 text-white hover:bg-white/20 border-white/30"
+                        >
+                          <Upload className="h-4 w-4 mr-1" />
+                          Upload
+                        </Button>
+                      </div>
                     </div>
                     <div className="p-6 px-7">
                       <VisualTimeline
