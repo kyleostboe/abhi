@@ -3603,11 +3603,12 @@ export default function Home() {
                       className="mb-6 mt-4"
                     >
                       <Alert className="bg-white p-0 border-0 shadow-none">
-                        <div className="p-3 text-center min-h-[76px] rounded-sm shadow-none bg-transparent pb-0.5 pt-0
+                        <div className="p-3 text-center min-h-[76px] rounded-sm shadow-none bg-transparent pb-0.5 pt-0">
                           <div className="flex items-center mb-2 justify-center">
                             {/* Removed the Info icon div */}
                             <div className="text-lg font-black text-gray-600">Audio Analysis</div>
                           </div>
+
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
                               <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-[3px] border-stone-200">
