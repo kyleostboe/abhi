@@ -6,6 +6,7 @@ import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
+import { AudioInfoMenu } from "@/components/audio-info-menu"
 import { BookmarkPlus } from "lucide-react"
 import * as Tone from "tone"
 import { bufferToWav, type BufferToWavMetadata } from "@/lib/audio-utils"
@@ -1032,9 +1033,35 @@ export default function EncoderPage() {
 
           {/* Encoded Audio Section */}
           {encodedAudioUrl && (
-            <Card className="p-6 mb-6 bg-white shadow-lg border border-gray-200">
-              <h3 className="text-xl font-bold mb-4 text-gray-800">Encoded Audio</h3>
-              <div className="space-y-4">
+            <Card className="overflow-hidden mb-6 bg-white shadow-lg border border-gray-200">
+              <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-white font-black text-base">Encoded Audio</h3>
+                  <AudioInfoMenu
+                    items={[
+                      {
+                        label: "Instructions",
+                        value: mappedInstructions.length,
+                      },
+                      {
+                        label: "Duration",
+                        value: formatTime(audioDuration),
+                      },
+                      ...(
+                        encodedAudioMetadata
+                          ? [
+                              {
+                                label: "Output Format",
+                                value: `Mono • ${encodedAudioMetadata.sampleRate.toLocaleString()} Hz • ${encodedAudioMetadata.bitDepth.toLocaleString()}-bit`,
+                              },
+                            ]
+                          : []
+                      ),
+                    ]}
+                  />
+                </div>
+              </div>
+              <div className="p-6 space-y-4">
                 <audio controls className="w-full" src={encodedAudioUrl} />
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button
@@ -1069,20 +1096,6 @@ export default function EncoderPage() {
                       Save to Library
                     </Button>
                   </SaveMeditationDialog>
-                </div>
-                <div className="text-sm text-gray-600">
-                  <p>
-                    <strong>Instructions:</strong> {mappedInstructions.length}
-                  </p>
-                  <p>
-                    <strong>Duration:</strong> {formatTime(audioDuration)}
-                  </p>
-                  {encodedAudioMetadata && (
-                    <p>
-                      <strong>Output Format:</strong> Mono • {encodedAudioMetadata.sampleRate.toLocaleString()} Hz •{" "}
-                      {encodedAudioMetadata.bitDepth}-bit
-                    </p>
-                  )}
                 </div>
                 {encodedQualityWarning && (
                   <Alert className="bg-amber-50 border-amber-200 text-amber-700 text-sm">
