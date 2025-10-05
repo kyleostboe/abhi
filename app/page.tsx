@@ -3917,7 +3917,7 @@ export default function Home() {
                               metadata={{}}
                             >
                               <Button
-                                className="w-full py-4 rounded-xl shadow-md bg-white hover:shadow-none text-gray-600 font-serif font-black"
+                                className="w-full py-4 rounded-sm shadow-md border-stone-300 border-[3px] bg-white hover:shadow-none text-gray-600 font-serif font-black"
                                 disabled={!originalBuffer}
                               >
                                 <BookmarkPlus className="w-4 h-4 mr-2" />
@@ -3995,7 +3995,7 @@ export default function Home() {
                               timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                             }}
                           >
-                            <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:shadow-none text-gray-600 font-serif font-black">
+                            <Button className="w-full py-4 rounded-sm shadow-md bg-white border-stone-300 border-[3px] hover:shadow-none text-gray-600 font-serif font-black">
                               <BookmarkPlus className="w-4 h-4 mr-2" />
                               Save to Library
                             </Button>
