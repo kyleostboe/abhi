@@ -789,18 +789,18 @@ export default function LibraryPage() {
                                   </div>
                                   <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
                                     <span className="flex items-center gap-1">
-                                      <Clock className="h-4 w-4 text-gray-600" />
+                                      <Clock className="h-4 w-4 text-gray-500" />
                                       <span>{formatDuration(meditation.duration)}</span>
                                     </span>
                                     {isWideLayout && (
                                       <>
                                         <span className="flex items-center gap-1">
-                                          <Calendar className="h-4 w-4 text-gray-600" />
+                                          <Calendar className="h-4 w-4 text-gray-500" />
                                           <span>{formatDate(meditation.createdAt)}</span>
                                         </span>
                                         {meditation.metadata.pausesAdjusted ? (
                                           <span className="flex items-center gap-1">
-                                            <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
+                                            <SlidersHorizontal className="h-4 w-4 text-gray-500" />
                                             <span>{meditation.metadata.pausesAdjusted} pauses adjusted</span>
                                           </span>
                                         ) : meditation.metadata.instructionCount ? (
@@ -857,14 +857,14 @@ export default function LibraryPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                                    className="h-8 w-8 text-gray-500 transition hover:bg-muted hover:text-logo-rose-400"
                                     onClick={(event) => {
                                       event.stopPropagation()
                                       handleDelete(meditation.id)
                                     }}
                                     aria-label="Delete meditation"
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash2 className="h-4 w-4 " />
                                   </Button>
                                 </div>
                               </div>
