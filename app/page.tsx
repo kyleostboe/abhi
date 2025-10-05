@@ -3967,7 +3967,7 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="p-6 px-3.5 py-4 space-y-4">
-                        <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
+                        <div className="bg-white p-3 rounded-sm shadow-md px-0 mb-0">
                           <audio controls className="w-full" src={processedUrl}></audio>
                         </div>
                         {processedQualityWarning && (
@@ -3980,7 +3980,7 @@ export default function Home() {
                             </AlertDescription>
                           </Alert>
                         )}
-                        <div 
+                         
                           
                           <SaveMeditationDialog
                             audioUrl={processedUrl}
@@ -4000,7 +4000,7 @@ export default function Home() {
                               Save to Library
                             </Button>
                           </SaveMeditationDialog>
-                        </div>
+                        
                       </div>
                     </Card>
                   )}
