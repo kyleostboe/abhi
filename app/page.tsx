@@ -3917,7 +3917,7 @@ export default function Home() {
                               metadata={{}}
                             >
                               <Button
-                                className="w-full py-4 rounded-sm shadow-md border-stone-300 border-[3px] bg-white hover:shadow-none text-gray-600 font-serif font-black"
+                                className="w-full py-4 rounded-sm shadow-md bg-white hover:shadow-none text-gray-600 font-serif font-black"
                                 disabled={!originalBuffer}
                               >
                                 <BookmarkPlus className="w-4 h-4 mr-2" />
@@ -3995,7 +3995,7 @@ export default function Home() {
                               timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                             }}
                           >
-                            <Button className="w-full py-4 rounded-sm shadow-md bg-white border-stone-300 border-[3px] hover:shadow-none text-gray-600 font-serif font-black">
+                            <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:shadow-none text-gray-600 font-serif font-black">
                               <BookmarkPlus className="w-4 h-4 mr-2" />
                               Save to Library
                             </Button>
@@ -4464,19 +4464,7 @@ export default function Home() {
                             </AlertDescription>
                           </Alert>
                         )}
-                        <Button
-                          className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:shadow-none transition-shadow border-none "
-                          onClick={() => {
-                            if (generatedAudioUrl) {
-                              const a = document.createElement("a")
-                              a.href = generatedAudioUrl
-                              a.download = `${meditationTitle.replace(/\s/g, "_") || "meditation"}.wav`
-                              document.body.appendChild(a)
-                              a.click()
-                              document.body.removeChild(a)
-                            }
-                          }}
-                        >
+                        
                           <svg
                             className="w-5 h-5 mr-2"
                             fill="none"
@@ -4505,7 +4493,7 @@ export default function Home() {
                             timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                           }}
                         >
-                          <Button className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white mt-3">
+                          <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:shadow-none text-gray-600 font-serif font-black mt-3">
                             <BookmarkPlus className="w-4 h-4 mr-2" />
                             Save to Library
                           </Button>
