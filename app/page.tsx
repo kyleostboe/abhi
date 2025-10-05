@@ -37,6 +37,7 @@ import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
 import * as Tone from "tone"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
+import { AudioInfoMenu } from "@/components/audio-info-menu"
 
 const ADJUSTER_SESSION_KEY = "abhi_last_adjuster_session"
 const ENCODER_SESSION_KEY = "abhi_last_encoder_session"
@@ -3887,23 +3888,42 @@ export default function Home() {
                     >
                       <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
                         <div className="bg-gradient-to-r from-gray-600 to-gray-500 py-3 px-6 ">
-                          <h3 className="text-white font-black">Original Audio</h3>
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-white font-black">Original Audio</h3>
+                            <AudioInfoMenu
+                              items={[
+                                {
+                                  label: "Duration",
+                                  value: originalBuffer ? formatTime(originalBuffer.duration) : "--",
+                                },
+                                {
+                                  label: "File Size",
+                                  value: formatFileSize(file?.size || 0),
+                                },
+                              ]}
+                            />
+                          </div>
                         </div>
-                        <div className="p-6 py-4 px-3.5">
+                        <div className="p-6 py-4 px-3.5 space-y-4">
                           <div className="bg-white rounded-sm p-3 shadow-md mb-3.5 px-0">
                             <audio controls className="w-full" src={originalUrl}></audio>
                           </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="p-3 text-center shadow-md bg-white rounded-smll rounded-sm py-3.5">
-                              <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 ">Duration</div>
-                              <div className="font-black text-gray-600 text-sm">
-                                {originalBuffer ? formatTime(originalBuffer.duration) : "--"}
-                              </div>
-                            </div>
-                            <div className="p-3 text-center shadow-md bg-white rounded-smll rounded-sm py-3.5">
-                              <div className="text-xs uppercase tracking-wide mb-1  text-gray-500 ">File Size</div>
-                              <div className="font-black text-gray-600 text-sm">{formatFileSize(file?.size || 0)}</div>
-                            </div>
+                          <div>
+                            <SaveMeditationDialog
+                              audioUrl={originalUrl}
+                              originalFileName={file?.name || "original-audio"}
+                              duration={originalBuffer?.duration || 0}
+                              source="adjuster"
+                              metadata={{}}
+                            >
+                              <Button
+                                className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white"
+                                disabled={!originalBuffer}
+                              >
+                                <BookmarkPlus className="w-4 h-4 mr-2" />
+                                Save to Library
+                              </Button>
+                            </SaveMeditationDialog>
                           </div>
                         </div>
                       </Card>
@@ -3912,43 +3932,43 @@ export default function Home() {
                   {isProcessingComplete && processedUrl && (
                     <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
                       <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 py-3 px-6 ">
-                        <h3 className="text-white font-black">Processed Audio</h3>
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-white font-black">Processed Audio</h3>
+                          <AudioInfoMenu
+                            items={[
+                              {
+                                label: "Actual Duration",
+                                value: actualDuration ? formatTime(actualDuration) : "--",
+                              },
+                              {
+                                label: "Target Duration",
+                                value: formatTime(targetDuration * 60),
+                              },
+                              {
+                                label: "Pauses Adjusted",
+                                value: pausesAdjusted,
+                              },
+                              {
+                                label: "File Size",
+                                value: formatFileSize(processedFileSize),
+                              },
+                              ...(
+                                processedAudioMetadata
+                                  ? [
+                                      {
+                                        label: "Output Format",
+                                        value: `Mono • ${processedAudioMetadata.sampleRate.toLocaleString()} Hz • ${processedAudioMetadata.bitDepth.toLocaleString()}-bit`,
+                                      },
+                                    ]
+                                  : []
+                              ),
+                            ]}
+                          />
+                        </div>
                       </div>
                       <div className="p-6 px-3.5 py-4 space-y-4">
                         <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
                           <audio controls className="w-full" src={processedUrl}></audio>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3.5">
-                          <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
-                            <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Actual Duration</div>
-                            <div className="font-black text-gray-600 text-sm">
-                              {actualDuration ? formatTime(actualDuration) : "--"}
-                            </div>
-                          </div>
-                          <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
-                            <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Target Duration</div>
-                            <div className="font-black text-gray-600 text-sm">{formatTime(targetDuration * 60)}</div>
-                          </div>
-                          <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
-                            <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Pauses Adjusted</div>
-                            <div className="font-black text-gray-600 text-sm">{pausesAdjusted}</div>
-                          </div>
-                          <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
-                            <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">File Size</div>
-                            <div className="font-black text-sm text-gray-600">
-                              {(processedFileSize / (1024 * 1024)).toFixed(2)} MB
-                            </div>
-                          </div>
-                          {processedAudioMetadata && (
-                            <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5 sm:col-span-2">
-                              <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Output Format</div>
-                              <div className="font-black text-sm text-gray-600">
-                                Mono • {processedAudioMetadata.sampleRate.toLocaleString()} Hz •{" "}
-                                {processedAudioMetadata.bitDepth.toLocaleString()}
-                                -bit
-                              </div>
-                            </div>
-                          )}
                         </div>
                         {processedQualityWarning && (
                           <Alert className="bg-amber-50 border-amber-200 text-amber-700">
@@ -4405,33 +4425,39 @@ export default function Home() {
                   >
                     <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
                       <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 py-3 px-6 ">
-                        <h3 className="text-white font-black">Generated Audio</h3>
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-white font-black">Generated Audio</h3>
+                          <AudioInfoMenu
+                            items={[
+                              {
+                                label: "Duration",
+                                value: formatTime(encoderTotalDuration),
+                              },
+                              {
+                                label: "Instructions",
+                                value: timelineEvents.length,
+                              },
+                              {
+                                label: "File Size",
+                                value: formatFileSize(generatedAudioFileSize || 0),
+                              },
+                              ...(
+                                generatedAudioMetadata
+                                  ? [
+                                      {
+                                        label: "Output Format",
+                                        value: `Mono • ${generatedAudioMetadata.sampleRate.toLocaleString()} Hz • ${generatedAudioMetadata.bitDepth.toLocaleString()}-bit`,
+                                      },
+                                    ]
+                                  : []
+                              ),
+                            ]}
+                          />
+                        </div>
                       </div>
-                      <div className="p-6 px-3.5 py-4">
+                      <div className="p-6 px-3.5 py-4 space-y-4">
                         <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
                           <audio ref={encoderAudioRef} controls className="w-full" src={generatedAudioUrl}></audio>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3 mb-3.5">
-                          <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
-                            <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Duration</div>
-                            <div className="font-black text-gray-600 text-sm">{formatTime(encoderTotalDuration)}</div>
-                          </div>
-                          <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5">
-                            <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">File Size</div>
-                            <div className="font-black text-sm text-gray-600">
-                              {formatFileSize(generatedAudioFileSize || 0)}
-                            </div>
-                          </div>
-                          {generatedAudioMetadata && (
-                            <div className="p-3 rounded-lg text-center bg-white shadow-md py-3.5 col-span-2">
-                              <div className="text-xs uppercase tracking-wide mb-1 text-gray-500">Output Format</div>
-                              <div className="font-black text-sm text-gray-600">
-                                Mono • {generatedAudioMetadata.sampleRate.toLocaleString()} Hz •{" "}
-                                {generatedAudioMetadata.bitDepth.toLocaleString()}
-                                -bit
-                              </div>
-                            </div>
-                          )}
                         </div>
                         {generatedQualityWarning && (
                           <Alert className="bg-amber-50 border-amber-200 text-amber-700 mb-3">
