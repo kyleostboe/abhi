@@ -94,13 +94,13 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
             Recorder
           </h3>
         </div>
-        <div className="p-6 pt-3.5 space-y-[21px]">
+        <div className="p-6 pt-3.5 space-y-[23px]">
           <input
             id={inputId}
             value={recordingLabel}
             onChange={onRecordingLabelChange}
             placeholder="Describe this recording..."
-            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-logo-rose-300 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 mt-1 text-xs focus-visible: text-logo-rose-400 font-black text-gray-500 border-stone-300 border-[3px] shadow-md h-[42px]"
+            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-logo-rose-300 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-xs focus-visible: text-logo-rose-400 font-black text-gray-500 border-stone-300 border-[3px] shadow-md h-[42px] mt-2"
           />
           <Button
             onClick={isRecording ? stopRecording : startRecording}
@@ -4098,7 +4098,7 @@ export default function Home() {
                       className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                     >
                       <div className="p-0.5 bg-gradient-to-r from-stone-300 to-logo-blue-400  py-1 shadow-lg rounded-sm px-[5px]">
-                        <div className="bg-white p-4 rounded-sm shadow-nonee pt-[9px] border-stone-200 border-[3px] shadow pb-3">
+                        <div className="bg-white p-4 rounded-sm shadow-nonee border-stone-200 border-[3px] shadow pb-3 pt-1.5">
                           <div className="text-center">
                             <Textarea
                               id="custom-instruction"
@@ -4289,7 +4289,7 @@ export default function Home() {
                             </AccordionItem>
                           </Accordion>
                         </div>
-                        <div className="h-[3px]"></div>
+                        <div className="h-0"></div>
                         <Button
                           className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-[11px] hover:shadow-none font-serif font-black mt-4"
                           onClick={handleAddInstructionSoundEvent}
