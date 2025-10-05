@@ -1026,6 +1026,32 @@ export default function Home() {
     processedAudioMetadata && (processedAudioMetadata.bitDepth === 8 || processedAudioMetadata.sampleRate <= 16000)
   const generatedQualityWarning =
     generatedAudioMetadata && (generatedAudioMetadata.bitDepth === 8 || generatedAudioMetadata.sampleRate <= 16000)
+  const processedQualityWarningShownRef = useRef(false)
+  const generatedQualityWarningShownRef = useRef(false)
+
+  useEffect(() => {
+    if (processedQualityWarning && processedAudioMetadata && !processedQualityWarningShownRef.current) {
+      toast({
+        title: "Reduced quality export",
+        description: `Exported audio was downsampled to ${processedAudioMetadata.sampleRate.toLocaleString()} Hz and ${processedAudioMetadata.bitDepth}-bit mono to meet the size cap. Consider shorter sessions for higher fidelity.`,
+      })
+      processedQualityWarningShownRef.current = true
+    } else if (!processedQualityWarning) {
+      processedQualityWarningShownRef.current = false
+    }
+  }, [processedQualityWarning, processedAudioMetadata, toast])
+
+  useEffect(() => {
+    if (generatedQualityWarning && generatedAudioMetadata && !generatedQualityWarningShownRef.current) {
+      toast({
+        title: "Reduced quality export",
+        description: `Output audio was downsampled to ${generatedAudioMetadata.sampleRate.toLocaleString()} Hz and ${generatedAudioMetadata.bitDepth}-bit mono to respect the file size limit. Shorter meditations will export at higher fidelity.`,
+      })
+      generatedQualityWarningShownRef.current = true
+    } else if (!generatedQualityWarning) {
+      generatedQualityWarningShownRef.current = false
+    }
+  }, [generatedQualityWarning, generatedAudioMetadata, toast])
 
   const addTimelineItem = useCallback((item: Instruction | SoundCue, type: "instruction" | "sound") => {
     const newItem: TimelineItem = {
@@ -2803,19 +2829,6 @@ export default function Home() {
     if (files.length > 0) void handleFile(files[0])
   }
 
-  const downloadProcessedAudioAction = async () => {
-    if (!processedUrl) {
-      setStatus({ message: "No processed audio available to download.", type: "warning" })
-      return
-    }
-    const a = document.createElement("a")
-    a.href = processedUrl
-    a.download = file ? `processed_${file.name.replace(/\.[^/.]+$/, "")}.wav` : "processed_audio.wav"
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-  }
-
   useEffect(() => {
     // This effect no longer resets isProcessingComplete.
     // It's now reset at the start of processAudioAdjusterAction or handleFile.
@@ -3917,7 +3930,7 @@ export default function Home() {
                               metadata={{}}
                             >
                               <Button
-                                className="w-full py-4 rounded-sm shadow-md bg-white hover:shadow-none text-gray-600 font-serif font-black"
+                                className="w-full py-4 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-gray-600 font-serif font-black"
                                 disabled={!originalBuffer}
                               >
                                 <BookmarkPlus className="w-4 h-4 mr-2" />
@@ -3968,17 +3981,6 @@ export default function Home() {
                         <div className="bg-white p-3 rounded-sm shadow-md px-0 mb-0">
                           <audio controls className="w-full" src={processedUrl}></audio>
                         </div>
-                        {processedQualityWarning && (
-                          <Alert className="bg-amber-50 border-amber-200 text-amber-700">
-                            <AlertTitle className="font-black text-sm">Reduced quality export</AlertTitle>
-                            <AlertDescription className="text-xs">
-                              Exported audio was downsampled to {processedAudioMetadata?.sampleRate.toLocaleString()} Hz
-                              and {processedAudioMetadata?.bitDepth}-bit mono to meet the size cap. Consider shorter
-                              sessions for higher fidelity.
-                            </AlertDescription>
-                          </Alert>
-                        )}
-
                         <SaveMeditationDialog
                           audioUrl={processedUrl}
                           mp3Blob={processedMp3Blob} // Pass pre-created WebM blob
@@ -3992,7 +3994,7 @@ export default function Home() {
                             timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                           }}
                         >
-                          <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:shadow-none text-gray-600 font-serif font-black">
+                          <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-gray-600 font-serif font-black">
                             <BookmarkPlus className="w-4 h-4 mr-2" />
                             Save to Library
                           </Button>
@@ -4448,36 +4450,6 @@ export default function Home() {
                         <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
                           <audio ref={encoderAudioRef} controls className="w-full" src={generatedAudioUrl}></audio>
                         </div>
-                        {generatedQualityWarning && (
-                          <Alert className="bg-amber-50 border-amber-200 text-amber-700 mb-3">
-                            <AlertTitle className="font-black text-sm">Reduced quality export</AlertTitle>
-                            <AlertDescription className="text-xs">
-                              Output audio was downsampled to {generatedAudioMetadata?.sampleRate.toLocaleString()} Hz
-                              and {generatedAudioMetadata?.bitDepth}-bit mono to respect the file size limit. Shorter
-                              meditations will export at higher fidelity.
-                            </AlertDescription>
-                          </Alert>
-                        )}
-                        <Button
-                          onClick={downloadProcessedAudioAction}
-                          className="w-full py-4 rounded-sm shadow-md bg-white hover:shadow-none text-gray-600 font-serif font-black mt-3 flex items-center justify-center"
-                        >
-                          <svg
-                            className="w-5 h-5 mr-2"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                            />
-                          </svg>
-                          Download
-                        </Button>
                         <SaveMeditationDialog
                           audioUrl={generatedAudioUrl}
                           originalFileName={meditationTitle || "meditation"}
@@ -4490,7 +4462,7 @@ export default function Home() {
                             timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                           }}
                         >
-                          <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:shadow-none text-gray-600 font-serif font-black mt-3">
+                          <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-gray-600 font-serif font-black mt-3">
                             <BookmarkPlus className="w-4 h-4 mr-2" />
                             Save to Library
                           </Button>
