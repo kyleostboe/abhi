@@ -3917,7 +3917,7 @@ export default function Home() {
                               metadata={{}}
                             >
                               <Button
-                                className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white"
+                                className="w-full py-4 rounded-xl shadow-md bg-white hover:shadow-none text-gray-600 font-serif font-black"
                                 disabled={!originalBuffer}
                               >
                                 <BookmarkPlus className="w-4 h-4 mr-2" />
@@ -3980,13 +3980,8 @@ export default function Home() {
                             </AlertDescription>
                           </Alert>
                         )}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <Button
-                            onClick={downloadProcessedAudioAction}
-                            className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 hover:shadow-none transition-shadow border-none "
-                          >
-                            Download Processed Audio
-                          </Button>
+                        <div 
+                          
                           <SaveMeditationDialog
                             audioUrl={processedUrl}
                             mp3Blob={processedMp3Blob} // Pass pre-created WebM blob
@@ -4000,7 +3995,7 @@ export default function Home() {
                               timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                             }}
                           >
-                            <Button className="w-full py-4 rounded-xl shadow-md bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 hover:from-logo-purple-600 hover:to-logo-rose-500 text-white">
+                            <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:shadow-none text-gray-600 font-serif font-black">
                               <BookmarkPlus className="w-4 h-4 mr-2" />
                               Save to Library
                             </Button>
