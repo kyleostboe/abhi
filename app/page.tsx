@@ -4322,7 +4322,7 @@ export default function Home() {
                 {/* Timeline Editor for encoder */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
                   <Card ref={timelineEditorRef} className="overflow-hidden border-none shadow-lg bg-white ">
-                    <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 py-3 flex items-center justify-between gap-3">
+                    <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 py-3 flex items-center justify-between gap-3 pr-3">
                       <h3 className="text-white flex items-center font-black text-base">
                         <CircleDotDashed className="h-5 w-5 mr-2" />
                         Timeline Editor
@@ -4340,7 +4340,7 @@ export default function Home() {
                           size="sm"
                           variant="secondary"
                           onClick={handleTimelineUploadClick}
-                          className="bg-white/10 text-white hover:bg-white/20 border-white/30"
+                          className="bg-white/10 rounded-[8px] text-white font-serif font-black text-xs hover:bg-white/20 "
                         >
                           <Upload className="h-4 w-4 mr-1" />
                           Upload
