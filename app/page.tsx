@@ -3952,16 +3952,14 @@ export default function Home() {
                                 label: "File Size",
                                 value: formatFileSize(processedFileSize),
                               },
-                              ...(
-                                processedAudioMetadata
-                                  ? [
-                                      {
-                                        label: "Output Format",
-                                        value: `Mono • ${processedAudioMetadata.sampleRate.toLocaleString()} Hz • ${processedAudioMetadata.bitDepth.toLocaleString()}-bit`,
-                                      },
-                                    ]
-                                  : []
-                              ),
+                              ...(processedAudioMetadata
+                                ? [
+                                    {
+                                      label: "Output Format",
+                                      value: `Mono • ${processedAudioMetadata.sampleRate.toLocaleString()} Hz • ${processedAudioMetadata.bitDepth.toLocaleString()}-bit`,
+                                    },
+                                  ]
+                                : []),
                             ]}
                           />
                         </div>
@@ -3980,27 +3978,25 @@ export default function Home() {
                             </AlertDescription>
                           </Alert>
                         )}
-                         
-                          
-                          <SaveMeditationDialog
-                            audioUrl={processedUrl}
-                            mp3Blob={processedMp3Blob} // Pass pre-created WebM blob
-                            originalFileName={file?.name || "meditation"}
-                            duration={actualDuration || targetDuration * 60}
-                            source="adjuster"
-                            metadata={{
-                              targetDuration,
-                              pausesAdjusted,
-                              wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
-                              timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
-                            }}
-                          >
-                            <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:shadow-none text-gray-600 font-serif font-black">
-                              <BookmarkPlus className="w-4 h-4 mr-2" />
-                              Save to Library
-                            </Button>
-                          </SaveMeditationDialog>
-                        
+
+                        <SaveMeditationDialog
+                          audioUrl={processedUrl}
+                          mp3Blob={processedMp3Blob} // Pass pre-created WebM blob
+                          originalFileName={file?.name || "meditation"}
+                          duration={actualDuration || targetDuration * 60}
+                          source="adjuster"
+                          metadata={{
+                            targetDuration,
+                            pausesAdjusted,
+                            wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
+                            timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
+                          }}
+                        >
+                          <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:shadow-none text-gray-600 font-serif font-black">
+                            <BookmarkPlus className="w-4 h-4 mr-2" />
+                            Save to Library
+                          </Button>
+                        </SaveMeditationDialog>
                       </div>
                     </Card>
                   )}
@@ -4436,16 +4432,14 @@ export default function Home() {
                                 label: "File Size",
                                 value: formatFileSize(generatedAudioFileSize || 0),
                               },
-                              ...(
-                                generatedAudioMetadata
-                                  ? [
-                                      {
-                                        label: "Output Format",
-                                        value: `Mono • ${generatedAudioMetadata.sampleRate.toLocaleString()} Hz • ${generatedAudioMetadata.bitDepth.toLocaleString()}-bit`,
-                                      },
-                                    ]
-                                  : []
-                              ),
+                              ...(generatedAudioMetadata
+                                ? [
+                                    {
+                                      label: "Output Format",
+                                      value: `Mono • ${generatedAudioMetadata.sampleRate.toLocaleString()} Hz • ${generatedAudioMetadata.bitDepth.toLocaleString()}-bit`,
+                                    },
+                                  ]
+                                : []),
                             ]}
                           />
                         </div>
@@ -4464,7 +4458,10 @@ export default function Home() {
                             </AlertDescription>
                           </Alert>
                         )}
-                        
+                        <Button
+                          onClick={downloadProcessedAudioAction}
+                          className="w-full py-4 rounded-sm shadow-md bg-white hover:shadow-none text-gray-600 font-serif font-black mt-3 flex items-center justify-center"
+                        >
                           <svg
                             className="w-5 h-5 mr-2"
                             fill="none"
