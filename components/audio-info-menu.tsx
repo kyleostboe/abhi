@@ -44,7 +44,7 @@ export function AudioInfoMenu({
           }`}
           onClick={(event) => event.stopPropagation()}
         >
-          <Info className="h-4 w-4" />
+          <Info className="h-4 w-4 text-white" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
