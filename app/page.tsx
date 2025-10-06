@@ -3930,7 +3930,7 @@ export default function Home() {
                               metadata={{}}
                             >
                               <Button
-                                className="w-full py-4 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-gray-600 font-serif font-black"
+                                className="w-full py-4 rounded-[11px] shadow-md bg-gradient-to-r from-gray-600 to-gray-500  hover:shadow-none text-white font-serif font-black"
                                 disabled={!originalBuffer}
                               >
                                 <BookmarkPlus className="w-4 h-4 mr-2" />
