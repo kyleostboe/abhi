@@ -3415,7 +3415,7 @@ export default function Home() {
                   transition={{ duration: 0.2 }}
                   className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                 >
-                  <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs">
+                  <p className="text-center px-4 pt-1.5 text-xs text-stone-500">
                     Change the length of your guided meditations. Upload an audio file, set your target duration, and
                     this tool will re-space content to fit your schedule.
                   </p>
@@ -3430,7 +3430,7 @@ export default function Home() {
                   transition={{ duration: 0.2 }}
                   className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                 >
-                  <p className="text-center px-4 pt-1.5 text-logo-rose-600 text-xs pb-1.5">
+                  <p className="text-center px-4 pt-1.5 text-xs pb-1.5 text-stone-500">
                     Design custom guided meditations by pairing instructions with sound cues and/or using the recorder,
                     then arranging events on the timeline.
                   </p>
@@ -4032,7 +4032,7 @@ export default function Home() {
                             value={meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
-                            className="flex w-full file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 shadow-lg h-[42px] border-[3px]"
+                            className="flex w-full file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 shadow-lg h-[42px] border-[3px] text-center"
                           />
                         </div>
                         <div className="text-center">
