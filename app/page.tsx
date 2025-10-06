@@ -3844,14 +3844,14 @@ export default function Home() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="mb-6 text-center font-serif font-black text-base rounded-sm"
+                  className="mb-6 text-center text-gray-600 font-serif font-black text-base rounded-sm"
                 >
                   <Button
                     className={cn(
                       "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
                       "shadow-lg hover:shadow-none active:shadow-none text-gray-600",
                       // Multi-stop gradient
-                      "bg-gradient-to-r from-logo-teal-500 via-muted to-logo-amber-300",
+                      "bg-gradient-to-r from-logo-teal-500 to-stone-300",
                       "",
                       "hover:brightness-[1.06] active:brightness-95",
                     )}
@@ -3884,8 +3884,8 @@ export default function Home() {
                           </svg>
                         </div>
                       )}
-                      <Wand2 className="mr-2 h-4 w-4 text-white" />
-                      <span className="font-black text-base text-white tracking-tight">
+                      <Wand2 className="mr-2 h-4 w-4 text-logo-blue-300" />
+                      <span className="font-black text-base tracking-tight text-logo-blue-300">
                         {isProcessing ? "Processing..." : "Process Audio"}
                       </span>
                     </div>
