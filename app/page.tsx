@@ -3840,58 +3840,45 @@ export default function Home() {
                 </motion.div>
 
                 {/* Process Audio Button */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="mb-6 text-center text-gray-600 font-serif font-black text-base rounded-sm"
-                >
-                  <Button
-                    className={cn(
-                      "relative w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
-                      "text-slate-800 border border-zinc-300/70",
-                      "shadow-[0_18px_36px_rgba(15,23,42,0.14)] hover:shadow-[0_12px_26px_rgba(15,23,42,0.2)] active:shadow-[0_8px_18px_rgba(15,23,42,0.26)]",
-                      "bg-[radial-gradient(circle_at_top,_theme(colors.zinc.100),_theme(colors.stone.200)_55%,_theme(colors.zinc.300))]",
-                      "hover:bg-[radial-gradient(circle_at_top,_theme(colors.zinc.50),_theme(colors.stone.200)_55%,_theme(colors.zinc.400))]",
-                      "active:bg-[radial-gradient(circle_at_top,_theme(colors.stone.200),_theme(colors.zinc.300)_55%,_theme(colors.slate.400))]",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-                      "transition-[box-shadow,filter] hover:brightness-[1.03] active:brightness-95",
-                    )}
-                    disabled={!originalBuffer || isProcessing || !durationLimits}
-                    onClick={processAudioAdjusterAction}
-                  >
-                    <div className="flex items-center justify-center">
-                      {isProcessing && (
-                        <div className="mr-3 h-5 w-5">
-                          <svg
-                            className="animate-spin h-5 w-5 text-slate-700"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291
-  A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                        </div>
-                      )}
-                      <Wand2 className="mr-2 h-4 w-4 text-slate-800" />
-                      <span className="font-black text-base tracking-tight text-slate-900">
-                        {isProcessing ? "Processing..." : "Process Audio"}
-                      </span>
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                  <div className="relative mb-6">
+                    <div className="rounded-3xl bg-gradient-to-r from-logo-teal-500 via-logo-blue-400 to-logo-amber-300 p-[1px] shadow-[0_22px_48px_rgba(15,23,42,0.16)]">
+                      <div className="rounded-[26px] bg-white/95 px-6 py-6 sm:px-8 sm:py-8">
+                        <Button
+                          className={cn(
+                            "relative w-full rounded-2xl px-8 py-6 text-lg font-black tracking-tight text-slate-900 transition-all duration-200",
+                            "bg-gradient-to-br from-white via-white/95 to-zinc-100 shadow-[0_16px_34px_rgba(15,23,42,0.12)] hover:shadow-[0_18px_38px_rgba(15,23,42,0.18)] active:shadow-[0_12px_24px_rgba(15,23,42,0.22)]",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-200 focus-visible:ring-offset-white",
+                            "disabled:opacity-55 disabled:cursor-not-allowed",
+                          )}
+                          disabled={!originalBuffer || isProcessing || !durationLimits}
+                          onClick={processAudioAdjusterAction}
+                        >
+                          <div className="flex items-center justify-center">
+                            {isProcessing && (
+                              <div className="mr-3 h-5 w-5">
+                                <svg
+                                  className="h-5 w-5 animate-spin text-slate-700"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  ></path>
+                                </svg>
+                              </div>
+                            )}
+                            <Wand2 className="mr-2 h-4 w-4 text-slate-800" />
+                            <span>{isProcessing ? "Processing..." : "Process Audio"}</span>
+                          </div>
+                        </Button>
+                      </div>
                     </div>
-                  </Button>
+                  </div>
                 </motion.div>
 
                 <div className="space-y-6 mt-6">
@@ -4368,51 +4355,44 @@ export default function Home() {
 
                 {/* Generate Audio Button */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-                  <Button
-                    onClick={handleExportAudio}
-                    disabled={isGeneratingAudio || timelineEvents.length === 0}
-                    className={cn(
-                      "relative w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
-                      "text-slate-900 border border-slate-200",
-                      "shadow-[0_20px_38px_rgba(15,23,42,0.16)] hover:shadow-[0_14px_28px_rgba(15,23,42,0.24)] active:shadow-[0_10px_22px_rgba(15,23,42,0.3)]",
-                      "bg-[linear-gradient(135deg,_theme(colors.slate.100),_theme(colors.zinc.200)_45%,_theme(colors.stone.300))]",
-                      "hover:bg-[linear-gradient(135deg,_theme(colors.slate.50),_theme(colors.zinc.200)_45%,_theme(colors.stone.400))]",
-                      "active:bg-[linear-gradient(135deg,_theme(colors.stone.200),_theme(colors.zinc.300)_45%,_theme(colors.slate.500))]",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-                      "transition-[box-shadow,filter] hover:brightness-[1.04] active:brightness-95",
-                    )}
-                  >
-                    <div className="flex items-center justify-center font-black">
-                      {isGeneratingAudio && (
-                        <div className="mr-3 h-5 w-5">
-                          <svg
-                            className="animate-spin h-5 w-5 text-slate-800"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                        </div>
-                      )}
-                      <Mic className="mr-2 h-4 w-4 text-slate-900" />
-                      <span className="font-black tracking-tight text-base text-slate-900">
-                        {isGeneratingAudio ? "Generating..." : "Generate Audio"}
-                      </span>
+                  <div className="relative mt-6">
+                    <div className="rounded-3xl bg-gradient-to-r from-logo-teal-500 via-logo-blue-400 to-logo-amber-300 p-[1px] shadow-[0_24px_52px_rgba(15,23,42,0.18)]">
+                      <div className="rounded-[26px] bg-white/95 px-6 py-6 sm:px-8 sm:py-8">
+                        <Button
+                          onClick={handleExportAudio}
+                          disabled={isGeneratingAudio || timelineEvents.length === 0}
+                          className={cn(
+                            "relative w-full rounded-2xl px-8 py-6 text-lg font-black tracking-tight text-slate-900 transition-all duration-200",
+                            "bg-gradient-to-br from-white via-white/95 to-zinc-100 shadow-[0_16px_34px_rgba(15,23,42,0.12)] hover:shadow-[0_18px_38px_rgba(15,23,42,0.18)] active:shadow-[0_12px_24px_rgba(15,23,42,0.22)]",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-200 focus-visible:ring-offset-white",
+                            "disabled:opacity-55 disabled:cursor-not-allowed",
+                          )}
+                        >
+                          <div className="flex items-center justify-center">
+                            {isGeneratingAudio && (
+                              <div className="mr-3 h-5 w-5">
+                                <svg
+                                  className="h-5 w-5 animate-spin text-slate-800"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  ></path>
+                                </svg>
+                              </div>
+                            )}
+                            <Mic className="mr-2 h-4 w-4 text-slate-900" />
+                            <span>{isGeneratingAudio ? "Generating..." : "Generate Audio"}</span>
+                          </div>
+                        </Button>
+                      </div>
                     </div>
-                  </Button>
+                  </div>
                 </motion.div>
 
                 {generatedAudioUrl && (
