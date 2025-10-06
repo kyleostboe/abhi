@@ -3569,7 +3569,7 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="p-0.5 mb-3.5 overflow-hidden bg-gradient-to-r from-purple-300 to-logo-amber-300 py-1 shadow-md rounded-sm px-[5px]"
+                      className="p-0.5 overflow-hidden bg-gradient-to-r from-purple-300 to-stone-300 py-1 shadow-md rounded-sm px-[5px] mb-3.5"
                     >
                       <div className="bg-white p-5 py-4 rounded-sm border-stone-200 border-[3px] shadow">
                         <div className="flex items-center">
@@ -3851,7 +3851,7 @@ export default function Home() {
                       "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
                       "shadow-lg hover:shadow-none active:shadow-none text-gray-600",
                       // Multi-stop gradient
-                      "bg-gradient-to-r from-logo-teal-500 to-stone-300",
+                      "bg-gradient-to-r from-purple-300 via-logo-teal-500 to-logo-amber-300",
                       "",
                       "hover:brightness-[1.06] active:brightness-95",
                     )}
@@ -3884,8 +3884,8 @@ export default function Home() {
                           </svg>
                         </div>
                       )}
-                      <Wand2 className="mr-2 h-4 w-4 text-logo-blue-300" />
-                      <span className="font-black text-base tracking-tight text-logo-blue-300">
+                      <Wand2 className="mr-2 h-4 w-4 text-white" />
+                      <span className="font-black text-base tracking-tight text-white">
                         {isProcessing ? "Processing..." : "Process Audio"}
                       </span>
                     </div>
