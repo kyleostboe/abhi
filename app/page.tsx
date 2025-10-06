@@ -3848,10 +3848,10 @@ export default function Home() {
                 >
                   <Button
                     className={cn(
-                      "w-full py-7 text-lg font-medium tracking-wider rounded-xl transition-all",
-                      "shadow-lg hover:shadow-none active:shadow-none text-white",
+                      "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
+                      "shadow-lg hover:shadow-none active:shadow-none text-gray-600",
                       // Multi-stop gradient
-                      "bg-gradient-to-r from-purple-300 via-logo-teal-500 to-logo-amber-300",
+                      "bg-gradient-to-r from-logo-teal-500 via-muted to-logo-amber-300",
                       "",
                       "hover:brightness-[1.06] active:brightness-95",
                     )}
