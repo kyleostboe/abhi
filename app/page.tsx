@@ -3848,12 +3848,14 @@ export default function Home() {
                 >
                   <Button
                     className={cn(
-                      "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
-                      "shadow-lg hover:shadow-none active:shadow-none text-gray-600",
-                      // Multi-stop gradient
-                      "bg-gradient-to-r from-purple-300 via-logo-teal-500 to-logo-amber-300",
-                      "",
-                      "hover:brightness-[1.06] active:brightness-95",
+                      "relative w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
+                      "text-slate-800 border border-zinc-300/70",
+                      "shadow-[0_18px_36px_rgba(15,23,42,0.14)] hover:shadow-[0_12px_26px_rgba(15,23,42,0.2)] active:shadow-[0_8px_18px_rgba(15,23,42,0.26)]",
+                      "bg-[radial-gradient(circle_at_top,_theme(colors.zinc.100),_theme(colors.stone.200)_55%,_theme(colors.zinc.300))]",
+                      "hover:bg-[radial-gradient(circle_at_top,_theme(colors.zinc.50),_theme(colors.stone.200)_55%,_theme(colors.zinc.400))]",
+                      "active:bg-[radial-gradient(circle_at_top,_theme(colors.stone.200),_theme(colors.zinc.300)_55%,_theme(colors.slate.400))]",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+                      "transition-[box-shadow,filter] hover:brightness-[1.03] active:brightness-95",
                     )}
                     disabled={!originalBuffer || isProcessing || !durationLimits}
                     onClick={processAudioAdjusterAction}
@@ -3862,7 +3864,7 @@ export default function Home() {
                       {isProcessing && (
                         <div className="mr-3 h-5 w-5">
                           <svg
-                            className="animate-spin h-5 w-5 text-white"
+                            className="animate-spin h-5 w-5 text-slate-700"
                             xmlns="http://www.w3.org/2000/svg"
                             fill="none"
                             viewBox="0 0 24 24"
@@ -3884,8 +3886,8 @@ export default function Home() {
                           </svg>
                         </div>
                       )}
-                      <Wand2 className="mr-2 h-4 w-4 text-white" />
-                      <span className="font-black text-base tracking-tight text-white">
+                      <Wand2 className="mr-2 h-4 w-4 text-slate-800" />
+                      <span className="font-black text-base tracking-tight text-slate-900">
                         {isProcessing ? "Processing..." : "Process Audio"}
                       </span>
                     </div>
@@ -4370,18 +4372,21 @@ export default function Home() {
                     onClick={handleExportAudio}
                     disabled={isGeneratingAudio || timelineEvents.length === 0}
                     className={cn(
-                      "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
-                      "shadow-lg hover:shadow-none active:shadow-none text-white",
-                      "bg-gradient-to-r from-purple-300 via-logo-teal-500 to-logo-amber-300",
-                      "",
-                      "hover:brightness-[1.06] active:brightness-95",
+                      "relative w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
+                      "text-slate-900 border border-slate-200",
+                      "shadow-[0_20px_38px_rgba(15,23,42,0.16)] hover:shadow-[0_14px_28px_rgba(15,23,42,0.24)] active:shadow-[0_10px_22px_rgba(15,23,42,0.3)]",
+                      "bg-[linear-gradient(135deg,_theme(colors.slate.100),_theme(colors.zinc.200)_45%,_theme(colors.stone.300))]",
+                      "hover:bg-[linear-gradient(135deg,_theme(colors.slate.50),_theme(colors.zinc.200)_45%,_theme(colors.stone.400))]",
+                      "active:bg-[linear-gradient(135deg,_theme(colors.stone.200),_theme(colors.zinc.300)_45%,_theme(colors.slate.500))]",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+                      "transition-[box-shadow,filter] hover:brightness-[1.04] active:brightness-95",
                     )}
                   >
                     <div className="flex items-center justify-center font-black">
                       {isGeneratingAudio && (
                         <div className="mr-3 h-5 w-5">
                           <svg
-                            className="animate-spin h-5 w-5 text-white"
+                            className="animate-spin h-5 w-5 text-slate-800"
                             xmlns="http://www.w3.org/2000/svg"
                             fill="none"
                             viewBox="0 0 24 24"
@@ -4402,8 +4407,8 @@ export default function Home() {
                           </svg>
                         </div>
                       )}
-                      <Mic className="mr-2 h-4 w-4" />
-                      <span className="font-black tracking-tight text-base">
+                      <Mic className="mr-2 h-4 w-4 text-slate-900" />
+                      <span className="font-black tracking-tight text-base text-slate-900">
                         {isGeneratingAudio ? "Generating..." : "Generate Audio"}
                       </span>
                     </div>
