@@ -3994,7 +3994,7 @@ export default function Home() {
                             timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                           }}
                         >
-                          <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-gray-600 font-serif font-black">
+                          <Button className="w-full py-4 rounded-[11px] shadow-md bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300  hover:shadow-none text-white font-serif font-black">
                             <BookmarkPlus className="w-4 h-4 mr-2" />
                             Save to Library
                           </Button>
