@@ -3842,8 +3842,8 @@ export default function Home() {
                 {/* Process Audio Button */}
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                   <div className="relative mb-6">
-                    <div className="rounded-3xl bg-gradient-to-r from-logo-teal-500 via-logo-blue-400 to-logo-amber-300 p-[1px] shadow-[0_22px_48px_rgba(15,23,42,0.16)]">
-                      <div className="rounded-[26px] bg-white/95 px-6 py-6 sm:px-8 sm:py-8">
+                    <div className="rounded-sm bg-gradient-to-r from-logo-teal-500 via-logo-blue-400 to-logo-amber-300 p-[1px] shadow-[0_22px_48px_rgba(15,23,42,0.16)] py-1 px-[5px]">
+                      <div className="bg-white/95 sm:px-8 sm:py-8 rounded-sm border-[3px] border-stone-200 px-[5px] py-1">
                         <Button
                           className={cn(
                             "relative w-full rounded-2xl px-8 py-6 text-lg font-black tracking-tight text-slate-900 transition-all duration-200",
