@@ -3848,21 +3848,23 @@ export default function Home() {
                 >
                   <Button
                     className={cn(
-                      "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
-                      "shadow-lg hover:shadow-none active:shadow-none text-gray-600",
-                      // Multi-stop gradient
-                      "bg-gradient-to-r from-purple-300 via-logo-teal-500 to-logo-amber-300",
-                      "",
-                      "hover:brightness-[1.06] active:brightness-95",
+                      "group relative overflow-hidden w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
+                      "border border-zinc-300/70 text-slate-700",
+                      "shadow-[0_18px_40px_-25px_rgba(17,24,39,0.45)] hover:shadow-[0_14px_32px_-20px_rgba(17,24,39,0.48)] active:shadow-[0_8px_24px_-16px_rgba(17,24,39,0.5)]",
+                      "bg-[radial-gradient(circle_at_15%_10%,#f9fafb_0%,#e5e7eb_55%,#d4d4d8_100%)]",
+                      "before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(120deg,rgba(255,255,255,0.7)_0%,rgba(255,255,255,0)_35%,rgba(255,255,255,0)_65%,rgba(255,255,255,0.45)_100%)] before:opacity-0 before:-translate-x-full before:transition before:duration-700",
+                      "after:absolute after:inset-0 after:content-[''] after:bg-[radial-gradient(circle_at_bottom,#cbd5f5_0%,rgba(148,163,184,0.25)_45%,transparent_75%)] after:opacity-0 after:transition after:duration-700",
+                      "hover:before:opacity-100 hover:before:translate-x-full hover:after:opacity-80",
+                      "active:brightness-95",
                     )}
                     disabled={!originalBuffer || isProcessing || !durationLimits}
                     onClick={processAudioAdjusterAction}
                   >
-                    <div className="flex items-center justify-center">
+                    <div className="relative z-[1] flex items-center justify-center">
                       {isProcessing && (
                         <div className="mr-3 h-5 w-5">
                           <svg
-                            className="animate-spin h-5 w-5 text-white"
+                            className="animate-spin h-5 w-5 text-slate-600"
                             xmlns="http://www.w3.org/2000/svg"
                             fill="none"
                             viewBox="0 0 24 24"
@@ -3884,8 +3886,8 @@ export default function Home() {
                           </svg>
                         </div>
                       )}
-                      <Wand2 className="mr-2 h-4 w-4 text-white" />
-                      <span className="font-black text-base tracking-tight text-white">
+                      <Wand2 className="mr-2 h-4 w-4 text-slate-700" />
+                      <span className="font-black text-base tracking-tight text-slate-800">
                         {isProcessing ? "Processing..." : "Process Audio"}
                       </span>
                     </div>
@@ -4370,18 +4372,21 @@ export default function Home() {
                     onClick={handleExportAudio}
                     disabled={isGeneratingAudio || timelineEvents.length === 0}
                     className={cn(
-                      "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
-                      "shadow-lg hover:shadow-none active:shadow-none text-white",
-                      "bg-gradient-to-r from-purple-300 via-logo-teal-500 to-logo-amber-300",
-                      "",
-                      "hover:brightness-[1.06] active:brightness-95",
+                      "group relative overflow-hidden w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
+                      "border border-stone-300/70 text-stone-700",
+                      "shadow-[0_20px_42px_-28px_rgba(68,64,60,0.55)] hover:shadow-[0_16px_34px_-24px_rgba(68,64,60,0.55)] active:shadow-[0_10px_24px_-16px_rgba(68,64,60,0.6)]",
+                      "bg-[radial-gradient(circle_at_20%_15%,#f6f5f3_0%,#e2e0dd_48%,#d1d5db_100%)]",
+                      "before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(115deg,rgba(255,255,255,0.65)_0%,rgba(255,255,255,0)_40%,rgba(255,255,255,0)_60%,rgba(255,255,255,0.4)_100%)] before:opacity-0 before:-translate-x-full before:transition before:duration-700",
+                      "after:absolute after:inset-0 after:content-[''] after:bg-[radial-gradient(circle_at_bottom,#d6d3d1_0%,rgba(120,113,108,0.25)_40%,transparent_75%)] after:opacity-0 after:transition after:duration-700",
+                      "hover:before:opacity-100 hover:before:translate-x-full hover:after:opacity-75",
+                      "active:brightness-95",
                     )}
                   >
-                    <div className="flex items-center justify-center font-black">
+                    <div className="relative z-[1] flex items-center justify-center font-black">
                       {isGeneratingAudio && (
                         <div className="mr-3 h-5 w-5">
                           <svg
-                            className="animate-spin h-5 w-5 text-white"
+                            className="animate-spin h-5 w-5 text-stone-600"
                             xmlns="http://www.w3.org/2000/svg"
                             fill="none"
                             viewBox="0 0 24 24"
@@ -4397,13 +4402,13 @@ export default function Home() {
                             <path
                               className="opacity-75"
                               fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.8243 7.938l3-2.647z"
                             ></path>
                           </svg>
                         </div>
                       )}
-                      <Mic className="mr-2 h-4 w-4" />
-                      <span className="font-black tracking-tight text-base">
+                      <Mic className="mr-2 h-4 w-4 text-stone-700" />
+                      <span className="font-black tracking-tight text-base text-stone-800">
                         {isGeneratingAudio ? "Generating..." : "Generate Audio"}
                       </span>
                     </div>
