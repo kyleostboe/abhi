@@ -3849,7 +3849,7 @@ export default function Home() {
                   <Button
                     className={cn(
                       "group relative overflow-hidden w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
-                      "border border-zinc-300/70 text-slate-700",
+                      "border-[3px] border-stone-200 text-slate-700",
                       "shadow-[0_18px_40px_-25px_rgba(17,24,39,0.45)] hover:shadow-[0_14px_32px_-20px_rgba(17,24,39,0.48)] active:shadow-[0_8px_24px_-16px_rgba(17,24,39,0.5)]",
                       "bg-[radial-gradient(circle_at_15%_10%,#f9fafb_0%,#e5e7eb_55%,#d4d4d8_100%)]",
                       "before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(120deg,rgba(255,255,255,0.7)_0%,rgba(255,255,255,0)_35%,rgba(255,255,255,0)_65%,rgba(255,255,255,0.45)_100%)] before:opacity-0 before:-translate-x-full before:transition before:duration-700",
