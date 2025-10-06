@@ -3461,7 +3461,7 @@ export default function Home() {
                     </p>
                   </div>
                   <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto backdrop-blur-sm border-0 py-4 px-0 bg-transparent pt-0 pb-0">
-                    <h3 className="mb-2 text-center font-black px-0 rounded text-base text-gray-600 pb-0.5">
+                    <h3 className="mb-2 text-center font-black px-0 rounded text-base pb-0.5 text-logo-rose-400">
                       Resources
                     </h3>
                     <div className="text-sm text-gray-600 leading-relaxed flex flex-wrap justify-center text-center gap-[5px] px-2">
@@ -3569,7 +3569,7 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="p-0.5 overflow-hidden bg-gradient-to-r from-stone-300 to-purple-300 py-1 shadow-md rounded-sm px-[5px] mb-3.5"
+                      className="p-0.5 overflow-hidden bg-gradient-to-r from-gray-500 to-gray-500 py-1 shadow-md rounded-sm px-[5px] mb-3.5"
                     >
                       <div className="bg-white p-5 py-4 rounded-sm border-stone-200 border-[3px] shadow">
                         <div className="flex items-center">
