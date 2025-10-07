@@ -3688,7 +3688,7 @@ export default function Home() {
                       </TabsTrigger>
                     </TabsList>
                     <TabsContent value="adjuster" className="mt-0 space-y-6">
-                      <div className="grid md:grid-cols-2 gap-6">
+                      <div className="grid md:grid-cols-2 gap-4">
                         <Card className="overflow-hidden border-none shadow-lg bg-white ">
                           <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-cyan-500">
                             <h3 className="text-white flex items-center font-black text-base">Target Duration</h3>
