@@ -100,7 +100,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
             value={recordingLabel}
             onChange={onRecordingLabelChange}
             placeholder="Describe this recording..."
-            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-logo-rose-300 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-xs focus-visible: text-logo-rose-400 font-black text-gray-500 border-stone-300 shadow-md h-[42px] mt-2 border-[3px]"
+            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-logo-rose-300 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-xs focus-visible: text-logo-rose-400 font-black text-gray-500 border-stone-300 border-[3px] shadow-md h-[42px] mt-2"
           />
           <Button
             onClick={isRecording ? stopRecording : startRecording}
@@ -3537,7 +3537,7 @@ export default function Home() {
                   onDragLeave={handleDragLeaveAction}
                   onDrop={handleDropAction}
                 >
-                  <div className="p-0.5 bg-gradient-to-r from-logo-blue-300 to-logo-rose-300 py-1 shadow-lg rounded-sm px-[5px]">
+                  <div className="p-0.5 bg-gradient-to-r from-logo-blue-400 to-logo-rose-300 py-1 shadow-lg rounded-sm px-[5px]">
                     <div className="p-10 md:p-16 text-center bg-white md:py-12 md:px-16 shadow border-4 rounded-sm border-stone-200">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
@@ -3625,7 +3625,7 @@ export default function Home() {
 
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-4">
                                 <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
                                 <div className="font-black text-gray-600">
                                   {formatTime(audioAnalysis.contentDuration)}
@@ -3633,19 +3633,19 @@ export default function Home() {
                               </div>
                             </div>
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-border border-[3px]">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-border border-4">
                                 <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
                                 <div className="font-black text-gray-600">{formatTime(audioAnalysis.totalSilence)}</div>
                               </div>
                             </div>
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-4">
                                 <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
                                 <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
                               </div>
                             </div>
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-4">
                                 <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
                                 <div className="uppercase text-gray-600 text-xs tracking-wide">
                                   {durationLimits.min} min - {isMobileDevice ? "1 hour" : "2 hours"}
@@ -3848,11 +3848,11 @@ export default function Home() {
                 >
                   <Button
                     className={cn(
-                      "w-full py-7 text-lg font-medium tracking-wider rounded-sm border-[4px] border-stone-200 transition-all",
+                      "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
                       "shadow-lg hover:shadow-none active:shadow-none text-gray-600",
                       // Multi-stop gradient
-                      "bg-gradient-to-r from-gray-600 to-gray-500
-                      ",
+                      "bg-gradient-to-r from-teal-500 via-logo-blue-300 to-logo-amber-300",
+                      "",
                       "hover:brightness-[1.06] active:brightness-95",
                     )}
                     disabled={!originalBuffer || isProcessing || !durationLimits}
@@ -4032,7 +4032,7 @@ export default function Home() {
                             value={meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
-                            className="flex w-full file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 shadow-lg h-[42px] text-center border-4"
+                            className="flex w-full file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 shadow-lg h-[42px] border-[3px] text-center"
                           />
                         </div>
                         <div className="text-center">
@@ -4041,7 +4041,7 @@ export default function Home() {
                           </Label>
                           <div
                             id="encoder-duration"
-                            className="flex w-full items-center justify-center gap-3 mt-1 border-gray-500 rounded-[10px] bg-white px-4 shadow-lg py-[9px] pr-1 h-[42px] border-4"
+                            className="flex w-full items-center justify-center gap-3 mt-1 border-gray-500 rounded-[10px] bg-white px-4 shadow-lg py-[9px] pr-1 h-[42px] border-[3px]"
                           >
                             <div className="flex items-center">
                               <input
