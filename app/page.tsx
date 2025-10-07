@@ -3569,7 +3569,7 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="p-0.5 overflow-hidden bg-gradient-to-r from-stone-300 to-purple-300 py-1 shadow-md rounded-sm px-[5px] mb-3.5"
+                      className="p-0.5 overflow-hidden bg-gradient-to-r from-stone-300 to-logo-purple-300 py-1 shadow-md rounded-sm px-[5px] mb-3.5"
                     >
                       <div className="bg-white p-5 py-4 rounded-sm border-stone-200 shadow border-[3px]">
                         <div className="flex items-center">
