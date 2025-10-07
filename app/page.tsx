@@ -3440,7 +3440,7 @@ export default function Home() {
             {/* Conditional Rendering based on activeMode */}
             {activeMode === "adjuster" ? (
               // == Length Adjuster UI ==
-              <div ref={adjusterSectionRef} className="space-y-6">
+              <div ref={adjusterSectionRef} className="space-y-[13px]">
                 {/* Note and Resources sections - moved to proper position */}
                 <div className="space-y-4 mb-[27px]">
                   <div className="p-4 max-w-2xl text-center mx-auto rounded-md border-logo-rose-500 border-0 shadow-none pt-0 pb-1">
@@ -3569,7 +3569,7 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="p-0.5 overflow-hidden bg-gradient-to-r from-gray-500 to-gray-500 py-1 shadow-md rounded-sm px-[5px] mb-3.5"
+                      className="p-0.5 overflow-hidden bg-gradient-to-r from-stone-300 to-purple-300 py-1 shadow-md rounded-sm px-[5px] mb-3.5"
                     >
                       <div className="bg-white p-5 py-4 rounded-sm border-stone-200 shadow border-[3px]">
                         <div className="flex items-center">
