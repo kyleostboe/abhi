@@ -3851,7 +3851,7 @@ export default function Home() {
                       "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
                       "shadow-lg hover:shadow-none active:shadow-none text-gray-600",
                       // Multi-stop gradient
-                      "bg-gradient-to-r from-teal-400 via-logo-blue-300 to-logo-amber-300",
+                      "bg-gradient-to-r from-teal-500 via-logo-blue-300 to-logo-amber-300",
                       "",
                       "hover:brightness-[1.06] active:brightness-95",
                     )}
@@ -3930,7 +3930,7 @@ export default function Home() {
                               metadata={{}}
                             >
                               <Button
-                                className="w-full py-4 rounded-[11px] shadow-md bg-gradient-to-r from-gray-600 to-gray-500  hover:shadow-none text-white font-serif font-black"
+                                className="w-full py-4 rounded-[11px] shadow-md bg-gradient-to-r from-gray-600 to-gray-500  border-[3px] border-stone-200 hover:shadow-none text-white font-serif font-black"
                                 disabled={!originalBuffer}
                               >
                                 <BookmarkPlus className="w-4 h-4 mr-2" />
@@ -3994,7 +3994,7 @@ export default function Home() {
                             timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                           }}
                         >
-                          <Button className="w-full py-4 rounded-[11px] shadow-md bg-gradient-to-r from-gray-600  to-gray-500  hover:shadow-none text-white font-serif font-black">
+                          <Button className="w-full py-4 rounded-[11px] shadow-md bg-gradient-to-r from-gray-600  to-gray-500  border-[3px] border-stone-200 hover:shadow-none text-white font-serif font-black">
                             <BookmarkPlus className="w-4 h-4 mr-2" />
                             Save to Library
                           </Button>
