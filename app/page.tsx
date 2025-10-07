@@ -3440,7 +3440,7 @@ export default function Home() {
             {/* Conditional Rendering based on activeMode */}
             {activeMode === "adjuster" ? (
               // == Length Adjuster UI ==
-              <div ref={adjusterSectionRef} className="space-y-[13px]">
+              <div ref={adjusterSectionRef} className="space-y-4">
                 {/* Note and Resources sections - moved to proper position */}
                 <div className="space-y-4 mb-[27px]">
                   <div className="p-4 max-w-2xl text-center mx-auto rounded-md border-logo-rose-500 border-0 shadow-none pt-0 pb-1">
@@ -4032,7 +4032,7 @@ export default function Home() {
                             value={meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
-                            className="flex w-full file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 h-[42px] text-center border-0 shadow-2xl"
+                            className="flex w-full file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 h-[42px] text-center border-[3px] shadow-md"
                           />
                         </div>
                         <div className="text-center">
@@ -4041,7 +4041,7 @@ export default function Home() {
                           </Label>
                           <div
                             id="encoder-duration"
-                            className="flex w-full items-center justify-center gap-3 mt-1 border-gray-500 rounded-[10px] bg-white px-4 py-[9px] pr-1 h-[42px] border-0 shadow-2xl"
+                            className="flex w-full items-center justify-center gap-3 mt-1 border-gray-500 rounded-[10px] bg-white px-4 py-[9px] pr-1 h-[42px] border-[3px] shadow-md"
                           >
                             <div className="flex items-center">
                               <input
