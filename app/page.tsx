@@ -3461,7 +3461,7 @@ export default function Home() {
                     </p>
                   </div>
                   <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto backdrop-blur-sm border-0 py-4 px-0 bg-transparent pt-0 pb-0">
-                    <h3 className="mb-2 text-center font-black px-0 rounded text-base pb-0.5 text-logo-rose-400">
+                    <h3 className="mb-2 text-center font-black px-0 rounded text-base pb-0.5 text-gray-600">
                       Resources
                     </h3>
                     <div className="text-sm text-gray-600 leading-relaxed flex flex-wrap justify-center text-center gap-[5px] px-2">
@@ -3537,8 +3537,8 @@ export default function Home() {
                   onDragLeave={handleDragLeaveAction}
                   onDrop={handleDropAction}
                 >
-                  <div className="p-0.5 bg-gradient-to-r from-logo-blue-400 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
-                    <div className="p-10 md:p-16 text-center bg-white rounded-lg md:py-12 md:px-16 border-stone-200 border-[3px] shadow">
+                  <div className="p-0.5 bg-gradient-to-r from-logo-blue-400 to-logo-rose-300 py-1 shadow-lg rounded-sm px-[5px]">
+                    <div className="p-10 md:p-16 text-center bg-white md:py-12 md:px-16 shadow border-4 rounded-sm border-stone-200">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -3571,7 +3571,7 @@ export default function Home() {
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
                       className="p-0.5 overflow-hidden bg-gradient-to-r from-gray-500 to-gray-500 py-1 shadow-md rounded-sm px-[5px] mb-3.5"
                     >
-                      <div className="bg-white p-5 py-4 rounded-sm border-stone-200 border-[3px] shadow">
+                      <div className="bg-white p-5 py-4 rounded-sm border-stone-200 shadow border-4">
                         <div className="flex items-center">
                           <motion.div
                             initial={{ scale: 0 }}
@@ -3625,7 +3625,7 @@ export default function Home() {
 
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-[3px] border-stone-200">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-4">
                                 <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
                                 <div className="font-black text-gray-600">
                                   {formatTime(audioAnalysis.contentDuration)}
@@ -3633,19 +3633,19 @@ export default function Home() {
                               </div>
                             </div>
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-border border-[3px]">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-border border-4">
                                 <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
                                 <div className="font-black text-gray-600">{formatTime(audioAnalysis.totalSilence)}</div>
                               </div>
                             </div>
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-[3px] border-stone-200">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-4">
                                 <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
                                 <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
                               </div>
                             </div>
                             <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-[3px] border-stone-200">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-4">
                                 <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
                                 <div className="uppercase text-gray-600 text-xs tracking-wide">
                                   {durationLimits.min} min - {isMobileDevice ? "1 hour" : "2 hours"}
@@ -3851,7 +3851,7 @@ export default function Home() {
                       "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
                       "shadow-lg hover:shadow-none active:shadow-none text-gray-600",
                       // Multi-stop gradient
-                      "bg-gradient-to-r from-purple-300 via-logo-teal-500 to-logo-amber-300",
+                      "bg-gradient-to-r from-teal-400 via-logo-blue-300 to-logo-amber-300",
                       "",
                       "hover:brightness-[1.06] active:brightness-95",
                     )}
@@ -3994,7 +3994,7 @@ export default function Home() {
                             timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                           }}
                         >
-                          <Button className="w-full py-4 rounded-[11px] shadow-md bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300  hover:shadow-none text-white font-serif font-black">
+                          <Button className="w-full py-4 rounded-[11px] shadow-md bg-gradient-to-r from-gray-600  to-gray-500  hover:shadow-none text-white font-serif font-black">
                             <BookmarkPlus className="w-4 h-4 mr-2" />
                             Save to Library
                           </Button>
