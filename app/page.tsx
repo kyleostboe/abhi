@@ -3538,7 +3538,7 @@ export default function Home() {
                   onDrop={handleDropAction}
                 >
                   <div className="p-0.5 bg-gradient-to-r from-logo-blue-400 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
-                    <div className="p-10 md:p-16 text-center bg-white md:py-12 md:px-16 shadow border-4 rounded-sm border-stone-200">
+                    <div className="p-10 md:p-16 text-center bg-white md:py-12 md:px-16 shadow rounded-sm border-stone-200 border-[3px]">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -3571,7 +3571,7 @@ export default function Home() {
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
                       className="p-0.5 overflow-hidden bg-gradient-to-r from-gray-500 to-gray-500 py-1 shadow-md rounded-sm px-[5px] mb-3.5"
                     >
-                      <div className="bg-white p-5 py-4 rounded-sm border-stone-200 shadow border-0">
+                      <div className="bg-white p-5 py-4 rounded-sm border-stone-200 shadow border-[3px]">
                         <div className="flex items-center">
                           <motion.div
                             initial={{ scale: 0 }}
@@ -3930,7 +3930,7 @@ export default function Home() {
                               metadata={{}}
                             >
                               <Button
-                                className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-none text-gray-600 font-serif font-black"
+                                className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black"
                                 disabled={!originalBuffer}
                               >
                                 <BookmarkPlus className="w-4 h-4 mr-2" />
@@ -3994,7 +3994,7 @@ export default function Home() {
                             timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                           }}
                         >
-                          <Button className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-none text-gray-600 font-serif font-black">
+                          <Button className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black">
                             <BookmarkPlus className="w-4 h-4 mr-2" />
                             Save to Library
                           </Button>
@@ -4032,7 +4032,7 @@ export default function Home() {
                             value={meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
-                            className="flex w-full file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 shadow-lg h-[42px] border-[3px] text-center"
+                            className="flex w-full file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 shadow-lg h-[42px] text-center border-4"
                           />
                         </div>
                         <div className="text-center">
@@ -4041,7 +4041,7 @@ export default function Home() {
                           </Label>
                           <div
                             id="encoder-duration"
-                            className="flex w-full items-center justify-center gap-3 mt-1 border-gray-500 rounded-[10px] bg-white px-4 shadow-lg py-[9px] pr-1 h-[42px] border-[3px]"
+                            className="flex w-full items-center justify-center gap-3 mt-1 border-gray-500 rounded-[10px] bg-white px-4 shadow-lg py-[9px] pr-1 h-[42px] border-4"
                           >
                             <div className="flex items-center">
                               <input
@@ -4100,7 +4100,7 @@ export default function Home() {
                       className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                     >
                       <div className="p-0.5 bg-gradient-to-r from-stone-300 to-logo-blue-400  py-1 shadow-lg rounded-sm px-[5px]">
-                        <div className="bg-white p-4 rounded-sm shadow-nonee border-stone-200 border-[4px] shadow pb-3 pt-1.5">
+                        <div className="bg-white p-4 rounded-sm shadow-nonee border-stone-200 shadow pb-3 pt-1.5 border-[3px]">
                           <div className="text-center">
                             <Textarea
                               id="custom-instruction"
@@ -4371,7 +4371,7 @@ export default function Home() {
                     disabled={isGeneratingAudio || timelineEvents.length === 0}
                     className={cn(
                       "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
-                      "shadow-lg hover:shadow-none active:shadow-none text-white",
+                      "shadow-lg hover:shadow-none  active:shadow-none text-white",
                       "bg-gradient-to-r from-gray-600 to-gray-500",
                       "",
                       "hover:brightness-[1.06] active:brightness-95",
