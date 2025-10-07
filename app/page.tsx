@@ -94,7 +94,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
             Recorder
           </h3>
         </div>
-        <div className="p-6 pt-3.5 space-y-[23px]">
+        <div className="p-6 pt-3.5 space-y-4">
           <input
             id={inputId}
             value={recordingLabel}
@@ -4011,7 +4011,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
-                className="space-y-6"
+                className="space-y-4"
               >
                 <motion.div
                   className="text-gray-600"
@@ -4092,7 +4092,7 @@ export default function Home() {
                   transition={{ delay: 0.2 }}
                   className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-4"
                 >
-                  <div className="flex flex-col gap-6">
+                  <div className="flex flex-col gap-4">
                     <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
