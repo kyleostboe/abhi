@@ -3537,7 +3537,7 @@ export default function Home() {
                   onDragLeave={handleDragLeaveAction}
                   onDrop={handleDropAction}
                 >
-                  <div className="p-0.5 bg-gradient-to-r from-logo-blue-400 to-logo-rose-300 py-1 shadow-lg rounded-sm px-[5px]">
+                  <div className="p-0.5 bg-gradient-to-r from-logo-blue-400 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
                     <div className="p-10 md:p-16 text-center bg-white md:py-12 md:px-16 shadow border-4 rounded-sm border-stone-200">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
@@ -3571,7 +3571,7 @@ export default function Home() {
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
                       className="p-0.5 overflow-hidden bg-gradient-to-r from-gray-500 to-gray-500 py-1 shadow-md rounded-sm px-[5px] mb-3.5"
                     >
-                      <div className="bg-white p-5 py-4 rounded-sm border-stone-200 shadow border-4">
+                      <div className="bg-white p-5 py-4 rounded-sm border-stone-200 shadow border-0">
                         <div className="flex items-center">
                           <motion.div
                             initial={{ scale: 0 }}
@@ -4100,7 +4100,7 @@ export default function Home() {
                       className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                     >
                       <div className="p-0.5 bg-gradient-to-r from-stone-300 to-logo-blue-400  py-1 shadow-lg rounded-sm px-[5px]">
-                        <div className="bg-white p-4 rounded-sm shadow-nonee border-stone-200 border-[3px] shadow pb-3 pt-1.5">
+                        <div className="bg-white p-4 rounded-sm shadow-nonee border-stone-200 border-[4px] shadow pb-3 pt-1.5">
                           <div className="text-center">
                             <Textarea
                               id="custom-instruction"
@@ -4372,7 +4372,7 @@ export default function Home() {
                     className={cn(
                       "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
                       "shadow-lg hover:shadow-none active:shadow-none text-white",
-                      "bg-gradient-to-r from-purple-300 via-logo-teal-500 to-logo-amber-300",
+                      "bg-gradient-to-r from-gray-600 to-gray-500",
                       "",
                       "hover:brightness-[1.06] active:brightness-95",
                     )}
