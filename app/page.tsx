@@ -3744,7 +3744,7 @@ export default function Home() {
                       </div>
                     </TabsContent>
                     <TabsContent value="encoder" className="mt-0 space-y-6">
-                      <div className="grid md:grid-cols-2 gap-6 font-serif font-black">
+                      <div className="grid md:grid-cols-2 font-serif font-black gap-4">
                         <Card className="overflow-hidden border-none shadow-lg bg-white ">
                           <div className="bg-gradient-to-r from-logo-purple-300 to-logo-emerald-500 py-3 px-6 ">
                             <h3 className="text-white font-black">Min Silence Duration</h3>
