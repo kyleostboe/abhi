@@ -981,6 +981,16 @@ export default function Home() {
 
     return Array.from(cues)
   }, [timelineEvents])
+
+  const nightSkyButtonStyles = useMemo<React.CSSProperties>(
+    () => ({
+      backgroundImage:
+        "linear-gradient(90deg, rgba(55,65,81,1), rgba(75,85,99,1)), radial-gradient(circle at 20% 30%, rgba(255,255,255,0.15) 1px, transparent 1px), radial-gradient(circle at 80% 25%, rgba(255,255,255,0.1) 1px, transparent 1px), radial-gradient(circle at 50% 75%, rgba(255,255,255,0.12) 1px, transparent 1px)",
+      backgroundSize: "100% 100%, 140px 140px, 180px 180px, 160px 160px",
+      backgroundRepeat: "no-repeat, repeat, repeat, repeat",
+    }),
+    [],
+  )
   const [selectedLibraryInstruction, setSelectedLibraryInstruction] = useState<Instruction | null>(null)
   const [customInstructionText, setCustomInstructionText] = useState<string>("")
   const [selectedSoundCue, setSelectedSoundCue] = useState<SoundCue | null>(null)
@@ -2830,6 +2840,96 @@ export default function Home() {
   }
 
   useEffect(() => {
+    if (!originalBuffer) {
+      return
+    }
+
+    let cancelled = false
+
+    const recomputeAnalysis = async () => {
+      try {
+        const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
+        if (cancelled) {
+          return
+        }
+
+        const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+        const contentDuration = originalBuffer.duration - totalSilenceDuration
+        const maxPossibleDuration = isMobileDevice ? 60 * 60 : 120 * 60
+        const nextLimits = {
+          min: Math.ceil(contentDuration / 60),
+          max: maxPossibleDuration / 60,
+        }
+
+        if (cancelled) {
+          return
+        }
+
+        setDurationLimits((prev) => {
+          if (prev && prev.min === nextLimits.min && prev.max === nextLimits.max) {
+            return prev
+          }
+          return nextLimits
+        })
+
+        if (cancelled) {
+          return
+        }
+
+        setAudioAnalysis((prev) => {
+          if (
+            prev &&
+            prev.totalSilence === totalSilenceDuration &&
+            prev.contentDuration === contentDuration &&
+            prev.silenceRegions === silenceRegions.length
+          ) {
+            return prev
+          }
+          return {
+            totalSilence: totalSilenceDuration,
+            contentDuration,
+            silenceRegions: silenceRegions.length,
+          }
+        })
+
+        if (cancelled) {
+          return
+        }
+
+        setTargetDuration((current) => {
+          const safeMin = Number.isFinite(nextLimits.min) ? nextLimits.min : current
+          const safeMax = Number.isFinite(nextLimits.max) ? nextLimits.max : safeMin
+
+          if (safeMin > safeMax) {
+            return safeMin
+          }
+          if (current < safeMin) {
+            return safeMin
+          }
+          if (current > safeMax) {
+            return safeMax
+          }
+          return current
+        })
+      } catch (error) {
+        console.error("[v0] Error updating audio analysis:", error)
+      }
+    }
+
+    void recomputeAnalysis()
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    originalBuffer,
+    detectSilenceRegions,
+    silenceThreshold,
+    minSilenceDuration,
+    isMobileDevice,
+  ])
+
+  useEffect(() => {
     // This effect no longer resets isProcessingComplete.
     // It's now reset at the start of processAudioAdjusterAction or handleFile.
   }, [targetDuration, silenceThreshold, minSilenceDuration, minSpacingDuration, preserveNaturalPacing])
@@ -3607,57 +3707,108 @@ export default function Home() {
                   )}
                 </AnimatePresence>
 
-                <AnimatePresence>
-                  {audioAnalysis && durationLimits && (
+                <div className="space-y-6 mt-4">
+                  <AnimatePresence>
+                    {audioAnalysis && durationLimits && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ delay: 0.1 }}
+                      >
+                        <Alert className="bg-white p-0 border-0 shadow-none">
+                          <div className="p-3 text-center min-h-[76px] rounded-sm shadow-none bg-transparent pb-0.5 pt-0">
+                            <div className="flex items-center mb-2 justify-center">
+                              {/* Removed the Info icon div */}
+                              <div className="text-lg font-black text-gray-600">Audio Analysis</div>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                              <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
+                                <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
+                                  <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
+                                  <div className="font-black text-gray-600">
+                                    {formatTime(audioAnalysis.contentDuration)}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
+                                <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-[3px] border-stone-200">
+                                  <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
+                                  <div className="font-black text-gray-600">{formatTime(audioAnalysis.totalSilence)}</div>
+                                </div>
+                              </div>
+                              <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
+                                <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
+                                  <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
+                                  <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
+                                </div>
+                              </div>
+                              <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
+                                <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
+                                  <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
+                                  <div className="uppercase text-gray-600 text-xs tracking-wide">
+                                    {durationLimits.min} min - {isMobileDevice ? "1 hour" : "2 hours"}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </Alert>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {originalUrl && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ delay: 0.1 }}
-                      className="mb-6 mt-4"
+                      transition={{ delay: 0.2 }}
                     >
-                      <Alert className="bg-white p-0 border-0 shadow-none">
-                        <div className="p-3 text-center min-h-[76px] rounded-sm shadow-none bg-transparent pb-0.5 pt-0">
-                          <div className="flex items-center mb-2 justify-center">
-                            {/* Removed the Info icon div */}
-                            <div className="text-lg font-black text-gray-600">Audio Analysis</div>
-                          </div>
-
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
-                                <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
-                                <div className="font-black text-gray-600">
-                                  {formatTime(audioAnalysis.contentDuration)}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-[3px] border-stone-200">
-                                <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
-                                <div className="font-black text-gray-600">{formatTime(audioAnalysis.totalSilence)}</div>
-                              </div>
-                            </div>
-                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
-                                <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
-                                <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
-                              </div>
-                            </div>
-                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
-                                <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
-                                <div className="uppercase text-gray-600 text-xs tracking-wide">
-                                  {durationLimits.min} min - {isMobileDevice ? "1 hour" : "2 hours"}
-                                </div>
-                              </div>
-                            </div>
+                      <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
+                        <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 py-[9px] ">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-white font-black">Original Audio</h3>
+                            <AudioInfoMenu
+                              items={[
+                                {
+                                  label: "Duration",
+                                  value: originalBuffer ? formatTime(originalBuffer.duration) : "--",
+                                },
+                                {
+                                  label: "File Size",
+                                  value: formatFileSize(file?.size || 0),
+                                },
+                              ]}
+                            />
                           </div>
                         </div>
-                      </Alert>
+                        <div className="p-6 py-4 px-3.5 space-y-4">
+                          <div className="bg-white rounded-sm p-3 shadow-md mb-3.5 px-0">
+                            <audio controls className="w-full" src={originalUrl}></audio>
+                          </div>
+                          <div>
+                            <SaveMeditationDialog
+                              audioUrl={originalUrl}
+                              originalFileName={file?.name || "original-audio"}
+                              duration={originalBuffer?.duration || 0}
+                              source="adjuster"
+                              metadata={{}}
+                            >
+                              <Button
+                                className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black"
+                                disabled={!originalBuffer}
+                              >
+                                <BookmarkPlus className="w-4 h-4 mr-2" />
+                                Save to Library
+                              </Button>
+                            </SaveMeditationDialog>
+                          </div>
+                        </div>
+                      </Card>
                     </motion.div>
                   )}
-                </AnimatePresence>
+                </div>
 
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -3852,9 +4003,10 @@ export default function Home() {
                       "shadow-lg hover:shadow-none active:shadow-none text-gray-600",
                       // Multi-stop gradient
                       "bg-gradient-to-r from-gray-600 to-gray-500",
-                      "",
                       "hover:brightness-[1.06] active:brightness-95",
+                      "disabled:opacity-100",
                     )}
+                    style={nightSkyButtonStyles}
                     disabled={!originalBuffer || isProcessing || !durationLimits}
                     onClick={processAudioAdjusterAction}
                   >
@@ -3893,55 +4045,6 @@ export default function Home() {
                 </motion.div>
 
                 <div className="space-y-6 mt-6">
-                  {originalUrl && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 }}
-                    >
-                      <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
-                        <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 py-[9px] ">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-white font-black">Original Audio</h3>
-                            <AudioInfoMenu
-                              items={[
-                                {
-                                  label: "Duration",
-                                  value: originalBuffer ? formatTime(originalBuffer.duration) : "--",
-                                },
-                                {
-                                  label: "File Size",
-                                  value: formatFileSize(file?.size || 0),
-                                },
-                              ]}
-                            />
-                          </div>
-                        </div>
-                        <div className="p-6 py-4 px-3.5 space-y-4">
-                          <div className="bg-white rounded-sm p-3 shadow-md mb-3.5 px-0">
-                            <audio controls className="w-full" src={originalUrl}></audio>
-                          </div>
-                          <div>
-                            <SaveMeditationDialog
-                              audioUrl={originalUrl}
-                              originalFileName={file?.name || "original-audio"}
-                              duration={originalBuffer?.duration || 0}
-                              source="adjuster"
-                              metadata={{}}
-                            >
-                              <Button
-                                className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black"
-                                disabled={!originalBuffer}
-                              >
-                                <BookmarkPlus className="w-4 h-4 mr-2" />
-                                Save to Library
-                              </Button>
-                            </SaveMeditationDialog>
-                          </div>
-                        </div>
-                      </Card>
-                    </motion.div>
-                  )}
                   {isProcessingComplete && processedUrl && (
                     <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
                       <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
@@ -4373,9 +4476,10 @@ export default function Home() {
                       "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
                       "shadow-lg hover:shadow-none  active:shadow-none text-white",
                       "bg-gradient-to-r from-gray-600 to-gray-500",
-                      "",
                       "hover:brightness-[1.06] active:brightness-95",
+                      "disabled:opacity-100",
                     )}
+                    style={nightSkyButtonStyles}
                   >
                     <div className="flex items-center justify-center font-black">
                       {isGeneratingAudio && (
