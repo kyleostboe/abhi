@@ -3669,7 +3669,7 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="p-0.5 overflow-hidden bg-gradient-to-r from-stone-300 to-logo-purple-300 py-1 shadow-md rounded-sm px-[5px] mb-3.5"
+                      className="p-0.5 overflow-hidden bg-gradient-to-r from-white to-logo-purple-300 py-1 rounded-sm px-[5px] mb-3.5 shadow-none"
                     >
                       <div className="bg-white p-5 py-4 rounded-sm border-stone-200 shadow border-[3px]">
                         <div className="flex items-center">
@@ -3714,7 +3714,7 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
-                      <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
+                      <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-gray-50 to-muted ">
                         <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 py-[9px] ">
                           <div className="flex items-center justify-between">
                             <h3 className="text-white font-black">Original Audio</h3>
