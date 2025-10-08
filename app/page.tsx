@@ -982,15 +982,38 @@ export default function Home() {
     return Array.from(cues)
   }, [timelineEvents])
 
-  const nightSkyButtonStyles = useMemo<React.CSSProperties>(
-    () => ({
-      backgroundImage:
-        "radial-gradient(circle at 20% 30%, rgba(255,255,255,0.18) 1px, transparent 1px), radial-gradient(circle at 80% 25%, rgba(255,255,255,0.14) 1px, transparent 1px), radial-gradient(circle at 50% 75%, rgba(255,255,255,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(55,65,81,1), rgba(75,85,99,1))",
-      backgroundSize: "140px 140px, 180px 180px, 160px 160px, 100% 100%",
-      backgroundRepeat: "repeat, repeat, repeat, no-repeat",
-    }),
-    [],
-  )
+  const nightSkyButtonStyles = useMemo<React.CSSProperties>(() => {
+    const starClusterPrimary =
+      "radial-gradient(circle at 20% 30%, rgba(255,255,255,0.6) 1.2px, transparent 1.2px)"
+    const starClusterSecondary =
+      "radial-gradient(circle at 80% 25%, rgba(226,232,240,0.45) 1.1px, transparent 1.2px)"
+    const starClusterTertiary =
+      "radial-gradient(circle at 45% 80%, rgba(248,250,252,0.5) 1.1px, transparent 1.3px)"
+    const nightGradient =
+      "linear-gradient(135deg, rgba(15,23,42,0.98) 0%, rgba(30,41,59,0.98) 55%, rgba(56,78,120,0.92) 100%)"
+
+    const daySparkles =
+      "radial-gradient(circle at 30% 35%, rgba(255,255,255,0.35) 1.1px, transparent 1.4px)"
+    const dayGradient =
+      "linear-gradient(135deg, hsla(210,80%,88%,1) 0%, hsla(35,90%,85%,0.95) 100%)"
+
+    const activeStars = [
+      "radial-gradient(circle at 20% 30%, hsla(35,90%,80%,0.85) 1.4px, transparent 1.2px)",
+      "radial-gradient(circle at 70% 25%, hsla(35,90%,70%,0.8) 1.3px, transparent 1.3px)",
+      "radial-gradient(circle at 45% 80%, hsla(35,90%,75%,0.75) 1.5px, transparent 1.3px)",
+    ].join(", ")
+
+    return {
+      "--stellar-night-overlay":
+        [starClusterPrimary, starClusterSecondary, starClusterTertiary, nightGradient].join(", "),
+      "--stellar-night-overlay-size": "140px 140px, 200px 200px, 220px 220px, 100% 100%",
+      "--stellar-day-overlay": [daySparkles, dayGradient].join(", "),
+      "--stellar-day-overlay-size": "220px 220px, 100% 100%",
+      "--stellar-active-stars": activeStars,
+      "--stellar-active-stars-size": "160px 160px, 210px 210px, 240px 240px",
+      "--stellar-active-gradient": "linear-gradient(135deg, hsl(210 80% 60%) 0%, hsl(210 80% 70%) 100%)",
+    } as React.CSSProperties
+  }, [])
   const [selectedLibraryInstruction, setSelectedLibraryInstruction] = useState<Instruction | null>(null)
   const [customInstructionText, setCustomInstructionText] = useState<string>("")
   const [selectedSoundCue, setSelectedSoundCue] = useState<SoundCue | null>(null)
@@ -3999,12 +4022,10 @@ export default function Home() {
                 >
                   <Button
                     className={cn(
-                      "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
-                      "shadow-lg hover:shadow-none active:shadow-none text-gray-600",
-                      // Multi-stop gradient
-                      "bg-gradient-to-r from-gray-600 to-gray-500",
-                      "hover:brightness-[1.06] active:brightness-95",
-                      "disabled:opacity-100",
+                      "stellar-button w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
+                      "shadow-lg hover:shadow-xl active:shadow-md",
+                      "text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-300",
+                      "disabled:opacity-80 disabled:cursor-not-allowed",
                     )}
                     style={nightSkyButtonStyles}
                     disabled={!originalBuffer || isProcessing || !durationLimits}
@@ -4473,11 +4494,10 @@ export default function Home() {
                     onClick={handleExportAudio}
                     disabled={isGeneratingAudio || timelineEvents.length === 0}
                     className={cn(
-                      "w-full py-7 text-lg font-medium tracking-wider rounded-sm transition-all",
-                      "shadow-lg hover:shadow-none  active:shadow-none text-white",
-                      "bg-gradient-to-r from-gray-600 to-gray-500",
-                      "hover:brightness-[1.06] active:brightness-95",
-                      "disabled:opacity-100",
+                      "stellar-button w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
+                      "shadow-lg hover:shadow-xl active:shadow-md",
+                      "text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-300",
+                      "disabled:opacity-80 disabled:cursor-not-allowed",
                     )}
                     style={nightSkyButtonStyles}
                   >
