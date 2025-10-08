@@ -985,9 +985,9 @@ export default function Home() {
   const nightSkyButtonStyles = useMemo<React.CSSProperties>(
     () => ({
       backgroundImage:
-        "linear-gradient(90deg, rgba(55,65,81,1), rgba(75,85,99,1)), radial-gradient(circle at 20% 30%, rgba(255,255,255,0.15) 1px, transparent 1px), radial-gradient(circle at 80% 25%, rgba(255,255,255,0.1) 1px, transparent 1px), radial-gradient(circle at 50% 75%, rgba(255,255,255,0.12) 1px, transparent 1px)",
-      backgroundSize: "100% 100%, 140px 140px, 180px 180px, 160px 160px",
-      backgroundRepeat: "no-repeat, repeat, repeat, repeat",
+        "radial-gradient(circle at 20% 30%, rgba(255,255,255,0.18) 1px, transparent 1px), radial-gradient(circle at 80% 25%, rgba(255,255,255,0.14) 1px, transparent 1px), radial-gradient(circle at 50% 75%, rgba(255,255,255,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(55,65,81,1), rgba(75,85,99,1))",
+      backgroundSize: "140px 140px, 180px 180px, 160px 160px, 100% 100%",
+      backgroundRepeat: "repeat, repeat, repeat, no-repeat",
     }),
     [],
   )
@@ -3708,6 +3708,56 @@ export default function Home() {
                 </AnimatePresence>
 
                 <div className="space-y-6 mt-4">
+                  {originalUrl && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
+                        <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 py-[9px] ">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-white font-black">Original Audio</h3>
+                            <AudioInfoMenu
+                              items={[
+                                {
+                                  label: "Duration",
+                                  value: originalBuffer ? formatTime(originalBuffer.duration) : "--",
+                                },
+                                {
+                                  label: "File Size",
+                                  value: formatFileSize(file?.size || 0),
+                                },
+                              ]}
+                            />
+                          </div>
+                        </div>
+                        <div className="p-6 py-4 px-3.5 space-y-4">
+                          <div className="bg-white rounded-sm p-3 shadow-md mb-3.5 px-0">
+                            <audio controls className="w-full" src={originalUrl}></audio>
+                          </div>
+                          <div>
+                            <SaveMeditationDialog
+                              audioUrl={originalUrl}
+                              originalFileName={file?.name || "original-audio"}
+                              duration={originalBuffer?.duration || 0}
+                              source="adjuster"
+                              metadata={{}}
+                            >
+                              <Button
+                                className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black"
+                                disabled={!originalBuffer}
+                              >
+                                <BookmarkPlus className="w-4 h-4 mr-2" />
+                                Save to Library
+                              </Button>
+                            </SaveMeditationDialog>
+                          </div>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  )}
+
                   <AnimatePresence>
                     {audioAnalysis && durationLimits && (
                       <motion.div
@@ -3758,56 +3808,6 @@ export default function Home() {
                       </motion.div>
                     )}
                   </AnimatePresence>
-
-                  {originalUrl && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
-                        <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 py-[9px] ">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-white font-black">Original Audio</h3>
-                            <AudioInfoMenu
-                              items={[
-                                {
-                                  label: "Duration",
-                                  value: originalBuffer ? formatTime(originalBuffer.duration) : "--",
-                                },
-                                {
-                                  label: "File Size",
-                                  value: formatFileSize(file?.size || 0),
-                                },
-                              ]}
-                            />
-                          </div>
-                        </div>
-                        <div className="p-6 py-4 px-3.5 space-y-4">
-                          <div className="bg-white rounded-sm p-3 shadow-md mb-3.5 px-0">
-                            <audio controls className="w-full" src={originalUrl}></audio>
-                          </div>
-                          <div>
-                            <SaveMeditationDialog
-                              audioUrl={originalUrl}
-                              originalFileName={file?.name || "original-audio"}
-                              duration={originalBuffer?.duration || 0}
-                              source="adjuster"
-                              metadata={{}}
-                            >
-                              <Button
-                                className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black"
-                                disabled={!originalBuffer}
-                              >
-                                <BookmarkPlus className="w-4 h-4 mr-2" />
-                                Save to Library
-                              </Button>
-                            </SaveMeditationDialog>
-                          </div>
-                        </div>
-                      </Card>
-                    </motion.div>
-                  )}
                 </div>
 
                 <motion.div
