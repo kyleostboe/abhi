@@ -116,3 +116,98 @@ audio::-webkit-media-controls-time-remaining-display {
   filter: none !important;
   text-shadow: none !important;
 }
+
+@layer components {
+  .stellar-button {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    z-index: 0;
+    background-color: rgba(17, 24, 39, 0.95);
+    transition: color 0.4s ease, transform 0.4s ease;
+  }
+
+  .stellar-button::before,
+  .stellar-button::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    transition: opacity 1.2s ease-in-out;
+  }
+
+  .stellar-button::before {
+    z-index: -1;
+    opacity: 1;
+    background-image: var(--stellar-night-overlay);
+    background-size: var(--stellar-night-overlay-size);
+    background-repeat: repeat, repeat, repeat, no-repeat;
+    animation: stellar-night-fade 6s ease-in-out infinite;
+  }
+
+  .stellar-button::after {
+    z-index: -2;
+    opacity: 0;
+    background-image: var(--stellar-day-overlay);
+    background-size: var(--stellar-day-overlay-size);
+    background-repeat: repeat, no-repeat;
+    animation: stellar-day-fade 6s ease-in-out infinite;
+  }
+
+  .stellar-button:active {
+    color: #ffffff;
+    transform: translateY(1px);
+  }
+
+  .stellar-button:active svg,
+  .stellar-button:active span {
+    color: #ffffff !important;
+  }
+
+  .stellar-button:active::before,
+  .stellar-button:active::after {
+    animation: none;
+    opacity: 1;
+  }
+
+  .stellar-button:active::before {
+    background-image: var(--stellar-active-stars);
+    background-size: var(--stellar-active-stars-size);
+    background-repeat: repeat, repeat, repeat;
+  }
+
+  .stellar-button:active::after {
+    background-image: var(--stellar-active-gradient);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+  }
+}
+
+@keyframes stellar-night-fade {
+  0%,
+  40% {
+    opacity: 1;
+  }
+  50%,
+  90% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes stellar-day-fade {
+  0%,
+  40% {
+    opacity: 0;
+  }
+  50%,
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
