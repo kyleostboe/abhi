@@ -3995,6 +3995,7 @@ export default function Home() {
                       "text-white ,
                       " disabled:cursor-not-allowed",
                     )}
+                    style={{ "--star-brightness": "0.9" } as React.CSSProperties}
                     disabled={!originalBuffer || isProcessing || !durationLimits}
                     onClick={processAudioAdjusterAction}
                   >
@@ -4435,13 +4436,14 @@ export default function Home() {
                   <Button
                     onClick={handleExportAudio}
                     disabled={isGeneratingAudio || timelineEvents.length === 0}
-                    className={cn(
-                      "stellar-button w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
-                      "shadow-lg hover:shadow-xl active:shadow-md",
-                      "text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-300",
-                      "disabled:opacity-80 disabled:cursor-not-allowed",
-                    )}
-                  >
+                      className={cn(
+                        "stellar-button w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
+                        "shadow-lg hover:shadow-xl active:shadow-md",
+                        "text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-300",
+                        "disabled:opacity-80 disabled:cursor-not-allowed",
+                      )}
+                      style={{ "--star-brightness": "0.9" } as React.CSSProperties}
+                    >
                     <div className="flex items-center justify-center font-black">
                       <Mic className="mr-2 h-4 w-4" />
                       <span className="font-black tracking-tight text-base">
