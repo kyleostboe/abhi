@@ -122,6 +122,51 @@
   }
 }
 
+@layer components {
+  .stellar-button {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    z-index: 0;
+    background-image: linear-gradient(135deg, #4b5563 0%, #6b7280 100%);
+    color: inherit;
+  }
+
+  .stellar-button > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .stellar-button::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.85;
+    background-image: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.95) 1.2px, transparent 1.6px),
+      radial-gradient(circle at 65% 25%, rgba(255, 255, 255, 0.9) 1.1px, transparent 1.5px),
+      radial-gradient(circle at 40% 75%, rgba(255, 255, 255, 0.9) 1.4px, transparent 1.7px),
+      radial-gradient(circle, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.7px);
+    background-size: 140px 140px, 180px 180px, 200px 200px, 4px 4px;
+    background-repeat: repeat;
+    animation: stellar-stars-twinkle 8s ease-in-out infinite;
+  }
+}
+
+@keyframes stellar-stars-twinkle {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate3d(0.8%, -0.6%, 0) scale(1.01);
+  }
+}
+
 /* Audio controls: transparent panel, keep default icons visible */
 audio {
   border-radius: 30px;
