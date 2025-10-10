@@ -3969,10 +3969,10 @@ export default function Home() {
                     onClick={handleProcessAudio}
                     disabled={isProcessing || !originalBuffer}
                     className={cn(
-                      "w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
+                      "w-full border-[5px] border-stone-200 py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
                       "shadow-lg hover:shadow-xl active:shadow-md",
-                      "text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-300",
-                      "disabled:opacity-80 disabled:cursor-not-allowed",
+                      "text-white ",
+                      " disabled:cursor-not-allowed",
                       "relative overflow-hidden",
                       "bg-gradient-to-br from-gray-600 to-gray-500",
                     )}
