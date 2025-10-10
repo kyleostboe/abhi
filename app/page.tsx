@@ -3992,6 +3992,7 @@ export default function Home() {
                       "text-white",
                       "disabled:cursor-not-allowed",
                       "relative overflow-hidden",
+                      "bg-gradient-to-br from-gray-600 to-gray-500",
                     )}
                     style={
                       {
@@ -4025,11 +4026,10 @@ export default function Home() {
                         radial-gradient(circle at 23% 26%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
                         radial-gradient(circle at 76% 83%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
                         radial-gradient(circle at 52% 15%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
-                        radial-gradient(circle at 3% 69%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
-                        linear-gradient(135deg, #4b5563 0%, #6b7280 100%)
+                        radial-gradient(circle at 3% 69%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px)
                       `,
                         backgroundSize:
-                          "100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%",
+                          "100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%",
                         backgroundRepeat: "no-repeat",
                       } as React.CSSProperties
                     }
@@ -4045,8 +4045,12 @@ export default function Home() {
                   </Button>
                 </motion.div>
 
-                <div className="space-y-6 mt-6">
-                  {isProcessingComplete && processedUrl && (
+                {isProcessingComplete && processedUrl && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
                     <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
                       <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
                         <div className="flex items-center justify-between">
@@ -4105,8 +4109,8 @@ export default function Home() {
                         </SaveMeditationDialog>
                       </div>
                     </Card>
-                  )}
-                </div>
+                  </motion.div>
+                )}
               </div>
             ) : (
               // == Encoder UI ==
@@ -4479,6 +4483,7 @@ export default function Home() {
                       "text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-300",
                       "disabled:opacity-80 disabled:cursor-not-allowed",
                       "relative overflow-hidden",
+                      "bg-gradient-to-br from-gray-600 to-gray-500",
                     )}
                     style={
                       {
@@ -4512,11 +4517,10 @@ export default function Home() {
                         radial-gradient(circle at 23% 26%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
                         radial-gradient(circle at 76% 83%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
                         radial-gradient(circle at 52% 15%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
-                        radial-gradient(circle at 3% 69%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
-                        linear-gradient(135deg, #4b5563 0%, #6b7280 100%)
+                        radial-gradient(circle at 3% 69%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px)
                       `,
                         backgroundSize:
-                          "100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%",
+                          "100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%",
                         backgroundRepeat: "no-repeat",
                       } as React.CSSProperties
                     }
