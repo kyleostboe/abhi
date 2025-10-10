@@ -3993,7 +3993,7 @@ export default function Home() {
                       "stellar-button w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
                       "shadow-lg hover:shadow-xl active:shadow-md",
                       "text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-300",
-                      "disabled:opacity-80 disabled:cursor-not-allowed",
+                      " disabled:cursor-not-allowed",
                     )}
                     disabled={!originalBuffer || isProcessing || !durationLimits}
                     onClick={processAudioAdjusterAction}
