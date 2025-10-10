@@ -3989,29 +3989,48 @@ export default function Home() {
                     className={cn(
                       "w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
                       "shadow-lg hover:shadow-xl active:shadow-md",
-                      "text-white bg-gradient-to-br from-gray-600 to-gray-500",
+                      "text-white",
                       "disabled:cursor-not-allowed",
                       "relative overflow-hidden",
                     )}
                     style={
                       {
                         backgroundImage: `
-                        radial-gradient(circle at 8% 14%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
-                        radial-gradient(circle at 26% 42%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
-                        radial-gradient(circle at 72% 18%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
-                        radial-gradient(circle at 54% 64%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
-                        radial-gradient(circle at 91% 35%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
-                        radial-gradient(circle at 12% 78%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
-                        radial-gradient(circle at 37% 87%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
-                        radial-gradient(circle at 83% 74%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
-                        radial-gradient(circle at 68% 52%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
-                        radial-gradient(circle at 45% 23%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 8% 14%, rgba(255, 255, 255, 0.9) 0.8px, transparent 1px),
+                        radial-gradient(circle at 26% 42%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
+                        radial-gradient(circle at 72% 18%, rgba(255, 255, 255, 0.85) 0.7px, transparent 1px),
+                        radial-gradient(circle at 54% 64%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
+                        radial-gradient(circle at 91% 35%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
+                        radial-gradient(circle at 12% 78%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
+                        radial-gradient(circle at 37% 87%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 83% 74%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
+                        radial-gradient(circle at 68% 52%, rgba(255, 255, 255, 0.7) 0.5px, transparent 1px),
+                        radial-gradient(circle at 45% 23%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
+                        radial-gradient(circle at 15% 31%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
+                        radial-gradient(circle at 89% 67%, rgba(255, 255, 255, 0.85) 0.7px, transparent 1px),
+                        radial-gradient(circle at 33% 9%, rgba(255, 255, 255, 0.7) 0.5px, transparent 1px),
+                        radial-gradient(circle at 61% 81%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
+                        radial-gradient(circle at 5% 55%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
+                        radial-gradient(circle at 78% 29%, rgba(255, 255, 255, 0.7) 0.5px, transparent 1px),
+                        radial-gradient(circle at 42% 71%, rgba(255, 255, 255, 0.85) 0.7px, transparent 1px),
+                        radial-gradient(circle at 96% 12%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
+                        radial-gradient(circle at 19% 48%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
+                        radial-gradient(circle at 58% 36%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
+                        radial-gradient(circle at 85% 91%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
+                        radial-gradient(circle at 29% 62%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 67% 7%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
+                        radial-gradient(circle at 11% 93%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
+                        radial-gradient(circle at 94% 58%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
+                        radial-gradient(circle at 48% 44%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
+                        radial-gradient(circle at 23% 26%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 76% 83%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
+                        radial-gradient(circle at 52% 15%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
+                        radial-gradient(circle at 3% 69%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
                         linear-gradient(135deg, #4b5563 0%, #6b7280 100%)
                       `,
                         backgroundSize:
-                          "220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 100% 100%",
-                        backgroundRepeat:
-                          "repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, no-repeat",
+                          "100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%",
+                        backgroundRepeat: "no-repeat",
                       } as React.CSSProperties
                     }
                     disabled={!originalBuffer || isProcessing || !durationLimits}
@@ -4457,33 +4476,52 @@ export default function Home() {
                     className={cn(
                       "w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
                       "shadow-lg hover:shadow-xl active:shadow-md",
-                      "text-white bg-gradient-to-br from-gray-600 to-gray-500 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-300",
+                      "text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-300",
                       "disabled:opacity-80 disabled:cursor-not-allowed",
                       "relative overflow-hidden",
                     )}
                     style={
                       {
                         backgroundImage: `
-                        radial-gradient(circle at 8% 14%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
-                        radial-gradient(circle at 26% 42%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
-                        radial-gradient(circle at 72% 18%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
-                        radial-gradient(circle at 54% 64%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
-                        radial-gradient(circle at 91% 35%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
-                        radial-gradient(circle at 12% 78%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
-                        radial-gradient(circle at 37% 87%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
-                        radial-gradient(circle at 83% 74%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
-                        radial-gradient(circle at 68% 52%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
-                        radial-gradient(circle at 45% 23%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 8% 14%, rgba(255, 255, 255, 0.9) 0.8px, transparent 1px),
+                        radial-gradient(circle at 26% 42%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
+                        radial-gradient(circle at 72% 18%, rgba(255, 255, 255, 0.85) 0.7px, transparent 1px),
+                        radial-gradient(circle at 54% 64%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
+                        radial-gradient(circle at 91% 35%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
+                        radial-gradient(circle at 12% 78%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
+                        radial-gradient(circle at 37% 87%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 83% 74%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
+                        radial-gradient(circle at 68% 52%, rgba(255, 255, 255, 0.7) 0.5px, transparent 1px),
+                        radial-gradient(circle at 45% 23%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
+                        radial-gradient(circle at 15% 31%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
+                        radial-gradient(circle at 89% 67%, rgba(255, 255, 255, 0.85) 0.7px, transparent 1px),
+                        radial-gradient(circle at 33% 9%, rgba(255, 255, 255, 0.7) 0.5px, transparent 1px),
+                        radial-gradient(circle at 61% 81%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
+                        radial-gradient(circle at 5% 55%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
+                        radial-gradient(circle at 78% 29%, rgba(255, 255, 255, 0.7) 0.5px, transparent 1px),
+                        radial-gradient(circle at 42% 71%, rgba(255, 255, 255, 0.85) 0.7px, transparent 1px),
+                        radial-gradient(circle at 96% 12%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
+                        radial-gradient(circle at 19% 48%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
+                        radial-gradient(circle at 58% 36%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
+                        radial-gradient(circle at 85% 91%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
+                        radial-gradient(circle at 29% 62%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 67% 7%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
+                        radial-gradient(circle at 11% 93%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
+                        radial-gradient(circle at 94% 58%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
+                        radial-gradient(circle at 48% 44%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
+                        radial-gradient(circle at 23% 26%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 76% 83%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
+                        radial-gradient(circle at 52% 15%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
+                        radial-gradient(circle at 3% 69%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
                         linear-gradient(135deg, #4b5563 0%, #6b7280 100%)
                       `,
                         backgroundSize:
-                          "220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 100% 100%",
-                        backgroundRepeat:
-                          "repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, no-repeat",
+                          "100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%",
+                        backgroundRepeat: "no-repeat",
                       } as React.CSSProperties
                     }
                   >
-                    <div className="flex items-center justify-center font-black">
+                    <div className="flex items-center justify-center">
                       <Mic className="mr-2 h-4 w-4" />
                       <span className="font-black tracking-tight text-base">
                         {isGeneratingAudio ? "Generating..." : "Generate Audio"}
