@@ -192,13 +192,6 @@ audio::-webkit-media-controls-time-remaining-display {
   font-size: 13px;
 }
 
-/* Firefox – nothing fancy; just keep panel transparent */ \
-@-moz-document url-prefix() {\
-audio {
-background-color: transparent !important;
-}
-}
-
 /* Optional subtle hover feedback without affecting glyphs */
 audio::-webkit-media-controls-play-button {
   transition: transform 0.15s ease;
