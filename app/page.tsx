@@ -3990,9 +3990,9 @@ export default function Home() {
                 >
                   <Button
                     className={cn(
-                      "stellar-button w-full py-7 text-lg font-black tracking-wider rounded-sm transition-all duration-500",
+                      "stellar-button w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
                       "shadow-lg hover:shadow-xl active:shadow-md",
-                      "text-white ",
+                      "text-white ,
                       " disabled:cursor-not-allowed",
                     )}
                     disabled={!originalBuffer || isProcessing || !durationLimits}
