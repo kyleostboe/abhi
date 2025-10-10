@@ -122,47 +122,6 @@
   }
 }
 
-@layer components {
-  .stellar-button {
-    --star-brightness: 0.85;
-    position: relative;
-    overflow: hidden;
-    isolation: isolate;
-    z-index: 0;
-    background-image: linear-gradient(135deg, #4b5563 0%, #6b7280 100%);
-    color: inherit;
-  }
-
-  .stellar-button > * {
-    position: relative;
-    z-index: 1;
-  }
-
-  .stellar-button::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    z-index: 0;
-    opacity: 1;
-    background-image:
-      radial-gradient(circle at 8% 14%, rgba(255, 255, 255, var(--star-brightness)) 0.5px, transparent 0.9px),
-      radial-gradient(circle at 26% 42%, rgba(255, 255, 255, var(--star-brightness)) 0.5px, transparent 0.9px),
-      radial-gradient(circle at 72% 18%, rgba(255, 255, 255, var(--star-brightness)) 0.5px, transparent 0.9px),
-      radial-gradient(circle at 54% 64%, rgba(255, 255, 255, var(--star-brightness)) 0.5px, transparent 0.9px),
-      radial-gradient(circle at 91% 35%, rgba(255, 255, 255, var(--star-brightness)) 0.5px, transparent 0.9px),
-      radial-gradient(circle at 12% 78%, rgba(255, 255, 255, var(--star-brightness)) 0.5px, transparent 0.9px),
-      radial-gradient(circle at 37% 87%, rgba(255, 255, 255, var(--star-brightness)) 0.5px, transparent 0.9px),
-      radial-gradient(circle at 83% 74%, rgba(255, 255, 255, var(--star-brightness)) 0.5px, transparent 0.9px),
-      radial-gradient(circle at 68% 52%, rgba(255, 255, 255, var(--star-brightness)) 0.5px, transparent 0.9px),
-      radial-gradient(circle at 45% 23%, rgba(255, 255, 255, var(--star-brightness)) 0.5px, transparent 0.9px);
-    background-size: 220px 220px;
-    background-repeat: repeat;
-    animation: stellar-stars-twinkle 10s ease-in-out infinite;
-  }
-}
-
 @keyframes stellar-stars-twinkle {
   0%,
   100% {

@@ -3987,12 +3987,33 @@ export default function Home() {
                 >
                   <Button
                     className={cn(
-                      "stellar-button w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
+                      "w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
                       "shadow-lg hover:shadow-xl active:shadow-md",
-                      "text-white",
+                      "text-white bg-gradient-to-br from-gray-600 to-gray-500",
                       "disabled:cursor-not-allowed",
+                      "relative overflow-hidden",
                     )}
-                    style={{ "--star-brightness": "0.9" } as React.CSSProperties}
+                    style={
+                      {
+                        backgroundImage: `
+                        radial-gradient(circle at 8% 14%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 26% 42%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 72% 18%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 54% 64%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 91% 35%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 12% 78%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 37% 87%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 83% 74%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 68% 52%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 45% 23%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        linear-gradient(135deg, #4b5563 0%, #6b7280 100%)
+                      `,
+                        backgroundSize:
+                          "220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 100% 100%",
+                        backgroundRepeat:
+                          "repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, no-repeat",
+                      } as React.CSSProperties
+                    }
                     disabled={!originalBuffer || isProcessing || !durationLimits}
                     onClick={processAudioAdjusterAction}
                   >
@@ -4434,12 +4455,33 @@ export default function Home() {
                     onClick={handleExportAudio}
                     disabled={isGeneratingAudio || timelineEvents.length === 0}
                     className={cn(
-                      "stellar-button w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
+                      "w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
                       "shadow-lg hover:shadow-xl active:shadow-md",
-                      "text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-300",
+                      "text-white bg-gradient-to-br from-gray-600 to-gray-500 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-300",
                       "disabled:opacity-80 disabled:cursor-not-allowed",
+                      "relative overflow-hidden",
                     )}
-                    style={{ "--star-brightness": "0.9" } as React.CSSProperties}
+                    style={
+                      {
+                        backgroundImage: `
+                        radial-gradient(circle at 8% 14%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 26% 42%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 72% 18%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 54% 64%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 91% 35%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 12% 78%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 37% 87%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 83% 74%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 68% 52%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        radial-gradient(circle at 45% 23%, rgba(255, 255, 255, 0.85) 0.5px, transparent 0.9px),
+                        linear-gradient(135deg, #4b5563 0%, #6b7280 100%)
+                      `,
+                        backgroundSize:
+                          "220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 100% 100%",
+                        backgroundRepeat:
+                          "repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, no-repeat",
+                      } as React.CSSProperties
+                    }
                   >
                     <div className="flex items-center justify-center font-black">
                       <Mic className="mr-2 h-4 w-4" />
