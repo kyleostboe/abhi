@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert" // Import Alert component
+import { Alert } from "@/components/ui/alert" // Import Alert component
 import {
   AlertTriangle,
   Music2,
@@ -1620,7 +1620,7 @@ export default function Home() {
             console.error("[v0] Piano sampler not available for chord")
           }
         } else if (noteType === "synth") {
-          chordNotes.forEach(async (noteString) => {
+          chordNotes.forEach(async (noteString, index) => {
             const synth = new Tone.Synth({
               oscillator: { type: "fatsawtooth" },
               envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
@@ -1632,7 +1632,8 @@ export default function Home() {
             synth.connect(synthGain)
 
             console.log("[v0] Playing synth note in chord:", noteString)
-            synth.triggerAttackRelease(noteString, 0.5)
+            const startDelay = index * 0.01
+            synth.triggerAttackRelease(noteString, 0.5, `+${startDelay}`)
 
             setTimeout(() => {
               synth.dispose()
@@ -2912,13 +2913,7 @@ export default function Home() {
     return () => {
       cancelled = true
     }
-  }, [
-    originalBuffer,
-    detectSilenceRegions,
-    silenceThreshold,
-    minSilenceDuration,
-    isMobileDevice,
-  ])
+  }, [originalBuffer, detectSilenceRegions, silenceThreshold, minSilenceDuration, isMobileDevice])
 
   useEffect(() => {
     // This effect no longer resets isProcessingComplete.
@@ -3776,7 +3771,9 @@ export default function Home() {
                               <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
                                 <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-[3px] border-stone-200">
                                   <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
-                                  <div className="font-black text-gray-600">{formatTime(audioAnalysis.totalSilence)}</div>
+                                  <div className="font-black text-gray-600">
+                                    {formatTime(audioAnalysis.totalSilence)}
+                                  </div>
                                 </div>
                               </div>
                               <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
@@ -3833,7 +3830,7 @@ export default function Home() {
                       <div className="grid md:grid-cols-2 gap-4">
                         <Card className="overflow-hidden border-none shadow-lg bg-white ">
                           <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-cyan-500">
-                            <h3 className="text-white flex items-center font-black text-base">Target Duration</h3>
+                            <h3 className="text-white font-black text-base">Target Duration</h3>
                           </div>
                           <div className="p-6 py-6 px-11 pb-6">
                             <div className="mb-4">
@@ -3861,7 +3858,7 @@ export default function Home() {
                         </Card>
                         <Card className="overflow-hidden border-none shadow-lg bg-white ">
                           <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 ">
-                            <h3 className="text-white flex items-center font-black text-base">Silence Threshold</h3>
+                            <h3 className="text-white font-black">Silence Threshold</h3>
                           </div>
                           <div className="p-6 px-11">
                             <div className="mb-4">
@@ -3992,8 +3989,8 @@ export default function Home() {
                     className={cn(
                       "stellar-button w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
                       "shadow-lg hover:shadow-xl active:shadow-md",
-                      "text-white ,
-                      " disabled:cursor-not-allowed",
+                      "text-white",
+                      "disabled:cursor-not-allowed",
                     )}
                     style={{ "--star-brightness": "0.9" } as React.CSSProperties}
                     disabled={!originalBuffer || isProcessing || !durationLimits}
@@ -4045,7 +4042,7 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="p-6 px-3.5 py-4 space-y-4">
-                        <div className="bg-white p-3 rounded-sm shadow-md px-0 mb-0">
+                        <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
                           <audio controls className="w-full" src={processedUrl}></audio>
                         </div>
                         <SaveMeditationDialog
@@ -4436,14 +4433,14 @@ export default function Home() {
                   <Button
                     onClick={handleExportAudio}
                     disabled={isGeneratingAudio || timelineEvents.length === 0}
-                      className={cn(
-                        "stellar-button w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
-                        "shadow-lg hover:shadow-xl active:shadow-md",
-                        "text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-300",
-                        "disabled:opacity-80 disabled:cursor-not-allowed",
-                      )}
-                      style={{ "--star-brightness": "0.9" } as React.CSSProperties}
-                    >
+                    className={cn(
+                      "stellar-button w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
+                      "shadow-lg hover:shadow-xl active:shadow-md",
+                      "text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-300",
+                      "disabled:opacity-80 disabled:cursor-not-allowed",
+                    )}
+                    style={{ "--star-brightness": "0.9" } as React.CSSProperties}
+                  >
                     <div className="flex items-center justify-center font-black">
                       <Mic className="mr-2 h-4 w-4" />
                       <span className="font-black tracking-tight text-base">
