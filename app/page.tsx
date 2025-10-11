@@ -18,6 +18,7 @@ import {
   Wand2,
   Volume2,
   Upload,
+  Sparkles,
 } from "lucide-react" // Import Copy icon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
@@ -1995,7 +1996,7 @@ export default function Home() {
           instructionText: text || `Instruction ${index + 1}`,
           soundCueId: entry.soundCueId ?? entry.soundId ?? matchingCue?.id ?? undefined,
           soundCueName,
-          soundCueSrc: entry.soundSrc ?? matchingCue?.src ?? undefined,
+          soundCueSrc: entry.soundCueSrc ?? matchingCue?.src ?? undefined,
           instrument: entry.instrument ?? undefined,
           color,
           keepOriginal: Boolean(entry.keepOriginal),
@@ -3930,7 +3931,7 @@ export default function Home() {
                               <Switch
                                 checked={preserveNaturalPacing}
                                 onCheckedChange={setPreserveNaturalPacing}
-                                className="data-[state=checked]:bg-gray-400 "
+                                className="data-[state=checked]:bg-gray-500 "
                               />
                             </div>
                           </div>
@@ -3968,10 +3969,10 @@ export default function Home() {
                     onClick={handleProcessAudio}
                     disabled={isProcessing || !originalBuffer}
                     className={cn(
-                      "w-full border-[5px] border-stone-200 py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
-                      "shadow-lg hover:shadow-xl active:shadow-md",
-                      "text-white",
-                      "disabled:cursor-not-allowed",
+                      "w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
+                      "shadow-lg hover:shadow-xl active:shadow-none",
+                      "text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-300",
+                      "disabled:cursor-not-allowed disabled:opacity-100",
                       "relative overflow-hidden",
                       "bg-gradient-to-br from-gray-600 to-gray-500",
                     )}
@@ -4040,6 +4041,7 @@ export default function Home() {
                         radial-gradient(circle at 68% 38%, rgba(255, 255, 255, 0.85) 0.5px, transparent 1px),
                         radial-gradient(circle at 65% 65%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px)
                       `,
+                        animation: isProcessing ? "stellar-stars-twinkle 2s ease-in-out infinite" : "none",
                       } as React.CSSProperties
                     }
                   >
@@ -4484,9 +4486,9 @@ export default function Home() {
                     disabled={isGeneratingAudio || timelineEvents.length === 0}
                     className={cn(
                       "w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
-                      "shadow-lg hover:shadow-xl active:shadow-md",
+                      "shadow-lg hover:shadow-xl active:shadow-none",
                       "text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-300",
-                      "disabled:cursor-not-allowed",
+                      "disabled:cursor-not-allowed disabled:opacity-100",
                       "relative overflow-hidden",
                       "bg-gradient-to-br from-gray-600 to-gray-500",
                     )}
@@ -4555,13 +4557,12 @@ export default function Home() {
                         radial-gradient(circle at 68% 38%, rgba(255, 255, 255, 0.85) 0.5px, transparent 1px),
                         radial-gradient(circle at 65% 65%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px)
                       `,
+                        animation: isGeneratingAudio ? "stellar-stars-twinkle 2s ease-in-out infinite" : "none",
                       } as React.CSSProperties
                     }
                   >
-                    <Wand2 className="mr-2 h-5 w-5" />
-                    <span className="font-black tracking-tight text-base">
-                      {isGeneratingAudio ? "Generating..." : "Generate Audio"}
-                    </span>
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    {isGeneratingAudio ? "Generating..." : "Generate Audio"}
                   </Button>
                 </motion.div>
 
