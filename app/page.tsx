@@ -3972,7 +3972,7 @@ export default function Home() {
                       "w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
                       "shadow-lg hover:shadow-xl active:shadow-none",
                       "text-white ",
-                      "disabled:cursor-not-allowed disabled:opacity-100",
+                      "disabled:cursor-not-allowed hover:opacity-100 disabled:opacity-100",
                       "relative overflow-hidden",
                       "bg-gradient-to-br from-gray-600 to-gray-500",
                     )}
