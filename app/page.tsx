@@ -2268,7 +2268,7 @@ export default function Home() {
         const arrayBuffer = await response.arrayBuffer()
         const buffer = await context.decodeAudioData(arrayBuffer)
 
-        // Set up the audio like normal file upload
+        // Set up the audio like normal upload
         setOriginalBuffer(buffer)
         setOriginalUrl(importData.processedAudioUrl)
         setProcessingStep("Analyzing audio...")
@@ -3684,7 +3684,7 @@ export default function Home() {
                       transition={{ delay: 0.2 }}
                     >
                       <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-gray-50 to-muted ">
-                        
+                        <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 px-6 py-[9px] ">
                           <div className="flex items-center justify-between">
                             <h3 className="text-white font-black">Original Audio</h3>
                             <AudioInfoMenu
@@ -4039,88 +4039,87 @@ export default function Home() {
                         radial-gradient(circle at 65% 65%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
                         linear-gradient(to right, #4b5563, #6b7280)
                       `,
-                        animation: isProcessing ? "stellar-stars-twinkle 2s ease-in-out infinite" : "none",
-                      } as React.CSSProperties
-                    }
-                  >
-                    <Wand2 className="mr-2 h-4 w-4 text-white" />
-                    <span className="font-black text-base tracking-tight text-white">
-                      {isProcessing ? "Processing..." : "Process Audio"}
-                    </span>
-                  </Button>
-                </motion.div>
+                      animation: isProcessing ? "stellar-stars-twinkle 2s ease-in-out infinite" : "none",
+                    } as React.CSSProperties
+                  }
+                >
+                  <Wand2 className="mr-2 h-4 w-4 text-white" />
+                  <span className="font-black text-base tracking-tight text-white">
+                    {isProcessing ? "Processing..." : "Process Audio"}
+                  </span>
+                </Button>
+              </motion.div>
 
-                {isProcessingComplete && processedUrl && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
-                      <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-white font-black">Processed Audio</h3>
-                          <AudioInfoMenu
-                            items={[
-                              {
-                                label: "Actual Duration",
-                                value: actualDuration ? formatTime(actualDuration) : "--",
-                              },
-                              {
-                                label: "Target Duration",
-                                value: formatTime(targetDuration * 60),
-                              },
-                              {
-                                label: "Pauses Adjusted",
-                                value: pausesAdjusted,
-                              },
-                              {
-                                label: "File Size",
-                                value: formatFileSize(processedFileSize),
-                              },
-                              ...(processedAudioMetadata
-                                ? [
-                                    {
-                                      label: "Output Format",
-                                      value: `Mono • ${processedAudioMetadata.sampleRate.toLocaleString()} Hz • ${processedAudioMetadata.bitDepth.toLocaleString()}-bit`,
-                                    },
-                                  ]
-                                : []),
-                            ]}
-                          />
-                        </div>
+              {isProcessingComplete && processedUrl && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
+                    <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-white font-black">Processed Audio</h3>
+                        <AudioInfoMenu
+                          items={[
+                            {
+                              label: "Actual Duration",
+                              value: actualDuration ? formatTime(actualDuration) : "--",
+                            },
+                            {
+                              label: "Target Duration",
+                              value: formatTime(targetDuration * 60),
+                            },
+                            {
+                              label: "Pauses Adjusted",
+                              value: pausesAdjusted,
+                            },
+                            {
+                              label: "File Size",
+                              value: formatFileSize(processedFileSize),
+                            },
+                            ...(processedAudioMetadata
+                              ? [
+                                  {
+                                    label: "Output Format",
+                                    value: `Mono • ${processedAudioMetadata.sampleRate.toLocaleString()} Hz • ${processedAudioMetadata.bitDepth.toLocaleString()}-bit`,
+                                  },
+                                ]
+                              : []),
+                          ]}
+                        />
                       </div>
-                      <div className="p-6 px-3.5 py-4 space-y-4">
-                        <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
-                          <audio controls className="w-full" src={processedUrl}></audio>
-                        </div>
-                        <SaveMeditationDialog
-                          audioUrl={processedUrl}
-                          mp3Blob={processedMp3Blob} // Pass pre-created WebM blob
-                          originalFileName={file?.name || "meditation"}
-                          duration={actualDuration || targetDuration * 60}
-                          source="adjuster"
-                          metadata={{
-                            targetDuration,
-                            pausesAdjusted,
-                            wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
-                            timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
-                          }}
-                        >
-                          <Button className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black">
-                            <BookmarkPlus className="w-4 h-4 mr-2" />
-                            Save to Library
-                          </Button>
-                        </SaveMeditationDialog>
+                    </div>
+                    <div className="p-6 px-3.5 py-4 space-y-4">
+                      <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
+                        <audio controls className="w-full" src={processedUrl}></audio>
                       </div>
-                    </Card>
-                  </motion.div>
-                )}
-              </div>
-            ) : (
+                      <SaveMeditationDialog
+                        audioUrl={processedUrl}
+                        mp3Blob={processedMp3Blob} // Pass pre-created WebM blob
+                        originalFileName={file?.name || "meditation"}
+                        duration={actualDuration || targetDuration * 60}
+                        source="adjuster"
+                        metadata={{
+                          targetDuration,
+                          pausesAdjusted,
+                          wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
+                          timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
+                        }}
+                      >
+                        <Button className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black">
+                          <BookmarkPlus className="w-4 h-4 mr-2" />
+                          Save to Library
+                        </Button>
+                      </SaveMeditationDialog>
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
+            </div> : (\
               // == Encoder UI ==
               <motion.div
-                key="encoder-content"
+                key=\"encoder-content"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
@@ -4552,82 +4551,82 @@ export default function Home() {
                         radial-gradient(circle at 65% 65%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
                         linear-gradient(to right, #4b5563, #6b7280)
                       `,
-                      } as React.CSSProperties
-                    }
-                  >
-                    <Wand2 className="mr-2 h-4 w-4 text-white" />
-                    <span className="font-black text-base tracking-tight text-white">
-                      {isGeneratingAudio ? "Generating..." : "Generate Audio"}
-                    </span>
-                  </Button>
-                </motion.div>
-
-                {generatedAudioUrl && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.7 }}
-                  >
-                    <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
-                      <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-white font-black">Generated Audio</h3>
-                          <AudioInfoMenu
-                            items={[
-                              {
-                                label: "Duration",
-                                value: formatTime(encoderTotalDuration),
-                              },
-                              {
-                                label: "Instructions",
-                                value: timelineEvents.length,
-                              },
-                              {
-                                label: "File Size",
-                                value: formatFileSize(generatedAudioFileSize || 0),
-                              },
-                              ...(generatedAudioMetadata
-                                ? [
-                                    {
-                                      label: "Output Format",
-                                      value: `Mono • ${generatedAudioMetadata.sampleRate.toLocaleString()} Hz • ${generatedAudioMetadata.bitDepth.toLocaleString()}-bit`,
-                                    },
-                                  ]
-                                : []),
-                            ]}
-                          />
-                        </div>
-                      </div>
-                      <div className="p-6 px-3.5 py-4 space-y-4">
-                        <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
-                          <audio ref={encoderAudioRef} controls className="w-full" src={generatedAudioUrl}></audio>
-                        </div>
-                        <SaveMeditationDialog
-                          audioUrl={generatedAudioUrl}
-                          originalFileName={meditationTitle || "meditation"}
-                          duration={encoderTotalDuration}
-                          source="encoder"
-                          metadata={{
-                            instructionCount: timelineEvents.length,
-                            meditationTitle,
-                            wav: generatedAudioMetadata ? { ...generatedAudioMetadata } : undefined,
-                            timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
-                          }}
-                        >
-                          <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-gray-600 font-serif font-black mt-3">
-                            <BookmarkPlus className="w-4 h-4 mr-2" />
-                            Save to Library
-                          </Button>
-                        </SaveMeditationDialog>
-                      </div>
-                    </Card>
-                  </motion.div>
-                )}
+                      animation: isGeneratingAudio ? "stellar-stars-twinkle 2s ease-in-out infinite" : "none",
+                    } as React.CSSProperties
+                  }
+                >
+                  <Wand2 className="mr-2 h-4 w-4 text-white" />
+                  <span className="font-black text-base tracking-tight text-white">
+                    {isGeneratingAudio ? "Generating..." : "Generate Audio"}
+                  </span>
+                </Button>
               </motion.div>
-            )}
+
+              {generatedAudioUrl && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                >
+                  <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
+                    <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-white font-black">Generated Audio</h3>
+                        <AudioInfoMenu
+                          items={[
+                            {
+                              label: "Duration",
+                              value: formatTime(encoderTotalDuration),
+                            },
+                            {
+                              label: "Instructions",
+                              value: timelineEvents.length,
+                            },
+                            {
+                              label: "File Size",
+                              value: formatFileSize(generatedAudioFileSize || 0),
+                            },
+                            ...(generatedAudioMetadata
+                              ? [
+                                  {
+                                    label: "Output Format",
+                                    value: `Mono • ${generatedAudioMetadata.sampleRate.toLocaleString()} Hz • ${generatedAudioMetadata.bitDepth.toLocaleString()}-bit`,
+                                  },
+                                ]
+                              : []),
+                          ]}
+                        />
+                      </div>
+                    </div>
+                    <div className="p-6 px-3.5 py-4 space-y-4">
+                      <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
+                        <audio ref={encoderAudioRef} controls className="w-full" src={generatedAudioUrl}></audio>
+                      </div>
+                      <SaveMeditationDialog
+                        audioUrl={generatedAudioUrl}
+                        originalFileName={meditationTitle || "meditation"}
+                        duration={encoderTotalDuration}
+                        source="encoder"
+                        metadata={{
+                          instructionCount: timelineEvents.length,
+                          meditationTitle,
+                          wav: generatedAudioMetadata ? { ...generatedAudioMetadata } : undefined,
+                          timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
+                        }}
+                      >
+                        <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-gray-600 font-serif font-black mt-3">
+                          <BookmarkPlus className="w-4 h-4 mr-2" />
+                          Save to Library
+                        </Button>
+                      </SaveMeditationDialog>
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
+            </motion.div>
           </div>
         </div>
       </motion.div>
-    </div>
+  </div>
   )
 }
