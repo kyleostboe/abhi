@@ -4485,10 +4485,10 @@ export default function Home() {
                     onClick={handleExportAudio}
                     disabled={isGeneratingAudio || timelineEvents.length === 0}
                     className={cn(
-                      "w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
+                      "w-full py-7 text-base font-semibold tracking-wider rounded-sm transition-all duration-500",
                       "shadow-lg hover:shadow-xl active:shadow-none",
-                      "text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-300",
-                      "disabled:cursor-not-allowed disabled:opacity-100",
+                      "text-white ",
+                      "disabled:cursor-not-allowed hover:opacity-100 disabled:opacity-100",
                       "relative overflow-hidden",
                       "bg-gradient-to-br from-gray-600 to-gray-500",
                     )}
@@ -4561,7 +4561,7 @@ export default function Home() {
                       } as React.CSSProperties
                     }
                   >
-                    <Sparkles className="mr-2 h-5 w-5" />
+                    <Sparkles className="mr-2 h-4 w-4" />
                     {isGeneratingAudio ? "Generating..." : "Generate Audio"}
                   </Button>
                 </motion.div>
