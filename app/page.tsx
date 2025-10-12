@@ -4562,7 +4562,9 @@ export default function Home() {
                     }
                   >
                     <Sparkles className="mr-2 h-4 w-4" />
+                    <span className="font-black text-base tracking-tight text-white">
                     {isGeneratingAudio ? "Generating..." : "Generate Audio"}
+                    </span>
                   </Button>
                 </motion.div>
 
