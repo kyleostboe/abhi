@@ -3974,7 +3974,6 @@ export default function Home() {
                       "text-white ",
                       "disabled:cursor-not-allowed hover:opacity-100 disabled:opacity-100",
                       "relative overflow-hidden",
-                      "bg-gradient-to-br from-gray-600 to-gray-500",
                     )}
                     style={
                       {
@@ -4039,7 +4038,8 @@ export default function Home() {
                         radial-gradient(circle at 35% 68%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
                         radial-gradient(circle at 62% 32%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
                         radial-gradient(circle at 68% 38%, rgba(255, 255, 255, 0.85) 0.5px, transparent 1px),
-                        radial-gradient(circle at 65% 65%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px)
+                        radial-gradient(circle at 65% 65%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
+                        linear-gradient(to right, #4b5563, #6b7280)
                       `,
                         animation: isProcessing ? "stellar-stars-twinkle 2s ease-in-out infinite" : "none",
                       } as React.CSSProperties
@@ -4490,7 +4490,6 @@ export default function Home() {
                       "text-white ",
                       "disabled:cursor-not-allowed hover:opacity-100 disabled:opacity-100",
                       "relative overflow-hidden",
-                      "bg-gradient-to-br from-gray-600 to-gray-500",
                     )}
                     style={
                       {
@@ -4555,7 +4554,8 @@ export default function Home() {
                         radial-gradient(circle at 35% 68%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
                         radial-gradient(circle at 62% 32%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
                         radial-gradient(circle at 68% 38%, rgba(255, 255, 255, 0.85) 0.5px, transparent 1px),
-                        radial-gradient(circle at 65% 65%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px)
+                        radial-gradient(circle at 65% 65%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
+                        linear-gradient(to right, #4b5563, #6b7280)
                       `,
                         animation: isGeneratingAudio ? "stellar-stars-twinkle 2s ease-in-out infinite" : "none",
                       } as React.CSSProperties
@@ -4563,7 +4563,7 @@ export default function Home() {
                   >
                     <Sparkles className="mr-2 h-4 w-4" />
                     <span className="font-black text-base tracking-tight text-white">
-                    {isGeneratingAudio ? "Generating..." : "Generate Audio"}
+                      {isGeneratingAudio ? "Generating..." : "Generate Audio"}
                     </span>
                   </Button>
                 </motion.div>
