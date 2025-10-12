@@ -8,7 +8,6 @@ import { Card } from "@/components/ui/card"
 import { Alert } from "@/components/ui/alert" // Import Alert component
 import {
   AlertTriangle,
-  Music2,
   Mic,
   StopCircle,
   Play,
@@ -18,7 +17,6 @@ import {
   Wand2,
   Volume2,
   Upload,
-  Sparkles,
 } from "lucide-react" // Import Copy icon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
@@ -4253,10 +4251,7 @@ export default function Home() {
                   >
                     <Card className="overflow-hidden border-none shadow-lg bg-white ">
                       <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-center">
-                        <h3 className="text-white flex items-center font-black text-left">
-                          <Music2 className="h-4 w-4 mr-2" />
-                          Sound Cues
-                        </h3>
+                        <h3 className="text-white font-black text-base">Sound Cues</h3>
                       </div>
                       <div className="p-6 flex flex-col space-y-4 pt-[5px]">
                         <div className="flex-1 h-auto">
@@ -4557,11 +4552,10 @@ export default function Home() {
                         radial-gradient(circle at 65% 65%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
                         linear-gradient(to right, #4b5563, #6b7280)
                       `,
-                        animation: isGeneratingAudio ? "stellar-stars-twinkle 2s ease-in-out infinite" : "none",
                       } as React.CSSProperties
                     }
                   >
-                    <Sparkles className="mr-2 h-4 w-4" />
+                    <Wand2 className="mr-2 h-4 w-4 text-white" />
                     <span className="font-black text-base tracking-tight text-white">
                       {isGeneratingAudio ? "Generating..." : "Generate Audio"}
                     </span>
