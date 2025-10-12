@@ -2268,7 +2268,7 @@ export default function Home() {
         const arrayBuffer = await response.arrayBuffer()
         const buffer = await context.decodeAudioData(arrayBuffer)
 
-        // Set up the audio like normal upload
+        // Set up the audio like normal file upload
         setOriginalBuffer(buffer)
         setOriginalUrl(importData.processedAudioUrl)
         setProcessingStep("Analyzing audio...")
@@ -3364,9 +3364,6 @@ export default function Home() {
   // Function to handle the Process Audio button click
   const handleProcessAudio = processAudioAdjusterAction
 
-  // Function to handle the Generate Audio button click
-  const handleGenerateAudio = handleExportAudio
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px]">
       <Navigation />
@@ -3686,8 +3683,8 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
-                      <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
-                        <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 px-6 py-[9px] ">
+                      <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-gray-50 to-muted ">
+                        <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 py-[9px] ">
                           <div className="flex items-center justify-between">
                             <h3 className="text-white font-black">Original Audio</h3>
                             <AudioInfoMenu
@@ -4042,455 +4039,455 @@ export default function Home() {
                         radial-gradient(circle at 65% 65%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
                         linear-gradient(to right, #4b5563, #6b7280)
                       `,
-                      animation: isProcessing ? "stellar-stars-twinkle 2s ease-in-out infinite" : "none",
-                    } as React.CSSProperties
-                  }
-                >
-                  <Wand2 className="mr-2 h-4 w-4 text-white" />
-                  <span className="font-black text-base tracking-tight text-white">
-                    {isProcessing ? "Processing..." : "Process Audio"}
-                  </span>
-                </Button>
-              </motion.div>
-
-              {isProcessingComplete && processedUrl && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                >
-                  <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
-                    <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-white font-black">Processed Audio</h3>
-                        <AudioInfoMenu
-                          items={[
-                            {
-                              label: "Actual Duration",
-                              value: actualDuration ? formatTime(actualDuration) : "--",
-                            },
-                            {
-                              label: "Target Duration",
-                              value: formatTime(targetDuration * 60),
-                            },
-                            {
-                              label: "Pauses Adjusted",
-                              value: pausesAdjusted,
-                            },
-                            {
-                              label: "File Size",
-                              value: formatFileSize(processedFileSize),
-                            },
-                            ...(processedAudioMetadata
-                              ? [
-                                  {
-                                    label: "Output Format",
-                                    value: `Mono • ${processedAudioMetadata.sampleRate.toLocaleString()} Hz • ${processedAudioMetadata.bitDepth.toLocaleString()}-bit`,
-                                  },
-                                ]
-                              : []),
-                          ]}
-                        />
-                      </div>
-                    </div>
-                    <div className="p-6 px-3.5 py-4 space-y-4">
-                      <div className="bg-white rounded-sm p-3 shadow-md mb-3.5 px-0">
-                        <audio controls className="w-full" src={processedUrl}></audio>
-                      </div>
-                      <SaveMeditationDialog
-                        audioUrl={processedUrl}
-                        mp3Blob={processedMp3Blob} // Pass pre-created WebM blob
-                        originalFileName={file?.name || "meditation"}
-                        duration={actualDuration || targetDuration * 60}
-                        source="adjuster"
-                        metadata={{
-                          targetDuration,
-                          pausesAdjusted,
-                          wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
-                          timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
-                        }}
-                      >
-                        <Button className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black">
-                          <BookmarkPlus className="w-4 h-4 mr-2" />
-                          Save to Library
-                        </Button>
-                      </SaveMeditationDialog>
-                    </div>
-                  </Card>
-                </motion.div>
-              )}
-            </div> : (\
-            // == Encoder UI ==
-            <motion.div
-              key=\"encoder-content"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-4"
-            >
-              <motion.div
-                className="text-gray-600"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <Card className="overflow-visible bg-white max-w-2xl mx-auto rounded-2xl shadow-none">
-                  <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none">
-                    <div className="grid md:grid-cols-2 text-gray-600 pb-2 gap-4">
-                      <div className="text-center">
-                        <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
-                          Title
-                        </Label>
-                        <input
-                          id="meditation-title"
-                          type="text"
-                          value={meditationTitle}
-                          onChange={handleMeditationTitleChange}
-                          placeholder="My Custom Meditation"
-                          className="flex w-full file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 text-center border-[3px] shadow-md h-9"
-                        />
-                      </div>
-                      <div className="text-center">
-                        <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
-                          Duration (h:m:s)
-                        </Label>
-                        <div
-                          id="encoder-duration"
-                          className="flex w-full items-center justify-center gap-3 mt-1 border-gray-500 rounded-[10px] bg-white px-4 py-[9px] pr-1 border-[3px] shadow-md h-9"
-                        >
-                          <div className="flex items-center">
-                            <input
-                              type="number"
-                              min={0}
-                              step={1}
-                              value={encoderDurationParts.hours}
-                              onChange={(event) => handleDurationPartChange("hours", Number(event.target.value))}
-                              className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
-                              aria-label="Hours"
-                            />
-                          </div>
-
-                          <div className="flex items-center">
-                            <input
-                              type="number"
-                              min={0}
-                              max={59}
-                              step={1}
-                              value={encoderDurationParts.minutes}
-                              onChange={(event) => handleDurationPartChange("minutes", Number(event.target.value))}
-                              className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
-                              aria-label="Minutes"
-                            />
-                          </div>
-                          <div className="flex items-center">
-                            <input
-                              type="number"
-                              min={0}
-                              max={59}
-                              step={1}
-                              value={encoderDurationParts.seconds}
-                              onChange={(event) => handleDurationPartChange("seconds", Number(event.target.value))}
-                              className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
-                              aria-label="Seconds"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-4"
-              >
-                <div className="flex flex-col gap-4">
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
+                      } as React.CSSProperties
+                    }
                   >
-                    <div className="p-0.5 bg-gradient-to-r from-stone-300 to-logo-blue-400 py-1 shadow-lg rounded-sm px-[5px]">
-                      <div className="bg-white p-4 rounded-sm shadow-nonee border-stone-200 shadow pb-3 pt-1.5 border-[3px]">
-                        <div className="text-center">
-                          <Textarea
-                            id="custom-instruction"
-                            value={customInstructionText}
-                            onChange={handleCustomInstructionChange}
-                            placeholder="Enter an instruction..."
-                            className="mt-2 text-sm font-serif font-black text-indigo-400 placeholder-indigo-400 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
+                    <Wand2 className="mr-2 h-4 w-4 text-white" />
+                    <span className="font-black text-base tracking-tight text-white">
+                      {isProcessing ? "Processing..." : "Process Audio"}
+                    </span>
+                  </Button>
+                </motion.div>
+
+                {isProcessingComplete && processedUrl && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
+                      <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-white font-black">Processed Audio</h3>
+                          <AudioInfoMenu
+                            items={[
+                              {
+                                label: "Actual Duration",
+                                value: actualDuration ? formatTime(actualDuration) : "--",
+                              },
+                              {
+                                label: "Target Duration",
+                                value: formatTime(targetDuration * 60),
+                              },
+                              {
+                                label: "Pauses Adjusted",
+                                value: pausesAdjusted,
+                              },
+                              {
+                                label: "File Size",
+                                value: formatFileSize(processedFileSize),
+                              },
+                              ...(processedAudioMetadata
+                                ? [
+                                    {
+                                      label: "Output Format",
+                                      value: `Mono • ${processedAudioMetadata.sampleRate.toLocaleString()} Hz • ${processedAudioMetadata.bitDepth.toLocaleString()}-bit`,
+                                    },
+                                  ]
+                                : []),
+                            ]}
                           />
                         </div>
                       </div>
-                    </div>
+                      <div className="p-6 px-3.5 py-4 space-y-4">
+                        <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
+                          <audio controls className="w-full" src={processedUrl}></audio>
+                        </div>
+                        <SaveMeditationDialog
+                          audioUrl={processedUrl}
+                          mp3Blob={processedMp3Blob} // Pass pre-created WebM blob
+                          originalFileName={file?.name || "meditation"}
+                          duration={actualDuration || targetDuration * 60}
+                          source="adjuster"
+                          metadata={{
+                            targetDuration,
+                            pausesAdjusted,
+                            wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
+                            timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
+                          }}
+                        >
+                          <Button className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black">
+                            <BookmarkPlus className="w-4 h-4 mr-2" />
+                            Save to Library
+                          </Button>
+                        </SaveMeditationDialog>
+                      </div>
+                    </Card>
                   </motion.div>
-                  <RecorderSection
-                    className="hidden lg:block"
-                    inputId="recording-label-desktop"
-                    recordingLabel={recordingLabel}
-                    onRecordingLabelChange={handleRecordingLabelChange}
-                    isRecording={isRecording}
-                    startRecording={startRecording}
-                    stopRecording={stopRecording}
-                    readyToAddToTimelineRecording={readyToAddToTimelineRecording}
-                    timelineEvents={timelineEvents}
-                    addEventToTimeline={addEventToTimeline}
-                    setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
-                    setRecordedBlobs={setRecordedBlobs}
-                    setRecordingLabel={setRecordingLabel}
-                    recordingPreviewRef={recordingPreviewRef}
-                  />
-                </div>
+                )}
+              </div>
+            ) : (
+              // == Encoder UI ==
+              <motion.div
+                key="encoder-content"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-4"
+              >
+                <motion.div
+                  className="text-gray-600"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <Card className="overflow-visible bg-white max-w-2xl mx-auto rounded-2xl shadow-none">
+                    <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none">
+                      <div className="grid md:grid-cols-2 text-gray-600 pb-2 gap-4">
+                        <div className="text-center">
+                          <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
+                            Title
+                          </Label>
+                          <input
+                            id="meditation-title"
+                            type="text"
+                            value={meditationTitle}
+                            onChange={handleMeditationTitleChange}
+                            placeholder="My Custom Meditation"
+                            className="flex w-full file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 text-center border-[3px] shadow-md h-9"
+                          />
+                        </div>
+                        <div className="text-center">
+                          <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
+                            Duration (h:m:s)
+                          </Label>
+                          <div
+                            id="encoder-duration"
+                            className="flex w-full items-center justify-center gap-3 mt-1 border-gray-500 rounded-[10px] bg-white px-4 py-[9px] pr-1 border-[3px] shadow-md h-9"
+                          >
+                            <div className="flex items-center">
+                              <input
+                                type="number"
+                                min={0}
+                                step={1}
+                                value={encoderDurationParts.hours}
+                                onChange={(event) => handleDurationPartChange("hours", Number(event.target.value))}
+                                className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
+                                aria-label="Hours"
+                              />
+                            </div>
+
+                            <div className="flex items-center">
+                              <input
+                                type="number"
+                                min={0}
+                                max={59}
+                                step={1}
+                                value={encoderDurationParts.minutes}
+                                onChange={(event) => handleDurationPartChange("minutes", Number(event.target.value))}
+                                className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
+                                aria-label="Minutes"
+                              />
+                            </div>
+                            <div className="flex items-center">
+                              <input
+                                type="number"
+                                min={0}
+                                max={59}
+                                step={1}
+                                value={encoderDurationParts.seconds}
+                                onChange={(event) => handleDurationPartChange("seconds", Number(event.target.value))}
+                                className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
+                                aria-label="Seconds"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
 
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
+                  transition={{ delay: 0.2 }}
+                  className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-4"
                 >
-                  <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                    <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-center">
-                      <h3 className="text-white font-black text-base">Sound Cues</h3>
-                    </div>
-                    <div className="p-6 flex flex-col space-y-4 pt-[5px]">
-                      <div className="flex-1 h-auto">
-                        <Accordion type="single" collapsible className="w-full">
-                          <AccordionItem value="musical-notes">
-                            <AccordionTrigger className="text-gray-600 hover:no-underline py-3 font-serif font-black">
-                              <div className="flex items-center justify-between w-full">
-                                <span>Notes</span>
-                              </div>
-                            </AccordionTrigger>
-                            <div className="px-4 pb-2 border-b-0">
-                              <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-gray-500">Type</span>
-                                  <select
-                                    value={noteType}
-                                    onChange={(e) => setNoteType(e.target.value as "piano" | "synth" | "harp")}
-                                    className="text-xs bg-white border border-gray-300 rounded px-2 py-1"
-                                  >
-                                    <option value="piano">Piano</option>
-                                    <option value="synth">Synth</option>
-                                    <option value="harp">Harp</option>
-                                  </select>
+                  <div className="flex flex-col gap-4">
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
+                    >
+                      <div className="p-0.5 bg-gradient-to-r from-stone-300 to-logo-blue-400  py-1 shadow-lg rounded-sm px-[5px]">
+                        <div className="bg-white p-4 rounded-sm shadow-nonee border-stone-200 shadow pb-3 pt-1.5 border-[3px]">
+                          <div className="text-center">
+                            <Textarea
+                              id="custom-instruction"
+                              value={customInstructionText}
+                              onChange={handleCustomInstructionChange}
+                              placeholder="Enter an instruction..."
+                              className="mt-2 text-sm font-serif font-black text-indigo-400 placeholder-indigo-400 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                    <RecorderSection
+                      className="hidden lg:block"
+                      inputId="recording-label-desktop"
+                      recordingLabel={recordingLabel}
+                      onRecordingLabelChange={handleRecordingLabelChange}
+                      isRecording={isRecording}
+                      startRecording={startRecording}
+                      stopRecording={stopRecording}
+                      readyToAddToTimelineRecording={readyToAddToTimelineRecording}
+                      timelineEvents={timelineEvents}
+                      addEventToTimeline={addEventToTimeline}
+                      setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
+                      setRecordedBlobs={setRecordedBlobs}
+                      setRecordingLabel={setRecordingLabel}
+                      recordingPreviewRef={recordingPreviewRef}
+                    />
+                  </div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                      <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-center">
+                        <h3 className="text-white font-black text-base">Sound Cues</h3>
+                      </div>
+                      <div className="p-6 flex flex-col space-y-4 pt-[5px]">
+                        <div className="flex-1 h-auto">
+                          <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="musical-notes">
+                              <AccordionTrigger className="text-gray-600 hover:no-underline py-3 font-serif font-black">
+                                <div className="flex items-center justify-between w-full">
+                                  <span>Notes</span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-gray-500">Multi-Note</span>
-                                  <button
-                                    onClick={() => {
-                                      setMultiNoteMode(!multiNoteMode)
-                                      setSelectedNotes([])
-                                    }}
-                                    className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
-                                      multiNoteMode ? "bg-gray-500" : "bg-gray-200"
-                                    }`}
-                                  >
-                                    <span
-                                      className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                                        multiNoteMode ? "translate-x-[1.125rem]" : "translate-x-0.5"
+                              </AccordionTrigger>
+                              <div className="px-4 pb-2 border-b-0">
+                                <div className="flex items-center gap-4">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500">Type</span>
+                                    <select
+                                      value={noteType}
+                                      onChange={(e) => setNoteType(e.target.value as "piano" | "synth" | "harp")}
+                                      className="text-xs bg-white border border-gray-300 rounded px-2 py-1"
+                                    >
+                                      <option value="piano">Piano</option>
+                                      <option value="synth">Synth</option>
+                                      <option value="harp">Harp</option>
+                                    </select>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500">Multi-Note</span>
+                                    <button
+                                      onClick={() => {
+                                        setMultiNoteMode(!multiNoteMode)
+                                        setSelectedNotes([])
+                                      }}
+                                      className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
+                                        multiNoteMode ? "bg-gray-500" : "bg-gray-200"
                                       }`}
-                                    />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                            <AccordionContent className="pb-4">
-                              {multiNoteMode && (
-                                <div className="p-3 bg-gray-50 rounded-sm mb-1.5 shadow-inner py-3 px-3">
-                                  <div className="flex items-center justify-between">
-                                    <div className="text-gray-500 text-sm">
-                                      {selectedNotes.length > 0 ? selectedNotes.join(", ") : "None"}
-                                    </div>
-                                    {selectedNotes.length > 1 && (
-                                      <Button
-                                        size="sm"
-                                        onClick={() => {
-                                          console.log("[v0] Chord button clicked, selectedNotes:", selectedNotes)
-                                          console.log("[v0] multiNoteMode:", multiNoteMode)
-                                          playChordPreview()
-                                        }}
-                                        className="bg-gradient-to-r from-gray-600 to-gray-500 text-white font-serif font-black text-xs rounded-sm shadow-md"
-                                      >
-                                        Play Chord
-                                      </Button>
-                                    )}
+                                    >
+                                      <span
+                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                                          multiNoteMode ? "translate-x-[1.125rem]" : "translate-x-0.5"
+                                        }`}
+                                      />
+                                    </button>
                                   </div>
                                 </div>
-                              )}
-                              <Accordion type="single" collapsible className="w-full">
-                                {Object.entries(
-                                  Object.entries(MUSICAL_NOTES).reduce(
-                                    (acc, [_, notes]) => {
-                                      notes.forEach((note) => {
-                                        const octave = `Octave ${note.octave}`
-                                        if (!acc[octave]) acc[octave] = []
-                                        acc[octave].push(note)
-                                      })
-                                      return acc
-                                    },
-                                    {} as Record<string, any[]>,
-                                  ),
-                                ).map(([octave, notes]) => (
-                                  <AccordionItem value={octave} key={octave} className="border-b border-gray-100 ">
-                                    <AccordionTrigger className="text-gray-500 hover:no-underline py-3 font-serif font-black">
-                                      {octave}
-                                    </AccordionTrigger>
-                                    <AccordionContent className="pb-4">
-                                      <div className="space-y-2 text-gray-600">
-                                        {notes.map((note) => {
-                                          const noteString = `${note.note}${note.octave}`
-                                          const isSelected = multiNoteMode && selectedNotes.includes(noteString)
-                                          const isSingleSelected = !multiNoteMode && selectedSoundCue?.id === note.id
+                              </div>
+                              <AccordionContent className="pb-4">
+                                {multiNoteMode && (
+                                  <div className="p-3 bg-gray-50 rounded-sm mb-1.5 shadow-inner py-3 px-3">
+                                    <div className="flex items-center justify-between">
+                                      <div className="text-gray-500 text-sm">
+                                        {selectedNotes.length > 0 ? selectedNotes.join(", ") : "None"}
+                                      </div>
+                                      {selectedNotes.length > 1 && (
+                                        <Button
+                                          size="sm"
+                                          onClick={() => {
+                                            console.log("[v0] Chord button clicked, selectedNotes:", selectedNotes)
+                                            console.log("[v0] multiNoteMode:", multiNoteMode)
+                                            playChordPreview()
+                                          }}
+                                          className="bg-gradient-to-r from-gray-600 to-gray-500 text-white font-serif font-black text-xs rounded-sm shadow-md"
+                                        >
+                                          Play Chord
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                                <Accordion type="single" collapsible className="w-full">
+                                  {Object.entries(
+                                    Object.entries(MUSICAL_NOTES).reduce(
+                                      (acc, [_, notes]) => {
+                                        notes.forEach((note) => {
+                                          const octave = `Octave ${note.octave}`
+                                          if (!acc[octave]) acc[octave] = []
+                                          acc[octave].push(note)
+                                        })
+                                        return acc
+                                      },
+                                      {} as Record<string, any[]>,
+                                    ),
+                                  ).map(([octave, notes]) => (
+                                    <AccordionItem value={octave} key={octave} className="border-b border-gray-100 ">
+                                      <AccordionTrigger className="text-gray-500 hover:no-underline py-3 font-serif font-black">
+                                        {octave}
+                                      </AccordionTrigger>
+                                      <AccordionContent className="pb-4">
+                                        <div className="space-y-2 text-gray-600">
+                                          {notes.map((note) => {
+                                            const noteString = `${note.note}${note.octave}`
+                                            const isSelected = multiNoteMode && selectedNotes.includes(noteString)
+                                            const isSingleSelected = !multiNoteMode && selectedSoundCue?.id === note.id
 
-                                          return (
-                                            <div
-                                              key={note.id}
-                                              className="flex items-center gap-2 font-black font-serif"
-                                            >
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className={`flex-1 justify-start rounded-[10px] font-black font-serif text-gray-600 ${
-                                                  isSelected
-                                                    ? "bg-white shadow-md border-[3px] border-gray-500 "
-                                                    : isSingleSelected
-                                                      ? "bg-white shadow-md text-gray-600 border-gray-500 border-[3px]"
-                                                      : "hover:bg-white "
-                                                }`}
-                                                onClick={() => handleNoteSelection(note)}
+                                            return (
+                                              <div
+                                                key={note.id}
+                                                className="flex items-center gap-2 font-black font-serif"
                                               >
-                                                {note.name}
-                                              </Button>
-                                              {!multiNoteMode && (
                                                 <Button
                                                   variant="ghost"
                                                   size="sm"
-                                                  onClick={async () =>
-                                                    await playSingleNote(note.note, note.octave, noteType)
-                                                  }
-                                                  className="hover:bg-logo-emerald-50 "
-                                                  title={`Preview ${note.name}`}
+                                                  className={`flex-1 justify-start rounded-[10px] font-black font-serif text-gray-600 ${
+                                                    isSelected
+                                                      ? "bg-white shadow-md border-[3px] border-gray-500 "
+                                                      : isSingleSelected
+                                                        ? "bg-white shadow-md text-gray-600 border-gray-500 border-[3px]"
+                                                        : "hover:bg-white "
+                                                  }`}
+                                                  onClick={() => handleNoteSelection(note)}
                                                 >
-                                                  <Play className="h-4 w-4" />
+                                                  {note.name}
                                                 </Button>
-                                              )}
-                                            </div>
-                                          )
-                                        })}
-                                      </div>
-                                    </AccordionContent>
-                                  </AccordionItem>
-                                ))}
-                              </Accordion>
-                            </AccordionContent>
-                          </AccordionItem>
-                          <AccordionItem value="miscellaneous">
-                            <AccordionTrigger className="text-gray-600 hover:no-underline py-3 font-serif font-black">
-                              Miscellaneous
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-4">
-                              <div className="text-center py-8 text-gray-500 ">
-                                <div className="mb-2 text-lg font-black">Coming Soon!</div>
-                                <div className="text-sm">
-                                  Additional sound cues are being developed and will be available in a future update.
+                                                {!multiNoteMode && (
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={async () =>
+                                                      await playSingleNote(note.note, note.octave, noteType)
+                                                    }
+                                                    className="hover:bg-logo-emerald-50 "
+                                                    title={`Preview ${note.name}`}
+                                                  >
+                                                    <Play className="h-4 w-4" />
+                                                  </Button>
+                                                )}
+                                              </div>
+                                            )
+                                          })}
+                                        </div>
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  ))}
+                                </Accordion>
+                              </AccordionContent>
+                            </AccordionItem>
+                            <AccordionItem value="miscellaneous">
+                              <AccordionTrigger className="text-gray-600 hover:no-underline py-3 font-serif font-black">
+                                Miscellaneous
+                              </AccordionTrigger>
+                              <AccordionContent className="pb-4">
+                                <div className="text-center py-8 text-gray-500 ">
+                                  <div className="mb-2 text-lg font-black">Coming Soon!</div>
+                                  <div className="text-sm">
+                                    Additional sound cues are being developed and will be available in a future update.
+                                  </div>
                                 </div>
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        </Accordion>
+                              </AccordionContent>
+                            </AccordionItem>
+                          </Accordion>
+                        </div>
+                        <div className="h-0"></div>
+                        <Button
+                          className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-[11px] hover:shadow-none font-serif font-black mt-4"
+                          onClick={handleAddInstructionSoundEvent}
+                          disabled={!customInstructionText.trim() || (!selectedSoundCue && selectedNotes.length === 0)}
+                        >
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          <span className="font-black font-serif">Add to Timeline</span>
+                        </Button>
                       </div>
-                      <div className="h-0"></div>
-                      <Button
-                        className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-[11px] hover:shadow-none font-serif font-black mt-4"
-                        onClick={handleAddInstructionSoundEvent}
-                        disabled={!customInstructionText.trim() || (!selectedSoundCue && selectedNotes.length === 0)}
-                      >
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        <span className="font-black font-serif">Add to Timeline</span>
-                      </Button>
+                    </Card>
+                  </motion.div>
+                </motion.div>
+                <RecorderSection
+                  className="lg:hidden"
+                  inputId="recording-label-mobile"
+                  recordingLabel={recordingLabel}
+                  onRecordingLabelChange={handleRecordingLabelChange}
+                  isRecording={isRecording}
+                  startRecording={startRecording}
+                  stopRecording={stopRecording}
+                  readyToAddToTimelineRecording={readyToAddToTimelineRecording}
+                  timelineEvents={timelineEvents}
+                  addEventToTimeline={addEventToTimeline}
+                  setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
+                  setRecordedBlobs={setRecordedBlobs}
+                  setRecordingLabel={setRecordingLabel}
+                  recordingPreviewRef={recordingPreviewRef}
+                />
+
+                {/* Timeline Editor for encoder */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+                  <Card ref={timelineEditorRef} className="overflow-hidden border-none shadow-lg bg-white ">
+                    <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 py-3 flex items-center justify-between gap-3 pr-3">
+                      <h3 className="text-white flex items-center font-black text-base">
+                        <CircleDotDashed className="h-5 w-5 mr-2" />
+                        Timeline Editor
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <input
+                          ref={timelineUploadInputRef}
+                          type="file"
+                          accept="audio/*"
+                          className="hidden"
+                          onChange={handleTimelineUploadChange}
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={handleTimelineUploadClick}
+                          className="bg-white/10 rounded-[8px] text-white font-serif font-black text-xs hover:bg-white/20 "
+                        >
+                          <Upload className="h-4 w-4 mr-1" />
+                          Upload
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="p-6 px-7">
+                      <VisualTimeline
+                        events={timelineEvents}
+                        totalDuration={encoderTotalDuration}
+                        onUpdateEvent={updateEventStartTime}
+                        onRemoveEvent={removeTimelineEvent}
+                        onDuplicateEvent={handleDuplicateEvent}
+                        selectedInstrument={noteType}
+                        playSingleNote={timelinePlaySingleNote}
+                        playChordPreview={timelinePlayChordPreview}
+                      />
                     </div>
                   </Card>
                 </motion.div>
-              </motion.div>
-              <RecorderSection
-                className="lg:hidden"
-                inputId="recording-label-mobile"
-                recordingLabel={recordingLabel}
-                onRecordingLabelChange={handleRecordingLabelChange}
-                isRecording={isRecording}
-                startRecording={startRecording}
-                stopRecording={stopRecording}
-                readyToAddToTimelineRecording={readyToAddToTimelineRecording}
-                timelineEvents={timelineEvents}
-                addEventToTimeline={addEventToTimeline}
-                setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
-                setRecordedBlobs={setRecordedBlobs}
-                setRecordingLabel={setRecordingLabel}
-                recordingPreviewRef={recordingPreviewRef}
-              />
 
-              {/* Timeline Editor for encoder */}
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                <Card ref={timelineEditorRef} className="overflow-hidden border-none shadow-lg bg-white ">
-                  <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 py-3 flex items-center justify-between gap-3 pr-3">
-                    <h3 className="text-white flex items-center font-black text-base">
-                      <CircleDotDashed className="h-5 w-5 mr-2" />
-                      Timeline Editor
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <input
-                        ref={timelineUploadInputRef}
-                        type="file"
-                        accept="audio/*"
-                        className="hidden"
-                        onChange={handleTimelineUploadChange}
-                      />
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={handleTimelineUploadClick}
-                        className="bg-white/10 rounded-[8px] text-white font-serif font-black text-xs hover:bg-white/20 "
-                      >
-                        <Upload className="h-4 w-4 mr-1" />
-                        Upload
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="p-6 px-7">
-                    <VisualTimeline
-                      events={timelineEvents}
-                      totalDuration={encoderTotalDuration}
-                      onUpdateEvent={updateEventStartTime}
-                      onRemoveEvent={removeTimelineEvent}
-                      onDuplicateEvent={handleDuplicateEvent}
-                      selectedInstrument={noteType}
-                      playSingleNote={timelinePlaySingleNote}
-                      playChordPreview={timelinePlayChordPreview}
-                    />
-                  </div>
-                </Card>
-              </motion.div>
-
-              {/* Generate Audio Button */}
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-                <Button
-                  onClick={handleGenerateAudio}
-                  disabled={isGeneratingAudio || !processedUrl}
-                  className={cn(
-                    "w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
-                    "shadow-lg hover:shadow-xl active:shadow-none",
-                    "text-white ",
-                    "disabled:cursor-not-allowed hover:opacity-100 disabled:opacity-100",
-                    "relative overflow-hidden",
-                  )}
-                  style={
-                    {
-                      backgroundImage: `
+                {/* Generate Audio Button */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+                  <Button
+                    onClick={handleExportAudio}
+                    disabled={isGeneratingAudio || timelineEvents.length === 0}
+                    className={cn(
+                      "w-full py-7 text-base font-semibold tracking-wider rounded-sm transition-all duration-500",
+                      "shadow-lg hover:shadow-xl active:shadow-none",
+                      "text-white ",
+                      "disabled:cursor-not-allowed hover:opacity-100 disabled:opacity-100",
+                      "relative overflow-hidden",
+                    )}
+                    style={
+                      {
+                        backgroundImage: `
                         radial-gradient(circle at 8% 14%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
                         radial-gradient(circle at 15% 8%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
                         radial-gradient(circle at 4% 22%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
@@ -4554,20 +4551,82 @@ export default function Home() {
                         radial-gradient(circle at 65% 65%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
                         linear-gradient(to right, #4b5563, #6b7280)
                       `,
-                      animation: isGeneratingAudio ? "stellar-stars-twinkle 2s ease-in-out infinite" : "none",
-                    } as React.CSSProperties
-                  }
-                >
-                  <Wand2 className="mr-2 h-4 w-4 text-white" />
-                  <span className="font-black text-base tracking-tight text-white">
-                    {isGeneratingAudio ? "Generating..." : "Generate Audio"}
-                  </span>
-                </Button>
+                      } as React.CSSProperties
+                    }
+                  >
+                    <Wand2 className="mr-2 h-4 w-4 text-white" />
+                    <span className="font-black text-base tracking-tight text-white">
+                      {isGeneratingAudio ? "Generating..." : "Generate Audio"}
+                    </span>
+                  </Button>
+                </motion.div>
+
+                {generatedAudioUrl && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
+                  >
+                    <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
+                      <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-white font-black">Generated Audio</h3>
+                          <AudioInfoMenu
+                            items={[
+                              {
+                                label: "Duration",
+                                value: formatTime(encoderTotalDuration),
+                              },
+                              {
+                                label: "Instructions",
+                                value: timelineEvents.length,
+                              },
+                              {
+                                label: "File Size",
+                                value: formatFileSize(generatedAudioFileSize || 0),
+                              },
+                              ...(generatedAudioMetadata
+                                ? [
+                                    {
+                                      label: "Output Format",
+                                      value: `Mono • ${generatedAudioMetadata.sampleRate.toLocaleString()} Hz • ${generatedAudioMetadata.bitDepth.toLocaleString()}-bit`,
+                                    },
+                                  ]
+                                : []),
+                            ]}
+                          />
+                        </div>
+                      </div>
+                      <div className="p-6 px-3.5 py-4 space-y-4">
+                        <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
+                          <audio ref={encoderAudioRef} controls className="w-full" src={generatedAudioUrl}></audio>
+                        </div>
+                        <SaveMeditationDialog
+                          audioUrl={generatedAudioUrl}
+                          originalFileName={meditationTitle || "meditation"}
+                          duration={encoderTotalDuration}
+                          source="encoder"
+                          metadata={{
+                            instructionCount: timelineEvents.length,
+                            meditationTitle,
+                            wav: generatedAudioMetadata ? { ...generatedAudioMetadata } : undefined,
+                            timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
+                          }}
+                        >
+                          <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-gray-600 font-serif font-black mt-3">
+                            <BookmarkPlus className="w-4 h-4 mr-2" />
+                            Save to Library
+                          </Button>
+                        </SaveMeditationDialog>
+                      </div>
+                    </Card>
+                  </motion.div>
+                )}
               </motion.div>
-            </motion.div>
-          )}
+            )}
+          </div>
         </div>
       </motion.div>
-  </div>
+    </div>
   )
 }
