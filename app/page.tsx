@@ -3971,13 +3971,13 @@ export default function Home() {
                     className={cn(
                       "w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
                       "shadow-lg hover:shadow-xl active:shadow-none",
-                      "text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-300",
-                      "!opacity-100 disabled:cursor-not-allowed",
+                      "text-white ",
+                      "disabled:cursor-not-allowed disabled:opacity-100",
                       "relative overflow-hidden",
+                      "bg-gradient-to-br from-gray-600 to-gray-500",
                     )}
                     style={
                       {
-                        background: "linear-gradient(135deg, #4b5563 0%, #6b7280 100%)",
                         backgroundImage: `
                         radial-gradient(circle at 8% 14%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
                         radial-gradient(circle at 15% 8%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
@@ -4488,12 +4488,12 @@ export default function Home() {
                       "w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
                       "shadow-lg hover:shadow-xl active:shadow-none",
                       "text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-logo-blue-300",
-                      "!opacity-100 disabled:cursor-not-allowed",
+                      "disabled:cursor-not-allowed disabled:opacity-100",
                       "relative overflow-hidden",
+                      "bg-gradient-to-br from-gray-600 to-gray-500",
                     )}
                     style={
                       {
-                        background: "linear-gradient(135deg, #4b5563 0%, #6b7280 100%)",
                         backgroundImage: `
                         radial-gradient(circle at 8% 14%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
                         radial-gradient(circle at 15% 8%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
@@ -4561,10 +4561,8 @@ export default function Home() {
                       } as React.CSSProperties
                     }
                   >
-                    <Sparkles className="mr-2 h-4 w-4 text-white" />
-                    <span className="font-black text-base tracking-tight text-white">
-                      {isGeneratingAudio ? "Generating..." : "Generate Audio"}
-                    </span>
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    {isGeneratingAudio ? "Generating..." : "Generate Audio"}
                   </Button>
                 </motion.div>
 
