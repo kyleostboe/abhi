@@ -4130,7 +4130,7 @@ export default function Home() {
                             value={meditationTitle}
                             onChange={handleMeditationTitleChange}
                             placeholder="My Custom Meditation"
-                            className="flex w-full file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 text-center border-[3px] shadow-md h-9"
+                            className="flex file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 text-center border-[3px] shadow-md h-9 w-60"
                           />
                         </div>
                         <div className="text-center">
@@ -4148,7 +4148,7 @@ export default function Home() {
                                 step={1}
                                 value={encoderDurationParts.hours}
                                 onChange={(event) => handleDurationPartChange("hours", Number(event.target.value))}
-                                className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
+                                className="text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500 w-9"
                                 aria-label="Hours"
                               />
                             </div>
@@ -4161,7 +4161,7 @@ export default function Home() {
                                 step={1}
                                 value={encoderDurationParts.minutes}
                                 onChange={(event) => handleDurationPartChange("minutes", Number(event.target.value))}
-                                className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
+                                className="text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500 border-2 w-9"
                                 aria-label="Minutes"
                               />
                             </div>
@@ -4173,7 +4173,7 @@ export default function Home() {
                                 step={1}
                                 value={encoderDurationParts.seconds}
                                 onChange={(event) => handleDurationPartChange("seconds", Number(event.target.value))}
-                                className="w-14 text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500"
+                                className="text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500 w-9"
                                 aria-label="Seconds"
                               />
                             </div>
