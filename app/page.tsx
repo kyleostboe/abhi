@@ -3683,30 +3683,26 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
-                      <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-gray-50 to-muted ">
-                        <div className="p-6 py-6 px-11 pb-6">
-                          <div className="bg-white rounded-sm p-3 shadow-md mb-3.5 px-0">
-                            <audio controls className="w-full" src={originalUrl}></audio>
-                          </div>
-                          <div>
-                            <SaveMeditationDialog
-                              audioUrl={originalUrl}
-                              originalFileName={file?.name || "original-audio"}
-                              duration={originalBuffer?.duration || 0}
-                              source="adjuster"
-                              metadata={{}}
-                            >
-                              <Button
-                                className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black"
-                                disabled={!originalBuffer}
-                              >
-                                <BookmarkPlus className="w-4 h-4 mr-2" />
-                                Save to Library
-                              </Button>
-                            </SaveMeditationDialog>
-                          </div>
-                        </div>
-                      </Card>
+                      <div className="bg-white rounded-sm p-3 shadow-md mb-3.5 px-0">
+                        <audio controls className="w-full" src={originalUrl}></audio>
+                      </div>
+                      <div>
+                        <SaveMeditationDialog
+                          audioUrl={originalUrl}
+                          originalFileName={file?.name || "original-audio"}
+                          duration={originalBuffer?.duration || 0}
+                          source="adjuster"
+                          metadata={{}}
+                        >
+                          <Button
+                            className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black"
+                            disabled={!originalBuffer}
+                          >
+                            <BookmarkPlus className="w-4 h-4 mr-2" />
+                            Save to Library
+                          </Button>
+                        </SaveMeditationDialog>
+                      </div>
                     </motion.div>
                   )}
 
