@@ -951,7 +951,7 @@ export default function Home() {
         soundCueId: !isRecording ? event.soundCueId : undefined,
         soundId: isRecording ? (event.recordedAudioUrl ?? event.id) : (event.soundCueId ?? event.id),
         soundName: event.soundCueName,
-        soundSrc: event.soundCueSrc,
+        soundCueSrc: event.soundCueSrc,
         instrument: event.instrument,
         keepOriginal: isRecording,
         originalVolume: isRecording ? 100 : 0,
@@ -4093,7 +4093,7 @@ export default function Home() {
                           }}
                         >
                           <Button className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black">
-                            <BookmarkPlus className="w-4 h-4 mr-2" />
+                            <BookmarkPlus className="h-4 w-4 mr-2" />
                             Save to Library
                           </Button>
                         </SaveMeditationDialog>
@@ -4119,7 +4119,7 @@ export default function Home() {
                 >
                   <Card className="overflow-visible bg-white max-w-2xl mx-auto rounded-2xl shadow-none">
                     <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none">
-                      <div className="grid md:grid-cols-2 text-gray-600 pb-2 gap-4 justify-items-center">
+                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto] text-gray-600 pb-2 gap-4 justify-center">
                         <div className="text-center">
                           <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
                             Title
@@ -4600,7 +4600,7 @@ export default function Home() {
                           }}
                         >
                           <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-gray-600 font-serif font-black mt-3">
-                            <BookmarkPlus className="w-4 h-4 mr-2" />
+                            <BookmarkPlus className="h-4 w-4 mr-2" />
                             Save to Library
                           </Button>
                         </SaveMeditationDialog>
