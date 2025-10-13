@@ -1982,7 +1982,7 @@ export default function Home() {
             (entry.soundCueId && cue.id === entry.soundCueId) ||
             (entry.soundId && cue.id === entry.soundId) ||
             (entry.soundName && cue.name === entry.soundName) ||
-            (entry.soundSrc && cue.src === entry.soundSrc),
+            (entry.soundCueSrc && cue.src === entry.soundCueSrc),
         )
 
         const soundCueName = entry.soundName?.trim() || matchingCue?.name || entry.soundId || `Sound Cue ${index + 1}`
