@@ -4139,7 +4139,7 @@ export default function Home() {
                           </Label>
                           <div
                             id="encoder-duration"
-                            className="flex w-full items-center justify-center gap-3 mt-1 border-gray-500 rounded-[10px] bg-white px-4 py-[9px] pr-1 border-[3px] shadow-md h-9"
+                            className="flex w-full items-center justify-center gap-3 mt-1 border-gray-500 rounded-[10px] bg-white px-4 py-[9px] border-[3px] shadow-md h-9 pr-1"
                           >
                             <div className="flex items-center">
                               <input
