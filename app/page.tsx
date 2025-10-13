@@ -3684,9 +3684,6 @@ export default function Home() {
                       transition={{ delay: 0.2 }}
                     >
                       <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-gray-50 to-muted ">
-                        <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-cyan-500">
-                          <h3 className="text-white font-black text-base">Original Audio</h3>
-                        </div>
                         <div className="p-6 py-6 px-11 pb-6">
                           <div className="bg-white rounded-sm p-3 shadow-md mb-3.5 px-0">
                             <audio controls className="w-full" src={originalUrl}></audio>
