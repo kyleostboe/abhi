@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useMemo } from "react"
+import { useEffect, useRef, useState, useMemo, useCallback } from "react"
 import { createPortal } from "react-dom"
 import type { MouseEvent } from "react"
 import { Navigation } from "@/components/navigation"
@@ -13,6 +13,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
+import { getAudioContext } from "@/lib/audio-utils"
+import { runAdjusterWorkflow } from "@/lib/adjuster-workflow"
 import { cn } from "@/lib/utils"
 import {
   Trash2,
@@ -36,6 +38,7 @@ import {
   Plus,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useMobile } from "@/hooks/use-mobile"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
 
@@ -56,6 +59,8 @@ type DurationMode = {
   source: "original" | "quick-adjust" | "saved"
   persisted: boolean
   presetId?: string | null
+  audioUrl: string
+  sourceAudioUrl?: string | null
 }
 
 type StoredDurationMode = {
@@ -65,6 +70,8 @@ type StoredDurationMode = {
   playbackRate: number
   timeline: LibraryTimelineEntry[]
   presetId?: string | null
+  audioUrl?: string | null
+  sourceAudioUrl?: string | null
 }
 
 type StoredMeditationDurations = {
@@ -187,6 +194,8 @@ const cloneTimeline = (events: LibraryTimelineEntry[] | undefined) =>
 const buildDurationModeFromStored = (
   stored: StoredDurationMode,
   source: DurationMode["source"],
+  fallbackAudioUrl: string,
+  fallbackSourceAudioUrl?: string | null,
 ): DurationMode => ({
   id: stored.id,
   label: stored.label,
@@ -196,6 +205,8 @@ const buildDurationModeFromStored = (
   source,
   persisted: true,
   presetId: stored.presetId,
+  audioUrl: stored.audioUrl ?? fallbackAudioUrl,
+  sourceAudioUrl: stored.sourceAudioUrl ?? fallbackSourceAudioUrl ?? null,
 })
 
 const sortDurationModes = (modes: DurationMode[]) =>
@@ -236,6 +247,8 @@ export default function LibraryPage() {
   const [isEditingPresets, setIsEditingPresets] = useState(false)
   const [newPresetValue, setNewPresetValue] = useState("")
   const [isQuickAdjustProcessing, setIsQuickAdjustProcessing] = useState(false)
+  const [quickAdjustProgress, setQuickAdjustProgress] = useState(0)
+  const [quickAdjustStep, setQuickAdjustStep] = useState("")
   const [pendingAdjustmentId, setPendingAdjustmentId] = useState<string | null>(null)
   const [savedDurationsMap, setSavedDurationsMap] = useState<Record<string, StoredMeditationDurations>>({})
   const [lastPlayedDurationMap, setLastPlayedDurationMap] = useState<
@@ -252,6 +265,7 @@ export default function LibraryPage() {
   const durationsPersistReadyRef = useRef(false)
   const { toast } = useToast()
   const router = useRouter()
+  const isMobileDevice = useMobile()
 
   const [playlistMeditationsMap, setPlaylistMeditationsMap] = useState<Record<string, SavedMeditation[]>>({})
 
@@ -262,6 +276,8 @@ export default function LibraryPage() {
     playbackRate: mode.playbackRate,
     timeline: cloneTimeline(mode.timeline),
     presetId: mode.presetId ?? null,
+    audioUrl: mode.audioUrl,
+    sourceAudioUrl: mode.sourceAudioUrl ?? null,
   })
 
   const updateSavedDurations = (
@@ -582,53 +598,74 @@ export default function LibraryPage() {
     })
   }
 
-  const applyDurationMode = (mode: DurationMode) => {
-    if (!baseMeditation) return
+  const applyDurationMode = useCallback(
+    (mode: DurationMode, baseOverride?: SavedMeditation) => {
+      const base = baseOverride ?? baseMeditation
+      if (!base) return
 
-    const audio = audioRef.current
-    if (audio) {
-      audio.pause()
-    }
-    if (timelineAudioRef.current) {
-      timelineAudioRef.current.pause()
-      timelineAudioRef.current = null
-    }
-    setPlayingTimelineEventId(null)
-
-    let meditationToUse: SavedMeditation
-    if (mode.id === "original") {
-      meditationToUse = { ...baseMeditation }
-    } else {
-      meditationToUse = {
-        ...baseMeditation,
-        duration: mode.seconds,
-        metadata: {
-          ...baseMeditation.metadata,
-          targetDuration: mode.seconds,
-          timeline: cloneTimeline(mode.timeline),
-          quickAdjust: {
-            ...(baseMeditation.metadata.quickAdjust ?? {}),
-            lastPresetId: mode.presetId ?? null,
-            lastDurationId: mode.id,
-          },
-        },
+      const audio = audioRef.current
+      if (audio) {
+        audio.pause()
       }
-    }
+      if (timelineAudioRef.current) {
+        timelineAudioRef.current.pause()
+        timelineAudioRef.current = null
+      }
+      setPlayingTimelineEventId(null)
 
-    setSelectedMeditation(meditationToUse)
-    setActiveDurationModeId(mode.id)
-    setPlayerDuration(mode.seconds)
-    setPlayerTime(0)
-    setIsAudioPlaying(false)
-    setCurrentPlaybackRate(mode.playbackRate)
+      let meditationToUse: SavedMeditation
+      if (mode.id === "original") {
+        meditationToUse = { ...base }
+      } else {
+        const processedAudioUrl = mode.audioUrl || base.processedAudioUrl
+        const sourceAudioUrl = mode.sourceAudioUrl ?? base.sourceAudioUrl
 
-    if (audio) {
-      audio.playbackRate = mode.playbackRate
-      audio.currentTime = 0
-    }
+        meditationToUse = {
+          ...base,
+          duration: mode.seconds,
+          processedAudioUrl,
+          sourceAudioUrl,
+          metadata: {
+            ...base.metadata,
+            targetDuration: mode.seconds,
+            timeline: cloneTimeline(mode.timeline),
+            quickAdjust: {
+              ...(base.metadata.quickAdjust ?? {}),
+              lastPresetId: mode.presetId ?? null,
+              lastDurationId: mode.id,
+            },
+          },
+        }
+      }
 
-    recordLastPlayedDuration(baseMeditation, mode)
-  }
+      setSelectedMeditation(meditationToUse)
+      setActiveDurationModeId(mode.id)
+      setPlayerDuration(mode.seconds)
+      setPlayerTime(0)
+      setIsAudioPlaying(false)
+      setCurrentPlaybackRate(mode.playbackRate)
+
+      if (audio) {
+        audio.playbackRate = mode.playbackRate
+        audio.currentTime = 0
+      }
+
+      recordLastPlayedDuration(base, mode)
+    },
+    [
+      baseMeditation,
+      audioRef,
+      timelineAudioRef,
+      setPlayingTimelineEventId,
+      setSelectedMeditation,
+      setActiveDurationModeId,
+      setPlayerDuration,
+      setPlayerTime,
+      setIsAudioPlaying,
+      setCurrentPlaybackRate,
+      recordLastPlayedDuration,
+    ],
+  )
 
   const applyDurationModeById = (modeId: string) => {
     const mode = currentDurationModes.find((item) => item.id === modeId)
@@ -642,7 +679,72 @@ export default function LibraryPage() {
     applyDurationModeById(modeId)
   }
 
-  const handleQuickAdjust = () => {
+  const deriveAdjusterSettings = (meditation: SavedMeditation | null) => {
+    const defaults = {
+      silenceThreshold: 0.01,
+      minSilenceDuration: 3,
+      minSpacingDuration: 1.5,
+      preserveNaturalPacing: true,
+      compatibilityMode: "high",
+    }
+
+    if (!meditation) {
+      return defaults
+    }
+
+    const metadata = meditation.metadata ?? {}
+    const adjusterMetadata = (metadata as Record<string, unknown>).adjusterSettings ??
+      (metadata as Record<string, unknown>).adjuster ?? {}
+
+    const pickNumber = (value: unknown, fallback: number, allowZero = false) => {
+      if (typeof value === "number" && Number.isFinite(value)) {
+        if (allowZero) {
+          return value
+        }
+        if (value > 0) {
+          return value
+        }
+      }
+      return fallback
+    }
+
+    const pickBoolean = (value: unknown, fallback: boolean) =>
+      typeof value === "boolean" ? value : fallback
+
+    const pickString = (value: unknown, fallback: string) =>
+      typeof value === "string" && value.trim().length > 0 ? value : fallback
+
+    return {
+      silenceThreshold: pickNumber(
+        (metadata as Record<string, unknown>).silenceThreshold ??
+          (adjusterMetadata as Record<string, unknown>).silenceThreshold,
+        defaults.silenceThreshold,
+      ),
+      minSilenceDuration: pickNumber(
+        (metadata as Record<string, unknown>).minSilenceDuration ??
+          (adjusterMetadata as Record<string, unknown>).minSilenceDuration,
+        defaults.minSilenceDuration,
+      ),
+      minSpacingDuration: pickNumber(
+        (metadata as Record<string, unknown>).minSpacingDuration ??
+          (adjusterMetadata as Record<string, unknown>).minSpacingDuration,
+        defaults.minSpacingDuration,
+        true,
+      ),
+      preserveNaturalPacing: pickBoolean(
+        (metadata as Record<string, unknown>).preserveNaturalPacing ??
+          (adjusterMetadata as Record<string, unknown>).preserveNaturalPacing,
+        defaults.preserveNaturalPacing,
+      ),
+      compatibilityMode: pickString(
+        (metadata as Record<string, unknown>).compatibilityMode ??
+          (adjusterMetadata as Record<string, unknown>).compatibilityMode,
+        defaults.compatibilityMode,
+      ),
+    }
+  }
+
+  const handleQuickAdjust = async () => {
     if (isQuickAdjustProcessing) return
     if (!selectedPresetId || !baseMeditation) {
       toast({
@@ -666,66 +768,212 @@ export default function LibraryPage() {
     if (audio) {
       audio.pause()
     }
+    if (timelineAudioRef.current) {
+      timelineAudioRef.current.pause()
+      timelineAudioRef.current = null
+    }
+    setPlayingTimelineEventId(null)
     setIsAudioPlaying(false)
     setIsQuickAdjustDialogOpen(false)
     setIsQuickAdjustProcessing(true)
+    setQuickAdjustStep("Preparing audio...")
+    setQuickAdjustProgress(0)
+    setPendingAdjustmentId(null)
 
     const baseDuration = baseMeditation.duration > 0 ? baseMeditation.duration : playerDuration
     const targetSeconds = Math.max(1, preset.seconds)
-    const rawPlaybackRate = baseDuration > 0 ? baseDuration / targetSeconds : 1
-    const playbackRate = Number.isFinite(rawPlaybackRate) && rawPlaybackRate > 0 ? rawPlaybackRate : 1
-    const scaledTimeline = scaleTimelineEvents(
-      baseMeditation.metadata?.timeline as LibraryTimelineEntry[] | undefined,
-      baseDuration,
-      targetSeconds,
-    )
 
-    const existingMode = currentDurationModes.find((mode) => Math.round(mode.seconds) === targetSeconds)
-    if (existingMode) {
+    const existingMode = currentDurationModes.find(
+      (mode) => mode.id !== "original" && (mode.presetId === preset.id || Math.round(mode.seconds) === targetSeconds),
+    )
+    if (existingMode && existingMode.persisted) {
       applyDurationMode(existingMode)
-      setPendingAdjustmentId(existingMode.persisted ? null : existingMode.id)
-      setIsQuickAdjustProcessing(false)
       toast({
-        title: "Quick adjust complete",
-        description: `Meditation duration set to ${formatDuration(targetSeconds)}.`,
+        title: "Quick adjust ready",
+        description: `Meditation duration set to ${formatDuration(Math.round(existingMode.seconds))}.`,
       })
+      setIsQuickAdjustProcessing(false)
+      setQuickAdjustStep("")
+      setQuickAdjustProgress(0)
       return
     }
 
-    const modeId = `quick-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-    const newMode: DurationMode = {
-      id: modeId,
-      label: preset.label,
-      seconds: targetSeconds,
-      playbackRate,
-      timeline: scaledTimeline,
-      source: "quick-adjust",
-      persisted: false,
-      presetId: preset.id,
+    const settings = deriveAdjusterSettings(baseMeditation)
+    const sourceUrl = baseMeditation.sourceAudioUrl || baseMeditation.processedAudioUrl
+
+    if (!sourceUrl) {
+      toast({
+        title: "Missing audio",
+        description: "We couldn't locate the source audio for this meditation.",
+        variant: "destructive",
+      })
+      setIsQuickAdjustProcessing(false)
+      setQuickAdjustStep("")
+      setQuickAdjustProgress(0)
+      return
     }
 
-    const existingPendingId = pendingAdjustmentId
-    setCurrentDurationModes((previous) => {
-      const filtered = previous.filter((mode) => {
-        if (mode.id === newMode.id) return false
-        if (existingPendingId && !mode.persisted && mode.id === existingPendingId) {
-          return false
+    let objectUrl: string | null = null
+    let memoryWarningShown = false
+
+    try {
+      setQuickAdjustStep("Loading audio...")
+      const response = await fetch(sourceUrl)
+      if (!response.ok) {
+        throw new Error("Unable to load the source audio for this meditation.")
+      }
+      const arrayBuffer = await response.arrayBuffer()
+
+      const audioContext = getAudioContext()
+      if (audioContext.state === "suspended") {
+        try {
+          await audioContext.resume()
+        } catch (resumeError) {
+          console.warn("[v0] Unable to resume audio context for quick adjust:", resumeError)
         }
-        return true
+      }
+
+      setQuickAdjustStep("Decoding audio...")
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0))
+
+      const result = await runAdjusterWorkflow({
+        audioContext,
+        buffer: audioBuffer,
+        settings: {
+          targetDurationSeconds: targetSeconds,
+          silenceThreshold: settings.silenceThreshold,
+          minSilenceDuration: settings.minSilenceDuration,
+          minSpacingDuration: settings.minSpacingDuration,
+          preserveNaturalPacing: settings.preserveNaturalPacing,
+          compatibilityMode: settings.compatibilityMode,
+        },
+        isMobileDevice,
+        callbacks: {
+          onProgress: (progress) =>
+            setQuickAdjustProgress(Math.max(0, Math.min(100, Math.round(progress)))),
+          onStep: (step) => setQuickAdjustStep(step),
+          onMemoryWarning: () => {
+            if (!memoryWarningShown) {
+              memoryWarningShown = true
+              toast({
+                title: "Processing may take longer",
+                description: "We're optimizing the adjustment for this device's memory limits.",
+              })
+            }
+          },
+        },
       })
-      return sortDurationModes([...filtered, newMode])
-    })
 
-    setPendingAdjustmentId(modeId)
+      const processedDurationSeconds = result.processedBuffer.duration
+      const playbackRate =
+        baseDuration > 0 ? Math.max(0.01, baseDuration / processedDurationSeconds) : 1
+      const scaledTimeline = scaleTimelineEvents(
+        baseMeditation.metadata?.timeline as LibraryTimelineEntry[] | undefined,
+        baseDuration,
+        processedDurationSeconds,
+      )
 
-    window.setTimeout(() => {
-      applyDurationMode(newMode)
-      setIsQuickAdjustProcessing(false)
+      const modeId = existingMode?.id ?? `quick-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+
+      const quickAdjustMetadata = {
+        ...(baseMeditation.metadata.quickAdjust ?? {}),
+        lastPresetId: preset.id,
+        lastDurationId: modeId,
+      }
+
+      setQuickAdjustStep("Saving to library...")
+      objectUrl = URL.createObjectURL(result.wavBlob)
+
+      const metadataForSave: SavedMeditation["metadata"] = {
+        ...baseMeditation.metadata,
+        targetDuration: processedDurationSeconds,
+        pausesAdjusted: result.pausesAdjusted,
+        wav: result.wavMetadata,
+        timeline: scaledTimeline,
+        adjusterSettings: {
+          silenceThreshold: settings.silenceThreshold,
+          minSilenceDuration: settings.minSilenceDuration,
+          minSpacingDuration: settings.minSpacingDuration,
+          preserveNaturalPacing: settings.preserveNaturalPacing,
+          compatibilityMode: settings.compatibilityMode,
+        },
+        quickAdjust: quickAdjustMetadata,
+      }
+
+      const savedMeditation = await MeditationLibrary.saveMeditation({
+        title: baseMeditation.title,
+        originalFileName: baseMeditation.originalFileName,
+        processedAudioUrl: objectUrl,
+        sourceAudioUrl: baseMeditation.sourceAudioUrl ?? objectUrl,
+        duration: Math.max(1, Math.round(processedDurationSeconds)),
+        source: baseMeditation.source,
+        metadata: metadataForSave,
+      })
+
+      const newMode: DurationMode = {
+        id: modeId,
+        label: preset.label,
+        seconds: processedDurationSeconds,
+        playbackRate,
+        timeline: scaledTimeline,
+        source: "saved",
+        persisted: true,
+        presetId: preset.id,
+        audioUrl: savedMeditation.processedAudioUrl,
+        sourceAudioUrl: savedMeditation.sourceAudioUrl ?? savedMeditation.processedAudioUrl,
+      }
+
+      const updatedBaseMeditation: SavedMeditation = {
+        ...baseMeditation,
+        metadata: {
+          ...baseMeditation.metadata,
+          quickAdjust: quickAdjustMetadata,
+        },
+      }
+
+      setBaseMeditation(updatedBaseMeditation)
+      setCurrentDurationModes((previous) => {
+        const filtered = previous.filter((mode) => mode.id !== newMode.id)
+        return sortDurationModes([...filtered, newMode])
+      })
+
+      updateSavedDurations(baseMeditation.id, (existing) => {
+        const baseStored: StoredMeditationDurations = existing
+          ? { ...existing, modes: Array.isArray(existing.modes) ? [...existing.modes] : [] }
+          : { modes: [] }
+        const storedMode = convertModeToStored(newMode)
+        const without = baseStored.modes.filter((mode) => mode.id !== storedMode.id)
+        return {
+          ...baseStored,
+          modes: [...without, storedMode],
+          lastPlayedId: newMode.id,
+          lastPlayedSeconds: newMode.seconds,
+          lastPlayedLabel: `${newMode.label} (${formatDuration(Math.round(newMode.seconds))})`,
+        }
+      })
+
+      applyDurationMode(newMode, updatedBaseMeditation)
+      setQuickAdjustProgress(100)
       toast({
         title: "Quick adjust complete",
-        description: `Meditation duration set to ${formatDuration(targetSeconds)}.`,
+        description: `Meditation duration set to ${formatDuration(Math.round(processedDurationSeconds))}.`,
       })
-    }, 450)
+    } catch (error) {
+      console.error("[v0] Quick adjust failed:", error)
+      toast({
+        title: "Quick adjust failed",
+        description: error instanceof Error ? error.message : "We couldn't adjust this meditation.",
+        variant: "destructive",
+      })
+    } finally {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl)
+      }
+      setPendingAdjustmentId(null)
+      setIsQuickAdjustProcessing(false)
+      setQuickAdjustStep("")
+      setQuickAdjustProgress(0)
+    }
   }
 
   const handleAddPreset = () => {
@@ -888,10 +1136,15 @@ export default function LibraryPage() {
       source: "original",
       persisted: true,
       presetId: null,
+      audioUrl: meditation.processedAudioUrl,
+      sourceAudioUrl: meditation.sourceAudioUrl ?? null,
     }
 
     const storedData = savedDurationsMap[meditation.id]
-    const storedModes = storedData?.modes?.map((mode) => buildDurationModeFromStored(mode, "saved")) ?? []
+    const storedModes =
+      storedData?.modes?.map((mode) =>
+        buildDurationModeFromStored(mode, "saved", meditation.processedAudioUrl, meditation.sourceAudioUrl ?? null),
+      ) ?? []
 
     const deduped = new Map<string, DurationMode>()
     ;[baseMode, ...storedModes].forEach((mode) => {
@@ -2299,7 +2552,18 @@ export default function LibraryPage() {
                     {isQuickAdjustProcessing && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white/85 backdrop-blur-sm text-gray-600">
                         <Loader2 className="h-6 w-6 animate-spin" />
-                        <span className="text-sm font-black">Adjusting...</span>
+                        <span className="text-sm font-black text-center px-4">
+                          {quickAdjustStep || "Adjusting..."}
+                        </span>
+                        <div className="w-40 h-2 rounded-full bg-gray-200 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 transition-all duration-150"
+                            style={{ width: `${Math.max(0, Math.min(100, quickAdjustProgress))}%` }}
+                          />
+                        </div>
+                        <span className="text-[11px] font-black text-gray-500">
+                          {Math.max(0, Math.min(100, Math.round(quickAdjustProgress)))}%
+                        </span>
                       </div>
                     )}
                   </Card>

@@ -16,6 +16,13 @@ export interface SavedMeditation {
     // For adjuster meditations
     targetDuration?: number
     pausesAdjusted?: number
+    adjusterSettings?: {
+      silenceThreshold?: number
+      minSilenceDuration?: number
+      minSpacingDuration?: number
+      preserveNaturalPacing?: boolean
+      compatibilityMode?: string
+    }
     // For encoder meditations
     instructionCount?: number
     soundCuesUsed?: string[]
