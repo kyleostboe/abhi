@@ -901,6 +901,7 @@ export default function Home() {
     contentDuration: number
     silenceRegions: number
   } | null>(null)
+  const [quickAdjustRange, setQuickAdjustRange] = useState<{ minSeconds: number } | null>(null)
   const [actualDuration, setActualDuration] = useState<number | null>(null)
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
   const [processedFileSize, setProcessedFileSize] = useState<number>(0)
@@ -913,6 +914,19 @@ export default function Home() {
   const timelineUploadInputRef = useRef<HTMLInputElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [processedMp3Blob, setProcessedMp3Blob] = useState<Blob | null>(null) // Renamed to processedMp3Blob for clarity, but will store WebM
+
+  const analysisLowerBoundSeconds = useMemo(() => {
+    if (!audioAnalysis) {
+      return null
+    }
+
+    const minSeconds = audioAnalysis.contentDuration + audioAnalysis.silenceRegions * minSpacingDuration
+    if (!Number.isFinite(minSeconds) || minSeconds <= 0) {
+      return null
+    }
+
+    return Math.max(1, Math.round(minSeconds))
+  }, [audioAnalysis, minSpacingDuration])
 
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
@@ -1756,6 +1770,7 @@ export default function Home() {
     setProcessingStep("Loading audio...")
     setGeneratedAudioMetadata(null)
     setProcessedMp3Blob(null)
+    setQuickAdjustRange(null)
 
     if (typeof window === "undefined") return
     window.sessionStorage.removeItem(ADJUSTER_SESSION_KEY)
@@ -2505,6 +2520,7 @@ export default function Home() {
     setProcessingProgress(0)
     setProcessingStep("Starting processing...")
     setProcessedAudioMetadata(null)
+    setQuickAdjustRange(null)
     setProcessedMp3Blob(null)
 
     if (currentAudioContext.state === "suspended") {
@@ -2562,6 +2578,11 @@ export default function Home() {
       setProcessedFileSize(result.wavBlob.size)
       setProcessedAudioMetadata(result.wavMetadata)
       setPausesAdjusted(result.pausesAdjusted)
+      const minimumDurationSeconds = Math.max(
+        1,
+        Math.round(result.audioContentDuration + result.silenceRegions.length * minSpacingDuration),
+      )
+      setQuickAdjustRange({ minSeconds: minimumDurationSeconds })
       setProcessingProgress(100)
       setStatus({ message: "Audio processing completed successfully!", type: "success" })
       setIsProcessingComplete(true)
@@ -3483,7 +3504,11 @@ export default function Home() {
                           originalFileName={file?.name || "original-audio"}
                           duration={originalBuffer?.duration || 0}
                           source="adjuster"
-                          metadata={{}}
+                          metadata={
+                            analysisLowerBoundSeconds
+                              ? { quickAdjust: { range: { minSeconds: analysisLowerBoundSeconds } } }
+                              : {}
+                          }
                         >
                           <Button
                             className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black"
@@ -3874,6 +3899,9 @@ export default function Home() {
                             pausesAdjusted,
                             wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
                             timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
+                            ...(quickAdjustRange
+                              ? { quickAdjust: { range: { minSeconds: quickAdjustRange.minSeconds } } }
+                              : {}),
                           }}
                         >
                           <Button className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black">

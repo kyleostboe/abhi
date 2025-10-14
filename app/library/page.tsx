@@ -191,23 +191,56 @@ const scaleTimelineEvents = (
 const cloneTimeline = (events: LibraryTimelineEntry[] | undefined) =>
   Array.isArray(events) ? events.map((event) => ({ ...event })) : []
 
+const normalizeDurationMode = (mode: DurationMode): DurationMode => {
+  let nextPlaybackRate = mode.playbackRate
+
+  if (!Number.isFinite(nextPlaybackRate) || nextPlaybackRate <= 0) {
+    nextPlaybackRate = 1
+  }
+
+  if (
+    mode.id !== "original" &&
+    mode.persisted &&
+    typeof mode.audioUrl === "string" &&
+    mode.audioUrl.length > 0 &&
+    Math.abs(nextPlaybackRate - 1) > 0.001
+  ) {
+    nextPlaybackRate = 1
+  }
+
+  if (nextPlaybackRate === mode.playbackRate) {
+    return mode
+  }
+
+  return { ...mode, playbackRate: nextPlaybackRate }
+}
+
 const buildDurationModeFromStored = (
   stored: StoredDurationMode,
   source: DurationMode["source"],
   fallbackAudioUrl: string,
   fallbackSourceAudioUrl?: string | null,
-): DurationMode => ({
-  id: stored.id,
-  label: stored.label,
-  seconds: stored.seconds,
-  playbackRate: stored.playbackRate,
-  timeline: cloneTimeline(stored.timeline),
-  source,
-  persisted: true,
-  presetId: stored.presetId,
-  audioUrl: stored.audioUrl ?? fallbackAudioUrl,
-  sourceAudioUrl: stored.sourceAudioUrl ?? fallbackSourceAudioUrl ?? null,
-})
+): DurationMode => {
+  const storedPlaybackRate =
+    Number.isFinite(stored.playbackRate) && stored.playbackRate > 0 ? stored.playbackRate : 1
+  const playbackRate =
+    typeof stored.audioUrl === "string" && stored.audioUrl.length > 0 ? 1 : storedPlaybackRate
+
+  const mode: DurationMode = {
+    id: stored.id,
+    label: stored.label,
+    seconds: stored.seconds,
+    playbackRate,
+    timeline: cloneTimeline(stored.timeline),
+    source,
+    persisted: true,
+    presetId: stored.presetId,
+    audioUrl: stored.audioUrl ?? fallbackAudioUrl,
+    sourceAudioUrl: stored.sourceAudioUrl ?? fallbackSourceAudioUrl ?? null,
+  }
+
+  return normalizeDurationMode(mode)
+}
 
 const sortDurationModes = (modes: DurationMode[]) =>
   [...modes].sort((a, b) => {
@@ -783,14 +816,43 @@ export default function LibraryPage() {
     const baseDuration = baseMeditation.duration > 0 ? baseMeditation.duration : playerDuration
     const targetSeconds = Math.max(1, preset.seconds)
 
+    const storedRange = baseMeditation.metadata?.quickAdjust?.range
+    const storedLowerBoundSeconds =
+      typeof storedRange?.minSeconds === "number" && Number.isFinite(storedRange.minSeconds) && storedRange.minSeconds > 0
+        ? Math.max(1, Math.round(storedRange.minSeconds))
+        : null
+
+    let effectiveTargetSeconds = targetSeconds
+    let clampedToLowerBound = false
+
+    if (storedLowerBoundSeconds && targetSeconds < storedLowerBoundSeconds) {
+      effectiveTargetSeconds = storedLowerBoundSeconds
+      clampedToLowerBound = true
+    }
+
     const existingMode = currentDurationModes.find(
-      (mode) => mode.id !== "original" && (mode.presetId === preset.id || Math.round(mode.seconds) === targetSeconds),
+      (mode) =>
+        mode.id !== "original" &&
+        (mode.presetId === preset.id || Math.round(mode.seconds) === Math.round(effectiveTargetSeconds)),
     )
+
     if (existingMode && existingMode.persisted) {
-      applyDurationMode(existingMode)
+      const normalizedExistingMode = normalizeDurationMode(existingMode)
+      if (normalizedExistingMode.playbackRate !== existingMode.playbackRate) {
+        setCurrentDurationModes((previous) =>
+          previous.map((mode) => (mode.id === normalizedExistingMode.id ? normalizedExistingMode : mode)),
+        )
+      }
+      applyDurationMode(normalizedExistingMode)
+      let description = `Meditation duration set to ${formatDuration(Math.round(normalizedExistingMode.seconds))}.`
+      if (clampedToLowerBound && storedLowerBoundSeconds) {
+        description += ` This meditation can't be shortened below ${formatDuration(
+          Math.round(storedLowerBoundSeconds),
+        )}.`
+      }
       toast({
         title: "Quick adjust ready",
-        description: `Meditation duration set to ${formatDuration(Math.round(existingMode.seconds))}.`,
+        description,
       })
       setIsQuickAdjustProcessing(false)
       setQuickAdjustStep("")
@@ -840,7 +902,7 @@ export default function LibraryPage() {
         audioContext,
         buffer: audioBuffer,
         settings: {
-          targetDurationSeconds: targetSeconds,
+          targetDurationSeconds: effectiveTargetSeconds,
           silenceThreshold: settings.silenceThreshold,
           minSilenceDuration: settings.minSilenceDuration,
           minSpacingDuration: settings.minSpacingDuration,
@@ -865,8 +927,10 @@ export default function LibraryPage() {
       })
 
       const processedDurationSeconds = result.processedBuffer.duration
-      const playbackRate =
-        baseDuration > 0 ? Math.max(0.01, baseDuration / processedDurationSeconds) : 1
+      const newLowerBoundSeconds = Math.max(
+        1,
+        Math.round(result.audioContentDuration + result.silenceRegions.length * settings.minSpacingDuration),
+      )
       const scaledTimeline = scaleTimelineEvents(
         baseMeditation.metadata?.timeline as LibraryTimelineEntry[] | undefined,
         baseDuration,
@@ -875,10 +939,15 @@ export default function LibraryPage() {
 
       const modeId = existingMode?.id ?? `quick-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 
+      const existingQuickAdjustMetadata = baseMeditation.metadata.quickAdjust ?? {}
       const quickAdjustMetadata = {
-        ...(baseMeditation.metadata.quickAdjust ?? {}),
+        ...existingQuickAdjustMetadata,
         lastPresetId: preset.id,
         lastDurationId: modeId,
+        range: {
+          ...(existingQuickAdjustMetadata.range ?? {}),
+          minSeconds: newLowerBoundSeconds,
+        },
       }
 
       setQuickAdjustStep("Saving to library...")
@@ -914,7 +983,7 @@ export default function LibraryPage() {
         id: modeId,
         label: preset.label,
         seconds: processedDurationSeconds,
-        playbackRate,
+        playbackRate: 1,
         timeline: scaledTimeline,
         source: "saved",
         persisted: true,
@@ -922,6 +991,8 @@ export default function LibraryPage() {
         audioUrl: savedMeditation.processedAudioUrl,
         sourceAudioUrl: savedMeditation.sourceAudioUrl ?? savedMeditation.processedAudioUrl,
       }
+
+      const normalizedNewMode = normalizeDurationMode(newMode)
 
       const updatedBaseMeditation: SavedMeditation = {
         ...baseMeditation,
@@ -933,15 +1004,16 @@ export default function LibraryPage() {
 
       setBaseMeditation(updatedBaseMeditation)
       setCurrentDurationModes((previous) => {
-        const filtered = previous.filter((mode) => mode.id !== newMode.id)
-        return sortDurationModes([...filtered, newMode])
+        const filtered = previous.filter((mode) => mode.id !== normalizedNewMode.id)
+        const normalizedPrevious = filtered.map((mode) => normalizeDurationMode(mode))
+        return sortDurationModes([...normalizedPrevious, normalizedNewMode])
       })
 
       updateSavedDurations(baseMeditation.id, (existing) => {
         const baseStored: StoredMeditationDurations = existing
           ? { ...existing, modes: Array.isArray(existing.modes) ? [...existing.modes] : [] }
           : { modes: [] }
-        const storedMode = convertModeToStored(newMode)
+        const storedMode = convertModeToStored(normalizedNewMode)
         const without = baseStored.modes.filter((mode) => mode.id !== storedMode.id)
         return {
           ...baseStored,
@@ -952,11 +1024,26 @@ export default function LibraryPage() {
         }
       })
 
-      applyDurationMode(newMode, updatedBaseMeditation)
+      applyDurationMode(normalizedNewMode, updatedBaseMeditation)
       setQuickAdjustProgress(100)
+      const roundedProcessedSeconds = Math.round(processedDurationSeconds)
+      const requestedRoundedSeconds = Math.round(targetSeconds)
+      const differenceFromRequested = Math.abs(roundedProcessedSeconds - requestedRoundedSeconds)
+      const wasBelowNewMinimum = targetSeconds < newLowerBoundSeconds
+
+      let completionDescription = `Meditation duration set to ${formatDuration(roundedProcessedSeconds)}.`
+
+      if (wasBelowNewMinimum || clampedToLowerBound) {
+        completionDescription += ` This meditation can't be shortened below ${formatDuration(newLowerBoundSeconds)}.`
+      } else if (!storedLowerBoundSeconds && differenceFromRequested > 1) {
+        completionDescription += ` We couldn't reach ${formatDuration(
+          requestedRoundedSeconds,
+        )} automatically. Open this meditation in Adjuster to fine-tune the duration.`
+      }
+
       toast({
         title: "Quick adjust complete",
-        description: `Meditation duration set to ${formatDuration(Math.round(processedDurationSeconds))}.`,
+        description: completionDescription,
       })
     } catch (error) {
       console.error("[v0] Quick adjust failed:", error)
@@ -1148,7 +1235,8 @@ export default function LibraryPage() {
 
     const deduped = new Map<string, DurationMode>()
     ;[baseMode, ...storedModes].forEach((mode) => {
-      deduped.set(mode.id, mode)
+      const normalized = normalizeDurationMode(mode)
+      deduped.set(normalized.id, normalized)
     })
 
     const availableModes = sortDurationModes(Array.from(deduped.values()))
@@ -1156,7 +1244,7 @@ export default function LibraryPage() {
     const targetModeId = storedData?.lastPlayedId && deduped.has(storedData.lastPlayedId)
       ? storedData.lastPlayedId
       : "original"
-    const activeMode = deduped.get(targetModeId) ?? baseMode
+    const activeMode = availableModes.find((mode) => mode.id === targetModeId) ?? availableModes[0] ?? baseMode
 
     setBaseMeditation(meditation)
     setCurrentDurationModes(availableModes)
@@ -1206,6 +1294,7 @@ export default function LibraryPage() {
     if (pendingAdjustmentId && baseMeditation) {
       const pendingMode = currentDurationModes.find((mode) => mode.id === pendingAdjustmentId)
       if (pendingMode) {
+        const normalizedPendingMode = normalizeDurationMode(pendingMode)
         const shouldPersist = window.confirm(
           "Would you like to save this adjusted duration for instant toggling in the future?",
         )
@@ -1214,26 +1303,26 @@ export default function LibraryPage() {
             const base: StoredMeditationDurations = existing
               ? { ...existing, modes: Array.isArray(existing.modes) ? [...existing.modes] : [] }
               : { modes: [] }
-            const storedMode = convertModeToStored(pendingMode)
+            const storedMode = convertModeToStored(normalizedPendingMode)
             const withoutPending = base.modes.filter((mode) => mode.id !== storedMode.id)
             const updatedModes = [...withoutPending, storedMode]
             return {
               ...base,
               modes: updatedModes,
-              lastPlayedId: pendingMode.id,
-              lastPlayedSeconds: pendingMode.seconds,
+              lastPlayedId: normalizedPendingMode.id,
+              lastPlayedSeconds: normalizedPendingMode.seconds,
               lastPlayedLabel:
-                pendingMode.id === "original"
-                  ? `Original (${formatDuration(pendingMode.seconds)})`
-                  : `${pendingMode.label} (${formatDuration(pendingMode.seconds)})`,
+                normalizedPendingMode.id === "original"
+                  ? `Original (${formatDuration(normalizedPendingMode.seconds)})`
+                  : `${normalizedPendingMode.label} (${formatDuration(normalizedPendingMode.seconds)})`,
             }
           })
           setCurrentDurationModes((previous) =>
             sortDurationModes(
               previous.map((mode) =>
-                mode.id === pendingMode.id
-                  ? { ...mode, persisted: true, source: "saved" as const }
-                  : mode,
+                mode.id === normalizedPendingMode.id
+                  ? normalizeDurationMode({ ...mode, persisted: true, source: "saved" as const })
+                  : normalizeDurationMode(mode),
               ),
             ),
           )
