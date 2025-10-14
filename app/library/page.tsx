@@ -2400,10 +2400,8 @@ export default function LibraryPage() {
                               <div className="space-y-4">
                                 {!isEditingPresets ? (
                                   <>
-                                    <p className="text-xs text-gray-500">
-                                      Pick a preset duration to instantly rebalance this meditation.
-                                    </p>
-                                    <div className="grid gap-2">
+                                    
+                                    <div className="grid gap-2 font-serif font-black">
                                       {quickAdjustPresets.length === 0 && (
                                         <div className="rounded-md border border-dashed border-gray-300 p-3 text-xs text-gray-500">
                                           No presets yet. Switch to Edit Presets to add your first quick adjust duration.
@@ -2423,14 +2421,14 @@ export default function LibraryPage() {
                                             onClick={() => setSelectedPresetId(preset.id)}
                                           >
                                             <span>{preset.label}</span>
-                                            <span className="text-[11px] font-semibold opacity-80">
+                                            <span className="text-[11px] opacity-80 font-black font-serif">
                                               {formatDuration(preset.seconds)}
                                             </span>
                                           </Button>
                                         )
                                       })}
                                     </div>
-                                    <div className="flex items-center justify-between gap-3 pt-1">
+                                    <div className="flex items-center justify-between gap-3 pt-1 font-serif font-black">
                                       <Button variant="outline" onClick={() => setIsEditingPresets(true)} size="sm">
                                         Edit Presets
                                       </Button>
