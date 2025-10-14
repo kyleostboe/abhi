@@ -28,8 +28,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useToast } from "@/hooks/use-toast"
 import { VisualTimeline } from "@/components/visual-timeline"
-import { cn, formatTime, sleep, monitorMemory, forceGarbageCollection, formatFileSize } from "@/lib/utils"
+import { cn, formatTime, sleep, monitorMemory, formatFileSize } from "@/lib/utils"
 import { getAudioContext, bufferToWav, type BufferToWavMetadata } from "@/lib/audio-utils" // Import from audio-utils
+import { runAdjusterWorkflow, detectSilenceRegions as computeSilenceRegions } from "@/lib/adjuster-workflow"
 import type { SavedMeditation } from "@/lib/meditation-library"
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
@@ -1839,72 +1840,9 @@ export default function Home() {
   }
 
   const detectSilenceRegions = useCallback(
-    async (buffer: AudioBuffer, threshold: number, minDuration: number): Promise<{ start: number; end: number }[]> => {
-      const BUFFER_SECONDS = 0.3 // 300ms buffer to preserve word endings
-      const sampleRate = buffer.sampleRate
-      const channelData = buffer.getChannelData(0)
-      const windowSize = Math.floor(sampleRate * 0.01) // 10ms windows
-      const minSamples = Math.floor(minDuration * sampleRate)
-
-      const regions: { start: number; end: number }[] = []
-      let silenceStart = -1
-
-      for (let i = 0; i < channelData.length; i += windowSize) {
-        const windowEnd = Math.min(i + windowSize, channelData.length)
-        let rms = 0
-
-        // Calculate RMS for this window
-        for (let j = i; j < windowEnd; j++) {
-          rms += channelData[j] * channelData[j]
-        }
-        rms = Math.sqrt(rms / (windowEnd - i))
-
-        const isSilent = rms < threshold
-        const timeSeconds = i / sampleRate
-
-        if (isSilent && silenceStart === -1) {
-          silenceStart = timeSeconds
-        } else if (!isSilent && silenceStart !== -1) {
-          const silenceDuration = timeSeconds - silenceStart
-          if (silenceDuration >= minDuration) {
-            regions.push({ start: silenceStart, end: timeSeconds })
-          }
-          silenceStart = -1
-        }
-      }
-
-      // Handle silence at the end
-      if (silenceStart !== -1) {
-        const endTime = buffer.duration
-        const silenceDuration = endTime - silenceStart
-        if (silenceDuration >= minDuration) {
-          regions.push({ start: silenceStart, end: endTime })
-        }
-      }
-
-      // Apply buffer to preserve word endings
-      const bufferedRegions: { start: number; end: number }[] = []
-
-      for (let i = 0; i < regions.length; i++) {
-        const region = regions[i]
-        let bufferedStart = region.start + BUFFER_SECONDS
-        const bufferedEnd = region.end - BUFFER_SECONDS
-
-        // Prevent overlap with previous region
-        if (bufferedRegions.length > 0) {
-          const prevRegion = bufferedRegions[bufferedRegions.length - 1]
-          bufferedStart = Math.max(bufferedStart, prevRegion.end + BUFFER_SECONDS)
-        }
-
-        // Only keep regions that are still long enough after buffering
-        if (bufferedEnd > bufferedStart && bufferedEnd - bufferedStart >= minDuration) {
-          bufferedRegions.push({ start: bufferedStart, end: bufferedEnd })
-        }
-      }
-
-      return bufferedRegions
-    },
-    [silenceThreshold, minSilenceDuration], // Dependencies: threshold and minDuration
+    (buffer: AudioBuffer, threshold: number, minDuration: number) =>
+      computeSilenceRegions(buffer, threshold, minDuration),
+    [],
   )
 
   const parseTimelineMetadata = useCallback((timelineMetadata: SavedTimelineEntry[]): TimelineEvent[] => {
@@ -2595,64 +2533,36 @@ export default function Home() {
     try {
       setStatus({ message: "Processing audio...", type: "info" })
       const targetDurationSeconds = targetDuration * 60
-      setProcessingStep("Detecting silence regions (step 1/4)...")
-      setProcessingProgress(10)
-      await sleep(10)
 
-      const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
-
-      setProcessingStep("Calculating adjustments (step 2/4)...")
-      setProcessingProgress(25)
-      await sleep(10)
-
-      const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
-      const audioContentDuration = originalBuffer.duration - totalSilenceDuration
-      const availableSilenceDuration = Math.max(
-        targetDurationSeconds - audioContentDuration,
-        silenceRegions.length * minSpacingDuration,
-      )
-      const scaleFactor = totalSilenceDuration > 0 ? availableSilenceDuration / totalSilenceDuration : 1
-      setProcessingStep("Rebuilding audio (step 3/4)...")
-      setProcessingProgress(50)
-      await sleep(10)
-
-      const processedAudioBuffer = await rebuildAudioWithScaledPauses(
-        originalBuffer,
-        silenceRegions,
-        scaleFactor,
-        minSpacingDuration,
-        preserveNaturalPacing,
-        availableSilenceDuration,
-        (p) => setProcessingProgress(50 + Math.floor(p * 0.3)),
-      )
-      setPausesAdjusted(silenceRegions.length)
-
-      setProcessingStep("Creating audio file (step 4/4)...")
-      setProcessingProgress(80)
-      await sleep(10)
-
-      const wavResult = await bufferToWav(processedAudioBuffer, {
-        preferCompatibility: compatibilityMode === "high",
-        maxBytes: 48 * 1024 * 1024, // 48MB limit (under 50MB)
-        onProgress: (p) => setProcessingProgress(80 + Math.floor((p / 100) * 20)),
-        isMobile: isMobileDevice,
+      const result = await runAdjusterWorkflow({
+        audioContext: currentAudioContext,
+        buffer: originalBuffer,
+        settings: {
+          targetDurationSeconds,
+          silenceThreshold,
+          minSilenceDuration,
+          minSpacingDuration,
+          preserveNaturalPacing,
+          compatibilityMode,
+        },
+        isMobileDevice,
+        callbacks: {
+          onProgress: (progress) => setProcessingProgress(Math.max(0, Math.min(100, Math.round(progress)))),
+          onStep: (step) => setProcessingStep(step),
+          onMemoryWarning: () => setMemoryWarning(true),
+        },
       })
 
-      if (wavResult.blob.size === 0) {
-        throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
-      }
-
-      const { blob: wavBlob, ...metadata } = wavResult
-      const url = URL.createObjectURL(wavBlob)
+      const url = URL.createObjectURL(result.wavBlob)
 
       setProcessedUrl(url)
-      setProcessedMp3Blob(wavBlob) // This is the file that will be saved
-      setActualDuration(processedAudioBuffer.duration)
-      setProcessedBufferState(processedAudioBuffer)
-      setProcessedFileSize(wavBlob.size)
-      setProcessedAudioMetadata(metadata)
+      setProcessedMp3Blob(result.wavBlob) // This is the file that will be saved
+      setActualDuration(result.processedBuffer.duration)
+      setProcessedBufferState(result.processedBuffer)
+      setProcessedFileSize(result.wavBlob.size)
+      setProcessedAudioMetadata(result.wavMetadata)
+      setPausesAdjusted(result.pausesAdjusted)
       setProcessingProgress(100)
-      setProcessingStep("Complete!")
       setStatus({ message: "Audio processing completed successfully!", type: "success" })
       setIsProcessingComplete(true)
     } catch (error) {
@@ -2667,126 +2577,7 @@ export default function Home() {
     }
   }
 
-  const rebuildAudioWithScaledPauses = useCallback(
-    async (
-      buffer: AudioBuffer,
-      regions: { start: number; end: number }[],
-      scaleFactorVal: number,
-      minSpacingVal: number,
-      preservePacing: boolean,
-      targetTotalSilence: number,
-      onProgress: (progress: number) => void,
-    ): Promise<AudioBuffer> => {
-      const currentAudioContext = audioContextRef.current
-      if (!currentAudioContext) throw new Error("Audio context not available for rebuild")
-      onProgress(0)
-
-      let dynamicScale = scaleFactorVal
-      if (!preservePacing && regions.length > 0) {
-        const currentTotalSilence = regions.reduce((sum, r) => sum + (r.end - r.start), 0)
-        dynamicScale = currentTotalSilence > 0 ? targetTotalSilence / currentTotalSilence : 1
-        if (!isFinite(dynamicScale) || dynamicScale <= 0) dynamicScale = 1
-      }
-
-      const processedRegions = regions.map((region) => {
-        const duration = region.end - region.start
-        const newDuration = preservePacing
-          ? Math.max(duration * dynamicScale, minSpacingVal)
-          : regions.length > 0
-            ? Math.max(minSpacingVal, targetTotalSilence / regions.length)
-            : minSpacingVal
-        return { ...region, newDuration }
-      })
-
-      const audioContentDur = buffer.duration - regions.reduce((sum, r) => sum + (r.end - r.start), 0)
-      const newSilenceDur = processedRegions.reduce((sum, r) => sum + r.newDuration, 0)
-      const newTotalDur = audioContentDur + newSilenceDur
-
-      if (newTotalDur <= 0) throw new Error("Calculated new total duration is zero or negative.")
-
-      if (isMobileDevice && newTotalDur > 45 * 60) {
-        console.warn(`Mobile device: Output duration ${formatTime(newTotalDur)} may cause issues.`)
-        setMemoryWarning(true)
-      }
-
-      let newBuffer: AudioBuffer
-      try {
-        newBuffer = currentAudioContext.createBuffer(
-          buffer.numberOfChannels,
-          Math.max(1, Math.floor(newTotalDur * buffer.sampleRate)),
-          buffer.sampleRate,
-        )
-      } catch (e) {
-        forceGarbageCollection()
-        throw new Error(
-          `Failed to create output buffer (duration: ${newTotalDur.toFixed(2)}s). Memory limit likely exceeded. Try a shorter target duration.`,
-        )
-      }
-
-      onProgress(10)
-
-      for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-        const originalData = buffer.getChannelData(channel)
-        const newData = newBuffer.getChannelData(channel)
-        let writeIndex = 0
-        let readIndex = 0
-        const totalSamples = originalData.length
-
-        // Copy initial content before first silence region
-        if (regions.length > 0 && regions[0].start > 0) {
-          const samplesToCopy = Math.floor(regions[0].start * buffer.sampleRate)
-          for (let i = 0; i < samplesToCopy && writeIndex < newData.length; i++) {
-            newData[writeIndex++] = originalData[readIndex++]
-          }
-        }
-
-        // Process each silence region and the content after it
-        for (let i = 0; i < regions.length; i++) {
-          if (i % (isMobileDevice ? 5 : 10) === 0) {
-            await sleep(0)
-            onProgress(10 + Math.floor((i / regions.length) * 80))
-          }
-
-          const region = regions[i]
-          const processedReg = processedRegions[i]
-
-          // Skip to end of silence region
-          readIndex = Math.floor(region.end * buffer.sampleRate)
-
-          // Add scaled silence
-          const newSilenceLength = Math.floor(processedReg.newDuration * buffer.sampleRate)
-          for (let j = 0; j < newSilenceLength && writeIndex < newData.length; j++) {
-            newData[writeIndex++] = 0
-          }
-
-          // Copy content until next silence region (or end of audio)
-          const nextRegionStart =
-            i < regions.length - 1 ? Math.floor(regions[i + 1].start * buffer.sampleRate) : totalSamples
-
-          // Ensure we don't go backwards or get stuck
-          const segmentStart = Math.max(readIndex, 0)
-          const segmentEnd = Math.min(nextRegionStart, totalSamples)
-
-          for (let j = segmentStart; j < segmentEnd && writeIndex < newData.length; j++) {
-            newData[writeIndex++] = originalData[j]
-          }
-
-          readIndex = segmentEnd
-        }
-
-        // Copy any remaining audio if no regions were processed
-        if (regions.length === 0) {
-          for (let i = 0; i < totalSamples && writeIndex < newData.length; i++) {
-            newData[writeIndex++] = originalData[i]
-          }
-        }
-      }
-
-      onProgress(100)
-      return newBuffer
-    },
-    [isMobileDevice, setMemoryWarning],
-  )
+  
 
   const handleFileSelectAction = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
