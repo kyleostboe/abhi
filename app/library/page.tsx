@@ -1971,9 +1971,7 @@ export default function LibraryPage() {
                                 )}
                               </div>
                               {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
-                              <p className="text-[11px] text-gray-500">
-                                Uploaded meditations use the standard adjuster settings and can be quick-adjusted later.
-                              </p>
+                              
                               <div className="flex justify-end gap-2">
                                 <Button
                                   variant="outline"
