@@ -31,12 +31,179 @@ import {
   ChevronDown,
   Music,
   Volume2,
+  Wand2,
+  Loader2,
+  Plus,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
 
 type LibraryTimelineEntry = NonNullable<SavedMeditation["metadata"]["timeline"]>[number]
+
+type QuickAdjustPreset = {
+  id: string
+  label: string
+  seconds: number
+}
+
+type DurationMode = {
+  id: string
+  label: string
+  seconds: number
+  playbackRate: number
+  timeline: LibraryTimelineEntry[]
+  source: "original" | "quick-adjust" | "saved"
+  persisted: boolean
+  presetId?: string | null
+}
+
+type StoredDurationMode = {
+  id: string
+  label: string
+  seconds: number
+  playbackRate: number
+  timeline: LibraryTimelineEntry[]
+  presetId?: string | null
+}
+
+type StoredMeditationDurations = {
+  modes: StoredDurationMode[]
+  lastPlayedId?: string
+  lastPlayedSeconds?: number
+  lastPlayedLabel?: string
+}
+
+const DEFAULT_PRESETS: QuickAdjustPreset[] = [
+  { id: "preset-10m", label: "10m", seconds: 10 * 60 },
+  { id: "preset-30m", label: "30m", seconds: 30 * 60 },
+  { id: "preset-1h", label: "1h", seconds: 60 * 60 },
+]
+
+const QUICK_ADJUST_PRESETS_KEY = "library.quickAdjustPresets"
+const QUICK_ADJUST_DURATIONS_KEY = "library.quickAdjustDurations"
+
+const formatDurationLabelFromSeconds = (seconds: number) => {
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return "--"
+  }
+
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+
+  if (hours > 0 && minutes > 0) {
+    return `${hours}h ${minutes}m`
+  }
+  if (hours > 0) {
+    return `${hours}h`
+  }
+  return `${minutes}m`
+}
+
+const parseDurationInput = (value: string): number | null => {
+  const raw = value.trim().toLowerCase()
+  if (!raw) return null
+
+  if (raw.includes(":")) {
+    const parts = raw.split(":").map((part) => Number.parseFloat(part))
+    if (parts.some((part) => Number.isNaN(part))) {
+      return null
+    }
+    if (parts.length === 3) {
+      const [hours, minutes, seconds] = parts
+      return hours * 3600 + minutes * 60 + seconds
+    }
+    if (parts.length === 2) {
+      const [minutes, seconds] = parts
+      return minutes * 60 + seconds
+    }
+    if (parts.length === 1) {
+      return parts[0]
+    }
+    return null
+  }
+
+  const comboMatch = raw.match(/^(\d+)\s*h(?:\s*(\d+)\s*m)?$/)
+  if (comboMatch) {
+    const hours = Number.parseInt(comboMatch[1] ?? "0", 10)
+    const minutes = Number.parseInt(comboMatch[2] ?? "0", 10)
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+      return null
+    }
+    return hours * 3600 + minutes * 60
+  }
+
+  const match = raw.match(/^(\d+(?:\.\d+)?)(h|m)?$/)
+  if (match) {
+    const valueNum = Number.parseFloat(match[1])
+    if (Number.isNaN(valueNum)) {
+      return null
+    }
+    const unit = match[2] ?? "m"
+    if (unit === "h") {
+      return valueNum * 3600
+    }
+    return valueNum * 60
+  }
+
+  const asNumber = Number.parseFloat(raw)
+  if (!Number.isNaN(asNumber) && asNumber > 0) {
+    return asNumber * 60
+  }
+
+  return null
+}
+
+const scaleTimelineEvents = (
+  events: LibraryTimelineEntry[] | undefined,
+  baseDuration: number,
+  targetDuration: number,
+): LibraryTimelineEntry[] => {
+  if (!Array.isArray(events)) {
+    return []
+  }
+  if (!Number.isFinite(baseDuration) || baseDuration <= 0) {
+    return events.map((event) => ({ ...event }))
+  }
+  const ratio = targetDuration / baseDuration
+  return events.map((event) => {
+    const scaled: LibraryTimelineEntry = { ...event }
+    if (Number.isFinite(event.startTime)) {
+      scaled.startTime = Math.max(0, event.startTime * ratio)
+    }
+    if (Number.isFinite(event.endTime)) {
+      scaled.endTime = Math.max(0, event.endTime * ratio)
+    }
+    if (Number.isFinite(event.duration ?? NaN)) {
+      scaled.duration = Math.max(0, (event.duration ?? 0) * ratio)
+    }
+    return scaled
+  })
+}
+
+const cloneTimeline = (events: LibraryTimelineEntry[] | undefined) =>
+  Array.isArray(events) ? events.map((event) => ({ ...event })) : []
+
+const buildDurationModeFromStored = (
+  stored: StoredDurationMode,
+  source: DurationMode["source"],
+): DurationMode => ({
+  id: stored.id,
+  label: stored.label,
+  seconds: stored.seconds,
+  playbackRate: stored.playbackRate,
+  timeline: cloneTimeline(stored.timeline),
+  source,
+  persisted: true,
+  presetId: stored.presetId,
+})
+
+const sortDurationModes = (modes: DurationMode[]) =>
+  [...modes].sort((a, b) => {
+    if (a.id === "original") return -1
+    if (b.id === "original") return 1
+    return a.seconds - b.seconds
+  })
 
 export default function LibraryPage() {
   const [meditations, setMeditations] = useState<SavedMeditation[]>([])
@@ -49,6 +216,7 @@ export default function LibraryPage() {
   const [newPlaylistDescription, setNewPlaylistDescription] = useState("")
   const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null)
   const [selectedMeditation, setSelectedMeditation] = useState<SavedMeditation | null>(null)
+  const [baseMeditation, setBaseMeditation] = useState<SavedMeditation | null>(null)
   const [isPlayerOpen, setIsPlayerOpen] = useState(false)
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const [playerTime, setPlayerTime] = useState(0)
@@ -57,15 +225,102 @@ export default function LibraryPage() {
   const [isWideLayout, setIsWideLayout] = useState(false)
   const [playingTimelineEventId, setPlayingTimelineEventId] = useState<string | null>(null)
   const [playerPortalElement, setPlayerPortalElement] = useState<HTMLElement | null>(null)
+  const [currentDurationModes, setCurrentDurationModes] = useState<DurationMode[]>([])
+  const [activeDurationModeId, setActiveDurationModeId] = useState<string>("original")
+  const [currentPlaybackRate, setCurrentPlaybackRate] = useState(1)
+  const [quickAdjustPresets, setQuickAdjustPresets] = useState<QuickAdjustPreset[]>(DEFAULT_PRESETS)
+  const [isQuickAdjustDialogOpen, setIsQuickAdjustDialogOpen] = useState(false)
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(
+    DEFAULT_PRESETS.length > 0 ? DEFAULT_PRESETS[0].id : null,
+  )
+  const [isEditingPresets, setIsEditingPresets] = useState(false)
+  const [newPresetValue, setNewPresetValue] = useState("")
+  const [isQuickAdjustProcessing, setIsQuickAdjustProcessing] = useState(false)
+  const [pendingAdjustmentId, setPendingAdjustmentId] = useState<string | null>(null)
+  const [savedDurationsMap, setSavedDurationsMap] = useState<Record<string, StoredMeditationDurations>>({})
+  const [lastPlayedDurationMap, setLastPlayedDurationMap] = useState<
+    Record<string, { label: string; seconds: number }>
+  >({})
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false)
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [uploadTitle, setUploadTitle] = useState("")
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const timelineAudioRef = useRef<HTMLAudioElement | null>(null)
+  const presetsPersistReadyRef = useRef(false)
+  const durationsPersistReadyRef = useRef(false)
   const { toast } = useToast()
   const router = useRouter()
 
   const [playlistMeditationsMap, setPlaylistMeditationsMap] = useState<Record<string, SavedMeditation[]>>({})
 
+  const convertModeToStored = (mode: DurationMode): StoredDurationMode => ({
+    id: mode.id,
+    label: mode.label,
+    seconds: mode.seconds,
+    playbackRate: mode.playbackRate,
+    timeline: cloneTimeline(mode.timeline),
+    presetId: mode.presetId ?? null,
+  })
+
+  const updateSavedDurations = (
+    meditationId: string,
+    updater: (existing: StoredMeditationDurations | undefined) => StoredMeditationDurations | undefined,
+  ) => {
+    setSavedDurationsMap((previous) => {
+      const next = { ...previous }
+      const updated = updater(previous[meditationId])
+      if (!updated) {
+        delete next[meditationId]
+      } else {
+        next[meditationId] = updated
+      }
+      return next
+    })
+  }
+
   useEffect(() => {
     loadData()
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    try {
+      const storedPresets = window.localStorage.getItem(QUICK_ADJUST_PRESETS_KEY)
+      if (storedPresets) {
+        const parsed = JSON.parse(storedPresets) as QuickAdjustPreset[]
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setQuickAdjustPresets(parsed)
+          setSelectedPresetId(parsed[0]?.id ?? null)
+        }
+      }
+    } catch (error) {
+      console.warn("[v0] Failed to restore quick adjust presets:", error)
+    }
+
+    try {
+      const storedDurations = window.localStorage.getItem(QUICK_ADJUST_DURATIONS_KEY)
+      if (storedDurations) {
+        const parsed = JSON.parse(storedDurations) as Record<string, StoredMeditationDurations>
+        if (parsed && typeof parsed === "object") {
+          setSavedDurationsMap(parsed)
+          const lastPlayed: Record<string, { label: string; seconds: number }> = {}
+          Object.entries(parsed).forEach(([meditationId, data]) => {
+            if (!data) return
+            const label = data.lastPlayedLabel
+            const seconds = data.lastPlayedSeconds
+            if (label && Number.isFinite(seconds)) {
+              lastPlayed[meditationId] = { label, seconds }
+            }
+          })
+          setLastPlayedDurationMap(lastPlayed)
+        }
+      }
+    } catch (error) {
+      console.warn("[v0] Failed to restore saved durations:", error)
+    }
   }, [])
 
   useEffect(() => {
@@ -107,6 +362,45 @@ export default function LibraryPage() {
     mediaQuery.addListener(updateLayout)
     return () => mediaQuery.removeListener(updateLayout)
   }, [])
+
+  useEffect(() => {
+    if (!presetsPersistReadyRef.current) {
+      presetsPersistReadyRef.current = true
+      return
+    }
+    if (typeof window === "undefined") return
+    try {
+      window.localStorage.setItem(QUICK_ADJUST_PRESETS_KEY, JSON.stringify(quickAdjustPresets))
+    } catch (error) {
+      console.warn("[v0] Failed to persist quick adjust presets:", error)
+    }
+  }, [quickAdjustPresets])
+
+  useEffect(() => {
+    if (!durationsPersistReadyRef.current) {
+      durationsPersistReadyRef.current = true
+      return
+    }
+    if (typeof window === "undefined") return
+    try {
+      window.localStorage.setItem(QUICK_ADJUST_DURATIONS_KEY, JSON.stringify(savedDurationsMap))
+    } catch (error) {
+      console.warn("[v0] Failed to persist saved durations:", error)
+    }
+  }, [savedDurationsMap])
+
+  useEffect(() => {
+    const nextMap: Record<string, { label: string; seconds: number }> = {}
+    Object.entries(savedDurationsMap).forEach(([meditationId, data]) => {
+      if (!data) return
+      const label = data.lastPlayedLabel
+      const seconds = data.lastPlayedSeconds
+      if (label && Number.isFinite(seconds)) {
+        nextMap[meditationId] = { label, seconds }
+      }
+    })
+    setLastPlayedDurationMap(nextMap)
+  }, [savedDurationsMap])
 
   const filteredMeditations = useMemo(
     () =>
@@ -268,26 +562,481 @@ export default function LibraryPage() {
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
-  const openMeditationPlayer = (meditation: SavedMeditation) => {
-    setSelectedMeditation(meditation)
+  const recordLastPlayedDuration = (meditation: SavedMeditation, mode: DurationMode) => {
+    const label =
+      mode.id === "original"
+        ? `Original (${formatDuration(mode.seconds)})`
+        : `${mode.label} (${formatDuration(mode.seconds)})`
+
+    updateSavedDurations(meditation.id, (existing) => {
+      const base: StoredMeditationDurations = existing
+        ? { ...existing, modes: Array.isArray(existing.modes) ? existing.modes : [] }
+        : { modes: [] }
+
+      return {
+        ...base,
+        lastPlayedId: mode.id,
+        lastPlayedSeconds: mode.seconds,
+        lastPlayedLabel: label,
+      }
+    })
+  }
+
+  const applyDurationMode = (mode: DurationMode) => {
+    if (!baseMeditation) return
+
+    const audio = audioRef.current
+    if (audio) {
+      audio.pause()
+    }
+    if (timelineAudioRef.current) {
+      timelineAudioRef.current.pause()
+      timelineAudioRef.current = null
+    }
+    setPlayingTimelineEventId(null)
+
+    let meditationToUse: SavedMeditation
+    if (mode.id === "original") {
+      meditationToUse = { ...baseMeditation }
+    } else {
+      meditationToUse = {
+        ...baseMeditation,
+        duration: mode.seconds,
+        metadata: {
+          ...baseMeditation.metadata,
+          targetDuration: mode.seconds,
+          timeline: cloneTimeline(mode.timeline),
+          quickAdjust: {
+            ...(baseMeditation.metadata.quickAdjust ?? {}),
+            lastPresetId: mode.presetId ?? null,
+            lastDurationId: mode.id,
+          },
+        },
+      }
+    }
+
+    setSelectedMeditation(meditationToUse)
+    setActiveDurationModeId(mode.id)
+    setPlayerDuration(mode.seconds)
     setPlayerTime(0)
-    setPlayerDuration(meditation.duration)
+    setIsAudioPlaying(false)
+    setCurrentPlaybackRate(mode.playbackRate)
+
+    if (audio) {
+      audio.playbackRate = mode.playbackRate
+      audio.currentTime = 0
+    }
+
+    recordLastPlayedDuration(baseMeditation, mode)
+  }
+
+  const applyDurationModeById = (modeId: string) => {
+    const mode = currentDurationModes.find((item) => item.id === modeId)
+    if (!mode) return
+    applyDurationMode(mode)
+  }
+
+  const handleSelectDurationMode = (modeId: string) => {
+    if (isQuickAdjustProcessing) return
+    if (modeId === activeDurationModeId) return
+    applyDurationModeById(modeId)
+  }
+
+  const handleQuickAdjust = () => {
+    if (isQuickAdjustProcessing) return
+    if (!selectedPresetId || !baseMeditation) {
+      toast({
+        title: "Select a preset",
+        description: "Choose a quick adjust preset to continue.",
+      })
+      return
+    }
+
+    const preset = quickAdjustPresets.find((item) => item.id === selectedPresetId)
+    if (!preset) {
+      toast({
+        title: "Preset unavailable",
+        description: "The selected preset could not be found.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const audio = audioRef.current
+    if (audio) {
+      audio.pause()
+    }
+    setIsAudioPlaying(false)
+    setIsQuickAdjustDialogOpen(false)
+    setIsQuickAdjustProcessing(true)
+
+    const baseDuration = baseMeditation.duration > 0 ? baseMeditation.duration : playerDuration
+    const targetSeconds = Math.max(1, preset.seconds)
+    const rawPlaybackRate = baseDuration > 0 ? baseDuration / targetSeconds : 1
+    const playbackRate = Number.isFinite(rawPlaybackRate) && rawPlaybackRate > 0 ? rawPlaybackRate : 1
+    const scaledTimeline = scaleTimelineEvents(
+      baseMeditation.metadata?.timeline as LibraryTimelineEntry[] | undefined,
+      baseDuration,
+      targetSeconds,
+    )
+
+    const existingMode = currentDurationModes.find((mode) => Math.round(mode.seconds) === targetSeconds)
+    if (existingMode) {
+      applyDurationMode(existingMode)
+      setPendingAdjustmentId(existingMode.persisted ? null : existingMode.id)
+      setIsQuickAdjustProcessing(false)
+      toast({
+        title: "Quick adjust complete",
+        description: `Meditation duration set to ${formatDuration(targetSeconds)}.`,
+      })
+      return
+    }
+
+    const modeId = `quick-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const newMode: DurationMode = {
+      id: modeId,
+      label: preset.label,
+      seconds: targetSeconds,
+      playbackRate,
+      timeline: scaledTimeline,
+      source: "quick-adjust",
+      persisted: false,
+      presetId: preset.id,
+    }
+
+    const existingPendingId = pendingAdjustmentId
+    setCurrentDurationModes((previous) => {
+      const filtered = previous.filter((mode) => {
+        if (mode.id === newMode.id) return false
+        if (existingPendingId && !mode.persisted && mode.id === existingPendingId) {
+          return false
+        }
+        return true
+      })
+      return sortDurationModes([...filtered, newMode])
+    })
+
+    setPendingAdjustmentId(modeId)
+
+    window.setTimeout(() => {
+      applyDurationMode(newMode)
+      setIsQuickAdjustProcessing(false)
+      toast({
+        title: "Quick adjust complete",
+        description: `Meditation duration set to ${formatDuration(targetSeconds)}.`,
+      })
+    }, 450)
+  }
+
+  const handleAddPreset = () => {
+    const seconds = parseDurationInput(newPresetValue)
+    if (!seconds || seconds <= 0) {
+      toast({
+        title: "Enter a valid duration",
+        description: "Try values like 12m, 45, or 1h 15m.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const label = formatDurationLabelFromSeconds(seconds)
+    const exists = quickAdjustPresets.some((preset) => preset.seconds === seconds || preset.label === label)
+    if (exists) {
+      toast({
+        title: "Preset already exists",
+        description: "Choose a new duration or edit an existing preset.",
+      })
+      return
+    }
+
+    const newPreset: QuickAdjustPreset = {
+      id: `preset-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      label,
+      seconds,
+    }
+
+    const sorted = [...quickAdjustPresets, newPreset].sort((a, b) => a.seconds - b.seconds)
+    setQuickAdjustPresets(sorted)
+    setSelectedPresetId(newPreset.id)
+    setNewPresetValue("")
+    toast({
+      title: "Preset added",
+      description: `${label} is now available for quick adjustments.`,
+    })
+  }
+
+  const handleRemovePreset = (presetId: string) => {
+    const preset = quickAdjustPresets.find((item) => item.id === presetId)
+    setQuickAdjustPresets((previous) => {
+      const filtered = previous.filter((preset) => preset.id !== presetId)
+      if (filtered.length === 0) {
+        setSelectedPresetId(null)
+        return []
+      }
+      if (selectedPresetId === presetId) {
+        setSelectedPresetId(filtered[0]?.id ?? null)
+      }
+      return filtered
+    })
+    if (preset) {
+      toast({
+        title: "Preset removed",
+        description: `${preset.label} has been removed from quick adjust.`,
+      })
+    }
+  }
+
+  const readAudioDurationFromUrl = (url: string): Promise<number> =>
+    new Promise((resolve, reject) => {
+      const audio = document.createElement("audio")
+      audio.preload = "metadata"
+      audio.src = url
+      audio.onloadedmetadata = () => {
+        if (Number.isFinite(audio.duration) && audio.duration > 0) {
+          resolve(audio.duration)
+        } else {
+          reject(new Error("Unable to determine audio duration."))
+        }
+        audio.remove()
+      }
+      audio.onerror = () => {
+        audio.remove()
+        reject(new Error("Unable to read audio metadata."))
+      }
+      audio.load()
+    })
+
+  const handleUploadMeditation = async () => {
+    if (!uploadFile) {
+      setUploadError("Select an audio file to upload.")
+      return
+    }
+
+    const trimmedTitle = uploadTitle.trim()
+    const derivedTitle = trimmedTitle || uploadFile.name.replace(/\.[^/.]+$/, "")
+
+    setIsUploading(true)
+    setUploadError(null)
+
+    let objectUrl: string | null = null
+
+    try {
+      objectUrl = URL.createObjectURL(uploadFile)
+      const duration = await readAudioDurationFromUrl(objectUrl)
+      const roundedDuration = Math.max(1, Math.round(duration))
+
+      await MeditationLibrary.saveMeditation({
+        title: derivedTitle,
+        originalFileName: uploadFile.name,
+        processedAudioUrl: objectUrl,
+        sourceAudioUrl: objectUrl,
+        duration: roundedDuration,
+        source: "adjuster",
+        metadata: {
+          meditationTitle: derivedTitle,
+          targetDuration: roundedDuration,
+        },
+      })
+
+      toast({
+        title: "Meditation uploaded",
+        description: `"${derivedTitle}" is ready in your library.`,
+      })
+
+      setUploadFile(null)
+      setUploadTitle("")
+      setIsUploadDialogOpen(false)
+      await loadData()
+    } catch (error) {
+      console.error("[v0] Failed to upload meditation:", error)
+      setUploadError(
+        error instanceof Error ? error.message : "We couldn't upload this meditation. Please try again.",
+      )
+    } finally {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl)
+      }
+      setIsUploading(false)
+    }
+  }
+
+  const resetUploadDialogState = () => {
+    setUploadFile(null)
+    setUploadTitle("")
+    setUploadError(null)
+  }
+
+  const openMeditationPlayer = (meditation: SavedMeditation) => {
+    const audio = audioRef.current
+    if (audio) {
+      audio.pause()
+      audio.currentTime = 0
+    }
+    if (timelineAudioRef.current) {
+      timelineAudioRef.current.pause()
+      timelineAudioRef.current = null
+    }
+    setPlayingTimelineEventId(null)
+
+    const baseTimeline = cloneTimeline(meditation.metadata?.timeline as LibraryTimelineEntry[] | undefined)
+    const baseMode: DurationMode = {
+      id: "original",
+      label: "Original",
+      seconds: meditation.duration,
+      playbackRate: 1,
+      timeline: baseTimeline,
+      source: "original",
+      persisted: true,
+      presetId: null,
+    }
+
+    const storedData = savedDurationsMap[meditation.id]
+    const storedModes = storedData?.modes?.map((mode) => buildDurationModeFromStored(mode, "saved")) ?? []
+
+    const deduped = new Map<string, DurationMode>()
+    ;[baseMode, ...storedModes].forEach((mode) => {
+      deduped.set(mode.id, mode)
+    })
+
+    const availableModes = sortDurationModes(Array.from(deduped.values()))
+
+    const targetModeId = storedData?.lastPlayedId && deduped.has(storedData.lastPlayedId)
+      ? storedData.lastPlayedId
+      : "original"
+    const activeMode = deduped.get(targetModeId) ?? baseMode
+
+    setBaseMeditation(meditation)
+    setCurrentDurationModes(availableModes)
+    setActiveDurationModeId(activeMode.id)
+    setPendingAdjustmentId(null)
+    setIsQuickAdjustProcessing(false)
+
+    if (activeMode.id === "original") {
+      setSelectedMeditation(meditation)
+      setCurrentPlaybackRate(1)
+      setPlayerDuration(meditation.duration)
+    } else {
+      const adjustedMeditation: SavedMeditation = {
+        ...meditation,
+        duration: activeMode.seconds,
+        metadata: {
+          ...meditation.metadata,
+          targetDuration: activeMode.seconds,
+          timeline: cloneTimeline(activeMode.timeline),
+          quickAdjust: {
+            ...(meditation.metadata.quickAdjust ?? {}),
+            lastPresetId: activeMode.presetId ?? null,
+            lastDurationId: activeMode.id,
+          },
+        },
+      }
+      setSelectedMeditation(adjustedMeditation)
+      setCurrentPlaybackRate(activeMode.playbackRate)
+      setPlayerDuration(activeMode.seconds)
+    }
+
+    setPlayerTime(0)
     setIsAudioPlaying(false)
     setIsPlayerOpen(true)
+
+    if (audio) {
+      audio.playbackRate = activeMode.playbackRate
+    }
+
+    if (activeMode) {
+      recordLastPlayedDuration(meditation, activeMode)
+    }
   }
 
   const closeMeditationPlayer = () => {
+    setIsQuickAdjustProcessing(false)
+    if (pendingAdjustmentId && baseMeditation) {
+      const pendingMode = currentDurationModes.find((mode) => mode.id === pendingAdjustmentId)
+      if (pendingMode) {
+        const shouldPersist = window.confirm(
+          "Would you like to save this adjusted duration for instant toggling in the future?",
+        )
+        if (shouldPersist) {
+          updateSavedDurations(baseMeditation.id, (existing) => {
+            const base: StoredMeditationDurations = existing
+              ? { ...existing, modes: Array.isArray(existing.modes) ? [...existing.modes] : [] }
+              : { modes: [] }
+            const storedMode = convertModeToStored(pendingMode)
+            const withoutPending = base.modes.filter((mode) => mode.id !== storedMode.id)
+            const updatedModes = [...withoutPending, storedMode]
+            return {
+              ...base,
+              modes: updatedModes,
+              lastPlayedId: pendingMode.id,
+              lastPlayedSeconds: pendingMode.seconds,
+              lastPlayedLabel:
+                pendingMode.id === "original"
+                  ? `Original (${formatDuration(pendingMode.seconds)})`
+                  : `${pendingMode.label} (${formatDuration(pendingMode.seconds)})`,
+            }
+          })
+          setCurrentDurationModes((previous) =>
+            sortDurationModes(
+              previous.map((mode) =>
+                mode.id === pendingMode.id
+                  ? { ...mode, persisted: true, source: "saved" as const }
+                  : mode,
+              ),
+            ),
+          )
+        } else {
+          const originalMode: DurationMode =
+            currentDurationModes.find((mode) => mode.id === "original") ??
+            ({
+              id: "original",
+              label: "Original",
+              seconds: baseMeditation.duration,
+              playbackRate: 1,
+              timeline: cloneTimeline(baseMeditation.metadata?.timeline as LibraryTimelineEntry[] | undefined),
+              source: "original",
+              persisted: true,
+              presetId: null,
+            } as DurationMode)
+
+          updateSavedDurations(baseMeditation.id, (existing) => {
+            const base: StoredMeditationDurations = existing
+              ? { ...existing, modes: Array.isArray(existing.modes) ? [...existing.modes] : [] }
+              : { modes: [] }
+
+            return {
+              ...base,
+              lastPlayedId: originalMode.id,
+              lastPlayedSeconds: originalMode.seconds,
+              lastPlayedLabel: `Original (${formatDuration(originalMode.seconds)})`,
+            }
+          })
+
+          setCurrentDurationModes((previous) =>
+            sortDurationModes(previous.filter((mode) => mode.id !== pendingMode.id)),
+          )
+        }
+      }
+      setPendingAdjustmentId(null)
+    }
+
     if (timelineAudioRef.current) {
       timelineAudioRef.current.pause()
       timelineAudioRef.current = null
     }
     setPlayingTimelineEventId(null)
     setIsPlayerOpen(false)
+    setSelectedMeditation(null)
+    setBaseMeditation(null)
+    setCurrentDurationModes([])
+    setActiveDurationModeId("original")
+    setCurrentPlaybackRate(1)
   }
 
   const togglePlayback = () => {
+    if (isQuickAdjustProcessing) return
     const audio = audioRef.current
     if (!audio) return
+    audio.playbackRate = currentPlaybackRate
     if (audio.paused) {
       audio
         .play()
@@ -308,14 +1057,22 @@ export default function LibraryPage() {
   }
 
   const handleSkip = (amount: number) => {
+    if (isQuickAdjustProcessing) return
     const audio = audioRef.current
     if (!audio) return
-    const newTime = Math.max(0, Math.min(audio.duration || 0, audio.currentTime + amount))
-    audio.currentTime = newTime
-    setPlayerTime(newTime)
+    const playbackRate = currentPlaybackRate > 0 ? currentPlaybackRate : 1
+    const baseDuration = Number.isFinite(audio.duration)
+      ? audio.duration
+      : baseMeditation?.duration ?? playerDuration
+    const maxTime = Number.isFinite(baseDuration) && baseDuration > 0 ? baseDuration : audio.currentTime
+    const newCurrentTime = Math.max(0, Math.min(maxTime, audio.currentTime + amount * playbackRate))
+    audio.currentTime = newCurrentTime
+    const displayTime = playbackRate > 0 ? newCurrentTime / playbackRate : newCurrentTime
+    setPlayerTime(displayTime)
   }
 
   const handlePlayTimelineEvent = (timelineEvent: LibraryTimelineEntry) => {
+    if (isQuickAdjustProcessing) return
     if (!selectedMeditation) return
 
     const stopCurrentTimelineAudio = () => {
@@ -385,11 +1142,19 @@ export default function LibraryPage() {
     if (!audio) return
 
     const targetTime = Number.isFinite(timelineEvent.startTime) ? timelineEvent.startTime : 0
-    audio.currentTime = Math.max(0, Math.min(audio.duration || targetTime, targetTime))
+    const playbackRate = currentPlaybackRate > 0 ? currentPlaybackRate : 1
+    const baseDuration = Number.isFinite(audio.duration)
+      ? audio.duration
+      : baseMeditation?.duration ?? selectedMeditation.duration
+    const clampedBase = Number.isFinite(baseDuration) && baseDuration > 0 ? baseDuration : targetTime
+    const adjustedTime = Math.max(0, Math.min(clampedBase, targetTime * playbackRate))
+    audio.playbackRate = playbackRate
+    audio.currentTime = adjustedTime
     audio
       .play()
       .then(() => {
         setIsAudioPlaying(true)
+        setPlayerTime(targetTime)
       })
       .catch((error) => {
         console.error("[v0] Failed to play main audio from timeline event:", error)
@@ -518,30 +1283,43 @@ export default function LibraryPage() {
   }
 
   const handleSeek = (event: MouseEvent<HTMLDivElement>) => {
+    if (isQuickAdjustProcessing) return
     const audio = audioRef.current
     if (!audio || !(audio.duration || playerDuration)) return
 
     const rect = event.currentTarget.getBoundingClientRect()
     const clickPosition = event.clientX - rect.left
     const ratio = Math.min(Math.max(clickPosition / rect.width, 0), 1)
-    const duration =
-      Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : (selectedMeditation?.duration ?? 0)
-    const newTime = ratio * duration
-    audio.currentTime = newTime
-    setPlayerTime(newTime)
+    const playbackRate = currentPlaybackRate > 0 ? currentPlaybackRate : 1
+    const baseDuration = Number.isFinite(audio.duration)
+      ? audio.duration
+      : baseMeditation?.duration ?? selectedMeditation?.duration ?? 0
+    const effectiveDuration = playbackRate > 0 ? baseDuration / playbackRate : baseDuration
+    const newDisplayTime = ratio * effectiveDuration
+    audio.currentTime = newDisplayTime * playbackRate
+    setPlayerTime(newDisplayTime)
   }
 
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
 
-    const handleTimeUpdate = () => setPlayerTime(audio.currentTime)
+    const handleTimeUpdate = () => {
+      const playbackRate = currentPlaybackRate > 0 ? currentPlaybackRate : 1
+      const displayTime = playbackRate > 0 ? audio.currentTime / playbackRate : audio.currentTime
+      setPlayerTime(displayTime)
+    }
     const handlePlayEvent = () => setIsAudioPlaying(true)
     const handlePauseEvent = () => setIsAudioPlaying(false)
     const handleLoadedMetadata = () => {
-      const duration = Number.isFinite(audio.duration) ? audio.duration : (selectedMeditation?.duration ?? 0)
-      setPlayerDuration(duration)
-      setPlayerTime(audio.currentTime)
+      const playbackRate = currentPlaybackRate > 0 ? currentPlaybackRate : 1
+      const baseDuration = Number.isFinite(audio.duration)
+        ? audio.duration
+        : baseMeditation?.duration ?? selectedMeditation?.duration ?? 0
+      const displayDuration = playbackRate > 0 ? baseDuration / playbackRate : baseDuration
+      const displayTime = playbackRate > 0 ? audio.currentTime / playbackRate : audio.currentTime
+      setPlayerDuration(displayDuration)
+      setPlayerTime(displayTime)
     }
     const handleEndedEvent = () => {
       setIsAudioPlaying(false)
@@ -555,6 +1333,7 @@ export default function LibraryPage() {
     audio.addEventListener("ended", handleEndedEvent)
 
     if (selectedMeditation) {
+      audio.playbackRate = currentPlaybackRate > 0 ? currentPlaybackRate : 1
       audio.load()
       audio.currentTime = 0
       setPlayerTime(0)
@@ -568,7 +1347,7 @@ export default function LibraryPage() {
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata)
       audio.removeEventListener("ended", handleEndedEvent)
     }
-  }, [selectedMeditation])
+  }, [selectedMeditation, currentPlaybackRate, baseMeditation])
 
   useEffect(() => {
     if (!selectedMeditation && timelineAudioRef.current) {
@@ -698,6 +1477,87 @@ export default function LibraryPage() {
                           />
                         </div>
                       </div>
+                      <div className="mt-3">
+                        <Dialog
+                          open={isUploadDialogOpen}
+                          onOpenChange={(open) => {
+                            setIsUploadDialogOpen(open)
+                            if (!open) {
+                              resetUploadDialogState()
+                            }
+                          }}
+                        >
+                          <DialogTrigger asChild>
+                            <Button className="w-full bg-gradient-to-r from-logo-teal-400 to-logo-emerald-500 text-white shadow-md hover:shadow-none text-xs font-black">
+                              Upload Meditation
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                              <DialogTitle>Upload Meditation</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="upload-title" className="text-xs font-black text-gray-600">
+                                  Title
+                                </Label>
+                                <Input
+                                  id="upload-title"
+                                  value={uploadTitle}
+                                  onChange={(event) => setUploadTitle(event.target.value)}
+                                  placeholder="Morning Calm"
+                                  className="text-xs"
+                                  disabled={isUploading}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="upload-file" className="text-xs font-black text-gray-600">
+                                  Audio file
+                                </Label>
+                                <Input
+                                  id="upload-file"
+                                  type="file"
+                                  accept="audio/*"
+                                  onChange={(event) => {
+                                    const file = event.target.files?.[0] ?? null
+                                    setUploadFile(file)
+                                    setUploadError(null)
+                                    if (file && !uploadTitle) {
+                                      setUploadTitle(file.name.replace(/\.[^/.]+$/, ""))
+                                    }
+                                  }}
+                                  className="text-xs"
+                                  disabled={isUploading}
+                                />
+                                {uploadFile && (
+                                  <p className="text-[11px] text-gray-500 truncate">Selected: {uploadFile.name}</p>
+                                )}
+                              </div>
+                              {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
+                              <p className="text-[11px] text-gray-500">
+                                Uploaded meditations use the standard adjuster settings and can be quick-adjusted later.
+                              </p>
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    resetUploadDialogState()
+                                    setIsUploadDialogOpen(false)
+                                  }}
+                                  disabled={isUploading}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button onClick={handleUploadMeditation} size="sm" disabled={isUploading || !uploadFile}>
+                                  {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                  {isUploading ? "Uploading" : "Upload"}
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
                     </div>
                     <div className="flex flex-wrap font-serif font-black text-xs text-gray-600 md:justify-start md:items-start gap-[5px] justify-center">
                       <button
@@ -764,6 +1624,10 @@ export default function LibraryPage() {
                   ) : (
                     <div className="space-y-5">
                       {displayedMeditations.map((meditation) => {
+                        const lastPlayedInfo = lastPlayedDurationMap[meditation.id]
+                        const durationDisplay = lastPlayedInfo
+                          ? lastPlayedInfo.label
+                          : `Original (${formatDuration(meditation.duration)})`
                         return (
                           <motion.div
                             key={meditation.id}
@@ -790,7 +1654,7 @@ export default function LibraryPage() {
                                   <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
                                     <span className="flex items-center gap-1">
                                       <Clock className="h-4 w-4 text-gray-500" />
-                                      <span>{formatDuration(meditation.duration)}</span>
+                                      <span>{durationDisplay}</span>
                                     </span>
                                     {isWideLayout && (
                                       <>
@@ -1076,7 +1940,12 @@ export default function LibraryPage() {
                       <X className="h-[16px] w-[16px]" />
                     </button>
 
-                    <div className="space-y-6 my-[3px] mx-[7px]">
+                    <div
+                      className={cn(
+                        "space-y-6 my-[3px] mx-[7px]",
+                        isQuickAdjustProcessing ? "pointer-events-none select-none blur-[1px]" : "",
+                      )}
+                    >
                       <div className="space-y-3">
                         <button className="bg-gradient-to-r from-muted to-stone-200 text-xs font-serif rounded-[7px] font-black text-gray-500 shadow-inner py-[5px] px-[13px] mb-[9px]">
                           {selectedMeditation.source === "adjuster" ? "Adjuster" : "Encoder"}
@@ -1170,6 +2039,7 @@ export default function LibraryPage() {
                                           handlePlayTimelineEvent(timelineEvent)
                                         }}
                                         aria-label="Play timeline event"
+                                        disabled={isQuickAdjustProcessing}
                                       >
                                         {isRecordingPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                                       </Button>
@@ -1215,6 +2085,7 @@ export default function LibraryPage() {
                             size="icon"
                             onClick={() => handleSkip(-10)}
                             className="h-10 w-10 text-gray-600 hover:text-gray-800"
+                            disabled={isQuickAdjustProcessing}
                           >
                             <SkipBack className="h-5 w-5" />
                           </Button>
@@ -1222,6 +2093,7 @@ export default function LibraryPage() {
                           <Button
                             onClick={togglePlayback}
                             className="h-12 w-12 rounded-full shadow-md bg-gradient-to-r from-gray-500 to-gray-600  hover:shadow-none text-white"
+                            disabled={isQuickAdjustProcessing}
                           >
                             {isAudioPlaying ? <Pause className="h-10 w-10" /> : <Play className="ml-0.5 w-10 h-10" />}
                           </Button>
@@ -1231,6 +2103,7 @@ export default function LibraryPage() {
                             size="icon"
                             onClick={() => handleSkip(10)}
                             className="h-10 w-10 text-gray-600 hover:text-gray-800"
+                            disabled={isQuickAdjustProcessing}
                           >
                             <SkipForward className="h-5 w-5" />
                           </Button>
@@ -1243,13 +2116,140 @@ export default function LibraryPage() {
                             size="icon"
                             className="h-10 w-10 text-gray-600 hover:text-gray-800 shadow-md hover:shadow-none"
                             title="Download"
+                            disabled={isQuickAdjustProcessing}
                           >
                             <Download className="h-4 w-4" />
                           </Button>
 
+                          <Dialog
+                            open={isQuickAdjustDialogOpen}
+                            onOpenChange={(open) => {
+                              if (!open) {
+                                setIsEditingPresets(false)
+                                setNewPresetValue("")
+                              }
+                              setIsQuickAdjustDialogOpen(open)
+                            }}
+                          >
+                            <DialogTrigger asChild>
+                              <Button
+                                className="flex-1 shadow-md bg-gradient-to-r from-logo-rose-300 to-logo-purple-400 rounded-[11px] hover:shadow-none text-white font-black text-xs flex items-center justify-center gap-2"
+                                disabled={isQuickAdjustProcessing}
+                              >
+                                <Wand2 className="h-4 w-4" />
+                                Quick Adjust
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-md">
+                              <DialogHeader>
+                                <DialogTitle>Quick Adjust</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                {!isEditingPresets ? (
+                                  <>
+                                    <p className="text-xs text-gray-500">
+                                      Pick a preset duration to instantly rebalance this meditation.
+                                    </p>
+                                    <div className="grid gap-2">
+                                      {quickAdjustPresets.length === 0 && (
+                                        <div className="rounded-md border border-dashed border-gray-300 p-3 text-xs text-gray-500">
+                                          No presets yet. Switch to Edit Presets to add your first quick adjust duration.
+                                        </div>
+                                      )}
+                                      {quickAdjustPresets.map((preset) => {
+                                        const isActive = selectedPresetId === preset.id
+                                        return (
+                                          <Button
+                                            key={preset.id}
+                                            variant={isActive ? "default" : "outline"}
+                                            className={`justify-between text-xs font-black ${
+                                              isActive
+                                                ? "bg-gradient-to-r from-logo-teal-400 to-logo-emerald-500 text-white"
+                                                : "text-gray-600"
+                                            }`}
+                                            onClick={() => setSelectedPresetId(preset.id)}
+                                          >
+                                            <span>{preset.label}</span>
+                                            <span className="text-[11px] font-semibold opacity-80">
+                                              {formatDuration(preset.seconds)}
+                                            </span>
+                                          </Button>
+                                        )
+                                      })}
+                                    </div>
+                                    <div className="flex items-center justify-between gap-3 pt-1">
+                                      <Button variant="outline" onClick={() => setIsEditingPresets(true)} size="sm">
+                                        Edit Presets
+                                      </Button>
+                                      <Button
+                                        onClick={handleQuickAdjust}
+                                        size="sm"
+                                        disabled={!selectedPresetId || isQuickAdjustProcessing || quickAdjustPresets.length === 0}
+                                      >
+                                        Adjust
+                                      </Button>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <p className="text-xs text-gray-500">
+                                      Add or remove preset durations. Use minutes (15), hours (1h), or mm:ss (12:30).
+                                    </p>
+                                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                      {quickAdjustPresets.map((preset) => (
+                                        <div
+                                          key={preset.id}
+                                          className="flex items-center justify-between rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs"
+                                        >
+                                          <div className="flex flex-col">
+                                            <span className="font-black text-gray-700">{preset.label}</span>
+                                            <span className="text-[11px] text-gray-500">{formatDuration(preset.seconds)}</span>
+                                          </div>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7 text-gray-500 hover:text-red-500"
+                                            onClick={() => handleRemovePreset(preset.id)}
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                          </Button>
+                                        </div>
+                                      ))}
+                                      {quickAdjustPresets.length === 0 && (
+                                        <div className="rounded-md border border-dashed border-gray-300 p-3 text-xs text-gray-500">
+                                          No presets yet. Add a duration below to get started.
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Input
+                                        placeholder="e.g. 45m"
+                                        value={newPresetValue}
+                                        onChange={(event) => setNewPresetValue(event.target.value)}
+                                        className="text-xs"
+                                      />
+                                      <Button type="button" size="sm" onClick={handleAddPreset}>
+                                        <Plus className="h-3.5 w-3.5 mr-1" />
+                                        Add
+                                      </Button>
+                                    </div>
+                                    <div className="flex justify-end">
+                                      <Button variant="outline" size="sm" onClick={() => setIsEditingPresets(false)}>
+                                        Done
+                                      </Button>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button className="flex-1 shadow-md bg-gradient-to-r from-logo-amber-300 to-logo-teal-500 rounded-[11px] hover:shadow-none text-white font-black text-xs">
+                              <Button
+                                className="flex-1 shadow-md bg-gradient-to-r from-logo-amber-300 to-logo-teal-500 rounded-[11px] hover:shadow-none text-white font-black text-xs"
+                                disabled={isQuickAdjustProcessing}
+                              >
                                 Open In
                                 <ChevronDown className="h-4 w-4 ml-2" />
                               </Button>
@@ -1264,8 +2264,44 @@ export default function LibraryPage() {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
+
+                        {currentDurationModes.length > 0 && (
+                          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                            {currentDurationModes.map((mode) => {
+                              const isActive = mode.id === activeDurationModeId
+                              const label =
+                                mode.id === "original"
+                                  ? `Original (${formatDuration(mode.seconds)})`
+                                  : `${mode.label}`
+                              return (
+                                <Button
+                                  key={mode.id}
+                                  size="sm"
+                                  variant={isActive ? "default" : "outline"}
+                                  className={`text-[11px] font-black ${
+                                    isActive ? "bg-gradient-to-r from-gray-600 to-gray-500 text-white" : "text-gray-600"
+                                  }`}
+                                  onClick={() => handleSelectDurationMode(mode.id)}
+                                  disabled={isQuickAdjustProcessing}
+                                >
+                                  <span className="flex items-center gap-1">
+                                    {label}
+                                    {!mode.persisted && mode.id !== "original" && <span className="text-[10px]">• Unsaved</span>}
+                                  </span>
+                                </Button>
+                              )
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
+
+                    {isQuickAdjustProcessing && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white/85 backdrop-blur-sm text-gray-600">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                        <span className="text-sm font-black">Adjusting...</span>
+                      </div>
+                    )}
                   </Card>
                 </motion.div>
               </motion.div>
