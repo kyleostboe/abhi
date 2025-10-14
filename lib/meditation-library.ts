@@ -51,6 +51,9 @@ export interface SavedMeditation {
     quickAdjust?: {
       lastPresetId?: string | null
       lastDurationId?: string | null
+      range?: {
+        minSeconds?: number | null
+      }
     }
   }
 }
