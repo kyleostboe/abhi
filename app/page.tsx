@@ -5,6 +5,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
+import { Alert } from "@/components/ui/alert" // Import Alert component
 import {
   AlertTriangle,
   Mic,
@@ -14,8 +15,10 @@ import {
   CircleDotDashed,
   BookmarkPlus,
   Wand2,
+  Volume2,
   Upload,
 } from "lucide-react" // Import Copy icon
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { motion, AnimatePresence } from "framer-motion"
@@ -3506,303 +3509,524 @@ export default function Home() {
             {/* Conditional Rendering based on activeMode */}
             {activeMode === "adjuster" ? (
               // == Length Adjuster UI ==
-              <motion.div
-                ref={adjusterSectionRef}
-                key="adjuster-content"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-4"
-              >
-                <div
+              <div ref={adjusterSectionRef} className="space-y-4">
+                {/* Note and Resources sections - moved to proper position */}
+                <div className="space-y-4 mb-[27px]">
+                  <div className="p-4 max-w-2xl text-center mx-auto rounded-md border-logo-rose-500 border-0 shadow-none pt-0 pb-1">
+                    <p className="leading-relaxed font-serif font-black text-xs text-gray-600">
+                      <strong className="pr-1.5 font-black font-serif text-center text-sm text-logo-amber-400">
+                        Note:
+                      </strong>
+                      Depending on the audio, users may need to tweak the advanced settings for optimal results. Only
+                      pauses are adjusted, spoken instruction is preserved. Any guided meditation under{" "}
+                      {isMobileDevice ? "50MB" : "500MB"} should be compatible. Teachers, please feel free to
+                      <a
+                        href="/contact"
+                        className=" underline px-1 rounded transition-colors transition-shadow font-black text-sm text-logo-purple-300"
+                      >
+                        contact me
+                      </a>
+                      to opt out. Enjoy:)
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto backdrop-blur-sm border-0 py-4 px-0 bg-transparent pt-0 pb-0">
+                    <h3 className="mb-2 text-center font-black px-0 rounded text-base pb-0.5 text-gray-600">
+                      Resources
+                    </h3>
+                    <div className="text-sm text-gray-600 leading-relaxed flex flex-wrap justify-center text-center gap-[5px] px-2">
+                      <a
+                        href="https://dharmaseed.org/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
+                      >
+                        Dharma Seed
+                      </a>
+                      <a
+                        href="https://dharmaseed.org/teacher/210/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
+                      >
+                        Rob Burbea's talks &amp; retreats
+                      </a>
+                      <a
+                        href="https://tasshin.com/guided-meditations/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
+                      >
+                        Tasshin &amp; friend's meditations
+                      </a>
+                      <a
+                        href="https://www.tarabrach.com/guided-meditations/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
+                      >
+                        Tara Brach's meditations
+                      </a>
+                      <a
+                        href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDDo3?usp=drive_link"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
+                      >
+                        Toby Sola's meditations
+                      </a>
+                      <a
+                        href="https://meditofoundation.org/meditations"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
+                      >
+                        Medito Foundation
+                      </a>
+                      <a
+                        href="https://www.freebuddhistaudio.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
+                      >
+                        freebuddhistaudio
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Upload Area */}
+                <motion.div
+                  whileHover={{ scale: 1.005 }}
+                  whileTap={{ scale: 0.995 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
                   ref={uploadAreaRef}
+                  className="overflow-hidden border-none bg-white rounded-2xl mb-5 cursor-pointer transition-all duration-300 shadow-none hover:shadow-lg "
+                  onClick={() => fileInputRef.current?.click()}
                   onDragOver={handleDragOverAction}
                   onDragLeave={handleDragLeaveAction}
                   onDrop={handleDropAction}
-                  className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg cursor-pointer bg-white/50 backdrop-blur-sm transition-colors duration-300 ease-in-out"
                 >
+                  <div className="p-0.5 bg-gradient-to-r from-logo-blue-400 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
+                    <div className="p-10 md:p-16 text-center bg-white md:py-12 md:px-16 shadow rounded-sm border-stone-200 border-[3px]">
+                      <motion.div
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        <div className="font-serif mb-2.5 font-black text-base text-gray-600">
+                          Drop your audio file here or click to browse
+                        </div>
+                        <div className="font-serif text-xs text-gray-500">
+                          Supports MP3, WAV, OGG, and M4A files {"(Max: " + (isMobileDevice ? "50MB" : "500MB") + ")"}
+                        </div>
+                      </motion.div>
+                    </div>
+                  </div>
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="audio/*"
                     className="hidden"
+                    accept=".mp3,.wav,.ogg,.m4a,audio/*"
                     onChange={handleFileSelectAction}
                   />
-                  <Upload className="h-12 w-12 text-logo-blue-400 mb-4" />
-                  <p className="text-lg font-black text-gray-700">Drag & drop audio file here or click to upload</p>
-                  <p className="text-sm font-serif text-gray-500 mt-1">Supports WAV, MP3, AAC, OGG, etc.</p>
+                </motion.div>
+
+                <AnimatePresence>
+                  {file && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: "auto" }}
+                      exit={{ opacity: 0, y: -10, height: 0 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      className="p-0.5 overflow-hidden bg-gradient-to-r from-stone-300 to-logo-purple-300 py-1 rounded-sm px-[5px] mb-3.5 shadow-none"
+                    >
+                      <div className="bg-white p-5 py-4 rounded-sm border-stone-200 shadow border-[3px]">
+                        <div className="flex items-center">
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: "spring", stiffness: 500, damping: 30, delay: 0.1 }}
+                            className="p-2 rounded-lg mr-4 bg-transparent text-purple-300"
+                          >
+                            <Volume2 className="h-4 w-4 text-gray-600" />
+                          </motion.div>
+                          <div className="flex-1">
+                            <motion.div
+                              initial={{ opacity: 0, x: -5 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: 0.2 }}
+                              className="mb-1 font-black text-gray-600 text-xs"
+                            >
+                              {displayedFileName ?? file.name}
+                            </motion.div>
+                            <motion.div
+                              initial={{ opacity: 0, x: -5 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: 0.3 }}
+                              className="mb-1 font-black text-sm text-gray-500"
+                            >
+                              Size: {formatFileSize(file.size)}
+                              {" • Type: "}
+                              {file.type}
+                            </motion.div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="space-y-6 mt-4">
+                  {originalUrl && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <div className="bg-white rounded-sm p-3 shadow-md mb-3.5 px-0">
+                        <audio controls className="w-full" src={originalUrl}></audio>
+                      </div>
+                      <div>
+                        <SaveMeditationDialog
+                          audioUrl={originalUrl}
+                          originalFileName={file?.name || "original-audio"}
+                          duration={originalBuffer?.duration || 0}
+                          source="adjuster"
+                          metadata={{}}
+                        >
+                          <Button
+                            className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black"
+                            disabled={!originalBuffer}
+                          >
+                            <BookmarkPlus className="w-4 h-4 mr-2" />
+                            Save to Library
+                          </Button>
+                        </SaveMeditationDialog>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  <AnimatePresence>
+                    {audioAnalysis && durationLimits && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ delay: 0.1 }}
+                      >
+                        <Alert className="bg-white p-0 border-0 shadow-none">
+                          <div className="p-3 text-center min-h-[76px] rounded-sm shadow-none bg-transparent pb-0.5 pt-0">
+                            <div className="flex items-center mb-2 justify-center">
+                              {/* Removed the Info icon div */}
+                              <div className="text-lg font-black text-gray-600">Audio Analysis</div>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                              <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
+                                <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
+                                  <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
+                                  <div className="font-black text-gray-600">
+                                    {formatTime(audioAnalysis.contentDuration)}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
+                                <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-[3px] border-stone-200">
+                                  <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
+                                  <div className="font-black text-gray-600">
+                                    {formatTime(audioAnalysis.totalSilence)}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
+                                <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
+                                  <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
+                                  <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
+                                </div>
+                              </div>
+                              <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
+                                <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
+                                  <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
+                                  <div className="uppercase text-gray-600 text-xs tracking-wide">
+                                    {durationLimits.min} min - {isMobileDevice ? "1 hour" : "2 hours"}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </Alert>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
-                {file && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                  >
-                    <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
-                      <div className="bg-gradient-to-r from-logo-rose-300 via-logo-amber-300 to-logo-emerald-500 px-6 py-[9px] ">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <h3 className="text-white font-black">Uploaded File</h3>
-                            <AudioInfoMenu
-                              items={[
-                                { label: "File Name", value: displayedFileName || "N/A" },
-                                { label: "Original Duration", value: formatTime(actualDuration ?? 0) },
-                                { label: "Original Size", value: formatFileSize(file.size) },
-                                ...(processedAudioMetadata
-                                  ? [
-                                      {
-                                        label: "Export Format",
-                                        value: `Mono • ${processedAudioMetadata.sampleRate.toLocaleString()} Hz • ${processedAudioMetadata.bitDepth.toLocaleString()}-bit`,
-                                      },
-                                    ]
-                                  : []),
-                              ]}
-                            />
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="mb-6"
+                >
+                  <Tabs defaultValue={activeTab} className="w-full font-serif font-black">
+                    <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted p-1 rounded-sm ">
+                      <TabsTrigger
+                        value="adjuster"
+                        onClick={() => {
+                          setActiveMode("adjuster")
+                          setActiveTab("adjuster")
+                        }}
+                        className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-[10px] "
+                      >
+                        Basic Settings
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="encoder"
+                        onClick={() => {
+                          setActiveTab("adjuster") // Only change the tab, not the mode
+                        }}
+                        className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-[10px] "
+                      >
+                        Advanced Settings
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="adjuster" className="mt-0 space-y-6">
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                          <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-cyan-500">
+                            <h3 className="text-white font-black text-base">Target Duration</h3>
                           </div>
-                        </div>
-                      </div>
-                      <div className="p-6 px-3.5 py-4 space-y-4">
-                        <p className="text-sm font-black text-gray-600 break-words">
-                          File: <span className="font-serif font-black text-gray-700">{displayedFileName}</span>
-                        </p>
-                        {actualDuration !== null && (
-                          <p className="text-sm font-black text-gray-600">
-                            Original Duration:{" "}
-                            <span className="font-serif font-black text-gray-700">{formatTime(actualDuration)}</span>
-                          </p>
-                        )}
-                        {audioAnalysis && (
-                          <>
-                            <p className="text-sm font-black text-gray-600">
-                              Silence Detected:{" "}
-                              <span className="font-serif font-black text-gray-700">
-                                {audioAnalysis.silenceRegions}
-                              </span>{" "}
-                              regions ({formatTime(audioAnalysis.totalSilence)})
-                            </p>
-                            <p className="text-sm font-black text-gray-600">
-                              Content Duration:{" "}
-                              <span className="font-serif font-black text-gray-700">
-                                {formatTime(audioContentDuration)}
-                              </span>
-                            </p>
-                          </>
-                        )}
-
-                        <audio controls className="w-full mt-4" src={originalUrl}></audio>
-                      </div>
-                    </Card>
-                  </motion.div>
-                )}
-
-                {(file || processedUrl) && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                      <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 text-center">
-                        <h3 className="text-white flex items-center font-serif font-black">
-                          <Wand2 className="h-4 w-4 mr-2" />
-                          Adjuster Settings
-                        </h3>
-                      </div>
-                      <div className="p-6 pt-3.5 space-y-4">
-                        {durationLimits && (
-                          <div className="flex flex-col space-y-2">
-                            <Label className="text-gray-600 font-black text-sm">Target Duration (Minutes)</Label>
-                            <Slider
-                              value={[targetDuration]}
-                              onValueChange={(value) => setTargetDuration(value[0])}
-                              min={durationLimits.min}
-                              max={durationLimits.max}
-                              step={1}
-                              className="[&>span:first-child]:h-2 [&>span:first-child]:w-2 [&>span:last-child]:bg-logo-emerald-500"
-                            />
-                            <div className="flex justify-between text-xs font-serif font-black text-gray-500">
-                              <span>{durationLimits.min} min</span>
-                              <span>{durationLimits.max} min</span>
+                          <div className="p-6 py-6 px-11 pb-6">
+                            <div className="mb-4">
+                              <Slider
+                                value={[targetDuration]}
+                                min={durationLimits?.min || 5}
+                                max={durationLimits?.max || (isMobileDevice ? 60 : 120)}
+                                step={1}
+                                onValueChange={(value) => setTargetDuration(value[0])}
+                                disabled={!durationLimits}
+                                className="py-4"
+                                rangeClassName="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 "
+                              />
                             </div>
-                            <p className="text-center text-xs font-serif text-gray-500">
-                              Targeting {targetDuration} minutes
-                            </p>
+                            <div className="text-center font-serif font-black">
+                              <span className="font-black text-xl text-gray-600">{targetDuration}</span>
+                              <span className="ml-1 text-base text-gray-600">minutes</span>
+                            </div>
+                            {durationLimits && (
+                              <div className="text-center text-sm mt-0 text-gray-500">
+                                Range: {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
+                              </div>
+                            )}
                           </div>
-                        )}
-                        <div className="space-y-2">
-                          <Label className="text-gray-600 font-black text-sm">Silence Threshold (%)</Label>
-                          <Slider
-                            value={[silenceThreshold * 100]}
-                            onValueChange={(value) => setSilenceThreshold(value[0] / 100)}
-                            min={0.1}
-                            max={5}
-                            step={0.1}
-                            className="[&>span:first-child]:h-2 [&>span:first-child]:w-2 [&>span:last-child]:bg-logo-emerald-500"
-                          />
-                          <p className="text-center text-xs font-serif text-gray-500">
-                            Silences below {silenceThreshold.toFixed(3)} amplitude will be considered
-                          </p>
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-gray-600 font-black text-sm">Min Silence Duration (Seconds)</Label>
-                          <Slider
-                            value={[minSilenceDuration]}
-                            onValueChange={(value) => setMinSilenceDuration(value[0])}
-                            min={0.5}
-                            max={10}
-                            step={0.5}
-                            className="[&>span:first-child]:h-2 [&>span:first-child]:w-2 [&>span:last-child]:bg-logo-emerald-500"
-                          />
-                          <p className="text-center text-xs font-serif text-gray-500">
-                            Minimum {minSilenceDuration.toFixed(1)} seconds of silence to be considered
-                          </p>
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-gray-600 font-black text-sm">
-                            Min Spacing Between Pauses (Seconds)
-                          </Label>
-                          <Slider
-                            value={[minSpacingDuration]}
-                            onValueChange={(value) => setMinSpacingDuration(value[0])}
-                            min={0.5}
-                            max={5}
-                            step={0.5}
-                            className="[&>span:first-child]:h-2 [&>span:first-child]:w-2 [&>span:last-child]:bg-logo-emerald-500"
-                          />
-                          <p className="text-center text-xs font-serif text-gray-500">
-                            Ensures at least {minSpacingDuration.toFixed(1)} seconds between adjusted silence
-                          </p>
-                        </div>
-                        <div className="flex items-center space-x-2 pt-2">
-                          <Switch
-                            id="preserve-natural-pacing"
-                            checked={preserveNaturalPacing}
-                            onCheckedChange={setPreserveNaturalPacing}
-                          />
-                          <Label htmlFor="preserve-natural-pacing" className="text-gray-600 font-black text-sm">
-                            Preserve Natural Pacing
-                          </Label>
-                        </div>
-                        <div className="space-y-2 pt-2">
-                          <Label className="text-gray-600 font-black text-sm">Compatibility Mode</Label>
-                          <Select value={compatibilityMode} onValueChange={setCompatibilityMode}>
-                            <SelectTrigger className="w-full bg-white rounded-[10px] shadow-md border-gray-300 focus:ring-logo-emerald-500 focus:border-logo-emerald-500 text-xs font-black">
-                              <SelectValue placeholder="Select compatibility mode" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="high">High (Best Quality)</SelectItem>
-                              <SelectItem value="medium">Medium (Good Balance)</SelectItem>
-                              <SelectItem value="low">Low (Smallest File Size)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        </Card>
+                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                          <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 ">
+                            <h3 className="text-white font-black">Silence Threshold</h3>
+                          </div>
+                          <div className="p-6 px-11">
+                            <div className="mb-4">
+                              <Slider
+                                value={[silenceThreshold]}
+                                min={0.001}
+                                max={0.05}
+                                step={0.001}
+                                onValueChange={(value) => setSilenceThreshold(value[0])}
+                                className="py-4"
+                                rangeClassName="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 "
+                              />
+                            </div>
+                            <div className="text-center">
+                              <span className="font-serif font-black text-xl text-gray-600">
+                                {silenceThreshold.toFixed(3)}
+                              </span>
+                            </div>
+                            <div className="text-center mt-0 text-sm text-gray-500">Lower = more sensitive</div>
+                          </div>
+                        </Card>
                       </div>
-                    </Card>
-                  </motion.div>
-                )}
+                    </TabsContent>
+                    <TabsContent value="encoder" className="mt-0 space-y-6">
+                      <div className="grid md:grid-cols-2 font-serif font-black gap-4">
+                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                          <div className="bg-gradient-to-r from-logo-purple-300 to-logo-emerald-500 py-3 px-6 ">
+                            <h3 className="text-white font-black">Min Silence Duration</h3>
+                          </div>
+                          <div className="p-6 font-serif font-black px-11 py-6">
+                            <div className="mb-4">
+                              <Slider
+                                value={[minSilenceDuration]}
+                                min={1}
+                                max={15}
+                                step={0.5}
+                                onValueChange={(value) => setMinSilenceDuration(value[0])}
+                                className="py-4"
+                                rangeClassName="bg-gradient-to-r from-logo-purple-300 to-logo-emerald-500 "
+                              />
+                            </div>
+                            <div className="text-center">
+                              <span className="font-black text-xl text-gray-600">{minSilenceDuration}</span>
+                              <span className="ml-1 text-base text-gray-600">seconds</span>
+                            </div>
+                            <div className="text-center mt-0 text-sm text-gray-500">Shorter = detect more pauses</div>
+                          </div>
+                        </Card>
+                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                          <div className="bg-gradient-to-r from-orange-300 to-logo-rose-300 py-3 px-6 ">
+                            <h3 className="text-white font-black">Min Spacing Between Content</h3>
+                          </div>
+                          <div className="p-6 px-11 py-6">
+                            <div className="mb-4">
+                              <Slider
+                                value={[minSpacingDuration]}
+                                min={0.0}
+                                max={5}
+                                step={0.1}
+                                onValueChange={(value) => setMinSpacingDuration(value[0])}
+                                className="py-4"
+                                rangeClassName="bg-gradient-to-r from-orange-300 to-logo-rose-300 "
+                              />
+                            </div>
+                            <div className="text-center">
+                              <span className="font-black text-xl text-gray-600">{minSpacingDuration.toFixed(1)}</span>
+                              <span className="ml-1 text-base text-gray-600">seconds</span>
+                            </div>
+                            <div className="text-center text-sm mt-0 text-gray-500">
+                              Minimum pause between speaking parts
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                          <div className="bg-gradient-to-r from-pink-400 to-cyan-400 py-3 px-6 ">
+                            <h3 className="text-white font-black">Preserve Natural Pacing</h3>
+                          </div>
+                          <div className="p-6 px-11 py-6">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="mb-1 text-gray-600 text-sm mr-2">
+                                  Maintain the relative length of pauses
+                                </p>
+                              </div>
+                              <Switch
+                                checked={preserveNaturalPacing}
+                                onCheckedChange={setPreserveNaturalPacing}
+                                className="data-[state=checked]:bg-gray-500 "
+                              />
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                          <div className="bg-gradient-to-r from-logo-teal-500 to-logo-amber-300 py-3 px-6 ">
+                            <h3 className="text-white font-black">Compatibility Mode</h3>
+                          </div>
+                          <div className="p-6 px-11">
+                            <Select value={compatibilityMode} onValueChange={(value) => setCompatibilityMode(value)}>
+                              <SelectTrigger className="w-full mb-2 border-logo-teal-200 focus:ring-logo-teal-500 ">
+                                <SelectValue placeholder="Select compatibility mode" />
+                              </SelectTrigger>
+                              <SelectContent className="">
+                                <SelectItem value="standard">Standard Quality (Original SR)</SelectItem>
+                                <SelectItem value="high">
+                                  High Compatibility (44.1kHz or 22.05kHz for Mobile Long Audio)
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <div className="text-xs mt-3.5 text-gray-500">
+                              High Compatibility for better playback on mobile/AirPods. May reduce sample rate for long
+                              audio on mobile.
+                            </div>
+                          </div>
+                        </Card>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </motion.div>
 
-                {file && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
+                {/* Process Audio Button */}
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                  <Button
+                    onClick={handleProcessAudio}
+                    disabled={isProcessing || !originalBuffer}
+                    className={cn(
+                      "w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
+                      "shadow-lg hover:shadow-xl active:shadow-none",
+                      "text-white ",
+                      "disabled:cursor-not-allowed hover:opacity-100 disabled:opacity-100",
+                      "relative overflow-hidden",
+                    )}
+                    style={
+                      {
+                        backgroundImage: `
+                        radial-gradient(circle at 8% 14%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
+                        radial-gradient(circle at 15% 8%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
+                        radial-gradient(circle at 4% 22%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 12% 28%, rgba(255, 255, 255, 0.7) 0.3px, transparent 1px),
+                        radial-gradient(circle at 22% 18%, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px),
+                        radial-gradient(circle at 18% 72%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
+                        radial-gradient(circle at 8% 78%, rgba(255, 255, 255, 0.8) 1.3px, transparent 1.5px),
+                        radial-gradient(circle at 14% 85%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
+                        radial-gradient(circle at 6% 92%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
+                        radial-gradient(circle at 24% 88%, rgba(255, 255, 255, 0.9) 1.1px, transparent 1.3px),
+                        radial-gradient(circle at 72% 8%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
+                        radial-gradient(circle at 78% 15%, rgba(255, 255, 255, 0.75) 1.4px, transparent 1.6px),
+                        radial-gradient(circle at 85% 22%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
+                        radial-gradient(circle at 92% 12%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
+                        radial-gradient(circle at 88% 6%, rgba(255, 255, 255, 0.85) 0.3px, transparent 1px),
+                        radial-gradient(circle at 76% 72%, rgba(255, 255, 255, 0.8) 1.2px, transparent 1.4px),
+                        radial-gradient(circle at 82% 78%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
+                        radial-gradient(circle at 88% 85%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
+                        radial-gradient(circle at 94% 92%, rgba(255, 255, 255, 0.7) 1px, transparent 1.2px),
+                        radial-gradient(circle at 91% 68%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 5% 35%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
+                        radial-gradient(circle at 12% 68%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
+                        radial-gradient(circle at 8% 38%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
+                        radial-gradient(circle at 18% 15%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
+                        radial-gradient(circle at 24% 5%, rgba(255, 255, 255, 0.85) 0.6px, transparent 1px),
+                        radial-gradient(circle at 76% 25%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
+                        radial-gradient(circle at 85% 68%, rgba(255, 255, 255, 0.75) 0.7px, transparent 1px),
+                        radial-gradient(circle at 92% 75%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
+                        radial-gradient(circle at 88% 32%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
+                        radial-gradient(circle at 94% 28%, rgba(255, 255, 255, 0.85) 0.5px, transparent 1px),
+                        radial-gradient(circle at 3% 62%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
+                        radial-gradient(circle at 9% 42%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
+                        radial-gradient(circle at 16% 95%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
+                        radial-gradient(circle at 22% 78%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
+                        radial-gradient(circle at 26% 12%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
+                        radial-gradient(circle at 74% 5%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
+                        radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
+                        radial-gradient(circle at 88% 95%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
+                        radial-gradient(circle at 95% 82%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
+                        radial-gradient(circle at 78% 88%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
+                        radial-gradient(circle at 4% 68%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
+                        radial-gradient(circle at 11% 18%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
+                        radial-gradient(circle at 19% 32%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
+                        radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
+                        radial-gradient(circle at 28% 8%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 72% 72%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
+                        radial-gradient(circle at 79% 95%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
+                        radial-gradient(circle at 86% 8%, rgba(255, 255, 255, 0.9) 0.7px, transparent 1px),
+                        radial-gradient(circle at 92% 88%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
+                        radial-gradient(circle at 96% 15%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
+                        radial-gradient(circle at 2% 12%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
+                        radial-gradient(circle at 7% 88%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
+                        radial-gradient(circle at 13% 5%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
+                        radial-gradient(circle at 20% 92%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
+                        radial-gradient(circle at 27% 72%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
+                        radial-gradient(circle at 32% 35%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
+                        radial-gradient(circle at 38% 22%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
+                        radial-gradient(circle at 35% 68%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
+                        radial-gradient(circle at 62% 32%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
+                        radial-gradient(circle at 68% 38%, rgba(255, 255, 255, 0.85) 0.5px, transparent 1px),
+                        radial-gradient(circle at 65% 65%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
+                        linear-gradient(to right, #4b5563, #6b7280)
+                      `,
+                      } as React.CSSProperties
+                    }
                   >
-                    <Button
-                      ref={adjusterSectionRef}
-                      onClick={handleProcessAudio}
-                      disabled={isProcessing || !file || !originalBuffer}
-                      className={cn(
-                        "w-full py-7 text-base font-semibold tracking-wider rounded-sm transition-all duration-500",
-                        "shadow-lg hover:shadow-xl active:shadow-none",
-                        "text-white ",
-                        "disabled:cursor-not-allowed hover:opacity-100 disabled:opacity-100",
-                        "relative overflow-hidden",
-                      )}
-                      style={
-                        {
-                          backgroundImage: `
-                          radial-gradient(circle at 8% 14%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
-                          radial-gradient(circle at 15% 8%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
-                          radial-gradient(circle at 4% 22%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                          radial-gradient(circle at 12% 28%, rgba(255, 255, 255, 0.7) 0.3px, transparent 1px),
-                          radial-gradient(circle at 22% 18%, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px),
-                          radial-gradient(circle at 18% 72%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
-                          radial-gradient(circle at 8% 78%, rgba(255, 255, 255, 0.8) 1.3px, transparent 1.5px),
-                          radial-gradient(circle at 14% 85%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
-                          radial-gradient(circle at 6% 92%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
-                          radial-gradient(circle at 24% 88%, rgba(255, 255, 255, 0.9) 1.1px, transparent 1.3px),
-                          radial-gradient(circle at 72% 8%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
-                          radial-gradient(circle at 78% 15%, rgba(255, 255, 255, 0.75) 1.4px, transparent 1.6px),
-                          radial-gradient(circle at 85% 22%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
-                          radial-gradient(circle at 92% 12%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                          radial-gradient(circle at 88% 6%, rgba(255, 255, 255, 0.85) 0.3px, transparent 1px),
-                          radial-gradient(circle at 76% 72%, rgba(255, 255, 255, 0.8) 1.2px, transparent 1.4px),
-                          radial-gradient(circle at 82% 78%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
-                          radial-gradient(circle at 88% 85%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
-                          radial-gradient(circle at 94% 92%, rgba(255, 255, 255, 0.7) 1px, transparent 1.2px),
-                          radial-gradient(circle at 91% 68%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                          radial-gradient(circle at 5% 35%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
-                          radial-gradient(circle at 12% 68%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                          radial-gradient(circle at 8% 38%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
-                          radial-gradient(circle at 18% 15%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                          radial-gradient(circle at 24% 5%, rgba(255, 255, 255, 0.85) 0.6px, transparent 1px),
-                          radial-gradient(circle at 76% 25%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                          radial-gradient(circle at 85% 68%, rgba(255, 255, 255, 0.75) 0.7px, transparent 1px),
-                          radial-gradient(circle at 92% 75%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
-                          radial-gradient(circle at 88% 32%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
-                          radial-gradient(circle at 94% 28%, rgba(255, 255, 255, 0.85) 0.5px, transparent 1px),
-                          radial-gradient(circle at 3% 62%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
-                          radial-gradient(circle at 9% 42%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
-                          radial-gradient(circle at 16% 95%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
-                          radial-gradient(circle at 22% 78%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
-                          radial-gradient(circle at 26% 12%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
-                          radial-gradient(circle at 74% 5%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
-                          radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                          radial-gradient(circle at 88% 95%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
-                          radial-gradient(circle at 95% 82%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                          radial-gradient(circle at 78% 88%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
-                          radial-gradient(circle at 4% 68%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                          radial-gradient(circle at 11% 18%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
-                          radial-gradient(circle at 19% 32%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
-                          radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
-                          radial-gradient(circle at 28% 8%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                          radial-gradient(circle at 72% 72%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
-                          radial-gradient(circle at 79% 95%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
-                          radial-gradient(circle at 86% 8%, rgba(255, 255, 255, 0.9) 0.7px, transparent 1px),
-                          radial-gradient(circle at 92% 88%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
-                          radial-gradient(circle at 96% 15%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
-                          radial-gradient(circle at 2% 12%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
-                          radial-gradient(circle at 7% 88%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                          radial-gradient(circle at 13% 5%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
-                          radial-gradient(circle at 20% 92%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                          radial-gradient(circle at 27% 72%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
-                          radial-gradient(circle at 32% 35%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                          radial-gradient(circle at 38% 22%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
-                          radial-gradient(circle at 35% 68%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
-                          radial-gradient(circle at 62% 32%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
-                          radial-gradient(circle at 68% 38%, rgba(255, 255, 255, 0.85) 0.5px, transparent 1px),
-                          radial-gradient(circle at 65% 65%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
-                          linear-gradient(to right, #4b5563, #6b7280)
-                        `,
-                        } as React.CSSProperties
-                      }
-                    >
-                      <Wand2 className="mr-2 h-4 w-4 text-white" />
-                      <span className="font-black text-base tracking-tight text-white">
-                        {isProcessing ? `Processing... (${processingStep})` : "Process Audio"}
-                      </span>
-                      {isProcessing && (
-                        <div className="w-full h-1 bg-white/30 absolute bottom-0 left-0 rounded-bl-sm">
-                          <div
-                            className="h-full bg-logo-emerald-500 rounded-bl-sm transition-all duration-300 ease-linear"
-                            style={{ width: `${processingProgress}%` }}
-                          ></div>
-                        </div>
-                      )}
-                    </Button>
-                  </motion.div>
-                )}
+                    <Wand2 className="mr-2 h-4 w-4 text-white" />
+                    <span className="font-black text-base tracking-tight text-white">
+                      {isProcessing ? "Processing..." : "Process Audio"}
+                    </span>
+                  </Button>
+                </motion.div>
 
                 {isProcessingComplete && processedUrl && (
                   <motion.div
@@ -3811,58 +4035,66 @@ export default function Home() {
                     transition={{ delay: 0.4 }}
                   >
                     <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
-                      <div className="bg-gradient-to-r from-logo-rose-300 via-logo-amber-300 to-logo-emerald-500 px-6 py-[9px] ">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <h3 className="text-white font-black">Processed Audio</h3>
-                            <AudioInfoMenu
-                              items={[
-                                {
-                                  label: "Duration",
-                                  value: formatTime(actualDuration ?? 0),
-                                },
-                                {
-                                  label: "File Size",
-                                  value: formatFileSize(processedFileSize),
-                                },
-                                ...(processedAudioMetadata
-                                  ? [
-                                      {
-                                        label: "Output Format",
-                                        value: `Mono • ${processedAudioMetadata.sampleRate.toLocaleString()} Hz • ${processedAudioMetadata.bitDepth.toLocaleString()}-bit`,
-                                      },
-                                    ]
-                                  : []),
-                              ]}
-                            />
-                          </div>
-                          <SaveMeditationDialog
-                            audioUrl={processedUrl}
-                            originalFileName={displayedFileName || "processed_meditation"}
-                            duration={actualDuration}
-                            source="adjuster"
-                            metadata={{
-                              meditationTitle: meditationTitle,
-                              wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
-                            }}
-                          >
-                            <Button
-                              size="sm"
-                              className="rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-gray-600 font-serif font-black"
-                            >
-                              <BookmarkPlus className="h-4 w-4 mr-1.5" />
-                              Save
-                            </Button>
-                          </SaveMeditationDialog>
+                      <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-white font-black">Processed Audio</h3>
+                          <AudioInfoMenu
+                            items={[
+                              {
+                                label: "Actual Duration",
+                                value: actualDuration ? formatTime(actualDuration) : "--",
+                              },
+                              {
+                                label: "Target Duration",
+                                value: formatTime(targetDuration * 60),
+                              },
+                              {
+                                label: "Pauses Adjusted",
+                                value: pausesAdjusted,
+                              },
+                              {
+                                label: "File Size",
+                                value: formatFileSize(processedFileSize),
+                              },
+                              ...(processedAudioMetadata
+                                ? [
+                                    {
+                                      label: "Output Format",
+                                      value: `Mono • ${processedAudioMetadata.sampleRate.toLocaleString()} Hz • ${processedAudioMetadata.bitDepth.toLocaleString()}-bit`,
+                                    },
+                                  ]
+                                : []),
+                            ]}
+                          />
                         </div>
                       </div>
                       <div className="p-6 px-3.5 py-4 space-y-4">
-                        <audio controls className="w-full" src={processedUrl}></audio>
+                        <div className="bg-white p-3 rounded-sm shadow-md px-0 mb-0">
+                          <audio controls className="w-full" src={processedUrl}></audio>
+                        </div>
+                        <SaveMeditationDialog
+                          audioUrl={processedUrl}
+                          mp3Blob={processedMp3Blob} // Pass pre-created WebM blob
+                          originalFileName={file?.name || "meditation"}
+                          duration={actualDuration || targetDuration * 60}
+                          source="adjuster"
+                          metadata={{
+                            targetDuration,
+                            pausesAdjusted,
+                            wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
+                            timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
+                          }}
+                        >
+                          <Button className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black">
+                            <BookmarkPlus className="h-4 w-4 mr-2" />
+                            Save to Library
+                          </Button>
+                        </SaveMeditationDialog>
                       </div>
                     </Card>
                   </motion.div>
                 )}
-              </motion.div>
+              </div>
             ) : (
               // == Encoder UI ==
               <motion.div
@@ -3944,6 +4176,7 @@ export default function Home() {
                     </div>
                   </Card>
                 </motion.div>
+
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -4175,6 +4408,7 @@ export default function Home() {
                   setRecordingLabel={setRecordingLabel}
                   recordingPreviewRef={recordingPreviewRef}
                 />
+
                 {/* Timeline Editor for encoder */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
                   <Card ref={timelineEditorRef} className="overflow-hidden border-none shadow-lg bg-white ">
@@ -4217,6 +4451,7 @@ export default function Home() {
                     </div>
                   </Card>
                 </motion.div>
+
                 {/* Generate Audio Button */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
                   <Button
@@ -4300,18 +4535,72 @@ export default function Home() {
                   >
                     <Wand2 className="mr-2 h-4 w-4 text-white" />
                     <span className="font-black text-base tracking-tight text-white">
-                      {isGeneratingAudio ? `Generating... (${generationStep})` : "Generate Meditation Audio"}
+                      {isGeneratingAudio ? "Generating..." : "Generate Audio"}
                     </span>
-                    {isGeneratingAudio && (
-                      <div className="w-full h-1 bg-white/30 absolute bottom-0 left-0 rounded-bl-sm">
-                        <div
-                          className="h-full bg-logo-emerald-500 rounded-bl-sm transition-all duration-300 ease-linear"
-                          style={{ width: `${generationProgress}%` }}
-                        ></div>
-                      </div>
-                    )}
                   </Button>
                 </motion.div>
+
+                {generatedAudioUrl && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
+                  >
+                    <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
+                      <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-white font-black">Generated Audio</h3>
+                          <AudioInfoMenu
+                            items={[
+                              {
+                                label: "Duration",
+                                value: formatTime(encoderTotalDuration),
+                              },
+                              {
+                                label: "Instructions",
+                                value: timelineEvents.length,
+                              },
+                              {
+                                label: "File Size",
+                                value: formatFileSize(generatedAudioFileSize || 0),
+                              },
+                              ...(generatedAudioMetadata
+                                ? [
+                                    {
+                                      label: "Output Format",
+                                      value: `Mono • ${generatedAudioMetadata.sampleRate.toLocaleString()} Hz • ${generatedAudioMetadata.bitDepth.toLocaleString()}-bit`,
+                                    },
+                                  ]
+                                : []),
+                            ]}
+                          />
+                        </div>
+                      </div>
+                      <div className="p-6 px-3.5 py-4 space-y-4">
+                        <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
+                          <audio ref={encoderAudioRef} controls className="w-full" src={generatedAudioUrl}></audio>
+                        </div>
+                        <SaveMeditationDialog
+                          audioUrl={generatedAudioUrl}
+                          originalFileName={meditationTitle || "meditation"}
+                          duration={encoderTotalDuration}
+                          source="encoder"
+                          metadata={{
+                            instructionCount: timelineEvents.length,
+                            meditationTitle,
+                            wav: generatedAudioMetadata ? { ...generatedAudioMetadata } : undefined,
+                            timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
+                          }}
+                        >
+                          <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-gray-600 font-serif font-black mt-3">
+                            <BookmarkPlus className="h-4 w-4 mr-2" />
+                            Save to Library
+                          </Button>
+                        </SaveMeditationDialog>
+                      </div>
+                    </Card>
+                  </motion.div>
+                )}
               </motion.div>
             )}
           </div>
