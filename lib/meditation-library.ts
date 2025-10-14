@@ -41,6 +41,10 @@ export interface SavedMeditation {
     }>
     // Shared audio export metadata
     wav?: BufferToWavMetadata
+    quickAdjust?: {
+      lastPresetId?: string | null
+      lastDurationId?: string | null
+    }
   }
 }
 
