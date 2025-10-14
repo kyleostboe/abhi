@@ -22,6 +22,38 @@ interface SaveMeditationDialogProps {
   source: "adjuster" | "encoder"
   metadata: SavedMeditation["metadata"]
   children?: React.ReactNode
+  existingMeditationId?: string | null
+  existingMeditationTitle?: string | null
+  existingMeditationDuration?: number | null
+}
+
+const formatDurationLabel = (seconds: number) => {
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return "--"
+  }
+
+  const totalSeconds = Math.round(seconds)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+
+  if (hours > 0 && minutes > 0) {
+    return `${hours}h ${minutes}m`
+  }
+  if (hours > 0) {
+    return `${hours}h`
+  }
+  return `${minutes}m`
+}
+
+const formatClockDuration = (seconds: number) => {
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return "0:00"
+  }
+
+  const totalSeconds = Math.max(0, Math.round(seconds))
+  const minutes = Math.floor(totalSeconds / 60)
+  const secs = totalSeconds % 60
+  return `${minutes}:${secs.toString().padStart(2, "0")}`
 }
 
 export function SaveMeditationDialog({
@@ -32,6 +64,9 @@ export function SaveMeditationDialog({
   source,
   metadata,
   children,
+  existingMeditationId,
+  existingMeditationTitle,
+  existingMeditationDuration,
 }: SaveMeditationDialogProps) {
   const [open, setOpen] = useState(false)
   const metadataWithTitle = metadata as { meditationTitle?: unknown }
@@ -48,8 +83,22 @@ export function SaveMeditationDialog({
   const [showNewPlaylist, setShowNewPlaylist] = useState(false)
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [isSaving, setIsSaving] = useState(false)
+  const [saveMode, setSaveMode] = useState<"preset" | "new">(
+    existingMeditationId ? "preset" : "new",
+  )
+  const [presetLabel, setPresetLabel] = useState(() =>
+    existingMeditationId ? formatDurationLabel(duration) : "",
+  )
   const { toast } = useToast()
   const abortControllerRef = useRef<AbortController | null>(null)
+  const isPresetOptionAvailable = Boolean(existingMeditationId)
+  const effectiveOriginalDuration =
+    typeof existingMeditationDuration === "number" && Number.isFinite(existingMeditationDuration)
+      ? existingMeditationDuration
+      : duration
+  const presetLabelDisplay =
+    presetLabel.trim().length > 0 ? presetLabel.trim() : formatDurationLabel(duration)
+  const targetPresetTitle = (existingMeditationTitle ?? title).trim() || title
 
   useEffect(() => {
     return () => {
@@ -79,18 +128,32 @@ export function SaveMeditationDialog({
     if (open) {
       const baseTitle = metadataTitle || originalFileName
       setTitle(baseTitle.replace(/\.[^/.]+$/, ""))
+      setSaveMode(existingMeditationId ? "preset" : "new")
+      setPresetLabel(existingMeditationId ? formatDurationLabel(duration) : "")
     }
-  }, [open, originalFileName, metadataTitle])
+  }, [open, originalFileName, metadataTitle, existingMeditationId, duration])
 
   const handleSave = async () => {
     if (isSaving) {
       return
     }
 
-    if (!title.trim()) {
+    const isPresetSave = saveMode === "preset" && isPresetOptionAvailable
+    const trimmedPresetLabel = presetLabel.trim()
+
+    if (!isPresetSave && !title.trim()) {
       toast({
         title: "Title required",
         description: "Please enter a title for your meditation.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (isPresetSave && !trimmedPresetLabel) {
+      toast({
+        title: "Preset label required",
+        description: "Add a label so you can recognize this duration in your library.",
         variant: "destructive",
       })
       return
@@ -155,14 +218,54 @@ export function SaveMeditationDialog({
 
       console.log(`[v0] Saving meditation. File size: ${Math.round(distributionBlob.size / 1024 / 1024)}MB`)
 
-      const metadataForSave: Record<string, unknown> = { ...metadata }
+      const metadataForSave: SavedMeditation["metadata"] = { ...metadata }
+      const metadataRecord = metadataForSave as Record<string, unknown>
+
+      const existingDurationId =
+        typeof metadataForSave.quickAdjust?.lastDurationId === "string"
+          ? metadataForSave.quickAdjust.lastDurationId.trim()
+          : ""
+      const generatedDurationId = existingDurationId.length > 0
+        ? existingDurationId
+        : `preset-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+
+      if (isPresetSave) {
+        metadataForSave.quickAdjust = {
+          ...(metadataForSave.quickAdjust ?? {}),
+          lastDurationId: generatedDurationId,
+        }
+        metadataRecord.linkedParentId = existingMeditationId as string
+        metadataRecord.linkedVariantLabel = trimmedPresetLabel
+        metadataRecord.linkedDurationId = generatedDurationId
+        metadataRecord.linkedIsPreset = true
+        metadataRecord.originalDurationSeconds = Math.round(effectiveOriginalDuration)
+
+        if (
+          typeof metadataRecord.meditationTitle !== "string" ||
+          (metadataRecord.meditationTitle as string).trim().length === 0
+        ) {
+          metadataRecord.meditationTitle = existingMeditationTitle ?? title
+        }
+      } else {
+        delete metadataRecord.linkedParentId
+        delete metadataRecord.linkedVariantLabel
+        delete metadataRecord.linkedDurationId
+        delete metadataRecord.linkedIsPreset
+        delete metadataRecord.originalDurationSeconds
+      }
+
+      const trimmedTitle = title.trim()
+      const baseTitle = (metadataTitle || originalFileName).replace(/\.[^/.]+$/, "").trim()
+      const titleToSave = isPresetSave
+        ? (existingMeditationTitle?.trim() || trimmedTitle || baseTitle)
+        : trimmedTitle || baseTitle
 
       let distributionBlobUrl: string | null = null
       try {
         distributionBlobUrl = URL.createObjectURL(distributionBlob)
 
         const savedMeditation = await MeditationLibrary.saveMeditation({
-          title: title.trim(),
+          title: titleToSave,
           originalFileName,
           processedAudioUrl: distributionBlobUrl,
           sourceAudioUrl: distributionBlobUrl, // TODO: Save master file separately on upload
@@ -187,12 +290,16 @@ export function SaveMeditationDialog({
         await loadPlaylists()
 
         toast({
-          title: "Meditation saved",
-          description: `"${title.trim()}" is now available in your library.`,
+          title: isPresetSave ? "Preset saved" : "Meditation saved",
+          description: isPresetSave
+            ? `"${trimmedPresetLabel}" has been added to "${titleToSave}".`
+            : `"${titleToSave}" is now available in your library.`,
         })
 
         const baseTitle = metadataTitle || originalFileName
         setTitle(baseTitle.replace(/\.[^/.]+$/, ""))
+        setPresetLabel(isPresetOptionAvailable ? formatDurationLabel(duration) : "")
+        setSaveMode(isPresetOptionAvailable ? saveMode : "new")
         setSelectedPlaylist("")
         setNewPlaylistName("")
         setNewPlaylistDescription("")
@@ -239,15 +346,60 @@ export function SaveMeditationDialog({
           Save your processed meditation audio to your personal library with optional playlist organization
         </div>
         <div className="space-y-4">
-          <div>
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter meditation title"
-            />
-          </div>
+          {isPresetOptionAvailable && (
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase text-gray-500">Save option</Label>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Button
+                  type="button"
+                  variant={saveMode === "preset" ? "default" : "outline"}
+                  onClick={() => setSaveMode("preset")}
+                  className="w-full"
+                >
+                  Attach to "{targetPresetTitle}"
+                </Button>
+                <Button
+                  type="button"
+                  variant={saveMode === "new" ? "default" : "outline"}
+                  onClick={() => setSaveMode("new")}
+                  className="w-full"
+                >
+                  Save as new meditation
+                </Button>
+              </div>
+              {saveMode === "preset" && (
+                <p className="text-xs text-gray-500">
+                  This preset will appear alongside the original meditation in your library card.
+                </p>
+              )}
+            </div>
+          )}
+
+          {saveMode === "preset" ? (
+            <div className="space-y-2">
+              <Label htmlFor="preset-label">Preset label</Label>
+              <Input
+                id="preset-label"
+                value={presetLabel}
+                onChange={(e) => setPresetLabel(e.target.value)}
+                placeholder="e.g. 30m"
+              />
+              <p className="text-xs text-gray-500">
+                Displayed as Original ({formatClockDuration(effectiveOriginalDuration)}), {presetLabelDisplay} (
+                {formatClockDuration(duration)}).
+              </p>
+            </div>
+          ) : (
+            <div>
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter meditation title"
+              />
+            </div>
+          )}
 
           <div>
             <Label>Add to Playlist (Optional)</Label>
