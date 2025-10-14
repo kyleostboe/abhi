@@ -914,6 +914,11 @@ export default function Home() {
   const timelineUploadInputRef = useRef<HTMLInputElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [processedMp3Blob, setProcessedMp3Blob] = useState<Blob | null>(null) // Renamed to processedMp3Blob for clarity, but will store WebM
+  const [loadedLibraryContext, setLoadedLibraryContext] = useState<{
+    id: string
+    title: string
+    duration: number
+  } | null>(null)
 
   const analysisLowerBoundSeconds = useMemo(() => {
     if (!audioAnalysis) {
@@ -1771,6 +1776,7 @@ export default function Home() {
     setGeneratedAudioMetadata(null)
     setProcessedMp3Blob(null)
     setQuickAdjustRange(null)
+    setLoadedLibraryContext(null)
 
     if (typeof window === "undefined") return
     window.sessionStorage.removeItem(ADJUSTER_SESSION_KEY)
@@ -2237,6 +2243,30 @@ export default function Home() {
           typeof importData.title === "string" && importData.title.trim().length > 0 ? importData.title.trim() : null
         setDisplayedFileName(libraryTitle ?? fakeFileName)
         setMeditationTitle(deriveMeditationTitle(importData))
+
+        const linkedParentId =
+          typeof importData.metadata?.linkedParentId === "string"
+            ? importData.metadata.linkedParentId.trim()
+            : ""
+        const contextId = linkedParentId.length > 0 ? linkedParentId : importData.id
+        const metadataOriginalDuration =
+          typeof importData.metadata?.originalDurationSeconds === "number" &&
+          Number.isFinite(importData.metadata.originalDurationSeconds)
+            ? importData.metadata.originalDurationSeconds
+            : null
+        const fallbackDuration =
+          typeof importData.duration === "number" && Number.isFinite(importData.duration)
+            ? importData.duration
+            : buffer.duration
+        if (typeof contextId === "string" && contextId.trim().length > 0) {
+          setLoadedLibraryContext({
+            id: contextId,
+            title: deriveMeditationTitle(importData),
+            duration: metadataOriginalDuration ?? fallbackDuration,
+          })
+        } else {
+          setLoadedLibraryContext(null)
+        }
 
         // Perform silence detection like normal upload
         const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
@@ -3509,6 +3539,9 @@ export default function Home() {
                               ? { quickAdjust: { range: { minSeconds: analysisLowerBoundSeconds } } }
                               : {}
                           }
+                          existingMeditationId={loadedLibraryContext?.id}
+                          existingMeditationTitle={loadedLibraryContext?.title}
+                          existingMeditationDuration={loadedLibraryContext?.duration}
                         >
                           <Button
                             className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black"
@@ -3903,6 +3936,9 @@ export default function Home() {
                               ? { quickAdjust: { range: { minSeconds: quickAdjustRange.minSeconds } } }
                               : {}),
                           }}
+                          existingMeditationId={loadedLibraryContext?.id}
+                          existingMeditationTitle={loadedLibraryContext?.title}
+                          existingMeditationDuration={loadedLibraryContext?.duration}
                         >
                           <Button className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black">
                             <BookmarkPlus className="h-4 w-4 mr-2" />

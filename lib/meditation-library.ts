@@ -55,6 +55,11 @@ export interface SavedMeditation {
         minSeconds?: number | null
       }
     }
+    linkedParentId?: string
+    linkedVariantLabel?: string
+    linkedDurationId?: string
+    linkedIsPreset?: boolean
+    originalDurationSeconds?: number
   }
 }
 

@@ -81,6 +81,11 @@ type StoredMeditationDurations = {
   lastPlayedLabel?: string
 }
 
+type MeditationGroup = {
+  base: SavedMeditation
+  variants: SavedMeditation[]
+}
+
 const DEFAULT_PRESETS: QuickAdjustPreset[] = [
   { id: "preset-10m", label: "10m", seconds: 10 * 60 },
   { id: "preset-30m", label: "30m", seconds: 30 * 60 },
@@ -265,7 +270,6 @@ export default function LibraryPage() {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const [playerTime, setPlayerTime] = useState(0)
   const [playerDuration, setPlayerDuration] = useState(0)
-  const [displayedMeditations, setDisplayedMeditations] = useState<SavedMeditation[]>([])
   const [isWideLayout, setIsWideLayout] = useState(false)
   const [playingTimelineEventId, setPlayingTimelineEventId] = useState<string | null>(null)
   const [playerPortalElement, setPlayerPortalElement] = useState<HTMLElement | null>(null)
@@ -451,12 +455,21 @@ export default function LibraryPage() {
     setLastPlayedDurationMap(nextMap)
   }, [savedDurationsMap])
 
+  const allMeditationsMap = useMemo(() => {
+    const map = new Map<string, SavedMeditation>()
+    meditations.forEach((meditation) => {
+      map.set(meditation.id, meditation)
+    })
+    return map
+  }, [meditations])
+
   const filteredMeditations = useMemo(
     () =>
       meditations.filter((med) => {
+        const lowerSearch = searchQuery.toLowerCase()
         const matchesSearch =
-          med.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          med.originalFileName.toLowerCase().includes(searchQuery.toLowerCase())
+          med.title.toLowerCase().includes(lowerSearch) ||
+          med.originalFileName.toLowerCase().includes(lowerSearch)
         const matchesSource = sourceFilter === "all" || med.source === sourceFilter
 
         return matchesSearch && matchesSource
@@ -464,16 +477,62 @@ export default function LibraryPage() {
     [meditations, searchQuery, sourceFilter],
   )
 
-  useEffect(() => {
-    const updateDisplayedMeditations = () => {
-      if (selectedPlaylist) {
-        setDisplayedMeditations(playlistMeditationsMap[selectedPlaylist] || [])
-      } else {
-        setDisplayedMeditations(filteredMeditations)
+  const groupMeditations = useCallback(
+    (items: SavedMeditation[], includeExternalParent: boolean): MeditationGroup[] => {
+      if (!Array.isArray(items) || items.length === 0) {
+        return []
       }
+
+      const itemMap = new Map(items.map((item) => [item.id, item]))
+      const groups = new Map<string, MeditationGroup>()
+
+      items.forEach((meditation) => {
+        const rawParentId =
+          typeof meditation.metadata?.linkedParentId === "string"
+            ? meditation.metadata.linkedParentId.trim()
+            : ""
+        const hasLinkedParent = rawParentId.length > 0 && rawParentId !== meditation.id
+        let parent: SavedMeditation | undefined
+
+        if (hasLinkedParent) {
+          parent = itemMap.get(rawParentId)
+          if (!parent && includeExternalParent) {
+            parent = allMeditationsMap.get(rawParentId)
+          }
+        }
+
+        if (!parent) {
+          parent = meditation
+        }
+
+        const groupId = parent.id
+        let group = groups.get(groupId)
+        if (!group) {
+          group = { base: parent, variants: [] }
+          groups.set(groupId, group)
+        }
+
+        if (meditation.id === parent.id) {
+          group.base = meditation
+        } else if (!group.variants.some((variant) => variant.id === meditation.id)) {
+          group.variants.push(meditation)
+        }
+      })
+
+      return Array.from(groups.values()).sort(
+        (a, b) => b.base.createdAt.getTime() - a.base.createdAt.getTime(),
+      )
+    },
+    [allMeditationsMap],
+  )
+
+  const displayedGroups = useMemo<MeditationGroup[]>(() => {
+    if (selectedPlaylist) {
+      const playlistItems = playlistMeditationsMap[selectedPlaylist] || []
+      return groupMeditations(playlistItems, false)
     }
-    updateDisplayedMeditations()
-  }, [selectedPlaylist, filteredMeditations, playlistMeditationsMap])
+    return groupMeditations(filteredMeditations, true)
+  }, [selectedPlaylist, playlistMeditationsMap, filteredMeditations, groupMeditations])
 
   const handleSelectPlaylist = (playlistId: string | null) => {
     setSelectedPlaylist(playlistId)
@@ -967,6 +1026,11 @@ export default function LibraryPage() {
           compatibilityMode: settings.compatibilityMode,
         },
         quickAdjust: quickAdjustMetadata,
+        linkedParentId: baseMeditation.id,
+        linkedVariantLabel: preset.label,
+        linkedDurationId: modeId,
+        linkedIsPreset: true,
+        originalDurationSeconds: baseMeditation.duration,
       }
 
       const savedMeditation = await MeditationLibrary.saveMeditation({
@@ -1201,7 +1265,7 @@ export default function LibraryPage() {
     setUploadError(null)
   }
 
-  const openMeditationPlayer = (meditation: SavedMeditation) => {
+  const openMeditationPlayer = (meditation: SavedMeditation, linkedVariants: SavedMeditation[] = []) => {
     const audio = audioRef.current
     if (audio) {
       audio.pause()
@@ -1233,8 +1297,39 @@ export default function LibraryPage() {
         buildDurationModeFromStored(mode, "saved", meditation.processedAudioUrl, meditation.sourceAudioUrl ?? null),
       ) ?? []
 
+    const variantModes = linkedVariants
+      .filter((variant) => typeof variant.processedAudioUrl === "string" && variant.processedAudioUrl.length > 0)
+      .map((variant) => {
+        const variantIdRaw =
+          typeof variant.metadata?.linkedDurationId === "string"
+            ? variant.metadata.linkedDurationId.trim()
+            : ""
+        const variantId = variantIdRaw.length > 0 ? variantIdRaw : `linked-${variant.id}`
+        const rawLabel =
+          typeof variant.metadata?.linkedVariantLabel === "string"
+            ? variant.metadata.linkedVariantLabel.trim()
+            : ""
+        const label = rawLabel.length > 0 ? rawLabel : formatDurationLabelFromSeconds(variant.duration)
+        const timeline = cloneTimeline(variant.metadata?.timeline as LibraryTimelineEntry[] | undefined)
+
+        const mode: DurationMode = {
+          id: variantId,
+          label,
+          seconds: variant.duration,
+          playbackRate: 1,
+          timeline,
+          source: "saved",
+          persisted: true,
+          presetId: variant.metadata?.quickAdjust?.lastPresetId ?? null,
+          audioUrl: variant.processedAudioUrl,
+          sourceAudioUrl: variant.sourceAudioUrl ?? null,
+        }
+
+        return normalizeDurationMode(mode)
+      })
+
     const deduped = new Map<string, DurationMode>()
-    ;[baseMode, ...storedModes].forEach((mode) => {
+    ;[baseMode, ...storedModes, ...variantModes].forEach((mode) => {
       const normalized = normalizeDurationMode(mode)
       deduped.set(normalized.id, normalized)
     })
@@ -1949,7 +2044,7 @@ export default function LibraryPage() {
                   </div>
 
                   {/* Meditations Grid */}
-                  {displayedMeditations.length === 0 ? (
+                  {displayedGroups.length === 0 ? (
                     <Card className="p-12 text-center">
                       <p className="text-gray-500 mb-4 text-base">
                         {selectedPlaylist
@@ -1965,33 +2060,45 @@ export default function LibraryPage() {
                     </Card>
                   ) : (
                     <div className="space-y-5">
-                      {displayedMeditations.map((meditation) => {
-                        const lastPlayedInfo = lastPlayedDurationMap[meditation.id]
-                        const durationDisplay = lastPlayedInfo
-                          ? lastPlayedInfo.label
-                          : `Original (${formatDuration(meditation.duration)})`
+                      {displayedGroups.map((group) => {
+                        const { base, variants } = group
+                        const lastPlayedInfo = lastPlayedDurationMap[base.id]
+                        const sortedVariants = [...variants].sort((a, b) => a.duration - b.duration)
+                        const variantSummaries = sortedVariants.map((variant) => {
+                          const rawLabel =
+                            typeof variant.metadata?.linkedVariantLabel === "string"
+                              ? variant.metadata.linkedVariantLabel.trim()
+                              : ""
+                          const label = rawLabel.length > 0 ? rawLabel : formatDurationLabelFromSeconds(variant.duration)
+                          return `${label} (${formatDuration(variant.duration)})`
+                        })
+                        const defaultDurationDisplay = [
+                          `Original (${formatDuration(base.duration)})`,
+                          ...variantSummaries,
+                        ].join(", ")
+                        const durationDisplay = lastPlayedInfo ? lastPlayedInfo.label : defaultDurationDisplay
                         return (
                           <motion.div
-                            key={meditation.id}
+                            key={base.id}
                             className="group w-full text-left cursor-pointer"
-                            onClick={() => openMeditationPlayer(meditation)}
+                            onClick={() => openMeditationPlayer(base, variants)}
                           >
                             <Card className="w-full border border-muted bg-white backdrop-blur-sm shadow-md">
                               <div className="relative flex items-center justify-between p-4 border-muted border-[3px] rounded-sm overflow-visible">
                                 <Badge
                                   variant="outline"
                                   className={`absolute -top-2 -right-2 translate-x-[7px] -translate-y-[5px] z-10 !border-0 !px-3 !py-1 shadow-inner text-gray-500 text-xs font-black rounded-[6px] bg-gradient-to-r ${
-                                    meditation.source === "adjuster"
+                                    base.source === "adjuster"
                                       ? "bg-gradient-to-r from-muted to-stone-200"
                                       : "bg-gradient-to-r from-muted to-stone-200"
                                   }`}
                                 >
-                                  {meditation.source === "adjuster" ? "Adjuster" : "Encoder"}
+                                  {base.source === "adjuster" ? "Adjuster" : "Encoder"}
                                 </Badge>
 
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-3 mb-2">
-                                    <h3 className="font-black text-gray-800 text-sm truncate">{meditation.title}</h3>
+                                    <h3 className="font-black text-gray-800 text-sm truncate">{base.title}</h3>
                                   </div>
                                   <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
                                     <span className="flex items-center gap-1">
@@ -2002,17 +2109,17 @@ export default function LibraryPage() {
                                       <>
                                         <span className="flex items-center gap-1">
                                           <Calendar className="h-4 w-4 text-gray-500" />
-                                          <span>{formatDate(meditation.createdAt)}</span>
+                                          <span>{formatDate(base.createdAt)}</span>
                                         </span>
-                                        {meditation.metadata.pausesAdjusted ? (
+                                        {base.metadata.pausesAdjusted ? (
                                           <span className="flex items-center gap-1">
                                             <SlidersHorizontal className="h-4 w-4 text-gray-500" />
-                                            <span>{meditation.metadata.pausesAdjusted} pauses adjusted</span>
+                                            <span>{base.metadata.pausesAdjusted} pauses adjusted</span>
                                           </span>
-                                        ) : meditation.metadata.instructionCount ? (
+                                        ) : base.metadata.instructionCount ? (
                                           <span className="flex items-center gap-1">
                                             <SlidersHorizontal className="h-4 w-4 text-gray-600" />
-                                            <span>{meditation.metadata.instructionCount} instructions</span>
+                                            <span>{base.metadata.instructionCount} instructions</span>
                                           </span>
                                         ) : null}
                                       </>
@@ -2040,20 +2147,20 @@ export default function LibraryPage() {
                                       >
                                         <DropdownMenuItem className="flex items-center gap-2 cursor-default">
                                           <Calendar className="h-4 w-4 text-gray-600" />
-                                          <span className="text-sm">{formatDate(meditation.createdAt)}</span>
+                                          <span className="text-sm">{formatDate(base.createdAt)}</span>
                                         </DropdownMenuItem>
-                                        {meditation.metadata.pausesAdjusted ? (
+                                        {base.metadata.pausesAdjusted ? (
                                           <DropdownMenuItem className="flex items-center gap-2 cursor-default">
                                             <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
                                             <span className="text-sm">
-                                              {meditation.metadata.pausesAdjusted} pauses adjusted
+                                              {base.metadata.pausesAdjusted} pauses adjusted
                                             </span>
                                           </DropdownMenuItem>
-                                        ) : meditation.metadata.instructionCount ? (
+                                        ) : base.metadata.instructionCount ? (
                                           <DropdownMenuItem className="flex items-center gap-2 cursor-default">
                                             <SlidersHorizontal className="h-4 w-4 text-gray-600" />
                                             <span className="text-sm">
-                                              {meditation.metadata.instructionCount} instructions
+                                              {base.metadata.instructionCount} instructions
                                             </span>
                                           </DropdownMenuItem>
                                         ) : null}
@@ -2066,7 +2173,7 @@ export default function LibraryPage() {
                                     className="h-8 w-8 text-gray-500 transition hover:bg-muted hover:text-logo-rose-400"
                                     onClick={(event) => {
                                       event.stopPropagation()
-                                      handleDelete(meditation.id)
+                                      handleDelete(base.id)
                                     }}
                                     aria-label="Delete meditation"
                                   >
