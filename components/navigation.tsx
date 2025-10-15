@@ -38,28 +38,15 @@ export function Navigation() {
         </li>
         <li>
           <Link
-            href="/contact"
+            href="/journal"
             className={cn(
-              "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-sm",
-              pathname === "/contact"
+              "px-4 py-2 transition-colors font-black font-serif text-sm shadow-none rounded-sm",
+              pathname === "/journal"
                 ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md "
                 : "text-gray-600 rounded-[10px] hover:bg-muted hover:shadow-inner ",
             )}
           >
-            Contact
-          </Link>
-        </li>
-        <li>
-          <Link
-            href="/donate"
-            className={cn(
-              "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-sm",
-              pathname === "/donate"
-                ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md "
-                : "text-gray-600 rounded-[10px] hover:bg-muted hover:shadow-inner ",
-            )}
-          >
-            Donate
+            Journal
           </Link>
         </li>
       </ul>
