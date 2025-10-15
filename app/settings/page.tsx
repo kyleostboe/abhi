@@ -50,18 +50,18 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="container max-w-4xl mx-auto py-8 px-4">
+    <div className="container max-w-4xl mx-auto py-8 px-4 font-black font-serif">
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-gray-800 mb-2">Account Settings</h1>
-        <p className="text-gray-600">Manage your account preferences and profile information</p>
+        <h1 className="font-black text-xl mb-0 text-gray-600">Account Settings</h1>
+        
       </div>
 
       <Card className="p-6 shadow-lg">
         <div className="space-y-6">
           <div>
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Profile Information</h2>
+            <h2 className="font-bold mb-4 text-gray-600 text-base">Profile Information</h2>
             <div className="space-y-4">
-              <div>
+              <div className="text-gray-600">
                 <Label htmlFor="username" className="text-sm font-semibold text-gray-700">
                   Username
                 </Label>
@@ -75,7 +75,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-gray-500 mt-1">This is your unique identifier on the platform</p>
               </div>
 
-              <div>
+              <div className="text-gray-600">
                 <Label htmlFor="displayName" className="text-sm font-semibold text-gray-700">
                   Display Name
                 </Label>
@@ -89,7 +89,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-gray-500 mt-1">This is how your name will appear to others</p>
               </div>
 
-              <div>
+              <div className="text-gray-600">
                 <Label htmlFor="email" className="text-sm font-semibold text-gray-700">
                   Email Address
                 </Label>
@@ -106,46 +106,16 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <Separator />
+          
 
           <div>
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Preferences</h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-semibold text-gray-800">Journal Reminders</p>
-                  <p className="text-sm text-gray-600">Get reminded to journal after meditations</p>
-                </div>
-                <Button variant="outline" size="sm" disabled>
-                  Coming Soon
-                </Button>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-semibold text-gray-800">Meditation Streaks</p>
-                  <p className="text-sm text-gray-600">Track your daily meditation practice</p>
-                </div>
-                <Button variant="outline" size="sm" disabled>
-                  Coming Soon
-                </Button>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-semibold text-gray-800">Export Data</p>
-                  <p className="text-sm text-gray-600">Download your meditation history and journal entries</p>
-                </div>
-                <Button variant="outline" size="sm" disabled>
-                  Coming Soon
-                </Button>
-              </div>
-            </div>
+            <h2 className="font-bold mb-4 text-gray-600 text-base">Preferences</h2>
+            
           </div>
 
-          <Separator />
+          
 
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end gap-3 rounded-sm font-serif">
             <Button variant="outline" onClick={() => window.history.back()}>
               Cancel
             </Button>
@@ -161,11 +131,11 @@ export default function SettingsPage() {
       </Card>
 
       <Card className="mt-6 p-6 bg-gray-50">
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">Account Information</h3>
+        <h3 className="font-semibold mb-2 text-gray-600 text-base">Account Information</h3>
         <div className="text-xs text-gray-600 space-y-1">
-          <p>Account ID: {TEST_PROFILE_ID}</p>
-          <p>Account Type: Test Account (No authentication required)</p>
-          <p className="text-amber-600 font-medium mt-2">
+          <p className="text-gray-500">Account ID: {TEST_PROFILE_ID}</p>
+          <p className="text-gray-500">Account Type: Test Account (No authentication required)</p>
+          <p className="text-amber-600 mt-2 font-black text-xs">
             Note: Authentication and password management will be added in a future update
           </p>
         </div>
