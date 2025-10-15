@@ -70,6 +70,29 @@ const ensureMinimumDays = (keys: string[]): string[] => {
 
 const sameDay = (a: string, b: string) => a === b
 
+const buildJournalHref = ({
+  date,
+  meditation,
+  entry,
+}: {
+  date?: string | null
+  meditation?: string | null
+  entry?: string | null
+}) => {
+  const params = new URLSearchParams()
+  if (date) {
+    params.set("date", date)
+  }
+  if (meditation) {
+    params.set("meditation", meditation)
+  }
+  if (entry && meditation) {
+    params.set("entry", entry)
+  }
+  const query = params.toString()
+  return query ? `/journal?${query}` : "/journal"
+}
+
 export default function JournalPage() {
   const { entries, updateEntryNote } = useJournal()
   const [meditations, setMeditations] = useState<SavedMeditation[]>([])
@@ -77,6 +100,7 @@ export default function JournalPage() {
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null)
   const [selectedMeditationId, setSelectedMeditationId] = useState<string | null>(null)
   const [activeMeditationEntryId, setActiveMeditationEntryId] = useState<string | null>(null)
+  const [shouldAutoSelectMeditation, setShouldAutoSelectMeditation] = useState(true)
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({})
   const dayRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const searchParams = useSearchParams()
@@ -134,6 +158,7 @@ export default function JournalPage() {
     if (paramMeditation) {
       setActiveTab("meditation")
       setSelectedMeditationId(paramMeditation)
+      setShouldAutoSelectMeditation(false)
       if (paramEntry) {
         setActiveMeditationEntryId(paramEntry)
       }
@@ -168,10 +193,16 @@ export default function JournalPage() {
 
   useEffect(() => {
     if (!selectedMeditationId) {
+      if (!shouldAutoSelectMeditation) {
+        setActiveMeditationEntryId(null)
+        return
+      }
+
       const meditationIdsWithEntries = new Set(entries.map((entry) => entry.meditationId))
       const firstId = meditations.find((meditation) => meditationIdsWithEntries.has(meditation.id))?.id
       if (firstId) {
         setSelectedMeditationId(firstId)
+        setShouldAutoSelectMeditation(false)
       }
       return
     }
@@ -184,7 +215,13 @@ export default function JournalPage() {
     } else {
       setActiveMeditationEntryId(null)
     }
-  }, [entries, meditations, selectedMeditationId, activeMeditationEntryId])
+  }, [
+    entries,
+    meditations,
+    selectedMeditationId,
+    activeMeditationEntryId,
+    shouldAutoSelectMeditation,
+  ])
 
   const entriesByDate = useMemo(() => {
     const map = new Map<string, typeof entries>()
@@ -234,9 +271,28 @@ export default function JournalPage() {
   }
 
   const handleSelectMeditation = (meditationId: string) => {
+    if (selectedMeditationId === meditationId) {
+      setSelectedMeditationId(null)
+      setActiveMeditationEntryId(null)
+      setShouldAutoSelectMeditation(false)
+      setActiveTab("meditation")
+      router.replace(buildJournalHref({}))
+      return
+    }
+
+    const entriesForMeditation = meditationEntries.get(meditationId) ?? []
+    const firstEntryId = entriesForMeditation[0]?.id ?? null
+
     setSelectedMeditationId(meditationId)
-    setActiveMeditationEntryId(null)
-    router.replace(`/journal?meditation=${encodeURIComponent(meditationId)}`)
+    setActiveMeditationEntryId(firstEntryId)
+    setShouldAutoSelectMeditation(false)
+    setActiveTab("meditation")
+    router.replace(
+      buildJournalHref({
+        meditation: meditationId,
+        entry: firstEntryId,
+      }),
+    )
   }
 
   return (
@@ -244,46 +300,65 @@ export default function JournalPage() {
       <Navigation />
       <main className="px-4 pb-20">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mt-6 mb-10">
-            <div className="flex justify-center mb-[25px]">
-              <div className="relative">
-                <div className="flex justify-center items-center space-x-[5px]">
-                  <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px] shadow-md" />
-                  <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[11px] w-[11px] shadow" />
-                  <div className="w-5 bg-gradient-to-br from-logo-amber to-orange-300 rounded-[4px] transform h-[11px] shadow-sm" />
-                  <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-0 mx-0 border-[3px] bg-muted h-11 w-3 rounded border-stone-200 shadow-md" />
-                  <div className="w-5 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[4px] transform h-[11px] pl-0 ml-2 shadow-sm" />
-                  <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[11px] w-[11px] shadow" />
-                  <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[16px] h-[16px] shadow-md" />
+          <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out">
+            <div className="p-6 sm:p-8 lg:p-12">
+              <div className="text-center mb-8">
+                <div className="flex justify-center mb-[25px]">
+                  <div className="relative">
+                    <div className="flex justify-center items-center space-x-[5px]">
+                      <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px] shadow-md" />
+                      <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[11px] w-[11px] shadow" />
+                      <div className="w-5 bg-gradient-to-br from-logo-amber to-orange-300 rounded-[4px] transform h-[11px] shadow-sm" />
+                      <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-0 mx-0 border-[3px] bg-muted h-11 w-3 rounded border-stone-200 shadow-md" />
+                      <div className="w-5 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[4px] transform h-[11px] pl-0 ml-2 shadow-sm" />
+                      <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[11px] w-[11px] shadow" />
+                      <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[16px] h-[16px] shadow-md" />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            
-          </div>
 
-          <div className="flex justify-center mb-8">
-            <div className="flex p-1 bg-muted rounded-sm shadow-inner text-sm text-gray-600">
-              <button
-                onClick={() => setActiveTab("meditation")}
-                className={cn(
-                  "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
-                  activeTab === "meditation" ? "bg-white text-gray-600 shadow-sm" : "",
-                )}
-              >
-                By Meditation
-              </button>
-              <button
-                onClick={() => setActiveTab("date")}
-                className={cn(
-                  "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
-                  activeTab === "date" ? "bg-white text-gray-600 shadow-sm" : "",
-                )}
-              >
-                By Date
-              </button>
-            </div>
-          </div>
+              <div className="flex justify-center mb-8">
+                <div className="flex p-1 bg-muted rounded-sm shadow-inner text-sm text-gray-600">
+                  <button
+                    onClick={() => {
+                      const nextDateKey =
+                        selectedDateKey ?? availableDayKeys[availableDayKeys.length - 1] ?? getDateKey(new Date())
+                      setActiveTab("date")
+                      setSelectedDateKey(nextDateKey)
+                      router.replace(
+                        buildJournalHref({
+                          date: nextDateKey,
+                        }),
+                      )
+                    }}
+                    className={cn(
+                      "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
+                      activeTab === "date" ? "bg-white text-gray-600 shadow-sm" : "",
+                    )}
+                  >
+                    By Date
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab("meditation")
+                      setShouldAutoSelectMeditation(false)
+                      router.replace(
+                        buildJournalHref({
+                          meditation: selectedMeditationId,
+                          entry: activeMeditationEntryId,
+                        }),
+                      )
+                    }}
+                    className={cn(
+                      "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
+                      activeTab === "meditation" ? "bg-white text-gray-600 shadow-sm" : "",
+                    )}
+                  >
+                    By Meditation
+                  </button>
+                </div>
+              </div>
 
           <AnimatePresence mode="wait">
             {activeTab === "date" && (
@@ -318,7 +393,12 @@ export default function JournalPage() {
                                 }}
                                 onClick={() => {
                                   setSelectedDateKey(key)
-                                  router.replace(`/journal?date=${key}`)
+                                  setActiveTab("date")
+                                  router.replace(
+                                    buildJournalHref({
+                                      date: key,
+                                    }),
+                                  )
                                 }}
                                 className={cn(
                                   "flex flex-col items-center justify-center px-4 py-3 rounded-xl border-[3px] transition-all duration-200 shadow-sm min-w-[90px]",
@@ -397,14 +477,25 @@ export default function JournalPage() {
                                   className="font-serif text-sm text-gray-600"
                                 />
                                 <div className="flex justify-end gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-gray-500 hover:text-gray-700"
-                                    onClick={() => router.push(`/journal?meditation=${entry.meditationId}&entry=${entry.id}`)}
-                                  >
-                                    View Meditation History
-                                  </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-gray-500 hover:text-gray-700"
+                                  onClick={() => {
+                                    setActiveTab("meditation")
+                                    setSelectedMeditationId(entry.meditationId)
+                                    setActiveMeditationEntryId(entry.id)
+                                    setShouldAutoSelectMeditation(false)
+                                    router.push(
+                                      buildJournalHref({
+                                        meditation: entry.meditationId,
+                                        entry: entry.id,
+                                      }),
+                                    )
+                                  }}
+                                >
+                                  View Meditation History
+                                </Button>
                                   <Button
                                     onClick={() => handleSaveNote(entry.id)}
                                     disabled={!hasChanged}
@@ -495,7 +586,11 @@ export default function JournalPage() {
                         </Button>
                       </div>
 
-                      {selectedMeditationEntries.length === 0 ? (
+                      {!selectedMeditation ? (
+                        <div className="text-center py-12 border border-dashed border-gray-200 rounded-xl text-sm text-gray-500 font-serif font-black">
+                          Select a meditation to view or write your reflections.
+                        </div>
+                      ) : selectedMeditationEntries.length === 0 ? (
                         <div className="text-center py-12 border border-dashed border-gray-200 rounded-xl">
                           <BookOpenCheck className="mx-auto h-10 w-10 text-logo-emerald-400 mb-3" />
                           <p className="text-sm text-gray-500 font-serif font-black">
@@ -562,9 +657,16 @@ export default function JournalPage() {
                                     variant="ghost"
                                     size="sm"
                                     className="text-gray-500 hover:text-gray-700"
-                                    onClick={() =>
-                                      router.push(`/journal?date=${getDateKey(new Date(activeMeditationEntry.playedAt))}`)
-                                    }
+                                    onClick={() => {
+                                      const entryDateKey = getDateKey(new Date(activeMeditationEntry.playedAt))
+                                      setActiveTab("date")
+                                      setSelectedDateKey(entryDateKey)
+                                      router.push(
+                                        buildJournalHref({
+                                          date: entryDateKey,
+                                        }),
+                                      )
+                                    }}
                                   >
                                     Jump to Date
                                   </Button>
@@ -600,7 +702,9 @@ export default function JournalPage() {
             )}
           </AnimatePresence>
         </div>
-      </main>
+      </div>
     </div>
+    </main>
+  </div>
   )
 }
