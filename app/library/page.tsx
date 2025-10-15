@@ -1980,7 +1980,7 @@ export default function LibraryPage() {
             </div>
           </div>
 
-          <div className="px-6 md:px-10 pb-10">
+          <div className="px-6 md:px-10 pb-6">
             {/* Tab Navigation */}
             <div className="flex justify-center mb-[25px]">
               <div className="flex p-1 bg-muted flex-row rounded-sm shadow-inner text-sm text-gray-600">
