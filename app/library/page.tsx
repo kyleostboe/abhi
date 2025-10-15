@@ -1956,10 +1956,8 @@ export default function LibraryPage() {
       <Navigation />
 
       <div
-        className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
-        style={{
-          borderRadius: "5rem 3rem 2rem 1rem",
-        }}
+        className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors rounded-sm duration-300 ease-in-out"
+        
       >
         <div className="relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
