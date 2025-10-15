@@ -16,6 +16,7 @@ import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/me
 import { getAudioContext } from "@/lib/audio-utils"
 import { runAdjusterWorkflow } from "@/lib/adjuster-workflow"
 import { cn } from "@/lib/utils"
+import { useJournal } from "@/hooks/use-journal"
 import {
   Trash2,
   Clock,
@@ -36,11 +37,13 @@ import {
   Wand2,
   Loader2,
   Plus,
+  NotebookPen,
+  BookOpenCheck,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useMobile } from "@/hooks/use-mobile"
 import { motion, AnimatePresence } from "framer-motion"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 type LibraryTimelineEntry = NonNullable<SavedMeditation["metadata"]["timeline"]>[number]
 
@@ -266,6 +269,12 @@ export default function LibraryPage() {
   const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null)
   const [selectedMeditation, setSelectedMeditation] = useState<SavedMeditation | null>(null)
   const [baseMeditation, setBaseMeditation] = useState<SavedMeditation | null>(null)
+  const { entries: journalEntries, recordPlayback: recordJournalPlayback } = useJournal()
+  const [hasRecordedJournalEntry, setHasRecordedJournalEntry] = useState(false)
+  const [isJournalHistoryOpen, setIsJournalHistoryOpen] = useState(false)
+  const [activeJournalEntryId, setActiveJournalEntryId] = useState<string | null>(null)
+  const [handledMeditationParam, setHandledMeditationParam] = useState<string | null>(null)
+  const [pendingJournalEntryId, setPendingJournalEntryId] = useState<string | null>(null)
   const [isPlayerOpen, setIsPlayerOpen] = useState(false)
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const [playerTime, setPlayerTime] = useState(0)
@@ -302,6 +311,7 @@ export default function LibraryPage() {
   const durationsPersistReadyRef = useRef(false)
   const { toast } = useToast()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const isMobileDevice = useMobile()
 
   const [playlistMeditationsMap, setPlaylistMeditationsMap] = useState<Record<string, SavedMeditation[]>>({})
@@ -360,14 +370,14 @@ export default function LibraryPage() {
         if (parsed && typeof parsed === "object") {
           setSavedDurationsMap(parsed)
           const lastPlayed: Record<string, { label: string; seconds: number }> = {}
-          Object.entries(parsed).forEach(([meditationId, data]) => {
-            if (!data) return
-            const label = data.lastPlayedLabel
-            const seconds = data.lastPlayedSeconds
-            if (label && Number.isFinite(seconds)) {
-              lastPlayed[meditationId] = { label, seconds }
-            }
-          })
+            Object.entries(parsed).forEach(([meditationId, data]) => {
+              if (!data) return
+              const label = data.lastPlayedLabel
+              const seconds = data.lastPlayedSeconds
+              if (label && typeof seconds === "number" && Number.isFinite(seconds)) {
+                lastPlayed[meditationId] = { label, seconds }
+              }
+            })
           setLastPlayedDurationMap(lastPlayed)
         }
       }
@@ -444,14 +454,14 @@ export default function LibraryPage() {
 
   useEffect(() => {
     const nextMap: Record<string, { label: string; seconds: number }> = {}
-    Object.entries(savedDurationsMap).forEach(([meditationId, data]) => {
-      if (!data) return
-      const label = data.lastPlayedLabel
-      const seconds = data.lastPlayedSeconds
-      if (label && Number.isFinite(seconds)) {
-        nextMap[meditationId] = { label, seconds }
-      }
-    })
+      Object.entries(savedDurationsMap).forEach(([meditationId, data]) => {
+        if (!data) return
+        const label = data.lastPlayedLabel
+        const seconds = data.lastPlayedSeconds
+        if (label && typeof seconds === "number" && Number.isFinite(seconds)) {
+          nextMap[meditationId] = { label, seconds }
+        }
+      })
     setLastPlayedDurationMap(nextMap)
   }, [savedDurationsMap])
 
@@ -533,6 +543,59 @@ export default function LibraryPage() {
     }
     return groupMeditations(filteredMeditations, true)
   }, [selectedPlaylist, playlistMeditationsMap, filteredMeditations, groupMeditations])
+
+  const journalEntriesForSelectedMeditation = useMemo(() => {
+    if (!selectedMeditation) return []
+    return journalEntries
+      .filter((entry) => entry.meditationId === selectedMeditation.id)
+      .sort((a, b) => new Date(b.playedAt).getTime() - new Date(a.playedAt).getTime())
+  }, [journalEntries, selectedMeditation])
+
+  const activeJournalEntry = activeJournalEntryId
+    ? journalEntriesForSelectedMeditation.find((entry) => entry.id === activeJournalEntryId) ?? null
+    : journalEntriesForSelectedMeditation[0] ?? null
+
+  useEffect(() => {
+    setHasRecordedJournalEntry(false)
+  }, [selectedMeditation?.id])
+
+  useEffect(() => {
+    if (isAudioPlaying && selectedMeditation && !hasRecordedJournalEntry) {
+      void recordJournalPlayback({ id: selectedMeditation.id, title: selectedMeditation.title })
+      setHasRecordedJournalEntry(true)
+    }
+  }, [isAudioPlaying, selectedMeditation, hasRecordedJournalEntry, recordJournalPlayback])
+
+  useEffect(() => {
+    if (!isJournalHistoryOpen) return
+    if (journalEntriesForSelectedMeditation.length > 0) {
+      setActiveJournalEntryId((current) => {
+        if (current && journalEntriesForSelectedMeditation.some((entry) => entry.id === current)) {
+          return current
+        }
+        return journalEntriesForSelectedMeditation[0]?.id ?? null
+      })
+    } else {
+      setActiveJournalEntryId(null)
+    }
+  }, [isJournalHistoryOpen, journalEntriesForSelectedMeditation])
+
+  useEffect(() => {
+    if (!selectedMeditation) {
+      setIsJournalHistoryOpen(false)
+      setActiveJournalEntryId(null)
+    }
+  }, [selectedMeditation])
+
+  useEffect(() => {
+    if (!pendingJournalEntryId || !selectedMeditation) return
+    const hasEntry = journalEntriesForSelectedMeditation.some((entry) => entry.id === pendingJournalEntryId)
+    if (hasEntry) {
+      setActiveJournalEntryId(pendingJournalEntryId)
+      setIsJournalHistoryOpen(true)
+      setPendingJournalEntryId(null)
+    }
+  }, [pendingJournalEntryId, selectedMeditation, journalEntriesForSelectedMeditation])
 
   const handleSelectPlaylist = (playlistId: string | null) => {
     setSelectedPlaylist(playlistId)
@@ -669,6 +732,21 @@ export default function LibraryPage() {
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
+
+  const formatJournalDateLabel = (isoString: string) =>
+    new Intl.DateTimeFormat("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    }).format(new Date(isoString))
+
+  const formatJournalTimeLabel = (isoString: string) =>
+    new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(isoString))
+
+  const getDateKeyFromIso = (isoString: string) => isoString.split("T")[0] ?? ""
 
   const recordLastPlayedDuration = (meditation: SavedMeditation, mode: DurationMode) => {
     const label =
@@ -1383,6 +1461,47 @@ export default function LibraryPage() {
       recordLastPlayedDuration(meditation, activeMode)
     }
   }
+
+  const openMeditationPlayerRef = useRef(openMeditationPlayer)
+
+  useEffect(() => {
+    openMeditationPlayerRef.current = openMeditationPlayer
+  }, [openMeditationPlayer])
+
+  useEffect(() => {
+    const meditationParam = searchParams.get("meditation")
+    const entryParam = searchParams.get("entry")
+
+    if (!meditationParam) {
+      setHandledMeditationParam(null)
+      if (entryParam && pendingJournalEntryId !== entryParam) {
+        setPendingJournalEntryId(entryParam)
+      }
+      return
+    }
+
+    if (handledMeditationParam === meditationParam) {
+      if (entryParam && pendingJournalEntryId !== entryParam) {
+        setPendingJournalEntryId(entryParam)
+      }
+      return
+    }
+
+    if (meditations.length === 0) return
+    const allGroups = groupMeditations(meditations, true)
+    const targetGroup = allGroups.find(
+      (group) =>
+        group.base.id === meditationParam || group.variants.some((variant) => variant.id === meditationParam),
+    )
+
+    if (targetGroup && openMeditationPlayerRef.current) {
+      setHandledMeditationParam(meditationParam)
+      if (entryParam && pendingJournalEntryId !== entryParam) {
+        setPendingJournalEntryId(entryParam)
+      }
+      openMeditationPlayerRef.current(targetGroup.base, targetGroup.variants)
+    }
+  }, [searchParams, meditations, groupMeditations, handledMeditationParam, pendingJournalEntryId])
 
   const closeMeditationPlayer = () => {
     setIsQuickAdjustProcessing(false)
@@ -2556,7 +2675,20 @@ export default function LibraryPage() {
                           </Button>
                         </div>
 
-                        <div className="flex pt-[27px] gap-3.5">
+                        <div className="flex pt-[27px] gap-3.5 flex-wrap">
+                          <Button
+                            onClick={() => {
+                              if (!selectedMeditation) return
+                              router.push(`/journal?meditation=${selectedMeditation.id}`)
+                            }}
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 text-gray-600 hover:text-gray-800 shadow-md hover:shadow-none"
+                            title="Open Journal"
+                            disabled={isQuickAdjustProcessing || !selectedMeditation}
+                          >
+                            <NotebookPen className="h-4 w-4" />
+                          </Button>
                           <Button
                             onClick={handleDownloadMeditation}
                             variant="ghost"
@@ -2686,10 +2818,108 @@ export default function LibraryPage() {
                                   </>
                                 )}
                               </div>
-                            </DialogContent>
-                          </Dialog>
+                          </DialogContent>
+                        </Dialog>
 
-                          <DropdownMenu>
+                        <Dialog open={isJournalHistoryOpen} onOpenChange={setIsJournalHistoryOpen}>
+                          <DialogTrigger asChild>
+                            <Button
+                              className="flex-1 shadow-md bg-gradient-to-r from-logo-emerald-400 to-logo-amber-300 rounded-[11px] hover:shadow-none text-white font-black text-xs flex items-center justify-center gap-2"
+                              disabled={!selectedMeditation}
+                            >
+                              <BookOpenCheck className="h-4 w-4" />
+                              Journal History
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-3xl">
+                            <DialogHeader>
+                              <DialogTitle>Journal History</DialogTitle>
+                            </DialogHeader>
+                            {journalEntriesForSelectedMeditation.length === 0 ? (
+                              <div className="text-center py-10 text-sm text-gray-500 font-serif font-black">
+                                No journal reflections for this meditation yet.
+                              </div>
+                            ) : (
+                              <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-1">
+                                  {journalEntriesForSelectedMeditation.map((entry) => {
+                                    const isActive = activeJournalEntry?.id === entry.id
+                                    return (
+                                      <button
+                                        key={entry.id}
+                                        onClick={() => setActiveJournalEntryId(entry.id)}
+                                        className={cn(
+                                          "rounded-xl border-[3px] px-4 py-3 text-left transition-all",
+                                          isActive
+                                            ? "border-stone-300 bg-white shadow-md text-gray-700"
+                                            : "border-gray-300/60 bg-muted/60 text-gray-500 hover:bg-white",
+                                        )}
+                                      >
+                                        <div className="text-[11px] uppercase tracking-[0.3em] text-gray-400 font-black mb-1">
+                                          {formatJournalDateLabel(entry.playedAt)}
+                                        </div>
+                                        <div className="text-sm font-black text-gray-700 mb-1">
+                                          {formatJournalTimeLabel(entry.playedAt)}
+                                        </div>
+                                        <div className="text-xs text-gray-500 line-clamp-3 font-serif">
+                                          {entry.note ?? "Tap to add a reflection in the journal."}
+                                        </div>
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                                <div className="rounded-xl border-[3px] border-muted bg-gradient-to-br from-white to-stone-50 p-5 shadow-md">
+                                  {activeJournalEntry ? (
+                                    <div className="space-y-4">
+                                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 font-black">
+                                        <span className="flex items-center gap-1">
+                                          <Calendar className="h-4 w-4" />
+                                          {formatJournalDateLabel(activeJournalEntry.playedAt)}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                          <Clock className="h-4 w-4" />
+                                          {formatJournalTimeLabel(activeJournalEntry.playedAt)}
+                                        </span>
+                                      </div>
+                                      <div className="text-sm text-gray-600 font-serif whitespace-pre-wrap leading-relaxed border border-muted bg-muted/60 rounded-md p-3 min-h-[120px]">
+                                        {activeJournalEntry.note ?? "No notes recorded yet. Add one from the journal page."}
+                                      </div>
+                                      <div className="flex justify-end gap-2 flex-wrap">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-gray-500 hover:text-gray-700"
+                                          onClick={() =>
+                                            router.push(`/journal?date=${getDateKeyFromIso(activeJournalEntry.playedAt)}`)
+                                          }
+                                        >
+                                          View by Date
+                                        </Button>
+                                        <Button
+                                          className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-400 text-white font-black shadow-md hover:shadow-none"
+                                          onClick={() => {
+                                            const basePath = selectedMeditation
+                                              ? `/journal?meditation=${selectedMeditation.id}&entry=${activeJournalEntry.id}`
+                                              : `/journal?entry=${activeJournalEntry.id}`
+                                            router.push(basePath)
+                                          }}
+                                        >
+                                          Open Journal Page
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="text-center py-12 text-sm text-gray-500 font-serif font-black">
+                                      Choose an entry to view its details.
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </DialogContent>
+                        </Dialog>
+
+                        <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 className="flex-1 shadow-md bg-gradient-to-r from-logo-amber-300 to-logo-teal-500 rounded-[11px] hover:shadow-none text-white font-black text-xs"
