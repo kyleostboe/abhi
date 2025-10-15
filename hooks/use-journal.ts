@@ -52,17 +52,20 @@ type JournalEntryRow = {
   id: string
   profile_id: string
   meditation_id: string
-  meditation_title: string | null
-  played_at: string
-  note: string | null
+  entry_date: string
+  play_time: string
+  content: string | null
+  meditations: {
+    title: string
+  } | null
 }
 
 const mapRowToEntry = (row: JournalEntryRow): JournalEntry => ({
   id: row.id,
   meditationId: row.meditation_id,
-  meditationTitle: sanitizeTitle(row.meditation_title),
-  playedAt: new Date(row.played_at).toISOString(),
-  note: row.note ?? undefined,
+  meditationTitle: sanitizeTitle(row.meditations?.title),
+  playedAt: row.play_time, // Using play_time as the timestamp
+  note: row.content ?? undefined,
 })
 
 export function useJournal() {
@@ -81,9 +84,9 @@ export function useJournal() {
       try {
         const { data, error } = await supabase
           .from("journal_entries")
-          .select("id, profile_id, meditation_id, meditation_title, played_at, note")
+          .select("id, profile_id, meditation_id, entry_date, play_time, content, meditations(title)")
           .eq("profile_id", TEST_PROFILE_ID)
-          .order("played_at", { ascending: true })
+          .order("play_time", { ascending: true })
 
         if (!isActive) {
           return
@@ -116,9 +119,7 @@ export function useJournal() {
       const playedAtDate = normalizeDate(options?.playedAt)
       const noteValue = options?.note?.trim()
       const currentEntries = entriesRef.current
-      const latestForMeditation = [...currentEntries]
-        .reverse()
-        .find((entry) => entry.meditationId === meditation.id)
+      const latestForMeditation = [...currentEntries].reverse().find((entry) => entry.meditationId === meditation.id)
 
       const normalizedTitle = sanitizeTitle(meditation.title ?? latestForMeditation?.meditationTitle)
       const note = noteValue && noteValue.length > 0 ? noteValue : undefined
@@ -133,20 +134,18 @@ export function useJournal() {
             note: note ?? latestForMeditation.note,
           }
 
-          setEntries((previous) =>
-            previous.map((entry) => (entry.id === updatedEntry.id ? updatedEntry : entry)),
-          )
+          setEntries((previous) => previous.map((entry) => (entry.id === updatedEntry.id ? updatedEntry : entry)))
 
           const { data, error } = await supabase
             .from("journal_entries")
             .update({
-              played_at: updatedEntry.playedAt,
-              meditation_title: updatedEntry.meditationTitle,
-              note: updatedEntry.note ?? null,
+              entry_date: playedAtDate.toISOString().split("T")[0], // Extract date part
+              play_time: updatedEntry.playedAt,
+              content: updatedEntry.note ?? null,
             })
             .eq("id", updatedEntry.id)
             .eq("profile_id", TEST_PROFILE_ID)
-            .select("id, profile_id, meditation_id, meditation_title, played_at, note")
+            .select("id, profile_id, meditation_id, entry_date, play_time, content, meditations(title)")
             .single()
 
           if (error) {
@@ -159,9 +158,7 @@ export function useJournal() {
 
           if (data) {
             const normalized = mapRowToEntry(data)
-            setEntries((previous) =>
-              previous.map((entry) => (entry.id === normalized.id ? normalized : entry)),
-            )
+            setEntries((previous) => previous.map((entry) => (entry.id === normalized.id ? normalized : entry)))
             return normalized
           }
 
@@ -185,11 +182,11 @@ export function useJournal() {
           id: newEntry.id,
           profile_id: TEST_PROFILE_ID,
           meditation_id: newEntry.meditationId,
-          meditation_title: newEntry.meditationTitle,
-          played_at: newEntry.playedAt,
-          note: newEntry.note ?? null,
+          entry_date: playedAtDate.toISOString().split("T")[0], // Extract date part
+          play_time: newEntry.playedAt,
+          content: newEntry.note ?? null,
         })
-        .select("id, profile_id, meditation_id, meditation_title, played_at, note")
+        .select("id, profile_id, meditation_id, entry_date, play_time, content, meditations(title)")
         .single()
 
       if (error) {
@@ -200,9 +197,7 @@ export function useJournal() {
 
       if (data) {
         const normalized = mapRowToEntry(data)
-        setEntries((previous) =>
-          previous.map((entry) => (entry.id === normalized.id ? normalized : entry)),
-        )
+        setEntries((previous) => previous.map((entry) => (entry.id === normalized.id ? normalized : entry)))
         return normalized
       }
 
@@ -226,10 +221,10 @@ export function useJournal() {
 
       const { data, error } = await supabase
         .from("journal_entries")
-        .update({ note: nextNote ?? null })
+        .update({ content: nextNote ?? null })
         .eq("id", entryId)
         .eq("profile_id", TEST_PROFILE_ID)
-        .select("id, profile_id, meditation_id, meditation_title, played_at, note")
+        .select("id, profile_id, meditation_id, entry_date, play_time, content, meditations(title)")
         .single()
 
       if (error) {
