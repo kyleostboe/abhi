@@ -561,7 +561,7 @@ export default function LibraryPage() {
 
   useEffect(() => {
     if (isAudioPlaying && selectedMeditation && !hasRecordedJournalEntry) {
-      recordJournalPlayback({ id: selectedMeditation.id, title: selectedMeditation.title })
+      void recordJournalPlayback({ id: selectedMeditation.id, title: selectedMeditation.title })
       setHasRecordedJournalEntry(true)
     }
   }, [isAudioPlaying, selectedMeditation, hasRecordedJournalEntry, recordJournalPlayback])

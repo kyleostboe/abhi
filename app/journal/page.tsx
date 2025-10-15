@@ -226,7 +226,7 @@ export default function JournalPage() {
 
   const handleSaveNote = (entryId: string) => {
     const draft = noteDrafts[entryId] ?? ""
-    updateEntryNote(entryId, draft)
+    void updateEntryNote(entryId, draft)
     toast({
       title: "Journal updated",
       description: "Your reflection has been saved.",
