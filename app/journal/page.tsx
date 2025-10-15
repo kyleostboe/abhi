@@ -349,7 +349,7 @@ export default function JournalPage() {
                       {entriesForSelectedDate.length === 0 ? (
                         <div className="text-center py-10">
                           <Sparkles className="mx-auto h-10 w-10 text-logo-rose-300 mb-3" />
-                          <p className="text-sm text-gray-500 font-serif font-black">No sessions recorded on this date yet.</p>
+                          <p className="text-sm text-gray-500 font-serif font-black">No entries yet</p>
                         </div>
                       ) : (
                         entriesForSelectedDate.map((entry) => {
