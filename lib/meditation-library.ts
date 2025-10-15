@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client"
 import type { BufferToWavMetadata } from "./audio-utils"
+import { TEST_PROFILE_ID } from "./test-profile"
 
 export interface SavedMeditation {
   id: string
@@ -234,6 +235,7 @@ export class MeditationLibrary {
             source: meditation.source,
             metadata: metadataToSave,
             original_filename: meditation.originalFileName,
+            profile_id: TEST_PROFILE_ID,
           })
           .select()
           .single()
@@ -274,7 +276,11 @@ export class MeditationLibrary {
       console.log("[v0] getAllMeditations - fetching from Supabase")
       const supabase = createClient()
 
-      const { data, error } = await supabase.from("meditations").select("*").order("created_at", { ascending: false })
+      const { data, error } = await supabase
+        .from("meditations")
+        .select("*")
+        .eq("profile_id", TEST_PROFILE_ID)
+        .order("created_at", { ascending: false })
 
       if (error) {
         console.error("[v0] Supabase select error:", error)
@@ -425,6 +431,7 @@ export class MeditationLibrary {
         .insert({
           name,
           description,
+          profile_id: TEST_PROFILE_ID,
         })
         .select()
         .single()
@@ -460,6 +467,7 @@ export class MeditationLibrary {
             meditation_id
           )
         `)
+        .eq("profile_id", TEST_PROFILE_ID)
         .order("created_at", { ascending: false })
 
       if (error) {

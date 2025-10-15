@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { TEST_PROFILE_ID } from "@/lib/test-profile"
 
 const MEDITATION_BUCKET = "meditations"
 
@@ -101,6 +102,7 @@ export async function POST(request: NextRequest) {
         source,
         metadata,
         original_filename: originalFileName,
+        profile_id: TEST_PROFILE_ID,
       }
 
       const { data, error } = await supabase.from("meditations").insert(meditationData).select().single()
