@@ -1956,7 +1956,7 @@ export default function LibraryPage() {
       <Navigation />
 
       <div
-        className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors rounded-sm duration-300 ease-in-out"
+        className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg  shadow-xl overflow-hidden transition-colors rounded-3xl duration-300 ease-in-out"
         
       >
         <div className="relative overflow-hidden">

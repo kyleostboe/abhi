@@ -3243,9 +3243,7 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
         className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
-        style={{
-          borderRadius: "5rem 3rem 2rem 1rem",
-        }}
+        
         role="application"
       >
         <div className="relative overflow-hidden">
@@ -3314,7 +3312,7 @@ export default function Home() {
             </motion.div>
           </div>
 
-          <div className="px-6 md:px-10 font-serif font-black pb-7">
+          <div className="px-6 md:px-10 font-serif font-black pb-6">
             {/* Mode Description Notes */}
             <AnimatePresence mode="wait">
               {activeMode === "adjuster" && (
