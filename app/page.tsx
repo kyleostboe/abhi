@@ -3361,14 +3361,8 @@ export default function Home() {
                       </strong>
                       Depending on the audio, users may need to tweak the advanced settings for optimal results. Only
                       pauses are adjusted, spoken instruction is preserved. Any guided meditation under{" "}
-                      {isMobileDevice ? "50MB" : "500MB"} should be compatible. Teachers, please feel free to
-                      <a
-                        href="/contact"
-                        className=" underline px-1 rounded transition-colors transition-shadow font-black text-sm text-logo-purple-300"
-                      >
-                        contact me
-                      </a>
-                      to opt out. Enjoy:)
+                      {isMobileDevice ? "50MB" : "500MB"} should be compatible. Teachers, please feel free to reach out if
+                      you'd like to opt out. Enjoy:)
                     </p>
                   </div>
                   <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto backdrop-blur-sm border-0 py-4 px-0 bg-transparent pt-0 pb-0">
