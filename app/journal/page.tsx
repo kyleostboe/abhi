@@ -245,7 +245,7 @@ export default function JournalPage() {
       <main className="px-4 pb-20">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mt-6 mb-10">
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center mb-[25px]">
               <div className="relative">
                 <div className="flex justify-center items-center space-x-[5px]">
                   <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px] shadow-md" />
@@ -258,17 +258,8 @@ export default function JournalPage() {
                 </div>
               </div>
             </div>
-            <motion.h1
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="text-3xl font-black font-serif text-gray-700"
-            >
-              Journal
-            </motion.h1>
-            <p className="mt-2 text-sm text-gray-500 max-w-xl mx-auto font-serif font-black">
-              Capture insights from each session and revisit them by date or by meditation.
-            </p>
+            
+            
           </div>
 
           <div className="flex justify-center mb-8">
