@@ -58,7 +58,6 @@ export default function SettingsPage() {
 
       <Card className="p-6 shadow-lg">
         <div className="space-y-6">
-          {/* Profile Section */}
           <div>
             <h2 className="text-xl font-bold text-gray-800 mb-4">Profile Information</h2>
             <div className="space-y-4">
@@ -109,7 +108,6 @@ export default function SettingsPage() {
 
           <Separator />
 
-          {/* Preferences Section */}
           <div>
             <h2 className="text-xl font-bold text-gray-800 mb-4">Preferences</h2>
             <div className="space-y-4">
@@ -147,7 +145,6 @@ export default function SettingsPage() {
 
           <Separator />
 
-          {/* Save Button */}
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => window.history.back()}>
               Cancel
@@ -163,7 +160,6 @@ export default function SettingsPage() {
         </div>
       </Card>
 
-      {/* Account Info */}
       <Card className="mt-6 p-6 bg-gray-50">
         <h3 className="text-sm font-semibold text-gray-700 mb-2">Account Information</h3>
         <div className="text-xs text-gray-600 space-y-1">
