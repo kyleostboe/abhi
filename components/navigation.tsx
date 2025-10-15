@@ -3,12 +3,13 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { UserMenu } from "@/components/user-menu"
 
 export function Navigation() {
   const pathname = usePathname()
 
   return (
-    <nav className="flex justify-center py-4 mb-5">
+    <nav className="flex justify-center py-4 mb-5 relative">
       <ul className="flex backdrop-blur-md shadow-2xl rounded-sm bg-white px-[9px] py-3.5 space-x-[9px]">
         <li>
           <Link
@@ -50,6 +51,9 @@ export function Navigation() {
           </Link>
         </li>
       </ul>
+      <div className="absolute right-4 top-1/2 -translate-y-1/2">
+        <UserMenu />
+      </div>
     </nav>
   )
 }
