@@ -296,13 +296,21 @@ export default function JournalPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-logo-rose-100 via-white to-logo-emerald-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px]">
       <Navigation />
       <main className="px-4 pb-20">
         <div className="max-w-5xl mx-auto">
           <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out">
-            <div className="p-6 sm:p-8 lg:p-12">
-              <div className="text-center mb-8">
+            <div className="relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20" />
+                <div className="absolute top-2 left-8 w-16 h-12 bg-gradient-to-br from-emerald-300/30 to-teal-400/25 rounded-full transform rotate-12" />
+                <div className="absolute top-6 right-12 w-20 h-8 bg-gradient-to-bl from-rose-300/25 to-purple-400/20 rounded-full transform -rotate-6" />
+                <div className="absolute top-1 left-1/3 w-12 h-16 bg-gradient-to-tr from-amber-300/20 to-orange-400/15 rounded-full transform rotate-45" />
+                <div className="absolute top-8 right-1/4 w-14 h-10 bg-gradient-to-tl from-blue-300/25 to-indigo-400/20 rounded-full transform -rotate-12" />
+              </div>
+              <div className="relative px-6 sm:px-8 lg:px-12 pt-16 pb-10">
+                <div className="text-center mb-8">
                 <div className="flex justify-center mb-[25px]">
                   <div className="relative">
                     <div className="flex justify-center items-center space-x-[5px]">
@@ -700,11 +708,12 @@ export default function JournalPage() {
                 </Card>
               </motion.div>
             )}
-          </AnimatePresence>
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     </div>
-    </main>
-  </div>
+      </main>
+    </div>
   )
 }
