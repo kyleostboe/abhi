@@ -3,13 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import {
-  CalendarDays,
-  Clock,
-  NotebookPen,
-  BookOpenCheck,
-  Sparkles,
-} from "lucide-react"
+import { CalendarDays, Clock, NotebookPen, BookOpenCheck, Sparkles } from "lucide-react"
 
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
@@ -66,6 +60,20 @@ const ensureMinimumDays = (keys: string[]): string[] => {
     padded.unshift(getDateKey(cursor))
   }
   return padded
+}
+
+const generateCenteredDates = (centerKey: string, count: number): string[] => {
+  const dates: string[] = []
+  const centerDate = new Date(centerKey)
+  const halfCount = Math.floor(count / 2)
+
+  for (let i = -halfCount; i <= halfCount; i++) {
+    const date = new Date(centerDate)
+    date.setDate(date.getDate() + i)
+    dates.push(getDateKey(date))
+  }
+
+  return dates
 }
 
 const sameDay = (a: string, b: string) => a === b
@@ -148,6 +156,13 @@ export default function JournalPage() {
     return ensureMinimumDays(sorted)
   }, [entries])
 
+  const displayDayKeys = useMemo(() => {
+    if (!selectedDateKey) return []
+    // Show 5 on mobile, 7 on tablet, 9 on desktop
+    // We'll generate 9 and use CSS to hide extras on smaller screens
+    return generateCenteredDates(selectedDateKey, 9)
+  }, [selectedDateKey])
+
   const selectedDate = useMemo(() => parseDateKey(selectedDateKey), [selectedDateKey])
 
   useEffect(() => {
@@ -215,13 +230,7 @@ export default function JournalPage() {
     } else {
       setActiveMeditationEntryId(null)
     }
-  }, [
-    entries,
-    meditations,
-    selectedMeditationId,
-    activeMeditationEntryId,
-    shouldAutoSelectMeditation,
-  ])
+  }, [entries, meditations, selectedMeditationId, activeMeditationEntryId, shouldAutoSelectMeditation])
 
   const entriesByDate = useMemo(() => {
     const map = new Map<string, typeof entries>()
@@ -237,7 +246,7 @@ export default function JournalPage() {
     return map
   }, [entries])
 
-  const entriesForSelectedDate = selectedDateKey ? entriesByDate.get(selectedDateKey) ?? [] : []
+  const entriesForSelectedDate = selectedDateKey ? (entriesByDate.get(selectedDateKey) ?? []) : []
 
   const meditationEntries = useMemo(() => {
     const groups = new Map<string, JournalEntry[]>()
@@ -256,10 +265,10 @@ export default function JournalPage() {
   }, [entries])
 
   const selectedMeditation = meditations.find((meditation) => meditation.id === selectedMeditationId) ?? null
-  const selectedMeditationEntries = selectedMeditationId ? meditationEntries.get(selectedMeditationId) ?? [] : []
+  const selectedMeditationEntries = selectedMeditationId ? (meditationEntries.get(selectedMeditationId) ?? []) : []
   const activeMeditationEntry = activeMeditationEntryId
-    ? selectedMeditationEntries.find((entry) => entry.id === activeMeditationEntryId) ?? null
-    : selectedMeditationEntries[0] ?? null
+    ? (selectedMeditationEntries.find((entry) => entry.id === activeMeditationEntryId) ?? null)
+    : (selectedMeditationEntries[0] ?? null)
 
   const handleSaveNote = (entryId: string) => {
     const draft = noteDrafts[entryId] ?? ""
@@ -311,408 +320,436 @@ export default function JournalPage() {
               </div>
               <div className="relative px-6 sm:px-8 lg:px-12 pt-16 pb-10">
                 <div className="text-center mb-8">
-                <div className="flex justify-center mb-[25px]">
-                  <div className="relative">
-                    <div className="flex justify-center items-center space-x-[5px]">
-                      <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px] shadow-md" />
-                      <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[11px] w-[11px] shadow" />
-                      <div className="w-5 bg-gradient-to-br from-logo-amber to-orange-300 rounded-[4px] transform h-[11px] shadow-sm" />
-                      <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-0 mx-0 border-[3px] bg-muted h-11 w-3 rounded border-stone-200 shadow-md" />
-                      <div className="w-5 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[4px] transform h-[11px] pl-0 ml-2 shadow-sm" />
-                      <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[11px] w-[11px] shadow" />
-                      <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[16px] h-[16px] shadow-md" />
+                  <div className="flex justify-center mb-[25px]">
+                    <div className="relative">
+                      <div className="flex justify-center items-center space-x-[5px]">
+                        <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px] shadow-md" />
+                        <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[11px] w-[11px] shadow" />
+                        <div className="w-5 bg-gradient-to-br from-logo-amber to-orange-300 rounded-[4px] transform h-[11px] shadow-sm" />
+                        <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-0 mx-0 border-[3px] bg-muted h-11 w-3 rounded border-stone-200 shadow-md" />
+                        <div className="w-5 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[4px] transform h-[11px] pl-0 ml-2 shadow-sm" />
+                        <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[11px] w-[11px] shadow" />
+                        <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[16px] h-[16px] shadow-md" />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex justify-center mb-8">
-                <div className="flex p-1 bg-muted rounded-sm shadow-inner text-sm text-gray-600">
-                  <button
-                    onClick={() => {
-                      const nextDateKey =
-                        selectedDateKey ?? availableDayKeys[availableDayKeys.length - 1] ?? getDateKey(new Date())
-                      setActiveTab("date")
-                      setSelectedDateKey(nextDateKey)
-                      router.replace(
-                        buildJournalHref({
-                          date: nextDateKey,
-                        }),
-                      )
-                    }}
-                    className={cn(
-                      "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
-                      activeTab === "date" ? "bg-white text-gray-600 shadow-sm" : "",
-                    )}
-                  >
-                    By Date
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveTab("meditation")
-                      setShouldAutoSelectMeditation(false)
-                      router.replace(
-                        buildJournalHref({
-                          meditation: selectedMeditationId,
-                          entry: activeMeditationEntryId,
-                        }),
-                      )
-                    }}
-                    className={cn(
-                      "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
-                      activeTab === "meditation" ? "bg-white text-gray-600 shadow-sm" : "",
-                    )}
-                  >
-                    By Meditation
-                  </button>
-                </div>
-              </div>
-
-          <AnimatePresence mode="wait">
-            {activeTab === "date" && (
-              <motion.div
-                key="date"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Card className="p-6 lg:p-8 bg-white/90 backdrop-blur-md shadow-xl border-none">
-                  <div className="flex flex-col gap-6">
-                    <div className="text-center">
-                      
-                      {selectedDate && (
-                        <div className="font-black text-gray-500 text-2xl">{formatMonth(selectedDate)}</div>
+                <div className="flex justify-center mb-8">
+                  <div className="flex p-1 bg-muted rounded-sm shadow-inner text-sm text-gray-600">
+                    <button
+                      onClick={() => {
+                        const nextDateKey =
+                          selectedDateKey ?? availableDayKeys[availableDayKeys.length - 1] ?? getDateKey(new Date())
+                        setActiveTab("date")
+                        setSelectedDateKey(nextDateKey)
+                        router.replace(
+                          buildJournalHref({
+                            date: nextDateKey,
+                          }),
+                        )
+                      }}
+                      className={cn(
+                        "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
+                        activeTab === "date" ? "bg-white text-gray-600 shadow-sm" : "",
                       )}
-                    </div>
+                    >
+                      By Date
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveTab("meditation")
+                        setShouldAutoSelectMeditation(false)
+                        router.replace(
+                          buildJournalHref({
+                            meditation: selectedMeditationId,
+                            entry: activeMeditationEntryId,
+                          }),
+                        )
+                      }}
+                      className={cn(
+                        "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
+                        activeTab === "meditation" ? "bg-white text-gray-600 shadow-sm" : "",
+                      )}
+                    >
+                      By Meditation
+                    </button>
+                  </div>
+                </div>
 
-                    <div>
-                      <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent px-1">
-                        <div className="flex gap-3 min-w-max py-2">
-                          {availableDayKeys.map((key) => {
-                            const date = new Date(key)
-                            const isSelected = selectedDateKey ? sameDay(selectedDateKey, key) : false
-                            const [weekdayLabel, dayNumber] = getDayLabel(date).split(" ")
-                            return (
-                              <button
-                                key={key}
-                                ref={(element) => {
-                                  dayRefs.current[key] = element
-                                }}
-                                onClick={() => {
-                                  setSelectedDateKey(key)
-                                  setActiveTab("date")
-                                  router.replace(
-                                    buildJournalHref({
-                                      date: key,
-                                    }),
+                <AnimatePresence mode="wait">
+                  {activeTab === "date" && (
+                    <motion.div
+                      key="date"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Card className="p-6 lg:p-8 bg-white/90 backdrop-blur-md shadow-xl border-none">
+                        <div className="flex flex-col gap-6">
+                          <div className="text-center">
+                            {selectedDate && (
+                              <div className="font-black text-gray-500 text-2xl">{formatMonth(selectedDate)}</div>
+                            )}
+                          </div>
+
+                          <div>
+                            <div className="flex justify-center items-center">
+                              <div className="grid grid-cols-5 md:grid-cols-7 lg:grid-cols-9 gap-2 md:gap-3 w-full max-w-4xl">
+                                {displayDayKeys.map((key, index) => {
+                                  const date = new Date(key)
+                                  const isSelected = selectedDateKey ? sameDay(selectedDateKey, key) : false
+                                  const isCenterDate = index === Math.floor(displayDayKeys.length / 2)
+                                  const [weekdayLabel, dayNumber] = getDayLabel(date).split(" ")
+                                  const hasEntries = entriesByDate.has(key)
+
+                                  return (
+                                    <button
+                                      key={key}
+                                      ref={(element) => {
+                                        dayRefs.current[key] = element
+                                      }}
+                                      onClick={() => {
+                                        setSelectedDateKey(key)
+                                        setActiveTab("date")
+                                        router.replace(
+                                          buildJournalHref({
+                                            date: key,
+                                          }),
+                                        )
+                                      }}
+                                      className={cn(
+                                        "flex flex-col items-center justify-center rounded-xl border-[3px] transition-all duration-200 shadow-sm",
+                                        index >= 5 && "hidden md:flex",
+                                        index >= 7 && "hidden lg:flex",
+                                        isSelected && isCenterDate
+                                          ? "border-stone-400 bg-white text-gray-800 scale-110 shadow-lg py-4 px-5"
+                                          : isSelected
+                                            ? "border-stone-300 bg-white text-gray-700 scale-105 py-3 px-4"
+                                            : "border-gray-400/40 bg-muted/60 text-gray-500 hover:bg-white py-3 px-4",
+                                      )}
+                                    >
+                                      <span
+                                        className={cn(
+                                          "uppercase tracking-[0.3em] font-black text-gray-400",
+                                          isSelected && isCenterDate ? "text-[11px]" : "text-[10px]",
+                                        )}
+                                      >
+                                        {weekdayLabel}
+                                      </span>
+                                      <span
+                                        className={cn(
+                                          "font-black font-serif",
+                                          isSelected && isCenterDate
+                                            ? "text-2xl text-gray-800"
+                                            : isSelected
+                                              ? "text-lg text-gray-700"
+                                              : "text-lg text-gray-500",
+                                        )}
+                                      >
+                                        {dayNumber}
+                                      </span>
+                                      {hasEntries && !isSelected && (
+                                        <div className="w-1.5 h-1.5 rounded-full bg-logo-emerald-400 mt-1" />
+                                      )}
+                                    </button>
                                   )
-                                }}
-                                className={cn(
-                                  "flex flex-col items-center justify-center px-4 py-3 rounded-xl border-[3px] transition-all duration-200 shadow-sm min-w-[90px]",
-                                  isSelected
-                                    ? "border-stone-300 bg-white text-gray-700 scale-105"
-                                    : "border-gray-400/40 bg-muted/60 text-gray-500 hover:bg-white",
-                                )}
-                              >
-                                <span className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-400">
-                                  {weekdayLabel}
-                                </span>
-                                <span
-                                  className={cn(
-                                    "text-lg font-black font-serif",
-                                    isSelected ? "text-gray-700" : "text-gray-500",
-                                  )}
-                                >
-                                  {dayNumber}
-                                </span>
-                              </button>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      {entriesForSelectedDate.length === 0 ? (
-                        <div className="text-center py-10">
-                          <Sparkles className="mx-auto h-10 w-10 text-logo-rose-300 mb-3" />
-                          <p className="text-sm text-gray-500 font-serif font-black">No entries yet</p>
-                        </div>
-                      ) : (
-                        entriesForSelectedDate.map((entry) => {
-                          const entryDate = new Date(entry.playedAt)
-                          const draft = noteDrafts[entry.id] ?? ""
-                          const hasChanged = (entry.note ?? "") !== draft
-                          return (
-                            <Card key={entry.id} className="p-5 border-[3px] border-muted bg-gradient-to-br from-white to-stone-50 shadow-md">
-                              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                                <div>
-                                  <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-gray-400 font-black">
-                                    <CalendarDays className="h-4 w-4" />
-                                    <span>{formatLongDate(entryDate)}</span>
-                                  </div>
-                                  <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-600 font-black">
-                                    <span className="flex items-center gap-1">
-                                      <Clock className="h-4 w-4" />
-                                      {formatTimeLabel(entryDate)}
-                                    </span>
-                                    <span className="px-3 py-1 rounded-full bg-muted/80 border border-gray-300 text-xs font-black text-gray-600">
-                                      {entry.meditationTitle}
-                                    </span>
-                                  </div>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="self-start text-gray-500 hover:text-gray-700"
-                                  onClick={() => router.push(`/library?meditation=${entry.meditationId}`)}
-                                >
-                                  Open in Library
-                                </Button>
+                                })}
                               </div>
-                              <div className="mt-5 space-y-3">
-                                <Textarea
-                                  value={draft}
-                                  onChange={(event) => {
-                                    setNoteDrafts((previous) => ({
-                                      ...previous,
-                                      [entry.id]: event.target.value,
-                                    }))
-                                  }}
-                                  rows={4}
-                                  placeholder="What arose during this session?"
-                                  className="font-serif text-sm text-gray-600"
-                                />
-                                <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-gray-500 hover:text-gray-700"
-                                  onClick={() => {
-                                    setActiveTab("meditation")
-                                    setSelectedMeditationId(entry.meditationId)
-                                    setActiveMeditationEntryId(entry.id)
-                                    setShouldAutoSelectMeditation(false)
-                                    router.push(
-                                      buildJournalHref({
-                                        meditation: entry.meditationId,
-                                        entry: entry.id,
-                                      }),
-                                    )
-                                  }}
-                                >
-                                  View Meditation History
-                                </Button>
-                                  <Button
-                                    onClick={() => handleSaveNote(entry.id)}
-                                    disabled={!hasChanged}
-                                    className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-400 text-white font-black shadow-md hover:shadow-none"
-                                  >
-                                    Save Reflection
-                                  </Button>
-                                </div>
-                                {entry.note && !hasChanged && (
-                                  <div className="text-sm text-gray-600 font-serif bg-muted/60 border border-muted rounded-md p-3">
-                                    {entry.note}
-                                  </div>
-                                )}
-                              </div>
-                            </Card>
-                          )
-                        })
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            )}
+                            </div>
+                          </div>
 
-            {activeTab === "meditation" && (
-              <motion.div
-                key="meditation"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Card className="p-6 lg:p-8 bg-white/90 backdrop-blur-md shadow-xl border-none">
-                  <div className="grid gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-                    <div className="space-y-4">
-                      <div className="text-xs uppercase tracking-[0.2em] text-gray-400 font-black">Meditations</div>
-                      <div className="space-y-3 max-h-[440px] overflow-y-auto pr-2">
-                        {meditations.map((meditation) => {
-                          const entryCount = meditationEntries.get(meditation.id)?.length ?? 0
-                          const isSelected = meditation.id === selectedMeditationId
-                          return (
-                            <button
-                              key={meditation.id}
-                              onClick={() => handleSelectMeditation(meditation.id)}
-                              className={cn(
-                                "w-full text-left rounded-xl border-[3px] px-4 py-3 transition-all font-serif",
-                                isSelected
-                                  ? "border-stone-300 bg-white shadow-md text-gray-700"
-                                  : "border-gray-300/60 bg-muted/60 text-gray-500 hover:bg-white",
-                              )}
-                            >
-                              <div className="flex items-center justify-between gap-3">
-                                <div>
-                                  <div className="text-sm font-black text-gray-700 line-clamp-2">{meditation.title}</div>
-                                  <div className="text-[11px] uppercase tracking-[0.3em] text-gray-400 mt-1 font-black">
-                                    {entryCount > 0 ? `${entryCount} entr${entryCount === 1 ? "y" : "ies"}` : "No entries yet"}
-                                  </div>
-                                </div>
-                                <NotebookPen className="h-4 w-4 text-logo-rose-400" />
-                              </div>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                    <div className="space-y-5">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-xs uppercase tracking-[0.2em] text-gray-400 font-black mb-2">
-                            Journal Entries
-                          </div>
-                          <div className="text-lg font-black text-gray-700 font-serif">
-                            {selectedMeditation?.title ?? "Select a meditation"}
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-gray-500 hover:text-gray-700"
-                          onClick={() => {
-                            const libraryPath = selectedMeditation
-                              ? `/library?meditation=${selectedMeditation.id}`
-                              : "/library"
-                            router.push(libraryPath)
-                          }}
-                        >
-                          View in Library
-                        </Button>
-                      </div>
-
-                      {!selectedMeditation ? (
-                        <div className="text-center py-12 border border-dashed border-gray-200 rounded-xl text-sm text-gray-500 font-serif font-black">
-                          Select a meditation to view or write your reflections.
-                        </div>
-                      ) : selectedMeditationEntries.length === 0 ? (
-                        <div className="text-center py-12 border border-dashed border-gray-200 rounded-xl">
-                          <BookOpenCheck className="mx-auto h-10 w-10 text-logo-emerald-400 mb-3" />
-                          <p className="text-sm text-gray-500 font-serif font-black">
-                            No journal reflections for this meditation yet.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {selectedMeditationEntries.map((entry) => {
-                              const entryDate = new Date(entry.playedAt)
-                              const isActive = entry.id === activeMeditationEntry?.id
-                              return (
-                                <button
-                                  key={entry.id}
-                                  onClick={() => setActiveMeditationEntryId(entry.id)}
-                                  className={cn(
-                                    "rounded-xl border-[3px] px-4 py-3 text-left transition-all",
-                                    isActive
-                                      ? "border-stone-300 bg-white shadow-md text-gray-700"
-                                      : "border-gray-300/60 bg-muted/60 text-gray-500 hover:bg-white",
-                                  )}
-                                >
-                                  <div className="text-[11px] uppercase tracking-[0.3em] text-gray-400 font-black mb-1">
-                                    {formatLongDate(entryDate)}
-                                  </div>
-                                  <div className="text-sm font-black text-gray-700 mb-1">
-                                    {formatTimeLabel(entryDate)}
-                                  </div>
-                                  <div className="text-xs text-gray-500 line-clamp-3 font-serif">
-                                    {entry.note ?? "Tap to add a reflection."}
-                                  </div>
-                                </button>
-                              )
-                            })}
-                          </div>
-                          <Card className="p-5 border-[3px] border-muted bg-gradient-to-br from-white to-stone-50 shadow-md">
-                            {activeMeditationEntry ? (
-                              <div className="space-y-4">
-                                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 font-black">
-                                  <span className="flex items-center gap-1">
-                                    <CalendarDays className="h-4 w-4" />
-                                    {formatLongDate(new Date(activeMeditationEntry.playedAt))}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="h-4 w-4" />
-                                    {formatTimeLabel(new Date(activeMeditationEntry.playedAt))}
-                                  </span>
-                                </div>
-                                <Textarea
-                                  value={noteDrafts[activeMeditationEntry.id] ?? ""}
-                                  onChange={(event) => {
-                                    setNoteDrafts((previous) => ({
-                                      ...previous,
-                                      [activeMeditationEntry.id]: event.target.value,
-                                    }))
-                                  }}
-                                  rows={6}
-                                  placeholder="What stood out to you during this session?"
-                                  className="font-serif text-sm text-gray-600"
-                                />
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-gray-500 hover:text-gray-700"
-                                    onClick={() => {
-                                      const entryDateKey = getDateKey(new Date(activeMeditationEntry.playedAt))
-                                      setActiveTab("date")
-                                      setSelectedDateKey(entryDateKey)
-                                      router.push(
-                                        buildJournalHref({
-                                          date: entryDateKey,
-                                        }),
-                                      )
-                                    }}
-                                  >
-                                    Jump to Date
-                                  </Button>
-                                  <Button
-                                    onClick={() => handleSaveNote(activeMeditationEntry.id)}
-                                    disabled={
-                                      (activeMeditationEntry.note ?? "") === (noteDrafts[activeMeditationEntry.id] ?? "")
-                                    }
-                                    className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-400 text-white font-black shadow-md hover:shadow-none"
-                                  >
-                                    Save Reflection
-                                  </Button>
-                                </div>
-                                {activeMeditationEntry.note &&
-                                  activeMeditationEntry.note === (noteDrafts[activeMeditationEntry.id] ?? "") && (
-                                    <div className="text-sm text-gray-600 font-serif bg-muted/60 border border-muted rounded-md p-3">
-                                      {activeMeditationEntry.note}
-                                    </div>
-                                  )}
+                          <div className="space-y-6">
+                            {entriesForSelectedDate.length === 0 ? (
+                              <div className="text-center py-10">
+                                <Sparkles className="mx-auto h-10 w-10 text-logo-rose-300 mb-3" />
+                                <p className="text-sm text-gray-500 font-serif font-black">No entries yet</p>
                               </div>
                             ) : (
-                              <div className="text-center py-12 text-sm text-gray-500 font-serif font-black">
-                                Choose a journal entry to view the full reflection.
+                              entriesForSelectedDate.map((entry) => {
+                                const entryDate = new Date(entry.playedAt)
+                                const draft = noteDrafts[entry.id] ?? ""
+                                const hasChanged = (entry.note ?? "") !== draft
+                                return (
+                                  <Card
+                                    key={entry.id}
+                                    className="p-5 border-[3px] border-muted bg-gradient-to-br from-white to-stone-50 shadow-md"
+                                  >
+                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                      <div>
+                                        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-gray-400 font-black">
+                                          <CalendarDays className="h-4 w-4" />
+                                          <span>{formatLongDate(entryDate)}</span>
+                                        </div>
+                                        <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-600 font-black">
+                                          <span className="flex items-center gap-1">
+                                            <Clock className="h-4 w-4" />
+                                            {formatTimeLabel(entryDate)}
+                                          </span>
+                                          <span className="px-3 py-1 rounded-full bg-muted/80 border border-gray-300 text-xs font-black text-gray-600">
+                                            {entry.meditationTitle}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="self-start text-gray-500 hover:text-gray-700"
+                                        onClick={() => router.push(`/library?meditation=${entry.meditationId}`)}
+                                      >
+                                        Open in Library
+                                      </Button>
+                                    </div>
+                                    <div className="mt-5 space-y-3">
+                                      <Textarea
+                                        value={draft}
+                                        onChange={(event) => {
+                                          setNoteDrafts((previous) => ({
+                                            ...previous,
+                                            [entry.id]: event.target.value,
+                                          }))
+                                        }}
+                                        rows={4}
+                                        placeholder="What arose during this session?"
+                                        className="font-serif text-sm text-gray-600"
+                                      />
+                                      <div className="flex justify-end gap-2">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-gray-500 hover:text-gray-700"
+                                          onClick={() => {
+                                            setActiveTab("meditation")
+                                            setSelectedMeditationId(entry.meditationId)
+                                            setActiveMeditationEntryId(entry.id)
+                                            setShouldAutoSelectMeditation(false)
+                                            router.push(
+                                              buildJournalHref({
+                                                meditation: entry.meditationId,
+                                                entry: entry.id,
+                                              }),
+                                            )
+                                          }}
+                                        >
+                                          View Meditation History
+                                        </Button>
+                                        <Button
+                                          onClick={() => handleSaveNote(entry.id)}
+                                          disabled={!hasChanged}
+                                          className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-400 text-white font-black shadow-md hover:shadow-none"
+                                        >
+                                          Save Reflection
+                                        </Button>
+                                      </div>
+                                      {entry.note && !hasChanged && (
+                                        <div className="text-sm text-gray-600 font-serif bg-muted/60 border border-muted rounded-md p-3">
+                                          {entry.note}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </Card>
+                                )
+                              })
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  )}
+
+                  {activeTab === "meditation" && (
+                    <motion.div
+                      key="meditation"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Card className="p-6 lg:p-8 bg-white/90 backdrop-blur-md shadow-xl border-none">
+                        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+                          <div className="space-y-4">
+                            <div className="text-xs uppercase tracking-[0.2em] text-gray-400 font-black">
+                              Meditations
+                            </div>
+                            <div className="space-y-3 max-h-[440px] overflow-y-auto pr-2">
+                              {meditations.map((meditation) => {
+                                const entryCount = meditationEntries.get(meditation.id)?.length ?? 0
+                                const isSelected = meditation.id === selectedMeditationId
+                                return (
+                                  <button
+                                    key={meditation.id}
+                                    onClick={() => handleSelectMeditation(meditation.id)}
+                                    className={cn(
+                                      "w-full text-left rounded-xl border-[3px] px-4 py-3 transition-all font-serif",
+                                      isSelected
+                                        ? "border-stone-300 bg-white shadow-md text-gray-700"
+                                        : "border-gray-300/60 bg-muted/60 text-gray-500 hover:bg-white",
+                                    )}
+                                  >
+                                    <div className="flex items-center justify-between gap-3">
+                                      <div>
+                                        <div className="text-sm font-black text-gray-700 line-clamp-2">
+                                          {meditation.title}
+                                        </div>
+                                        <div className="text-[11px] uppercase tracking-[0.3em] text-gray-400 mt-1 font-black">
+                                          {entryCount > 0
+                                            ? `${entryCount} entr${entryCount === 1 ? "y" : "ies"}`
+                                            : "No entries yet"}
+                                        </div>
+                                      </div>
+                                      <NotebookPen className="h-4 w-4 text-logo-rose-400" />
+                                    </div>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                          <div className="space-y-5">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-xs uppercase tracking-[0.2em] text-gray-400 font-black mb-2">
+                                  Journal Entries
+                                </div>
+                                <div className="text-lg font-black text-gray-700 font-serif">
+                                  {selectedMeditation?.title ?? "Select a meditation"}
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-gray-500 hover:text-gray-700"
+                                onClick={() => {
+                                  const libraryPath = selectedMeditation
+                                    ? `/library?meditation=${selectedMeditation.id}`
+                                    : "/library"
+                                  router.push(libraryPath)
+                                }}
+                              >
+                                View in Library
+                              </Button>
+                            </div>
+
+                            {!selectedMeditation ? (
+                              <div className="text-center py-12 border border-dashed border-gray-200 rounded-xl text-sm text-gray-500 font-serif font-black">
+                                Select a meditation to view or write your reflections.
+                              </div>
+                            ) : selectedMeditationEntries.length === 0 ? (
+                              <div className="text-center py-12 border border-dashed border-gray-200 rounded-xl">
+                                <BookOpenCheck className="mx-auto h-10 w-10 text-logo-emerald-400 mb-3" />
+                                <p className="text-sm text-gray-500 font-serif font-black">
+                                  No journal reflections for this meditation yet.
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  {selectedMeditationEntries.map((entry) => {
+                                    const entryDate = new Date(entry.playedAt)
+                                    const isActive = entry.id === activeMeditationEntry?.id
+                                    return (
+                                      <button
+                                        key={entry.id}
+                                        onClick={() => setActiveMeditationEntryId(entry.id)}
+                                        className={cn(
+                                          "rounded-xl border-[3px] px-4 py-3 text-left transition-all",
+                                          isActive
+                                            ? "border-stone-300 bg-white shadow-md text-gray-700"
+                                            : "border-gray-300/60 bg-muted/60 text-gray-500 hover:bg-white",
+                                        )}
+                                      >
+                                        <div className="text-[11px] uppercase tracking-[0.3em] text-gray-400 font-black mb-1">
+                                          {formatLongDate(entryDate)}
+                                        </div>
+                                        <div className="text-sm font-black text-gray-700 mb-1">
+                                          {formatTimeLabel(entryDate)}
+                                        </div>
+                                        <div className="text-xs text-gray-500 line-clamp-3 font-serif">
+                                          {entry.note ?? "Tap to add a reflection."}
+                                        </div>
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                                <Card className="p-5 border-[3px] border-muted bg-gradient-to-br from-white to-stone-50 shadow-md">
+                                  {activeMeditationEntry ? (
+                                    <div className="space-y-4">
+                                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 font-black">
+                                        <span className="flex items-center gap-1">
+                                          <CalendarDays className="h-4 w-4" />
+                                          {formatLongDate(new Date(activeMeditationEntry.playedAt))}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                          <Clock className="h-4 w-4" />
+                                          {formatTimeLabel(new Date(activeMeditationEntry.playedAt))}
+                                        </span>
+                                      </div>
+                                      <Textarea
+                                        value={noteDrafts[activeMeditationEntry.id] ?? ""}
+                                        onChange={(event) => {
+                                          setNoteDrafts((previous) => ({
+                                            ...previous,
+                                            [activeMeditationEntry.id]: event.target.value,
+                                          }))
+                                        }}
+                                        rows={6}
+                                        placeholder="What stood out to you during this session?"
+                                        className="font-serif text-sm text-gray-600"
+                                      />
+                                      <div className="flex justify-end gap-2">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-gray-500 hover:text-gray-700"
+                                          onClick={() => {
+                                            const entryDateKey = getDateKey(new Date(activeMeditationEntry.playedAt))
+                                            setActiveTab("date")
+                                            setSelectedDateKey(entryDateKey)
+                                            router.push(
+                                              buildJournalHref({
+                                                date: entryDateKey,
+                                              }),
+                                            )
+                                          }}
+                                        >
+                                          Jump to Date
+                                        </Button>
+                                        <Button
+                                          onClick={() => handleSaveNote(activeMeditationEntry.id)}
+                                          disabled={
+                                            (activeMeditationEntry.note ?? "") ===
+                                            (noteDrafts[activeMeditationEntry.id] ?? "")
+                                          }
+                                          className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-400 text-white font-black shadow-md hover:shadow-none"
+                                        >
+                                          Save Reflection
+                                        </Button>
+                                      </div>
+                                      {activeMeditationEntry.note &&
+                                        activeMeditationEntry.note === (noteDrafts[activeMeditationEntry.id] ?? "") && (
+                                          <div className="text-sm text-gray-600 font-serif bg-muted/60 border border-muted rounded-md p-3">
+                                            {activeMeditationEntry.note}
+                                          </div>
+                                        )}
+                                    </div>
+                                  ) : (
+                                    <div className="text-center py-12 text-sm text-gray-500 font-serif font-black">
+                                      Choose a journal entry to view the full reflection.
+                                    </div>
+                                  )}
+                                </Card>
                               </div>
                             )}
-                          </Card>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            )}
-            </AnimatePresence>
+                      </Card>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
       </main>
     </div>
   )
