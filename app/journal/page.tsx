@@ -76,8 +76,8 @@ const generateCenteredDates = (centerKey: string, count: number): string[] => {
   return dates
 }
 
-const generateMonthDates = (referenceKey: string): string[] => {
-  const referenceDate = new Date(referenceKey)
+const generateMonthDates = (referenceDate: Date): string[] => {
+  const dates: string[] = []
   const year = referenceDate.getFullYear()
   const month = referenceDate.getMonth()
 
@@ -85,7 +85,7 @@ const generateMonthDates = (referenceKey: string): string[] => {
   const firstDay = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0)
 
-  const dates: string[] = []
+  // Generate all dates in the month
   for (let day = 1; day <= lastDay.getDate(); day++) {
     const date = new Date(year, month, day)
     dates.push(getDateKey(date))
@@ -176,8 +176,8 @@ export default function JournalPage() {
 
   const displayDayKeys = useMemo(() => {
     if (!selectedDateKey) return []
-    // Show all dates for the entire month
-    return generateMonthDates(selectedDateKey)
+    const selectedDate = new Date(selectedDateKey)
+    return generateMonthDates(selectedDate)
   }, [selectedDateKey])
 
   const selectedDate = useMemo(() => parseDateKey(selectedDateKey), [selectedDateKey])
@@ -218,7 +218,7 @@ export default function JournalPage() {
       if (button) {
         button.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" })
       }
-    }, 60)
+    }, 100)
 
     return () => clearTimeout(handle)
   }, [selectedDateKey])
@@ -413,7 +413,7 @@ export default function JournalPage() {
 
                           <div>
                             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-                              <div className="flex gap-3 px-4 py-2 min-w-max">
+                              <div className="flex gap-2 md:gap-3 px-4 py-2 min-w-max">
                                 {displayDayKeys.map((key) => {
                                   const date = new Date(key)
                                   const isSelected = selectedDateKey ? sameDay(selectedDateKey, key) : false
@@ -436,10 +436,10 @@ export default function JournalPage() {
                                         )
                                       }}
                                       className={cn(
-                                        "flex flex-col items-center justify-center rounded-xl border-[3px] transition-all duration-200 shadow-sm flex-shrink-0",
+                                        "flex flex-col items-center justify-center rounded-xl border-[3px] transition-all duration-300 shadow-sm flex-shrink-0",
                                         isSelected
-                                          ? "border-stone-400 bg-white text-gray-800 scale-125 shadow-xl py-5 px-6"
-                                          : "border-gray-400/40 bg-muted/60 text-gray-500 hover:bg-white hover:border-gray-400/60 py-3 px-4",
+                                          ? "border-stone-400 bg-white text-gray-800 scale-125 shadow-xl py-5 px-6 z-10"
+                                          : "border-gray-400/40 bg-muted/60 text-gray-500 hover:bg-white hover:scale-105 py-3 px-4",
                                       )}
                                     >
                                       <span
@@ -458,13 +458,8 @@ export default function JournalPage() {
                                       >
                                         {dayNumber}
                                       </span>
-                                      {hasEntries && (
-                                        <div
-                                          className={cn(
-                                            "rounded-full bg-logo-emerald-400 mt-1",
-                                            isSelected ? "w-2 h-2" : "w-1.5 h-1.5",
-                                          )}
-                                        />
+                                      {hasEntries && !isSelected && (
+                                        <div className="w-1.5 h-1.5 rounded-full bg-logo-emerald-400 mt-1" />
                                       )}
                                     </button>
                                   )
