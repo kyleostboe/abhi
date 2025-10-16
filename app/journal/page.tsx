@@ -298,7 +298,7 @@ export default function JournalPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px]">
       <Navigation />
-      <main className="px-4 pb-20">
+      <main className="px-0">
         <div className="max-w-5xl mx-auto">
           <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out">
             <div className="relative overflow-hidden">
@@ -380,9 +380,9 @@ export default function JournalPage() {
                 <Card className="p-6 lg:p-8 bg-white/90 backdrop-blur-md shadow-xl border-none">
                   <div className="flex flex-col gap-6">
                     <div className="text-center">
-                      <div className="text-xs uppercase tracking-[0.2em] text-gray-400 font-black mb-2">Journal by Date</div>
+                      
                       {selectedDate && (
-                        <div className="text-sm font-black text-gray-500">{formatMonth(selectedDate)}</div>
+                        <div className="font-black text-gray-500 text-2xl">{formatMonth(selectedDate)}</div>
                       )}
                     </div>
 
