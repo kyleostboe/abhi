@@ -76,6 +76,24 @@ const generateCenteredDates = (centerKey: string, count: number): string[] => {
   return dates
 }
 
+const generateMonthDates = (referenceKey: string): string[] => {
+  const referenceDate = new Date(referenceKey)
+  const year = referenceDate.getFullYear()
+  const month = referenceDate.getMonth()
+
+  // Get first and last day of the month
+  const firstDay = new Date(year, month, 1)
+  const lastDay = new Date(year, month + 1, 0)
+
+  const dates: string[] = []
+  for (let day = 1; day <= lastDay.getDate(); day++) {
+    const date = new Date(year, month, day)
+    dates.push(getDateKey(date))
+  }
+
+  return dates
+}
+
 const sameDay = (a: string, b: string) => a === b
 
 const buildJournalHref = ({
@@ -158,9 +176,8 @@ export default function JournalPage() {
 
   const displayDayKeys = useMemo(() => {
     if (!selectedDateKey) return []
-    // Show 5 on mobile, 7 on tablet, 9 on desktop
-    // We'll generate 9 and use CSS to hide extras on smaller screens
-    return generateCenteredDates(selectedDateKey, 9)
+    // Show all dates for the entire month
+    return generateMonthDates(selectedDateKey)
   }, [selectedDateKey])
 
   const selectedDate = useMemo(() => parseDateKey(selectedDateKey), [selectedDateKey])
@@ -395,12 +412,11 @@ export default function JournalPage() {
                           </div>
 
                           <div>
-                            <div className="flex justify-center items-center">
-                              <div className="grid grid-cols-5 md:grid-cols-7 lg:grid-cols-9 gap-2 md:gap-3 w-full max-w-4xl">
-                                {displayDayKeys.map((key, index) => {
+                            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                              <div className="flex gap-3 px-4 py-2 min-w-max">
+                                {displayDayKeys.map((key) => {
                                   const date = new Date(key)
                                   const isSelected = selectedDateKey ? sameDay(selectedDateKey, key) : false
-                                  const isCenterDate = index === Math.floor(displayDayKeys.length / 2)
                                   const [weekdayLabel, dayNumber] = getDayLabel(date).split(" ")
                                   const hasEntries = entriesByDate.has(key)
 
@@ -420,20 +436,16 @@ export default function JournalPage() {
                                         )
                                       }}
                                       className={cn(
-                                        "flex flex-col items-center justify-center rounded-xl border-[3px] transition-all duration-200 shadow-sm",
-                                        index >= 5 && "hidden md:flex",
-                                        index >= 7 && "hidden lg:flex",
-                                        isSelected && isCenterDate
-                                          ? "border-stone-400 bg-white text-gray-800 scale-110 shadow-lg py-4 px-5"
-                                          : isSelected
-                                            ? "border-stone-300 bg-white text-gray-700 scale-105 py-3 px-4"
-                                            : "border-gray-400/40 bg-muted/60 text-gray-500 hover:bg-white py-3 px-4",
+                                        "flex flex-col items-center justify-center rounded-xl border-[3px] transition-all duration-200 shadow-sm flex-shrink-0",
+                                        isSelected
+                                          ? "border-stone-400 bg-white text-gray-800 scale-125 shadow-xl py-5 px-6"
+                                          : "border-gray-400/40 bg-muted/60 text-gray-500 hover:bg-white hover:border-gray-400/60 py-3 px-4",
                                       )}
                                     >
                                       <span
                                         className={cn(
                                           "uppercase tracking-[0.3em] font-black text-gray-400",
-                                          isSelected && isCenterDate ? "text-[11px]" : "text-[10px]",
+                                          isSelected ? "text-xs" : "text-[10px]",
                                         )}
                                       >
                                         {weekdayLabel}
@@ -441,17 +453,18 @@ export default function JournalPage() {
                                       <span
                                         className={cn(
                                           "font-black font-serif",
-                                          isSelected && isCenterDate
-                                            ? "text-2xl text-gray-800"
-                                            : isSelected
-                                              ? "text-lg text-gray-700"
-                                              : "text-lg text-gray-500",
+                                          isSelected ? "text-3xl text-gray-800" : "text-lg text-gray-500",
                                         )}
                                       >
                                         {dayNumber}
                                       </span>
-                                      {hasEntries && !isSelected && (
-                                        <div className="w-1.5 h-1.5 rounded-full bg-logo-emerald-400 mt-1" />
+                                      {hasEntries && (
+                                        <div
+                                          className={cn(
+                                            "rounded-full bg-logo-emerald-400 mt-1",
+                                            isSelected ? "w-2 h-2" : "w-1.5 h-1.5",
+                                          )}
+                                        />
                                       )}
                                     </button>
                                   )
