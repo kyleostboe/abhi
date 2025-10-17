@@ -2568,7 +2568,7 @@ export default function LibraryPage() {
 
                         <div
                           className={cn(
-                            "space-y-6 my-[3px] mx-[7px]",
+                            "space-y-6 mx-0 my-0",
                             isQuickAdjustProcessing ? "pointer-events-none select-none blur-[1px]" : "",
                           )}
                         >
@@ -2700,7 +2700,7 @@ export default function LibraryPage() {
                             </div>
                           )}
 
-                          <div className="space-y-4">
+                          <div className="space-y-3">
                             <div
                               className="relative h-2 rounded-full cursor-pointer shadow-inner bg-muted"
                               onClick={handleSeek}
@@ -2751,7 +2751,7 @@ export default function LibraryPage() {
                             </div>
 
                             {currentDurationModes.length > 0 && (
-                              <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                              <div className="mt-5 flex flex-wrap items-center justify-center gap-2 font-black font-serif">
                                 {currentDurationModes.map((mode) => {
                                   const isActive = mode.id === activeDurationModeId
                                   const label =
@@ -2763,7 +2763,7 @@ export default function LibraryPage() {
                                       key={mode.id}
                                       size="sm"
                                       variant={isActive ? "default" : "outline"}
-                                      className={`text-[11px] font-black ${
+                                      className={`text-[11px] rounded-sm font-black ${
                                         isActive
                                           ? "bg-gradient-to-r from-gray-600 to-gray-500 text-white"
                                           : "text-gray-600"
@@ -2783,7 +2783,7 @@ export default function LibraryPage() {
                               </div>
                             )}
 
-                            <div className="flex pt-[27px] gap-3.5 flex-wrap">
+                            <div className="flex flex-wrap pt-0 gap-3">
                               <Button
                                 onClick={() => {
                                   if (!selectedMeditation) return
