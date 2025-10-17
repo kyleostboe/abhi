@@ -189,7 +189,7 @@ const scaleTimelineEvents = (
     if (Number.isFinite(event.endTime)) {
       scaled.endTime = Math.max(0, event.endTime * ratio)
     }
-    if (Number.isFinite(event.duration ?? NaN)) {
+    if (Number.isFinite(event.duration ?? Number.NaN)) {
       scaled.duration = Math.max(0, (event.duration ?? 0) * ratio)
     }
     return scaled
@@ -229,10 +229,8 @@ const buildDurationModeFromStored = (
   fallbackAudioUrl: string,
   fallbackSourceAudioUrl?: string | null,
 ): DurationMode => {
-  const storedPlaybackRate =
-    Number.isFinite(stored.playbackRate) && stored.playbackRate > 0 ? stored.playbackRate : 1
-  const playbackRate =
-    typeof stored.audioUrl === "string" && stored.audioUrl.length > 0 ? 1 : storedPlaybackRate
+  const storedPlaybackRate = Number.isFinite(stored.playbackRate) && stored.playbackRate > 0 ? stored.playbackRate : 1
+  const playbackRate = typeof stored.audioUrl === "string" && stored.audioUrl.length > 0 ? 1 : storedPlaybackRate
 
   const mode: DurationMode = {
     id: stored.id,
@@ -316,32 +314,38 @@ export default function LibraryPage() {
 
   const [playlistMeditationsMap, setPlaylistMeditationsMap] = useState<Record<string, SavedMeditation[]>>({})
 
-  const convertModeToStored = (mode: DurationMode): StoredDurationMode => ({
-    id: mode.id,
-    label: mode.label,
-    seconds: mode.seconds,
-    playbackRate: mode.playbackRate,
-    timeline: cloneTimeline(mode.timeline),
-    presetId: mode.presetId ?? null,
-    audioUrl: mode.audioUrl,
-    sourceAudioUrl: mode.sourceAudioUrl ?? null,
-  })
+  const convertModeToStored = useCallback(
+    (mode: DurationMode): StoredDurationMode => ({
+      id: mode.id,
+      label: mode.label,
+      seconds: mode.seconds,
+      playbackRate: mode.playbackRate,
+      timeline: cloneTimeline(mode.timeline),
+      presetId: mode.presetId ?? null,
+      audioUrl: mode.audioUrl,
+      sourceAudioUrl: mode.sourceAudioUrl ?? null,
+    }),
+    [],
+  )
 
-  const updateSavedDurations = (
-    meditationId: string,
-    updater: (existing: StoredMeditationDurations | undefined) => StoredMeditationDurations | undefined,
-  ) => {
-    setSavedDurationsMap((previous) => {
-      const next = { ...previous }
-      const updated = updater(previous[meditationId])
-      if (!updated) {
-        delete next[meditationId]
-      } else {
-        next[meditationId] = updated
-      }
-      return next
-    })
-  }
+  const updateSavedDurations = useCallback(
+    (
+      meditationId: string,
+      updater: (existing: StoredMeditationDurations | undefined) => StoredMeditationDurations | undefined,
+    ) => {
+      setSavedDurationsMap((previous) => {
+        const next = { ...previous }
+        const updated = updater(previous[meditationId])
+        if (!updated) {
+          delete next[meditationId]
+        } else {
+          next[meditationId] = updated
+        }
+        return next
+      })
+    },
+    [],
+  )
 
   useEffect(() => {
     loadData()
@@ -370,14 +374,14 @@ export default function LibraryPage() {
         if (parsed && typeof parsed === "object") {
           setSavedDurationsMap(parsed)
           const lastPlayed: Record<string, { label: string; seconds: number }> = {}
-            Object.entries(parsed).forEach(([meditationId, data]) => {
-              if (!data) return
-              const label = data.lastPlayedLabel
-              const seconds = data.lastPlayedSeconds
-              if (label && typeof seconds === "number" && Number.isFinite(seconds)) {
-                lastPlayed[meditationId] = { label, seconds }
-              }
-            })
+          Object.entries(parsed).forEach(([meditationId, data]) => {
+            if (!data) return
+            const label = data.lastPlayedLabel
+            const seconds = data.lastPlayedSeconds
+            if (label && typeof seconds === "number" && Number.isFinite(seconds)) {
+              lastPlayed[meditationId] = { label, seconds }
+            }
+          })
           setLastPlayedDurationMap(lastPlayed)
         }
       }
@@ -454,14 +458,14 @@ export default function LibraryPage() {
 
   useEffect(() => {
     const nextMap: Record<string, { label: string; seconds: number }> = {}
-      Object.entries(savedDurationsMap).forEach(([meditationId, data]) => {
-        if (!data) return
-        const label = data.lastPlayedLabel
-        const seconds = data.lastPlayedSeconds
-        if (label && typeof seconds === "number" && Number.isFinite(seconds)) {
-          nextMap[meditationId] = { label, seconds }
-        }
-      })
+    Object.entries(savedDurationsMap).forEach(([meditationId, data]) => {
+      if (!data) return
+      const label = data.lastPlayedLabel
+      const seconds = data.lastPlayedSeconds
+      if (label && typeof seconds === "number" && Number.isFinite(seconds)) {
+        nextMap[meditationId] = { label, seconds }
+      }
+    })
     setLastPlayedDurationMap(nextMap)
   }, [savedDurationsMap])
 
@@ -478,8 +482,7 @@ export default function LibraryPage() {
       meditations.filter((med) => {
         const lowerSearch = searchQuery.toLowerCase()
         const matchesSearch =
-          med.title.toLowerCase().includes(lowerSearch) ||
-          med.originalFileName.toLowerCase().includes(lowerSearch)
+          med.title.toLowerCase().includes(lowerSearch) || med.originalFileName.toLowerCase().includes(lowerSearch)
         const matchesSource = sourceFilter === "all" || med.source === sourceFilter
 
         return matchesSearch && matchesSource
@@ -498,9 +501,7 @@ export default function LibraryPage() {
 
       items.forEach((meditation) => {
         const rawParentId =
-          typeof meditation.metadata?.linkedParentId === "string"
-            ? meditation.metadata.linkedParentId.trim()
-            : ""
+          typeof meditation.metadata?.linkedParentId === "string" ? meditation.metadata.linkedParentId.trim() : ""
         const hasLinkedParent = rawParentId.length > 0 && rawParentId !== meditation.id
         let parent: SavedMeditation | undefined
 
@@ -529,9 +530,7 @@ export default function LibraryPage() {
         }
       })
 
-      return Array.from(groups.values()).sort(
-        (a, b) => b.base.createdAt.getTime() - a.base.createdAt.getTime(),
-      )
+      return Array.from(groups.values()).sort((a, b) => b.base.createdAt.getTime() - a.base.createdAt.getTime())
     },
     [allMeditationsMap],
   )
@@ -552,8 +551,8 @@ export default function LibraryPage() {
   }, [journalEntries, selectedMeditation])
 
   const activeJournalEntry = activeJournalEntryId
-    ? journalEntriesForSelectedMeditation.find((entry) => entry.id === activeJournalEntryId) ?? null
-    : journalEntriesForSelectedMeditation[0] ?? null
+    ? (journalEntriesForSelectedMeditation.find((entry) => entry.id === activeJournalEntryId) ?? null)
+    : (journalEntriesForSelectedMeditation[0] ?? null)
 
   useEffect(() => {
     setHasRecordedJournalEntry(false)
@@ -706,11 +705,11 @@ export default function LibraryPage() {
     }
   }
 
-  const formatDuration = (seconds: number) => {
+  const formatDuration = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs.toString().padStart(2, "0")}`
-  }
+  }, [])
 
   const formatDetailedTime = (seconds: number) => {
     if (!Number.isFinite(seconds)) return "0:00"
@@ -719,13 +718,12 @@ export default function LibraryPage() {
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat("en-US", {
+  const formatDate = (date: Date) =>
+    new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
     }).format(date)
-  }
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -748,25 +746,28 @@ export default function LibraryPage() {
 
   const getDateKeyFromIso = (isoString: string) => isoString.split("T")[0] ?? ""
 
-  const recordLastPlayedDuration = (meditation: SavedMeditation, mode: DurationMode) => {
-    const label =
-      mode.id === "original"
-        ? `Original (${formatDuration(mode.seconds)})`
-        : `${mode.label} (${formatDuration(mode.seconds)})`
+  const recordLastPlayedDuration = useCallback(
+    (meditation: SavedMeditation, mode: DurationMode) => {
+      const label =
+        mode.id === "original"
+          ? `Original (${formatDuration(mode.seconds)})`
+          : `${mode.label} (${formatDuration(mode.seconds)})`
 
-    updateSavedDurations(meditation.id, (existing) => {
-      const base: StoredMeditationDurations = existing
-        ? { ...existing, modes: Array.isArray(existing.modes) ? existing.modes : [] }
-        : { modes: [] }
+      updateSavedDurations(meditation.id, (existing) => {
+        const base: StoredMeditationDurations = existing
+          ? { ...existing, modes: Array.isArray(existing.modes) ? existing.modes : [] }
+          : { modes: [] }
 
-      return {
-        ...base,
-        lastPlayedId: mode.id,
-        lastPlayedSeconds: mode.seconds,
-        lastPlayedLabel: label,
-      }
-    })
-  }
+        return {
+          ...base,
+          lastPlayedId: mode.id,
+          lastPlayedSeconds: mode.seconds,
+          lastPlayedLabel: label,
+        }
+      })
+    },
+    [updateSavedDurations, formatDuration],
+  )
 
   const applyDurationMode = useCallback(
     (mode: DurationMode, baseOverride?: SavedMeditation) => {
@@ -837,11 +838,14 @@ export default function LibraryPage() {
     ],
   )
 
-  const applyDurationModeById = (modeId: string) => {
-    const mode = currentDurationModes.find((item) => item.id === modeId)
-    if (!mode) return
-    applyDurationMode(mode)
-  }
+  const applyDurationModeById = useCallback(
+    (modeId: string) => {
+      const mode = currentDurationModes.find((item) => item.id === modeId)
+      if (!mode) return
+      applyDurationMode(mode)
+    },
+    [currentDurationModes, applyDurationMode],
+  )
 
   const handleSelectDurationMode = (modeId: string) => {
     if (isQuickAdjustProcessing) return
@@ -863,8 +867,8 @@ export default function LibraryPage() {
     }
 
     const metadata = meditation.metadata ?? {}
-    const adjusterMetadata = (metadata as Record<string, unknown>).adjusterSettings ??
-      (metadata as Record<string, unknown>).adjuster ?? {}
+    const adjusterMetadata =
+      (metadata as Record<string, unknown>).adjusterSettings ?? (metadata as Record<string, unknown>).adjuster ?? {}
 
     const pickNumber = (value: unknown, fallback: number, allowZero = false) => {
       if (typeof value === "number" && Number.isFinite(value)) {
@@ -878,8 +882,7 @@ export default function LibraryPage() {
       return fallback
     }
 
-    const pickBoolean = (value: unknown, fallback: boolean) =>
-      typeof value === "boolean" ? value : fallback
+    const pickBoolean = (value: unknown, fallback: boolean) => (typeof value === "boolean" ? value : fallback)
 
     const pickString = (value: unknown, fallback: string) =>
       typeof value === "string" && value.trim().length > 0 ? value : fallback
@@ -955,7 +958,9 @@ export default function LibraryPage() {
 
     const storedRange = baseMeditation.metadata?.quickAdjust?.range
     const storedLowerBoundSeconds =
-      typeof storedRange?.minSeconds === "number" && Number.isFinite(storedRange.minSeconds) && storedRange.minSeconds > 0
+      typeof storedRange?.minSeconds === "number" &&
+      Number.isFinite(storedRange.minSeconds) &&
+      storedRange.minSeconds > 0
         ? Math.max(1, Math.round(storedRange.minSeconds))
         : null
 
@@ -1048,8 +1053,7 @@ export default function LibraryPage() {
         },
         isMobileDevice,
         callbacks: {
-          onProgress: (progress) =>
-            setQuickAdjustProgress(Math.max(0, Math.min(100, Math.round(progress)))),
+          onProgress: (progress) => setQuickAdjustProgress(Math.max(0, Math.min(100, Math.round(progress)))),
           onStep: (step) => setQuickAdjustStep(step),
           onMemoryWarning: () => {
             if (!memoryWarningShown) {
@@ -1156,10 +1160,10 @@ export default function LibraryPage() {
           ? { ...existing, modes: Array.isArray(existing.modes) ? [...existing.modes] : [] }
           : { modes: [] }
         const storedMode = convertModeToStored(normalizedNewMode)
-        const without = baseStored.modes.filter((mode) => mode.id !== storedMode.id)
+        const withoutPending = baseStored.modes.filter((mode) => mode.id !== storedMode.id)
         return {
           ...baseStored,
-          modes: [...without, storedMode],
+          modes: [...withoutPending, storedMode],
           lastPlayedId: newMode.id,
           lastPlayedSeconds: newMode.seconds,
           lastPlayedLabel: `${newMode.label} (${formatDuration(Math.round(newMode.seconds))})`,
@@ -1326,9 +1330,7 @@ export default function LibraryPage() {
       await loadData()
     } catch (error) {
       console.error("[v0] Failed to upload meditation:", error)
-      setUploadError(
-        error instanceof Error ? error.message : "We couldn't upload this meditation. Please try again.",
-      )
+      setUploadError(error instanceof Error ? error.message : "We couldn't upload this meditation. Please try again.")
     } finally {
       if (objectUrl) {
         URL.revokeObjectURL(objectUrl)
@@ -1343,124 +1345,142 @@ export default function LibraryPage() {
     setUploadError(null)
   }
 
-  const openMeditationPlayer = (meditation: SavedMeditation, linkedVariants: SavedMeditation[] = []) => {
-    const audio = audioRef.current
-    if (audio) {
-      audio.pause()
-      audio.currentTime = 0
-    }
-    if (timelineAudioRef.current) {
-      timelineAudioRef.current.pause()
-      timelineAudioRef.current = null
-    }
-    setPlayingTimelineEventId(null)
+  const openMeditationPlayer = useCallback(
+    (meditation: SavedMeditation, linkedVariants: SavedMeditation[] = []) => {
+      const audio = audioRef.current
+      if (audio) {
+        audio.pause()
+        audio.currentTime = 0
+      }
+      if (timelineAudioRef.current) {
+        timelineAudioRef.current.pause()
+        timelineAudioRef.current = null
+      }
+      setPlayingTimelineEventId(null)
 
-    const baseTimeline = cloneTimeline(meditation.metadata?.timeline as LibraryTimelineEntry[] | undefined)
-    const baseMode: DurationMode = {
-      id: "original",
-      label: "Original",
-      seconds: meditation.duration,
-      playbackRate: 1,
-      timeline: baseTimeline,
-      source: "original",
-      persisted: true,
-      presetId: null,
-      audioUrl: meditation.processedAudioUrl,
-      sourceAudioUrl: meditation.sourceAudioUrl ?? null,
-    }
+      const baseTimeline = cloneTimeline(meditation.metadata?.timeline as LibraryTimelineEntry[] | undefined)
+      const baseMode: DurationMode = {
+        id: "original",
+        label: "Original",
+        seconds: meditation.duration,
+        playbackRate: 1,
+        timeline: baseTimeline,
+        source: "original",
+        persisted: true,
+        presetId: null,
+        audioUrl: meditation.processedAudioUrl,
+        sourceAudioUrl: meditation.sourceAudioUrl ?? null,
+      }
 
-    const storedData = savedDurationsMap[meditation.id]
-    const storedModes =
-      storedData?.modes?.map((mode) =>
-        buildDurationModeFromStored(mode, "saved", meditation.processedAudioUrl, meditation.sourceAudioUrl ?? null),
-      ) ?? []
+      const storedData = savedDurationsMap[meditation.id]
+      const storedModes =
+        storedData?.modes?.map((mode) =>
+          buildDurationModeFromStored(mode, "saved", meditation.processedAudioUrl, meditation.sourceAudioUrl ?? null),
+        ) ?? []
 
-    const variantModes = linkedVariants
-      .filter((variant) => typeof variant.processedAudioUrl === "string" && variant.processedAudioUrl.length > 0)
-      .map((variant) => {
-        const variantIdRaw =
-          typeof variant.metadata?.linkedDurationId === "string"
-            ? variant.metadata.linkedDurationId.trim()
-            : ""
-        const variantId = variantIdRaw.length > 0 ? variantIdRaw : `linked-${variant.id}`
-        const rawLabel =
-          typeof variant.metadata?.linkedVariantLabel === "string"
-            ? variant.metadata.linkedVariantLabel.trim()
-            : ""
-        const label = rawLabel.length > 0 ? rawLabel : formatDurationLabelFromSeconds(variant.duration)
-        const timeline = cloneTimeline(variant.metadata?.timeline as LibraryTimelineEntry[] | undefined)
+      const variantModes = linkedVariants
+        .filter((variant) => typeof variant.processedAudioUrl === "string" && variant.processedAudioUrl.length > 0)
+        .map((variant) => {
+          const variantIdRaw =
+            typeof variant.metadata?.linkedDurationId === "string" ? variant.metadata.linkedDurationId.trim() : ""
+          const variantId = variantIdRaw.length > 0 ? variantIdRaw : `linked-${variant.id}`
+          const rawLabel =
+            typeof variant.metadata?.linkedVariantLabel === "string" ? variant.metadata.linkedVariantLabel.trim() : ""
+          const label = rawLabel.length > 0 ? rawLabel : formatDurationLabelFromSeconds(variant.duration)
+          const timeline = cloneTimeline(variant.metadata?.timeline as LibraryTimelineEntry[] | undefined)
 
-        const mode: DurationMode = {
-          id: variantId,
-          label,
-          seconds: variant.duration,
-          playbackRate: 1,
-          timeline,
-          source: "saved",
-          persisted: true,
-          presetId: variant.metadata?.quickAdjust?.lastPresetId ?? null,
-          audioUrl: variant.processedAudioUrl,
-          sourceAudioUrl: variant.sourceAudioUrl ?? null,
-        }
+          const mode: DurationMode = {
+            id: variantId,
+            label,
+            seconds: variant.duration,
+            playbackRate: 1,
+            timeline,
+            source: "saved",
+            persisted: true,
+            presetId: variant.metadata?.quickAdjust?.lastPresetId ?? null,
+            audioUrl: variant.processedAudioUrl,
+            sourceAudioUrl: variant.sourceAudioUrl ?? null,
+          }
 
-        return normalizeDurationMode(mode)
+          return normalizeDurationMode(mode)
+        })
+
+      const deduped = new Map<string, DurationMode>()
+      ;[baseMode, ...storedModes, ...variantModes].forEach((mode) => {
+        const normalized = normalizeDurationMode(mode)
+        deduped.set(normalized.id, normalized)
       })
 
-    const deduped = new Map<string, DurationMode>()
-    ;[baseMode, ...storedModes, ...variantModes].forEach((mode) => {
-      const normalized = normalizeDurationMode(mode)
-      deduped.set(normalized.id, normalized)
-    })
+      const availableModes = sortDurationModes(Array.from(deduped.values()))
 
-    const availableModes = sortDurationModes(Array.from(deduped.values()))
+      const targetModeId =
+        storedData?.lastPlayedId && deduped.has(storedData.lastPlayedId) ? storedData.lastPlayedId : "original"
+      const activeMode = availableModes.find((mode) => mode.id === targetModeId) ?? availableModes[0] ?? baseMode
 
-    const targetModeId = storedData?.lastPlayedId && deduped.has(storedData.lastPlayedId)
-      ? storedData.lastPlayedId
-      : "original"
-    const activeMode = availableModes.find((mode) => mode.id === targetModeId) ?? availableModes[0] ?? baseMode
+      setBaseMeditation(meditation)
+      setCurrentDurationModes(availableModes)
+      setActiveDurationModeId(activeMode.id)
+      setPendingAdjustmentId(null)
+      setIsQuickAdjustProcessing(false)
 
-    setBaseMeditation(meditation)
-    setCurrentDurationModes(availableModes)
-    setActiveDurationModeId(activeMode.id)
-    setPendingAdjustmentId(null)
-    setIsQuickAdjustProcessing(false)
-
-    if (activeMode.id === "original") {
-      setSelectedMeditation(meditation)
-      setCurrentPlaybackRate(1)
-      setPlayerDuration(meditation.duration)
-    } else {
-      const adjustedMeditation: SavedMeditation = {
-        ...meditation,
-        duration: activeMode.seconds,
-        metadata: {
-          ...meditation.metadata,
-          targetDuration: activeMode.seconds,
-          timeline: cloneTimeline(activeMode.timeline),
-          quickAdjust: {
-            ...(meditation.metadata.quickAdjust ?? {}),
-            lastPresetId: activeMode.presetId ?? null,
-            lastDurationId: activeMode.id,
+      if (activeMode.id === "original") {
+        setSelectedMeditation(meditation)
+        setCurrentPlaybackRate(1)
+        setPlayerDuration(meditation.duration)
+      } else {
+        const adjustedMeditation: SavedMeditation = {
+          ...meditation,
+          duration: activeMode.seconds,
+          metadata: {
+            ...meditation.metadata,
+            targetDuration: activeMode.seconds,
+            timeline: cloneTimeline(activeMode.timeline),
+            quickAdjust: {
+              ...(meditation.metadata.quickAdjust ?? {}),
+              lastPresetId: activeMode.presetId ?? null,
+              lastDurationId: activeMode.id,
+            },
           },
-        },
+        }
+        setSelectedMeditation(adjustedMeditation)
+        setCurrentPlaybackRate(activeMode.playbackRate)
+        setPlayerDuration(activeMode.seconds)
       }
-      setSelectedMeditation(adjustedMeditation)
-      setCurrentPlaybackRate(activeMode.playbackRate)
-      setPlayerDuration(activeMode.seconds)
-    }
 
-    setPlayerTime(0)
-    setIsAudioPlaying(false)
-    setIsPlayerOpen(true)
+      setPlayerTime(0)
+      setIsAudioPlaying(false)
+      setIsPlayerOpen(true)
 
-    if (audio) {
-      audio.playbackRate = activeMode.playbackRate
-    }
+      if (audio) {
+        audio.playbackRate = activeMode.playbackRate
+      }
 
-    if (activeMode) {
-      recordLastPlayedDuration(meditation, activeMode)
-    }
-  }
+      if (activeMode) {
+        recordLastPlayedDuration(meditation, activeMode)
+      }
+    },
+    [
+      baseMeditation,
+      audioRef,
+      timelineAudioRef,
+      setPlayingTimelineEventId,
+      setSelectedMeditation,
+      setBaseMeditation,
+      setCurrentDurationModes,
+      setActiveDurationModeId,
+      setPlayerDuration,
+      setPlayerTime,
+      setIsAudioPlaying,
+      setCurrentPlaybackRate,
+      setIsQuickAdjustProcessing,
+      recordLastPlayedDuration,
+      savedDurationsMap,
+      formatDurationLabelFromSeconds,
+      cloneTimeline,
+      normalizeDurationMode,
+      sortDurationModes,
+    ],
+  )
 
   const openMeditationPlayerRef = useRef(openMeditationPlayer)
 
@@ -1490,8 +1510,7 @@ export default function LibraryPage() {
     if (meditations.length === 0) return
     const allGroups = groupMeditations(meditations, true)
     const targetGroup = allGroups.find(
-      (group) =>
-        group.base.id === meditationParam || group.variants.some((variant) => variant.id === meditationParam),
+      (group) => group.base.id === meditationParam || group.variants.some((variant) => variant.id === meditationParam),
     )
 
     if (targetGroup && openMeditationPlayerRef.current) {
@@ -1503,7 +1522,7 @@ export default function LibraryPage() {
     }
   }, [searchParams, meditations, groupMeditations, handledMeditationParam, pendingJournalEntryId])
 
-  const closeMeditationPlayer = () => {
+  const closeMeditationPlayer = useCallback(() => {
     setIsQuickAdjustProcessing(false)
     if (pendingAdjustmentId && baseMeditation) {
       const pendingMode = currentDurationModes.find((mode) => mode.id === pendingAdjustmentId)
@@ -1586,9 +1605,19 @@ export default function LibraryPage() {
     setCurrentDurationModes([])
     setActiveDurationModeId("original")
     setCurrentPlaybackRate(1)
-  }
+  }, [
+    pendingAdjustmentId,
+    baseMeditation,
+    currentDurationModes,
+    normalizeDurationMode,
+    updateSavedDurations,
+    convertModeToStored,
+    cloneTimeline,
+    sortDurationModes,
+    formatDuration,
+  ])
 
-  const togglePlayback = () => {
+  const togglePlayback = useCallback(() => {
     if (isQuickAdjustProcessing) return
     const audio = audioRef.current
     if (!audio) return
@@ -1610,182 +1639,202 @@ export default function LibraryPage() {
       audio.pause()
       setIsAudioPlaying(false)
     }
-  }
+  }, [isQuickAdjustProcessing, audioRef, currentPlaybackRate, toast])
 
-  const handleSkip = (amount: number) => {
-    if (isQuickAdjustProcessing) return
-    const audio = audioRef.current
-    if (!audio) return
-    const playbackRate = currentPlaybackRate > 0 ? currentPlaybackRate : 1
-    const baseDuration = Number.isFinite(audio.duration)
-      ? audio.duration
-      : baseMeditation?.duration ?? playerDuration
-    const maxTime = Number.isFinite(baseDuration) && baseDuration > 0 ? baseDuration : audio.currentTime
-    const newCurrentTime = Math.max(0, Math.min(maxTime, audio.currentTime + amount * playbackRate))
-    audio.currentTime = newCurrentTime
-    const displayTime = playbackRate > 0 ? newCurrentTime / playbackRate : newCurrentTime
-    setPlayerTime(displayTime)
-  }
+  const handleSkip = useCallback(
+    (amount: number) => {
+      if (isQuickAdjustProcessing) return
+      const audio = audioRef.current
+      if (!audio) return
+      const playbackRate = currentPlaybackRate > 0 ? currentPlaybackRate : 1
+      const baseDuration = Number.isFinite(audio.duration)
+        ? audio.duration
+        : (baseMeditation?.duration ?? playerDuration)
+      const maxTime = Number.isFinite(baseDuration) && baseDuration > 0 ? baseDuration : audio.currentTime
+      const newCurrentTime = Math.max(0, Math.min(maxTime, audio.currentTime + amount * playbackRate))
+      audio.currentTime = newCurrentTime
+      const displayTime = playbackRate > 0 ? newCurrentTime / playbackRate : newCurrentTime
+      setPlayerTime(displayTime)
+    },
+    [isQuickAdjustProcessing, audioRef, currentPlaybackRate, baseMeditation, playerDuration, setPlayerTime],
+  )
 
-  const handlePlayTimelineEvent = (timelineEvent: LibraryTimelineEntry) => {
-    if (isQuickAdjustProcessing) return
-    if (!selectedMeditation) return
+  const handlePlayTimelineEvent = useCallback(
+    (timelineEvent: LibraryTimelineEntry) => {
+      if (isQuickAdjustProcessing) return
+      if (!selectedMeditation) return
 
-    const stopCurrentTimelineAudio = () => {
-      if (timelineAudioRef.current) {
-        timelineAudioRef.current.pause()
-        timelineAudioRef.current = null
+      const stopCurrentTimelineAudio = () => {
+        if (timelineAudioRef.current) {
+          timelineAudioRef.current.pause()
+          timelineAudioRef.current = null
+        }
+        setPlayingTimelineEventId(null)
       }
-      setPlayingTimelineEventId(null)
-    }
 
-    if (timelineEvent.eventType === "recorded_voice" && timelineEvent.recordingUrl) {
-      if (playingTimelineEventId === timelineEvent.id) {
+      if (timelineEvent.eventType === "recorded_voice" && timelineEvent.recordingUrl) {
+        if (playingTimelineEventId === timelineEvent.id) {
+          stopCurrentTimelineAudio()
+          return
+        }
+
         stopCurrentTimelineAudio()
+        const audio = audioRef.current
+        if (audio && !audio.paused) {
+          audio.pause()
+          setIsAudioPlaying(false)
+        }
+
+        try {
+          const playback = new Audio(timelineEvent.recordingUrl)
+          playback.onended = () => {
+            stopCurrentTimelineAudio()
+          }
+          playback.onerror = () => {
+            stopCurrentTimelineAudio()
+            toast({
+              title: "Unable to play recording",
+              description: "The stored recording could not be loaded.",
+              variant: "destructive",
+            })
+          }
+          timelineAudioRef.current = playback
+          playback
+            .play()
+            .then(() => {
+              setPlayingTimelineEventId(timelineEvent.id)
+            })
+            .catch((error) => {
+              console.error("[v0] Failed to play timeline recording:", error)
+              stopCurrentTimelineAudio()
+              toast({
+                title: "Unable to play recording",
+                description: "Try reloading the page and playing the event again.",
+                variant: "destructive",
+              })
+            })
+        } catch (error) {
+          console.error("[v0] Error playing timeline recording:", error)
+          stopCurrentTimelineAudio()
+          toast({
+            title: "Unable to play recording",
+            description: "The recording could not be initialized for playback.",
+            variant: "destructive",
+          })
+        }
         return
       }
 
       stopCurrentTimelineAudio()
+
       const audio = audioRef.current
-      if (audio && !audio.paused) {
-        audio.pause()
-        setIsAudioPlaying(false)
+      if (!audio) return
+
+      const targetTime = Number.isFinite(timelineEvent.startTime) ? timelineEvent.startTime : 0
+      const playbackRate = currentPlaybackRate > 0 ? currentPlaybackRate : 1
+      const baseDuration = Number.isFinite(audio.duration)
+        ? audio.duration
+        : (baseMeditation?.duration ?? selectedMeditation.duration)
+      const clampedBase = Number.isFinite(baseDuration) && baseDuration > 0 ? baseDuration : targetTime
+      const adjustedTime = Math.max(0, Math.min(clampedBase, targetTime * playbackRate))
+      audio.playbackRate = playbackRate
+      audio.currentTime = adjustedTime
+      audio
+        .play()
+        .then(() => {
+          setIsAudioPlaying(true)
+          setPlayerTime(targetTime)
+        })
+        .catch((error) => {
+          console.error("[v0] Failed to play main audio from timeline event:", error)
+          toast({
+            title: "Unable to play event",
+            description: "Try reloading the page and playing the meditation again.",
+            variant: "destructive",
+          })
+        })
+    },
+    [
+      isQuickAdjustProcessing,
+      selectedMeditation,
+      playingTimelineEventId,
+      timelineAudioRef,
+      audioRef,
+      setIsAudioPlaying,
+      toast,
+      currentPlaybackRate,
+      baseMeditation,
+      setPlayerTime,
+    ],
+  )
+
+  const handleOpenInTool = useCallback(
+    (tool?: "adjuster" | "encoder") => {
+      if (!selectedMeditation) return
+
+      // Determine target tool - use parameter if provided, otherwise use original logic
+      const targetTool = tool || (selectedMeditation.source === "adjuster" ? "adjuster" : "encoder")
+
+      const audioUrlToUse = selectedMeditation.sourceAudioUrl || selectedMeditation.processedAudioUrl
+
+      console.log("[v0] Opening meditation in tool:", {
+        tool: targetTool,
+        hasSourceAudio: !!selectedMeditation.sourceAudioUrl,
+        usingSourceAudio: audioUrlToUse === selectedMeditation.sourceAudioUrl,
+      })
+
+      const metadataForPayload: SavedMeditation["metadata"] & { meditationTitle?: string } = {
+        ...selectedMeditation.metadata,
+      }
+
+      if (
+        typeof metadataForPayload.meditationTitle !== "string" ||
+        metadataForPayload.meditationTitle.trim().length === 0
+      ) {
+        metadataForPayload.meditationTitle = selectedMeditation.title
+      }
+
+      const payload = {
+        id: selectedMeditation.id,
+        title: selectedMeditation.title,
+        originalFileName: selectedMeditation.originalFileName,
+        processedAudioUrl: audioUrlToUse, // Use high-quality source for re-adjustment
+        duration: selectedMeditation.duration,
+        source: selectedMeditation.source,
+        metadata: metadataForPayload,
+        crossToolOpening: targetTool !== selectedMeditation.source,
       }
 
       try {
-        const playback = new Audio(timelineEvent.recordingUrl)
-        playback.onended = () => {
-          stopCurrentTimelineAudio()
-        }
-        playback.onerror = () => {
-          stopCurrentTimelineAudio()
+        if (targetTool === "adjuster") {
+          localStorage.setItem("abhi_adjuster_import", JSON.stringify(payload))
           toast({
-            title: "Unable to play recording",
-            description: "The stored recording could not be loaded.",
-            variant: "destructive",
+            title: "Opening Adjuster",
+            description: `"${selectedMeditation.title}" will load in the Adjuster tool${selectedMeditation.sourceAudioUrl ? " (using high-quality source)" : ""}.`,
           })
+          setIsPlayerOpen(false)
+          router.push("/#adjuster", { scroll: false })
+        } else {
+          localStorage.setItem("abhi_encoder_import", JSON.stringify(payload))
+          toast({
+            title: "Opening Encoder",
+            description: `"${selectedMeditation.title}" will load in the Encoder tool${selectedMeditation.sourceAudioUrl ? " (using high-quality source)" : ""}.`,
+          })
+          setIsPlayerOpen(false)
+          router.push("/#encoder", { scroll: false })
         }
-        timelineAudioRef.current = playback
-        playback
-          .play()
-          .then(() => {
-            setPlayingTimelineEventId(timelineEvent.id)
-          })
-          .catch((error) => {
-            console.error("[v0] Failed to play timeline recording:", error)
-            stopCurrentTimelineAudio()
-            toast({
-              title: "Unable to play recording",
-              description: "Try reloading the page and playing the event again.",
-              variant: "destructive",
-            })
-          })
       } catch (error) {
-        console.error("[v0] Error playing timeline recording:", error)
-        stopCurrentTimelineAudio()
         toast({
-          title: "Unable to play recording",
-          description: "The recording could not be initialized for playback.",
+          title: "Unable to open tool",
+          description: "We couldn't pass this meditation to the selected tool.",
           variant: "destructive",
         })
       }
-      return
-    }
+    },
+    [selectedMeditation, router, toast, setIsPlayerOpen],
+  )
 
-    stopCurrentTimelineAudio()
-
-    const audio = audioRef.current
-    if (!audio) return
-
-    const targetTime = Number.isFinite(timelineEvent.startTime) ? timelineEvent.startTime : 0
-    const playbackRate = currentPlaybackRate > 0 ? currentPlaybackRate : 1
-    const baseDuration = Number.isFinite(audio.duration)
-      ? audio.duration
-      : baseMeditation?.duration ?? selectedMeditation.duration
-    const clampedBase = Number.isFinite(baseDuration) && baseDuration > 0 ? baseDuration : targetTime
-    const adjustedTime = Math.max(0, Math.min(clampedBase, targetTime * playbackRate))
-    audio.playbackRate = playbackRate
-    audio.currentTime = adjustedTime
-    audio
-      .play()
-      .then(() => {
-        setIsAudioPlaying(true)
-        setPlayerTime(targetTime)
-      })
-      .catch((error) => {
-        console.error("[v0] Failed to play main audio from timeline event:", error)
-        toast({
-          title: "Unable to play event",
-          description: "Try reloading the page and playing the meditation again.",
-          variant: "destructive",
-        })
-      })
-  }
-
-  const handleOpenInTool = (tool?: "adjuster" | "encoder") => {
-    if (!selectedMeditation) return
-
-    // Determine target tool - use parameter if provided, otherwise use original logic
-    const targetTool = tool || (selectedMeditation.source === "adjuster" ? "adjuster" : "encoder")
-
-    const audioUrlToUse = selectedMeditation.sourceAudioUrl || selectedMeditation.processedAudioUrl
-
-    console.log("[v0] Opening meditation in tool:", {
-      tool: targetTool,
-      hasSourceAudio: !!selectedMeditation.sourceAudioUrl,
-      usingSourceAudio: audioUrlToUse === selectedMeditation.sourceAudioUrl,
-    })
-
-    const metadataForPayload: SavedMeditation["metadata"] & { meditationTitle?: string } = {
-      ...selectedMeditation.metadata,
-    }
-
-    if (
-      typeof metadataForPayload.meditationTitle !== "string" ||
-      metadataForPayload.meditationTitle.trim().length === 0
-    ) {
-      metadataForPayload.meditationTitle = selectedMeditation.title
-    }
-
-    const payload = {
-      id: selectedMeditation.id,
-      title: selectedMeditation.title,
-      originalFileName: selectedMeditation.originalFileName,
-      processedAudioUrl: audioUrlToUse, // Use high-quality source for re-adjustment
-      duration: selectedMeditation.duration,
-      source: selectedMeditation.source,
-      metadata: metadataForPayload,
-      crossToolOpening: targetTool !== selectedMeditation.source,
-    }
-
-    try {
-      if (targetTool === "adjuster") {
-        localStorage.setItem("abhi_adjuster_import", JSON.stringify(payload))
-        toast({
-          title: "Opening Adjuster",
-          description: `"${selectedMeditation.title}" will load in the Adjuster tool${selectedMeditation.sourceAudioUrl ? " (using high-quality source)" : ""}.`,
-        })
-        setIsPlayerOpen(false)
-        router.push("/#adjuster", { scroll: false })
-      } else {
-        localStorage.setItem("abhi_encoder_import", JSON.stringify(payload))
-        toast({
-          title: "Opening Encoder",
-          description: `"${selectedMeditation.title}" will load in the Encoder tool${selectedMeditation.sourceAudioUrl ? " (using high-quality source)" : ""}.`,
-        })
-        setIsPlayerOpen(false)
-        router.push("/#encoder", { scroll: false })
-      }
-    } catch (error) {
-      toast({
-        title: "Unable to open tool",
-        description: "We couldn't pass this meditation to the selected tool.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleDownloadMeditation = () => {
+  const handleDownloadMeditation = useCallback(() => {
     if (!selectedMeditation) return
 
     try {
@@ -1836,25 +1885,36 @@ export default function LibraryPage() {
         variant: "destructive",
       })
     }
-  }
+  }, [selectedMeditation, toast])
 
-  const handleSeek = (event: MouseEvent<HTMLDivElement>) => {
-    if (isQuickAdjustProcessing) return
-    const audio = audioRef.current
-    if (!audio || !(audio.duration || playerDuration)) return
+  const handleSeek = useCallback(
+    (event: MouseEvent<HTMLDivElement>) => {
+      if (isQuickAdjustProcessing) return
+      const audio = audioRef.current
+      if (!audio || !(audio.duration || playerDuration)) return
 
-    const rect = event.currentTarget.getBoundingClientRect()
-    const clickPosition = event.clientX - rect.left
-    const ratio = Math.min(Math.max(clickPosition / rect.width, 0), 1)
-    const playbackRate = currentPlaybackRate > 0 ? currentPlaybackRate : 1
-    const baseDuration = Number.isFinite(audio.duration)
-      ? audio.duration
-      : baseMeditation?.duration ?? selectedMeditation?.duration ?? 0
-    const effectiveDuration = playbackRate > 0 ? baseDuration / playbackRate : baseDuration
-    const newDisplayTime = ratio * effectiveDuration
-    audio.currentTime = newDisplayTime * playbackRate
-    setPlayerTime(newDisplayTime)
-  }
+      const rect = event.currentTarget.getBoundingClientRect()
+      const clickPosition = event.clientX - rect.left
+      const ratio = Math.min(Math.max(clickPosition / rect.width, 0), 1)
+      const playbackRate = currentPlaybackRate > 0 ? currentPlaybackRate : 1
+      const baseDuration = Number.isFinite(audio.duration)
+        ? audio.duration
+        : (baseMeditation?.duration ?? selectedMeditation?.duration ?? 0)
+      const effectiveDuration = playbackRate > 0 ? baseDuration / playbackRate : baseDuration
+      const newDisplayTime = ratio * effectiveDuration
+      audio.currentTime = newDisplayTime * playbackRate
+      setPlayerTime(newDisplayTime)
+    },
+    [
+      isQuickAdjustProcessing,
+      audioRef,
+      playerDuration,
+      currentPlaybackRate,
+      baseMeditation,
+      selectedMeditation,
+      setPlayerTime,
+    ],
+  )
 
   useEffect(() => {
     const audio = audioRef.current
@@ -1871,7 +1931,7 @@ export default function LibraryPage() {
       const playbackRate = currentPlaybackRate > 0 ? currentPlaybackRate : 1
       const baseDuration = Number.isFinite(audio.duration)
         ? audio.duration
-        : baseMeditation?.duration ?? selectedMeditation?.duration ?? 0
+        : (baseMeditation?.duration ?? selectedMeditation?.duration ?? 0)
       const displayDuration = playbackRate > 0 ? baseDuration / playbackRate : baseDuration
       const displayTime = playbackRate > 0 ? audio.currentTime / playbackRate : audio.currentTime
       setPlayerDuration(displayDuration)
@@ -1903,7 +1963,7 @@ export default function LibraryPage() {
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata)
       audio.removeEventListener("ended", handleEndedEvent)
     }
-  }, [selectedMeditation, currentPlaybackRate, baseMeditation])
+  }, [selectedMeditation, currentPlaybackRate, baseMeditation, setPlayerTime, setPlayerDuration])
 
   useEffect(() => {
     if (!selectedMeditation && timelineAudioRef.current) {
@@ -1955,10 +2015,7 @@ export default function LibraryPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px] font-serif font-black">
       <Navigation />
 
-      <div
-        className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg  shadow-xl overflow-hidden transition-colors rounded-3xl duration-300 ease-in-out"
-        
-      >
+      <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg  shadow-xl overflow-hidden transition-colors rounded-3xl duration-300 ease-in-out">
         <div className="relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
             <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20"></div>
@@ -2088,7 +2145,7 @@ export default function LibraryPage() {
                                 )}
                               </div>
                               {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
-                              
+
                               <div className="flex justify-end gap-2">
                                 <Button
                                   variant="outline"
@@ -2101,7 +2158,11 @@ export default function LibraryPage() {
                                 >
                                   Cancel
                                 </Button>
-                                <Button onClick={handleUploadMeditation} size="sm" disabled={isUploading || !uploadFile}>
+                                <Button
+                                  onClick={handleUploadMeditation}
+                                  size="sm"
+                                  disabled={isUploading || !uploadFile}
+                                >
                                   {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                   {isUploading ? "Uploading" : "Upload"}
                                 </Button>
@@ -2184,7 +2245,8 @@ export default function LibraryPage() {
                             typeof variant.metadata?.linkedVariantLabel === "string"
                               ? variant.metadata.linkedVariantLabel.trim()
                               : ""
-                          const label = rawLabel.length > 0 ? rawLabel : formatDurationLabelFromSeconds(variant.duration)
+                          const label =
+                            rawLabel.length > 0 ? rawLabel : formatDurationLabelFromSeconds(variant.duration)
                           return `${label} (${formatDuration(variant.duration)})`
                         })
                         const defaultDurationDisplay = [
@@ -2467,534 +2529,573 @@ export default function LibraryPage() {
             </AnimatePresence>
           </div>
 
-      {playerPortalElement &&
-        createPortal(
-          <AnimatePresence>
-            {isPlayerOpen && selectedMeditation && (
-              <motion.div
-                key="meditation-player"
-                className="fixed inset-0 z-50 flex items-center justify-center"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                onClick={closeMeditationPlayer}
-              >
-                <motion.div
-                  className="absolute inset-0 bg-black/70 backdrop-blur-2xl"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                />
-                <motion.div
-                  className="relative z-10 w-full max-w-xl px-4"
-                  initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 30, scale: 0.95 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 24 }}
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <Card className="relative overflow-hidden border-none bg-white p-6 shadow-2xl backdrop-blur">
-                    <button
-                      type="button"
-                      className="absolute right-4 top-4 rounded-full  p-2 text-gray-500 transition hover:text-gray-700"
-                      onClick={closeMeditationPlayer}
-                      aria-label="Close player"
+          {playerPortalElement &&
+            createPortal(
+              <AnimatePresence>
+                {isPlayerOpen && selectedMeditation && (
+                  <motion.div
+                    key="meditation-player"
+                    className="fixed inset-0 z-50 flex items-center justify-center"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={closeMeditationPlayer}
+                  >
+                    <motion.div
+                      className="absolute inset-0 bg-black/70 backdrop-blur-2xl"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                    />
+                    <motion.div
+                      className="relative z-10 w-full max-w-xl px-4"
+                      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 30, scale: 0.95 }}
+                      transition={{ type: "spring", stiffness: 260, damping: 24 }}
+                      onClick={(event) => event.stopPropagation()}
                     >
-                      <X className="h-[16px] w-[16px]" />
-                    </button>
-
-                    <div
-                      className={cn(
-                        "space-y-6 my-[3px] mx-[7px]",
-                        isQuickAdjustProcessing ? "pointer-events-none select-none blur-[1px]" : "",
-                      )}
-                    >
-                      <div className="space-y-3">
-                        <button className="bg-gradient-to-r from-muted to-stone-200 text-xs font-serif rounded-[7px] font-black text-gray-500 shadow-inner py-[5px] px-[13px] mb-[9px]">
-                          {selectedMeditation.source === "adjuster" ? "Adjuster" : "Encoder"}
-                        </button>
-                        <div>
-                          <h2 className="text-2xl font-black text-gray-600 text-left">{selectedMeditation.title}</h2>
-                          {(() => {
-                            const trimmedTitle = selectedMeditation.title.trim()
-                            const trimmedOriginal = selectedMeditation.originalFileName.trim()
-                            const showOriginalFileName =
-                              trimmedOriginal.length > 0 &&
-                              trimmedOriginal.localeCompare(trimmedTitle, undefined, {
-                                sensitivity: "accent",
-                              }) !== 0
-                            if (!showOriginalFileName) return null
-                            return null
-                          })()}
-                        </div>
-                      </div>
-
-                      {/* Player Content */}
-                      <audio
-                        ref={audioRef}
-                        src={selectedMeditation.processedAudioUrl}
-                        preload="metadata"
-                        className="hidden"
-                      />
-
-                      {hasTimelineEvents && (
-                        <div className="space-y-3">
-                          <h3 className="text-sm font-black text-gray-700 uppercase tracking-wide">Timeline Events</h3>
-                          <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
-                            {timelineEvents.map((timelineEvent, index) => {
-                              const colorClass =
-                                typeof timelineEvent.color === "string" && timelineEvent.color.trim().length > 0
-                                  ? timelineEvent.color
-                                  : "bg-gradient-to-br from-gray-300 to-gray-400"
-                              const isRecording =
-                                timelineEvent.eventType === "recorded_voice" || Boolean(timelineEvent.keepOriginal)
-                              const isRecordingPlaying = playingTimelineEventId === timelineEvent.id && isRecording
-                              const durationLabel =
-                                typeof timelineEvent.duration === "number" && Number.isFinite(timelineEvent.duration)
-                                  ? formatTime(timelineEvent.duration)
-                                  : null
-
-                              return (
-                                <div
-                                  key={timelineEvent.id}
-                                  className="bg-gradient-to-r from-gray-50 to-stone-50 rounded-lg p-3 border border-gray-200 shadow-sm"
-                                >
-                                  <div className="flex items-start gap-3">
-                                    <div className="mt-0.5">
-                                      <div
-                                        className={cn(
-                                          "w-2.5 h-12 rounded-full shadow-sm",
-                                          colorClass,
-                                          colorClass.includes("bg-gradient") ? "" : "bg-gradient-to-b",
-                                        )}
-                                        aria-hidden="true"
-                                      />
-                                    </div>
-                                    <div className="flex-1 min-w-0 space-y-1">
-                                      <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-500">
-                                        <span className="font-black">#{index + 1}</span>
-                                        <span>at {formatTime(timelineEvent.startTime ?? 0)}</span>
-                                        {durationLabel && <span>• {durationLabel}</span>}
-                                      </div>
-                                      <p className="text-xs font-black text-gray-800 truncate">{timelineEvent.text}</p>
-                                      <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-600">
-                                        {isRecording && (
-                                          <span className="flex items-center gap-1">
-                                            <Volume2 className="h-3 w-3 text-logo-rose-500" />
-                                            <span className="text-logo-rose-500 font-semibold">
-                                              {timelineEvent.recordingLabel?.trim() || "Recording"}
-                                            </span>
-                                          </span>
-                                        )}
-                                        <span className="flex items-center gap-1">
-                                          <Music className="h-3 w-3 text-logo-teal-500" />
-                                          <span className="text-logo-teal-500 font-semibold">Cue</span>
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <div className="flex flex-col items-end gap-2">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                                        onClick={(event) => {
-                                          event.stopPropagation()
-                                          handlePlayTimelineEvent(timelineEvent)
-                                        }}
-                                        aria-label="Play timeline event"
-                                        disabled={isQuickAdjustProcessing}
-                                      >
-                                        {isRecordingPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {!hasTimelineEvents && selectedMeditation.source === "encoder" && (
-                        <div className="space-y-3">
-                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                            <p className="text-xs text-amber-800 font-black">
-                              Timeline data not available for this meditation. Re-encode and save it again to see the
-                              timeline events.
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="space-y-4">
-                        <div
-                          className="relative h-2 rounded-full cursor-pointer shadow-inner bg-muted"
-                          onClick={handleSeek}
+                      <Card className="relative overflow-hidden border-none bg-white p-6 shadow-2xl backdrop-blur">
+                        <button
+                          type="button"
+                          className="absolute right-4 top-4 rounded-full  p-2 text-gray-500 transition hover:text-gray-700"
+                          onClick={closeMeditationPlayer}
+                          aria-label="Close player"
                         >
-                          <div
-                            className="absolute top-0 left-0 h-full bg-gradient-to-r from-gray-500 to-gray-600 rounded-full transition-all duration-150"
-                            style={{ width: `${playbackProgress}%` }}
+                          <X className="h-[16px] w-[16px]" />
+                        </button>
+
+                        <div
+                          className={cn(
+                            "space-y-6 my-[3px] mx-[7px]",
+                            isQuickAdjustProcessing ? "pointer-events-none select-none blur-[1px]" : "",
+                          )}
+                        >
+                          <div className="space-y-3">
+                            <button className="bg-gradient-to-r from-muted to-stone-200 text-xs font-serif rounded-[7px] font-black text-gray-500 shadow-inner py-[5px] px-[13px] mb-[9px]">
+                              {selectedMeditation.source === "adjuster" ? "Adjuster" : "Encoder"}
+                            </button>
+                            <div>
+                              <h2 className="text-2xl font-black text-gray-600 text-left">
+                                {selectedMeditation.title}
+                              </h2>
+                              {(() => {
+                                const trimmedTitle = selectedMeditation.title.trim()
+                                const trimmedOriginal = selectedMeditation.originalFileName.trim()
+                                const showOriginalFileName =
+                                  trimmedOriginal.length > 0 &&
+                                  trimmedOriginal.localeCompare(trimmedTitle, undefined, {
+                                    sensitivity: "accent",
+                                  }) !== 0
+                                if (!showOriginalFileName) return null
+                                return null
+                              })()}
+                            </div>
+                          </div>
+
+                          {/* Player Content */}
+                          <audio
+                            ref={audioRef}
+                            src={selectedMeditation.processedAudioUrl}
+                            preload="metadata"
+                            className="hidden"
                           />
-                        </div>
 
-                        <div className="flex justify-between text-xs font-black text-gray-600">
-                          <span>{formatDetailedTime(playerTime)}</span>
-                          <span>{formatDetailedTime(playerDuration)}</span>
-                        </div>
+                          {hasTimelineEvents && (
+                            <div className="space-y-3">
+                              <h3 className="text-sm font-black text-gray-700 uppercase tracking-wide">
+                                Timeline Events
+                              </h3>
+                              <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
+                                {timelineEvents.map((timelineEvent, index) => {
+                                  const colorClass =
+                                    typeof timelineEvent.color === "string" && timelineEvent.color.trim().length > 0
+                                      ? timelineEvent.color
+                                      : "bg-gradient-to-br from-gray-300 to-gray-400"
+                                  const isRecording =
+                                    timelineEvent.eventType === "recorded_voice" || Boolean(timelineEvent.keepOriginal)
+                                  const isRecordingPlaying = playingTimelineEventId === timelineEvent.id && isRecording
+                                  const durationLabel =
+                                    typeof timelineEvent.duration === "number" &&
+                                    Number.isFinite(timelineEvent.duration)
+                                      ? formatTime(timelineEvent.duration)
+                                      : null
 
-                        <div className="flex items-center justify-center gap-4">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleSkip(-10)}
-                            className="h-10 w-10 text-gray-600 hover:text-gray-800"
-                            disabled={isQuickAdjustProcessing}
-                          >
-                            <SkipBack className="h-5 w-5" />
-                          </Button>
-
-                          <Button
-                            onClick={togglePlayback}
-                            className="h-12 w-12 rounded-full shadow-md bg-gradient-to-r from-gray-500 to-gray-600  hover:shadow-none text-white"
-                            disabled={isQuickAdjustProcessing}
-                          >
-                            {isAudioPlaying ? <Pause className="h-10 w-10" /> : <Play className="ml-0.5 w-10 h-10" />}
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleSkip(10)}
-                            className="h-10 w-10 text-gray-600 hover:text-gray-800"
-                            disabled={isQuickAdjustProcessing}
-                          >
-                            <SkipForward className="h-5 w-5" />
-                          </Button>
-                        </div>
-
-                        <div className="flex pt-[27px] gap-3.5 flex-wrap">
-                          <Button
-                            onClick={() => {
-                              if (!selectedMeditation) return
-                              router.push(`/journal?meditation=${selectedMeditation.id}`)
-                            }}
-                            variant="ghost"
-                            size="icon"
-                            className="h-10 w-10 text-gray-600 hover:text-gray-800 shadow-md hover:shadow-none"
-                            title="Open Journal"
-                            disabled={isQuickAdjustProcessing || !selectedMeditation}
-                          >
-                            <NotebookPen className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            onClick={handleDownloadMeditation}
-                            variant="ghost"
-                            size="icon"
-                            className="h-10 w-10 text-gray-600 hover:text-gray-800 shadow-md hover:shadow-none"
-                            title="Download"
-                            disabled={isQuickAdjustProcessing}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-
-                          <Dialog
-                            open={isQuickAdjustDialogOpen}
-                            onOpenChange={(open) => {
-                              if (!open) {
-                                setIsEditingPresets(false)
-                                setNewPresetValue("")
-                              }
-                              setIsQuickAdjustDialogOpen(open)
-                            }}
-                          >
-                            <DialogTrigger asChild>
-                              <Button
-                                className="flex-1 shadow-md bg-gradient-to-r from-logo-rose-300 to-logo-purple-400 rounded-[11px] hover:shadow-none text-white font-black text-xs flex items-center justify-center gap-2"
-                                disabled={isQuickAdjustProcessing}
-                              >
-                                <Wand2 className="h-4 w-4" />
-                                Quick Adjust
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-md">
-                              <DialogHeader>
-                                <DialogTitle>Quick Adjust</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                {!isEditingPresets ? (
-                                  <>
-                                    
-                                    <div className="grid gap-2 font-serif font-black">
-                                      {quickAdjustPresets.length === 0 && (
-                                        <div className="rounded-md border border-dashed border-gray-300 p-3 text-xs text-gray-500">
-                                          No presets yet. Switch to Edit Presets to add your first quick adjust duration.
+                                  return (
+                                    <div
+                                      key={timelineEvent.id}
+                                      className="bg-gradient-to-r from-gray-50 to-stone-50 rounded-lg p-3 border border-gray-200 shadow-sm"
+                                    >
+                                      <div className="flex items-start gap-3">
+                                        <div className="mt-0.5">
+                                          <div
+                                            className={cn(
+                                              "w-2.5 h-12 rounded-full shadow-sm",
+                                              colorClass,
+                                              colorClass.includes("bg-gradient") ? "" : "bg-gradient-to-b",
+                                            )}
+                                            aria-hidden="true"
+                                          />
                                         </div>
-                                      )}
-                                      {quickAdjustPresets.map((preset) => {
-                                        const isActive = selectedPresetId === preset.id
-                                        return (
-                                          <Button
-                                            key={preset.id}
-                                            variant={isActive ? "default" : "outline"}
-                                            className={`justify-between text-xs font-black ${
-                                              isActive
-                                                ? "bg-gradient-to-r from-logo-teal-400 to-logo-emerald-500 text-white"
-                                                : "text-gray-600"
-                                            }`}
-                                            onClick={() => setSelectedPresetId(preset.id)}
-                                          >
-                                            <span>{preset.label}</span>
-                                            <span className="text-[11px] opacity-80 font-black font-serif">
-                                              {formatDuration(preset.seconds)}
-                                            </span>
-                                          </Button>
-                                        )
-                                      })}
-                                    </div>
-                                    <div className="flex items-center justify-between gap-3 pt-1 font-serif font-black">
-                                      <Button variant="outline" onClick={() => setIsEditingPresets(true)} size="sm">
-                                        Edit Presets
-                                      </Button>
-                                      <Button
-                                        onClick={handleQuickAdjust}
-                                        size="sm"
-                                        disabled={!selectedPresetId || isQuickAdjustProcessing || quickAdjustPresets.length === 0}
-                                      >
-                                        Adjust
-                                      </Button>
-                                    </div>
-                                  </>
-                                ) : (
-                                  <>
-                                    <p className="text-xs text-gray-500">
-                                      Add or remove preset durations. Use minutes (15), hours (1h), or mm:ss (12:30).
-                                    </p>
-                                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                                      {quickAdjustPresets.map((preset) => (
-                                        <div
-                                          key={preset.id}
-                                          className="flex items-center justify-between rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs"
-                                        >
-                                          <div className="flex flex-col">
-                                            <span className="font-black text-gray-700">{preset.label}</span>
-                                            <span className="text-[11px] text-gray-500">{formatDuration(preset.seconds)}</span>
+                                        <div className="flex-1 min-w-0 space-y-1">
+                                          <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-500">
+                                            <span className="font-black">#{index + 1}</span>
+                                            <span>at {formatTime(timelineEvent.startTime ?? 0)}</span>
+                                            {durationLabel && <span>• {durationLabel}</span>}
                                           </div>
+                                          <p className="text-xs font-black text-gray-800 truncate">
+                                            {timelineEvent.text}
+                                          </p>
+                                          <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-600">
+                                            {isRecording && (
+                                              <span className="flex items-center gap-1">
+                                                <Volume2 className="h-3 w-3 text-logo-rose-500" />
+                                                <span className="text-logo-rose-500 font-semibold">
+                                                  {timelineEvent.recordingLabel?.trim() || "Recording"}
+                                                </span>
+                                              </span>
+                                            )}
+                                            <span className="flex items-center gap-1">
+                                              <Music className="h-3 w-3 text-logo-teal-500" />
+                                              <span className="text-logo-teal-500 font-semibold">Cue</span>
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-2">
                                           <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-7 w-7 text-gray-500 hover:text-red-500"
-                                            onClick={() => handleRemovePreset(preset.id)}
+                                            className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                                            onClick={(event) => {
+                                              event.stopPropagation()
+                                              handlePlayTimelineEvent(timelineEvent)
+                                            }}
+                                            aria-label="Play timeline event"
+                                            disabled={isQuickAdjustProcessing}
                                           >
-                                            <Trash2 className="h-3.5 w-3.5" />
+                                            {isRecordingPlaying ? (
+                                              <Pause className="h-4 w-4" />
+                                            ) : (
+                                              <Play className="h-4 w-4" />
+                                            )}
                                           </Button>
                                         </div>
-                                      ))}
-                                      {quickAdjustPresets.length === 0 && (
-                                        <div className="rounded-md border border-dashed border-gray-300 p-3 text-xs text-gray-500">
-                                          No presets yet. Add a duration below to get started.
-                                        </div>
-                                      )}
+                                      </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                      <Input
-                                        placeholder="e.g. 45m"
-                                        value={newPresetValue}
-                                        onChange={(event) => setNewPresetValue(event.target.value)}
-                                        className="text-xs"
-                                      />
-                                      <Button type="button" size="sm" onClick={handleAddPreset}>
-                                        <Plus className="h-3.5 w-3.5 mr-1" />
-                                        Add
-                                      </Button>
-                                    </div>
-                                    <div className="flex justify-end">
-                                      <Button variant="outline" size="sm" onClick={() => setIsEditingPresets(false)}>
-                                        Done
-                                      </Button>
-                                    </div>
-                                  </>
-                                )}
+                                  )
+                                })}
                               </div>
-                          </DialogContent>
-                        </Dialog>
+                            </div>
+                          )}
 
-                        <Dialog open={isJournalHistoryOpen} onOpenChange={setIsJournalHistoryOpen}>
-                          <DialogTrigger asChild>
-                            <Button
-                              className="flex-1 shadow-md bg-gradient-to-r from-logo-emerald-400 to-logo-amber-300 rounded-[11px] hover:shadow-none text-white font-black text-xs flex items-center justify-center gap-2"
-                              disabled={!selectedMeditation}
+                          {!hasTimelineEvents && selectedMeditation.source === "encoder" && (
+                            <div className="space-y-3">
+                              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                <p className="text-xs text-amber-800 font-black">
+                                  Timeline data not available for this meditation. Re-encode and save it again to see
+                                  the timeline events.
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="space-y-4">
+                            <div
+                              className="relative h-2 rounded-full cursor-pointer shadow-inner bg-muted"
+                              onClick={handleSeek}
                             >
-                              <BookOpenCheck className="h-4 w-4" />
-                              Journal History
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-3xl">
-                            <DialogHeader>
-                              <DialogTitle>Journal History</DialogTitle>
-                            </DialogHeader>
-                            {journalEntriesForSelectedMeditation.length === 0 ? (
-                              <div className="text-center py-10 text-sm text-gray-500 font-serif font-black">
-                                No journal reflections for this meditation yet.
-                              </div>
-                            ) : (
-                              <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-1">
-                                  {journalEntriesForSelectedMeditation.map((entry) => {
-                                    const isActive = activeJournalEntry?.id === entry.id
-                                    return (
-                                      <button
-                                        key={entry.id}
-                                        onClick={() => setActiveJournalEntryId(entry.id)}
-                                        className={cn(
-                                          "rounded-xl border-[3px] px-4 py-3 text-left transition-all",
-                                          isActive
-                                            ? "border-stone-300 bg-white shadow-md text-gray-700"
-                                            : "border-gray-300/60 bg-muted/60 text-gray-500 hover:bg-white",
-                                        )}
-                                      >
-                                        <div className="text-[11px] uppercase tracking-[0.3em] text-gray-400 font-black mb-1">
-                                          {formatJournalDateLabel(entry.playedAt)}
-                                        </div>
-                                        <div className="text-sm font-black text-gray-700 mb-1">
-                                          {formatJournalTimeLabel(entry.playedAt)}
-                                        </div>
-                                        <div className="text-xs text-gray-500 line-clamp-3 font-serif">
-                                          {entry.note ?? "Tap to add a reflection in the journal."}
-                                        </div>
-                                      </button>
-                                    )
-                                  })}
-                                </div>
-                                <div className="rounded-xl border-[3px] border-muted bg-gradient-to-br from-white to-stone-50 p-5 shadow-md">
-                                  {activeJournalEntry ? (
-                                    <div className="space-y-4">
-                                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 font-black">
-                                        <span className="flex items-center gap-1">
-                                          <Calendar className="h-4 w-4" />
-                                          {formatJournalDateLabel(activeJournalEntry.playedAt)}
-                                        </span>
-                                        <span className="flex items-center gap-1">
-                                          <Clock className="h-4 w-4" />
-                                          {formatJournalTimeLabel(activeJournalEntry.playedAt)}
-                                        </span>
-                                      </div>
-                                      <div className="text-sm text-gray-600 font-serif whitespace-pre-wrap leading-relaxed border border-muted bg-muted/60 rounded-md p-3 min-h-[120px]">
-                                        {activeJournalEntry.note ?? "No notes recorded yet. Add one from the journal page."}
-                                      </div>
-                                      <div className="flex justify-end gap-2 flex-wrap">
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="text-gray-500 hover:text-gray-700"
-                                          onClick={() =>
-                                            router.push(`/journal?date=${getDateKeyFromIso(activeJournalEntry.playedAt)}`)
-                                          }
-                                        >
-                                          View by Date
-                                        </Button>
-                                        <Button
-                                          className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-400 text-white font-black shadow-md hover:shadow-none"
-                                          onClick={() => {
-                                            const basePath = selectedMeditation
-                                              ? `/journal?meditation=${selectedMeditation.id}&entry=${activeJournalEntry.id}`
-                                              : `/journal?entry=${activeJournalEntry.id}`
-                                            router.push(basePath)
-                                          }}
-                                        >
-                                          Open Journal Page
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="text-center py-12 text-sm text-gray-500 font-serif font-black">
-                                      Choose an entry to view its details.
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </DialogContent>
-                        </Dialog>
+                              <div
+                                className="absolute top-0 left-0 h-full bg-gradient-to-r from-gray-500 to-gray-600 rounded-full transition-all duration-150"
+                                style={{ width: `${playbackProgress}%` }}
+                              />
+                            </div>
 
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
+                            <div className="flex justify-between text-xs font-black text-gray-600">
+                              <span>{formatDetailedTime(playerTime)}</span>
+                              <span>{formatDetailedTime(playerDuration)}</span>
+                            </div>
+
+                            <div className="flex items-center justify-center gap-4">
                               <Button
-                                className="flex-1 shadow-md bg-gradient-to-r from-logo-amber-300 to-logo-teal-500 rounded-[11px] hover:shadow-none text-white font-black text-xs"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleSkip(-10)}
+                                className="h-10 w-10 text-gray-600 hover:text-gray-800"
                                 disabled={isQuickAdjustProcessing}
                               >
-                                Open In
-                                <ChevronDown className="h-4 w-4 ml-2" />
+                                <SkipBack className="h-5 w-5" />
                               </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-40">
-                              <DropdownMenuItem onClick={() => handleOpenInTool("adjuster")} className="cursor-pointer">
-                                Adjuster
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleOpenInTool("encoder")} className="cursor-pointer">
-                                Encoder
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+
+                              <Button
+                                onClick={togglePlayback}
+                                className="h-12 w-12 rounded-full shadow-md bg-gradient-to-r from-gray-500 to-gray-600  hover:shadow-none text-white"
+                                disabled={isQuickAdjustProcessing}
+                              >
+                                {isAudioPlaying ? (
+                                  <Pause className="h-10 w-10" />
+                                ) : (
+                                  <Play className="ml-0.5 w-10 h-10" />
+                                )}
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleSkip(10)}
+                                className="h-10 w-10 text-gray-600 hover:text-gray-800"
+                                disabled={isQuickAdjustProcessing}
+                              >
+                                <SkipForward className="h-5 w-5" />
+                              </Button>
+                            </div>
+
+                            {currentDurationModes.length > 0 && (
+                              <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                                {currentDurationModes.map((mode) => {
+                                  const isActive = mode.id === activeDurationModeId
+                                  const label =
+                                    mode.id === "original"
+                                      ? `Original (${formatDuration(mode.seconds)})`
+                                      : `${mode.label}`
+                                  return (
+                                    <Button
+                                      key={mode.id}
+                                      size="sm"
+                                      variant={isActive ? "default" : "outline"}
+                                      className={`text-[11px] font-black ${
+                                        isActive
+                                          ? "bg-gradient-to-r from-gray-600 to-gray-500 text-white"
+                                          : "text-gray-600"
+                                      }`}
+                                      onClick={() => handleSelectDurationMode(mode.id)}
+                                      disabled={isQuickAdjustProcessing}
+                                    >
+                                      <span className="flex items-center gap-1">
+                                        {label}
+                                        {!mode.persisted && mode.id !== "original" && (
+                                          <span className="text-[10px]">• Unsaved</span>
+                                        )}
+                                      </span>
+                                    </Button>
+                                  )
+                                })}
+                              </div>
+                            )}
+
+                            <div className="flex pt-[27px] gap-3.5 flex-wrap">
+                              <Button
+                                onClick={() => {
+                                  if (!selectedMeditation) return
+                                  router.push(`/journal?meditation=${selectedMeditation.id}`)
+                                }}
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 text-gray-600 hover:text-gray-800 shadow-md hover:shadow-none"
+                                title="Open Journal"
+                                disabled={isQuickAdjustProcessing || !selectedMeditation}
+                              >
+                                <NotebookPen className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                onClick={handleDownloadMeditation}
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 text-gray-600 hover:text-gray-800 shadow-md hover:shadow-none"
+                                title="Download"
+                                disabled={isQuickAdjustProcessing}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+
+                              <Dialog
+                                open={isQuickAdjustDialogOpen}
+                                onOpenChange={(open) => {
+                                  if (!open) {
+                                    setIsEditingPresets(false)
+                                    setNewPresetValue("")
+                                  }
+                                  setIsQuickAdjustDialogOpen(open)
+                                }}
+                              >
+                                <DialogTrigger asChild>
+                                  <Button
+                                    className="flex-1 shadow-md bg-gradient-to-r from-logo-rose-300 to-logo-purple-400 rounded-[11px] hover:shadow-none text-white font-black text-xs flex items-center justify-center gap-2"
+                                    disabled={isQuickAdjustProcessing}
+                                  >
+                                    <Wand2 className="h-4 w-4" />
+                                    Quick Adjust
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-md">
+                                  <DialogHeader>
+                                    <DialogTitle>Quick Adjust</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4">
+                                    {!isEditingPresets ? (
+                                      <>
+                                        <div className="grid gap-2 font-serif font-black">
+                                          {quickAdjustPresets.length === 0 && (
+                                            <div className="rounded-md border border-dashed border-gray-300 p-3 text-xs text-gray-500">
+                                              No presets yet. Switch to Edit Presets to add your first quick adjust
+                                              duration.
+                                            </div>
+                                          )}
+                                          {quickAdjustPresets.map((preset) => {
+                                            const isActive = selectedPresetId === preset.id
+                                            return (
+                                              <Button
+                                                key={preset.id}
+                                                variant={isActive ? "default" : "outline"}
+                                                className={`justify-between text-xs font-black ${
+                                                  isActive
+                                                    ? "bg-gradient-to-r from-logo-teal-400 to-logo-emerald-500 text-white"
+                                                    : "text-gray-600"
+                                                }`}
+                                                onClick={() => setSelectedPresetId(preset.id)}
+                                              >
+                                                <span>{preset.label}</span>
+                                                <span className="text-[11px] opacity-80 font-black font-serif">
+                                                  {formatDuration(preset.seconds)}
+                                                </span>
+                                              </Button>
+                                            )
+                                          })}
+                                        </div>
+                                        <div className="flex items-center justify-between gap-3 pt-1 font-serif font-black">
+                                          <Button variant="outline" onClick={() => setIsEditingPresets(true)} size="sm">
+                                            Edit Presets
+                                          </Button>
+                                          <Button
+                                            onClick={handleQuickAdjust}
+                                            size="sm"
+                                            disabled={
+                                              !selectedPresetId ||
+                                              isQuickAdjustProcessing ||
+                                              quickAdjustPresets.length === 0
+                                            }
+                                          >
+                                            Adjust
+                                          </Button>
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <p className="text-xs text-gray-500">
+                                          Add or remove preset durations. Use minutes (15), hours (1h), or mm:ss
+                                          (12:30).
+                                        </p>
+                                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                          {quickAdjustPresets.map((preset) => (
+                                            <div
+                                              key={preset.id}
+                                              className="flex items-center justify-between rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs"
+                                            >
+                                              <div className="flex flex-col">
+                                                <span className="font-black text-gray-700">{preset.label}</span>
+                                                <span className="text-[11px] text-gray-500">
+                                                  {formatDuration(preset.seconds)}
+                                                </span>
+                                              </div>
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-7 w-7 text-gray-500 hover:text-red-500"
+                                                onClick={() => handleRemovePreset(preset.id)}
+                                              >
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                              </Button>
+                                            </div>
+                                          ))}
+                                          {quickAdjustPresets.length === 0 && (
+                                            <div className="rounded-md border border-dashed border-gray-300 p-3 text-xs text-gray-500">
+                                              No presets yet. Add a duration below to get started.
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <Input
+                                            placeholder="e.g. 45m"
+                                            value={newPresetValue}
+                                            onChange={(event) => setNewPresetValue(event.target.value)}
+                                            className="text-xs"
+                                          />
+                                          <Button type="button" size="sm" onClick={handleAddPreset}>
+                                            <Plus className="h-3.5 w-3.5 mr-1" />
+                                            Add
+                                          </Button>
+                                        </div>
+                                        <div className="flex justify-end">
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setIsEditingPresets(false)}
+                                          >
+                                            Done
+                                          </Button>
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+
+                              <Dialog open={isJournalHistoryOpen} onOpenChange={setIsJournalHistoryOpen}>
+                                <DialogTrigger asChild>
+                                  <Button
+                                    className="flex-1 shadow-md bg-gradient-to-r from-logo-emerald-400 to-logo-amber-300 rounded-[11px] hover:shadow-none text-white font-black text-xs flex items-center justify-center gap-2"
+                                    disabled={!selectedMeditation}
+                                  >
+                                    <BookOpenCheck className="h-4 w-4" />
+                                    Journal History
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-3xl">
+                                  <DialogHeader>
+                                    <DialogTitle>Journal History</DialogTitle>
+                                  </DialogHeader>
+                                  {journalEntriesForSelectedMeditation.length === 0 ? (
+                                    <div className="text-center py-10 text-sm text-gray-500 font-serif font-black">
+                                      No journal reflections for this meditation yet.
+                                    </div>
+                                  ) : (
+                                    <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-1">
+                                        {journalEntriesForSelectedMeditation.map((entry) => {
+                                          const isActive = activeJournalEntry?.id === entry.id
+                                          return (
+                                            <button
+                                              key={entry.id}
+                                              onClick={() => setActiveJournalEntryId(entry.id)}
+                                              className={cn(
+                                                "rounded-xl border-[3px] px-4 py-3 text-left transition-all",
+                                                isActive
+                                                  ? "border-stone-300 bg-white shadow-md text-gray-700"
+                                                  : "border-gray-300/60 bg-muted/60 text-gray-500 hover:bg-white",
+                                              )}
+                                            >
+                                              <div className="text-[11px] uppercase tracking-[0.3em] text-gray-400 font-black mb-1">
+                                                {formatJournalDateLabel(entry.playedAt)}
+                                              </div>
+                                              <div className="text-sm font-black text-gray-700 mb-1">
+                                                {formatJournalTimeLabel(entry.playedAt)}
+                                              </div>
+                                              <div className="text-xs text-gray-500 line-clamp-3 font-serif">
+                                                {entry.note ?? "Tap to add a reflection in the journal."}
+                                              </div>
+                                            </button>
+                                          )
+                                        })}
+                                      </div>
+                                      <div className="rounded-xl border-[3px] border-muted bg-gradient-to-br from-white to-stone-50 p-5 shadow-md">
+                                        {activeJournalEntry ? (
+                                          <div className="space-y-4">
+                                            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 font-black">
+                                              <span className="flex items-center gap-1">
+                                                <Calendar className="h-4 w-4" />
+                                                {formatJournalDateLabel(activeJournalEntry.playedAt)}
+                                              </span>
+                                              <span className="flex items-center gap-1">
+                                                <Clock className="h-4 w-4" />
+                                                {formatJournalTimeLabel(activeJournalEntry.playedAt)}
+                                              </span>
+                                            </div>
+                                            <div className="text-sm text-gray-600 font-serif whitespace-pre-wrap leading-relaxed border border-muted bg-muted/60 rounded-md p-3 min-h-[120px]">
+                                              {activeJournalEntry.note ??
+                                                "No notes recorded yet. Add one from the journal page."}
+                                            </div>
+                                            <div className="flex justify-end gap-2 flex-wrap">
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-gray-500 hover:text-gray-700"
+                                                onClick={() =>
+                                                  router.push(
+                                                    `/journal?date=${getDateKeyFromIso(activeJournalEntry.playedAt)}`,
+                                                  )
+                                                }
+                                              >
+                                                View by Date
+                                              </Button>
+                                              <Button
+                                                className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-400 text-white font-black shadow-md hover:shadow-none"
+                                                onClick={() => {
+                                                  const basePath = selectedMeditation
+                                                    ? `/journal?meditation=${selectedMeditation.id}&entry=${activeJournalEntry.id}`
+                                                    : `/journal?entry=${activeJournalEntry.id}`
+                                                  router.push(basePath)
+                                                }}
+                                              >
+                                                Open Journal Page
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="text-center py-12 text-sm text-gray-500 font-serif font-black">
+                                            Choose an entry to view its details.
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </DialogContent>
+                              </Dialog>
+
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    className="flex-1 shadow-md bg-gradient-to-r from-logo-amber-300 to-logo-teal-500 rounded-[11px] hover:shadow-none text-white font-black text-xs"
+                                    disabled={isQuickAdjustProcessing}
+                                  >
+                                    Open In
+                                    <ChevronDown className="h-4 w-4 ml-2" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-40">
+                                  <DropdownMenuItem
+                                    onClick={() => handleOpenInTool("adjuster")}
+                                    className="cursor-pointer"
+                                  >
+                                    Adjuster
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleOpenInTool("encoder")}
+                                    className="cursor-pointer"
+                                  >
+                                    Encoder
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </div>
                         </div>
 
-                        {currentDurationModes.length > 0 && (
-                          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-                            {currentDurationModes.map((mode) => {
-                              const isActive = mode.id === activeDurationModeId
-                              const label =
-                                mode.id === "original"
-                                  ? `Original (${formatDuration(mode.seconds)})`
-                                  : `${mode.label}`
-                              return (
-                                <Button
-                                  key={mode.id}
-                                  size="sm"
-                                  variant={isActive ? "default" : "outline"}
-                                  className={`text-[11px] font-black ${
-                                    isActive ? "bg-gradient-to-r from-gray-600 to-gray-500 text-white" : "text-gray-600"
-                                  }`}
-                                  onClick={() => handleSelectDurationMode(mode.id)}
-                                  disabled={isQuickAdjustProcessing}
-                                >
-                                  <span className="flex items-center gap-1">
-                                    {label}
-                                    {!mode.persisted && mode.id !== "original" && <span className="text-[10px]">• Unsaved</span>}
-                                  </span>
-                                </Button>
-                              )
-                            })}
+                        {isQuickAdjustProcessing && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white/85 backdrop-blur-sm text-gray-600">
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                            <span className="text-sm font-black text-center px-4">
+                              {quickAdjustStep || "Adjusting..."}
+                            </span>
+                            <div className="w-40 h-2 rounded-full bg-gray-200 overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 transition-all duration-150"
+                                style={{ width: `${Math.max(0, Math.min(100, quickAdjustProgress))}%` }}
+                              />
+                            </div>
+                            <span className="text-[11px] font-black text-gray-500">
+                              {Math.max(0, Math.min(100, Math.round(quickAdjustProgress)))}%
+                            </span>
                           </div>
                         )}
-                      </div>
-                    </div>
-
-                    {isQuickAdjustProcessing && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white/85 backdrop-blur-sm text-gray-600">
-                        <Loader2 className="h-6 w-6 animate-spin" />
-                        <span className="text-sm font-black text-center px-4">
-                          {quickAdjustStep || "Adjusting..."}
-                        </span>
-                        <div className="w-40 h-2 rounded-full bg-gray-200 overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 transition-all duration-150"
-                            style={{ width: `${Math.max(0, Math.min(100, quickAdjustProgress))}%` }}
-                          />
-                        </div>
-                        <span className="text-[11px] font-black text-gray-500">
-                          {Math.max(0, Math.min(100, Math.round(quickAdjustProgress)))}%
-                        </span>
-                      </div>
-                    )}
-                  </Card>
-                </motion.div>
-              </motion.div>
+                      </Card>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>,
+              playerPortalElement,
             )}
-          </AnimatePresence>,
-          playerPortalElement,
-        )}
-          </div>
         </div>
       </div>
+    </div>
   )
 }
