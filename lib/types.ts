@@ -1,7 +1,6 @@
 export interface Instruction {
   id: string
   text: string
-  category: string
 }
 
 export interface SoundCue {

@@ -248,13 +248,11 @@ export async function runAdjusterWorkflow({
 
   onStep("Detecting silence regions (step 1/4)...")
   onProgress(10)
-  await sleep(10)
 
   const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
 
   onStep("Calculating adjustments (step 2/4)...")
   onProgress(25)
-  await sleep(10)
 
   const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
   const audioContentDuration = buffer.duration - totalSilenceDuration
@@ -266,7 +264,6 @@ export async function runAdjusterWorkflow({
 
   onStep("Rebuilding audio (step 3/4)...")
   onProgress(50)
-  await sleep(10)
 
   const processedAudioBuffer = await rebuildAudioWithScaledPauses({
     audioContext,
@@ -286,7 +283,6 @@ export async function runAdjusterWorkflow({
 
   onStep("Creating audio file (step 4/4)...")
   onProgress(80)
-  await sleep(10)
 
   const wavResult = await bufferToWav(processedAudioBuffer, {
     preferCompatibility: compatibilityMode === "high",
