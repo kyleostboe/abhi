@@ -3286,12 +3286,36 @@ export default function Home() {
                         Rob Burbea's talks &amp; retreats
                       </a>
                       <a
+                        href="https://tasshin.com/guided-meditations/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
+                      >
+                        Tasshin &amp; friend's meditations
+                      </a>
+                      <a
                         href="https://www.tarabrach.com/guided-meditations/"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
                       >
                         Tara Brach's meditations
+                      </a>
+                      <a
+                        href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDDo3?usp=drive_link"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
+                      >
+                        Toby Sola's meditations
+                      </a>
+                      <a
+                        href="https://meditofoundation.org/meditations"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
+                      >
+                        Medito Foundation
                       </a>
                       <a
                         href="https://www.freebuddhistaudio.com"
@@ -4376,7 +4400,7 @@ export default function Home() {
                       } as React.CSSProperties
                     }
                   >
-                    
+                 
                     <span className="font-black text-base tracking-tight text-white">
                       {isGeneratingAudio ? "Generating..." : "Generate Audio"}
                     </span>
