@@ -3799,7 +3799,7 @@ export default function Home() {
                       } as React.CSSProperties
                     }
                   >
-                    <Wand2 className="mr-2 h-4 w-4 text-white" />
+                    
                     <span className="font-black text-base tracking-tight text-white">
                       {isProcessing ? "Processing..." : "Process Audio"}
                     </span>
@@ -4376,7 +4376,7 @@ export default function Home() {
                       } as React.CSSProperties
                     }
                   >
-                    <Wand2 className="mr-2 h-4 w-4 text-white" />
+                    
                     <span className="font-black text-base tracking-tight text-white">
                       {isGeneratingAudio ? "Generating..." : "Generate Audio"}
                     </span>
