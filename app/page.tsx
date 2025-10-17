@@ -28,8 +28,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useToast } from "@/hooks/use-toast"
 import { VisualTimeline } from "@/components/visual-timeline"
-import { cn, formatTime, sleep, monitorMemory, formatFileSize } from "@/lib/utils"
-import { getAudioContext, bufferToWav, type BufferToWavMetadata } from "@/lib/audio-utils" // Import from audio-utils
+import { cn, formatTime, monitorMemory, formatFileSize } from "@/lib/utils"
+import {
+  getAudioContext,
+  bufferToWav,
+  bufferToWebM,
+  type BufferToWavMetadata,
+} from "@/lib/audio-utils" // Import from audio-utils
 import { runAdjusterWorkflow, detectSilenceRegions as computeSilenceRegions } from "@/lib/adjuster-workflow"
 import type { SavedMeditation } from "@/lib/meditation-library"
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
@@ -245,402 +250,6 @@ interface TimelineItem {
   recordingStoragePath?: string
 }
 
-const INSTRUCTIONS_LIBRARY = [
-  // Metta (Loving Kindness) Instructions
-  {
-    id: "metta-1",
-    text: "May I/you/we be safe",
-    category: "Metta",
-  },
-  {
-    id: "metta-2",
-    text: "May I/you/we be filled with happiness",
-    category: "Metta",
-  },
-  {
-    id: "metta-3",
-    text: "May I/you/we be peaceful",
-    category: "Metta",
-  },
-  {
-    id: "metta-4",
-    text: "May I/you/we live with ease and kindness",
-    category: "Metta",
-  },
-  {
-    id: "metta-5",
-    text: "May I/you/we be healthy",
-    category: "Metta",
-  },
-  {
-    id: "metta-6",
-    text: "May I/you/we be strong",
-    category: "Metta",
-  },
-  {
-    id: "metta-7",
-    text: "May I/you/we be free from suffering",
-    category: "Metta",
-  },
-  {
-    id: "metta-8",
-    text: "May I/you/we be filled with loving kindness",
-    category: "Metta",
-  },
-  {
-    id: "metta-9",
-    text: "May I/you/we accept myself/yourself/ourselves as I am/you are/we are",
-    category: "Metta",
-  },
-  {
-    id: "metta-10",
-    text: "May I/you/we forgive myself/yourself/ourselves",
-    category: "Metta",
-  },
-  // Mindfulness Instructions
-  {
-    id: "mindfulness-1",
-    text: "Breathing in, I know I am breathing in",
-    category: "Mindfulness",
-  },
-  {
-    id: "mindfulness-2",
-    text: "Breathing out, I know I am breathing out",
-    category: "Mindfulness",
-  },
-  {
-    id: "mindfulness-3",
-    text: "Long breath, I know it is long",
-    category: "Mindfulness",
-  },
-  {
-    id: "mindfulness-4",
-    text: "Short breath, I know it is short",
-    category: "Mindfulness",
-  },
-  {
-    id: "mindfulness-5",
-    text: "Breathing in, I calm my body",
-    category: "Mindfulness",
-  },
-  {
-    id: "mindfulness-6",
-    text: "I am aware of my whole body",
-    category: "Mindfulness",
-  },
-  {
-    id: "mindfulness-7",
-    text: "I release tension from my body",
-    category: "Mindfulness",
-  },
-  {
-    id: "mindfulness-8",
-    text: "Thinking, thinking",
-    category: "Mindfulness",
-  },
-  {
-    id: "mindfulness-9",
-    text: "Feeling this emotion",
-    category: "Mindfulness",
-  },
-  {
-    id: "mindfulness-10",
-    text: "Hearing sounds",
-    category: "Mindfulness",
-  },
-  {
-    id: "mindfulness-11",
-    text: "Seeing what appears",
-    category: "Mindfulness",
-  },
-  {
-    id: "mindfulness-12",
-    text: "Noticing bodily sensations",
-    category: "Mindfulness",
-  },
-  {
-    id: "mindfulness-13",
-    text: "This too shall pass",
-    category: "Mindfulness",
-  },
-  {
-    id: "mindfulness-14",
-    text: "Watching thoughts arise",
-    category: "Mindfulness",
-  },
-  {
-    id: "mindfulness-15",
-    text: "Watching thoughts pass away",
-    category: "Mindfulness",
-  },
-  {
-    id: "mindfulness-16",
-    text: "Resting in spacious awareness",
-    category: "Mindfulness",
-  },
-  {
-    id: "mindfulness-17",
-    text: "Here, now, this moment",
-    category: "Mindfulness",
-  },
-  // Nonduality Instructions
-  {
-    id: "nonduality-1",
-    text: "Who is aware of this awareness?",
-    category: "Nonduality",
-  },
-  {
-    id: "nonduality-2",
-    text: "Tat tvam asi - Thou art That",
-    category: "Nonduality",
-  },
-  {
-    id: "nonduality-3",
-    text: "All is Consciousness appearing as the many",
-    category: "Nonduality",
-  },
-  {
-    id: "nonduality-4",
-    text: "The seer, seeing, and seen are one",
-    category: "Nonduality",
-  },
-  {
-    id: "nonduality-5",
-    text: "Pure being-consciousness-bliss (sat-chit-ananda)",
-    category: "Nonduality",
-  },
-  {
-    id: "nonduality-6",
-    text: "I am Shiva - pure consciousness at rest",
-    category: "Nonduality",
-  },
-  {
-    id: "nonduality-7",
-    text: "I am Shakti - consciousness in movement",
-    category: "Nonduality",
-  },
-  {
-    id: "nonduality-8",
-    text: "Everything arises within me as me",
-    category: "Nonduality",
-  },
-  {
-    id: "nonduality-9",
-    text: "No coming, no going - only being",
-    category: "Nonduality",
-  },
-  {
-    id: "nonduality-10",
-    text: "The heart is the supreme abode",
-    category: "Nonduality",
-  },
-  {
-    id: "nonduality-11",
-    text: "Recognizing what I already am",
-    category: "Nonduality",
-  },
-  {
-    id: "nonduality-12",
-    text: 'Resting as the source of the "I" thought',
-    category: "Nonduality",
-  },
-  // Body Scan Instructions
-  {
-    id: "body-scan-1",
-    text: "Awareness at the crown of my head",
-    category: "Body Scan",
-  },
-  {
-    id: "body-scan-2",
-    text: "Softening my forehead",
-    category: "Body Scan",
-  },
-  {
-    id: "body-scan-3",
-    text: "Relaxing around my eyes",
-    category: "Body Scan",
-  },
-  {
-    id: "body-scan-4",
-    text: "Unclenching my jaw",
-    category: "Body Scan",
-  },
-  {
-    id: "body-scan-5",
-    text: "Releasing tension from my neck",
-    category: "Body Scan",
-  },
-  {
-    id: "body-scan-6",
-    text: "Dropping my shoulders",
-    category: "Body Scan",
-  },
-  {
-    id: "body-scan-7",
-    text: "Arms heavy and relaxed",
-    category: "Body Scan",
-  },
-  {
-    id: "body-scan-8",
-    text: "Hands soft and open",
-    category: "Body Scan",
-  },
-  {
-    id: "body-scan-9",
-    text: "Heart space open and free",
-    category: "Body Scan",
-  },
-  {
-    id: "body-scan-10",
-    text: "Belly soft and natural",
-    category: "Body Scan",
-  },
-  {
-    id: "body-scan-11",
-    text: "Spine long and supported",
-    category: "Body Scan",
-  },
-  {
-    id: "body-scan-12",
-    text: "Hips heavy and grounded",
-    category: "Body Scan",
-  },
-  {
-    id: "body-scan-13",
-    text: "Legs relaxed and still",
-    category: "Body Scan",
-  },
-  {
-    id: "body-scan-14",
-    text: "Feet connected to earth",
-    category: "Body Scan",
-  },
-  {
-    id: "body-scan-15",
-    text: "Whole body at peace",
-    category: "Body Scan",
-  },
-  // Concentration Instructions
-  {
-    id: "concentration-1",
-    text: "One breath, complete attention",
-    category: "Concentration",
-  },
-  {
-    id: "concentration-2",
-    text: "In breath, counting one",
-    category: "Concentration",
-  },
-  {
-    id: "concentration-3",
-    text: "Out breath, counting two",
-    category: "Concentration",
-  },
-  {
-    id: "concentration-4",
-    text: "Air touching my nostrils",
-    category: "Concentration",
-  },
-  {
-    id: "concentration-5",
-    text: "Belly rising and falling",
-    category: "Concentration",
-  },
-  {
-    id: "concentration-6",
-    text: "Resting in the pause between breaths",
-    category: "Concentration",
-  },
-  {
-    id: "concentration-7",
-    text: "Gently returning to my anchor",
-    category: "Concentration",
-  },
-  // Gratitude Instructions
-  {
-    id: "gratitude-1",
-    text: "Grateful for this breath",
-    category: "Gratitude",
-  },
-  {
-    id: "gratitude-2",
-    text: "Thankful for my body",
-    category: "Gratitude",
-  },
-  {
-    id: "gratitude-3",
-    text: "Grateful for this moment",
-    category: "Gratitude",
-  },
-  {
-    id: "gratitude-4",
-    text: "Thankful to be alive",
-    category: "Gratitude",
-  },
-  {
-    id: "gratitude-5",
-    text: "Grateful for all my teachers",
-    category: "Gratitude",
-  },
-  // Forgiveness Instructions
-  {
-    id: "forgiveness-1",
-    text: "I forgive myself completely",
-    category: "Forgiveness",
-  },
-  {
-    id: "forgiveness-2",
-    text: "I forgive all who have hurt me",
-    category: "Forgiveness",
-  },
-  {
-    id: "forgiveness-3",
-    text: "I release all past mistakes",
-    category: "Forgiveness",
-  },
-  {
-    id: "forgiveness-4",
-    text: "I am free from resentment",
-    category: "Forgiveness",
-  },
-  // Transition Instructions
-  {
-    id: "transitions-1",
-    text: "I am ready to begin",
-    category: "Transitions",
-  },
-  {
-    id: "transitions-2",
-    text: "Settling into stillness",
-    category: "Transitions",
-  },
-  {
-    id: "transitions-3",
-    text: "Going deeper within",
-    category: "Transitions",
-  },
-  {
-    id: "transitions-4",
-    text: "Preparing for the next phase",
-    category: "Transitions",
-  },
-  {
-    id: "transitions-5",
-    text: "Gently returning to awareness",
-    category: "Transitions",
-  },
-  {
-    id: "transitions-6",
-    text: "This meditation is complete",
-    category: "Transitions",
-  },
-  {
-    id: "transitions-7",
-    text: "Carrying this peace forward",
-    category: "Transitions",
-  },
-]
-
 const SOUND_CUES_LIBRARY: SoundCue[] = [
   { id: "ambient-forest", name: "Forest Ambiance", src: "/sounds/forest.mp3", duration: 60 },
   { id: "ocean-waves", name: "Ocean Waves", src: "/sounds/ocean.mp3", duration: 60 },
@@ -713,10 +322,11 @@ const MUSICAL_NOTES = {
   })),
 }
 
-let sampler = null
-let reverb = null
+let sampler: Tone.Sampler | null = null
+let reverb: Tone.Reverb | null = null
 let isLoading = false
 let isLoaded = false
+let loadPianoPromise: Promise<void> | null = null
 
 const ensureTone = async () => {
   if (typeof window !== "undefined" && (window as any).Tone) {
@@ -752,12 +362,18 @@ const startPianoAudio = async () => {
 }
 
 const loadPiano = async ({ wet = 0.18, decay = 2.8 } = {}) => {
-  if (isLoading || isLoaded) return
+  if (isLoaded && sampler) return
 
-  isLoading = true
-  const Tone = await ensureTone()
+  if (loadPianoPromise) {
+    await loadPianoPromise
+    return
+  }
 
-  try {
+  const ToneModule = await ensureTone()
+
+  const loadPromise = async () => {
+    isLoading = true
+
     await startPianoAudio()
 
     if (sampler) {
@@ -777,10 +393,10 @@ const loadPiano = async ({ wet = 0.18, decay = 2.8 } = {}) => {
       reverb = null
     }
 
-    reverb = new Tone.Reverb({ wet, decay, preDelay: 0.01 }).toDestination()
-    await reverb.generate()
+    const createdReverb = new ToneModule.Reverb({ wet, decay, preDelay: 0.01 }).toDestination()
+    await createdReverb.generate()
 
-    sampler = new Tone.Sampler({
+    const loadedSampler = new ToneModule.Sampler({
       urls: {
         A0: "A0.mp3",
         C1: "C1.mp3",
@@ -815,39 +431,49 @@ const loadPiano = async ({ wet = 0.18, decay = 2.8 } = {}) => {
       },
       release: 1.2,
       baseUrl: "https://tonejs.github.io/audio/salamander/",
-    }).connect(reverb)
+    }).connect(createdReverb)
 
-    await new Promise((resolve) => {
-      const checkLoaded = () => {
-        if (sampler.loaded) {
-          resolve(true)
-        } else {
-          setTimeout(checkLoaded, 100)
-        }
-      }
-      checkLoaded()
-    })
+    await ToneModule.loaded()
 
+    reverb = createdReverb
+    sampler = loadedSampler
     isLoaded = true
     console.log("[v0] Piano sampler fully loaded and ready")
+  }
+
+  loadPianoPromise = loadPromise()
+
+  try {
+    await loadPianoPromise
   } catch (error) {
     console.error("[v0] Error loading piano:", error)
     isLoaded = false
-    isLoading = false
+    if (sampler) {
+      try {
+        sampler.dispose()
+      } catch (e) {
+        console.warn("[v0] Error disposing sampler after failure:", e)
+      }
+      sampler = null
+    }
+    if (reverb) {
+      try {
+        reverb.dispose()
+      } catch (e) {
+        console.warn("[v0] Error disposing reverb after failure:", e)
+      }
+      reverb = null
+    }
     throw error
   } finally {
     isLoading = false
+    loadPianoPromise = null
   }
 }
 
 const playPianoNote = async (noteString: string, duration = 0.45, velocity = 0.9) => {
   try {
     await startPianoAudio()
-
-    // Wait for any ongoing loading to complete
-    while (isLoading) {
-      await new Promise((resolve) => setTimeout(resolve, 50))
-    }
 
     if (!isLoaded || !sampler || !sampler.loaded) {
       console.log("[v0] Piano not loaded, initializing...")
@@ -860,7 +486,11 @@ const playPianoNote = async (noteString: string, duration = 0.45, velocity = 0.9
 
     const Tone = await ensureTone()
     console.log(`[v0] Playing piano note: ${noteString}`)
-    sampler.triggerAttackRelease(noteString, duration, Tone.now(), velocity)
+    const activeSampler = sampler
+    if (!activeSampler) {
+      throw new Error("Piano sampler reference unavailable")
+    }
+    activeSampler.triggerAttackRelease(noteString, duration, Tone.now(), velocity)
   } catch (error) {
     console.error("[v0] Error playing piano note:", error)
     // Don't reset isLoaded here to avoid constant reloading
@@ -913,7 +543,10 @@ export default function Home() {
   const timelineEditorRef = useRef<HTMLDivElement>(null)
   const timelineUploadInputRef = useRef<HTMLInputElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const [processedMp3Blob, setProcessedMp3Blob] = useState<Blob | null>(null) // Renamed to processedMp3Blob for clarity, but will store WebM
+  const adjusterCompressionTokenRef = useRef(0)
+  const encoderCompressionTokenRef = useRef(0)
+  const [processedDistributionBlob, setProcessedDistributionBlob] = useState<Blob | null>(null)
+  const [generatedDistributionBlob, setGeneratedDistributionBlob] = useState<Blob | null>(null)
   const [loadedLibraryContext, setLoadedLibraryContext] = useState<{
     id: string
     title: string
@@ -1002,7 +635,6 @@ export default function Home() {
     return Array.from(cues)
   }, [timelineEvents])
 
-  const [selectedLibraryInstruction, setSelectedLibraryInstruction] = useState<Instruction | null>(null)
   const [customInstructionText, setCustomInstructionText] = useState<string>("")
   const [selectedSoundCue, setSelectedSoundCue] = useState<SoundCue | null>(null)
   const [isRecording, setIsRecording] = useState<boolean>(false)
@@ -1015,7 +647,6 @@ export default function Home() {
   const [recordedBlobs, setRecordedBlobs] = useState<Blob[]>([])
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const encoderAudioRef = useRef<HTMLAudioElement | null>(null)
-  const instructionCategories = Array.from(new Set(INSTRUCTIONS_LIBRARY.map((instr) => instr.category)))
   const [recordingLabel, setRecordingLabel] = useState<string>("")
 
   // Audio generation states
@@ -1023,7 +654,6 @@ export default function Home() {
   const [generationProgress, setGenerationProgress] = useState<number>(0)
   const [generationStep, setGenerationStep] = useState<string>("")
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
-  const [generatedAudioBlob, setGeneratedAudioBlob] = useState<Blob | null>(null) // Added for encoder audio blob
   const [generatedAudioFileSize, setGeneratedAudioFileSize] = useState<number>(0)
   const [generatedAudioMetadata, setGeneratedAudioMetadata] = useState<BufferToWavMetadata | null>(null)
 
@@ -1231,6 +861,8 @@ export default function Home() {
     setGenerationProgress(0)
     setGenerationStep("Initializing...")
     setGeneratedAudioMetadata(null)
+    setGeneratedDistributionBlob(null)
+    setGeneratedAudioFileSize(0)
 
     try {
       console.log("Starting audio export with events:", timelineEvents)
@@ -1246,6 +878,20 @@ export default function Home() {
 
       const Tone = await ensureTone()
       await Tone.setContext(ctx)
+
+      const audioBufferCache = new Map<string, AudioBuffer>()
+      const fetchAudioBuffer = async (src: string) => {
+        const cached = audioBufferCache.get(src)
+        if (cached) {
+          return cached
+        }
+
+        const response = await fetch(src)
+        const arrayBuffer = await response.arrayBuffer()
+        const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+        audioBufferCache.set(src, audioBuffer)
+        return audioBuffer
+      }
 
       // Prepare instrument instances for offline rendering
       let pianoSampler: any = null
@@ -1395,9 +1041,7 @@ export default function Home() {
           } else if (event.soundCueSrc) {
             try {
               console.log(`Loading pre-recorded audio: ${event.soundCueSrc}`)
-              const response = await fetch(event.soundCueSrc)
-              const arrayBuffer = await response.arrayBuffer()
-              const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+              const audioBuffer = await fetchAudioBuffer(event.soundCueSrc)
               const source = ctx.createBufferSource()
               const gainNode = ctx.createGain()
 
@@ -1417,9 +1061,7 @@ export default function Home() {
           console.log(`Processing recorded voice: ${event.recordedAudioUrl}`)
 
           try {
-            const response = await fetch(event.recordedAudioUrl)
-            const arrayBuffer = await response.arrayBuffer()
-            const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+            const audioBuffer = await fetchAudioBuffer(event.recordedAudioUrl)
             const source = ctx.createBufferSource()
             const gainNode = ctx.createGain()
 
@@ -1438,9 +1080,7 @@ export default function Home() {
           console.log(`Processing recorded block: ${event.content.url}`)
 
           try {
-            const response = await fetch(event.content.url)
-            const arrayBuffer = await response.arrayBuffer()
-            const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+            const audioBuffer = await fetchAudioBuffer(event.content.url)
             const source = ctx.createBufferSource()
             const gainNode = ctx.createGain()
 
@@ -1473,7 +1113,6 @@ export default function Home() {
 
       setGenerationStep("Creating audio file...")
       setGenerationProgress(80)
-      await sleep(10)
 
       const wavResult = await bufferToWav(rendered, {
         preferCompatibility: compatibilityMode === "high",
@@ -1490,13 +1129,36 @@ export default function Home() {
       const url = URL.createObjectURL(wavBlob)
 
       setGeneratedAudioUrl(url)
-      setGeneratedAudioBlob(wavBlob)
+      setGeneratedDistributionBlob(wavBlob)
+      setGeneratedAudioFileSize(wavBlob.size)
       setGeneratedAudioMetadata(metadata)
       setGenerationProgress(100)
       setGenerationStep("Complete!")
 
       console.log("Audio export completed successfully!")
       toast({ title: "Export Complete", description: "Timeline audio exported with sound cues included!" })
+
+      if (
+        typeof window !== "undefined" &&
+        typeof MediaRecorder !== "undefined" &&
+        MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+      ) {
+        const compressionToken = ++encoderCompressionTokenRef.current
+        void (async () => {
+          try {
+            await ensureTone()
+            const { blob } = await bufferToWebM(rendered, {})
+            if (encoderCompressionTokenRef.current === compressionToken) {
+              setGeneratedDistributionBlob(blob)
+              setGeneratedAudioFileSize(blob.size)
+            }
+          } catch (compressionError) {
+            if (encoderCompressionTokenRef.current === compressionToken) {
+              console.warn("[v0] Failed to prepare compressed encoder distribution:", compressionError)
+            }
+          }
+        })()
+      }
     } catch (error) {
       console.error("Audio export failed:", error)
       toast({
@@ -1521,7 +1183,6 @@ export default function Home() {
     const value = e.target?.value
     if (typeof value === "string") {
       setCustomInstructionText(value)
-      setSelectedLibraryInstruction(null)
     }
   }
 
@@ -1630,11 +1291,12 @@ export default function Home() {
             await loadPiano()
           }
 
-          if (sampler && isLoaded) {
+          const activeSampler = sampler
+          if (activeSampler && isLoaded) {
             // Play all notes simultaneously using the Salamander piano sampler
             chordNotes.forEach((noteString) => {
               console.log("[v0] Playing Salamander piano note in chord:", noteString)
-              sampler.triggerAttackRelease(noteString, 0.5)
+              activeSampler.triggerAttackRelease(noteString, 0.5)
             })
           } else {
             console.error("[v0] Piano sampler not available for chord")
@@ -1774,7 +1436,8 @@ export default function Home() {
     setProcessingProgress(0)
     setProcessingStep("Loading audio...")
     setGeneratedAudioMetadata(null)
-    setProcessedMp3Blob(null)
+    setProcessedDistributionBlob(null)
+    setProcessedFileSize(0)
     setQuickAdjustRange(null)
     setLoadedLibraryContext(null)
 
@@ -1789,6 +1452,7 @@ export default function Home() {
       }
     }
 
+    let playbackUrl: string | null = null
     try {
       const context = audioContextRef.current || new AudioContext()
       audioContextRef.current = context
@@ -1797,65 +1461,49 @@ export default function Home() {
         await context.resume()
       }
 
-      const reader = new FileReader()
-      reader.onload = async (event) => {
-        if (event.target?.result) {
-          try {
-            const arrayBuffer = event.target.result as ArrayBuffer
-            const buffer = await context.decodeAudioData(arrayBuffer)
-            setOriginalBuffer(buffer)
-            setOriginalUrl(URL.createObjectURL(selectedFile))
-            setProcessingStep("Analyzing audio...")
+      const arrayBuffer = await selectedFile.arrayBuffer()
+      const buffer = await context.decodeAudioData(arrayBuffer.slice(0))
+      setOriginalBuffer(buffer)
+      playbackUrl = URL.createObjectURL(selectedFile)
+      setOriginalUrl(playbackUrl)
+      setProcessingStep("Analyzing audio...")
 
-            const url = URL.createObjectURL(selectedFile)
-            const tempAudio = new Audio(url)
-            tempAudio.preload = "metadata"
-            tempAudio.onloadedmetadata = () => {
-              const duration = tempAudio.duration
-              setActualDuration(duration)
-              URL.revokeObjectURL(url) // Clean up temporary URL
-            }
-            tempAudio.onerror = () => {
-              console.error("Error loading audio metadata for duration.")
-              URL.revokeObjectURL(url)
-            }
-
-            // Perform silence detection
-            const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
-            const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
-            const contentDuration = buffer.duration - totalSilenceDuration
-            const maxPossibleDuration = isMobileDevice ? 60 * 60 : 120 * 60 // 1 hour for mobile, 2 hours for desktop
-            setDurationLimits({
-              min: Math.ceil(contentDuration / 60),
-              max: maxPossibleDuration / 60,
-            })
-            setAudioAnalysis({
-              totalSilence: totalSilenceDuration,
-              contentDuration: contentDuration,
-              silenceRegions: silenceRegions.length,
-            })
-            setProcessingStep("Ready to process.")
-            setStatus({ message: "Audio loaded and analyzed. Ready to adjust.", type: "success" })
-          } catch (error) {
-            console.error("Error decoding audio data:", error)
-            setStatus({
-              message: `Error loading audio: ${error instanceof Error ? error.message : "Unknown"}`,
-              type: "error",
-            })
-            setFile(null)
-            setDisplayedFileName(null)
-            setOriginalBuffer(null)
-            setOriginalUrl("")
-          }
-        }
+      const metadataUrl = URL.createObjectURL(selectedFile)
+      const tempAudio = new Audio(metadataUrl)
+      tempAudio.preload = "metadata"
+      tempAudio.onloadedmetadata = () => {
+        setActualDuration(tempAudio.duration)
+        URL.revokeObjectURL(metadataUrl)
       }
-      reader.readAsArrayBuffer(selectedFile)
+      tempAudio.onerror = () => {
+        console.error("Error loading audio metadata for duration.")
+        URL.revokeObjectURL(metadataUrl)
+      }
+
+      const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
+      const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+      const contentDuration = buffer.duration - totalSilenceDuration
+      const maxPossibleDuration = isMobileDevice ? 60 * 60 : 120 * 60 // 1 hour for mobile, 2 hours for desktop
+      setDurationLimits({
+        min: Math.ceil(contentDuration / 60),
+        max: maxPossibleDuration / 60,
+      })
+      setAudioAnalysis({
+        totalSilence: totalSilenceDuration,
+        contentDuration: contentDuration,
+        silenceRegions: silenceRegions.length,
+      })
+      setProcessingStep("Ready to process.")
+      setStatus({ message: "Audio loaded and analyzed. Ready to adjust.", type: "success" })
     } catch (error) {
       console.error("Error accessing audio context:", error)
       setStatus({ message: `Audio system error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
       setFile(null)
       setDisplayedFileName(null)
       setOriginalBuffer(null)
+      if (playbackUrl) {
+        URL.revokeObjectURL(playbackUrl)
+      }
       setOriginalUrl("")
     }
   }
@@ -2455,7 +2103,8 @@ export default function Home() {
     setProcessingStep("Starting processing...")
     setProcessedAudioMetadata(null)
     setQuickAdjustRange(null)
-    setProcessedMp3Blob(null)
+    setProcessedDistributionBlob(null)
+    setProcessedFileSize(0)
 
     if (currentAudioContext.state === "suspended") {
       try {
@@ -2506,7 +2155,7 @@ export default function Home() {
       const url = URL.createObjectURL(result.wavBlob)
 
       setProcessedUrl(url)
-      setProcessedMp3Blob(result.wavBlob) // This is the file that will be saved
+      setProcessedDistributionBlob(result.wavBlob)
       setActualDuration(result.processedBuffer.duration)
       setProcessedBufferState(result.processedBuffer)
       setProcessedFileSize(result.wavBlob.size)
@@ -2520,6 +2169,28 @@ export default function Home() {
       setProcessingProgress(100)
       setStatus({ message: "Audio processing completed successfully!", type: "success" })
       setIsProcessingComplete(true)
+
+      if (
+        typeof window !== "undefined" &&
+        typeof MediaRecorder !== "undefined" &&
+        MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+      ) {
+        const compressionToken = ++adjusterCompressionTokenRef.current
+        void (async () => {
+          try {
+            await ensureTone()
+            const { blob } = await bufferToWebM(result.processedBuffer, {})
+            if (adjusterCompressionTokenRef.current === compressionToken) {
+              setProcessedDistributionBlob(blob)
+              setProcessedFileSize(blob.size)
+            }
+          } catch (compressionError) {
+            if (adjusterCompressionTokenRef.current === compressionToken) {
+              console.warn("[v0] Failed to prepare compressed distribution:", compressionError)
+            }
+          }
+        })()
+      }
     } catch (error) {
       console.error("Error during audio processing:", error)
       setStatus({ message: `Processing error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
@@ -3424,6 +3095,7 @@ export default function Home() {
                       <div>
                         <SaveMeditationDialog
                           audioUrl={originalUrl}
+                          mp3Blob={file ?? undefined}
                           originalFileName={file?.name || "original-audio"}
                           duration={originalBuffer?.duration || 0}
                           source="adjuster"
@@ -3876,6 +3548,7 @@ export default function Home() {
                         </div>
                         <SaveMeditationDialog
                           audioUrl={processedUrl}
+                          mp3Blob={processedDistributionBlob ?? undefined}
                           originalFileName={file?.name || "meditation"}
                           duration={actualDuration || targetDuration * 60}
                           source="adjuster"
@@ -4449,6 +4122,7 @@ export default function Home() {
                         </div>
                         <SaveMeditationDialog
                           audioUrl={generatedAudioUrl}
+                          mp3Blob={generatedDistributionBlob ?? undefined}
                           originalFileName={meditationTitle || "meditation"}
                           duration={encoderTotalDuration}
                           source="encoder"

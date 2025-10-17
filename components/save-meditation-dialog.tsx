@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast"
 
 interface SaveMeditationDialogProps {
   audioUrl: string
-  mp3Blob?: Blob | null // Add optional pre-created MP3 blob
+  mp3Blob?: Blob | null // Optional pre-generated distribution blob (e.g., WebM/MP3)
   originalFileName: string
   duration: number
   source: "adjuster" | "encoder"
@@ -175,7 +175,7 @@ export function SaveMeditationDialog({
       let distributionBlob: Blob
 
       if (mp3Blob) {
-        console.log("[v0] Using pre-created MP3 blob")
+        console.log("[v0] Using pre-generated audio blob")
         distributionBlob = mp3Blob
       } else {
         console.log("[v0] No pre-created MP3, encoding now...")
