@@ -184,7 +184,7 @@ export function useJournal() {
           meditation_id: newEntry.meditationId,
           entry_date: playedAtDate.toISOString().split("T")[0], // Extract date part
           play_time: newEntry.playedAt,
-          content: newEntry.note ?? null,
+          content: newEntry.note ?? "",
         })
         .select("id, profile_id, meditation_id, entry_date, play_time, content, meditations(title)")
         .single()
@@ -197,7 +197,7 @@ export function useJournal() {
 
       if (data) {
         const normalized = mapRowToEntry(data)
-        setEntries((previous) => previous.map((entry) => (entry.id === normalized.id ? normalized : entry)))
+        setEntries((previous) => previous.map((entry) => (entry.id === newEntry.id ? normalized : entry)))
         return normalized
       }
 
