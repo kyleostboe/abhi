@@ -2177,164 +2177,6 @@ export default function Home() {
     ],
   )
 
-  const importIntoAdjuster = useCallback(
-    async (importData: any) => {
-      console.log("[v0] Importing meditation into adjuster:", importData)
-
-      try {
-        // Reset all state like normal file upload
-        setFile(null)
-        setDisplayedFileName(null)
-        setOriginalUrl("")
-        setProcessedUrl("")
-        setAudioAnalysis(null)
-        setActualDuration(null)
-        setProcessedBufferState(null)
-        setProcessedAudioMetadata(null)
-        setIsProcessingComplete(false)
-        setStatus(null)
-        setMemoryWarning(false)
-        setPausesAdjusted(0)
-        setProcessingProgress(0)
-        setProcessingStep("Loading audio...")
-        setGeneratedAudioMetadata(null)
-        setProcessedMp3Blob(null)
-        setTimelineEvents([])
-        setEncoderTimelineOriginalDuration(null)
-        lastEncoderDurationAdjustmentRef.current = null
-
-        if (audioContextRef.current && audioContextRef.current.state === "running") {
-          try {
-            await audioContextRef.current.suspend()
-          } catch (e) {
-            console.warn("Error suspending AudioContext before loading imported file:", e)
-          }
-        }
-
-        const context = audioContextRef.current || new AudioContext()
-        audioContextRef.current = context
-
-        if (context.state === "suspended") {
-          await context.resume()
-        }
-
-        // Fetch the audio file from the URL
-        const response = await fetch(importData.processedAudioUrl)
-        if (!response.ok) {
-          throw new Error(`Failed to fetch audio: ${response.statusText}`)
-        }
-
-        const arrayBuffer = await response.arrayBuffer()
-        const buffer = await context.decodeAudioData(arrayBuffer)
-
-        // Set up the audio like normal file upload
-        setOriginalBuffer(buffer)
-        setOriginalUrl(importData.processedAudioUrl)
-        setProcessingStep("Analyzing audio...")
-        setActualDuration(importData.duration)
-
-        // Create a fake file object for consistency
-        const blob = new Blob([arrayBuffer], { type: "audio/wav" })
-        const fakeFileName = deriveMeditationFileName(importData)
-        const fakeFile = new File([blob], fakeFileName, { type: "audio/wav" })
-        setFile(fakeFile)
-
-        const libraryTitle =
-          typeof importData.title === "string" && importData.title.trim().length > 0 ? importData.title.trim() : null
-        setDisplayedFileName(libraryTitle ?? fakeFileName)
-        setMeditationTitle(deriveMeditationTitle(importData))
-
-        const linkedParentId =
-          typeof importData.metadata?.linkedParentId === "string"
-            ? importData.metadata.linkedParentId.trim()
-            : ""
-        const contextId = linkedParentId.length > 0 ? linkedParentId : importData.id
-        const metadataOriginalDuration =
-          typeof importData.metadata?.originalDurationSeconds === "number" &&
-          Number.isFinite(importData.metadata.originalDurationSeconds)
-            ? importData.metadata.originalDurationSeconds
-            : null
-        const fallbackDuration =
-          typeof importData.duration === "number" && Number.isFinite(importData.duration)
-            ? importData.duration
-            : buffer.duration
-        if (typeof contextId === "string" && contextId.trim().length > 0) {
-          setLoadedLibraryContext({
-            id: contextId,
-            title: deriveMeditationTitle(importData),
-            duration: metadataOriginalDuration ?? fallbackDuration,
-          })
-        } else {
-          setLoadedLibraryContext(null)
-        }
-
-        // Perform silence detection like normal upload
-        const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
-        const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
-        const contentDuration = buffer.duration - totalSilenceDuration
-        const maxPossibleDuration = isMobileDevice ? 60 * 60 : 120 * 60 // 1 hour for mobile, 2 hours for desktop
-
-        setDurationLimits({
-          min: Math.ceil(contentDuration / 60),
-          max: maxPossibleDuration / 60,
-        })
-
-        setAudioAnalysis({
-          totalSilence: totalSilenceDuration,
-          contentDuration: contentDuration,
-          silenceRegions: silenceRegions.length,
-        })
-
-        setProcessingStep("Ready to process.")
-        setStatus({ message: "Meditation loaded and analyzed. Ready to adjust.", type: "success" })
-        setProcessedAudioMetadata(importData.metadata?.wav ?? null)
-
-        const timelineMetadata = Array.isArray(importData.metadata?.timeline)
-          ? (importData.metadata.timeline as SavedTimelineEntry[])
-          : null
-
-        if (timelineMetadata && timelineMetadata.length > 0) {
-          const reconstructedEvents = parseTimelineMetadata(timelineMetadata)
-
-          if (reconstructedEvents.length > 0) {
-            const reconstructedEnd = reconstructedEvents.reduce(
-              (max, event) => Math.max(max, event.startTime + (event.duration ?? 0)),
-              0,
-            )
-            const totalDuration = Math.max(importData.duration ?? 0, reconstructedEnd)
-
-            setTimelineEvents(reconstructedEvents)
-            setEncoderTotalDuration(totalDuration)
-            setEncoderTimelineOriginalDuration(totalDuration)
-            lastEncoderDurationAdjustmentRef.current = totalDuration
-          }
-        }
-      } catch (error) {
-        console.error("[v0] Error importing into adjuster:", error)
-        setStatus({
-          message: `Failed to load meditation: ${error instanceof Error ? error.message : "Unknown error"}`,
-          type: "error",
-        })
-        setFile(null)
-        setDisplayedFileName(null)
-        setOriginalBuffer(null)
-        setOriginalUrl("")
-      }
-    },
-    [
-      silenceThreshold,
-      minSilenceDuration,
-      isMobileDevice,
-      detectSilenceRegions,
-      setStatus,
-      setMeditationTitle,
-      parseTimelineMetadata,
-      setTimelineEvents,
-      setEncoderTotalDuration,
-      setEncoderTimelineOriginalDuration,
-    ],
-  )
-
   const importFromLibrary = useCallback(
     async (importData: any, sourceTab: "adjuster" | "encoder") => {
       console.log("[v0] Importing from library:", importData, "to tab:", sourceTab)
@@ -2359,27 +2201,101 @@ export default function Home() {
         adjusterSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" })
       }
 
-      try {
+      // Define importIntoAdjuster here or ensure it's accessible in scope
+      const importIntoAdjuster = async (data: any) => {
+        console.log("[v0] Importing into adjuster:", data)
+        try {
+          const response = await fetch(data.processedAudioUrl)
+          const audioBlob = await response.blob()
+          const importedFileName = deriveMeditationFileName(data)
+          const audioFile = new File([audioBlob], importedFileName, { type: "audio/wav" })
+
+          setFile(audioFile)
+          setDisplayedFileName(importedFileName)
+          setOriginalUrl(URL.createObjectURL(audioFile))
+          setMeditationTitle(deriveMeditationTitle(data))
+
+          const context = audioContextRef.current || new AudioContext()
+          audioContextRef.current = context
+
+          if (context.state === "suspended") {
+            await context.resume()
+          }
+
+          const arrayBuffer = await audioFile.arrayBuffer()
+          const buffer = await context.decodeAudioData(arrayBuffer)
+          setOriginalBuffer(buffer)
+
+          const url = URL.createObjectURL(audioFile)
+          const tempAudio = new Audio(url)
+          tempAudio.preload = "metadata"
+          tempAudio.onloadedmetadata = () => {
+            setActualDuration(tempAudio.duration)
+            URL.revokeObjectURL(url)
+          }
+          tempAudio.onerror = () => {
+            console.error("Error loading audio metadata for duration.")
+            URL.revokeObjectURL(url)
+          }
+
+          const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
+          const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+          const contentDuration = buffer.duration - totalSilenceDuration
+          const maxPossibleDuration = isMobileDevice ? 60 * 60 : 120 * 60
+          setDurationLimits({
+            min: Math.ceil(contentDuration / 60),
+            max: maxPossibleDuration / 60,
+          })
+          setAudioAnalysis({
+            totalSilence: totalSilenceDuration,
+            contentDuration: contentDuration,
+            silenceRegions: silenceRegions.length,
+          })
+          setProcessingStep("Ready to process.")
+          setStatus({ message: "Audio loaded. Ready to adjust.", type: "success" })
+
+          // Set default target duration within the new limits
+          setTargetDuration((current) => {
+            const safeMin = Number.isFinite(durationLimits.min) ? durationLimits.min : current
+            const safeMax = Number.isFinite(durationLimits.max) ? durationLimits.max : safeMin
+
+            if (safeMin > safeMax) return safeMin
+            if (current < safeMin) return safeMin
+            if (current > safeMax) return safeMax
+            return current
+          })
+          setLoadedLibraryContext({
+            id: data.id,
+            title: data.title,
+            duration: data.duration,
+          })
+        } catch (error) {
+          console.error("[v0] Error importing into adjuster:", error)
+          setStatus({
+            message: `Error importing: ${error instanceof Error ? error.message : "Unknown"}`,
+            type: "error",
+          })
+          setFile(null)
+          setDisplayedFileName(null)
+          setOriginalBuffer(null)
+          setOriginalUrl("")
+          setAudioAnalysis(null)
+          setDurationLimits(null)
+        }
+      }
+
+      if (sourceTab === "adjuster") {
+        await importIntoAdjuster(importData)
+        persistSessionForMode("adjuster", importData)
+        if (importData.crossToolOpening && !isMobileDevice) {
+          setShouldScrollToAdjuster(true)
+        }
+      } else if (sourceTab === "encoder") {
         const hasTimelineMetadata = Array.isArray(importData.metadata?.timeline)
           ? importData.metadata.timeline.length > 0
           : false
 
-        const shouldOpenAsRecordedBlock = sourceTab === "encoder" && importData?.source === "adjuster"
-
-        if (shouldOpenAsRecordedBlock) {
-          setActiveMode("encoder")
-          setActiveTab("encoder")
-          await importAsRecordedBlock(importData)
-          persistSessionForMode("encoder", importData)
-          if (typeof window !== "undefined") {
-            requestAnimationFrame(() => {
-              timelineEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-            })
-          }
-        } else if (sourceTab === "encoder" && (!importData.crossToolOpening || hasTimelineMetadata)) {
-          // Encoder meditation reopened in encoder - reconstruct cues/recordings
-          setActiveMode("encoder")
-          setActiveTab("encoder")
+        if (hasTimelineMetadata || importData.crossToolOpening) {
           await reconstructEncoderMeditation(importData)
           persistSessionForMode("encoder", importData)
           if (typeof window !== "undefined") {
@@ -2387,16 +2303,7 @@ export default function Home() {
               timelineEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
             })
           }
-        } else if (sourceTab === "adjuster" || importData.crossToolOpening) {
-          setActiveTab("adjuster")
-          setActiveMode("adjuster")
-          await importIntoAdjuster(importData)
-          persistSessionForMode("adjuster", importData)
-          if (importData.crossToolOpening && !isMobileDevice) {
-            setShouldScrollToAdjuster(true)
-          }
         } else {
-          // Fallback to recorded block for encoder cross-tool opening
           await importAsRecordedBlock(importData)
           persistSessionForMode("encoder", importData)
           if (typeof window !== "undefined") {
@@ -2405,27 +2312,24 @@ export default function Home() {
             })
           }
         }
-      } catch (error) {
-        console.error("[v0] Error importing from library:", error)
-        setStatus({
-          message: "Failed to load meditation from library. Please try again.",
-          type: "error",
-        })
       }
     },
     [
       reconstructEncoderMeditation,
-      importIntoAdjuster,
       importAsRecordedBlock,
       isMobileDevice,
       setActiveMode,
       setActiveTab,
       setStatus,
+      detectSilenceRegions,
+      silenceThreshold,
+      minSilenceDuration,
+      setLoadedLibraryContext,
     ],
   )
 
   useEffect(() => {
-    if (!shouldScrollToAdjuster || activeMode !== "adjuster") {
+    if (shouldScrollToAdjuster || activeMode !== "adjuster") {
       return
     }
 
@@ -2627,8 +2531,6 @@ export default function Home() {
       }
     }
   }
-
-  
 
   const handleFileSelectAction = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
@@ -3243,7 +3145,6 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
         className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
-        
         role="application"
       >
         <div className="relative overflow-hidden">
@@ -3359,8 +3260,8 @@ export default function Home() {
                       </strong>
                       Depending on the audio, users may need to tweak the advanced settings for optimal results. Only
                       pauses are adjusted, spoken instruction is preserved. Any guided meditation under{" "}
-                      {isMobileDevice ? "50MB" : "500MB"} should be compatible. Teachers, please feel free to reach out if
-                      you'd like to opt out. Enjoy:)
+                      {isMobileDevice ? "50MB" : "500MB"} should be compatible. Teachers, please feel free to reach out
+                      if you'd like to opt out. Enjoy:)
                     </p>
                   </div>
                   <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto backdrop-blur-sm border-0 py-4 px-0 bg-transparent pt-0 pb-0">
@@ -3388,7 +3289,7 @@ export default function Home() {
                         href="https://tasshin.com/guided-meditations/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
+                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
                       >
                         Tasshin &amp; friend's meditations
                       </a>
@@ -3797,66 +3698,81 @@ export default function Home() {
                       {
                         backgroundImage: `
                         radial-gradient(circle at 8% 14%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
+                        radial-gradient(circle at 92% 14%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
                         radial-gradient(circle at 15% 8%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
+                        radial-gradient(circle at 85% 8%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
                         radial-gradient(circle at 4% 22%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 96% 22%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
                         radial-gradient(circle at 12% 28%, rgba(255, 255, 255, 0.7) 0.3px, transparent 1px),
+                        radial-gradient(circle at 88% 28%, rgba(255, 255, 255, 0.7) 0.3px, transparent 1px),
                         radial-gradient(circle at 22% 18%, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px),
+                        radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px),
                         radial-gradient(circle at 18% 72%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
+                        radial-gradient(circle at 82% 72%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
                         radial-gradient(circle at 8% 78%, rgba(255, 255, 255, 0.8) 1.3px, transparent 1.5px),
+                        radial-gradient(circle at 92% 78%, rgba(255, 255, 255, 0.8) 1.3px, transparent 1.5px),
                         radial-gradient(circle at 14% 85%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
+                        radial-gradient(circle at 86% 85%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
                         radial-gradient(circle at 6% 92%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
+                        radial-gradient(circle at 94% 92%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
                         radial-gradient(circle at 24% 88%, rgba(255, 255, 255, 0.9) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 72% 8%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
-                        radial-gradient(circle at 78% 15%, rgba(255, 255, 255, 0.75) 1.4px, transparent 1.6px),
-                        radial-gradient(circle at 85% 22%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
-                        radial-gradient(circle at 92% 12%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                        radial-gradient(circle at 88% 6%, rgba(255, 255, 255, 0.85) 0.3px, transparent 1px),
-                        radial-gradient(circle at 76% 72%, rgba(255, 255, 255, 0.8) 1.2px, transparent 1.4px),
-                        radial-gradient(circle at 82% 78%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
-                        radial-gradient(circle at 88% 85%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
-                        radial-gradient(circle at 94% 92%, rgba(255, 255, 255, 0.7) 1px, transparent 1.2px),
-                        radial-gradient(circle at 91% 68%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 76% 88%, rgba(255, 255, 255, 0.9) 1.1px, transparent 1.3px),
                         radial-gradient(circle at 5% 35%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
+                        radial-gradient(circle at 95% 35%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
                         radial-gradient(circle at 12% 68%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
+                        radial-gradient(circle at 88% 68%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
                         radial-gradient(circle at 8% 38%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
+                        radial-gradient(circle at 92% 38%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
                         radial-gradient(circle at 18% 15%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
+                        radial-gradient(circle at 82% 15%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
                         radial-gradient(circle at 24% 5%, rgba(255, 255, 255, 0.85) 0.6px, transparent 1px),
+                        radial-gradient(circle at 76% 5%, rgba(255, 255, 255, 0.85) 0.6px, transparent 1px),
                         radial-gradient(circle at 76% 25%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 85% 68%, rgba(255, 255, 255, 0.75) 0.7px, transparent 1px),
-                        radial-gradient(circle at 92% 75%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
+                        radial-gradient(circle at 24% 25%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
                         radial-gradient(circle at 88% 32%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
-                        radial-gradient(circle at 94% 28%, rgba(255, 255, 255, 0.85) 0.5px, transparent 1px),
+                        radial-gradient(circle at 12% 32%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
                         radial-gradient(circle at 3% 62%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
+                        radial-gradient(circle at 97% 62%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
                         radial-gradient(circle at 9% 42%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
+                        radial-gradient(circle at 91% 42%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
                         radial-gradient(circle at 16% 95%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
+                        radial-gradient(circle at 84% 95%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
                         radial-gradient(circle at 22% 78%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
+                        radial-gradient(circle at 78% 78%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
                         radial-gradient(circle at 26% 12%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
-                        radial-gradient(circle at 74% 5%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
-                        radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                        radial-gradient(circle at 88% 95%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
-                        radial-gradient(circle at 95% 82%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                        radial-gradient(circle at 78% 88%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
+                        radial-gradient(circle at 74% 12%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
                         radial-gradient(circle at 4% 68%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
+                        radial-gradient(circle at 96% 68%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
                         radial-gradient(circle at 11% 18%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
+                        radial-gradient(circle at 89% 18%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
                         radial-gradient(circle at 19% 32%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
+                        radial-gradient(circle at 81% 32%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
                         radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
+                        radial-gradient(circle at 75% 25%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
                         radial-gradient(circle at 28% 8%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 72% 72%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
-                        radial-gradient(circle at 79% 95%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
-                        radial-gradient(circle at 86% 8%, rgba(255, 255, 255, 0.9) 0.7px, transparent 1px),
-                        radial-gradient(circle at 92% 88%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
-                        radial-gradient(circle at 96% 15%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
+                        radial-gradient(circle at 72% 8%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
                         radial-gradient(circle at 2% 12%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
+                        radial-gradient(circle at 98% 12%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
                         radial-gradient(circle at 7% 88%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
+                        radial-gradient(circle at 93% 88%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
                         radial-gradient(circle at 13% 5%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
+                        radial-gradient(circle at 87% 5%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
                         radial-gradient(circle at 20% 92%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
+                        radial-gradient(circle at 80% 92%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
                         radial-gradient(circle at 27% 72%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
+                        radial-gradient(circle at 73% 72%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
                         radial-gradient(circle at 32% 35%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
+                        radial-gradient(circle at 68% 35%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
                         radial-gradient(circle at 38% 22%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
+                        radial-gradient(circle at 62% 22%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
                         radial-gradient(circle at 35% 68%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
+                        radial-gradient(circle at 65% 68%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
                         radial-gradient(circle at 62% 32%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
+                        radial-gradient(circle at 38% 32%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
                         radial-gradient(circle at 68% 38%, rgba(255, 255, 255, 0.85) 0.5px, transparent 1px),
+                        radial-gradient(circle at 32% 38%, rgba(255, 255, 255, 0.85) 0.5px, transparent 1px),
                         radial-gradient(circle at 65% 65%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
+                        radial-gradient(circle at 35% 65%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
                         linear-gradient(to right, #4b5563, #6b7280)
                       `,
                       } as React.CSSProperties
@@ -3915,7 +3831,6 @@ export default function Home() {
                         </div>
                         <SaveMeditationDialog
                           audioUrl={processedUrl}
-                          mp3Blob={processedMp3Blob} // Pass pre-created WebM blob
                           originalFileName={file?.name || "meditation"}
                           duration={actualDuration || targetDuration * 60}
                           source="adjuster"
@@ -4315,66 +4230,81 @@ export default function Home() {
                       {
                         backgroundImage: `
                         radial-gradient(circle at 8% 14%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
+                        radial-gradient(circle at 92% 14%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
                         radial-gradient(circle at 15% 8%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
+                        radial-gradient(circle at 85% 8%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
                         radial-gradient(circle at 4% 22%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 96% 22%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
                         radial-gradient(circle at 12% 28%, rgba(255, 255, 255, 0.7) 0.3px, transparent 1px),
+                        radial-gradient(circle at 88% 28%, rgba(255, 255, 255, 0.7) 0.3px, transparent 1px),
                         radial-gradient(circle at 22% 18%, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px),
+                        radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px),
                         radial-gradient(circle at 18% 72%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
+                        radial-gradient(circle at 82% 72%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
                         radial-gradient(circle at 8% 78%, rgba(255, 255, 255, 0.8) 1.3px, transparent 1.5px),
+                        radial-gradient(circle at 92% 78%, rgba(255, 255, 255, 0.8) 1.3px, transparent 1.5px),
                         radial-gradient(circle at 14% 85%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
+                        radial-gradient(circle at 86% 85%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
                         radial-gradient(circle at 6% 92%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
+                        radial-gradient(circle at 94% 92%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
                         radial-gradient(circle at 24% 88%, rgba(255, 255, 255, 0.9) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 72% 8%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
-                        radial-gradient(circle at 78% 15%, rgba(255, 255, 255, 0.75) 1.4px, transparent 1.6px),
-                        radial-gradient(circle at 85% 22%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
-                        radial-gradient(circle at 92% 12%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                        radial-gradient(circle at 88% 6%, rgba(255, 255, 255, 0.85) 0.3px, transparent 1px),
-                        radial-gradient(circle at 76% 72%, rgba(255, 255, 255, 0.8) 1.2px, transparent 1.4px),
-                        radial-gradient(circle at 82% 78%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
-                        radial-gradient(circle at 88% 85%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
-                        radial-gradient(circle at 94% 92%, rgba(255, 255, 255, 0.7) 1px, transparent 1.2px),
-                        radial-gradient(circle at 91% 68%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 76% 88%, rgba(255, 255, 255, 0.9) 1.1px, transparent 1.3px),
                         radial-gradient(circle at 5% 35%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
+                        radial-gradient(circle at 95% 35%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
                         radial-gradient(circle at 12% 68%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
+                        radial-gradient(circle at 88% 68%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
                         radial-gradient(circle at 8% 38%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
+                        radial-gradient(circle at 92% 38%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
                         radial-gradient(circle at 18% 15%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
+                        radial-gradient(circle at 82% 15%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
                         radial-gradient(circle at 24% 5%, rgba(255, 255, 255, 0.85) 0.6px, transparent 1px),
+                        radial-gradient(circle at 76% 5%, rgba(255, 255, 255, 0.85) 0.6px, transparent 1px),
                         radial-gradient(circle at 76% 25%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 85% 68%, rgba(255, 255, 255, 0.75) 0.7px, transparent 1px),
-                        radial-gradient(circle at 92% 75%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
+                        radial-gradient(circle at 24% 25%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
                         radial-gradient(circle at 88% 32%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
-                        radial-gradient(circle at 94% 28%, rgba(255, 255, 255, 0.85) 0.5px, transparent 1px),
+                        radial-gradient(circle at 12% 32%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
                         radial-gradient(circle at 3% 62%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
+                        radial-gradient(circle at 97% 62%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
                         radial-gradient(circle at 9% 42%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
+                        radial-gradient(circle at 91% 42%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
                         radial-gradient(circle at 16% 95%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
+                        radial-gradient(circle at 84% 95%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
                         radial-gradient(circle at 22% 78%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
+                        radial-gradient(circle at 78% 78%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
                         radial-gradient(circle at 26% 12%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
-                        radial-gradient(circle at 74% 5%, rgba(255, 255, 255, 0.8) 0.7px, transparent 1px),
-                        radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                        radial-gradient(circle at 88% 95%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
-                        radial-gradient(circle at 95% 82%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                        radial-gradient(circle at 78% 88%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
+                        radial-gradient(circle at 74% 12%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
                         radial-gradient(circle at 4% 68%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
+                        radial-gradient(circle at 96% 68%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
                         radial-gradient(circle at 11% 18%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
+                        radial-gradient(circle at 89% 18%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
                         radial-gradient(circle at 19% 32%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
+                        radial-gradient(circle at 81% 32%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
                         radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
+                        radial-gradient(circle at 75% 25%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
                         radial-gradient(circle at 28% 8%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 72% 72%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
-                        radial-gradient(circle at 79% 95%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
-                        radial-gradient(circle at 86% 8%, rgba(255, 255, 255, 0.9) 0.7px, transparent 1px),
-                        radial-gradient(circle at 92% 88%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
-                        radial-gradient(circle at 96% 15%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
+                        radial-gradient(circle at 72% 8%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
                         radial-gradient(circle at 2% 12%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
+                        radial-gradient(circle at 98% 12%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
                         radial-gradient(circle at 7% 88%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
+                        radial-gradient(circle at 93% 88%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
                         radial-gradient(circle at 13% 5%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
+                        radial-gradient(circle at 87% 5%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
                         radial-gradient(circle at 20% 92%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
+                        radial-gradient(circle at 80% 92%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
                         radial-gradient(circle at 27% 72%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
+                        radial-gradient(circle at 73% 72%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
                         radial-gradient(circle at 32% 35%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
+                        radial-gradient(circle at 68% 35%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
                         radial-gradient(circle at 38% 22%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
+                        radial-gradient(circle at 62% 22%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
                         radial-gradient(circle at 35% 68%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
+                        radial-gradient(circle at 65% 68%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
                         radial-gradient(circle at 62% 32%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
+                        radial-gradient(circle at 38% 32%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
                         radial-gradient(circle at 68% 38%, rgba(255, 255, 255, 0.85) 0.5px, transparent 1px),
+                        radial-gradient(circle at 32% 38%, rgba(255, 255, 255, 0.85) 0.5px, transparent 1px),
                         radial-gradient(circle at 65% 65%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
+                        radial-gradient(circle at 35% 65%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
                         linear-gradient(to right, #4b5563, #6b7280)
                       `,
                       } as React.CSSProperties
