@@ -488,7 +488,7 @@ export default function JournalPage() {
                                       <div>
                                         <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-gray-400 font-black">
                                           <CalendarDays className="h-4 w-4" />
-                                          <span>{formatLongDate(entryDate)}</span>
+                                          <span className="font-serif tracking-normal">{formatLongDate(entryDate)}</span>
                                         </div>
                                         <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-600 font-black">
                                           <span className="flex items-center gap-1">
