@@ -403,17 +403,17 @@ export default function JournalPage() {
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <Card className="p-6 lg:p-8 bg-white/90 backdrop-blur-md shadow-xl border-none">
+                      <Card className="p-6 lg:p-8  shadow-none border-none">
                         <div className="flex flex-col gap-6">
                           <div className="text-center">
                             {selectedDate && (
-                              <div className="font-black text-gray-500 text-2xl">{formatMonth(selectedDate)}</div>
+                              <div className="font-black text-2xl text-gray-600">{formatMonth(selectedDate)}</div>
                             )}
                           </div>
 
                           <div>
                             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-                              <div className="flex gap-2 md:gap-3 px-4 py-2 min-w-max">
+                              <div className="flex px-4 min-w-max py-8 pt-4 pb-14 md:gap-0">
                                 {displayDayKeys.map((key) => {
                                   const date = new Date(key)
                                   const isSelected = selectedDateKey ? sameDay(selectedDateKey, key) : false
@@ -436,7 +436,7 @@ export default function JournalPage() {
                                         )
                                       }}
                                       className={cn(
-                                        "flex flex-col items-center justify-center rounded-xl border-[3px] transition-all duration-300 shadow-sm flex-shrink-0",
+                                        "flex flex-col items-center justify-center rounded-xl border-[3px] transition-all duration-300 shadow-sm flex-shrink-0 gap-0 mx-3",
                                         isSelected
                                           ? "border-stone-400 bg-white text-gray-800 scale-125 shadow-xl py-5 px-6 z-10"
                                           : "border-gray-400/40 bg-muted/60 text-gray-500 hover:bg-white hover:scale-105 py-3 px-4",
@@ -444,7 +444,7 @@ export default function JournalPage() {
                                     >
                                       <span
                                         className={cn(
-                                          "uppercase tracking-[0.3em] font-black text-gray-400",
+                                          "uppercase tracking-[0.3em] font-black text-gray-400 text-lg",
                                           isSelected ? "text-xs" : "text-[10px]",
                                         )}
                                       >
@@ -453,7 +453,7 @@ export default function JournalPage() {
                                       <span
                                         className={cn(
                                           "font-black font-serif",
-                                          isSelected ? "text-3xl text-gray-800" : "text-lg text-gray-500",
+                                          isSelected ? "text-2xl text-gray-600" : "text-lg text-gray-500",
                                         )}
                                       >
                                         {dayNumber}
@@ -470,7 +470,7 @@ export default function JournalPage() {
 
                           <div className="space-y-6">
                             {entriesForSelectedDate.length === 0 ? (
-                              <div className="text-center py-10">
+                              <div className="text-center py-10 pt-0">
                                 <Sparkles className="mx-auto h-10 w-10 text-logo-rose-300 mb-3" />
                                 <p className="text-sm text-gray-500 font-serif font-black">No entries yet</p>
                               </div>
