@@ -268,7 +268,9 @@ export function SaveMeditationDialog({
           title: titleToSave,
           originalFileName,
           processedAudioUrl: distributionBlobUrl,
+          processedAudioData: distributionBlob,
           sourceAudioUrl: distributionBlobUrl, // TODO: Save master file separately on upload
+          sourceAudioData: distributionBlob,
           duration,
           source,
           metadata: metadataForSave as SavedMeditation["metadata"],

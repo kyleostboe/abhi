@@ -1119,6 +1119,7 @@ export default function LibraryPage() {
         title: baseMeditation.title,
         originalFileName: baseMeditation.originalFileName,
         processedAudioUrl: objectUrl,
+        processedAudioData: result.wavBlob,
         sourceAudioUrl: baseMeditation.sourceAudioUrl ?? objectUrl,
         duration: Math.max(1, Math.round(processedDurationSeconds)),
         source: baseMeditation.source,
@@ -1310,7 +1311,9 @@ export default function LibraryPage() {
         title: derivedTitle,
         originalFileName: uploadFile.name,
         processedAudioUrl: objectUrl,
+        processedAudioData: uploadFile,
         sourceAudioUrl: objectUrl,
+        sourceAudioData: uploadFile,
         duration: roundedDuration,
         source: "adjuster",
         metadata: {

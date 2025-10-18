@@ -73,22 +73,38 @@ export interface Playlist {
   updatedAt: Date
 }
 
+export interface SaveMeditationInput extends Omit<SavedMeditation, "id" | "createdAt"> {
+  processedAudioData?: Blob | null
+  sourceAudioData?: Blob | null
+}
+
 export class MeditationLibrary {
-  static async saveMeditation(meditation: Omit<SavedMeditation, "id" | "createdAt">): Promise<SavedMeditation> {
+  static async saveMeditation(meditation: SaveMeditationInput): Promise<SavedMeditation> {
     console.log("[v0] MeditationLibrary.saveMeditation called with:", meditation)
 
     try {
-      if (meditation.processedAudioUrl.startsWith("blob:")) {
-        console.log("[v0] Using direct client-side upload to bypass function payload limits")
+      const supabase = createClient()
+      const meditationsBucket = supabase.storage.from("meditations")
 
-        const supabase = createClient()
-        const meditationsBucket = supabase.storage.from("meditations")
+      const isBlobLikeUrl = (value?: string | null) =>
+        typeof value === "string" && (value.startsWith("blob:") || value.startsWith("data:"))
 
-        // Fetch the blob data
-        const response = await fetch(meditation.processedAudioUrl)
-        const audioBlob = await response.blob()
+      const processedBlob: Blob | null =
+        meditation.processedAudioData ??
+        (isBlobLikeUrl(meditation.processedAudioUrl)
+          ? await (async () => {
+              const response = await fetch(meditation.processedAudioUrl)
+              return await response.blob()
+            })()
+          : null)
 
-        console.log("[v0] Audio blob size:", audioBlob.size, "bytes")
+      if (!processedBlob) {
+        throw new Error("Invalid audio data: Unable to access processed audio blob.")
+      }
+
+      console.log("[v0] Using direct client-side upload to bypass function payload limits")
+
+      console.log("[v0] Audio blob size:", processedBlob.size, "bytes")
 
         // Generate unique filename
         const timestamp = Date.now()
@@ -116,8 +132,8 @@ export class MeditationLibrary {
           return subtype || "webm"
         }
 
-        const distributionExtension = inferExtensionFromMime(audioBlob.type)
-        const distributionContentType = audioBlob.type || `audio/${distributionExtension}`
+        const distributionExtension = inferExtensionFromMime(processedBlob.type)
+        const distributionContentType = processedBlob.type || `audio/${distributionExtension}`
         const fileBase = `${sanitizedTitle}_${timestamp}_${randomId}`
         const fileName = `${fileBase}.${distributionExtension}`
         const sourceFileBase = `${fileBase}_source`
@@ -125,7 +141,7 @@ export class MeditationLibrary {
         console.log("[v0] Uploading directly to Supabase Storage:", fileName)
 
         // Upload distribution quality file
-        const { data: uploadData, error: uploadError } = await meditationsBucket.upload(fileName, audioBlob, {
+        const { data: uploadData, error: uploadError } = await meditationsBucket.upload(fileName, processedBlob, {
           contentType: distributionContentType,
           upsert: false,
         })
@@ -142,7 +158,10 @@ export class MeditationLibrary {
 
         console.log("[v0] Public URL:", urlData.publicUrl)
 
-        let sourcePublicUrl: string | undefined
+        let sourcePublicUrl: string | undefined =
+          isBlobLikeUrl(meditation.sourceAudioUrl) || meditation.sourceAudioUrl == null
+            ? undefined
+            : meditation.sourceAudioUrl
         let sourceStoragePath: string | undefined
         const metadataToSave: SavedMeditation["metadata"] = { ...meditation.metadata }
 
@@ -191,21 +210,36 @@ export class MeditationLibrary {
 
           metadataToSave.timeline = processedTimeline as NonNullable<SavedMeditation["metadata"]["timeline"]>
         }
-        if (meditation.sourceAudioUrl && meditation.sourceAudioUrl.startsWith("blob:")) {
-          const sourceResponse = await fetch(meditation.sourceAudioUrl)
-          const sourceBlob = await sourceResponse.blob()
+        const providedSourceBlob: Blob | null =
+          meditation.sourceAudioData ??
+          (isBlobLikeUrl(meditation.sourceAudioUrl)
+            ? await (async () => {
+                if (!meditation.sourceAudioUrl) {
+                  return null
+                }
+                const response = await fetch(meditation.sourceAudioUrl)
+                return await response.blob()
+              })()
+            : null)
 
-          console.log("[v0] Source audio blob size:", sourceBlob.size, "bytes")
+        const sharesProcessedBlob =
+          (!!meditation.sourceAudioData && meditation.sourceAudioData === meditation.processedAudioData) ||
+          (meditation.sourceAudioUrl && meditation.sourceAudioUrl === meditation.processedAudioUrl)
 
-          const sourceExtension = inferExtensionFromMime(sourceBlob.type)
-          const sourceContentType = sourceBlob.type || `audio/${sourceExtension}`
+        if (sharesProcessedBlob) {
+          sourcePublicUrl = urlData.publicUrl
+        } else if (providedSourceBlob) {
+          console.log("[v0] Source audio blob size:", providedSourceBlob.size, "bytes")
+
+          const sourceExtension = inferExtensionFromMime(providedSourceBlob.type)
+          const sourceContentType = providedSourceBlob.type || `audio/${sourceExtension}`
           const sourceFileName = `${sourceFileBase}.${sourceExtension}`
 
           console.log("[v0] Uploading high-quality source file:", sourceFileName)
 
           const { data: sourceUploadData, error: sourceUploadError } = await meditationsBucket.upload(
             sourceFileName,
-            sourceBlob,
+            providedSourceBlob,
             {
               contentType: sourceContentType,
               upsert: false,
@@ -263,9 +297,6 @@ export class MeditationLibrary {
           source: dbData.source as "adjuster" | "encoder",
           metadata: dbData.metadata || metadataToSave || {},
         }
-      }
-
-      throw new Error("Invalid audio URL format")
     } catch (error) {
       console.error("[v0] Error in saveMeditation:", error)
       throw error
