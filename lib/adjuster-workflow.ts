@@ -3,22 +3,62 @@ import { forceGarbageCollection, formatTime, sleep } from "@/lib/utils"
 
 export type SilenceRegion = { start: number; end: number }
 
+export interface DetectSilenceOptions {
+  onProgress?: (progress: number) => void
+  signal?: AbortSignal
+  /**
+   * Number of analysis windows to process before yielding to the event loop.
+   * Lower numbers keep the UI responsive on mobile devices with slower CPUs.
+   */
+  yieldEvery?: number
+}
+
 export async function detectSilenceRegions(
   buffer: AudioBuffer,
   threshold: number,
   minDuration: number,
+  options: DetectSilenceOptions = {},
 ): Promise<SilenceRegion[]> {
   const BUFFER_SECONDS = 0.3
   const sampleRate = buffer.sampleRate
   const channelData = buffer.getChannelData(0)
   const windowSize = Math.floor(sampleRate * 0.01)
   const minSamples = Math.floor(minDuration * sampleRate)
+  const totalSamples = channelData.length
+
+  const { onProgress, signal, yieldEvery = 200 } = options
+
+  let processedSamples = 0
+  let lastReportedProgress = -1
+
+  const reportProgress = (progress: number) => {
+    const rounded = Math.max(0, Math.min(100, Math.round(progress)))
+    if (rounded !== lastReportedProgress) {
+      lastReportedProgress = rounded
+      onProgress?.(rounded)
+    }
+  }
+
+  if (signal?.aborted) {
+    throw typeof DOMException !== "undefined" ? new DOMException("Aborted", "AbortError") : new Error("Aborted")
+  }
+
+  if (totalSamples === 0) {
+    reportProgress(100)
+    return []
+  }
 
   const regions: SilenceRegion[] = []
   let silenceStart = -1
   let consecutiveSilentSamples = 0
 
+  reportProgress(0)
+
   for (let i = 0; i < channelData.length; i += windowSize) {
+    if (signal?.aborted) {
+      throw typeof DOMException !== "undefined" ? new DOMException("Aborted", "AbortError") : new Error("Aborted")
+    }
+
     const windowEnd = Math.min(i + windowSize, channelData.length)
     let rms = 0
 
@@ -43,6 +83,18 @@ export async function detectSilenceRegions(
       silenceStart = -1
       consecutiveSilentSamples = 0
     }
+
+    processedSamples += windowEnd - i
+    if (processedSamples > 0) {
+      reportProgress((processedSamples / totalSamples) * 100)
+    }
+
+    if (yieldEvery > 0) {
+      const windowIndex = Math.floor(i / Math.max(1, windowSize))
+      if (windowIndex % yieldEvery === 0) {
+        await sleep(0)
+      }
+    }
   }
 
   if (silenceStart !== -1 && consecutiveSilentSamples >= minSamples) {
@@ -66,6 +118,7 @@ export async function detectSilenceRegions(
     }
   }
 
+  reportProgress(100)
   return bufferedRegions
 }
 
