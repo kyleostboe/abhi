@@ -2264,7 +2264,7 @@ export default function LibraryPage() {
                             onClick={() => openMeditationPlayer(base, variants)}
                           >
                             <Card className="w-full border border-muted bg-white backdrop-blur-sm shadow-md">
-                              <div className="relative flex items-center justify-between p-4 border-muted border-[3px] rounded-sm overflow-visible">
+                              <div className="relative flex flex-col gap-3 md:flex-row md:items-center md:justify-between p-4 border-muted border-[3px] rounded-sm overflow-visible">
                                 <Badge
                                   variant="outline"
                                   className={`absolute -top-2 -right-2 translate-x-[7px] -translate-y-[5px] z-10 !border-0 !px-3 !py-1 shadow-inner text-gray-500 text-xs font-black rounded-[6px] bg-gradient-to-r ${
@@ -2277,13 +2277,15 @@ export default function LibraryPage() {
                                 </Badge>
 
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-3 mb-2">
-                                    <h3 className="font-black text-gray-800 text-sm truncate">{base.title}</h3>
+                                  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3 gap-1 mb-2">
+                                    <h3 className="font-black text-gray-800 text-sm line-clamp-2 break-words">
+                                      {base.title}
+                                    </h3>
                                   </div>
-                                  <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+                                  <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
                                     <span className="flex items-center gap-1">
                                       <Clock className="h-4 w-4 text-gray-500" />
-                                      <span>{durationDisplay}</span>
+                                      <span className="truncate max-w-full sm:max-w-[240px] break-words">{durationDisplay}</span>
                                     </span>
                                     {isWideLayout && (
                                       <>
