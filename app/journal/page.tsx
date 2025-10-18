@@ -1,9 +1,9 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { CalendarDays, Clock, NotebookPen, BookOpenCheck, Sparkles, Trash2 } from "lucide-react"
+import { CalendarDays, Clock, NotebookPen, BookOpenCheck, Sparkles } from "lucide-react"
 
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
@@ -120,7 +120,7 @@ const buildJournalHref = ({
 }
 
 export default function JournalPage() {
-  const { entries, updateEntryNote, deleteEntry } = useJournal()
+  const { entries, updateEntryNote } = useJournal()
   const [meditations, setMeditations] = useState<SavedMeditation[]>([])
   const [activeTab, setActiveTab] = useState<"meditation" | "date">("date")
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null)
@@ -295,42 +295,6 @@ export default function JournalPage() {
       description: "Your reflection has been saved.",
     })
   }
-
-  const handleDeleteEntry = useCallback(
-    async (entry: JournalEntry) => {
-      const entryDate = new Date(entry.playedAt)
-      const confirmationMessage = `Delete the entry for ${formatLongDate(entryDate)}?`
-      if (typeof window !== "undefined" && !window.confirm(confirmationMessage)) {
-        return
-      }
-
-      const removed = await deleteEntry(entry.id)
-      if (!removed) {
-        toast({
-          title: "Unable to delete entry",
-          description: "Please try again.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      setNoteDrafts((previous) => {
-        const next = { ...previous }
-        delete next[entry.id]
-        return next
-      })
-
-      if (activeMeditationEntryId === entry.id) {
-        setActiveMeditationEntryId(null)
-      }
-
-      toast({
-        title: "Journal entry deleted",
-        description: `Removed reflection for "${entry.meditationTitle}".`,
-      })
-    },
-    [deleteEntry, toast, activeMeditationEntryId],
-  )
 
   const handleSelectMeditation = (meditationId: string) => {
     if (selectedMeditationId === meditationId) {
@@ -536,25 +500,14 @@ export default function JournalPage() {
                                           </span>
                                         </div>
                                       </div>
-                                      <div className="flex flex-wrap items-center gap-2">
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="self-start text-gray-500 hover:text-gray-700"
-                                          onClick={() => router.push(`/library?meditation=${entry.meditationId}`)}
-                                        >
-                                          Open in Library
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="self-start text-red-500 hover:text-red-600"
-                                          onClick={() => handleDeleteEntry(entry)}
-                                        >
-                                          <Trash2 className="h-4 w-4 mr-1" />
-                                          Delete
-                                        </Button>
-                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="self-start text-gray-500 hover:text-gray-700"
+                                        onClick={() => router.push(`/library?meditation=${entry.meditationId}`)}
+                                      >
+                                        Open in Library
+                                      </Button>
                                     </div>
                                     <div className="mt-5 space-y-3">
                                       <Textarea
@@ -570,15 +523,6 @@ export default function JournalPage() {
                                         className="font-serif text-sm text-gray-600"
                                       />
                                       <div className="flex justify-end gap-2">
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="text-red-500 hover:text-red-600"
-                                          onClick={() => handleDeleteEntry(activeMeditationEntry)}
-                                        >
-                                          <Trash2 className="h-4 w-4 mr-1" />
-                                          Delete Entry
-                                        </Button>
                                         <Button
                                           variant="ghost"
                                           size="sm"
@@ -630,7 +574,7 @@ export default function JournalPage() {
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <Card className="p-6 lg:p-8 bg-white/90 backdrop-blur-md shadow-xl border-none">
+                      <Card className="p-6 lg:p-8 bg-transparent border-none">
                         <div className="grid gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
                           <div className="space-y-4">
                             <div className="text-xs uppercase tracking-[0.2em] text-gray-400 font-black">
@@ -761,15 +705,6 @@ export default function JournalPage() {
                                         className="font-serif text-sm text-gray-600"
                                       />
                                       <div className="flex justify-end gap-2">
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="text-red-500 hover:text-red-600"
-                                          onClick={() => handleDeleteEntry(activeMeditationEntry)}
-                                        >
-                                          <Trash2 className="h-4 w-4 mr-1" />
-                                          Delete Entry
-                                        </Button>
                                         <Button
                                           variant="ghost"
                                           size="sm"

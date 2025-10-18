@@ -470,20 +470,6 @@ export default function EncoderPage() {
     }
   }
 
-  const openFilePicker = useCallback((input: HTMLInputElement | null) => {
-    if (!input) return
-    const element = input as HTMLInputElement & { showPicker?: () => void }
-    try {
-      if (typeof element.showPicker === "function") {
-        element.showPicker()
-        return
-      }
-    } catch (error) {
-      console.warn("[v0] showPicker failed in encoder, falling back to click", error)
-    }
-    input.click()
-  }, [])
-
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     if (uploadAreaRef.current) uploadAreaRef.current.classList.add("border-primary")
@@ -938,12 +924,12 @@ export default function EncoderPage() {
             <div
               ref={uploadAreaRef}
               className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-logo-teal-500 transition-colors"
-              onClick={() => openFilePicker(fileInputRef.current)}
+              onClick={() => fileInputRef.current?.click()}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
             >
-              <input ref={fileInputRef} type="file" accept="audio/*" onChange={handleFileChange} className="sr-only" />
+              <input ref={fileInputRef} type="file" accept="audio/*" onChange={handleFileChange} className="hidden" />
               <div className="space-y-2">
                 <div className="text-4xl">🎵</div>
                 <p className="text-lg font-semibold text-gray-700 ">

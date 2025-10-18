@@ -11,18 +11,6 @@ export interface DetectSilenceOptions {
    * Lower numbers keep the UI responsive on mobile devices with slower CPUs.
    */
   yieldEvery?: number
-  /**
-   * Duration, in seconds, of the analysis window for RMS calculations. Larger
-   * windows reduce the amount of work required when absolute precision is not
-   * necessary (for example on mobile devices).
-   */
-  windowDurationSeconds?: number
-  /**
-   * Samples to skip when iterating over the audio data. Setting this higher
-   * lowers the amount of computation at the cost of slightly rougher
-   * detection. A value of `2` effectively checks every other sample.
-   */
-  sampleStride?: number
 }
 
 export async function detectSilenceRegions(
@@ -34,19 +22,11 @@ export async function detectSilenceRegions(
   const BUFFER_SECONDS = 0.3
   const sampleRate = buffer.sampleRate
   const channelData = buffer.getChannelData(0)
+  const windowSize = Math.floor(sampleRate * 0.01)
   const minSamples = Math.floor(minDuration * sampleRate)
   const totalSamples = channelData.length
 
-  const {
-    onProgress,
-    signal,
-    yieldEvery = 200,
-    windowDurationSeconds = 0.01,
-    sampleStride = 1,
-  } = options
-
-  const sanitizedStride = Math.max(1, Math.floor(sampleStride))
-  const windowSize = Math.max(1, Math.floor(sampleRate * windowDurationSeconds))
+  const { onProgress, signal, yieldEvery = 200 } = options
 
   let processedSamples = 0
   let lastReportedProgress = -1
@@ -81,13 +61,11 @@ export async function detectSilenceRegions(
 
     const windowEnd = Math.min(i + windowSize, channelData.length)
     let rms = 0
-    let sampleCount = 0
 
-    for (let j = i; j < windowEnd; j += sanitizedStride) {
+    for (let j = i; j < windowEnd; j++) {
       rms += channelData[j] * channelData[j]
-      sampleCount++
     }
-    rms = sampleCount > 0 ? Math.sqrt(rms / sampleCount) : 0
+    rms = Math.sqrt(rms / (windowEnd - i))
 
     const isSilent = rms < threshold
     const timeSeconds = i / sampleRate
@@ -324,15 +302,7 @@ export async function runAdjusterWorkflow({
   onStep("Detecting silence regions (step 1/4)...")
   onProgress(10)
 
-  const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration, {
-    yieldEvery: isMobileDevice ? 50 : 200,
-    windowDurationSeconds: isMobileDevice ? 0.015 : 0.01,
-    sampleStride: isMobileDevice ? 2 : 1,
-    onProgress: (progress) => {
-      const normalized = Math.max(0, Math.min(100, progress))
-      onProgress(10 + Math.floor((normalized / 100) * 10))
-    },
-  })
+  const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
 
   onStep("Calculating adjustments (step 2/4)...")
   onProgress(25)
