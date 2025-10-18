@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useToast } from "@/hooks/use-toast"
 import { VisualTimeline } from "@/components/visual-timeline"
+import { EncoderDurationTimer } from "@/components/encoder-duration-timer"
 import { cn, formatTime, monitorMemory, formatFileSize } from "@/lib/utils"
 import {
   getAudioContext,
@@ -588,17 +589,7 @@ export default function Home() {
   const [encoderTimelineOriginalDuration, setEncoderTimelineOriginalDuration] = useState<number | null>(null)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
   const lastEncoderDurationAdjustmentRef = useRef<number | null>(null)
-  const convertSecondsToParts = useCallback((totalSeconds: number) => {
-    const normalized = Math.max(0, Math.floor(Number.isFinite(totalSeconds) ? totalSeconds : 0))
-    const hours = Math.floor(normalized / 3600)
-    const minutes = Math.floor((normalized % 3600) / 60)
-    const seconds = normalized % 60
-    return { hours, minutes, seconds }
-  }, [])
-  const encoderDurationParts = useMemo(
-    () => convertSecondsToParts(encoderTotalDuration),
-    [encoderTotalDuration, convertSecondsToParts],
-  )
+  const [isEncoderTimerMode, setIsEncoderTimerMode] = useState(false)
 
   const exportableTimelineMetadata = useMemo(() => {
     return timelineEvents.map((event) => {
@@ -1209,23 +1200,20 @@ export default function Home() {
     }
   }
 
-  const handleDurationPartChange = useCallback(
-    (part: "hours" | "minutes" | "seconds", rawValue: number) => {
-      setEncoderTotalDuration((previousTotal) => {
-        const { hours, minutes, seconds } = convertSecondsToParts(previousTotal)
+  const handleEncoderDurationChange = useCallback((seconds: number) => {
+    const normalized = Math.max(1, Math.floor(Number.isFinite(seconds) ? seconds : 0))
+    setEncoderTotalDuration(normalized)
+    lastEncoderDurationAdjustmentRef.current = normalized
+  }, [])
 
-        const sanitizedValue = Math.max(0, Math.floor(Number.isFinite(rawValue) ? rawValue : 0))
-
-        const nextHours = part === "hours" ? sanitizedValue : hours
-        const nextMinutes = part === "minutes" ? Math.min(59, sanitizedValue) : minutes
-        const nextSeconds = part === "seconds" ? Math.min(59, sanitizedValue) : seconds
-
-        const total = nextHours * 3600 + nextMinutes * 60 + nextSeconds
-
-        return Math.max(1, total)
-      })
+  const handleEncoderTimerFinalize = useCallback(
+    (seconds: number) => {
+      const normalized = Math.max(1, Math.floor(Number.isFinite(seconds) ? seconds : 0))
+      setEncoderTotalDuration(normalized)
+      setEncoderTimelineOriginalDuration((previous) => (previous !== null ? normalized : previous))
+      lastEncoderDurationAdjustmentRef.current = normalized
     },
-    [convertSecondsToParts],
+    [setEncoderTimelineOriginalDuration],
   )
 
   const playSingleNote = async (note: string, octave: number, noteType: string) => {
@@ -2173,6 +2161,20 @@ export default function Home() {
     }
   }
 
+  const triggerFilePicker = useCallback((input: HTMLInputElement | null) => {
+    if (!input) return
+    const element = input as HTMLInputElement & { showPicker?: () => void }
+    try {
+      if (typeof element.showPicker === "function") {
+        element.showPicker()
+        return
+      }
+    } catch (error) {
+      console.warn("[v0] showPicker failed, falling back to click", error)
+    }
+    input.click()
+  }, [])
+
   const handleFileSelectAction = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (selectedFile) void handleFile(selectedFile)
@@ -2219,6 +2221,9 @@ export default function Home() {
       try {
         const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration, {
           signal: controller.signal,
+          yieldEvery: isMobileDevice ? 50 : 200,
+          windowDurationSeconds: isMobileDevice ? 0.015 : 0.01,
+          sampleStride: isMobileDevice ? 2 : 1,
           onProgress: (progress) => {
             if (controller.signal.aborted) {
               return
@@ -2552,8 +2557,8 @@ export default function Home() {
   )
 
   const handleTimelineUploadClick = useCallback(() => {
-    timelineUploadInputRef.current?.click()
-  }, [])
+    triggerFilePicker(timelineUploadInputRef.current)
+  }, [triggerFilePicker])
 
   const handleAddInstructionSoundEvent = useCallback(() => {
     const instructionTextToAdd = customInstructionText.trim()
@@ -3019,7 +3024,7 @@ export default function Home() {
                   transition={{ type: "spring", stiffness: 400, damping: 20 }}
                   ref={uploadAreaRef}
                   className="overflow-hidden border-none bg-white rounded-2xl mb-5 cursor-pointer transition-all duration-300 shadow-none hover:shadow-lg "
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => triggerFilePicker(fileInputRef.current)}
                   onDragOver={handleDragOverAction}
                   onDragLeave={handleDragLeaveAction}
                   onDrop={handleDropAction}
@@ -3043,7 +3048,7 @@ export default function Home() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    className="hidden"
+                    className="sr-only"
                     accept=".mp3,.wav,.ogg,.m4a,audio/*"
                     onChange={handleFileSelectAction}
                   />
@@ -3609,7 +3614,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
-                className="space-y-4"
+                className={cn("space-y-4", isEncoderTimerMode ? "pointer-events-none blur-sm" : "")}
               >
                 <motion.div
                   className="text-gray-600"
@@ -3633,58 +3638,24 @@ export default function Home() {
                             className="flex file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 text-center border-[3px] shadow-md h-9 w-60"
                           />
                         </div>
-                        <div className="text-center">
-                          <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
-                            Duration (h:m:s)
-                          </Label>
-                          <div
-                            id="encoder-duration"
-                            className="flex items-center justify-center gap-3 mt-1 border-gray-500 rounded-[10px] bg-white px-4 py-[9px] border-[3px] shadow-md h-9 pr-1 w-[181px]"
-                          >
-                            <div className="flex items-center">
-                              <input
-                                type="number"
-                                min={0}
-                                step={1}
-                                value={encoderDurationParts.hours}
-                                onChange={(event) => handleDurationPartChange("hours", Number(event.target.value))}
-                                className="text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500 w-9"
-                                aria-label="Hours"
-                              />
-                            </div>
-
-                            <div className="flex items-center">
-                              <input
-                                type="number"
-                                min={0}
-                                max={59}
-                                step={1}
-                                value={encoderDurationParts.minutes}
-                                onChange={(event) => handleDurationPartChange("minutes", Number(event.target.value))}
-                                className="text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500 border-2 w-9"
-                                aria-label="Minutes"
-                              />
-                            </div>
-                            <div className="flex items-center">
-                              <input
-                                type="number"
-                                min={0}
-                                max={59}
-                                step={1}
-                                value={encoderDurationParts.seconds}
-                                onChange={(event) => handleDurationPartChange("seconds", Number(event.target.value))}
-                                className="text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500 w-9"
-                                aria-label="Seconds"
-                              />
-                            </div>
+                        <div className="flex flex-col items-center">
+                          <Label className="text-gray-600 text-sm font-black">Duration</Label>
+                          <div className="mt-2">
+                            <EncoderDurationTimer
+                              totalSeconds={encoderTotalDuration}
+                              onDurationChange={handleEncoderDurationChange}
+                              isTimerMode={isEncoderTimerMode}
+                              onTimerModeChange={setIsEncoderTimerMode}
+                              onTimerFinalize={handleEncoderTimerFinalize}
+                            />
                           </div>
                         </div>
                       </div>
                     </div>
                   </Card>
                 </motion.div>
-
-                <motion.div
+                <div className={cn("space-y-4", isEncoderTimerMode ? "pointer-events-none blur-sm" : "")}>
+                  <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
@@ -3929,7 +3900,7 @@ export default function Home() {
                           ref={timelineUploadInputRef}
                           type="file"
                           accept="audio/*"
-                          className="hidden"
+                          className="sr-only"
                           onChange={handleTimelineUploadChange}
                         />
                         <Button
@@ -4169,8 +4140,9 @@ export default function Home() {
                     </Card>
                   </motion.div>
                 )}
-              </motion.div>
-            )}
+              </div>
+            </motion.div>
+          )}
           </div>
         </div>
       </motion.div>
