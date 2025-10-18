@@ -8,13 +8,13 @@ import { Card } from "@/components/ui/card"
 import { Alert } from "@/components/ui/alert" // Import Alert component
 import {
   AlertTriangle,
-  Music2Icon,Music2Icon,Mic,
+  Music2Icon,
+  Mic,
   StopCircle,
   Play,
   PlusCircle,
   CircleDotDashed,
   BookmarkPlus,
-  Wand2,
   Volume2,
   Upload,
 } from "lucide-react" // Import Copy icon
@@ -29,12 +29,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useToast } from "@/hooks/use-toast"
 import { VisualTimeline } from "@/components/visual-timeline"
 import { cn, formatTime, monitorMemory, formatFileSize } from "@/lib/utils"
-import {
-  getAudioContext,
-  bufferToWav,
-  bufferToWebM,
-  type BufferToWavMetadata,
-} from "@/lib/audio-utils" // Import from audio-utils
+import { getAudioContext, bufferToWav, bufferToWebM, type BufferToWavMetadata } from "@/lib/audio-utils" // Import from audio-utils
 import {
   runAdjusterWorkflow,
   detectSilenceRegions as computeSilenceRegions,
@@ -2314,13 +2309,7 @@ export default function Home() {
     return () => {
       controller.abort()
     }
-  }, [
-    originalBuffer,
-    detectSilenceRegions,
-    silenceThreshold,
-    minSilenceDuration,
-    isMobileDevice,
-  ])
+  }, [originalBuffer, detectSilenceRegions, silenceThreshold, minSilenceDuration, isMobileDevice])
 
   useEffect(() => {
     // This effect no longer resets isProcessingComplete.
@@ -3132,25 +3121,25 @@ export default function Home() {
                     </motion.div>
                   )}
 
-                <AnimatePresence>
-                  {analysisProgress !== null && (
-                    <motion.div
-                      key="analysis-progress"
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ duration: 0.2 }}
-                      className="flex items-center justify-center text-xs text-gray-600 gap-2"
-                    >
-                      <CircleDotDashed className="h-4 w-4 animate-spin" />
-                      <span>
-                        Analyzing audio{analysisProgress >= 0 ? ` (${Math.round(analysisProgress)}%)` : ""}...
-                      </span>
-                    </motion.div>
-                  )}
-                  {audioAnalysis && durationLimits && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
+                  <AnimatePresence>
+                    {analysisProgress !== null && (
+                      <motion.div
+                        key="analysis-progress"
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex items-center justify-center text-xs text-gray-600 gap-2"
+                      >
+                        <CircleDotDashed className="h-4 w-4 animate-spin" />
+                        <span>
+                          Analyzing audio{analysisProgress >= 0 ? ` (${Math.round(analysisProgress)}%)` : ""}...
+                        </span>
+                      </motion.div>
+                    )}
+                    {audioAnalysis && durationLimits && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ delay: 0.1 }}
@@ -3522,7 +3511,6 @@ export default function Home() {
                       } as React.CSSProperties
                     }
                   >
-                    
                     <span className="font-black text-base tracking-tight text-white">
                       {isProcessing ? "Processing..." : "Process Audio"}
                     </span>
@@ -3736,10 +3724,10 @@ export default function Home() {
                   >
                     <Card className="overflow-hidden border-none shadow-lg bg-white ">
                       <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-center">
-                         <h3 className="text-white flex items-center font-serif font-black">
-            <Music2Icon className="h-4 w-4 mr-2" />
-            Sound Cues
-          </h3>
+                        <h3 className="text-white flex items-center font-serif font-black">
+                          <Music2Icon className="h-4 w-4 mr-2" />
+                          Sound Cues
+                        </h3>
                       </div>
                       <div className="p-6 flex flex-col space-y-4 pt-[5px]">
                         <div className="flex-1 h-auto">
@@ -3889,7 +3877,6 @@ export default function Home() {
                             </AccordionItem>
                           </Accordion>
                         </div>
-                        <div className="h-0"></div>
                         <Button
                           className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-[11px] hover:shadow-none font-serif font-black mt-4"
                           onClick={handleAddInstructionSoundEvent}
@@ -4103,7 +4090,6 @@ export default function Home() {
                       } as React.CSSProperties
                     }
                   >
-                 
                     <span className="font-black text-base tracking-tight text-white">
                       {isGeneratingAudio ? "Generating..." : "Generate Audio"}
                     </span>
