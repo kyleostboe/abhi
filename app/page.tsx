@@ -35,7 +35,11 @@ import {
   bufferToWebM,
   type BufferToWavMetadata,
 } from "@/lib/audio-utils" // Import from audio-utils
-import { runAdjusterWorkflow, detectSilenceRegions as computeSilenceRegions } from "@/lib/adjuster-workflow"
+import {
+  runAdjusterWorkflow,
+  detectSilenceRegions as computeSilenceRegions,
+  type DetectSilenceOptions,
+} from "@/lib/adjuster-workflow"
 import type { SavedMeditation } from "@/lib/meditation-library"
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
@@ -336,6 +340,16 @@ const ensureTone = async () => {
   return mod
 }
 
+const isAbortError = (error: unknown): boolean => {
+  if (typeof DOMException !== "undefined" && error instanceof DOMException) {
+    return error.name === "AbortError"
+  }
+  if (typeof error === "object" && error !== null && "name" in error) {
+    return (error as { name?: string }).name === "AbortError"
+  }
+  return false
+}
+
 const startPianoAudio = async () => {
   const Tone = await ensureTone()
 
@@ -531,6 +545,7 @@ export default function Home() {
     contentDuration: number
     silenceRegions: number
   } | null>(null)
+  const [analysisProgress, setAnalysisProgress] = useState<number | null>(null)
   const [quickAdjustRange, setQuickAdjustRange] = useState<{ minSeconds: number } | null>(null)
   const [actualDuration, setActualDuration] = useState<number | null>(null)
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
@@ -543,6 +558,7 @@ export default function Home() {
   const timelineEditorRef = useRef<HTMLDivElement>(null)
   const timelineUploadInputRef = useRef<HTMLInputElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const silenceAnalysisAbortRef = useRef<AbortController | null>(null)
   const adjusterCompressionTokenRef = useRef(0)
   const encoderCompressionTokenRef = useRef(0)
   const [processedDistributionBlob, setProcessedDistributionBlob] = useState<Blob | null>(null)
@@ -1427,6 +1443,7 @@ export default function Home() {
     setProcessedUrl("")
     setAudioAnalysis(null)
     setActualDuration(null)
+    setAnalysisProgress(null)
     setProcessedBufferState(null)
     setProcessedAudioMetadata(null)
     setIsProcessingComplete(false)
@@ -1443,6 +1460,10 @@ export default function Home() {
 
     if (typeof window === "undefined") return
     window.sessionStorage.removeItem(ADJUSTER_SESSION_KEY)
+
+    if (silenceAnalysisAbortRef.current) {
+      silenceAnalysisAbortRef.current.abort()
+    }
 
     if (audioContextRef.current && audioContextRef.current.state === "running") {
       try {
@@ -1467,6 +1488,8 @@ export default function Home() {
       playbackUrl = URL.createObjectURL(selectedFile)
       setOriginalUrl(playbackUrl)
       setProcessingStep("Analyzing audio...")
+      setAnalysisProgress(0)
+      setStatus({ message: "Analyzing audio...", type: "info" })
 
       const metadataUrl = URL.createObjectURL(selectedFile)
       const tempAudio = new Audio(metadataUrl)
@@ -1479,28 +1502,13 @@ export default function Home() {
         console.error("Error loading audio metadata for duration.")
         URL.revokeObjectURL(metadataUrl)
       }
-
-      const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
-      const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
-      const contentDuration = buffer.duration - totalSilenceDuration
-      const maxPossibleDuration = isMobileDevice ? 60 * 60 : 120 * 60 // 1 hour for mobile, 2 hours for desktop
-      setDurationLimits({
-        min: Math.ceil(contentDuration / 60),
-        max: maxPossibleDuration / 60,
-      })
-      setAudioAnalysis({
-        totalSilence: totalSilenceDuration,
-        contentDuration: contentDuration,
-        silenceRegions: silenceRegions.length,
-      })
-      setProcessingStep("Ready to process.")
-      setStatus({ message: "Audio loaded and analyzed. Ready to adjust.", type: "success" })
     } catch (error) {
       console.error("Error accessing audio context:", error)
       setStatus({ message: `Audio system error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
       setFile(null)
       setDisplayedFileName(null)
       setOriginalBuffer(null)
+      setAnalysisProgress(null)
       if (playbackUrl) {
         URL.revokeObjectURL(playbackUrl)
       }
@@ -1509,8 +1517,8 @@ export default function Home() {
   }
 
   const detectSilenceRegions = useCallback(
-    (buffer: AudioBuffer, threshold: number, minDuration: number) =>
-      computeSilenceRegions(buffer, threshold, minDuration),
+    (buffer: AudioBuffer, threshold: number, minDuration: number, options?: DetectSilenceOptions) =>
+      computeSilenceRegions(buffer, threshold, minDuration, options),
     [],
   )
 
@@ -1735,10 +1743,15 @@ export default function Home() {
         // Decode audio buffer for analysis
         const arrayBuffer = await audioFile.arrayBuffer()
         const buffer = await getAudioContext().decodeAudioData(arrayBuffer)
+        if (silenceAnalysisAbortRef.current) {
+          silenceAnalysisAbortRef.current.abort()
+        }
         setOriginalBuffer(buffer)
 
         // Perform the same analysis as normal file upload
         setProcessingStep("Analyzing imported audio...")
+        setAnalysisProgress(0)
+        setStatus({ message: "Analyzing audio...", type: "info" })
 
         const metadataUrl = URL.createObjectURL(audioFile)
         const tempAudio = new Audio(metadataUrl)
@@ -1752,22 +1765,6 @@ export default function Home() {
           console.error("Error loading audio metadata for duration.")
           URL.revokeObjectURL(metadataUrl)
         }
-
-        // Perform silence detection
-        const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
-        const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
-        const contentDuration = buffer.duration - totalSilenceDuration
-        const maxPossibleDuration = isMobileDevice ? 60 * 60 : 120 * 60
-        setDurationLimits({
-          min: Math.ceil(contentDuration / 60),
-          max: maxPossibleDuration / 60,
-        })
-        setAudioAnalysis({
-          totalSilence: totalSilenceDuration,
-          contentDuration: contentDuration,
-          silenceRegions: silenceRegions.length,
-        })
-        setProcessingStep("Ready to process.")
 
         // Create a single recorded block event for encoder
         const rawDurationCandidate =
@@ -1794,16 +1791,13 @@ export default function Home() {
         setEncoderTimelineOriginalDuration(safeDuration)
         lastEncoderDurationAdjustmentRef.current = safeDuration
         setGeneratedAudioMetadata(importData.metadata?.wav ?? null)
-        setStatus({
-          message: `Imported and analyzed "${importData.title}" - ready to adjust or encode.`,
-          type: "success",
-        })
       } catch (error) {
         console.error("[v0] Error importing as recorded block:", error)
         setStatus({
           message: "Failed to import meditation. Please try again.",
           type: "error",
         })
+        setAnalysisProgress(null)
       }
     },
     [
@@ -1812,16 +1806,12 @@ export default function Home() {
       setOriginalBuffer,
       setProcessingStep,
       setActualDuration,
-      setDurationLimits,
-      setAudioAnalysis,
       setTimelineEvents,
       setEncoderTotalDuration,
       setEncoderTimelineOriginalDuration,
       setStatus,
-      silenceThreshold,
-      minSilenceDuration,
-      isMobileDevice,
-      detectSilenceRegions,
+      silenceAnalysisAbortRef,
+      setAnalysisProgress,
     ],
   )
 
@@ -1872,7 +1862,14 @@ export default function Home() {
 
           const arrayBuffer = await audioFile.arrayBuffer()
           const buffer = await context.decodeAudioData(arrayBuffer)
+          if (silenceAnalysisAbortRef.current) {
+            silenceAnalysisAbortRef.current.abort()
+          }
           setOriginalBuffer(buffer)
+
+          setProcessingStep("Analyzing imported audio...")
+          setAnalysisProgress(0)
+          setStatus({ message: "Analyzing audio...", type: "info" })
 
           const url = URL.createObjectURL(audioFile)
           const tempAudio = new Audio(url)
@@ -1885,33 +1882,6 @@ export default function Home() {
             console.error("Error loading audio metadata for duration.")
             URL.revokeObjectURL(url)
           }
-
-          const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
-          const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
-          const contentDuration = buffer.duration - totalSilenceDuration
-          const maxPossibleDuration = isMobileDevice ? 60 * 60 : 120 * 60
-          setDurationLimits({
-            min: Math.ceil(contentDuration / 60),
-            max: maxPossibleDuration / 60,
-          })
-          setAudioAnalysis({
-            totalSilence: totalSilenceDuration,
-            contentDuration: contentDuration,
-            silenceRegions: silenceRegions.length,
-          })
-          setProcessingStep("Ready to process.")
-          setStatus({ message: "Audio loaded. Ready to adjust.", type: "success" })
-
-          // Set default target duration within the new limits
-          setTargetDuration((current) => {
-            const safeMin = Number.isFinite(durationLimits.min) ? durationLimits.min : current
-            const safeMax = Number.isFinite(durationLimits.max) ? durationLimits.max : safeMin
-
-            if (safeMin > safeMax) return safeMin
-            if (current < safeMin) return safeMin
-            if (current > safeMax) return safeMax
-            return current
-          })
           setLoadedLibraryContext({
             id: data.id,
             title: data.title,
@@ -1929,6 +1899,7 @@ export default function Home() {
           setOriginalUrl("")
           setAudioAnalysis(null)
           setDurationLimits(null)
+          setAnalysisProgress(null)
         }
       }
 
@@ -1969,10 +1940,9 @@ export default function Home() {
       setActiveMode,
       setActiveTab,
       setStatus,
-      detectSilenceRegions,
-      silenceThreshold,
-      minSilenceDuration,
       setLoadedLibraryContext,
+      silenceAnalysisAbortRef,
+      setAnalysisProgress,
     ],
   )
 
@@ -2228,15 +2198,42 @@ export default function Home() {
 
   useEffect(() => {
     if (!originalBuffer) {
+      if (silenceAnalysisAbortRef.current) {
+        silenceAnalysisAbortRef.current.abort()
+        silenceAnalysisAbortRef.current = null
+      }
+      setAnalysisProgress(null)
       return
     }
 
-    let cancelled = false
+    const controller = new AbortController()
+    if (silenceAnalysisAbortRef.current) {
+      silenceAnalysisAbortRef.current.abort()
+    }
+    silenceAnalysisAbortRef.current = controller
+
+    setAnalysisProgress((prev) => (prev === null ? 0 : prev))
+    setProcessingStep("Analyzing audio...")
 
     const recomputeAnalysis = async () => {
       try {
-        const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration)
-        if (cancelled) {
+        const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration, {
+          signal: controller.signal,
+          onProgress: (progress) => {
+            if (controller.signal.aborted) {
+              return
+            }
+            setAnalysisProgress((prev) => (prev === progress ? prev : progress))
+            setStatus((prev) => {
+              if (prev?.type === "error") {
+                return prev
+              }
+              return { message: `Analyzing audio (${progress}%)...`, type: "info" }
+            })
+          },
+        })
+
+        if (controller.signal.aborted) {
           return
         }
 
@@ -2248,20 +2245,12 @@ export default function Home() {
           max: maxPossibleDuration / 60,
         }
 
-        if (cancelled) {
-          return
-        }
-
         setDurationLimits((prev) => {
           if (prev && prev.min === nextLimits.min && prev.max === nextLimits.max) {
             return prev
           }
           return nextLimits
         })
-
-        if (cancelled) {
-          return
-        }
 
         setAudioAnalysis((prev) => {
           if (
@@ -2279,10 +2268,6 @@ export default function Home() {
           }
         })
 
-        if (cancelled) {
-          return
-        }
-
         setTargetDuration((current) => {
           const safeMin = Number.isFinite(nextLimits.min) ? nextLimits.min : current
           const safeMax = Number.isFinite(nextLimits.max) ? nextLimits.max : safeMin
@@ -2298,17 +2283,44 @@ export default function Home() {
           }
           return current
         })
+
+        setAnalysisProgress(null)
+        setProcessingStep("Ready to process.")
+        setStatus((prev) => {
+          if (prev?.type === "error") {
+            return prev
+          }
+          return { message: "Audio loaded and analyzed. Ready to adjust.", type: "success" }
+        })
       } catch (error) {
+        if (isAbortError(error)) {
+          return
+        }
         console.error("[v0] Error updating audio analysis:", error)
+        setAnalysisProgress(null)
+        setStatus({
+          message: `Audio analysis failed: ${error instanceof Error ? error.message : "Unknown"}`,
+          type: "error",
+        })
+      } finally {
+        if (silenceAnalysisAbortRef.current === controller) {
+          silenceAnalysisAbortRef.current = null
+        }
       }
     }
 
     void recomputeAnalysis()
 
     return () => {
-      cancelled = true
+      controller.abort()
     }
-  }, [originalBuffer, detectSilenceRegions, silenceThreshold, minSilenceDuration, isMobileDevice])
+  }, [
+    originalBuffer,
+    detectSilenceRegions,
+    silenceThreshold,
+    minSilenceDuration,
+    isMobileDevice,
+  ])
 
   useEffect(() => {
     // This effect no longer resets isProcessingComplete.
@@ -3120,10 +3132,25 @@ export default function Home() {
                     </motion.div>
                   )}
 
-                  <AnimatePresence>
-                    {audioAnalysis && durationLimits && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
+                <AnimatePresence>
+                  {analysisProgress !== null && (
+                    <motion.div
+                      key="analysis-progress"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex items-center justify-center text-xs text-gray-600 gap-2"
+                    >
+                      <CircleDotDashed className="h-4 w-4 animate-spin" />
+                      <span>
+                        Analyzing audio{analysisProgress >= 0 ? ` (${Math.round(analysisProgress)}%)` : ""}...
+                      </span>
+                    </motion.div>
+                  )}
+                  {audioAnalysis && durationLimits && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ delay: 0.1 }}
