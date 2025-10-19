@@ -2080,7 +2080,7 @@ export default function LibraryPage() {
                         : "md:[grid-template-columns:minmax(0,1.15fr)_minmax(0,1fr)] md:items-start"
                     }`}
                   >
-                    <div className={`${shouldStackFilters ? "" : "md:[grid-row:span_2]"}`}>
+                  <div className={`${shouldStackFilters ? "" : "md:[grid-row:span_2]"}`}>
                       <div className="p-0.5 bg-gradient-to-r from-logo-rose-300 to-stone-300 rounded-sm shadow-lg py-1 px-[5px]">
                         <div className="bg-white rounded-sm">
                           <input
@@ -2102,7 +2102,7 @@ export default function LibraryPage() {
                           }}
                         >
                           <DialogTrigger asChild>
-                            <Button className="w-full bg-gradient-to-r from-logo-teal-400 to-logo-emerald-500 text-white shadow-md hover:shadow-none text-xs font-black">
+                            <Button className="w-full bg-gradient-to-r from-purple-300 to-logo-teal-400 text-white shadow-md hover:shadow-none text-xs font-black">
                               Upload Meditation
                             </Button>
                           </DialogTrigger>
