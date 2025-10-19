@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/client"
 import type { BufferToWavMetadata } from "./audio-utils"
-import { TEST_PROFILE_ID } from "./test-profile"
+import { TEST_PROFILE_ID, ensureTestProfile } from "./test-profile"
 
 export interface SavedMeditation {
   id: string
@@ -83,6 +83,8 @@ export class MeditationLibrary {
     console.log("[v0] MeditationLibrary.saveMeditation called with:", meditation)
 
     try {
+      await ensureTestProfile()
+
       const supabase = createClient()
       const meditationsBucket = supabase.storage.from("meditations")
 
@@ -106,197 +108,197 @@ export class MeditationLibrary {
 
       console.log("[v0] Audio blob size:", processedBlob.size, "bytes")
 
-        // Generate unique filename
-        const timestamp = Date.now()
-        const randomId = Math.random().toString(36).substring(2, 15)
-        const sanitizedTitle = meditation.title.replace(/[^a-z0-9-_]+/gi, "_") || "meditation"
-        const inferExtensionFromMime = (mimeType?: string): string => {
-          if (!mimeType) {
-            return "webm"
-          }
-
-          if (mimeType.includes("mpeg")) {
-            return "mp3"
-          }
-          if (mimeType.includes("wav") || mimeType.includes("wave")) {
-            return "wav"
-          }
-          if (mimeType.includes("ogg")) {
-            return "ogg"
-          }
-          if (mimeType.includes("m4a") || mimeType.includes("mp4")) {
-            return "m4a"
-          }
-
-          const subtype = mimeType.split("/")[1]
-          return subtype || "webm"
+      // Generate unique filename
+      const timestamp = Date.now()
+      const randomId = Math.random().toString(36).substring(2, 15)
+      const sanitizedTitle = meditation.title.replace(/[^a-z0-9-_]+/gi, "_") || "meditation"
+      const inferExtensionFromMime = (mimeType?: string): string => {
+        if (!mimeType) {
+          return "webm"
         }
 
-        const distributionExtension = inferExtensionFromMime(processedBlob.type)
-        const distributionContentType = processedBlob.type || `audio/${distributionExtension}`
-        const fileBase = `${sanitizedTitle}_${timestamp}_${randomId}`
-        const fileName = `${fileBase}.${distributionExtension}`
-        const sourceFileBase = `${fileBase}_source`
-
-        console.log("[v0] Uploading directly to Supabase Storage:", fileName)
-
-        // Upload distribution quality file
-        const { data: uploadData, error: uploadError } = await meditationsBucket.upload(fileName, processedBlob, {
-          contentType: distributionContentType,
-          upsert: false,
-        })
-
-        if (uploadError) {
-          console.error("[v0] Direct upload error:", uploadError)
-          throw new Error(`Upload failed: ${uploadError.message}`)
+        if (mimeType.includes("mpeg")) {
+          return "mp3"
+        }
+        if (mimeType.includes("wav") || mimeType.includes("wave")) {
+          return "wav"
+        }
+        if (mimeType.includes("ogg")) {
+          return "ogg"
+        }
+        if (mimeType.includes("m4a") || mimeType.includes("mp4")) {
+          return "m4a"
         }
 
-        console.log("[v0] Upload successful:", uploadData.path)
+        const subtype = mimeType.split("/")[1]
+        return subtype || "webm"
+      }
 
-        // Get public URL for distribution file
-        const { data: urlData } = meditationsBucket.getPublicUrl(uploadData.path)
+      const distributionExtension = inferExtensionFromMime(processedBlob.type)
+      const distributionContentType = processedBlob.type || `audio/${distributionExtension}`
+      const fileBase = `${sanitizedTitle}_${timestamp}_${randomId}`
+      const fileName = `${fileBase}.${distributionExtension}`
+      const sourceFileBase = `${fileBase}_source`
 
-        console.log("[v0] Public URL:", urlData.publicUrl)
+      console.log("[v0] Uploading directly to Supabase Storage:", fileName)
 
-        let sourcePublicUrl: string | undefined =
-          isBlobLikeUrl(meditation.sourceAudioUrl) || meditation.sourceAudioUrl == null
-            ? undefined
-            : meditation.sourceAudioUrl
-        let sourceStoragePath: string | undefined
-        const metadataToSave: SavedMeditation["metadata"] = { ...meditation.metadata }
+      // Upload distribution quality file
+      const { data: uploadData, error: uploadError } = await meditationsBucket.upload(fileName, processedBlob, {
+        contentType: distributionContentType,
+        upsert: false,
+      })
 
-        if (Array.isArray(metadataToSave.timeline) && metadataToSave.timeline.length > 0) {
-          const processedTimeline = await Promise.all(
-            metadataToSave.timeline.map(async (event) => {
-              const processedEvent = { ...event }
+      if (uploadError) {
+        console.error("[v0] Direct upload error:", uploadError)
+        throw new Error(`Upload failed: ${uploadError.message}`)
+      }
 
-              if (
-                processedEvent.recordingUrl &&
-                (processedEvent.recordingUrl.startsWith("blob:") || processedEvent.recordingUrl.startsWith("data:"))
-              ) {
-                try {
-                  const response = await fetch(processedEvent.recordingUrl)
-                  const recordingBlob = await response.blob()
-                  const extension = inferExtensionFromMime(recordingBlob.type)
-                  const recordingFileName = `timeline_recordings/${timestamp}_${Math.random()
-                    .toString(36)
-                    .slice(2)}_${processedEvent.id || "event"}.${extension}`
+      console.log("[v0] Upload successful:", uploadData.path)
 
-                  const { data: recordingUploadData, error: recordingUploadError } = await meditationsBucket.upload(
-                    recordingFileName,
-                    recordingBlob,
-                    {
-                      contentType: recordingBlob.type || "audio/webm",
-                      upsert: false,
-                    },
-                  )
+      // Get public URL for distribution file
+      const { data: urlData } = meditationsBucket.getPublicUrl(uploadData.path)
 
-                  if (recordingUploadError) {
-                    console.error("[v0] Timeline recording upload error:", recordingUploadError)
-                  } else if (recordingUploadData?.path) {
-                    const { data: recordingUrlData } = meditationsBucket.getPublicUrl(recordingUploadData.path)
+      console.log("[v0] Public URL:", urlData.publicUrl)
 
-                    processedEvent.recordingUrl = recordingUrlData.publicUrl
-                    processedEvent.recordingStoragePath = recordingUploadData.path
-                  }
-                } catch (error) {
-                  console.error("[v0] Failed to upload timeline recording:", error)
+      let sourcePublicUrl: string | undefined =
+        isBlobLikeUrl(meditation.sourceAudioUrl) || meditation.sourceAudioUrl == null
+          ? undefined
+          : meditation.sourceAudioUrl
+      let sourceStoragePath: string | undefined
+      const metadataToSave: SavedMeditation["metadata"] = { ...meditation.metadata }
+
+      if (Array.isArray(metadataToSave.timeline) && metadataToSave.timeline.length > 0) {
+        const processedTimeline = await Promise.all(
+          metadataToSave.timeline.map(async (event) => {
+            const processedEvent = { ...event }
+
+            if (
+              processedEvent.recordingUrl &&
+              (processedEvent.recordingUrl.startsWith("blob:") || processedEvent.recordingUrl.startsWith("data:"))
+            ) {
+              try {
+                const response = await fetch(processedEvent.recordingUrl)
+                const recordingBlob = await response.blob()
+                const extension = inferExtensionFromMime(recordingBlob.type)
+                const recordingFileName = `timeline_recordings/${timestamp}_${Math.random()
+                  .toString(36)
+                  .slice(2)}_${processedEvent.id || "event"}.${extension}`
+
+                const { data: recordingUploadData, error: recordingUploadError } = await meditationsBucket.upload(
+                  recordingFileName,
+                  recordingBlob,
+                  {
+                    contentType: recordingBlob.type || "audio/webm",
+                    upsert: false,
+                  },
+                )
+
+                if (recordingUploadError) {
+                  console.error("[v0] Timeline recording upload error:", recordingUploadError)
+                } else if (recordingUploadData?.path) {
+                  const { data: recordingUrlData } = meditationsBucket.getPublicUrl(recordingUploadData.path)
+
+                  processedEvent.recordingUrl = recordingUrlData.publicUrl
+                  processedEvent.recordingStoragePath = recordingUploadData.path
                 }
+              } catch (error) {
+                console.error("[v0] Failed to upload timeline recording:", error)
               }
+            }
 
-              return processedEvent
-            }),
-          )
+            return processedEvent
+          }),
+        )
 
-          metadataToSave.timeline = processedTimeline as NonNullable<SavedMeditation["metadata"]["timeline"]>
+        metadataToSave.timeline = processedTimeline as NonNullable<SavedMeditation["metadata"]["timeline"]>
+      }
+      const providedSourceBlob: Blob | null =
+        meditation.sourceAudioData ??
+        (isBlobLikeUrl(meditation.sourceAudioUrl)
+          ? await (async () => {
+              if (!meditation.sourceAudioUrl) {
+                return null
+              }
+              const response = await fetch(meditation.sourceAudioUrl)
+              return await response.blob()
+            })()
+          : null)
+
+      const sharesProcessedBlob =
+        (!!meditation.sourceAudioData && meditation.sourceAudioData === meditation.processedAudioData) ||
+        (meditation.sourceAudioUrl && meditation.sourceAudioUrl === meditation.processedAudioUrl)
+
+      if (sharesProcessedBlob) {
+        sourcePublicUrl = urlData.publicUrl
+      } else if (providedSourceBlob) {
+        console.log("[v0] Source audio blob size:", providedSourceBlob.size, "bytes")
+
+        const sourceExtension = inferExtensionFromMime(providedSourceBlob.type)
+        const sourceContentType = providedSourceBlob.type || `audio/${sourceExtension}`
+        const sourceFileName = `${sourceFileBase}.${sourceExtension}`
+
+        console.log("[v0] Uploading high-quality source file:", sourceFileName)
+
+        const { data: sourceUploadData, error: sourceUploadError } = await meditationsBucket.upload(
+          sourceFileName,
+          providedSourceBlob,
+          {
+            contentType: sourceContentType,
+            upsert: false,
+          },
+        )
+
+        if (sourceUploadError) {
+          console.error("[v0] Source upload error:", sourceUploadError)
+          console.warn("[v0] Continuing without source file")
+        } else {
+          const { data: sourceUrlData } = meditationsBucket.getPublicUrl(sourceUploadData.path)
+          sourcePublicUrl = sourceUrlData.publicUrl
+          sourceStoragePath = sourceUploadData.path
+          console.log("[v0] Source public URL:", sourcePublicUrl)
         }
-        const providedSourceBlob: Blob | null =
-          meditation.sourceAudioData ??
-          (isBlobLikeUrl(meditation.sourceAudioUrl)
-            ? await (async () => {
-                if (!meditation.sourceAudioUrl) {
-                  return null
-                }
-                const response = await fetch(meditation.sourceAudioUrl)
-                return await response.blob()
-              })()
-            : null)
+      }
 
-        const sharesProcessedBlob =
-          (!!meditation.sourceAudioData && meditation.sourceAudioData === meditation.processedAudioData) ||
-          (meditation.sourceAudioUrl && meditation.sourceAudioUrl === meditation.processedAudioUrl)
+      const durationInSeconds = Math.round(meditation.duration)
 
-        if (sharesProcessedBlob) {
-          sourcePublicUrl = urlData.publicUrl
-        } else if (providedSourceBlob) {
-          console.log("[v0] Source audio blob size:", providedSourceBlob.size, "bytes")
+      const { data: dbData, error: dbError } = await supabase
+        .from("meditations")
+        .insert({
+          title: meditation.title,
+          description: `${meditation.source} meditation`,
+          audio_url: urlData.publicUrl,
+          source_audio_url: sourcePublicUrl,
+          duration: durationInSeconds,
+          source: meditation.source,
+          metadata: metadataToSave,
+          original_filename: meditation.originalFileName,
+          profile_id: TEST_PROFILE_ID,
+        })
+        .select()
+        .single()
 
-          const sourceExtension = inferExtensionFromMime(providedSourceBlob.type)
-          const sourceContentType = providedSourceBlob.type || `audio/${sourceExtension}`
-          const sourceFileName = `${sourceFileBase}.${sourceExtension}`
-
-          console.log("[v0] Uploading high-quality source file:", sourceFileName)
-
-          const { data: sourceUploadData, error: sourceUploadError } = await meditationsBucket.upload(
-            sourceFileName,
-            providedSourceBlob,
-            {
-              contentType: sourceContentType,
-              upsert: false,
-            },
-          )
-
-          if (sourceUploadError) {
-            console.error("[v0] Source upload error:", sourceUploadError)
-            console.warn("[v0] Continuing without source file")
-          } else {
-            const { data: sourceUrlData } = meditationsBucket.getPublicUrl(sourceUploadData.path)
-            sourcePublicUrl = sourceUrlData.publicUrl
-            sourceStoragePath = sourceUploadData.path
-            console.log("[v0] Source public URL:", sourcePublicUrl)
-          }
+      if (dbError) {
+        console.error("[v0] Database insert error:", dbError)
+        await meditationsBucket.remove([uploadData.path])
+        if (sourceStoragePath) {
+          await meditationsBucket.remove([sourceStoragePath])
         }
+        throw new Error(`Database save failed: ${dbError.message}`)
+      }
 
-        const durationInSeconds = Math.round(meditation.duration)
+      console.log("[v0] Client-side save successful:", dbData.id)
 
-        const { data: dbData, error: dbError } = await supabase
-          .from("meditations")
-          .insert({
-            title: meditation.title,
-            description: `${meditation.source} meditation`,
-            audio_url: urlData.publicUrl,
-            source_audio_url: sourcePublicUrl,
-            duration: durationInSeconds,
-            source: meditation.source,
-            metadata: metadataToSave,
-            original_filename: meditation.originalFileName,
-            profile_id: TEST_PROFILE_ID,
-          })
-          .select()
-          .single()
-
-        if (dbError) {
-          console.error("[v0] Database insert error:", dbError)
-          await meditationsBucket.remove([uploadData.path])
-          if (sourceStoragePath) {
-            await meditationsBucket.remove([sourceStoragePath])
-          }
-          throw new Error(`Database save failed: ${dbError.message}`)
-        }
-
-        console.log("[v0] Client-side save successful:", dbData.id)
-
-        return {
-          id: dbData.id,
-          title: dbData.title,
-          originalFileName: dbData.original_filename,
-          processedAudioUrl: dbData.audio_url,
-          sourceAudioUrl: dbData.source_audio_url,
-          duration: dbData.duration,
-          createdAt: new Date(dbData.created_at),
-          source: dbData.source as "adjuster" | "encoder",
-          metadata: dbData.metadata || metadataToSave || {},
-        }
+      return {
+        id: dbData.id,
+        title: dbData.title,
+        originalFileName: dbData.original_filename,
+        processedAudioUrl: dbData.audio_url,
+        sourceAudioUrl: dbData.source_audio_url,
+        duration: dbData.duration,
+        createdAt: new Date(dbData.created_at),
+        source: dbData.source as "adjuster" | "encoder",
+        metadata: dbData.metadata || metadataToSave || {},
+      }
     } catch (error) {
       console.error("[v0] Error in saveMeditation:", error)
       throw error
@@ -456,6 +458,8 @@ export class MeditationLibrary {
 
   static async createPlaylist(name: string, description = ""): Promise<Playlist> {
     try {
+      await ensureTestProfile()
+
       const supabase = createClient()
 
       const { data, error } = await supabase
