@@ -8,6 +8,16 @@ import { CalendarDays, Clock, NotebookPen, BookOpenCheck, Sparkles } from "lucid
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { useJournal, type JournalEntry } from "@/hooks/use-journal"
@@ -120,7 +130,7 @@ const buildJournalHref = ({
 }
 
 export default function JournalPage() {
-  const { entries, updateEntryNote } = useJournal()
+  const { entries, updateEntryNote, deleteEntry } = useJournal()
   const [meditations, setMeditations] = useState<SavedMeditation[]>([])
   const [activeTab, setActiveTab] = useState<"meditation" | "date">("date")
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null)
@@ -128,6 +138,8 @@ export default function JournalPage() {
   const [activeMeditationEntryId, setActiveMeditationEntryId] = useState<string | null>(null)
   const [shouldAutoSelectMeditation, setShouldAutoSelectMeditation] = useState(true)
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({})
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeletingEntry, setIsDeletingEntry] = useState(false)
   const dayRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -293,6 +305,55 @@ export default function JournalPage() {
     toast({
       title: "Journal updated",
       description: "Your reflection has been saved.",
+    })
+  }
+
+  const handleDeleteActiveEntry = async () => {
+    if (!activeMeditationEntry) return
+
+    const entryId = activeMeditationEntry.id
+    const meditationId = activeMeditationEntry.meditationId
+    const entryCountForMeditation = selectedMeditationEntries.length
+
+    setIsDeletingEntry(true)
+    const didDelete = await deleteEntry(entryId)
+    setIsDeletingEntry(false)
+
+    if (!didDelete) {
+      toast({
+        title: "Unable to delete entry",
+        description: "Please try again later.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsDeleteDialogOpen(false)
+
+    setNoteDrafts((previous) => {
+      const next = { ...previous }
+      delete next[entryId]
+      return next
+    })
+
+    if (activeMeditationEntryId === entryId) {
+      setActiveMeditationEntryId(null)
+
+      if (entryCountForMeditation <= 1) {
+        setSelectedMeditationId(null)
+        router.replace(buildJournalHref({}))
+      } else {
+        router.replace(
+          buildJournalHref({
+            meditation: meditationId,
+          }),
+        )
+      }
+    }
+
+    toast({
+      title: "Journal entry deleted",
+      description: "The reflection has been removed.",
     })
   }
 
@@ -722,6 +783,43 @@ export default function JournalPage() {
                                         >
                                           Jump to Date
                                         </Button>
+                                        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                                          <DialogTrigger asChild>
+                                            <Button
+                                              variant="destructive"
+                                              size="sm"
+                                              className="text-white"
+                                              disabled={isDeletingEntry}
+                                            >
+                                              Delete entry
+                                            </Button>
+                                          </DialogTrigger>
+                                          <DialogContent>
+                                            <DialogHeader>
+                                              <DialogTitle>Delete this journal entry?</DialogTitle>
+                                              <DialogDescription>
+                                                This will permanently remove your reflection for
+                                                {" "}
+                                                {formatLongDate(new Date(activeMeditationEntry.playedAt))}. This action
+                                                cannot be undone.
+                                              </DialogDescription>
+                                            </DialogHeader>
+                                            <DialogFooter className="sm:justify-end">
+                                              <DialogClose asChild>
+                                                <Button variant="ghost" disabled={isDeletingEntry}>
+                                                  Cancel
+                                                </Button>
+                                              </DialogClose>
+                                              <Button
+                                                variant="destructive"
+                                                onClick={handleDeleteActiveEntry}
+                                                disabled={isDeletingEntry}
+                                              >
+                                                {isDeletingEntry ? "Deleting..." : "Delete"}
+                                              </Button>
+                                            </DialogFooter>
+                                          </DialogContent>
+                                        </Dialog>
                                         <Button
                                           onClick={() => handleSaveNote(activeMeditationEntry.id)}
                                           disabled={
