@@ -23,6 +23,7 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
+import { TimerWheel } from "@/components/timer-wheel"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -583,17 +584,10 @@ export default function Home() {
   const [encoderTimelineOriginalDuration, setEncoderTimelineOriginalDuration] = useState<number | null>(null)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
   const lastEncoderDurationAdjustmentRef = useRef<number | null>(null)
-  const convertSecondsToParts = useCallback((totalSeconds: number) => {
-    const normalized = Math.max(0, Math.floor(Number.isFinite(totalSeconds) ? totalSeconds : 0))
-    const hours = Math.floor(normalized / 3600)
-    const minutes = Math.floor((normalized % 3600) / 60)
-    const seconds = normalized % 60
-    return { hours, minutes, seconds }
-  }, [])
-  const encoderDurationParts = useMemo(
-    () => convertSecondsToParts(encoderTotalDuration),
-    [encoderTotalDuration, convertSecondsToParts],
-  )
+  const [isTimerMode, setIsTimerMode] = useState(false)
+  const [isTimerRunning, setIsTimerRunning] = useState(false)
+  const [timerRemaining, setTimerRemaining] = useState<number>(600)
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const exportableTimelineMetadata = useMemo(() => {
     return timelineEvents.map((event) => {
@@ -1204,24 +1198,98 @@ export default function Home() {
     }
   }
 
-  const handleDurationPartChange = useCallback(
-    (part: "hours" | "minutes" | "seconds", rawValue: number) => {
-      setEncoderTotalDuration((previousTotal) => {
-        const { hours, minutes, seconds } = convertSecondsToParts(previousTotal)
+  const normalizeDuration = useCallback((value: number) => {
+    return Math.max(1, Math.floor(Number.isFinite(value) ? value : 0))
+  }, [])
 
-        const sanitizedValue = Math.max(0, Math.floor(Number.isFinite(rawValue) ? rawValue : 0))
-
-        const nextHours = part === "hours" ? sanitizedValue : hours
-        const nextMinutes = part === "minutes" ? Math.min(59, sanitizedValue) : minutes
-        const nextSeconds = part === "seconds" ? Math.min(59, sanitizedValue) : seconds
-
-        const total = nextHours * 3600 + nextMinutes * 60 + nextSeconds
-
-        return Math.max(1, total)
-      })
+  const handleEncoderDurationChange = useCallback(
+    (totalSeconds: number) => {
+      setEncoderTotalDuration(normalizeDuration(totalSeconds))
     },
-    [convertSecondsToParts],
+    [normalizeDuration],
   )
+
+  useEffect(() => {
+    if (!isTimerMode) {
+      setTimerRemaining(normalizeDuration(encoderTotalDuration))
+    }
+  }, [encoderTotalDuration, isTimerMode, normalizeDuration])
+
+  const clearTimerInterval = useCallback(() => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current)
+      timerIntervalRef.current = null
+    }
+  }, [])
+
+  const handleActivateTimer = useCallback(() => {
+    clearTimerInterval()
+    setTimerRemaining(normalizeDuration(encoderTotalDuration))
+    setIsTimerMode(true)
+    setIsTimerRunning(false)
+  }, [clearTimerInterval, encoderTotalDuration, normalizeDuration])
+
+  const handleStartTimer = useCallback(() => {
+    const normalizedDuration = normalizeDuration(encoderTotalDuration)
+    if (normalizedDuration <= 0) {
+      return
+    }
+
+    setTimerRemaining((previous) => {
+      if (previous <= 0 || previous > normalizedDuration) {
+        return normalizedDuration
+      }
+      return previous
+    })
+    setIsTimerRunning(true)
+  }, [encoderTotalDuration, normalizeDuration])
+
+  const handleStopTimer = useCallback(() => {
+    clearTimerInterval()
+    setIsTimerRunning(false)
+  }, [clearTimerInterval])
+
+  const handleResetTimer = useCallback(() => {
+    clearTimerInterval()
+    setTimerRemaining(normalizeDuration(encoderTotalDuration))
+    setIsTimerRunning(false)
+  }, [clearTimerInterval, encoderTotalDuration, normalizeDuration])
+
+  const handleReturnToEncoder = useCallback(() => {
+    clearTimerInterval()
+    setIsTimerRunning(false)
+    setIsTimerMode(false)
+    setTimerRemaining(normalizeDuration(encoderTotalDuration))
+  }, [clearTimerInterval, encoderTotalDuration, normalizeDuration])
+
+  useEffect(() => {
+    if (!isTimerMode || !isTimerRunning) {
+      clearTimerInterval()
+      return
+    }
+
+    clearTimerInterval()
+    timerIntervalRef.current = setInterval(() => {
+      setTimerRemaining((previous) => {
+        if (previous <= 1) {
+          clearTimerInterval()
+          setIsTimerRunning(false)
+          return 0
+        }
+        return previous - 1
+      })
+    }, 1000)
+
+    return () => {
+      clearTimerInterval()
+    }
+  }, [clearTimerInterval, isTimerMode, isTimerRunning])
+
+  useEffect(() => {
+    return () => {
+      clearTimerInterval()
+    }
+  }, [clearTimerInterval])
 
   const playSingleNote = async (note: string, octave: number, noteType: string) => {
     try {
@@ -2782,37 +2850,43 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px]">
-      <Navigation />
+      <div
+        className={cn(
+          "relative",
+          isTimerMode && "pointer-events-none select-none blur-sm transition duration-300 ease-in-out",
+        )}
+      >
+        <Navigation />
 
-      {typeof window !== "undefined" && window.location.hostname === "localhost" && (
-        <div className="fixed top-4 right-4 z-50">
-          <Button
-            onClick={clearLibraryData}
-            variant="outline"
-            size="sm"
-            className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
-          >
-            Clear Library (Debug)
-          </Button>
-        </div>
-      )}
+        {typeof window !== "undefined" && window.location.hostname === "localhost" && (
+          <div className="fixed top-4 right-4 z-50">
+            <Button
+              onClick={clearLibraryData}
+              variant="outline"
+              size="sm"
+              className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+            >
+              Clear Library (Debug)
+            </Button>
+          </div>
+        )}
 
-      {memoryWarning && activeMode === "adjuster" && (
-        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-yellow-100 to-amber-50 border border-yellow-300 shadow-sm ">
-          <div className="flex items-start">
-            <AlertTriangle className="text-yellow-500 mr-3 flex-shrink-0 mt-0.5 w-5 h-5" />
-            <div>
-              <h3 className="text-yellow-700 mb-1 font-serif font-black text-sm">High Memory Usage Expected</h3>
-              <p className="text-yellow-600 font-serif font-black text-xs">
-                Large files or long target durations require significant memory. Processing may be slow or unstable on
-                devices with limited RAM.
-              </p>
+        {memoryWarning && activeMode === "adjuster" && (
+          <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-yellow-100 to-amber-50 border border-yellow-300 shadow-sm ">
+            <div className="flex items-start">
+              <AlertTriangle className="text-yellow-500 mr-3 flex-shrink-0 mt-0.5 w-5 h-5" />
+              <div>
+                <h3 className="text-yellow-700 mb-1 font-serif font-black text-sm">High Memory Usage Expected</h3>
+                <p className="text-yellow-600 font-serif font-black text-xs">
+                  Large files or long target durations require significant memory. Processing may be slow or unstable on
+                  devices with limited RAM.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <motion.div
+        <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -3625,46 +3699,19 @@ export default function Home() {
                           <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
                             Duration (h:m:s)
                           </Label>
-                          <div
-                            id="encoder-duration"
-                            className="flex items-center justify-center gap-3 mt-1 border-gray-500 rounded-[10px] bg-white px-4 py-[9px] border-[3px] shadow-md h-9 pr-1 w-[181px]"
-                          >
-                            <div className="flex items-center">
-                              <input
-                                type="number"
-                                min={0}
-                                step={1}
-                                value={encoderDurationParts.hours}
-                                onChange={(event) => handleDurationPartChange("hours", Number(event.target.value))}
-                                className="text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500 w-9"
-                                aria-label="Hours"
-                              />
-                            </div>
-
-                            <div className="flex items-center">
-                              <input
-                                type="number"
-                                min={0}
-                                max={59}
-                                step={1}
-                                value={encoderDurationParts.minutes}
-                                onChange={(event) => handleDurationPartChange("minutes", Number(event.target.value))}
-                                className="text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500 border-2 w-9"
-                                aria-label="Minutes"
-                              />
-                            </div>
-                            <div className="flex items-center">
-                              <input
-                                type="number"
-                                min={0}
-                                max={59}
-                                step={1}
-                                value={encoderDurationParts.seconds}
-                                onChange={(event) => handleDurationPartChange("seconds", Number(event.target.value))}
-                                className="text-center bg-transparent border-none focus-visible:outline-none focus-visible:ring-0 text-sm font-black text-gray-500 w-9"
-                                aria-label="Seconds"
-                              />
-                            </div>
+                          <div id="encoder-duration" className="mt-3 flex flex-col items-center gap-4">
+                            <TimerWheel
+                              value={encoderTotalDuration}
+                              onChange={handleEncoderDurationChange}
+                              className="bg-white px-6 py-4 rounded-2xl border-[3px] border-gray-500 shadow-md"
+                            />
+                            <Button
+                              type="button"
+                              onClick={handleActivateTimer}
+                              className="rounded-full bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 px-6 py-2 text-white font-black shadow-md hover:shadow-lg"
+                            >
+                              Use as timer
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -4162,7 +4209,66 @@ export default function Home() {
             )}
           </div>
         </div>
-      </motion.div>
+        </motion.div>
+      </div>
+
+      {isTimerMode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm">
+          <Card className="w-full max-w-md space-y-6 rounded-3xl p-8 text-center shadow-2xl">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-black text-gray-700">Timer</h2>
+              <p className="text-sm font-medium text-gray-500">
+                Countdown without leaving the encoder. Return when you&apos;re ready to keep building.
+              </p>
+            </div>
+            <div className="mx-auto w-full max-w-xs rounded-2xl bg-gray-900 px-6 py-5 font-mono text-4xl font-semibold tracking-widest text-white shadow-inner">
+              {formatTime(timerRemaining)}
+            </div>
+            {timerRemaining === 0 && (
+              <p className="text-sm font-semibold uppercase tracking-wide text-rose-500">Time&apos;s up!</p>
+            )}
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {isTimerRunning ? (
+                <Button
+                  type="button"
+                  onClick={handleStopTimer}
+                  variant="destructive"
+                  className="flex items-center gap-2 rounded-full px-6 py-2 font-semibold"
+                >
+                  <StopCircle className="h-4 w-4" />
+                  Stop
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={handleStartTimer}
+                  className="flex items-center gap-2 rounded-full bg-gradient-to-r from-logo-emerald-500 to-logo-teal-500 px-6 py-2 font-semibold text-white shadow-md hover:shadow-lg"
+                >
+                  <Play className="h-4 w-4" />
+                  {timerRemaining === 0 ? "Restart" : "Start"}
+                </Button>
+              )}
+              <Button
+                type="button"
+                onClick={handleResetTimer}
+                variant="outline"
+                className="flex items-center gap-2 rounded-full px-6 py-2 font-semibold"
+              >
+                <CircleDotDashed className="h-4 w-4" />
+                Reset
+              </Button>
+            </div>
+            <Button
+              type="button"
+              onClick={handleReturnToEncoder}
+              variant="secondary"
+              className="w-full rounded-full px-6 py-3 font-black"
+            >
+              Return to encoder
+            </Button>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
