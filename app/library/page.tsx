@@ -2102,7 +2102,7 @@ export default function LibraryPage() {
                           }}
                         >
                           <DialogTrigger asChild>
-                            <Button className="w-full bg-gradient-to-r from-purple-300 to-logo-teal-400 rounded-[10px] text-white shadow-md hover:shadow-none text-xs font-black">
+                            <Button className="w-full bg-gradient-to-b from-purple-300 to-logo-teal-400 rounded-[9px] text-white shadow-md hover:shadow-none text-xs font-black">
                               Upload Meditation
                             </Button>
                           </DialogTrigger>
@@ -2382,7 +2382,7 @@ export default function LibraryPage() {
                   <div className="mb-6">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button className="bg-gradient-to-r from-logo-amber-300 to-logo-teal-500 rounded-[8px] shadow-md hover:shadow-none text-white text-sm font-black">
+                        <Button className="bg-gradient-to-r from-logo-amber-300 to-logo-teal-400 rounded-[9px] shadow-md hover:shadow-none text-white text-sm font-black">
                           <FolderPlus className="w-4 h-4 mr-2" />
                           Create Playlist
                         </Button>

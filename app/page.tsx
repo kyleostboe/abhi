@@ -3080,7 +3080,7 @@ export default function Home() {
                   onDragLeave={handleDragLeaveAction}
                   onDrop={handleDropAction}
                 >
-                  <div className="p-0.5 bg-gradient-to-r from-logo-blue-400 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
+                  <div className="p-0.5 bg-gradient-to-br from-gray-600 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
                     <div className="p-10 md:p-16 text-center bg-white md:py-12 md:px-16 shadow rounded-sm border-stone-200 border-[3px]">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
