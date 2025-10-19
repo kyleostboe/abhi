@@ -2959,7 +2959,7 @@ export default function Home() {
             </motion.div>
           </div>
 
-          <div className="px-6 md:px-10 font-serif font-black pb-6">
+          <div className="px-6 md:px-10 font-serif font-black pb-10">
             {/* Mode Description Notes */}
             <AnimatePresence mode="wait">
               {activeMode === "adjuster" && (
@@ -3438,7 +3438,7 @@ export default function Home() {
                 </motion.div>
 
                 {/* Process Audio Button */}
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                <motion.div className="mt-0" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                   <Button
                     onClick={handleProcessAudio}
                     disabled={isProcessing || !originalBuffer}
