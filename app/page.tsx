@@ -3080,14 +3080,14 @@ export default function Home() {
                   onDragLeave={handleDragLeaveAction}
                   onDrop={handleDropAction}
                 >
-                  <div className="p-0.5 bg-gradient-to-br from-gray-600 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
-                    <div className="p-10 md:p-16 text-center bg-white md:py-12 md:px-16 shadow rounded-sm border-stone-200 border-[3px]">
+                  <div className="p-0.5 bg-gradient-to-t from-logo-blue-400 to-gray-500 py-1 shadow-lg rounded-sm px-[5px]">
+                    <div className="p-10 md:p-16 text-center bg-white shadow rounded-sm border-stone-200 border-[3px] md:px-16 md:py-[33px]">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
                       >
-                        <div className="font-serif mb-2.5 font-black text-base text-gray-600">
+                        <div className="font-serif font-black text-base text-gray-600 mb-[3px]">
                           Drop your audio file here or click to browse
                         </div>
                         <div className="font-serif text-xs text-gray-500">
@@ -3112,7 +3112,7 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="p-0.5 overflow-hidden bg-gradient-to-r from-stone-300 to-logo-purple-300 py-1 rounded-sm px-[5px] mb-3.5 shadow-none"
+                      className="p-0.5 overflow-hidden bg-gradient-to-t from-stone-300 to-logo-purple-300 py-1 rounded-sm px-[5px] mb-3.5 shadow-none"
                     >
                       <div className="bg-white p-5 py-4 rounded-sm border-stone-200 shadow border-[3px]">
                         <div className="flex items-center">
@@ -3157,7 +3157,7 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
-                      <div className="bg-white rounded-sm p-3 shadow-md mb-3.5 px-0">
+                      <div className="bg-white rounded-sm p-3 shadow-md mb-3.5 px-0 border-[4px] border-stone-300">
                         <audio controls className="w-full" src={originalUrl}></audio>
                       </div>
                       <div>
@@ -3177,7 +3177,7 @@ export default function Home() {
                           existingMeditationDuration={loadedLibraryContext?.duration}
                         >
                           <Button
-                            className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black"
+                            className="w-full py-4 rounded-[10px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black border-[3px] border-stone-300"
                             disabled={!originalBuffer}
                           >
                             <BookmarkPlus className="w-4 h-4 mr-2" />
@@ -3725,7 +3725,7 @@ export default function Home() {
                       transition={{ delay: 0.2 }}
                       className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                     >
-                      <div className="p-0.5 bg-gradient-to-r from-stone-300 to-logo-blue-400  py-1 shadow-lg rounded-sm px-[5px]">
+                      <div className="p-0.5 bg-gradient-to-b from-stone-300 to-logo-blue-400  py-1 shadow-lg rounded-sm px-[5px]">
                         <div className="bg-white p-4 rounded-sm shadow-nonee border-stone-200 shadow pb-3 pt-1.5 border-[3px]">
                           <div className="text-center">
                             <Textarea
