@@ -656,18 +656,18 @@ export default function JournalPage() {
                                         : "border-gray-300/60 bg-muted/60 text-gray-500 hover:bg-white",
                                     )}
                                   >
-                                    <div className="flex items-center justify-between gap-3">
-                                      <div>
-                                        <div className="text-sm font-black text-gray-700 line-clamp-2">
+                                    <div className="flex flex-wrap items-center justify-between gap-3 md:flex-nowrap">
+                                      <div className="min-w-0 flex-1">
+                                        <div className="text-sm font-black text-gray-700 truncate">
                                           {meditation.title}
                                         </div>
-                                        <div className="text-[11px] uppercase tracking-[0.3em] text-gray-400 mt-1 font-black">
+                                        <div className="text-[11px] uppercase tracking-[0.3em] text-gray-400 mt-1 font-black truncate">
                                           {entryCount > 0
                                             ? `${entryCount} entr${entryCount === 1 ? "y" : "ies"}`
                                             : "No entries yet"}
                                         </div>
                                       </div>
-                                      <NotebookPen className="h-4 w-4 text-logo-rose-400" />
+                                      <NotebookPen className="h-4 w-4 text-logo-rose-400 flex-shrink-0 md:ml-3 mt-2 md:mt-0" />
                                     </div>
                                   </button>
                                 )
@@ -675,19 +675,19 @@ export default function JournalPage() {
                             </div>
                           </div>
                           <div className="space-y-5">
-                            <div className="flex items-center justify-between">
-                              <div>
+                            <div className="flex flex-wrap items-center justify-between gap-3 md:flex-nowrap">
+                              <div className="min-w-0 flex-1">
                                 <div className="text-xs uppercase tracking-[0.2em] text-gray-400 font-black mb-2">
                                   Journal Entries
                                 </div>
-                                <div className="text-lg font-black text-gray-700 font-serif">
+                                <div className="text-lg font-black text-gray-700 font-serif truncate">
                                   {selectedMeditation?.title ?? "Select a meditation"}
                                 </div>
                               </div>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-gray-500 hover:text-gray-700"
+                                className="text-gray-500 hover:text-gray-700 w-full md:w-auto md:ml-4 mt-2 md:mt-0"
                                 onClick={() => {
                                   const libraryPath = selectedMeditation
                                     ? `/library?meditation=${selectedMeditation.id}`
