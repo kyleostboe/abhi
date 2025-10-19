@@ -3063,14 +3063,7 @@ export default function Home() {
                       >
                         Medito Foundation
                       </a>
-                      <a
-                        href="https://www.freebuddhistaudio.com"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
-                      >
-                        freebuddhistaudio
-                      </a>
+                      
                     </div>
                   </div>
                 </div>
