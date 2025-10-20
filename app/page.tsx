@@ -3080,7 +3080,7 @@ export default function Home() {
                   onDragLeave={handleDragLeaveAction}
                   onDrop={handleDropAction}
                 >
-                  <div className="p-0.5 bg-gradient-to-t from-stone-300 to-gray-500 py-1 shadow-lg rounded-sm px-[5px]">
+                  <div className="p-0.5 bg-gradient-to-b from-gray-500 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
                     <div className="p-10 md:p-16 text-center bg-white shadow rounded-sm border-stone-200 border-[3px] md:px-16 md:py-[33px]">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
@@ -3112,7 +3112,7 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="p-0.5 overflow-hidden bg-gradient-to-t from-stone-300 to-logo-blue-400 py-1 rounded-sm px-[5px] mb-3.5 shadow-none"
+                      className="p-0.5 overflow-hidden bg-gradient-to-t from-gray-500 to-stone-300 py-1 rounded-sm px-[5px] mb-3.5 shadow-none"
                     >
                       <div className="bg-white p-5 py-4 rounded-sm border-stone-200 shadow border-[3px]">
                         <div className="flex items-center">
@@ -3137,7 +3137,7 @@ export default function Home() {
                               initial={{ opacity: 0, x: -5 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: 0.3 }}
-                              className="mb-1 font-black text-sm text-gray-500"
+                              className="mb-1 font-black text-gray-500 text-xs"
                             >
                               Size: {formatFileSize(file.size)}
                               {" • Type: "}
@@ -3150,17 +3150,17 @@ export default function Home() {
                   )}
                 </AnimatePresence>
 
-                <div className="space-y-6 mt-4">
+                <div className="mt-4 space-y-5">
                   {originalUrl && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
-                      <div className="bg-white rounded-sm p-3 mb-3.5 px-0 border-[4px] border-stone-300 shadow-none">
+                      <div className="rounded-sm p-3 px-0 shadow-none border-gray-500 bg-transparent border-0 mb-0">
                         <audio controls className="w-full" src={originalUrl}></audio>
                       </div>
-                      <div>
+                      <div className="px-3.5 text-center">
                         <SaveMeditationDialog
                           audioUrl={originalUrl}
                           mp3Blob={file ?? undefined}
@@ -3177,7 +3177,7 @@ export default function Home() {
                           existingMeditationDuration={loadedLibraryContext?.duration}
                         >
                           <Button
-                            className="w-full py-4 rounded-[10px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black border-[3px] border-stone-300"
+                            className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500"
                             disabled={!originalBuffer}
                           >
                             <BookmarkPlus className="w-4 h-4 mr-2" />
@@ -3215,7 +3215,7 @@ export default function Home() {
                           <div className="p-3 text-center min-h-[76px] rounded-sm shadow-none bg-transparent pb-0.5 pt-0">
                             <div className="flex items-center mb-2 justify-center">
                               {/* Removed the Info icon div */}
-                              <div className="text-lg font-black text-gray-600">Audio Analysis</div>
+                              
                             </div>
 
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">

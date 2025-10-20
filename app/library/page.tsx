@@ -2278,12 +2278,12 @@ export default function LibraryPage() {
 
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-3 mb-2">
-                                    <h3 className="font-black text-gray-800 text-sm truncate">{base.title}</h3>
+                                    <h3 className="font-black text-gray-800 truncate text-xs">{base.title}</h3>
                                   </div>
                                   <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
                                     <span className="flex items-center gap-1">
                                       <Clock className="h-4 w-4 text-gray-500" />
-                                      <span>{durationDisplay}</span>
+                                      <span className="font-black truncate text-xs text-gray-500">{durationDisplay}</span>
                                     </span>
                                     {isWideLayout && (
                                       <>
