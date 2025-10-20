@@ -3630,7 +3630,7 @@ export default function Home() {
                         transition={{ delay: 0.2 }}
                         className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                       >
-                        <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300  py-1 shadow-lg rounded-sm px-[5px]">
+                        <div className="p-0.5 bg-gradient-to-br from-logo-purple-300 to-stone-300  py-1 shadow-lg rounded-sm px-[5px]">
                           <div className="bg-white p-4 rounded-[10px] shadow-nonee border-stone-200 pb-3 pt-1.5 border-0 shadow-inner">
                             <div className="text-center">
                               <Textarea
