@@ -3552,7 +3552,7 @@ export default function Home() {
                             existingMeditationTitle={loadedLibraryContext?.title}
                             existingMeditationDuration={loadedLibraryContext?.duration}
                           >
-                            <Button className="w-44 py-3  rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black">
+                            <Button className="w-44 py-3  rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-xs text-gray-600 font-serif font-black">
                               <BookmarkPlus className="h-4 w-4 mr-2" />
                               Save to Library
                             </Button>
