@@ -3530,7 +3530,7 @@ export default function Home() {
                           </div>
                         </div>
                         <div className="p-6 px-3.5 py-4 space-y-4 text-center">
-                          <div className="p-3 rounded-sm px-0 mb-0 bg-transparent shadow-none">
+                          <div className="p-3 rounded-sm px-0 mb-0 bg-transparent shadow-none pb-0">
                             <audio controls className="w-full" src={processedUrl}></audio>
                           </div>
                           <SaveMeditationDialog
