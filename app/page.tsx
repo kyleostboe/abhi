@@ -3113,7 +3113,7 @@ export default function Home() {
                         transition={{ type: "spring", stiffness: 500, damping: 30 }}
                         className="p-0.5 overflow-hidden bg-gradient-to-tl from-gray-500 to-stone-300 py-1 rounded-sm px-[5px] mb-3.5 shadow-none"
                       >
-                        <div className="bg-white p-5 py-4 rounded-sm border-stone-200 border-0 shadow-none">
+                        <div className="bg-white p-5 py-4 rounded-[10px] border-stone-200 border-0 shadow-none">
                           <div className="flex items-center">
                             <motion.div
                               initial={{ scale: 0 }}
@@ -3159,7 +3159,7 @@ export default function Home() {
                         <div className="rounded-sm p-3 px-0 shadow-none border-gray-500 bg-transparent border-0 mb-0">
                           <audio controls className="w-full" src={originalUrl}></audio>
                         </div>
-                        <div className="px-3.5 text-center">
+                        <div className="px-3.5 text-center tracking-tight">
                           <SaveMeditationDialog
                             audioUrl={originalUrl}
                             mp3Blob={file ?? undefined}
@@ -3198,7 +3198,7 @@ export default function Home() {
                           className="flex items-center justify-center text-xs text-gray-600 gap-2"
                         >
                           <CircleDotDashed className="h-4 w-4 animate-spin" />
-                          <span>
+                          <span className="tracking-tight">
                             Analyzing audio{analysisProgress >= 0 ? ` (${Math.round(analysisProgress)}%)` : ""}...
                           </span>
                         </motion.div>
@@ -3529,7 +3529,7 @@ export default function Home() {
                             />
                           </div>
                         </div>
-                        <div className="p-6 px-3.5 py-4 space-y-4 text-center">
+                        <div className="p-6 px-3.5 py-4 space-y-4 text-center tracking-tight">
                           <div className="p-3 rounded-sm px-0 mb-0 bg-transparent shadow-none pb-0 pt-0">
                             <audio controls className="w-full" src={processedUrl}></audio>
                           </div>
