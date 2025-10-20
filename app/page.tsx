@@ -3477,10 +3477,10 @@ export default function Home() {
                         radial-gradient(circle at 61% 28%, rgba(255, 255, 255, 0.85) 1.1px, transparent 1.3px),
                         radial-gradient(circle at 94% 87%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
                         radial-gradient(circle at 41% 5%, rgba(255, 255, 255, 0.9) 0.9px, transparent 1px),
-                        linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)
+                        linear-gradient(135deg, #4b5563 0%, #6b7280 100%)
                       `,
                           backgroundSize: "100% 100%",
-                          backgroundColor: "#0f3460",
+                          backgroundColor: "#4b5563",
                         } as React.CSSProperties
                       }
                     >
@@ -3864,7 +3864,7 @@ export default function Home() {
                   >
                     <Card ref={timelineEditorRef} className="overflow-hidden border-none shadow-lg bg-white ">
                       <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-6 py-3 flex items-center justify-between gap-3 pr-3">
-                        <h3 className="text-white flex items-center font-black text-base">Timeline Editor</h3>
+                        <h3 className="text-white font-black text-base">Timeline Editor</h3>
                         <div className="flex items-center gap-2">
                           <input
                             ref={timelineUploadInputRef}
@@ -3938,10 +3938,10 @@ export default function Home() {
                         radial-gradient(circle at 58% 32%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.4px),
                         radial-gradient(circle at 91% 81%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
                         radial-gradient(circle at 37% 9%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)
+                        linear-gradient(135deg, #4b5563 0%, #6b7280 100%)
                       `,
                           backgroundSize: "100% 100%",
-                          backgroundColor: "#0f3460",
+                          backgroundColor: "#4b5563",
                         } as React.CSSProperties
                       }
                     >
