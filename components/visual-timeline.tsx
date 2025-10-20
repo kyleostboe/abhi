@@ -350,7 +350,7 @@ export function VisualTimeline({
       <div className="relative">
         <div
           ref={timelineRef}
-          className="relative h-20 bg-gradient-to-r from-muted to-gray-200/70 cursor-pointer overflow-visible shadow-inner border-gray-700 border-0 rounded-sm"
+          className="relative h-20 bg-gradient-to-br from-muted to-gray-200/70 cursor-pointer overflow-visible shadow-inner border-gray-700 border-0 rounded-sm"
         >
           {timeMarkers.slice(1, -1).map((time, index) => (
             <div
@@ -474,8 +474,8 @@ export function VisualTimeline({
               exit={{ opacity: 0 }}
               className="text-center py-8 text-gray-500 "
             >
-              <div className="mb-2 text-base">No events added yet</div>
-              <div className="text-sm">Add instruction-cue pairs or recordings to build your meditation timeline :) </div>
+              <div className="mb-2 text-sm">No events added yet</div>
+              <div className="text-xs">Add instruction-cue pairs or recordings to build your meditation timeline :) </div>
             </motion.div>
           ) : (
             events

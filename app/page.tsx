@@ -93,7 +93,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
       className={className}
     >
       <Card className="overflow-hidden border-none shadow-lg bg-white ">
-        <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 text-center">
+        <div className="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 py-3 px-6 text-center">
           <h3 className="text-white flex items-center font-serif font-black">
             <Mic className="h-4 w-4 mr-2" />
             Recorder
@@ -112,7 +112,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
             variant={isRecording ? "destructive" : "default"}
             disabled={!recordingLabel.trim() && !isRecording}
             className={cn(
-              "w-full bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-[11px] hover:shadow-none font-serif font-black",
+              "w-full bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-[11px] hover:shadow-none font-serif font-black",
               isRecording && "from-logo-rose-300 to-logo-rose-600",
             )}
           >
@@ -185,7 +185,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
                       description: `"${readyToAddToTimelineRecording.label.trim()}" added to timeline.`,
                     })
                   }}
-                  className="w-full bg-gradient-to-r from-logo-blue-400 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none font-black"
+                  className="w-full bg-gradient-to-br from-logo-blue-400 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none font-black"
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Add to Timeline
@@ -2908,7 +2908,7 @@ export default function Home() {
               transition={{ delay: 0.2, duration: 0.5 }}
             >
               <h1
-                className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-logo-amber via-logo-rose to-logo-purple transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 tracking-tighter text-center mt-16"
+                className="text-5xl text-transparent bg-clip-text bg-gradient-to-bl from-logo-rose-300 to-logo-rose-500 transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 text-center mt-16 tracking-tighter"
                 style={{
                   fontFamily: 'Georgia, "Times New Roman", serif',
                   textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
@@ -2916,7 +2916,7 @@ export default function Home() {
               >
                 abhī
               </h1>
-              <div className="font-black font-serif mb-[7px] text-logo-rose-600 text-xs">Meditation Tool</div>
+              <div className="font-black font-serif mb-[7px] text-xs text-logo-rose-600">Meditation Tool</div>
               <div className="flex justify-center items-center mb-4 space-x-[3px]">
                 <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[13px] h-[13px] shadow-md"></div>
                 <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px] shadow"></div>
@@ -3080,14 +3080,14 @@ export default function Home() {
                   onDragLeave={handleDragLeaveAction}
                   onDrop={handleDropAction}
                 >
-                  <div className="p-0.5 bg-gradient-to-b from-gray-500 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
-                    <div className="p-10 md:p-16 text-center bg-white shadow rounded-sm border-stone-200 border-[3px] md:px-16 md:py-[33px]">
+                  <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
+                    <div className="p-10 md:p-16 text-center bg-white rounded-sm border-stone-200 md:px-16 md:py-[33px] border-0 shadow-nonene">
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
                       >
-                        <div className="font-serif font-black text-base text-gray-600 mb-[3px]">
+                        <div className="font-serif font-black text-gray-600 mb-[3px] text-sm">
                           Drop your audio file here or click to browse
                         </div>
                         <div className="font-serif text-xs text-gray-500">
@@ -3112,9 +3112,9 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -10, height: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="p-0.5 overflow-hidden bg-gradient-to-t from-gray-500 to-stone-300 py-1 rounded-sm px-[5px] mb-3.5 shadow-none"
+                      className="p-0.5 overflow-hidden bg-gradient-to-tl from-gray-500 to-stone-300 py-1 rounded-sm px-[5px] mb-3.5 shadow-none"
                     >
-                      <div className="bg-white p-5 py-4 rounded-sm border-stone-200 shadow border-[3px]">
+                      <div className="bg-white p-5 py-4 rounded-sm border-stone-200 border-0 shadow-none">
                         <div className="flex items-center">
                           <motion.div
                             initial={{ scale: 0 }}
@@ -3273,7 +3273,7 @@ export default function Home() {
                         }}
                         className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-[10px] "
                       >
-                        Basic Settings
+                        Settings
                       </TabsTrigger>
                       <TabsTrigger
                         value="encoder"
@@ -3282,13 +3282,13 @@ export default function Home() {
                         }}
                         className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-[10px] "
                       >
-                        Advanced Settings
+                        Advanced 
                       </TabsTrigger>
                     </TabsList>
                     <TabsContent value="adjuster" className="mt-0 space-y-6">
                       <div className="grid md:grid-cols-2 gap-4">
                         <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                          <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-cyan-500">
+                          <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-cyan-500">
                             <h3 className="text-white font-black text-base">Target Duration</h3>
                           </div>
                           <div className="p-6 py-6 px-11 pb-6">
@@ -3301,12 +3301,12 @@ export default function Home() {
                                 onValueChange={(value) => setTargetDuration(value[0])}
                                 disabled={!durationLimits}
                                 className="py-4"
-                                rangeClassName="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 "
+                                rangeClassName="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 "
                               />
                             </div>
                             <div className="text-center font-serif font-black">
-                              <span className="font-black text-xl text-gray-600">{targetDuration}</span>
-                              <span className="ml-1 text-base text-gray-600">minutes</span>
+                              <span className="font-black text-gray-600 text-lg">{targetDuration}</span>
+                              <span className="ml-1 text-gray-600 text-sm">minutes</span>
                             </div>
                             {durationLimits && (
                               <div className="text-center text-sm mt-0 text-gray-500">
@@ -3316,7 +3316,7 @@ export default function Home() {
                           </div>
                         </Card>
                         <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                          <div className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 py-3 px-6 ">
+                          <div className="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 py-3 px-6 ">
                             <h3 className="text-white font-black">Silence Threshold</h3>
                           </div>
                           <div className="p-6 px-11">
@@ -3328,15 +3328,15 @@ export default function Home() {
                                 step={0.001}
                                 onValueChange={(value) => setSilenceThreshold(value[0])}
                                 className="py-4"
-                                rangeClassName="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500 "
+                                rangeClassName="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 "
                               />
                             </div>
                             <div className="text-center">
-                              <span className="font-serif font-black text-xl text-gray-600">
+                              <span className="font-serif font-black text-gray-600 text-lg">
                                 {silenceThreshold.toFixed(3)}
                               </span>
                             </div>
-                            <div className="text-center mt-0 text-sm text-gray-500">Lower = more sensitive</div>
+                            <div className="text-center mt-0 text-gray-500 text-xs">Lower = more sensitive</div>
                           </div>
                         </Card>
                       </div>
@@ -3344,7 +3344,7 @@ export default function Home() {
                     <TabsContent value="encoder" className="mt-0 space-y-6">
                       <div className="grid md:grid-cols-2 font-serif font-black gap-4">
                         <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                          <div className="bg-gradient-to-r from-logo-purple-300 to-logo-emerald-500 py-3 px-6 ">
+                          <div className="bg-gradient-to-br from-logo-purple-300 to-logo-emerald-500 py-3 px-6 ">
                             <h3 className="text-white font-black">Min Silence Duration</h3>
                           </div>
                           <div className="p-6 font-serif font-black px-11 py-6">
@@ -3356,19 +3356,19 @@ export default function Home() {
                                 step={0.5}
                                 onValueChange={(value) => setMinSilenceDuration(value[0])}
                                 className="py-4"
-                                rangeClassName="bg-gradient-to-r from-logo-purple-300 to-logo-emerald-500 "
+                                rangeClassName="bg-gradient-to-br from-logo-purple-300 to-logo-emerald-500 "
                               />
                             </div>
                             <div className="text-center">
-                              <span className="font-black text-xl text-gray-600">{minSilenceDuration}</span>
-                              <span className="ml-1 text-base text-gray-600">seconds</span>
+                              <span className="font-black text-gray-600 text-lg">{minSilenceDuration}</span>
+                              <span className="ml-1 text-gray-600 text-sm">seconds</span>
                             </div>
-                            <div className="text-center mt-0 text-sm text-gray-500">Shorter = detect more pauses</div>
+                            <div className="text-center mt-0 text-gray-500 text-xs">Shorter = detect more pauses</div>
                           </div>
                         </Card>
                         <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                          <div className="bg-gradient-to-r from-orange-300 to-logo-rose-300 py-3 px-6 ">
-                            <h3 className="text-white font-black">Min Spacing Between Content</h3>
+                          <div className="bg-gradient-to-br from-orange-300 to-logo-rose-300 py-3 px-6 ">
+                            <h3 className="text-white font-black">Min Spacing Btwn Content</h3>
                           </div>
                           <div className="p-6 px-11 py-6">
                             <div className="mb-4">
@@ -3383,22 +3383,22 @@ export default function Home() {
                               />
                             </div>
                             <div className="text-center">
-                              <span className="font-black text-xl text-gray-600">{minSpacingDuration.toFixed(1)}</span>
-                              <span className="ml-1 text-base text-gray-600">seconds</span>
+                              <span className="font-black text-gray-600 text-lg">{minSpacingDuration.toFixed(1)}</span>
+                              <span className="ml-1 text-gray-600 text-sm">seconds</span>
                             </div>
-                            <div className="text-center text-sm mt-0 text-gray-500">
+                            <div className="text-center mt-0 text-gray-500 text-xs">
                               Minimum pause between speaking parts
                             </div>
                           </div>
                         </Card>
                         <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                          <div className="bg-gradient-to-r from-pink-400 to-cyan-400 py-3 px-6 ">
+                          <div className="bg-gradient-to-br from-pink-400 to-cyan-400 py-3 px-6 ">
                             <h3 className="text-white font-black">Preserve Natural Pacing</h3>
                           </div>
                           <div className="p-6 px-11 py-6">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="mb-1 text-gray-600 text-sm mr-2">
+                                <p className="mb-1 text-gray-600 mr-2 text-xs">
                                   Maintain the relative length of pauses
                                 </p>
                               </div>
@@ -3411,7 +3411,7 @@ export default function Home() {
                           </div>
                         </Card>
                         <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                          <div className="bg-gradient-to-r from-logo-teal-500 to-logo-amber-300 py-3 px-6 ">
+                          <div className="bg-gradient-to-br from-logo-teal-500 to-logo-amber-300 py-3 px-6 ">
                             <h3 className="text-white font-black">Compatibility Mode</h3>
                           </div>
                           <div className="p-6 px-11">
@@ -3573,7 +3573,7 @@ export default function Home() {
                         radial-gradient(circle at 27% 28%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
                         radial-gradient(circle at 73% 28%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
                         
-                        linear-gradient(to right, #4b5563, #6b7280)
+                        linear-gradient(to bottom right, #4b5563, #6b7280)
                       `,
                       } as React.CSSProperties
                     }
@@ -3725,15 +3725,15 @@ export default function Home() {
                       transition={{ delay: 0.2 }}
                       className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                     >
-                      <div className="p-0.5 bg-gradient-to-b from-gray-500 to-stone-300  py-1 shadow-lg rounded-sm px-[5px]">
-                        <div className="bg-white p-4 rounded-sm shadow-nonee border-stone-200 shadow pb-3 pt-1.5 border-[3px]">
+                      <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300  py-1 shadow-lg rounded-sm px-[5px]">
+                        <div className="bg-white p-4 rounded-[10px] shadow-nonee border-stone-200 pb-3 pt-1.5 border-0 shadow-inner">
                           <div className="text-center">
                             <Textarea
                               id="custom-instruction"
                               value={customInstructionText}
                               onChange={handleCustomInstructionChange}
                               placeholder="Enter an instruction..."
-                              className="mt-2 text-sm font-serif font-black text-indigo-400 placeholder-indigo-400 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
+                              className="mt-2 text-xs font-serif font-black text-indigo-400 placeholder-indigo-400 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
                             />
                           </div>
                         </div>
@@ -3763,7 +3763,7 @@ export default function Home() {
                     transition={{ delay: 0.3 }}
                   >
                     <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                      <div className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-center">
+                      <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-center">
                         <h3 className="text-white flex items-center font-serif font-black">
                           <Music2Icon className="h-4 w-4 mr-2" />
                           Sound Cues
@@ -3827,7 +3827,7 @@ export default function Home() {
                                             console.log("[v0] multiNoteMode:", multiNoteMode)
                                             playChordPreview()
                                           }}
-                                          className="bg-gradient-to-r from-gray-600 to-gray-500 text-white font-serif font-black text-xs rounded-sm shadow-md"
+                                          className="bg-gradient-to-br from-gray-600 to-gray-500 text-white font-serif font-black text-xs rounded-sm shadow-md"
                                         >
                                           Play Chord
                                         </Button>
@@ -3909,7 +3909,7 @@ export default function Home() {
                               <AccordionContent className="pb-4">
                                 <div className="text-center py-8 text-gray-500 ">
                                   <div className="mb-2 text-lg font-black">Coming Soon!</div>
-                                  <div className="text-sm">
+                                  <div className="text-xs">
                                     Additional sound cues are being developed and will be available in a future update.
                                   </div>
                                 </div>
@@ -3918,7 +3918,7 @@ export default function Home() {
                           </Accordion>
                         </div>
                         <Button
-                          className="bg-gradient-to-r from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-[11px] hover:shadow-none font-serif font-black mt-4"
+                          className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-[11px] hover:shadow-none font-serif font-black mt-4"
                           onClick={handleAddInstructionSoundEvent}
                           disabled={!customInstructionText.trim() || (!selectedSoundCue && selectedNotes.length === 0)}
                         >
@@ -3949,9 +3949,9 @@ export default function Home() {
                 {/* Timeline Editor for encoder */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
                   <Card ref={timelineEditorRef} className="overflow-hidden border-none shadow-lg bg-white ">
-                    <div className="bg-gradient-to-r from-gray-600 to-gray-500 px-6 py-3 flex items-center justify-between gap-3 pr-3">
+                    <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-6 py-3 flex items-center justify-between gap-3 pr-3">
                       <h3 className="text-white flex items-center font-black text-base">
-                        <CircleDotDashed className="h-5 w-5 mr-2" />
+                        
                         Timeline Editor
                       </h3>
                       <div className="flex items-center gap-2">
@@ -3969,8 +3969,7 @@ export default function Home() {
                           onClick={handleTimelineUploadClick}
                           className="bg-white/10 rounded-[8px] text-white font-serif font-black text-xs hover:bg-white/20 "
                         >
-                          <Upload className="h-4 w-4 mr-1" />
-                          Upload
+                          <Upload className="h-4 w-4 mr-0" /> 
                         </Button>
                       </div>
                     </div>
@@ -4125,7 +4124,7 @@ export default function Home() {
                         radial-gradient(circle at 27% 28%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
                         radial-gradient(circle at 73% 28%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
                         
-                        linear-gradient(to right, #4b5563, #6b7280)
+                        linear-gradient(to bottom right, #4b5563, #6b7280)
                       `,
                       } as React.CSSProperties
                     }

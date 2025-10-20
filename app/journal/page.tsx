@@ -497,7 +497,7 @@ export default function JournalPage() {
                                         )
                                       }}
                                       className={cn(
-                                        "flex flex-col items-center justify-center rounded-xl border-[3px] transition-all duration-300 shadow-sm flex-shrink-0 gap-0 mx-3",
+                                        "flex flex-col items-center justify-center rounded-xl transition-all duration-300 shadow-sm flex-shrink-0 gap-0 mx-3 border-stone-400 border-4",
                                         isSelected
                                           ? "border-stone-400 bg-white text-gray-800 scale-125 shadow-xl py-5 px-6 z-10"
                                           : "border-gray-400/40 bg-muted/60 text-gray-500 hover:bg-white hover:scale-105 py-3 px-4",
