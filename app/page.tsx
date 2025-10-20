@@ -2887,1320 +2887,1214 @@ export default function Home() {
         )}
 
         <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
-        role="application"
-      >
-        <div className="relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 "></div>
-            <div className="absolute top-2 left-8 w-16 h-12 bg-gradient-to-br from-emerald-300/30 to-teal-400/25 rounded-full transform rotate-12 "></div>
-            <div className="absolute top-6 right-12 w-20 h-8 bg-gradient-to-bl from-rose-300/25 to-purple-400/20 rounded-full transform -rotate-6 "></div>
-            <div className="absolute top-1 left-1/3 w-12 h-16 bg-gradient-to-tr from-amber-300/20 to-orange-400/15 rounded-full transform rotate-45 "></div>
-            <div className="absolute top-8 right-1/4 w-14 h-10 bg-gradient-to-tl from-blue-300/25 to-indigo-400/20 rounded-full transform -rotate-12 "></div>
-          </div>
-          <div className="relative text-center px-[69px]">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-            >
-              <h1
-                className="text-5xl text-transparent bg-clip-text bg-gradient-to-bl from-logo-rose-300 to-logo-rose-500 transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 text-center mt-16 tracking-tighter"
-                style={{
-                  fontFamily: 'Georgia, "Times New Roman", serif',
-                  textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
-                }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
+          role="application"
+        >
+          <div className="relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 "></div>
+              <div className="absolute top-2 left-8 w-16 h-12 bg-gradient-to-br from-emerald-300/30 to-teal-400/25 rounded-full transform rotate-12 "></div>
+              <div className="absolute top-6 right-12 w-20 h-8 bg-gradient-to-bl from-rose-300/25 to-purple-400/20 rounded-full transform -rotate-6 "></div>
+              <div className="absolute top-1 left-1/3 w-12 h-16 bg-gradient-to-tr from-amber-300/20 to-orange-400/15 rounded-full transform rotate-45 "></div>
+              <div className="absolute top-8 right-1/4 w-14 h-10 bg-gradient-to-tl from-blue-300/25 to-indigo-400/20 rounded-full transform -rotate-12 "></div>
+            </div>
+            <div className="relative text-center px-[69px]">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
               >
-                abhī
-              </h1>
-              <div className="font-black font-serif mb-[7px] text-xs text-logo-rose-600">Meditation Tool</div>
-              <div className="flex justify-center items-center mb-4 space-x-[3px]">
-                <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[13px] h-[13px] shadow-md"></div>
-                <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px] shadow"></div>
-                <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-[3px] transform h-[9px] shadow-sm"></div>
-                <div className="w-4 bg-gradient-to-r from-gray-600 to-gray-500 border-2 border-stone-200 h-[34px] shadow-md rounded w-[9px]"></div>
-                <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[3px] transform h-[9px] pl-0 ml-2 shadow-sm"></div>
-                <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[9px] w-[9px] shadow"></div>
-                <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[13px] h-[13px] shadow-md"></div>
-              </div>
-
-              {/* Mode Switch */}
-              <div className="flex justify-center items-center mb-4 space-y-4 flex-row my-[33px]">
-                <div className="flex mx-auto items-center p-1 font-serif text-gray-600 shadow-inner rounded-sm gap-1 w-fit bg-muted">
-                  <button
-                    onClick={() => {
-                      setActiveMode("adjuster")
-                      setActiveTab("adjuster")
-                    }}
-                    className={cn(
-                      "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black py-3 tracking-tight text-sm",
-                      activeMode === "adjuster" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
-                    )}
-                  >
-                    Adjuster
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveMode("encoder")
-                      setActiveTab("encoder")
-                    }}
-                    className={cn(
-                      "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm",
-                      activeMode === "encoder" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
-                    )}
-                  >
-                    Encoder
-                  </button>
+                <h1
+                  className="text-5xl text-transparent bg-clip-text bg-gradient-to-bl from-logo-rose-300 to-logo-rose-500 transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 text-center mt-16 tracking-tighter"
+                  style={{
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
+                  }}
+                >
+                  abhī
+                </h1>
+                <div className="font-black font-serif mb-[7px] text-xs text-logo-rose-600">Meditation Tool</div>
+                <div className="flex justify-center items-center mb-4 space-x-[3px]">
+                  <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[13px] h-[13px] shadow-md"></div>
+                  <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px] shadow"></div>
+                  <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-[3px] transform h-[9px] shadow-sm"></div>
+                  <div className="w-4 bg-gradient-to-r from-gray-600 to-gray-500 border-2 border-stone-200 h-[34px] shadow-md rounded w-[9px]"></div>
+                  <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[3px] transform h-[9px] pl-0 ml-2 shadow-sm"></div>
+                  <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[9px] w-[9px] shadow"></div>
+                  <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[13px] h-[13px] shadow-md"></div>
                 </div>
-              </div>
-            </motion.div>
-          </div>
 
-          <div className="px-6 md:px-10 font-serif font-black pb-10">
-            {/* Mode Description Notes */}
-            <AnimatePresence mode="wait">
-              {activeMode === "adjuster" && (
-                <motion.div
-                  key="adjuster-note"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
-                >
-                  <p className="text-center px-4 pt-1.5 text-xs text-stone-500">
-                    Change the length of your guided meditations. Upload an audio file, set your target duration, and
-                    this tool will re-space content to fit your schedule.
-                  </p>
-                </motion.div>
-              )}
-              {activeMode === "encoder" && (
-                <motion.div
-                  key="encoder-note"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
-                >
-                  <p className="text-center px-4 pt-1.5 text-xs pb-1.5 text-stone-500">
-                    Design custom guided meditations by pairing instructions with sound cues and/or using the recorder,
-                    then arranging events on the timeline.
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            {/* Conditional Rendering based on activeMode */}
-            {activeMode === "adjuster" ? (
-              // == Length Adjuster UI ==
-              <div ref={adjusterSectionRef} className="space-y-4">
-                {/* Note and Resources sections - moved to proper position */}
-                <div className="space-y-4 mb-[27px]">
-                  <div className="p-4 max-w-2xl text-center mx-auto rounded-md border-logo-rose-500 border-0 shadow-none pt-0 pb-1">
-                    <p className="leading-relaxed font-serif font-black text-xs text-gray-600">
-                      <strong className="pr-1.5 font-black font-serif text-center text-sm text-logo-amber-400">
-                        Note:
-                      </strong>
-                      Depending on the audio, users may need to tweak the advanced settings for optimal results. Only
-                      pauses are adjusted, spoken instruction is preserved. Any guided meditation under{" "}
-                      {isMobileDevice ? "50MB" : "500MB"} should be compatible. Teachers, please feel free to reach out
-                      if you'd like to opt out. Enjoy:)
+                {/* Mode Switch */}
+                <div className="flex justify-center items-center mb-4 space-y-4 flex-row my-[33px]">
+                  <div className="flex mx-auto items-center p-1 font-serif text-gray-600 shadow-inner rounded-sm gap-1 w-fit bg-muted">
+                    <button
+                      onClick={() => {
+                        setActiveMode("adjuster")
+                        setActiveTab("adjuster")
+                      }}
+                      className={cn(
+                        "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black py-3 tracking-tight text-sm",
+                        activeMode === "adjuster" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
+                      )}
+                    >
+                      Adjuster
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveMode("encoder")
+                        setActiveTab("encoder")
+                      }}
+                      className={cn(
+                        "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm",
+                        activeMode === "encoder" ? "bg-white text-gray-600 shadow-sm " : "text-gray-600 ",
+                      )}
+                    >
+                      Encoder
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+
+            <div className="px-6 md:px-10 font-serif font-black pb-10">
+              {/* Mode Description Notes */}
+              <AnimatePresence mode="wait">
+                {activeMode === "adjuster" && (
+                  <motion.div
+                    key="adjuster-note"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
+                  >
+                    <p className="text-center px-4 pt-1.5 text-xs text-stone-500">
+                      Change the length of your guided meditations. Upload an audio file, set your target duration, and
+                      this tool will re-space content to fit your schedule.
                     </p>
-                  </div>
-                  <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto backdrop-blur-sm border-0 py-4 px-0 bg-transparent pt-0 pb-0">
-                    <h3 className="mb-2 text-center font-black px-0 rounded text-base pb-0.5 text-gray-600">
-                      Resources
-                    </h3>
-                    <div className="text-sm text-gray-600 leading-relaxed flex flex-wrap justify-center text-center gap-[5px] px-2">
-                      <a
-                        href="https://dharmaseed.org/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
-                      >
-                        Dharma Seed
-                      </a>
-                      <a
-                        href="https://dharmaseed.org/teacher/210/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
-                      >
-                        Rob Burbea's talks &amp; retreats
-                      </a>
-                      <a
-                        href="https://tasshin.com/guided-meditations/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
-                      >
-                        Tasshin &amp; friend's meditations
-                      </a>
-                      <a
-                        href="https://www.tarabrach.com/guided-meditations/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
-                      >
-                        Tara Brach's meditations
-                      </a>
-                      <a
-                        href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDDo3?usp=drive_link"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
-                      >
-                        Toby Sola's meditations
-                      </a>
-                      <a
-                        href="https://meditofoundation.org/meditations"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
-                      >
-                        Medito Foundation
-                      </a>
-                      
+                  </motion.div>
+                )}
+                {activeMode === "encoder" && (
+                  <motion.div
+                    key="encoder-note"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
+                  >
+                    <p className="text-center px-4 pt-1.5 text-xs pb-1.5 text-stone-500">
+                      Design custom guided meditations by pairing instructions with sound cues and/or using the
+                      recorder, then arranging events on the timeline.
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              {/* Conditional Rendering based on activeMode */}
+              {activeMode === "adjuster" ? (
+                // == Length Adjuster UI ==
+                <div ref={adjusterSectionRef} className="space-y-4">
+                  {/* Note and Resources sections - moved to proper position */}
+                  <div className="space-y-4 mb-[27px]">
+                    <div className="p-4 max-w-2xl text-center mx-auto rounded-md border-logo-rose-500 border-0 shadow-none pt-0 pb-1">
+                      <p className="leading-relaxed font-serif font-black text-xs text-gray-600">
+                        <strong className="pr-1.5 font-black font-serif text-center text-sm text-logo-amber-400">
+                          Note:
+                        </strong>
+                        Depending on the audio, users may need to tweak the advanced settings for optimal results. Only
+                        pauses are adjusted, spoken instruction is preserved. Any guided meditation under{" "}
+                        {isMobileDevice ? "50MB" : "500MB"} should be compatible. Teachers, please feel free to reach
+                        out if you'd like to opt out. Enjoy:)
+                      </p>
                     </div>
-                  </div>
-                </div>
-
-                {/* Upload Area */}
-                <motion.div
-                  whileHover={{ scale: 1.005 }}
-                  whileTap={{ scale: 0.995 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                  ref={uploadAreaRef}
-                  className="overflow-hidden border-none bg-white rounded-2xl mb-5 cursor-pointer transition-all duration-300 shadow-none hover:shadow-lg "
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={handleDragOverAction}
-                  onDragLeave={handleDragLeaveAction}
-                  onDrop={handleDropAction}
-                >
-                  <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
-                    <div className="p-10 md:p-16 text-center bg-white rounded-sm border-stone-200 md:px-16 md:py-[33px] border-0 shadow-nonene">
-                      <motion.div
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                      >
-                        <div className="font-serif font-black text-gray-600 mb-[3px] text-sm">
-                          Drop your audio file here or click to browse
-                        </div>
-                        <div className="font-serif text-xs text-gray-500">
-                          Supports MP3, WAV, OGG, and M4A files {"(Max: " + (isMobileDevice ? "50MB" : "500MB") + ")"}
-                        </div>
-                      </motion.div>
-                    </div>
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    accept=".mp3,.wav,.ogg,.m4a,audio/*"
-                    onChange={handleFileSelectAction}
-                  />
-                </motion.div>
-
-                <AnimatePresence>
-                  {file && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, height: 0 }}
-                      animate={{ opacity: 1, y: 0, height: "auto" }}
-                      exit={{ opacity: 0, y: -10, height: 0 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="p-0.5 overflow-hidden bg-gradient-to-tl from-gray-500 to-stone-300 py-1 rounded-sm px-[5px] mb-3.5 shadow-none"
-                    >
-                      <div className="bg-white p-5 py-4 rounded-sm border-stone-200 border-0 shadow-none">
-                        <div className="flex items-center">
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: "spring", stiffness: 500, damping: 30, delay: 0.1 }}
-                            className="p-2 rounded-lg mr-4 bg-transparent text-purple-300"
-                          >
-                            <Volume2 className="h-4 w-4 text-gray-600" />
-                          </motion.div>
-                          <div className="flex-1">
-                            <motion.div
-                              initial={{ opacity: 0, x: -5 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: 0.2 }}
-                              className="mb-1 font-black text-gray-600 text-xs"
-                            >
-                              {displayedFileName ?? file.name}
-                            </motion.div>
-                            <motion.div
-                              initial={{ opacity: 0, x: -5 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: 0.3 }}
-                              className="mb-1 font-black text-gray-500 text-xs"
-                            >
-                              Size: {formatFileSize(file.size)}
-                              {" • Type: "}
-                              {file.type}
-                            </motion.div>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <div className="mt-4 space-y-5">
-                  {originalUrl && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <div className="rounded-sm p-3 px-0 shadow-none border-gray-500 bg-transparent border-0 mb-0">
-                        <audio controls className="w-full" src={originalUrl}></audio>
-                      </div>
-                      <div className="px-3.5 text-center">
-                        <SaveMeditationDialog
-                          audioUrl={originalUrl}
-                          mp3Blob={file ?? undefined}
-                          originalFileName={file?.name || "original-audio"}
-                          duration={originalBuffer?.duration || 0}
-                          source="adjuster"
-                          metadata={
-                            analysisLowerBoundSeconds
-                              ? { quickAdjust: { range: { minSeconds: analysisLowerBoundSeconds } } }
-                              : {}
-                          }
-                          existingMeditationId={loadedLibraryContext?.id}
-                          existingMeditationTitle={loadedLibraryContext?.title}
-                          existingMeditationDuration={loadedLibraryContext?.duration}
+                    <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto backdrop-blur-sm border-0 py-4 px-0 bg-transparent pt-0 pb-0">
+                      <h3 className="mb-2 text-center font-black px-0 rounded text-base pb-0.5 text-gray-600">
+                        Resources
+                      </h3>
+                      <div className="text-sm text-gray-600 leading-relaxed flex flex-wrap justify-center text-center gap-[5px] px-2">
+                        <a
+                          href="https://dharmaseed.org/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
                         >
-                          <Button
-                            className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500"
-                            disabled={!originalBuffer}
-                          >
-                            <BookmarkPlus className="w-4 h-4 mr-2" />
-                            Save to Library
-                          </Button>
-                        </SaveMeditationDialog>
+                          Dharma Seed
+                        </a>
+                        <a
+                          href="https://dharmaseed.org/teacher/210/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
+                        >
+                          Rob Burbea's talks &amp; retreats
+                        </a>
+                        <a
+                          href="https://tasshin.com/guided-meditations/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
+                        >
+                          Tasshin &amp; friend's meditations
+                        </a>
+                        <a
+                          href="https://www.tarabrach.com/guided-meditations/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
+                        >
+                          Tara Brach's meditations
+                        </a>
+                        <a
+                          href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDDo3?usp=drive_link"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
+                        >
+                          Toby Sola's meditations
+                        </a>
+                        <a
+                          href="https://meditofoundation.org/meditations"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
+                        >
+                          Medito Foundation
+                        </a>
                       </div>
-                    </motion.div>
-                  )}
+                    </div>
+                  </div>
+
+                  {/* Upload Area */}
+                  <motion.div
+                    whileHover={{ scale: 1.005 }}
+                    whileTap={{ scale: 0.995 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                    ref={uploadAreaRef}
+                    className="overflow-hidden border-none bg-white rounded-2xl mb-5 cursor-pointer transition-all duration-300 shadow-none hover:shadow-lg "
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={handleDragOverAction}
+                    onDragLeave={handleDragLeaveAction}
+                    onDrop={handleDropAction}
+                  >
+                    <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
+                      <div className="p-10 md:p-16 text-center bg-white rounded-sm border-stone-200 md:px-16 md:py-[33px] border-0 shadow-nonene">
+                        <motion.div
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.2 }}
+                        >
+                          <div className="font-serif font-black text-gray-600 mb-[3px] text-sm">
+                            Drop your audio file here or click to browse
+                          </div>
+                          <div className="font-serif text-xs text-gray-500">
+                            Supports MP3, WAV, OGG, and M4A files {"(Max: " + (isMobileDevice ? "50MB" : "500MB") + ")"}
+                          </div>
+                        </motion.div>
+                      </div>
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      accept=".mp3,.wav,.ogg,.m4a,audio/*"
+                      onChange={handleFileSelectAction}
+                    />
+                  </motion.div>
 
                   <AnimatePresence>
-                    {analysisProgress !== null && (
+                    {file && (
                       <motion.div
-                        key="analysis-progress"
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.2 }}
-                        className="flex items-center justify-center text-xs text-gray-600 gap-2"
+                        initial={{ opacity: 0, y: 10, height: 0 }}
+                        animate={{ opacity: 1, y: 0, height: "auto" }}
+                        exit={{ opacity: 0, y: -10, height: 0 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        className="p-0.5 overflow-hidden bg-gradient-to-tl from-gray-500 to-stone-300 py-1 rounded-sm px-[5px] mb-3.5 shadow-none"
                       >
-                        <CircleDotDashed className="h-4 w-4 animate-spin" />
-                        <span>
-                          Analyzing audio{analysisProgress >= 0 ? ` (${Math.round(analysisProgress)}%)` : ""}...
-                        </span>
-                      </motion.div>
-                    )}
-                    {audioAnalysis && durationLimits && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ delay: 0.1 }}
-                      >
-                        <Alert className="bg-white p-0 border-0 shadow-none">
-                          <div className="p-3 text-center min-h-[76px] rounded-sm shadow-none bg-transparent pb-0.5 pt-0">
-                            <div className="flex items-center mb-2 justify-center">
-                              {/* Removed the Info icon div */}
-                              
-                            </div>
-
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                              <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
-                                <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
-                                  <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
-                                  <div className="font-black text-gray-600">
-                                    {formatTime(audioAnalysis.contentDuration)}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
-                                <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-[3px] border-stone-200">
-                                  <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
-                                  <div className="font-black text-gray-600">
-                                    {formatTime(audioAnalysis.totalSilence)}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
-                                <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
-                                  <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
-                                  <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
-                                </div>
-                              </div>
-                              <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
-                                <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
-                                  <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
-                                  <div className="uppercase text-gray-600 text-xs tracking-wide">
-                                    {durationLimits.min} min - {isMobileDevice ? "1 hour" : "2 hours"}
-                                  </div>
-                                </div>
-                              </div>
+                        <div className="bg-white p-5 py-4 rounded-sm border-stone-200 border-0 shadow-none">
+                          <div className="flex items-center">
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ type: "spring", stiffness: 500, damping: 30, delay: 0.1 }}
+                              className="p-2 rounded-lg mr-4 bg-transparent text-purple-300"
+                            >
+                              <Volume2 className="h-4 w-4 text-gray-600" />
+                            </motion.div>
+                            <div className="flex-1">
+                              <motion.div
+                                initial={{ opacity: 0, x: -5 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="mb-1 font-black text-gray-600 text-xs"
+                              >
+                                {displayedFileName ?? file.name}
+                              </motion.div>
+                              <motion.div
+                                initial={{ opacity: 0, x: -5 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.3 }}
+                                className="mb-1 font-black text-gray-500 text-xs"
+                              >
+                                Size: {formatFileSize(file.size)}
+                                {" • Type: "}
+                                {file.type}
+                              </motion.div>
                             </div>
                           </div>
-                        </Alert>
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </div>
 
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="mb-6"
-                >
-                  <Tabs defaultValue={activeTab} className="w-full font-serif font-black">
-                    <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted p-1 rounded-sm ">
-                      <TabsTrigger
-                        value="adjuster"
-                        onClick={() => {
-                          setActiveMode("adjuster")
-                          setActiveTab("adjuster")
-                        }}
-                        className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-[10px] "
+                  <div className="mt-4 space-y-5">
+                    {originalUrl && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
                       >
-                        Settings
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="encoder"
-                        onClick={() => {
-                          setActiveTab("adjuster") // Only change the tab, not the mode
-                        }}
-                        className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-[10px] "
-                      >
-                        Advanced 
-                      </TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="adjuster" className="mt-0 space-y-6">
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                          <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-cyan-500">
-                            <h3 className="text-white font-black text-base">Target Duration</h3>
-                          </div>
-                          <div className="p-6 py-6 px-11 pb-6">
-                            <div className="mb-4">
-                              <Slider
-                                value={[targetDuration]}
-                                min={durationLimits?.min || 5}
-                                max={durationLimits?.max || (isMobileDevice ? 60 : 120)}
-                                step={1}
-                                onValueChange={(value) => setTargetDuration(value[0])}
-                                disabled={!durationLimits}
-                                className="py-4"
-                                rangeClassName="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 "
-                              />
-                            </div>
-                            <div className="text-center font-serif font-black">
-                              <span className="font-black text-gray-600 text-lg">{targetDuration}</span>
-                              <span className="ml-1 text-gray-600 text-sm">minutes</span>
-                            </div>
-                            {durationLimits && (
-                              <div className="text-center text-sm mt-0 text-gray-500">
-                                Range: {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
-                              </div>
-                            )}
-                          </div>
-                        </Card>
-                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                          <div className="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 py-3 px-6 ">
-                            <h3 className="text-white font-black">Silence Threshold</h3>
-                          </div>
-                          <div className="p-6 px-11">
-                            <div className="mb-4">
-                              <Slider
-                                value={[silenceThreshold]}
-                                min={0.001}
-                                max={0.05}
-                                step={0.001}
-                                onValueChange={(value) => setSilenceThreshold(value[0])}
-                                className="py-4"
-                                rangeClassName="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 "
-                              />
-                            </div>
-                            <div className="text-center">
-                              <span className="font-serif font-black text-gray-600 text-lg">
-                                {silenceThreshold.toFixed(3)}
-                              </span>
-                            </div>
-                            <div className="text-center mt-0 text-gray-500 text-xs">Lower = more sensitive</div>
-                          </div>
-                        </Card>
-                      </div>
-                    </TabsContent>
-                    <TabsContent value="encoder" className="mt-0 space-y-6">
-                      <div className="grid md:grid-cols-2 font-serif font-black gap-4">
-                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                          <div className="bg-gradient-to-br from-logo-purple-300 to-logo-emerald-500 py-3 px-6 ">
-                            <h3 className="text-white font-black">Min Silence Duration</h3>
-                          </div>
-                          <div className="p-6 font-serif font-black px-11 py-6">
-                            <div className="mb-4">
-                              <Slider
-                                value={[minSilenceDuration]}
-                                min={1}
-                                max={15}
-                                step={0.5}
-                                onValueChange={(value) => setMinSilenceDuration(value[0])}
-                                className="py-4"
-                                rangeClassName="bg-gradient-to-br from-logo-purple-300 to-logo-emerald-500 "
-                              />
-                            </div>
-                            <div className="text-center">
-                              <span className="font-black text-gray-600 text-lg">{minSilenceDuration}</span>
-                              <span className="ml-1 text-gray-600 text-sm">seconds</span>
-                            </div>
-                            <div className="text-center mt-0 text-gray-500 text-xs">Shorter = detect more pauses</div>
-                          </div>
-                        </Card>
-                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                          <div className="bg-gradient-to-br from-orange-300 to-logo-rose-300 py-3 px-6 ">
-                            <h3 className="text-white font-black">Min Spacing Btwn Content</h3>
-                          </div>
-                          <div className="p-6 px-11 py-6">
-                            <div className="mb-4">
-                              <Slider
-                                value={[minSpacingDuration]}
-                                min={0.0}
-                                max={5}
-                                step={0.1}
-                                onValueChange={(value) => setMinSpacingDuration(value[0])}
-                                className="py-4"
-                                rangeClassName="bg-gradient-to-r from-orange-300 to-logo-rose-300 "
-                              />
-                            </div>
-                            <div className="text-center">
-                              <span className="font-black text-gray-600 text-lg">{minSpacingDuration.toFixed(1)}</span>
-                              <span className="ml-1 text-gray-600 text-sm">seconds</span>
-                            </div>
-                            <div className="text-center mt-0 text-gray-500 text-xs">
-                              Minimum pause between speaking parts
-                            </div>
-                          </div>
-                        </Card>
-                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                          <div className="bg-gradient-to-br from-pink-400 to-cyan-400 py-3 px-6 ">
-                            <h3 className="text-white font-black">Preserve Natural Pacing</h3>
-                          </div>
-                          <div className="p-6 px-11 py-6">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="mb-1 text-gray-600 mr-2 text-xs">
-                                  Maintain the relative length of pauses
-                                </p>
-                              </div>
-                              <Switch
-                                checked={preserveNaturalPacing}
-                                onCheckedChange={setPreserveNaturalPacing}
-                                className="data-[state=checked]:bg-gray-500 "
-                              />
-                            </div>
-                          </div>
-                        </Card>
-                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                          <div className="bg-gradient-to-br from-logo-teal-500 to-logo-amber-300 py-3 px-6 ">
-                            <h3 className="text-white font-black">Compatibility Mode</h3>
-                          </div>
-                          <div className="p-6 px-11">
-                            <Select value={compatibilityMode} onValueChange={(value) => setCompatibilityMode(value)}>
-                              <SelectTrigger className="w-full mb-2 border-logo-teal-200 focus:ring-logo-teal-500 ">
-                                <SelectValue placeholder="Select compatibility mode" />
-                              </SelectTrigger>
-                              <SelectContent className="">
-                                <SelectItem value="standard">Standard Quality (Original SR)</SelectItem>
-                                <SelectItem value="high">
-                                  High Compatibility (44.1kHz or 22.05kHz for Mobile Long Audio)
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <div className="text-xs mt-3.5 text-gray-500">
-                              High Compatibility for better playback on mobile/AirPods. May reduce sample rate for long
-                              audio on mobile.
-                            </div>
-                          </div>
-                        </Card>
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                </motion.div>
-
-                {/* Process Audio Button */}
-                <motion.div className="mt-0" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-                  <Button
-                    onClick={handleProcessAudio}
-                    disabled={isProcessing || !originalBuffer}
-                    className={cn(
-                      "w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
-                      "shadow-lg hover:shadow-xl active:shadow-none",
-                      "text-white ",
-                      "disabled:cursor-not-allowed hover:opacity-100 disabled:opacity-100",
-                      "relative overflow-hidden",
-                    )}
-                    style={
-                      {
-                        backgroundImage: `
-                        radial-gradient(circle at 8% 14%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
-                        radial-gradient(circle at 92% 14%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
-                        radial-gradient(circle at 8% 86%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
-                        radial-gradient(circle at 92% 86%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
-                        radial-gradient(circle at 15% 8%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
-                        radial-gradient(circle at 85% 8%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
-                        radial-gradient(circle at 15% 92%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
-                        radial-gradient(circle at 85% 92%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
-                        radial-gradient(circle at 4% 22%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 96% 22%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 4% 78%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 96% 78%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 12% 28%, rgba(255, 255, 255, 0.7) 0.3px, transparent 1px),
-                        radial-gradient(circle at 88% 28%, rgba(255, 255, 255, 0.7) 0.3px, transparent 1px),
-                        radial-gradient(circle at 12% 72%, rgba(255, 255, 255, 0.7) 0.3px, transparent 1px),
-                        radial-gradient(circle at 88% 72%, rgba(255, 255, 255, 0.7) 0.3px, transparent 1px),
-                        radial-gradient(circle at 22% 18%, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px),
-                        radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px),
-                        radial-gradient(circle at 22% 82%, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px),
-                        radial-gradient(circle at 78% 82%, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px),
-                        radial-gradient(circle at 18% 72%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
-                        radial-gradient(circle at 82% 72%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
-                        radial-gradient(circle at 18% 28%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
-                        radial-gradient(circle at 82% 28%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
-                        radial-gradient(circle at 14% 85%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
-                        radial-gradient(circle at 86% 85%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
-                        radial-gradient(circle at 14% 15%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
-                        radial-gradient(circle at 86% 15%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
-                        radial-gradient(circle at 6% 92%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
-                        radial-gradient(circle at 94% 92%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
-                        radial-gradient(circle at 6% 8%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
-                        radial-gradient(circle at 94% 8%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
-                        radial-gradient(circle at 24% 88%, rgba(255, 255, 255, 0.9) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 76% 88%, rgba(255, 255, 255, 0.9) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 24% 12%, rgba(255, 255, 255, 0.9) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 76% 12%, rgba(255, 255, 255, 0.9) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 5% 35%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
-                        radial-gradient(circle at 95% 35%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
-                        radial-gradient(circle at 5% 65%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
-                        radial-gradient(circle at 95% 65%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
-                        radial-gradient(circle at 12% 68%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                        radial-gradient(circle at 88% 68%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                        radial-gradient(circle at 12% 32%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                        radial-gradient(circle at 88% 32%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                        radial-gradient(circle at 8% 38%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
-                        radial-gradient(circle at 92% 38%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
-                        radial-gradient(circle at 8% 62%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
-                        radial-gradient(circle at 92% 62%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
-                        radial-gradient(circle at 18% 15%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                        radial-gradient(circle at 82% 15%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                        radial-gradient(circle at 18% 85%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                        radial-gradient(circle at 82% 85%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                        radial-gradient(circle at 24% 5%, rgba(255, 255, 255, 0.85) 0.6px, transparent 1px),
-                        radial-gradient(circle at 76% 5%, rgba(255, 255, 255, 0.85) 0.6px, transparent 1px),
-                        radial-gradient(circle at 24% 95%, rgba(255, 255, 255, 0.85) 0.6px, transparent 1px),
-                        radial-gradient(circle at 76% 95%, rgba(255, 255, 255, 0.85) 0.6px, transparent 1px),
-                        radial-gradient(circle at 76% 25%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 24% 25%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 76% 75%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 24% 75%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 3% 62%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
-                        radial-gradient(circle at 97% 62%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
-                        radial-gradient(circle at 3% 38%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
-                        radial-gradient(circle at 97% 38%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
-                        radial-gradient(circle at 9% 42%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
-                        radial-gradient(circle at 91% 42%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
-                        radial-gradient(circle at 9% 58%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
-                        radial-gradient(circle at 91% 58%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
-                        radial-gradient(circle at 16% 95%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
-                        radial-gradient(circle at 84% 95%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
-                        radial-gradient(circle at 16% 5%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
-                        radial-gradient(circle at 84% 5%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
-                        radial-gradient(circle at 22% 78%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
-                        radial-gradient(circle at 78% 78%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
-                        radial-gradient(circle at 22% 22%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
-                        radial-gradient(circle at 78% 22%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
-                        radial-gradient(circle at 26% 12%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
-                        radial-gradient(circle at 74% 12%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
-                        radial-gradient(circle at 26% 88%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
-                        radial-gradient(circle at 74% 88%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
-                        radial-gradient(circle at 4% 68%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 96% 68%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 4% 32%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 96% 32%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 11% 18%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
-                        radial-gradient(circle at 89% 18%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
-                        radial-gradient(circle at 11% 82%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
-                        radial-gradient(circle at 89% 82%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
-                        radial-gradient(circle at 19% 32%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
-                        radial-gradient(circle at 81% 32%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
-                        radial-gradient(circle at 19% 68%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
-                        radial-gradient(circle at 81% 68%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
-                        radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
-                        radial-gradient(circle at 75% 25%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
-                        radial-gradient(circle at 25% 75%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
-                        radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
-                        radial-gradient(circle at 28% 8%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 72% 8%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 28% 92%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 72% 92%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 2% 12%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
-                        radial-gradient(circle at 98% 12%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
-                        radial-gradient(circle at 2% 88%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
-                        radial-gradient(circle at 98% 88%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
-                        radial-gradient(circle at 7% 88%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                        radial-gradient(circle at 93% 88%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                        radial-gradient(circle at 7% 12%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                        radial-gradient(circle at 93% 12%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                        radial-gradient(circle at 13% 5%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
-                        radial-gradient(circle at 87% 5%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
-                        radial-gradient(circle at 13% 95%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
-                        radial-gradient(circle at 87% 95%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
-                        radial-gradient(circle at 20% 92%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                        radial-gradient(circle at 80% 92%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                        radial-gradient(circle at 20% 8%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                        radial-gradient(circle at 80% 8%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                        radial-gradient(circle at 27% 72%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
-                        radial-gradient(circle at 73% 72%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
-                        radial-gradient(circle at 27% 28%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
-                        radial-gradient(circle at 73% 28%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
-                        
-                        linear-gradient(to bottom right, #4b5563, #6b7280)
-                      `,
-                      } as React.CSSProperties
-                    }
-                  >
-                    <span className="font-black text-base tracking-tight text-white">
-                      {isProcessing ? "Processing..." : "Process Audio"}
-                    </span>
-                  </Button>
-                </motion.div>
-
-                {isProcessingComplete && processedUrl && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
-                      <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-white font-black">Processed Audio</h3>
-                          <AudioInfoMenu
-                            items={[
-                              {
-                                label: "Actual Duration",
-                                value: actualDuration ? formatTime(actualDuration) : "--",
-                              },
-                              {
-                                label: "Target Duration",
-                                value: formatTime(targetDuration * 60),
-                              },
-                              {
-                                label: "Pauses Adjusted",
-                                value: pausesAdjusted,
-                              },
-                              {
-                                label: "File Size",
-                                value: formatFileSize(processedFileSize),
-                              },
-                              ...(processedAudioMetadata
-                                ? [
-                                    {
-                                      label: "Output Format",
-                                      value: `Mono • ${processedAudioMetadata.sampleRate.toLocaleString()} Hz • ${processedAudioMetadata.bitDepth.toLocaleString()}-bit`,
-                                    },
-                                  ]
-                                : []),
-                            ]}
-                          />
+                        <div className="rounded-sm p-3 px-0 shadow-none border-gray-500 bg-transparent border-0 mb-0">
+                          <audio controls className="w-full" src={originalUrl}></audio>
                         </div>
-                      </div>
-                      <div className="p-6 px-3.5 py-4 space-y-4">
-                        <div className="bg-white p-3 rounded-sm shadow-md px-0 mb-0">
-                          <audio controls className="w-full" src={processedUrl}></audio>
-                        </div>
-                        <SaveMeditationDialog
-                          audioUrl={processedUrl}
-                          mp3Blob={processedDistributionBlob ?? undefined}
-                          originalFileName={file?.name || "meditation"}
-                          duration={actualDuration || targetDuration * 60}
-                          source="adjuster"
-                          metadata={{
-                            targetDuration,
-                            pausesAdjusted,
-                            wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
-                            timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
-                            ...(quickAdjustRange
-                              ? { quickAdjust: { range: { minSeconds: quickAdjustRange.minSeconds } } }
-                              : {}),
-                          }}
-                          existingMeditationId={loadedLibraryContext?.id}
-                          existingMeditationTitle={loadedLibraryContext?.title}
-                          existingMeditationDuration={loadedLibraryContext?.duration}
-                        >
-                          <Button className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black">
-                            <BookmarkPlus className="h-4 w-4 mr-2" />
-                            Save to Library
-                          </Button>
-                        </SaveMeditationDialog>
-                      </div>
-                    </Card>
-                  </motion.div>
-                )}
-              </div>
-            ) : (
-              // == Encoder UI ==
-              <motion.div
-                key="encoder-content"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-4"
-              >
-                <motion.div
-                  className="text-gray-600"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <Card className="overflow-visible bg-white max-w-2xl mx-auto rounded-2xl shadow-none">
-                    <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none">
-                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto] text-gray-600 pb-2 gap-4 justify-center">
-                        <div className="text-center">
-                          <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
-                            Title
-                          </Label>
-                          <input
-                            id="meditation-title"
-                            type="text"
-                            value={meditationTitle}
-                            onChange={handleMeditationTitleChange}
-                            placeholder="My Custom Meditation"
-                            className="flex file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 text-center border-[3px] shadow-md h-9 w-60"
-                          />
-                        </div>
-                        <div className="text-center">
-                          <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
-                            Duration (h:m:s)
-                          </Label>
-                          <div id="encoder-duration" className="mt-3 flex flex-col items-center gap-4">
-                            <TimerWheel
-                              value={encoderTotalDuration}
-                              onChange={handleEncoderDurationChange}
-                              className="bg-white px-6 py-4 rounded-2xl border-[3px] border-gray-500 shadow-md"
-                            />
+                        <div className="px-3.5 text-center">
+                          <SaveMeditationDialog
+                            audioUrl={originalUrl}
+                            mp3Blob={file ?? undefined}
+                            originalFileName={file?.name || "original-audio"}
+                            duration={originalBuffer?.duration || 0}
+                            source="adjuster"
+                            metadata={
+                              analysisLowerBoundSeconds
+                                ? { quickAdjust: { range: { minSeconds: analysisLowerBoundSeconds } } }
+                                : {}
+                            }
+                            existingMeditationId={loadedLibraryContext?.id}
+                            existingMeditationTitle={loadedLibraryContext?.title}
+                            existingMeditationDuration={loadedLibraryContext?.duration}
+                          >
                             <Button
-                              type="button"
-                              onClick={handleActivateTimer}
-                              className="rounded-full bg-gradient-to-r from-logo-teal-500 to-logo-emerald-500 px-6 py-2 text-white font-black shadow-md hover:shadow-lg"
+                              className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500"
+                              disabled={!originalBuffer}
                             >
-                              Use as timer
+                              <BookmarkPlus className="w-4 h-4 mr-2" />
+                              Save to Library
                             </Button>
-                          </div>
+                          </SaveMeditationDialog>
                         </div>
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
+                      </motion.div>
+                    )}
 
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-4"
-                >
-                  <div className="flex flex-col gap-4">
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
-                    >
-                      <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300  py-1 shadow-lg rounded-sm px-[5px]">
-                        <div className="bg-white p-4 rounded-[10px] shadow-nonee border-stone-200 pb-3 pt-1.5 border-0 shadow-inner">
-                          <div className="text-center">
-                            <Textarea
-                              id="custom-instruction"
-                              value={customInstructionText}
-                              onChange={handleCustomInstructionChange}
-                              placeholder="Enter an instruction..."
-                              className="mt-2 text-xs font-serif font-black text-indigo-400 placeholder-indigo-400 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                    <RecorderSection
-                      className="hidden lg:block"
-                      inputId="recording-label-desktop"
-                      recordingLabel={recordingLabel}
-                      onRecordingLabelChange={handleRecordingLabelChange}
-                      isRecording={isRecording}
-                      startRecording={startRecording}
-                      stopRecording={stopRecording}
-                      readyToAddToTimelineRecording={readyToAddToTimelineRecording}
-                      timelineEvents={timelineEvents}
-                      addEventToTimeline={addEventToTimeline}
-                      setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
-                      setRecordedBlobs={setRecordedBlobs}
-                      setRecordingLabel={setRecordingLabel}
-                      recordingPreviewRef={recordingPreviewRef}
-                    />
+                    <AnimatePresence>
+                      {analysisProgress !== null && (
+                        <motion.div
+                          key="analysis-progress"
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex items-center justify-center text-xs text-gray-600 gap-2"
+                        >
+                          <CircleDotDashed className="h-4 w-4 animate-spin" />
+                          <span>
+                            Analyzing audio{analysisProgress >= 0 ? ` (${Math.round(analysisProgress)}%)` : ""}...
+                          </span>
+                        </motion.div>
+                      )}
+                      {audioAnalysis && durationLimits && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ delay: 0.1 }}
+                        >
+                          <Alert className="bg-white p-0 border-0 shadow-none">
+                            <div className="p-3 text-center min-h-[76px] rounded-sm shadow-none bg-transparent pb-0.5 pt-0">
+                              <div className="flex items-center mb-2 justify-center">
+                                {/* Removed the Info icon div */}
+                              </div>
+
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
+                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
+                                    <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
+                                    <div className="font-black text-gray-600">
+                                      {formatTime(audioAnalysis.contentDuration)}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
+                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-[3px] border-stone-200">
+                                    <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
+                                    <div className="font-black text-gray-600">
+                                      {formatTime(audioAnalysis.totalSilence)}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
+                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
+                                    <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
+                                    <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
+                                  </div>
+                                </div>
+                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
+                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
+                                    <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
+                                    <div className="uppercase text-gray-600 text-xs tracking-wide">
+                                      {durationLimits.min} min - {isMobileDevice ? "1 hour" : "2 hours"}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </Alert>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="mb-6"
+                  >
+                    <Tabs defaultValue={activeTab} className="w-full font-serif font-black">
+                      <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted p-1 rounded-sm ">
+                        <TabsTrigger
+                          value="adjuster"
+                          onClick={() => {
+                            setActiveMode("adjuster")
+                            setActiveTab("adjuster")
+                          }}
+                          className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-[10px] "
+                        >
+                          Settings
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="encoder"
+                          onClick={() => {
+                            setActiveTab("adjuster") // Only change the tab, not the mode
+                          }}
+                          className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-[10px] "
+                        >
+                          Advanced
+                        </TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="adjuster" className="mt-0 space-y-6">
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                            <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-cyan-500">
+                              <h3 className="text-white font-black text-base">Target Duration</h3>
+                            </div>
+                            <div className="p-6 py-6 px-11 pb-6">
+                              <div className="mb-4">
+                                <Slider
+                                  value={[targetDuration]}
+                                  min={durationLimits?.min || 5}
+                                  max={durationLimits?.max || (isMobileDevice ? 60 : 120)}
+                                  step={1}
+                                  onValueChange={(value) => setTargetDuration(value[0])}
+                                  disabled={!durationLimits}
+                                  className="py-4"
+                                  rangeClassName="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 "
+                                />
+                              </div>
+                              <div className="text-center font-serif font-black">
+                                <span className="font-black text-gray-600 text-lg">{targetDuration}</span>
+                                <span className="ml-1 text-gray-600 text-sm">minutes</span>
+                              </div>
+                              {durationLimits && (
+                                <div className="text-center text-sm mt-0 text-gray-500">
+                                  Range: {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
+                                </div>
+                              )}
+                            </div>
+                          </Card>
+                          <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                            <div className="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 py-3 px-6 ">
+                              <h3 className="text-white font-black">Silence Threshold</h3>
+                            </div>
+                            <div className="p-6 px-11">
+                              <div className="mb-4">
+                                <Slider
+                                  value={[silenceThreshold]}
+                                  min={0.001}
+                                  max={0.05}
+                                  step={0.001}
+                                  onValueChange={(value) => setSilenceThreshold(value[0])}
+                                  className="py-4"
+                                  rangeClassName="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 "
+                                />
+                              </div>
+                              <div className="text-center">
+                                <span className="font-serif font-black text-gray-600 text-lg">
+                                  {silenceThreshold.toFixed(3)}
+                                </span>
+                              </div>
+                              <div className="text-center mt-0 text-gray-500 text-xs">Lower = more sensitive</div>
+                            </div>
+                          </Card>
+                        </div>
+                      </TabsContent>
+                      <TabsContent value="encoder" className="mt-0 space-y-6">
+                        <div className="grid md:grid-cols-2 font-serif font-black gap-4">
+                          <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                            <div className="bg-gradient-to-br from-logo-purple-300 to-logo-emerald-500 py-3 px-6 ">
+                              <h3 className="text-white font-black">Min Silence Duration</h3>
+                            </div>
+                            <div className="p-6 font-serif font-black px-11 py-6">
+                              <div className="mb-4">
+                                <Slider
+                                  value={[minSilenceDuration]}
+                                  min={1}
+                                  max={15}
+                                  step={0.5}
+                                  onValueChange={(value) => setMinSilenceDuration(value[0])}
+                                  className="py-4"
+                                  rangeClassName="bg-gradient-to-br from-logo-purple-300 to-logo-emerald-500 "
+                                />
+                              </div>
+                              <div className="text-center">
+                                <span className="font-black text-gray-600 text-lg">{minSilenceDuration}</span>
+                                <span className="ml-1 text-gray-600 text-sm">seconds</span>
+                              </div>
+                              <div className="text-center mt-0 text-gray-500 text-xs">Shorter = detect more pauses</div>
+                            </div>
+                          </Card>
+                          <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                            <div className="bg-gradient-to-br from-orange-300 to-logo-rose-300 py-3 px-6 ">
+                              <h3 className="text-white font-black">Min Spacing Btwn Content</h3>
+                            </div>
+                            <div className="p-6 px-11 py-6">
+                              <div className="mb-4">
+                                <Slider
+                                  value={[minSpacingDuration]}
+                                  min={0.0}
+                                  max={5}
+                                  step={0.1}
+                                  onValueChange={(value) => setMinSpacingDuration(value[0])}
+                                  className="py-4"
+                                  rangeClassName="bg-gradient-to-r from-orange-300 to-logo-rose-300 "
+                                />
+                              </div>
+                              <div className="text-center">
+                                <span className="font-black text-gray-600 text-lg">
+                                  {minSpacingDuration.toFixed(1)}
+                                </span>
+                                <span className="ml-1 text-gray-600 text-sm">seconds</span>
+                              </div>
+                              <div className="text-center mt-0 text-gray-500 text-xs">
+                                Minimum pause between speaking parts
+                              </div>
+                            </div>
+                          </Card>
+                          <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                            <div className="bg-gradient-to-br from-pink-400 to-cyan-400 py-3 px-6 ">
+                              <h3 className="text-white font-black">Preserve Natural Pacing</h3>
+                            </div>
+                            <div className="p-6 px-11 py-6">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="mb-1 text-gray-600 mr-2 text-xs">
+                                    Maintain the relative length of pauses
+                                  </p>
+                                </div>
+                                <Switch
+                                  checked={preserveNaturalPacing}
+                                  onCheckedChange={setPreserveNaturalPacing}
+                                  className="data-[state=checked]:bg-gray-500 "
+                                />
+                              </div>
+                            </div>
+                          </Card>
+                          <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                            <div className="bg-gradient-to-br from-logo-teal-500 to-logo-amber-300 py-3 px-6 ">
+                              <h3 className="text-white font-black">Compatibility Mode</h3>
+                            </div>
+                            <div className="p-6 px-11">
+                              <Select value={compatibilityMode} onValueChange={(value) => setCompatibilityMode(value)}>
+                                <SelectTrigger className="w-full mb-2 border-logo-teal-200 focus:ring-logo-teal-500 ">
+                                  <SelectValue placeholder="Select compatibility mode" />
+                                </SelectTrigger>
+                                <SelectContent className="">
+                                  <SelectItem value="standard">Standard Quality (Original SR)</SelectItem>
+                                  <SelectItem value="high">
+                                    High Compatibility (44.1kHz or 22.05kHz for Mobile Long Audio)
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <div className="text-xs mt-3.5 text-gray-500">
+                                High Compatibility for better playback on mobile/AirPods. May reduce sample rate for
+                                long audio on mobile.
+                              </div>
+                            </div>
+                          </Card>
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </motion.div>
+
+                  {/* Process Audio Button */}
+                  <motion.div
+                    className="mt-0"
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                      <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-center">
-                        <h3 className="text-white flex items-center font-serif font-black">
-                          <Music2Icon className="h-4 w-4 mr-2" />
-                          Sound Cues
-                        </h3>
-                      </div>
-                      <div className="p-6 flex flex-col space-y-4 pt-[3px]">
-                        <div className="flex-1 h-auto">
-                          <Accordion type="single" collapsible className="w-full">
-                            <AccordionItem value="musical-notes">
-                              <AccordionTrigger className="text-gray-600 hover:no-underline py-3 font-serif font-black">
-                                <div className="flex items-center justify-between w-full">
-                                  <span>Notes</span>
-                                </div>
-                              </AccordionTrigger>
-                              <div className="px-4 pb-2 border-b-0">
-                                <div className="flex items-center gap-4">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-500">Type</span>
-                                    <select
-                                      value={noteType}
-                                      onChange={(e) => setNoteType(e.target.value as "piano" | "synth" | "harp")}
-                                      className="text-xs bg-white border border-gray-300 rounded px-2 py-1"
-                                    >
-                                      <option value="piano">Piano</option>
-                                      <option value="synth">Synth</option>
-                                      <option value="harp">Harp</option>
-                                    </select>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-500">Multi-Note</span>
-                                    <button
-                                      onClick={() => {
-                                        setMultiNoteMode(!multiNoteMode)
-                                        setSelectedNotes([])
-                                      }}
-                                      className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
-                                        multiNoteMode ? "bg-gray-500" : "bg-gray-200"
-                                      }`}
-                                    >
-                                      <span
-                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                                          multiNoteMode ? "translate-x-[1.125rem]" : "translate-x-0.5"
-                                        }`}
-                                      />
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                              <AccordionContent className="pb-4">
-                                {multiNoteMode && (
-                                  <div className="p-3 bg-gray-50 rounded-sm mb-1.5 shadow-inner py-3 px-3">
-                                    <div className="flex items-center justify-between">
-                                      <div className="text-gray-500 text-sm">
-                                        {selectedNotes.length > 0 ? selectedNotes.join(", ") : "None"}
-                                      </div>
-                                      {selectedNotes.length > 1 && (
-                                        <Button
-                                          size="sm"
-                                          onClick={() => {
-                                            console.log("[v0] Chord button clicked, selectedNotes:", selectedNotes)
-                                            console.log("[v0] multiNoteMode:", multiNoteMode)
-                                            playChordPreview()
-                                          }}
-                                          className="bg-gradient-to-br from-gray-600 to-gray-500 text-white font-serif font-black text-xs rounded-sm shadow-md"
-                                        >
-                                          Play Chord
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-                                <Accordion type="single" collapsible className="w-full">
-                                  {Object.entries(
-                                    Object.entries(MUSICAL_NOTES).reduce(
-                                      (acc, [_, notes]) => {
-                                        notes.forEach((note) => {
-                                          const octave = `Octave ${note.octave}`
-                                          if (!acc[octave]) acc[octave] = []
-                                          acc[octave].push(note)
-                                        })
-                                        return acc
-                                      },
-                                      {} as Record<string, any[]>,
-                                    ),
-                                  ).map(([octave, notes]) => (
-                                    <AccordionItem value={octave} key={octave} className="border-b border-gray-100 ">
-                                      <AccordionTrigger className="text-gray-500 hover:no-underline py-3 font-serif font-black">
-                                        {octave}
-                                      </AccordionTrigger>
-                                      <AccordionContent className="pb-4">
-                                        <div className="space-y-2 text-gray-600">
-                                          {notes.map((note) => {
-                                            const noteString = `${note.note}${note.octave}`
-                                            const isSelected = multiNoteMode && selectedNotes.includes(noteString)
-                                            const isSingleSelected = !multiNoteMode && selectedSoundCue?.id === note.id
-
-                                            return (
-                                              <div
-                                                key={note.id}
-                                                className="flex items-center gap-2 font-black font-serif"
-                                              >
-                                                <Button
-                                                  variant="ghost"
-                                                  size="sm"
-                                                  className={`flex-1 justify-start rounded-[10px] font-black font-serif text-gray-600 ${
-                                                    isSelected
-                                                      ? "bg-white shadow-md border-[3px] border-gray-500 "
-                                                      : isSingleSelected
-                                                        ? "bg-white shadow-md text-gray-600 border-gray-500 border-[3px]"
-                                                        : "hover:bg-white "
-                                                  }`}
-                                                  onClick={() => handleNoteSelection(note)}
-                                                >
-                                                  {note.name}
-                                                </Button>
-                                                {!multiNoteMode && (
-                                                  <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={async () =>
-                                                      await playSingleNote(note.note, note.octave, noteType)
-                                                    }
-                                                    className="hover:bg-logo-emerald-50 "
-                                                    title={`Preview ${note.name}`}
-                                                  >
-                                                    <Play className="h-4 w-4" />
-                                                  </Button>
-                                                )}
-                                              </div>
-                                            )
-                                          })}
-                                        </div>
-                                      </AccordionContent>
-                                    </AccordionItem>
-                                  ))}
-                                </Accordion>
-                              </AccordionContent>
-                            </AccordionItem>
-                            <AccordionItem value="miscellaneous">
-                              <AccordionTrigger className="text-gray-600 hover:no-underline py-3 font-serif font-black">
-                                Miscellaneous
-                              </AccordionTrigger>
-                              <AccordionContent className="pb-4">
-                                <div className="text-center py-8 text-gray-500 ">
-                                  <div className="mb-2 text-lg font-black">Coming Soon!</div>
-                                  <div className="text-xs">
-                                    Additional sound cues are being developed and will be available in a future update.
-                                  </div>
-                                </div>
-                              </AccordionContent>
-                            </AccordionItem>
-                          </Accordion>
-                        </div>
-                        <Button
-                          className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-[11px] hover:shadow-none font-serif font-black mt-4"
-                          onClick={handleAddInstructionSoundEvent}
-                          disabled={!customInstructionText.trim() || (!selectedSoundCue && selectedNotes.length === 0)}
-                        >
-                          <PlusCircle className="mr-2 h-4 w-4" />
-                          <span className="font-black font-serif">Add to Timeline</span>
-                        </Button>
-                      </div>
-                    </Card>
-                  </motion.div>
-                </motion.div>
-                <RecorderSection
-                  className="lg:hidden"
-                  inputId="recording-label-mobile"
-                  recordingLabel={recordingLabel}
-                  onRecordingLabelChange={handleRecordingLabelChange}
-                  isRecording={isRecording}
-                  startRecording={startRecording}
-                  stopRecording={stopRecording}
-                  readyToAddToTimelineRecording={readyToAddToTimelineRecording}
-                  timelineEvents={timelineEvents}
-                  addEventToTimeline={addEventToTimeline}
-                  setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
-                  setRecordedBlobs={setRecordedBlobs}
-                  setRecordingLabel={setRecordingLabel}
-                  recordingPreviewRef={recordingPreviewRef}
-                />
-
-                {/* Timeline Editor for encoder */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                  <Card ref={timelineEditorRef} className="overflow-hidden border-none shadow-lg bg-white ">
-                    <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-6 py-3 flex items-center justify-between gap-3 pr-3">
-                      <h3 className="text-white flex items-center font-black text-base">
-                        
-                        Timeline Editor
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        <input
-                          ref={timelineUploadInputRef}
-                          type="file"
-                          accept="audio/*"
-                          className="hidden"
-                          onChange={handleTimelineUploadChange}
-                        />
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          onClick={handleTimelineUploadClick}
-                          className="bg-white/10 rounded-[8px] text-white font-serif font-black text-xs hover:bg-white/20 "
-                        >
-                          <Upload className="h-4 w-4 mr-0" /> 
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="p-6 px-7">
-                      <VisualTimeline
-                        events={timelineEvents}
-                        totalDuration={encoderTotalDuration}
-                        onUpdateEvent={updateEventStartTime}
-                        onRemoveEvent={removeTimelineEvent}
-                        onDuplicateEvent={handleDuplicateEvent}
-                        selectedInstrument={noteType}
-                        playSingleNote={timelinePlaySingleNote}
-                        playChordPreview={timelinePlayChordPreview}
-                      />
-                    </div>
-                  </Card>
-                </motion.div>
-
-                {/* Generate Audio Button */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-                  <Button
-                    onClick={handleExportAudio}
-                    disabled={isGeneratingAudio || timelineEvents.length === 0}
-                    className={cn(
-                      "w-full py-7 text-base font-semibold tracking-wider rounded-sm transition-all duration-500",
-                      "shadow-lg hover:shadow-xl active:shadow-none",
-                      "text-white ",
-                      "disabled:cursor-not-allowed hover:opacity-100 disabled:opacity-100",
-                      "relative overflow-hidden",
-                    )}
-                    style={
-                      {
-                        backgroundImage: `
+                    <Button
+                      onClick={handleProcessAudio}
+                      disabled={isProcessing || !originalBuffer}
+                      className={cn(
+                        "w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
+                        "shadow-lg hover:shadow-xl active:shadow-none",
+                        "text-white ",
+                        "disabled:cursor-not-allowed hover:opacity-100 disabled:opacity-100",
+                        "relative overflow-hidden",
+                      )}
+                      style={
+                        {
+                          backgroundImage: `
                         radial-gradient(circle at 8% 14%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
-                        radial-gradient(circle at 92% 14%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
-                        radial-gradient(circle at 8% 86%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
-                        radial-gradient(circle at 92% 86%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
                         radial-gradient(circle at 15% 8%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
-                        radial-gradient(circle at 85% 8%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
-                        radial-gradient(circle at 15% 92%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
-                        radial-gradient(circle at 85% 92%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
                         radial-gradient(circle at 4% 22%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 96% 22%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 4% 78%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 96% 78%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
                         radial-gradient(circle at 12% 28%, rgba(255, 255, 255, 0.7) 0.3px, transparent 1px),
-                        radial-gradient(circle at 88% 28%, rgba(255, 255, 255, 0.7) 0.3px, transparent 1px),
-                        radial-gradient(circle at 12% 72%, rgba(255, 255, 255, 0.7) 0.3px, transparent 1px),
-                        radial-gradient(circle at 88% 72%, rgba(255, 255, 255, 0.7) 0.3px, transparent 1px),
                         radial-gradient(circle at 22% 18%, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px),
-                        radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px),
-                        radial-gradient(circle at 22% 82%, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px),
-                        radial-gradient(circle at 78% 82%, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px),
                         radial-gradient(circle at 18% 72%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
-                        radial-gradient(circle at 82% 72%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
-                        radial-gradient(circle at 18% 28%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
-                        radial-gradient(circle at 82% 28%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
                         radial-gradient(circle at 14% 85%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
-                        radial-gradient(circle at 86% 85%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
-                        radial-gradient(circle at 14% 15%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
-                        radial-gradient(circle at 86% 15%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
                         radial-gradient(circle at 6% 92%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
-                        radial-gradient(circle at 94% 92%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
-                        radial-gradient(circle at 6% 8%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
-                        radial-gradient(circle at 94% 8%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
                         radial-gradient(circle at 24% 88%, rgba(255, 255, 255, 0.9) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 76% 88%, rgba(255, 255, 255, 0.9) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 24% 12%, rgba(255, 255, 255, 0.9) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 76% 12%, rgba(255, 255, 255, 0.9) 1.1px, transparent 1.3px),
                         radial-gradient(circle at 5% 35%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
-                        radial-gradient(circle at 95% 35%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
-                        radial-gradient(circle at 5% 65%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
-                        radial-gradient(circle at 95% 65%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
                         radial-gradient(circle at 12% 68%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                        radial-gradient(circle at 88% 68%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                        radial-gradient(circle at 12% 32%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                        radial-gradient(circle at 88% 32%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
                         radial-gradient(circle at 8% 38%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
-                        radial-gradient(circle at 92% 38%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
-                        radial-gradient(circle at 8% 62%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
-                        radial-gradient(circle at 92% 62%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
                         radial-gradient(circle at 18% 15%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                        radial-gradient(circle at 82% 15%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                        radial-gradient(circle at 18% 85%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                        radial-gradient(circle at 82% 85%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
                         radial-gradient(circle at 24% 5%, rgba(255, 255, 255, 0.85) 0.6px, transparent 1px),
-                        radial-gradient(circle at 76% 5%, rgba(255, 255, 255, 0.85) 0.6px, transparent 1px),
-                        radial-gradient(circle at 24% 95%, rgba(255, 255, 255, 0.85) 0.6px, transparent 1px),
-                        radial-gradient(circle at 76% 95%, rgba(255, 255, 255, 0.85) 0.6px, transparent 1px),
                         radial-gradient(circle at 76% 25%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 24% 25%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 76% 75%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 24% 75%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
                         radial-gradient(circle at 3% 62%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
-                        radial-gradient(circle at 97% 62%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
-                        radial-gradient(circle at 3% 38%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
-                        radial-gradient(circle at 97% 38%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
                         radial-gradient(circle at 9% 42%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
-                        radial-gradient(circle at 91% 42%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
-                        radial-gradient(circle at 9% 58%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
-                        radial-gradient(circle at 91% 58%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
                         radial-gradient(circle at 16% 95%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
-                        radial-gradient(circle at 84% 95%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
-                        radial-gradient(circle at 16% 5%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
-                        radial-gradient(circle at 84% 5%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
                         radial-gradient(circle at 22% 78%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
-                        radial-gradient(circle at 78% 78%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
-                        radial-gradient(circle at 22% 22%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
-                        radial-gradient(circle at 78% 22%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
                         radial-gradient(circle at 26% 12%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
-                        radial-gradient(circle at 74% 12%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
-                        radial-gradient(circle at 26% 88%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
-                        radial-gradient(circle at 74% 88%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
                         radial-gradient(circle at 4% 68%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 96% 68%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 4% 32%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 96% 32%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
                         radial-gradient(circle at 11% 18%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
-                        radial-gradient(circle at 89% 18%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
-                        radial-gradient(circle at 11% 82%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
-                        radial-gradient(circle at 89% 82%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
                         radial-gradient(circle at 19% 32%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
-                        radial-gradient(circle at 81% 32%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
-                        radial-gradient(circle at 19% 68%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
-                        radial-gradient(circle at 81% 68%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
-                        radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
-                        radial-gradient(circle at 75% 25%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
                         radial-gradient(circle at 25% 75%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
-                        radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
                         radial-gradient(circle at 28% 8%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 72% 8%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 28% 92%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 72% 92%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
                         radial-gradient(circle at 2% 12%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
-                        radial-gradient(circle at 98% 12%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
-                        radial-gradient(circle at 2% 88%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
-                        radial-gradient(circle at 98% 88%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
                         radial-gradient(circle at 7% 88%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                        radial-gradient(circle at 93% 88%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                        radial-gradient(circle at 7% 12%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
-                        radial-gradient(circle at 93% 12%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
                         radial-gradient(circle at 13% 5%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
-                        radial-gradient(circle at 87% 5%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
-                        radial-gradient(circle at 13% 95%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
-                        radial-gradient(circle at 87% 95%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
                         radial-gradient(circle at 20% 92%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                        radial-gradient(circle at 80% 92%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                        radial-gradient(circle at 20% 8%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
-                        radial-gradient(circle at 80% 8%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
                         radial-gradient(circle at 27% 72%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
+                        radial-gradient(circle at 92% 86%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
+                        radial-gradient(circle at 85% 8%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
+                        radial-gradient(circle at 96% 22%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 88% 28%, rgba(255, 255, 255, 0.7) 0.3px, transparent 1px),
+                        radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px),
+                        radial-gradient(circle at 82% 72%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
+                        radial-gradient(circle at 86% 85%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
+                        radial-gradient(circle at 94% 92%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
+                        radial-gradient(circle at 76% 88%, rgba(255, 255, 255, 0.9) 1.1px, transparent 1.3px),
+                        radial-gradient(circle at 95% 35%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
+                        radial-gradient(circle at 88% 68%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
+                        radial-gradient(circle at 92% 38%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
+                        radial-gradient(circle at 82% 15%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
+                        radial-gradient(circle at 76% 5%, rgba(255, 255, 255, 0.85) 0.6px, transparent 1px),
+                        radial-gradient(circle at 24% 25%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
+                        radial-gradient(circle at 97% 62%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
+                        radial-gradient(circle at 91% 42%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
+                        radial-gradient(circle at 84% 95%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
+                        radial-gradient(circle at 78% 78%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
+                        radial-gradient(circle at 74% 12%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
+                        radial-gradient(circle at 96% 68%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
+                        radial-gradient(circle at 89% 18%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
+                        radial-gradient(circle at 81% 32%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
+                        radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
+                        radial-gradient(circle at 72% 8%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 98% 12%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
+                        radial-gradient(circle at 93% 88%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
+                        radial-gradient(circle at 87% 5%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
+                        radial-gradient(circle at 80% 92%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
                         radial-gradient(circle at 73% 72%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
-                        radial-gradient(circle at 27% 28%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
-                        radial-gradient(circle at 73% 28%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
                         
                         linear-gradient(to bottom right, #4b5563, #6b7280)
                       `,
-                      } as React.CSSProperties
-                    }
-                  >
-                    <span className="font-black text-base tracking-tight text-white">
-                      {isGeneratingAudio ? "Generating..." : "Generate Audio"}
-                    </span>
-                  </Button>
-                </motion.div>
+                        } as React.CSSProperties
+                      }
+                    >
+                      <span className="font-black text-base tracking-tight text-white">
+                        {isProcessing ? "Processing..." : "Process Audio"}
+                      </span>
+                    </Button>
+                  </motion.div>
 
-                {generatedAudioUrl && (
+                  {isProcessingComplete && processedUrl && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                    >
+                      <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
+                        <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-white font-black">Processed Audio</h3>
+                            <AudioInfoMenu
+                              items={[
+                                {
+                                  label: "Actual Duration",
+                                  value: actualDuration ? formatTime(actualDuration) : "--",
+                                },
+                                {
+                                  label: "Target Duration",
+                                  value: formatTime(targetDuration * 60),
+                                },
+                                {
+                                  label: "Pauses Adjusted",
+                                  value: pausesAdjusted,
+                                },
+                                {
+                                  label: "File Size",
+                                  value: formatFileSize(processedFileSize),
+                                },
+                                ...(processedAudioMetadata
+                                  ? [
+                                      {
+                                        label: "Output Format",
+                                        value: `Mono • ${processedAudioMetadata.sampleRate.toLocaleString()} Hz • ${processedAudioMetadata.bitDepth.toLocaleString()}-bit`,
+                                      },
+                                    ]
+                                  : []),
+                              ]}
+                            />
+                          </div>
+                        </div>
+                        <div className="p-6 px-3.5 py-4 space-y-4">
+                          <div className="bg-white p-3 rounded-sm shadow-md px-0 mb-0">
+                            <audio controls className="w-full" src={processedUrl}></audio>
+                          </div>
+                          <SaveMeditationDialog
+                            audioUrl={processedUrl}
+                            mp3Blob={processedDistributionBlob ?? undefined}
+                            originalFileName={file?.name || "meditation"}
+                            duration={actualDuration || targetDuration * 60}
+                            source="adjuster"
+                            metadata={{
+                              targetDuration,
+                              pausesAdjusted,
+                              wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
+                              timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
+                              ...(quickAdjustRange
+                                ? { quickAdjust: { range: { minSeconds: quickAdjustRange.minSeconds } } }
+                                : {}),
+                            }}
+                            existingMeditationId={loadedLibraryContext?.id}
+                            existingMeditationTitle={loadedLibraryContext?.title}
+                            existingMeditationDuration={loadedLibraryContext?.duration}
+                          >
+                            <Button className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black">
+                              <BookmarkPlus className="h-4 w-4 mr-2" />
+                              Save to Library
+                            </Button>
+                          </SaveMeditationDialog>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  )}
+                </div>
+              ) : (
+                // == Encoder UI ==
+                <motion.div
+                  key="encoder-content"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4"
+                >
                   <motion.div
+                    className="text-gray-600"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.7 }}
+                    transition={{ delay: 0.2 }}
                   >
-                    <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
-                      <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-white font-black">Generated Audio</h3>
-                          <AudioInfoMenu
-                            items={[
-                              {
-                                label: "Duration",
-                                value: formatTime(encoderTotalDuration),
-                              },
-                              {
-                                label: "Instructions",
-                                value: timelineEvents.length,
-                              },
-                              {
-                                label: "File Size",
-                                value: formatFileSize(generatedAudioFileSize || 0),
-                              },
-                              ...(generatedAudioMetadata
-                                ? [
-                                    {
-                                      label: "Output Format",
-                                      value: `Mono • ${generatedAudioMetadata.sampleRate.toLocaleString()} Hz • ${generatedAudioMetadata.bitDepth.toLocaleString()}-bit`,
-                                    },
-                                  ]
-                                : []),
-                            ]}
-                          />
+                    <Card className="overflow-visible bg-white max-w-2xl mx-auto rounded-2xl shadow-none">
+                      <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none">
+                        <div className="grid grid-cols-1 md:grid-cols-[auto_auto] text-gray-600 pb-2 gap-4 justify-center">
+                          <div className="text-center">
+                            <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
+                              Title
+                            </Label>
+                            <input
+                              id="meditation-title"
+                              type="text"
+                              value={meditationTitle}
+                              onChange={handleMeditationTitleChange}
+                              placeholder="My Custom Meditation"
+                              className="flex file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 text-center border-[3px] shadow-md h-9 w-60"
+                            />
+                          </div>
+                          <div className="text-center">
+                            <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
+                              Duration (h:m:s)
+                            </Label>
+                            <div id="encoder-duration" className="mt-3 flex flex-col items-center gap-4">
+                              <TimerWheel
+                                value={encoderTotalDuration}
+                                onChange={handleEncoderDurationChange}
+                                className="bg-white px-6 py-4 rounded-2xl border-[3px] border-gray-500 shadow-md"
+                              />
+                              <Button
+                                type="button"
+                                onClick={handleActivateTimer}
+                                className="rounded-full bg-gradient-to-r from-logo-emerald-500 to-logo-teal-500 px-6 py-2 text-white font-black shadow-md hover:shadow-lg"
+                              >
+                                Use as timer
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="p-6 px-3.5 py-4 space-y-4">
-                        <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
-                          <audio ref={encoderAudioRef} controls className="w-full" src={generatedAudioUrl}></audio>
-                        </div>
-                        <SaveMeditationDialog
-                          audioUrl={generatedAudioUrl}
-                          mp3Blob={generatedDistributionBlob ?? undefined}
-                          originalFileName={meditationTitle || "meditation"}
-                          duration={encoderTotalDuration}
-                          source="encoder"
-                          metadata={{
-                            instructionCount: timelineEvents.length,
-                            meditationTitle,
-                            wav: generatedAudioMetadata ? { ...generatedAudioMetadata } : undefined,
-                            timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
-                          }}
-                        >
-                          <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-gray-600 font-serif font-black mt-3">
-                            <BookmarkPlus className="h-4 w-4 mr-2" />
-                            Save to Library
-                          </Button>
-                        </SaveMeditationDialog>
                       </div>
                     </Card>
                   </motion.div>
-                )}
-              </motion.div>
-            )}
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-4"
+                  >
+                    <div className="flex flex-col gap-4">
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
+                      >
+                        <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300  py-1 shadow-lg rounded-sm px-[5px]">
+                          <div className="bg-white p-4 rounded-[10px] shadow-nonee border-stone-200 pb-3 pt-1.5 border-0 shadow-inner">
+                            <div className="text-center">
+                              <Textarea
+                                id="custom-instruction"
+                                value={customInstructionText}
+                                onChange={handleCustomInstructionChange}
+                                placeholder="Enter an instruction..."
+                                className="mt-2 text-xs font-serif font-black text-indigo-400 placeholder-indigo-400 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                      <RecorderSection
+                        className="hidden lg:block"
+                        inputId="recording-label-desktop"
+                        recordingLabel={recordingLabel}
+                        onRecordingLabelChange={handleRecordingLabelChange}
+                        isRecording={isRecording}
+                        startRecording={startRecording}
+                        stopRecording={stopRecording}
+                        readyToAddToTimelineRecording={readyToAddToTimelineRecording}
+                        timelineEvents={timelineEvents}
+                        addEventToTimeline={addEventToTimeline}
+                        setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
+                        setRecordedBlobs={setRecordedBlobs}
+                        setRecordingLabel={setRecordingLabel}
+                        recordingPreviewRef={recordingPreviewRef}
+                      />
+                    </div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                        <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-center">
+                          <h3 className="text-white flex items-center font-serif font-black">
+                            <Music2Icon className="h-4 w-4 mr-2" />
+                            Sound Cues
+                          </h3>
+                        </div>
+                        <div className="p-6 flex flex-col space-y-4 pt-[3px]">
+                          <div className="flex-1 h-auto">
+                            <Accordion type="single" collapsible className="w-full">
+                              <AccordionItem value="musical-notes">
+                                <AccordionTrigger className="text-gray-600 hover:no-underline py-3 font-serif font-black">
+                                  <div className="flex items-center justify-between w-full">
+                                    <span>Notes</span>
+                                  </div>
+                                </AccordionTrigger>
+                                <div className="px-4 pb-2 border-b-0">
+                                  <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-500">Type</span>
+                                      <select
+                                        value={noteType}
+                                        onChange={(e) => setNoteType(e.target.value as "piano" | "synth" | "harp")}
+                                        className="text-xs bg-white border border-gray-300 rounded px-2 py-1"
+                                      >
+                                        <option value="piano">Piano</option>
+                                        <option value="synth">Synth</option>
+                                        <option value="harp">Harp</option>
+                                      </select>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-500">Multi-Note</span>
+                                      <button
+                                        onClick={() => {
+                                          setMultiNoteMode(!multiNoteMode)
+                                          setSelectedNotes([])
+                                        }}
+                                        className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
+                                          multiNoteMode ? "bg-gray-500" : "bg-gray-200"
+                                        }`}
+                                      >
+                                        <span
+                                          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                                            multiNoteMode ? "translate-x-[1.125rem]" : "translate-x-0.5"
+                                          }`}
+                                        />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                                <AccordionContent className="pb-4">
+                                  {multiNoteMode && (
+                                    <div className="p-3 bg-gray-50 rounded-sm mb-1.5 shadow-inner py-3 px-3">
+                                      <div className="flex items-center justify-between">
+                                        <div className="text-gray-500 text-sm">
+                                          {selectedNotes.length > 0 ? selectedNotes.join(", ") : "None"}
+                                        </div>
+                                        {selectedNotes.length > 1 && (
+                                          <Button
+                                            size="sm"
+                                            onClick={() => {
+                                              console.log("[v0] Chord button clicked, selectedNotes:", selectedNotes)
+                                              console.log("[v0] multiNoteMode:", multiNoteMode)
+                                              playChordPreview()
+                                            }}
+                                            className="bg-gradient-to-br from-gray-600 to-gray-500 text-white font-serif font-black text-xs rounded-sm shadow-md"
+                                          >
+                                            Play Chord
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                  <Accordion type="single" collapsible className="w-full">
+                                    {Object.entries(
+                                      Object.entries(MUSICAL_NOTES).reduce(
+                                        (acc, [_, notes]) => {
+                                          notes.forEach((note) => {
+                                            const octave = `Octave ${note.octave}`
+                                            if (!acc[octave]) acc[octave] = []
+                                            acc[octave].push(note)
+                                          })
+                                          return acc
+                                        },
+                                        {} as Record<string, any[]>,
+                                      ),
+                                    ).map(([octave, notes]) => (
+                                      <AccordionItem value={octave} key={octave} className="border-b border-gray-100 ">
+                                        <AccordionTrigger className="text-gray-500 hover:no-underline py-3 font-serif font-black">
+                                          {octave}
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pb-4">
+                                          <div className="space-y-2 text-gray-600">
+                                            {notes.map((note) => {
+                                              const noteString = `${note.note}${note.octave}`
+                                              const isSelected = multiNoteMode && selectedNotes.includes(noteString)
+                                              const isSingleSelected =
+                                                !multiNoteMode && selectedSoundCue?.id === note.id
+
+                                              return (
+                                                <div
+                                                  key={note.id}
+                                                  className="flex items-center gap-2 font-black font-serif"
+                                                >
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className={`flex-1 justify-start rounded-[10px] font-black font-serif text-gray-600 ${
+                                                      isSelected
+                                                        ? "bg-white shadow-md border-[3px] border-gray-500 "
+                                                        : isSingleSelected
+                                                          ? "bg-white shadow-md text-gray-600 border-gray-500 border-[3px]"
+                                                          : "hover:bg-white "
+                                                    }`}
+                                                    onClick={() => handleNoteSelection(note)}
+                                                  >
+                                                    {note.name}
+                                                  </Button>
+                                                  {!multiNoteMode && (
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="sm"
+                                                      onClick={async () =>
+                                                        await playSingleNote(note.note, note.octave, noteType)
+                                                      }
+                                                      className="hover:bg-logo-emerald-50 "
+                                                      title={`Preview ${note.name}`}
+                                                    >
+                                                      <Play className="h-4 w-4" />
+                                                    </Button>
+                                                  )}
+                                                </div>
+                                              )
+                                            })}
+                                          </div>
+                                        </AccordionContent>
+                                      </AccordionItem>
+                                    ))}
+                                  </Accordion>
+                                </AccordionContent>
+                              </AccordionItem>
+                              <AccordionItem value="miscellaneous">
+                                <AccordionTrigger className="text-gray-600 hover:no-underline py-3 font-serif font-black">
+                                  Miscellaneous
+                                </AccordionTrigger>
+                                <AccordionContent className="pb-4">
+                                  <div className="text-center py-8 text-gray-500 ">
+                                    <div className="mb-2 text-lg font-black">Coming Soon!</div>
+                                    <div className="text-xs">
+                                      Additional sound cues are being developed and will be available in a future
+                                      update.
+                                    </div>
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            </Accordion>
+                          </div>
+                          <Button
+                            className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-[11px] hover:shadow-none font-serif font-black mt-4"
+                            onClick={handleAddInstructionSoundEvent}
+                            disabled={
+                              !customInstructionText.trim() || (!selectedSoundCue && selectedNotes.length === 0)
+                            }
+                          >
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            <span className="font-black font-serif">Add to Timeline</span>
+                          </Button>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  </motion.div>
+                  <RecorderSection
+                    className="lg:hidden"
+                    inputId="recording-label-mobile"
+                    recordingLabel={recordingLabel}
+                    onRecordingLabelChange={handleRecordingLabelChange}
+                    isRecording={isRecording}
+                    startRecording={startRecording}
+                    stopRecording={stopRecording}
+                    readyToAddToTimelineRecording={readyToAddToTimelineRecording}
+                    timelineEvents={timelineEvents}
+                    addEventToTimeline={addEventToTimeline}
+                    setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
+                    setRecordedBlobs={setRecordedBlobs}
+                    setRecordingLabel={setRecordingLabel}
+                    recordingPreviewRef={recordingPreviewRef}
+                  />
+
+                  {/* Timeline Editor for encoder */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <Card ref={timelineEditorRef} className="overflow-hidden border-none shadow-lg bg-white ">
+                      <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-6 py-3 flex items-center justify-between gap-3 pr-3">
+                        <h3 className="text-white flex items-center font-black text-base">Timeline Editor</h3>
+                        <div className="flex items-center gap-2">
+                          <input
+                            ref={timelineUploadInputRef}
+                            type="file"
+                            accept="audio/*"
+                            className="hidden"
+                            onChange={handleTimelineUploadChange}
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            onClick={handleTimelineUploadClick}
+                            className="bg-white/10 rounded-[8px] text-white font-serif font-black text-xs hover:bg-white/20 "
+                          >
+                            <Upload className="h-4 w-4 mr-0" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="p-6 px-7">
+                        <VisualTimeline
+                          events={timelineEvents}
+                          totalDuration={encoderTotalDuration}
+                          onUpdateEvent={updateEventStartTime}
+                          onRemoveEvent={removeTimelineEvent}
+                          onDuplicateEvent={handleDuplicateEvent}
+                          selectedInstrument={noteType}
+                          playSingleNote={timelinePlaySingleNote}
+                          playChordPreview={timelinePlayChordPreview}
+                        />
+                      </div>
+                    </Card>
+                  </motion.div>
+
+                  {/* Generate Audio Button */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    <Button
+                      onClick={handleExportAudio}
+                      disabled={isGeneratingAudio || timelineEvents.length === 0}
+                      className={cn(
+                        "w-full py-7 text-base font-semibold tracking-wider rounded-sm transition-all duration-500",
+                        "shadow-lg hover:shadow-xl active:shadow-none",
+                        "text-white ",
+                        "disabled:cursor-not-allowed hover:opacity-100 disabled:opacity-100",
+                        "relative overflow-hidden",
+                      )}
+                      style={
+                        {
+                          backgroundImage: `
+                        radial-gradient(circle at 8% 14%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
+                        radial-gradient(circle at 15% 8%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
+                        radial-gradient(circle at 4% 22%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 12% 28%, rgba(255, 255, 255, 0.7) 0.3px, transparent 1px),
+                        radial-gradient(circle at 22% 18%, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px),
+                        radial-gradient(circle at 18% 72%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
+                        radial-gradient(circle at 14% 85%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
+                        radial-gradient(circle at 6% 92%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
+                        radial-gradient(circle at 24% 88%, rgba(255, 255, 255, 0.9) 1.1px, transparent 1.3px),
+                        radial-gradient(circle at 5% 35%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
+                        radial-gradient(circle at 12% 68%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
+                        radial-gradient(circle at 8% 38%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
+                        radial-gradient(circle at 18% 15%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
+                        radial-gradient(circle at 24% 5%, rgba(255, 255, 255, 0.85) 0.6px, transparent 1px),
+                        radial-gradient(circle at 76% 25%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
+                        radial-gradient(circle at 3% 62%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
+                        radial-gradient(circle at 9% 42%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
+                        radial-gradient(circle at 16% 95%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
+                        radial-gradient(circle at 22% 78%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
+                        radial-gradient(circle at 26% 12%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
+                        radial-gradient(circle at 4% 68%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
+                        radial-gradient(circle at 11% 18%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
+                        radial-gradient(circle at 19% 32%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
+                        radial-gradient(circle at 25% 75%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
+                        radial-gradient(circle at 28% 8%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 2% 12%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
+                        radial-gradient(circle at 7% 88%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
+                        radial-gradient(circle at 13% 5%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
+                        radial-gradient(circle at 20% 92%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
+                        radial-gradient(circle at 27% 72%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
+                        radial-gradient(circle at 92% 86%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
+                        radial-gradient(circle at 85% 8%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
+                        radial-gradient(circle at 96% 22%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 88% 28%, rgba(255, 255, 255, 0.7) 0.3px, transparent 1px),
+                        radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px),
+                        radial-gradient(circle at 82% 72%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
+                        radial-gradient(circle at 86% 85%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
+                        radial-gradient(circle at 94% 92%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
+                        radial-gradient(circle at 76% 88%, rgba(255, 255, 255, 0.9) 1.1px, transparent 1.3px),
+                        radial-gradient(circle at 95% 35%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
+                        radial-gradient(circle at 88% 68%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
+                        radial-gradient(circle at 92% 38%, rgba(255, 255, 255, 0.9) 0.4px, transparent 1px),
+                        radial-gradient(circle at 82% 15%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
+                        radial-gradient(circle at 76% 5%, rgba(255, 255, 255, 0.85) 0.6px, transparent 1px),
+                        radial-gradient(circle at 24% 25%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
+                        radial-gradient(circle at 97% 62%, rgba(255, 255, 255, 0.8) 0.8px, transparent 1px),
+                        radial-gradient(circle at 91% 42%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
+                        radial-gradient(circle at 84% 95%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
+                        radial-gradient(circle at 78% 78%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
+                        radial-gradient(circle at 74% 12%, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
+                        radial-gradient(circle at 96% 68%, rgba(255, 255, 255, 0.8) 1.1px, transparent 1.3px),
+                        radial-gradient(circle at 89% 18%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
+                        radial-gradient(circle at 81% 32%, rgba(255, 255, 255, 0.9) 0.3px, transparent 1px),
+                        radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.7) 1.4px, transparent 1.6px),
+                        radial-gradient(circle at 72% 8%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
+                        radial-gradient(circle at 98% 12%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
+                        radial-gradient(circle at 93% 88%, rgba(255, 255, 255, 0.75) 1.3px, transparent 1.5px),
+                        radial-gradient(circle at 87% 5%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
+                        radial-gradient(circle at 80% 92%, rgba(255, 255, 255, 0.7) 0.9px, transparent 1px),
+                        radial-gradient(circle at 73% 72%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
+                        
+                        linear-gradient(to bottom right, #4b5563, #6b7280)
+                      `,
+                        } as React.CSSProperties
+                      }
+                    >
+                      <span className="font-black text-base tracking-tight text-white">
+                        {isGeneratingAudio ? "Generating..." : "Generate Audio"}
+                      </span>
+                    </Button>
+                  </motion.div>
+
+                  {generatedAudioUrl && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.7 }}
+                    >
+                      <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
+                        <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-white font-black">Generated Audio</h3>
+                            <AudioInfoMenu
+                              items={[
+                                {
+                                  label: "Duration",
+                                  value: formatTime(encoderTotalDuration),
+                                },
+                                {
+                                  label: "Instructions",
+                                  value: timelineEvents.length,
+                                },
+                                {
+                                  label: "File Size",
+                                  value: formatFileSize(generatedAudioFileSize || 0),
+                                },
+                                ...(generatedAudioMetadata
+                                  ? [
+                                      {
+                                        label: "Output Format",
+                                        value: `Mono • ${generatedAudioMetadata.sampleRate.toLocaleString()} Hz • ${generatedAudioMetadata.bitDepth.toLocaleString()}-bit`,
+                                      },
+                                    ]
+                                  : []),
+                              ]}
+                            />
+                          </div>
+                        </div>
+                        <div className="p-6 px-3.5 py-4 space-y-4">
+                          <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
+                            <audio ref={encoderAudioRef} controls className="w-full" src={generatedAudioUrl}></audio>
+                          </div>
+                          <SaveMeditationDialog
+                            audioUrl={generatedAudioUrl}
+                            mp3Blob={generatedDistributionBlob ?? undefined}
+                            originalFileName={meditationTitle || "meditation"}
+                            duration={encoderTotalDuration}
+                            source="encoder"
+                            metadata={{
+                              instructionCount: timelineEvents.length,
+                              meditationTitle,
+                              wav: generatedAudioMetadata ? { ...generatedAudioMetadata } : undefined,
+                              timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
+                            }}
+                          >
+                            <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-gray-600 font-serif font-black mt-3">
+                              <BookmarkPlus className="h-4 w-4 mr-2" />
+                              Save to Library
+                            </Button>
+                          </SaveMeditationDialog>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  )}
+                </motion.div>
+              )}
+            </div>
           </div>
-        </div>
         </motion.div>
       </div>
 
@@ -4244,7 +4138,7 @@ export default function Home() {
                 type="button"
                 onClick={handleResetTimer}
                 variant="outline"
-                className="flex items-center gap-2 rounded-full px-6 py-2 font-semibold"
+                className="flex items-center gap-2 rounded-full px-6 py-2 font-semibold bg-transparent"
               >
                 <CircleDotDashed className="h-4 w-4" />
                 Reset
