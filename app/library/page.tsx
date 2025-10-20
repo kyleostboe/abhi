@@ -2054,7 +2054,7 @@ export default function LibraryPage() {
                 </button>
                 <button
                   onClick={() => setActiveTab("playlists")}
-                  className={`transition-all rounded-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600 ${
+                  className={`transition-all rounded-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600 text-sm ${
                     activeTab === "playlists" ? "bg-white text-gray-600 shadow-sm" : "text-gray-600 "
                   }`}
                 >

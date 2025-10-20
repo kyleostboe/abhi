@@ -15,7 +15,7 @@ export function Navigation() {
           <Link
             href="/"
             className={cn(
-              "px-4 py-2 transition-colors font-black font-serif text-sm shadow-none rounded-sm",
+              "px-4 py-2 transition-colors font-black font-serif text-sm shadow-none rounded-sm tracking-tight",
               pathname === "/"
                 ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md "
                 : "text-gray-600 rounded-[10px] hover:bg-muted hover:shadow-inner ",
@@ -28,7 +28,7 @@ export function Navigation() {
           <Link
             href="/library"
             className={cn(
-              "px-4 py-2 transition-colors font-black font-serif text-sm shadow-none rounded-sm",
+              "px-4 py-2 transition-colors font-black font-serif text-sm shadow-none rounded-sm tracking-tight",
               pathname === "/library"
                 ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md "
                 : "text-gray-600 rounded-[10px] hover:bg-muted hover:shadow-inner ",
@@ -41,7 +41,7 @@ export function Navigation() {
           <Link
             href="/journal"
             className={cn(
-              "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-sm",
+              "px-4 py-2 text-sm transition-colors font-black font-serif shadow-none rounded-sm tracking-tight",
               pathname === "/journal"
                 ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md "
                 : "text-gray-600 rounded-[10px] hover:bg-muted hover:shadow-inner ",

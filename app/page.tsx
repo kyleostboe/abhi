@@ -2916,7 +2916,7 @@ export default function Home() {
                 >
                   abhī
                 </h1>
-                <div className="font-black font-serif mb-[7px] text-xs text-logo-rose-600">Meditation Tool</div>
+                <div className="font-black font-serif mb-[7px] text-xs text-logo-rose-600 tracking-tight">Meditation Tool</div>
                 <div className="flex justify-center items-center mb-4 space-x-[3px]">
                   <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[13px] h-[13px] shadow-md"></div>
                   <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px] shadow"></div>
@@ -2971,7 +2971,7 @@ export default function Home() {
                     transition={{ duration: 0.2 }}
                     className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                   >
-                    <p className="text-center px-4 pt-1.5 text-xs text-stone-500">
+                    <p className="text-center px-4 pt-1.5 text-xs text-stone-500 tracking-tight">
                       Change the length of your guided meditations. Upload an audio file, set your target duration, and
                       this tool will re-space content to fit your schedule.
                     </p>
@@ -3000,7 +3000,7 @@ export default function Home() {
                   {/* Note and Resources sections - moved to proper position */}
                   <div className="space-y-4 mb-[27px]">
                     <div className="p-4 max-w-2xl text-center mx-auto rounded-md border-logo-rose-500 border-0 shadow-none pt-0 pb-1">
-                      <p className="leading-relaxed font-serif font-black text-xs text-gray-600">
+                      <p className="leading-relaxed font-serif font-black text-xs text-gray-600 tracking-tight">
                         <strong className="pr-1.5 font-black font-serif text-center text-sm text-logo-amber-400">
                           Note:
                         </strong>
@@ -3011,7 +3011,7 @@ export default function Home() {
                       </p>
                     </div>
                     <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto backdrop-blur-sm border-0 py-4 px-0 bg-transparent pt-0 pb-0">
-                      <h3 className="mb-2 text-center font-black px-0 rounded text-base pb-0.5 text-gray-600">
+                      <h3 className="mb-2 text-center font-black px-0 rounded text-base pb-0.5 text-gray-600 tracking-tight">
                         Resources
                       </h3>
                       <div className="text-sm text-gray-600 leading-relaxed flex flex-wrap justify-center text-center gap-[5px] px-2">
@@ -3019,7 +3019,7 @@ export default function Home() {
                           href="https://dharmaseed.org/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
+                          className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight"
                         >
                           Dharma Seed
                         </a>
@@ -3027,7 +3027,7 @@ export default function Home() {
                           href="https://dharmaseed.org/teacher/210/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px]"
+                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight"
                         >
                           Rob Burbea's talks &amp; retreats
                         </a>
@@ -3035,7 +3035,7 @@ export default function Home() {
                           href="https://tasshin.com/guided-meditations/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
+                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight"
                         >
                           Tasshin &amp; friend's meditations
                         </a>
@@ -3043,7 +3043,7 @@ export default function Home() {
                           href="https://www.tarabrach.com/guided-meditations/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
+                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight"
                         >
                           Tara Brach's meditations
                         </a>
@@ -3051,7 +3051,7 @@ export default function Home() {
                           href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDDo3?usp=drive_link"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
+                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight"
                         >
                           Toby Sola's meditations
                         </a>
@@ -3059,7 +3059,7 @@ export default function Home() {
                           href="https://meditofoundation.org/meditations"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px]"
+                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight"
                         >
                           Medito Foundation
                         </a>
@@ -3079,8 +3079,8 @@ export default function Home() {
                     onDragLeave={handleDragLeaveAction}
                     onDrop={handleDropAction}
                   >
-                    <div className="p-0.5 bg-gradient-to-br from-logo-purple-300 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
-                      <div className="p-10 md:p-16 text-center bg-white rounded-sm border-stone-200 border-0 shadow-none">
+                    <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
+                      <div className="p-10 md:p-16 text-center bg-white rounded-sm border-stone-200 border-0 shadow-none tracking-tight">
                         <motion.div
                           initial={{ opacity: 0, y: 5 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -3236,7 +3236,7 @@ export default function Home() {
                                 <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
                                   <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
                                     <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
-                                    <div className="font-black text-gray-600">{audioAnalysis.silenceRegions}</div>
+                                    <div className="font-black text-gray-600 text-sm tracking-tight">{audioAnalysis.silenceRegions}</div>
                                   </div>
                                 </div>
                                 <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
@@ -3287,7 +3287,7 @@ export default function Home() {
                         <div className="grid md:grid-cols-2 gap-4">
                           <Card className="overflow-hidden border-none shadow-lg bg-white ">
                             <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-cyan-500">
-                              <h3 className="text-white font-black text-base">Target Duration</h3>
+                              <h3 className="text-white font-black text-base tracking-tight">Target Duration</h3>
                             </div>
                             <div className="p-6 py-6 px-11 pb-6">
                               <div className="mb-4">
@@ -3302,9 +3302,9 @@ export default function Home() {
                                   rangeClassName="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 "
                                 />
                               </div>
-                              <div className="text-center font-serif font-black">
+                              <div className="text-center font-serif font-black tracking-tight">
                                 <span className="font-black text-gray-600 text-lg">{targetDuration}</span>
-                                <span className="ml-1 text-gray-600 text-sm">minutes</span>
+                                <span className="ml-1 text-gray-600 text-sm tracking-normal">minutes</span>
                               </div>
                               {durationLimits && (
                                 <div className="text-center text-sm mt-0 text-gray-500">
@@ -3315,7 +3315,7 @@ export default function Home() {
                           </Card>
                           <Card className="overflow-hidden border-none shadow-lg bg-white ">
                             <div className="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 py-3 px-6 ">
-                              <h3 className="text-white font-black">Silence Threshold</h3>
+                              <h3 className="text-white font-black text-base tracking-tight">Silence Threshold</h3>
                             </div>
                             <div className="p-6 px-11">
                               <div className="mb-4">
@@ -3329,12 +3329,12 @@ export default function Home() {
                                   rangeClassName="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 "
                                 />
                               </div>
-                              <div className="text-center">
+                              <div className="text-center tracking-tight">
                                 <span className="font-serif font-black text-gray-600 text-lg">
                                   {silenceThreshold.toFixed(3)}
                                 </span>
                               </div>
-                              <div className="text-center mt-0 text-gray-500 text-xs">Lower = more sensitive</div>
+                              <div className="text-center mt-0 text-gray-500 text-xs tracking-tight">Lower = more sensitive</div>
                             </div>
                           </Card>
                         </div>
@@ -3343,7 +3343,7 @@ export default function Home() {
                         <div className="grid md:grid-cols-2 font-serif font-black gap-4">
                           <Card className="overflow-hidden border-none shadow-lg bg-white ">
                             <div className="bg-gradient-to-br from-logo-purple-300 to-logo-emerald-500 py-3 px-6 ">
-                              <h3 className="text-white font-black">Min Silence Duration</h3>
+                              <h3 className="text-white font-black text-base tracking-tight">Min Silence Duration</h3>
                             </div>
                             <div className="p-6 font-serif font-black px-11 py-6">
                               <div className="mb-4">
@@ -3357,16 +3357,16 @@ export default function Home() {
                                   rangeClassName="bg-gradient-to-br from-logo-purple-300 to-logo-emerald-500 "
                                 />
                               </div>
-                              <div className="text-center">
+                              <div className="text-center tracking-tight">
                                 <span className="font-black text-gray-600 text-lg">{minSilenceDuration}</span>
                                 <span className="ml-1 text-gray-600 text-sm">seconds</span>
                               </div>
-                              <div className="text-center mt-0 text-gray-500 text-xs">Shorter = detect more pauses</div>
+                              <div className="text-center mt-0 text-gray-500 text-xs tracking-tight">Shorter = detect more pauses</div>
                             </div>
                           </Card>
                           <Card className="overflow-hidden border-none shadow-lg bg-white ">
                             <div className="bg-gradient-to-br from-orange-300 to-logo-rose-300 py-3 px-6 ">
-                              <h3 className="text-white font-black">Min Spacing Btwn Content</h3>
+                              <h3 className="text-white font-black text-base tracking-tight">Min Spacing Btwn Content</h3>
                             </div>
                             <div className="p-6 px-11 py-6">
                               <div className="mb-4">
@@ -3380,25 +3380,25 @@ export default function Home() {
                                   rangeClassName="bg-gradient-to-r from-orange-300 to-logo-rose-300 "
                                 />
                               </div>
-                              <div className="text-center">
+                              <div className="text-center tracking-tight">
                                 <span className="font-black text-gray-600 text-lg">
                                   {minSpacingDuration.toFixed(1)}
                                 </span>
                                 <span className="ml-1 text-gray-600 text-sm">seconds</span>
                               </div>
-                              <div className="text-center mt-0 text-gray-500 text-xs">
+                              <div className="text-center mt-0 text-gray-500 text-xs tracking-tight">
                                 Minimum pause between speaking parts
                               </div>
                             </div>
                           </Card>
                           <Card className="overflow-hidden border-none shadow-lg bg-white ">
                             <div className="bg-gradient-to-br from-pink-400 to-cyan-400 py-3 px-6 ">
-                              <h3 className="text-white font-black">Preserve Natural Pacing</h3>
+                              <h3 className="text-white font-black text-base tracking-tight">Preserve Natural Pacing</h3>
                             </div>
                             <div className="p-6 px-11 py-6">
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <p className="mb-1 text-gray-600 mr-2 text-xs">
+                                  <p className="mb-1 text-gray-600 mr-2 text-xs tracking-tight">
                                     Maintain the relative length of pauses
                                   </p>
                                 </div>
@@ -3412,7 +3412,7 @@ export default function Home() {
                           </Card>
                           <Card className="overflow-hidden border-none shadow-lg bg-white ">
                             <div className="bg-gradient-to-br from-logo-teal-500 to-logo-amber-300 py-3 px-6 ">
-                              <h3 className="text-white font-black">Compatibility Mode</h3>
+                              <h3 className="text-white font-black text-base tracking-tight">Compatibility Mode</h3>
                             </div>
                             <div className="p-6 px-11">
                               <Select value={compatibilityMode} onValueChange={(value) => setCompatibilityMode(value)}>
@@ -3426,7 +3426,7 @@ export default function Home() {
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
-                              <div className="text-xs mt-3.5 text-gray-500">
+                              <div className="text-xs mt-3.5 text-gray-500 tracking-tight">
                                 High Compatibility for better playback on mobile/AirPods. May reduce sample rate for
                                 long audio on mobile.
                               </div>
@@ -3498,7 +3498,7 @@ export default function Home() {
                       <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
                         <div className="bg-gradient-to-br from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
                           <div className="flex items-center justify-between">
-                            <h3 className="text-white font-black text-base">Processed Audio</h3>
+                            <h3 className="text-white font-black text-base tracking-tight">New Audio</h3>
                             <AudioInfoMenu
                               items={[
                                 {
@@ -3630,7 +3630,7 @@ export default function Home() {
                         transition={{ delay: 0.2 }}
                         className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                       >
-                        <div className="p-0.5 bg-gradient-to-br from-logo-purple-300 to-stone-300  py-1 shadow-lg rounded-sm px-[5px]">
+                        <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300  py-1 shadow-lg rounded-sm px-[5px]">
                           <div className="bg-white p-4 rounded-[10px] shadow-nonee border-stone-200 pb-3 pt-1.5 border-0 shadow-inner">
                             <div className="text-center">
                               <Textarea
