@@ -2065,7 +2065,7 @@ export default function LibraryPage() {
 
             <AnimatePresence mode="wait">
               {activeTab === "meditations" && (
-                <motion.div
+                <motion.div className="tracking-normal"
                   key="meditations"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -2074,14 +2074,14 @@ export default function LibraryPage() {
                 >
                   {/* Search and Filters */}
                   <div
-                    className={`grid grid-cols-1 gap-4 mb-[27px] ${
+                    className={`grid grid-cols-1 gap-4 mb-[27px] tracking-tight ${
                       shouldStackFilters
                         ? "md:grid-cols-1"
                         : "md:[grid-template-columns:minmax(0,1.15fr)_minmax(0,1fr)] md:items-start"
                     }`}
                   >
                   <div className={`${shouldStackFilters ? "" : "md:[grid-row:span_2]"}`}>
-                      <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 rounded-sm shadow-lg py-1 px-[5px]">
+                      <div className="p-0.5 bg-gradient-to-br from-logo-rose-300 to-stone-300 rounded-sm shadow-lg py-1 px-[5px]">
                         <div className="bg-white rounded-sm">
                           <input
                             placeholder="Search meditations..."
@@ -2283,18 +2283,18 @@ export default function LibraryPage() {
                                   <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
                                     <span className="flex items-center gap-1">
                                       <Clock className="h-4 w-4 text-gray-500" />
-                                      <span className="font-black truncate text-xs text-gray-500">{durationDisplay}</span>
+                                      <span className="font-black truncate text-xs text-gray-500 tracking-tight">{durationDisplay}</span>
                                     </span>
                                     {isWideLayout && (
                                       <>
                                         <span className="flex items-center gap-1">
                                           <Calendar className="h-4 w-4 text-gray-500" />
-                                          <span>{formatDate(base.createdAt)}</span>
+                                          <span className="font-black truncate text-xs text-gray-500 tracking-tight tracking-tightext-gray-500 tracking-tight">{formatDate(base.createdAt)}</span>
                                         </span>
                                         {base.metadata.pausesAdjusted ? (
                                           <span className="flex items-center gap-1">
                                             <SlidersHorizontal className="h-4 w-4 text-gray-500" />
-                                            <span>{base.metadata.pausesAdjusted} pauses adjusted</span>
+                                            <span className="font-black truncate text-xs text-gray-500 tracking-tight">{base.metadata.pausesAdjusted} pauses adjusted</span>
                                           </span>
                                         ) : base.metadata.instructionCount ? (
                                           <span className="flex items-center gap-1">
