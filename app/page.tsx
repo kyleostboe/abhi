@@ -3578,7 +3578,7 @@ export default function Home() {
                     transition={{ delay: 0.2 }}
                   >
                     <Card className="overflow-visible bg-white max-w-2xl mx-auto rounded-2xl shadow-none">
-                      <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none">
+                      <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none text-center">
                         <div className="grid grid-cols-1 md:grid-cols-[auto_auto] text-gray-600 pb-2 gap-4 justify-center">
                           <div className="text-center">
                             <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
@@ -3595,13 +3595,13 @@ export default function Home() {
                           </div>
                           <div className="text-center">
                             <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
-                              Duration (h:m:s)
+                              Duration
                             </Label>
                             <div id="encoder-duration" className="mt-3 flex flex-col items-center gap-4">
                               <TimerWheel
                                 value={encoderTotalDuration}
                                 onChange={handleEncoderDurationChange}
-                                className="bg-white px-6 py-4 rounded-2xl border-[3px] border-gray-500 shadow-md"
+                                className="bg-transparent px-6 py-4 "
                               />
                               <Button
                                 type="button"
@@ -3669,7 +3669,7 @@ export default function Home() {
                     >
                       <Card className="overflow-hidden border-none shadow-lg bg-white ">
                         <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-center">
-                          <h3 className="text-white flex items-center font-serif font-black">
+                          <h3 className="text-white flex items-center font-serif font-black text-base">
                             <Music2Icon className="h-4 w-4 mr-2" />
                             Sound Cues
                           </h3>
@@ -3956,7 +3956,7 @@ export default function Home() {
                       transition={{ delay: 0.7 }}
                     >
                       <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
-                        <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
+                        <div className="bg-gradient-to-br from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
                           <div className="flex items-center justify-between">
                             <h3 className="text-white font-black">Generated Audio</h3>
                             <AudioInfoMenu
@@ -3985,8 +3985,8 @@ export default function Home() {
                             />
                           </div>
                         </div>
-                        <div className="p-6 px-3.5 py-4 space-y-4">
-                          <div className="bg-white p-3 rounded-sm shadow-md mb-3.5 px-0">
+                        <div className="p-6 px-3.5 py-4 space-y-4 text-center shadow-none pb-0">
+                          <div className="p-3 rounded-sm mb-3.5 px-0 bg-transparent shadow-md pb-0">
                             <audio ref={encoderAudioRef} controls className="w-full" src={generatedAudioUrl}></audio>
                           </div>
                           <SaveMeditationDialog
@@ -4002,7 +4002,7 @@ export default function Home() {
                               timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                             }}
                           >
-                            <Button className="w-full py-4 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-gray-600 font-serif font-black mt-3">
+                            <Button className="w-44 py-3 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-gray-600 font-serif font-black mt-3">
                               <BookmarkPlus className="h-4 w-4 mr-2" />
                               Save to Library
                             </Button>
