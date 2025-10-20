@@ -2719,7 +2719,7 @@ export default function LibraryPage() {
                               <span>{formatDetailedTime(playerDuration)}</span>
                             </div>
 
-                            <div className="flex items-center justify-center gap-4">
+                            <div className="flex items-center justify-center gap-[13px] mb-0 pb-[21px]">
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -2732,7 +2732,7 @@ export default function LibraryPage() {
 
                               <Button
                                 onClick={togglePlayback}
-                                className="h-12 w-12 rounded-full shadow-md bg-gradient-to-r from-gray-500 to-gray-600  hover:shadow-none text-white"
+                                className="h-12 w-12 rounded-full shadow-md bg-gradient-to-br from-gray-600 to-gray-500  hover:shadow-none text-white"
                                 disabled={isQuickAdjustProcessing}
                               >
                                 {isAudioPlaying ? (
@@ -2766,9 +2766,9 @@ export default function LibraryPage() {
                                       key={mode.id}
                                       size="sm"
                                       variant={isActive ? "default" : "outline"}
-                                      className={`text-[11px] rounded-sm font-black ${
+                                      className={`text-[11px] rounded-[10px] font-black ${
                                         isActive
-                                          ? "bg-gradient-to-r from-gray-600 to-gray-500 text-white"
+                                          ? "bg-gradient-to-tl from-gray-600 to-gray-500 text-white"
                                           : "text-gray-600"
                                       }`}
                                       onClick={() => handleSelectDurationMode(mode.id)}
@@ -2786,7 +2786,7 @@ export default function LibraryPage() {
                               </div>
                             )}
 
-                            <div className="flex flex-wrap pt-0 gap-3">
+                            <div className="flex flex-wrap pt-0 gap-3 tracking-tight">
                               <Button
                                 onClick={() => {
                                   if (!selectedMeditation) return
@@ -2794,7 +2794,7 @@ export default function LibraryPage() {
                                 }}
                                 variant="ghost"
                                 size="icon"
-                                className="h-10 w-10 text-gray-600 hover:text-gray-800 shadow-md hover:shadow-none"
+                                className="h-10 w-10  rounded-[10px] text-gray-600 shadow-md hover:shadow-none"
                                 title="Open Journal"
                                 disabled={isQuickAdjustProcessing || !selectedMeditation}
                               >
@@ -2804,7 +2804,7 @@ export default function LibraryPage() {
                                 onClick={handleDownloadMeditation}
                                 variant="ghost"
                                 size="icon"
-                                className="h-10 w-10 text-gray-600 hover:text-gray-800 shadow-md hover:shadow-none"
+                                className="h-10 w-10 rounded-[10px] text-gray-600  shadow-md hover:shadow-none"
                                 title="Download"
                                 disabled={isQuickAdjustProcessing}
                               >
@@ -2823,7 +2823,7 @@ export default function LibraryPage() {
                               >
                                 <DialogTrigger asChild>
                                   <Button
-                                    className="flex-1 shadow-md bg-gradient-to-r from-logo-rose-300 to-logo-purple-400 rounded-[11px] hover:shadow-none text-white font-black text-xs flex items-center justify-center gap-2"
+                                    className="flex-1 shadow-md bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 rounded-[10px] hover:shadow-none text-white font-black text-xs flex items-center justify-center gap-2"
                                     disabled={isQuickAdjustProcessing}
                                   >
                                     <Wand2 className="h-4 w-4" />
@@ -2946,7 +2946,7 @@ export default function LibraryPage() {
                               <Dialog open={isJournalHistoryOpen} onOpenChange={setIsJournalHistoryOpen}>
                                 <DialogTrigger asChild>
                                   <Button
-                                    className="flex-1 shadow-md bg-gradient-to-r from-logo-emerald-400 to-logo-amber-300 rounded-[11px] hover:shadow-none text-white font-black text-xs flex items-center justify-center gap-2"
+                                    className="flex-1 shadow-md bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 rounded-[10px] hover:shadow-none text-white font-black text-xs flex items-center justify-center gap-2"
                                     disabled={!selectedMeditation}
                                   >
                                     <BookOpenCheck className="h-4 w-4" />
@@ -3047,7 +3047,7 @@ export default function LibraryPage() {
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button
-                                    className="flex-1 shadow-md bg-gradient-to-r from-logo-amber-300 to-logo-teal-500 rounded-[11px] hover:shadow-none text-white font-black text-xs"
+                                    className="flex-1 shadow-md bg-gradient-to-br from-gray-600 to-stone-300 rounded-[10px] hover:shadow-none text-white font-black text-xs"
                                     disabled={isQuickAdjustProcessing}
                                   >
                                     Open In
