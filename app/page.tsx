@@ -3985,8 +3985,8 @@ export default function Home() {
                             />
                           </div>
                         </div>
-                        <div className="p-6 px-3.5 py-4 space-y-4 text-center shadow-none pb-0">
-                          <div className="p-3 rounded-sm mb-3.5 px-0 bg-transparent shadow-md pb-0">
+                        <div className="p-6 px-3.5 py-4 space-y-4 text-center shadow-none pb-4">
+                          <div className="p-3 rounded-sm px-0 bg-transparent pb-0 mb-0 shadow-none">
                             <audio ref={encoderAudioRef} controls className="w-full" src={generatedAudioUrl}></audio>
                           </div>
                           <SaveMeditationDialog
@@ -4002,7 +4002,7 @@ export default function Home() {
                               timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                             }}
                           >
-                            <Button className="w-44 py-3 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-gray-600 font-serif font-black mt-3">
+                            <Button className="w-44 py-3 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-xs text-gray-600 font-serif font-black mt-3">
                               <BookmarkPlus className="h-4 w-4 mr-2" />
                               Save to Library
                             </Button>
