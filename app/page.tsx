@@ -3080,7 +3080,7 @@ export default function Home() {
                     onDrop={handleDropAction}
                   >
                     <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
-                      <div className="p-10 md:p-16 text-center bg-white rounded-sm border-stone-200 border-0 shadow-nonene">
+                      <div className="p-10 md:p-16 text-center bg-white rounded-sm border-stone-200 border-0 shadow-none">
                         <motion.div
                           initial={{ opacity: 0, y: 5 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -3479,8 +3479,7 @@ export default function Home() {
                         radial-gradient(circle at 41% 5%, rgba(255, 255, 255, 0.9) 0.9px, transparent 1px),
                         linear-gradient(135deg, #4b5563 0%, #6b7280 100%)
                       `,
-                          backgroundSize: "100% 100%",
-                          backgroundColor: "#4b5563",
+                          
                         } as React.CSSProperties
                       }
                     >
@@ -3940,8 +3939,7 @@ export default function Home() {
                         radial-gradient(circle at 37% 9%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
                         linear-gradient(135deg, #4b5563 0%, #6b7280 100%)
                       `,
-                          backgroundSize: "100% 100%",
-                          backgroundColor: "#4b5563",
+                          
                         } as React.CSSProperties
                       }
                     >
