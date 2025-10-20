@@ -3079,7 +3079,7 @@ export default function Home() {
                     onDragLeave={handleDragLeaveAction}
                     onDrop={handleDropAction}
                   >
-                    <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
+                    <div className="p-0.5 bg-gradient-to-br from-logo-purple-300 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
                       <div className="p-10 md:p-16 text-center bg-white rounded-sm border-stone-200 border-0 shadow-none">
                         <motion.div
                           initial={{ opacity: 0, y: 5 }}
@@ -3496,9 +3496,9 @@ export default function Home() {
                       transition={{ delay: 0.4 }}
                     >
                       <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
-                        <div className="bg-gradient-to-r from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
+                        <div className="bg-gradient-to-br from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
                           <div className="flex items-center justify-between">
-                            <h3 className="text-white font-black">Processed Audio</h3>
+                            <h3 className="text-white font-black text-base">Processed Audio</h3>
                             <AudioInfoMenu
                               items={[
                                 {
@@ -3529,8 +3529,8 @@ export default function Home() {
                             />
                           </div>
                         </div>
-                        <div className="p-6 px-3.5 py-4 space-y-4">
-                          <div className="bg-white p-3 rounded-sm shadow-md px-0 mb-0">
+                        <div className="p-6 px-3.5 py-4 space-y-4 text-center">
+                          <div className="p-3 rounded-sm px-0 mb-0 bg-transparent shadow-none">
                             <audio controls className="w-full" src={processedUrl}></audio>
                           </div>
                           <SaveMeditationDialog
@@ -3552,7 +3552,7 @@ export default function Home() {
                             existingMeditationTitle={loadedLibraryContext?.title}
                             existingMeditationDuration={loadedLibraryContext?.duration}
                           >
-                            <Button className="w-full py-4 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black">
+                            <Button className="w-44 py-3  rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 font-serif font-black">
                               <BookmarkPlus className="h-4 w-4 mr-2" />
                               Save to Library
                             </Button>
