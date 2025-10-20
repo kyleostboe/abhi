@@ -468,7 +468,7 @@ export default function JournalPage() {
                         <div className="flex flex-col gap-6">
                           <div className="text-center">
                             {selectedDate && (
-                              <div className="font-black text-2xl text-gray-600">{formatMonth(selectedDate)}</div>
+                              <div className="font-black text-2xl text-gray-600 tracking-tight">{formatMonth(selectedDate)}</div>
                             )}
                           </div>
 
@@ -497,7 +497,7 @@ export default function JournalPage() {
                                         )
                                       }}
                                       className={cn(
-                                        "flex flex-col items-center justify-center rounded-xl transition-all duration-300 shadow-sm flex-shrink-0 gap-0 mx-3 border-stone-400 border-4",
+                                        "flex flex-col items-center justify-center rounded-xl transition-all duration-300 shadow-sm flex-shrink-0 gap-0 mx-3 border-stone-400 border-4 tracking-tight",
                                         isSelected
                                           ? "border-stone-400 bg-white text-gray-800 scale-125 shadow-xl py-5 px-6 z-10"
                                           : "border-gray-400/40 bg-muted/60 text-gray-500 hover:bg-white hover:scale-105 py-3 px-4",
@@ -531,7 +531,7 @@ export default function JournalPage() {
 
                           <div className="space-y-6">
                             {entriesForSelectedDate.length === 0 ? (
-                              <div className="text-center py-10 pt-0">
+                              <div className="text-center py-10 pt-0 tracking-tight">
                                 <Sparkles className="mx-auto h-10 w-10 text-logo-rose-300 mb-3" />
                                 <p className="text-sm text-gray-500 font-serif font-black">No entries yet</p>
                               </div>
