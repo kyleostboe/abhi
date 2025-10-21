@@ -585,12 +585,6 @@ export default function Home() {
   const [encoderTimelineOriginalDuration, setEncoderTimelineOriginalDuration] = useState<number | null>(null)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
   const lastEncoderDurationAdjustmentRef = useRef<number | null>(null)
-  const [showTimerControls, setShowTimerControls] = useState(false)
-  const [isTimerRunning, setIsTimerRunning] = useState(false)
-  const [timerRemaining, setTimerRemaining] = useState<number>(600)
-  const [timerDurationDraft, setTimerDurationDraft] = useState<number>(600)
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
-
   const exportableTimelineMetadata = useMemo(() => {
     return timelineEvents.map((event) => {
       const isRecording = event.type === "recorded_voice"
@@ -1210,117 +1204,23 @@ export default function Home() {
 
   const handleEncoderDurationChange = useCallback(
     (totalSeconds: number) => {
-      setEncoderDurationDraft(clampDurationDraft(totalSeconds))
+      const clamped = clampDurationDraft(totalSeconds)
+      setEncoderDurationDraft(clamped)
+      setEncoderTotalDuration(normalizeDuration(clamped))
     },
-    [clampDurationDraft],
+    [clampDurationDraft, normalizeDuration],
   )
-
-  const handleApplyEncoderDuration = useCallback(() => {
-    setEncoderTotalDuration(normalizeDuration(encoderDurationDraft))
-  }, [encoderDurationDraft, normalizeDuration])
 
   useEffect(() => {
     setEncoderDurationDraft(clampDurationDraft(encoderTotalDuration))
   }, [clampDurationDraft, encoderTotalDuration])
 
-  const clearTimerInterval = useCallback(() => {
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current)
-      timerIntervalRef.current = null
-    }
-  }, [])
-
-  const handleTimerDurationChange = useCallback(
-    (totalSeconds: number) => {
-      const clamped = clampDurationDraft(totalSeconds)
-      setTimerDurationDraft(clamped)
-      if (!isTimerRunning) {
-        setTimerRemaining(clamped)
-      }
-    },
-    [clampDurationDraft, isTimerRunning],
-  )
-
   const handleDurationWheelChange = useCallback(
     (totalSeconds: number) => {
       handleEncoderDurationChange(totalSeconds)
-      if (showTimerControls) {
-        handleTimerDurationChange(totalSeconds)
-      }
     },
-    [handleEncoderDurationChange, handleTimerDurationChange, showTimerControls],
+    [handleEncoderDurationChange],
   )
-
-  const formatTimerDisplay = useCallback((totalSeconds: number) => {
-    const safeTotal = Math.max(0, Math.floor(Number.isFinite(totalSeconds) ? totalSeconds : 0))
-    const hours = Math.floor(safeTotal / 3600)
-    const minutes = Math.floor((safeTotal % 3600) / 60)
-    const seconds = safeTotal % 60
-
-    const pad = (value: number) => value.toString().padStart(2, "0")
-
-    return `${pad(hours)} hr : ${pad(minutes)} min : ${pad(seconds)} sec`
-  }, [])
-
-  const handleActivateTimer = useCallback(() => {
-    clearTimerInterval()
-    const clamped = clampDurationDraft(encoderDurationDraft)
-    setTimerDurationDraft(clamped)
-    setTimerRemaining(clamped)
-    setShowTimerControls(true)
-    setIsTimerRunning(false)
-  }, [clampDurationDraft, clearTimerInterval, encoderDurationDraft])
-
-  const handleStartTimer = useCallback(() => {
-    const normalizedDuration = clampDurationDraft(timerDurationDraft)
-    if (normalizedDuration <= 0) {
-      return
-    }
-
-    clearTimerInterval()
-    setTimerRemaining(normalizedDuration)
-    setIsTimerRunning(true)
-  }, [clampDurationDraft, clearTimerInterval, timerDurationDraft])
-
-  const handleStopTimer = useCallback(() => {
-    clearTimerInterval()
-    setIsTimerRunning(false)
-  }, [clearTimerInterval])
-
-  const handleResetTimer = useCallback(() => {
-    clearTimerInterval()
-    setTimerRemaining(timerDurationDraft)
-    setIsTimerRunning(false)
-  }, [clearTimerInterval, timerDurationDraft])
-
-  useEffect(() => {
-    if (!isTimerRunning) {
-      clearTimerInterval()
-      return
-    }
-
-    clearTimerInterval()
-    timerIntervalRef.current = setInterval(() => {
-      setTimerRemaining((previous) => {
-        if (previous <= 1) {
-          clearTimerInterval()
-          setIsTimerRunning(false)
-          return 0
-        }
-        return previous - 1
-      })
-    }, 1000)
-
-    return () => {
-      clearTimerInterval()
-    }
-  }, [clearTimerInterval, isTimerRunning])
-
-  useEffect(() => {
-    return () => {
-      clearTimerInterval()
-    }
-  }, [clearTimerInterval])
 
   const playSingleNote = async (note: string, octave: number, noteType: string) => {
     try {
@@ -3625,74 +3525,11 @@ export default function Home() {
                             </Label>
                             <div id="encoder-duration" className="mt-4 flex flex-col items-center gap-6">
                               <TimerWheel
-                                value={showTimerControls ? timerRemaining : encoderDurationDraft}
+                                value={encoderDurationDraft}
                                 onChange={handleDurationWheelChange}
                                 className="gap-6"
+                                maxHours={2}
                               />
-                              <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-6">
-                                <Button
-                                  type="button"
-                                  onClick={handleApplyEncoderDuration}
-                                  className="rounded-[10px] border-[3px] border-gray-500 bg-transparent px-6 py-2 text-xs font-serif font-black tracking-tight text-gray-600 shadow-md transition-shadow hover:shadow-none"
-                                >
-                                  Set timeline duration
-                                </Button>
-                                {showTimerControls ? (
-                                  <div className="flex flex-col items-center gap-4">
-                                    <div className="text-center">
-                                      <div className="font-serif text-2xl font-black tracking-tight text-gray-600">
-                                        {formatTimerDisplay(timerRemaining)}
-                                      </div>
-                                      {timerRemaining === 0 && (
-                                        <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-rose-500">Time&apos;s up!</p>
-                                      )}
-                                    </div>
-                                    <div className="flex flex-wrap items-center justify-center gap-3">
-                                      {isTimerRunning ? (
-                                        <Button
-                                          type="button"
-                                          onClick={handleStopTimer}
-                                          className="rounded-[10px] border-[3px] border-gray-500 bg-transparent px-5 py-2 text-xs font-serif font-black tracking-tight text-gray-600 shadow-md transition-shadow hover:shadow-none"
-                                        >
-                                          <span className="flex items-center gap-2">
-                                            <StopCircle className="h-4 w-4" />
-                                            Pause
-                                          </span>
-                                        </Button>
-                                      ) : (
-                                        <Button
-                                          type="button"
-                                          onClick={handleStartTimer}
-                                          className="rounded-[10px] border-[3px] border-gray-500 bg-transparent px-5 py-2 text-xs font-serif font-black tracking-tight text-gray-600 shadow-md transition-shadow hover:shadow-none"
-                                        >
-                                          <span className="flex items-center gap-2">
-                                            <Play className="h-4 w-4" />
-                                            {timerRemaining === 0 ? "Restart" : "Start"}
-                                          </span>
-                                        </Button>
-                                      )}
-                                      <Button
-                                        type="button"
-                                        onClick={handleResetTimer}
-                                        className="rounded-[10px] border-[3px] border-gray-500 bg-transparent px-5 py-2 text-xs font-serif font-black tracking-tight text-gray-600 shadow-md transition-shadow hover:shadow-none"
-                                      >
-                                        <span className="flex items-center gap-2">
-                                          <CircleDotDashed className="h-4 w-4" />
-                                          Reset
-                                        </span>
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <Button
-                                    type="button"
-                                    onClick={handleActivateTimer}
-                                    className="rounded-[10px] border-[3px] border-gray-500 bg-transparent px-6 py-2 text-xs font-serif font-black tracking-tight text-gray-600 shadow-md transition-shadow hover:shadow-none"
-                                  >
-                                    Set as timer
-                                  </Button>
-                                )}
-                              </div>
                             </div>
                           </div>
                         </div>
