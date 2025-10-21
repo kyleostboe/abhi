@@ -4,11 +4,12 @@ import { useCallback, useEffect, useMemo, useRef } from "react"
 
 import { cn } from "@/lib/utils"
 
-const ITEM_HEIGHT = 44
+const ITEM_HEIGHT = 48
 const PADDING_ITEMS = 2
 
 interface TimerWheelColumnProps {
   label: string
+  suffix: string
   value: number
   options: number[]
   onSelect: (value: number) => void
@@ -16,7 +17,7 @@ interface TimerWheelColumnProps {
 
 const padNumber = (value: number) => value.toString().padStart(2, "0")
 
-const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, value, options, onSelect }) => {
+const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, value, options, onSelect }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasMountedRef = useRef(false)
@@ -97,47 +98,57 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, value, optio
   )
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</span>
-      <div className="relative w-20">
-        <div className="pointer-events-none absolute inset-x-2 top-1/2 h-10 -translate-y-1/2 rounded-lg bg-emerald-100/60" />
-        <div
-          ref={containerRef}
-          onScroll={handleScroll}
-          role="listbox"
-          aria-label={label}
-          className="h-48 overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-inner"
-          style={{
-            scrollSnapType: "y mandatory",
-            scrollPaddingTop: ITEM_HEIGHT * PADDING_ITEMS,
-            scrollPaddingBottom: ITEM_HEIGHT * PADDING_ITEMS,
-            paddingTop: ITEM_HEIGHT * PADDING_ITEMS,
-            paddingBottom: ITEM_HEIGHT * PADDING_ITEMS,
-          }}
-        >
-          {options.map((option) => {
-            const isActive = option === value
-            return (
-              <button
-                key={option}
-                type="button"
-                role="option"
-                aria-selected={isActive}
+    <div className="relative w-24">
+      <div className="pointer-events-none absolute inset-x-3 top-1/2 h-14 -translate-y-1/2 rounded-xl border border-gray-200 bg-white/80 shadow-sm" />
+      <div
+        ref={containerRef}
+        onScroll={handleScroll}
+        role="listbox"
+        aria-label={label}
+        className="h-52 overflow-y-auto rounded-2xl bg-transparent"
+        style={{
+          scrollSnapType: "y mandatory",
+          scrollPaddingTop: ITEM_HEIGHT * PADDING_ITEMS,
+          scrollPaddingBottom: ITEM_HEIGHT * PADDING_ITEMS,
+          paddingTop: ITEM_HEIGHT * PADDING_ITEMS,
+          paddingBottom: ITEM_HEIGHT * PADDING_ITEMS,
+        }}
+      >
+        {options.map((option) => {
+          const isActive = option === value
+          return (
+            <button
+              key={option}
+              type="button"
+              role="option"
+              aria-selected={isActive}
+              className={cn(
+                "flex w-full items-baseline justify-center gap-1.5 px-3 transition-all duration-150",
+                "focus:outline-none",
+                isActive ? "text-gray-600" : "text-gray-300",
+              )}
+              style={{ height: ITEM_HEIGHT, scrollSnapAlign: "center" }}
+              onClick={() => handleOptionClick(option)}
+            >
+              <span
                 className={cn(
-                  "flex w-full items-center justify-center rounded-lg px-3 text-lg font-semibold transition-colors duration-150",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400",
-                  isActive
-                    ? "text-emerald-600"
-                    : "text-gray-500 hover:bg-emerald-50 hover:text-emerald-600",
+                  "font-serif font-black leading-none tracking-tight transition-all duration-150",
+                  isActive ? "text-2xl" : "text-base text-gray-300",
                 )}
-                style={{ height: ITEM_HEIGHT, scrollSnapAlign: "center" }}
-                onClick={() => handleOptionClick(option)}
               >
                 {padNumber(option)}
-              </button>
-            )
-          })}
-        </div>
+              </span>
+              <span
+                className={cn(
+                  "font-serif uppercase tracking-wide transition-all duration-150",
+                  isActive ? "text-xs text-gray-500" : "text-[10px] text-gray-300",
+                )}
+              >
+                {suffix}
+              </span>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
@@ -176,21 +187,26 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
   )
 
   return (
-    <div className={cn("flex items-start justify-center gap-6", className)}>
+    <div className={cn("flex items-center justify-center gap-4", className)}>
       <TimerWheelColumn
         label="Hours"
+        suffix="hr"
         value={Math.min(parts.hours, hoursLimit)}
         options={hourOptions}
         onSelect={(next) => handlePartChange("hours", next)}
       />
+      <span className="mt-1 text-2xl font-serif font-black text-gray-400">:</span>
       <TimerWheelColumn
         label="Minutes"
+        suffix="min"
         value={parts.minutes}
         options={minuteSecondOptions}
         onSelect={(next) => handlePartChange("minutes", next)}
       />
+      <span className="mt-1 text-2xl font-serif font-black text-gray-400">:</span>
       <TimerWheelColumn
         label="Seconds"
+        suffix="sec"
         value={parts.seconds}
         options={minuteSecondOptions}
         onSelect={(next) => handlePartChange("seconds", next)}
