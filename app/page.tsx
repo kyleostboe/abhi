@@ -581,12 +581,14 @@ export default function Home() {
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
   const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(600)
+  const [encoderDurationDraft, setEncoderDurationDraft] = useState<number>(600)
   const [encoderTimelineOriginalDuration, setEncoderTimelineOriginalDuration] = useState<number | null>(null)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
   const lastEncoderDurationAdjustmentRef = useRef<number | null>(null)
   const [isTimerMode, setIsTimerMode] = useState(false)
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [timerRemaining, setTimerRemaining] = useState<number>(600)
+  const [timerDurationDraft, setTimerDurationDraft] = useState<number>(600)
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const exportableTimelineMetadata = useMemo(() => {
@@ -1202,18 +1204,24 @@ export default function Home() {
     return Math.max(1, Math.floor(Number.isFinite(value) ? value : 0))
   }, [])
 
+  const clampDurationDraft = useCallback((value: number) => {
+    return Math.max(0, Math.floor(Number.isFinite(value) ? value : 0))
+  }, [])
+
   const handleEncoderDurationChange = useCallback(
     (totalSeconds: number) => {
-      setEncoderTotalDuration(normalizeDuration(totalSeconds))
+      setEncoderDurationDraft(clampDurationDraft(totalSeconds))
     },
-    [normalizeDuration],
+    [clampDurationDraft],
   )
 
+  const handleApplyEncoderDuration = useCallback(() => {
+    setEncoderTotalDuration(normalizeDuration(encoderDurationDraft))
+  }, [encoderDurationDraft, normalizeDuration])
+
   useEffect(() => {
-    if (!isTimerMode) {
-      setTimerRemaining(normalizeDuration(encoderTotalDuration))
-    }
-  }, [encoderTotalDuration, isTimerMode, normalizeDuration])
+    setEncoderDurationDraft(clampDurationDraft(encoderTotalDuration))
+  }, [clampDurationDraft, encoderTotalDuration])
 
   const clearTimerInterval = useCallback(() => {
     if (timerIntervalRef.current) {
@@ -1222,27 +1230,36 @@ export default function Home() {
     }
   }, [])
 
+  const handleTimerDurationChange = useCallback(
+    (totalSeconds: number) => {
+      const clamped = clampDurationDraft(totalSeconds)
+      setTimerDurationDraft(clamped)
+      if (!isTimerRunning) {
+        setTimerRemaining(clamped)
+      }
+    },
+    [clampDurationDraft, isTimerRunning],
+  )
+
   const handleActivateTimer = useCallback(() => {
     clearTimerInterval()
-    setTimerRemaining(normalizeDuration(encoderTotalDuration))
+    const clamped = clampDurationDraft(encoderDurationDraft)
+    setTimerDurationDraft(clamped)
+    setTimerRemaining(clamped)
     setIsTimerMode(true)
     setIsTimerRunning(false)
-  }, [clearTimerInterval, encoderTotalDuration, normalizeDuration])
+  }, [clampDurationDraft, clearTimerInterval, encoderDurationDraft])
 
   const handleStartTimer = useCallback(() => {
-    const normalizedDuration = normalizeDuration(encoderTotalDuration)
+    const normalizedDuration = clampDurationDraft(timerDurationDraft)
     if (normalizedDuration <= 0) {
       return
     }
 
-    setTimerRemaining((previous) => {
-      if (previous <= 0 || previous > normalizedDuration) {
-        return normalizedDuration
-      }
-      return previous
-    })
+    clearTimerInterval()
+    setTimerRemaining(normalizedDuration)
     setIsTimerRunning(true)
-  }, [encoderTotalDuration, normalizeDuration])
+  }, [clampDurationDraft, clearTimerInterval, timerDurationDraft])
 
   const handleStopTimer = useCallback(() => {
     clearTimerInterval()
@@ -1251,16 +1268,16 @@ export default function Home() {
 
   const handleResetTimer = useCallback(() => {
     clearTimerInterval()
-    setTimerRemaining(normalizeDuration(encoderTotalDuration))
+    setTimerRemaining(timerDurationDraft)
     setIsTimerRunning(false)
-  }, [clearTimerInterval, encoderTotalDuration, normalizeDuration])
+  }, [clearTimerInterval, timerDurationDraft])
 
   const handleReturnToEncoder = useCallback(() => {
     clearTimerInterval()
     setIsTimerRunning(false)
     setIsTimerMode(false)
-    setTimerRemaining(normalizeDuration(encoderTotalDuration))
-  }, [clearTimerInterval, encoderTotalDuration, normalizeDuration])
+    setTimerRemaining(timerDurationDraft)
+  }, [clearTimerInterval, timerDurationDraft])
 
   useEffect(() => {
     if (!isTimerMode || !isTimerRunning) {
@@ -3597,19 +3614,28 @@ export default function Home() {
                             <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
                               Duration
                             </Label>
-                            <div id="encoder-duration" className="mt-3 flex flex-col items-center gap-4">
+                            <div id="encoder-duration" className="mt-4 flex flex-col items-center gap-6">
                               <TimerWheel
-                                value={encoderTotalDuration}
+                                value={encoderDurationDraft}
                                 onChange={handleEncoderDurationChange}
-                                className="bg-transparent px-6 py-4 "
+                                className="px-2 text-2xl"
                               />
-                              <Button
-                                type="button"
-                                onClick={handleActivateTimer}
-                                className="rounded-full bg-gradient-to-r from-logo-emerald-500 to-logo-teal-500 px-6 py-2 text-white font-black shadow-md hover:shadow-lg"
-                              >
-                                Use as timer
-                              </Button>
+                              <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-4">
+                                <Button
+                                  type="button"
+                                  onClick={handleApplyEncoderDuration}
+                                  className="rounded-[10px] border-[3px] border-gray-500 bg-transparent px-6 py-2 text-xs font-serif font-black tracking-tight text-gray-600 shadow-md transition-shadow hover:shadow-none"
+                                >
+                                  Set timeline duration
+                                </Button>
+                                <Button
+                                  type="button"
+                                  onClick={handleActivateTimer}
+                                  className="rounded-[10px] border-[3px] border-gray-500 bg-transparent px-6 py-2 text-xs font-serif font-black tracking-tight text-gray-600 shadow-md transition-shadow hover:shadow-none"
+                                >
+                                  Set as timer
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -4019,59 +4045,69 @@ export default function Home() {
       </div>
 
       {isTimerMode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm">
-          <Card className="w-full max-w-md space-y-6 rounded-3xl p-8 text-center shadow-2xl">
-            <div className="space-y-1">
-              <h2 className="text-2xl font-black text-gray-700">Timer</h2>
-              <p className="text-sm font-medium text-gray-500">
-                Countdown without leaving the encoder. Return when you&apos;re ready to keep building.
-              </p>
-            </div>
-            <div className="mx-auto w-full max-w-xs rounded-2xl bg-gray-900 px-6 py-5 font-mono text-4xl font-semibold tracking-widest text-white shadow-inner">
-              {formatTime(timerRemaining)}
-            </div>
-            {timerRemaining === 0 && (
-              <p className="text-sm font-semibold uppercase tracking-wide text-rose-500">Time&apos;s up!</p>
-            )}
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              {isTimerRunning ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm"
+          onClick={handleReturnToEncoder}
+        >
+          <Card
+            className="w-full max-w-xl rounded-[32px] border-[3px] border-gray-500/30 bg-white/80 p-8 text-center shadow-2xl backdrop-blur-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="space-y-6">
+              <div className="space-y-1">
+                <h2 className="text-2xl font-serif font-black text-gray-700">Timer</h2>
+                <p className="text-sm font-medium text-gray-500">
+                  Dial in your duration and stay in flow. Click outside to return to the encoder.
+                </p>
+              </div>
+              <TimerWheel
+                value={timerDurationDraft}
+                onChange={handleTimerDurationChange}
+                className="px-2 text-2xl"
+              />
+              <div className="space-y-2">
+                <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">Remaining</div>
+                <div className="font-mono text-4xl font-semibold text-gray-700">{formatTime(timerRemaining)}</div>
+                {timerRemaining === 0 && (
+                  <p className="text-sm font-semibold uppercase tracking-wide text-rose-500">Time&apos;s up!</p>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                {isTimerRunning ? (
+                  <Button
+                    type="button"
+                    onClick={handleStopTimer}
+                    className="rounded-[10px] border-[3px] border-gray-500 bg-transparent px-5 py-2 text-xs font-serif font-black tracking-tight text-gray-600 shadow-md transition-shadow hover:shadow-none"
+                  >
+                    <span className="flex items-center gap-2">
+                      <StopCircle className="h-4 w-4" />
+                      Stop
+                    </span>
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={handleStartTimer}
+                    className="rounded-[10px] border-[3px] border-gray-500 bg-transparent px-5 py-2 text-xs font-serif font-black tracking-tight text-gray-600 shadow-md transition-shadow hover:shadow-none"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Play className="h-4 w-4" />
+                      {timerRemaining === 0 ? "Restart" : "Start"}
+                    </span>
+                  </Button>
+                )}
                 <Button
                   type="button"
-                  onClick={handleStopTimer}
-                  variant="destructive"
-                  className="flex items-center gap-2 rounded-full px-6 py-2 font-semibold"
+                  onClick={handleResetTimer}
+                  className="rounded-[10px] border-[3px] border-gray-500 bg-transparent px-5 py-2 text-xs font-serif font-black tracking-tight text-gray-600 shadow-md transition-shadow hover:shadow-none"
                 >
-                  <StopCircle className="h-4 w-4" />
-                  Stop
+                  <span className="flex items-center gap-2">
+                    <CircleDotDashed className="h-4 w-4" />
+                    Reset
+                  </span>
                 </Button>
-              ) : (
-                <Button
-                  type="button"
-                  onClick={handleStartTimer}
-                  className="flex items-center gap-2 rounded-full bg-gradient-to-r from-logo-emerald-500 to-logo-teal-500 px-6 py-2 font-semibold text-white shadow-md hover:shadow-lg"
-                >
-                  <Play className="h-4 w-4" />
-                  {timerRemaining === 0 ? "Restart" : "Start"}
-                </Button>
-              )}
-              <Button
-                type="button"
-                onClick={handleResetTimer}
-                variant="outline"
-                className="flex items-center gap-2 rounded-full px-6 py-2 font-semibold bg-transparent"
-              >
-                <CircleDotDashed className="h-4 w-4" />
-                Reset
-              </Button>
+              </div>
             </div>
-            <Button
-              type="button"
-              onClick={handleReturnToEncoder}
-              variant="secondary"
-              className="w-full rounded-full px-6 py-3 font-black"
-            >
-              Return to encoder
-            </Button>
           </Card>
         </div>
       )}
