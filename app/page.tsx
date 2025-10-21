@@ -1241,6 +1241,16 @@ export default function Home() {
     [clampDurationDraft, isTimerRunning],
   )
 
+  const handleDurationWheelChange = useCallback(
+    (totalSeconds: number) => {
+      handleEncoderDurationChange(totalSeconds)
+      if (showTimerControls) {
+        handleTimerDurationChange(totalSeconds)
+      }
+    },
+    [handleEncoderDurationChange, handleTimerDurationChange, showTimerControls],
+  )
+
   const formatTimerDisplay = useCallback((totalSeconds: number) => {
     const safeTotal = Math.max(0, Math.floor(Number.isFinite(totalSeconds) ? totalSeconds : 0))
     const hours = Math.floor(safeTotal / 3600)
@@ -3615,8 +3625,8 @@ export default function Home() {
                             </Label>
                             <div id="encoder-duration" className="mt-4 flex flex-col items-center gap-6">
                               <TimerWheel
-                                value={encoderDurationDraft}
-                                onChange={handleEncoderDurationChange}
+                                value={showTimerControls ? timerRemaining : encoderDurationDraft}
+                                onChange={handleDurationWheelChange}
                                 className="gap-6"
                               />
                               <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-6">
@@ -3629,11 +3639,6 @@ export default function Home() {
                                 </Button>
                                 {showTimerControls ? (
                                   <div className="flex flex-col items-center gap-4">
-                                    <TimerWheel
-                                      value={isTimerRunning ? timerRemaining : timerDurationDraft}
-                                      onChange={handleTimerDurationChange}
-                                      className="gap-6"
-                                    />
                                     <div className="text-center">
                                       <div className="font-serif text-2xl font-black tracking-tight text-gray-600">
                                         {formatTimerDisplay(timerRemaining)}
