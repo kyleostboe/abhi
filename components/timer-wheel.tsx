@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react"
 
 import { cn } from "@/lib/utils"
 
-const ITEM_HEIGHT = 48
+const ITEM_HEIGHT = 52
 const PADDING_ITEMS = 2
 
 interface TimerWheelColumnProps {
@@ -98,14 +98,13 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
   )
 
   return (
-    <div className="relative w-24">
-      <div className="pointer-events-none absolute inset-x-3 top-1/2 h-14 -translate-y-1/2 rounded-xl border border-gray-200 bg-white/80 shadow-sm" />
+    <div className="relative w-20">
       <div
         ref={containerRef}
         onScroll={handleScroll}
         role="listbox"
         aria-label={label}
-        className="h-52 overflow-y-auto rounded-2xl bg-transparent"
+        className="h-48 overflow-y-auto rounded-xl bg-transparent"
         style={{
           scrollSnapType: "y mandatory",
           scrollPaddingTop: ITEM_HEIGHT * PADDING_ITEMS,
@@ -123,7 +122,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
               role="option"
               aria-selected={isActive}
               className={cn(
-                "flex w-full items-baseline justify-center gap-1.5 px-3 transition-all duration-150",
+                "flex w-full items-end justify-center gap-1 px-1 transition-all duration-150",
                 "focus:outline-none",
                 isActive ? "text-gray-600" : "text-gray-300",
               )}
@@ -133,14 +132,14 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
               <span
                 className={cn(
                   "font-serif font-black leading-none tracking-tight transition-all duration-150",
-                  isActive ? "text-2xl" : "text-base text-gray-300",
+                  isActive ? "text-2xl" : "text-sm text-gray-400",
                 )}
               >
                 {padNumber(option)}
               </span>
               <span
                 className={cn(
-                  "font-serif uppercase tracking-wide transition-all duration-150",
+                  "pb-1 font-serif uppercase tracking-wide transition-all duration-150",
                   isActive ? "text-xs text-gray-500" : "text-[10px] text-gray-300",
                 )}
               >
