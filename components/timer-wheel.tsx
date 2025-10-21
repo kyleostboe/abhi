@@ -22,33 +22,28 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasMountedRef = useRef(false)
 
-  const clampToOption = useCallback(
-    (index: number) => {
-      if (options.length === 0) {
-        return options[0] ?? 0
-      }
-      if (index <= 0) {
-        return options[0]
-      }
-      if (index >= options.length - 1) {
-        return options[options.length - 1]
-      }
-      return options[index]
-    },
-    [options],
+  const baseOptions = useMemo(() => (options.length > 0 ? options : [0]), [options])
+  const extendedOptions = useMemo(
+    () => [...baseOptions, ...baseOptions, ...baseOptions],
+    [baseOptions],
   )
+  const baseIndex = baseOptions.length
+  const activeBaseIndex = useMemo(() => {
+    const nextIndex = baseOptions.indexOf(value)
+    return nextIndex >= 0 ? nextIndex : 0
+  }, [baseOptions, value])
 
   const alignToValue = useCallback(
     (nextValue: number, behavior: ScrollBehavior = "smooth") => {
-      if (!containerRef.current) {
+      if (!containerRef.current || baseOptions.length === 0) {
         return
       }
-      const nextIndex = options.indexOf(nextValue)
-      const targetIndex = nextIndex >= 0 ? nextIndex : 0
+      const nextIndex = baseOptions.indexOf(nextValue)
+      const targetIndex = (nextIndex >= 0 ? nextIndex : 0) + baseIndex
       const scrollTop = targetIndex * ITEM_HEIGHT
       containerRef.current.scrollTo({ top: scrollTop, behavior })
     },
-    [options],
+    [baseIndex, baseOptions],
   )
 
   useEffect(() => {
@@ -74,25 +69,31 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
 
       const target = event.currentTarget
       scrollTimeoutRef.current = setTimeout(() => {
+        const modulo = baseOptions.length
+        if (modulo === 0) {
+          return
+        }
+
         const rawIndex = Math.round(target.scrollTop / ITEM_HEIGHT)
-        const option = clampToOption(rawIndex)
+        const clampedIndex = Math.max(0, Math.min(rawIndex, extendedOptions.length - 1))
+        const normalizedIndex = ((clampedIndex % modulo) + modulo) % modulo
+        const option = baseOptions[normalizedIndex]
+
         if (option !== value) {
           onSelect(option)
-        } else {
-          alignToValue(option)
         }
+        alignToValue(option, "auto")
       }, 80)
     },
-    [alignToValue, clampToOption, onSelect, value],
+    [alignToValue, baseOptions, extendedOptions.length, onSelect, value],
   )
 
   const handleOptionClick = useCallback(
     (option: number) => {
       if (option !== value) {
         onSelect(option)
-      } else {
-        alignToValue(option)
       }
+      alignToValue(option)
     },
     [alignToValue, onSelect, value],
   )
@@ -113,11 +114,11 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
           paddingBottom: ITEM_HEIGHT * PADDING_ITEMS,
         }}
       >
-        {options.map((option) => {
-          const isActive = option === value
+        {extendedOptions.map((option, index) => {
+          const isActive = index === activeBaseIndex + baseIndex
           return (
             <button
-              key={option}
+              key={`${option}-${index}`}
               type="button"
               role="option"
               aria-selected={isActive}
@@ -137,14 +138,9 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
               >
                 {padNumber(option)}
               </span>
-              <span
-                className={cn(
-                  "pb-1 font-serif uppercase tracking-wide transition-all duration-150",
-                  isActive ? "text-xs text-gray-500" : "text-[10px] text-gray-300",
-                )}
-              >
-                {suffix}
-              </span>
+              {isActive && (
+                <span className="pb-1 font-serif uppercase tracking-wide text-xs text-gray-500">{suffix}</span>
+              )}
             </button>
           )
         })}
@@ -170,15 +166,15 @@ export interface TimerWheelProps {
 
 export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, className, maxHours = 23 }) => {
   const parts = useMemo(() => convertSecondsToParts(value), [value])
-  const hoursLimit = useMemo(() => Math.max(maxHours, parts.hours + 1), [maxHours, parts.hours])
+  const hoursLimit = useMemo(() => Math.max(maxHours, parts.hours), [maxHours, parts.hours])
   const hourOptions = useMemo(() => Array.from({ length: hoursLimit + 1 }, (_, index) => index), [hoursLimit])
-  const minuteSecondOptions = useMemo(() => Array.from({ length: 60 }, (_, index) => index), [])
+  const minuteSecondOptions = useMemo(() => Array.from({ length: 61 }, (_, index) => index), [])
 
   const handlePartChange = useCallback(
     (part: "hours" | "minutes" | "seconds", nextValue: number) => {
       const clampedHours = part === "hours" ? Math.max(0, Math.min(hoursLimit, nextValue)) : parts.hours
-      const clampedMinutes = part === "minutes" ? Math.max(0, Math.min(59, nextValue)) : parts.minutes
-      const clampedSeconds = part === "seconds" ? Math.max(0, Math.min(59, nextValue)) : parts.seconds
+      const clampedMinutes = part === "minutes" ? Math.max(0, Math.min(60, nextValue)) : parts.minutes
+      const clampedSeconds = part === "seconds" ? Math.max(0, Math.min(60, nextValue)) : parts.seconds
       const total = clampedHours * 3600 + clampedMinutes * 60 + clampedSeconds
       onChange(total)
     },
