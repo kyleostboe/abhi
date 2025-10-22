@@ -100,7 +100,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
 
   return (
     <div className="flex w-20 flex-col items-center">
-      <div className="relative w-full">
+      <div className="relative w-full h-auto">
         <div
           ref={containerRef}
           onScroll={handleScroll}
@@ -144,7 +144,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
           })}
         </div>
       </div>
-      <span className="mt-2 pb-1 font-serif text-xs font-semibold uppercase tracking-wide text-gray-500">
+      <span className="pb-1 font-serif text-xs font-semibold uppercase tracking-wide text-gray-500 mt-8">
         {suffix}
       </span>
     </div>
@@ -184,7 +184,7 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
   )
 
   return (
-    <div className={cn("flex items-center justify-center gap-4", className)}>
+    <div className={cn("flex items-center justify-center gap-1.5", className)}>
       <TimerWheelColumn
         label="Hours"
         suffix="hr"
