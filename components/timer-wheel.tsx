@@ -99,52 +99,54 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
   )
 
   return (
-    <div className="relative w-20">
-      <div
-        ref={containerRef}
-        onScroll={handleScroll}
-        role="listbox"
-        aria-label={label}
-        className="h-48 overflow-y-auto rounded-xl bg-transparent"
-        style={{
-          scrollSnapType: "y mandatory",
-          scrollPaddingTop: ITEM_HEIGHT * PADDING_ITEMS,
-          scrollPaddingBottom: ITEM_HEIGHT * PADDING_ITEMS,
-          paddingTop: ITEM_HEIGHT * PADDING_ITEMS,
-          paddingBottom: ITEM_HEIGHT * PADDING_ITEMS,
-        }}
-      >
-        {extendedOptions.map((option, index) => {
-          const isActive = index === activeBaseIndex + baseIndex
-          return (
-            <button
-              key={`${option}-${index}`}
-              type="button"
-              role="option"
-              aria-selected={isActive}
-              className={cn(
-                "flex w-full items-end justify-center gap-1 px-1 transition-all duration-150",
-                "focus:outline-none",
-                isActive ? "text-gray-600" : "text-gray-300",
-              )}
-              style={{ height: ITEM_HEIGHT, scrollSnapAlign: "center" }}
-              onClick={() => handleOptionClick(option)}
-            >
-              <span
+    <div className="flex w-20 flex-col items-center">
+      <div className="relative w-full">
+        <div
+          ref={containerRef}
+          onScroll={handleScroll}
+          role="listbox"
+          aria-label={label}
+          className="h-48 overflow-y-auto rounded-xl bg-transparent"
+          style={{
+            scrollSnapType: "y mandatory",
+            scrollPaddingTop: ITEM_HEIGHT * PADDING_ITEMS,
+            scrollPaddingBottom: ITEM_HEIGHT * PADDING_ITEMS,
+            paddingTop: ITEM_HEIGHT * PADDING_ITEMS,
+            paddingBottom: ITEM_HEIGHT * PADDING_ITEMS,
+          }}
+        >
+          {extendedOptions.map((option, index) => {
+            const isActive = index === activeBaseIndex + baseIndex
+            return (
+              <button
+                key={`${option}-${index}`}
+                type="button"
+                role="option"
+                aria-selected={isActive}
                 className={cn(
-                  "font-serif font-black leading-none tracking-tight transition-all duration-150",
-                  isActive ? "text-2xl" : "text-sm text-gray-400",
+                  "flex w-full items-end justify-center px-1 transition-all duration-150",
+                  "focus:outline-none",
+                  isActive ? "text-gray-600" : "text-gray-300",
                 )}
+                style={{ height: ITEM_HEIGHT, scrollSnapAlign: "center" }}
+                onClick={() => handleOptionClick(option)}
               >
-                {padNumber(option)}
-              </span>
-              {isActive && (
-                <span className="pb-1 font-serif uppercase tracking-wide text-xs text-gray-500">{suffix}</span>
-              )}
-            </button>
-          )
-        })}
+                <span
+                  className={cn(
+                    "font-serif font-black leading-none tracking-tight transition-all duration-150",
+                    isActive ? "text-2xl" : "text-sm text-gray-400",
+                  )}
+                >
+                  {padNumber(option)}
+                </span>
+              </button>
+            )
+          })}
+        </div>
       </div>
+      <span className="mt-2 pb-1 font-serif text-xs font-semibold uppercase tracking-wide text-gray-500">
+        {suffix}
+      </span>
     </div>
   )
 }
