@@ -580,8 +580,8 @@ export default function Home() {
 
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
-  const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(600)
-  const [encoderDurationDraft, setEncoderDurationDraft] = useState<number>(600)
+  const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(300)
+  const [encoderDurationDraft, setEncoderDurationDraft] = useState<number>(300)
   const [encoderTimelineOriginalDuration, setEncoderTimelineOriginalDuration] = useState<number | null>(null)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
   const lastEncoderDurationAdjustmentRef = useRef<number | null>(null)
