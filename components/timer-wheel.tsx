@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 
 import { cn } from "@/lib/utils"
 
@@ -57,6 +57,35 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
     [baseIndex, baseOptions],
   )
 
+  const computeScrollState = useCallback(
+    (scrollTop: number) => {
+      const modulo = baseOptions.length
+
+      if (modulo === 0) {
+        return {
+          normalizedIndex: 0,
+          option: baseOptions[0] ?? 0,
+          targetScrollTop: baseIndex * ITEM_HEIGHT,
+        }
+      }
+
+      const rawIndex = Math.round(scrollTop / ITEM_HEIGHT)
+      const clampedIndex = Math.max(0, Math.min(rawIndex, extendedOptions.length - 1))
+      const normalizedIndex = ((clampedIndex % modulo) + modulo) % modulo
+      const option = baseOptions[normalizedIndex]
+      const targetScrollTop = (normalizedIndex + baseIndex) * ITEM_HEIGHT
+
+      return { normalizedIndex, option, targetScrollTop }
+    },
+    [baseIndex, baseOptions, extendedOptions.length],
+  )
+
+  const [activeIndex, setActiveIndex] = useState(activeBaseIndex)
+
+  useEffect(() => {
+    setActiveIndex(activeBaseIndex)
+  }, [activeBaseIndex])
+
   useLayoutEffect(() => {
     if (!containerRef.current || baseOptions.length === 0) return
 
@@ -82,21 +111,17 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
       }
 
       const target = event.currentTarget
-      scrollTimeoutRef.current = setTimeout(() => {
-        const modulo = baseOptions.length
-        if (modulo === 0) {
-          return
-        }
+      const { normalizedIndex: immediateIndex } = computeScrollState(target.scrollTop)
+      setActiveIndex(immediateIndex)
 
-        const rawIndex = Math.round(target.scrollTop / ITEM_HEIGHT)
-        const clampedIndex = Math.max(0, Math.min(rawIndex, extendedOptions.length - 1))
-        const normalizedIndex = ((clampedIndex % modulo) + modulo) % modulo
-        const option = baseOptions[normalizedIndex]
+      scrollTimeoutRef.current = setTimeout(() => {
+        const { normalizedIndex, option, targetScrollTop } = computeScrollState(target.scrollTop)
+
+        setActiveIndex(normalizedIndex)
 
         if (option !== value) {
           onSelect(option)
         }
-        const targetScrollTop = (normalizedIndex + baseIndex) * ITEM_HEIGHT
         const hasDifferentOffset = Math.abs(target.scrollTop - targetScrollTop) > 0.5
 
         if (hasDifferentOffset) {
@@ -110,17 +135,21 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
         }
       }, 80)
     },
-    [alignToValue, baseIndex, baseOptions, extendedOptions.length, onSelect, value],
+    [alignToValue, computeScrollState, onSelect, value],
   )
 
   const handleOptionClick = useCallback(
     (option: number) => {
+      const nextIndex = baseOptions.indexOf(option)
+      if (nextIndex >= 0) {
+        setActiveIndex(nextIndex)
+      }
       if (option !== value) {
         onSelect(option)
       }
       alignToValue(option)
     },
-    [alignToValue, onSelect, value],
+    [alignToValue, baseOptions, onSelect, value],
   )
 
   return (
@@ -142,13 +171,14 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
           }}
         >
           {extendedOptions.map((option, index) => {
-            const isActive = option === value
+            const optionIndex = baseOptions.length === 0 ? 0 : index % baseOptions.length
+            const isActive = optionIndex === activeIndex
             return (
               <button
                 key={`${option}-${index}`}
                 type="button"
                 role="option"
-                aria-selected={isActive}
+                aria-selected={option === value}
                 className={cn(
                   "flex w-full items-end justify-center px-1 transition-all duration-150",
                   "focus:outline-none",
