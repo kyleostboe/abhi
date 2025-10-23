@@ -20,22 +20,18 @@ interface TimerWheelColumnProps {
 const padNumber = (value: number) => value.toString().padStart(2, "0")
 
 const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, value, options, onSelect }) => {
-  useEffect(() => {
-    console.log(`[v0] ${label} column - value:`, value, "options length:", options.length)
-  }, [label, value, options.length])
-
   const containerRef = useRef<HTMLDivElement>(null)
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasMountedRef = useRef(false)
+  const isInitializingRef = useRef(true)
 
   const baseOptions = useMemo(() => (options.length > 0 ? options : [0]), [options])
   const extendedOptions = useMemo(() => [...baseOptions, ...baseOptions, ...baseOptions], [baseOptions])
   const baseIndex = baseOptions.length
   const activeBaseIndex = useMemo(() => {
     const nextIndex = baseOptions.indexOf(value)
-    console.log(`[v0] ${label} - activeBaseIndex calculation: value=${value}, indexOf=${nextIndex}`)
     return nextIndex >= 0 ? nextIndex : 0
-  }, [baseOptions, value, label])
+  }, [baseOptions, value])
 
   const alignToValue = useCallback(
     (nextValue: number, behavior: ScrollBehavior = "smooth") => {
@@ -53,7 +49,14 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
   useEffect(() => {
     const behavior = hasMountedRef.current ? "smooth" : "auto"
     alignToValue(value, behavior)
-    hasMountedRef.current = true
+
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true
+      // Allow time for initial scroll to complete before enabling onChange
+      setTimeout(() => {
+        isInitializingRef.current = false
+      }, 100)
+    }
   }, [alignToValue, value])
 
   useEffect(() => {
@@ -67,6 +70,10 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
 
   const handleScroll = useCallback(
     (event: React.UIEvent<HTMLDivElement>) => {
+      if (isInitializingRef.current) {
+        return
+      }
+
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current)
       }
@@ -170,22 +177,16 @@ export interface TimerWheelProps {
 }
 
 export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, className, maxHours = 23 }) => {
-  useEffect(() => {
-    console.log("[v0] TimerWheel received value:", value)
-    const debugParts = convertSecondsToParts(value)
-    console.log("[v0] Converted to parts:", debugParts)
-  }, [value])
-
   const parts = useMemo(() => convertSecondsToParts(value), [value])
   const hoursLimit = useMemo(() => Math.max(maxHours, parts.hours), [maxHours, parts.hours])
   const hourOptions = useMemo(() => Array.from({ length: hoursLimit + 1 }, (_, index) => index), [hoursLimit])
-  const minuteSecondOptions = useMemo(() => Array.from({ length: 61 }, (_, index) => index), [])
+  const minuteSecondOptions = useMemo(() => Array.from({ length: 60 }, (_, index) => index), [])
 
   const handlePartChange = useCallback(
     (part: "hours" | "minutes" | "seconds", nextValue: number) => {
       const clampedHours = part === "hours" ? Math.max(0, Math.min(hoursLimit, nextValue)) : parts.hours
-      const clampedMinutes = part === "minutes" ? Math.max(0, Math.min(60, nextValue)) : parts.minutes
-      const clampedSeconds = part === "seconds" ? Math.max(0, Math.min(60, nextValue)) : parts.seconds
+      const clampedMinutes = part === "minutes" ? Math.max(0, Math.min(59, nextValue)) : parts.minutes
+      const clampedSeconds = part === "seconds" ? Math.max(0, Math.min(59, nextValue)) : parts.seconds
       const total = clampedHours * 3600 + clampedMinutes * 60 + clampedSeconds
       onChange(total)
     },
