@@ -98,7 +98,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
   )
 
   return (
-    <div className="flex w-20 flex-col items-center">
+    <div className="flex w-14 flex-col items-center">
       <div className="relative w-full h-auto">
         <div
           ref={containerRef}
@@ -182,7 +182,7 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
   )
 
   return (
-    <div className={cn("flex items-center justify-center -gap-2", className)}>
+    <div className={cn("flex items-center justify-center gap-0", className)}>
       <TimerWheelColumn
         label="Hours"
         suffix="hr"
@@ -190,7 +190,7 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
         options={hourOptions}
         onSelect={(next) => handlePartChange("hours", next)}
       />
-      <span className="mt-1 text-2xl font-serif font-black text-gray-400">:</span>
+      <span className="mt-1 text-2xl font-serif font-black text-gray-400 -mx-2">:</span>
       <TimerWheelColumn
         label="Minutes"
         suffix="min"
@@ -198,7 +198,7 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
         options={minuteSecondOptions}
         onSelect={(next) => handlePartChange("minutes", next)}
       />
-      <span className="mt-1 text-2xl font-serif font-black text-gray-400">:</span>
+      <span className="mt-1 text-2xl font-serif font-black text-gray-400 -mx-2">:</span>
       <TimerWheelColumn
         label="Seconds"
         suffix="sec"
