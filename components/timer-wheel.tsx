@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react"
 
 import { cn } from "@/lib/utils"
 
-const ITEM_HEIGHT = 52
+const ITEM_HEIGHT = 40
 const PADDING_ITEMS = 2
 
 interface TimerWheelColumnProps {
@@ -99,15 +99,16 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
   )
 
   return (
-    <div className="flex w-20 flex-col items-center">
+    <div className="flex w-16 flex-col items-center">
       <div className="relative w-full h-auto">
         <div
           ref={containerRef}
           onScroll={handleScroll}
           role="listbox"
           aria-label={label}
-          className="h-48 overflow-y-auto rounded-xl bg-transparent"
+          className="overflow-y-auto rounded-xl bg-transparent"
           style={{
+            height: ITEM_HEIGHT * 5,
             scrollSnapType: "y mandatory",
             scrollPaddingTop: ITEM_HEIGHT * PADDING_ITEMS,
             scrollPaddingBottom: ITEM_HEIGHT * PADDING_ITEMS,
@@ -124,7 +125,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
                 role="option"
                 aria-selected={isActive}
                 className={cn(
-                  "flex w-full items-end justify-center px-1 transition-all duration-150",
+                  "flex w-full items-end justify-center px-0.5 transition-all duration-150",
                   "focus:outline-none",
                   isActive ? "text-gray-600" : "text-gray-300",
                 )}
@@ -134,7 +135,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
                 <span
                   className={cn(
                     "font-serif font-black leading-none tracking-tight transition-all duration-150",
-                    isActive ? "text-2xl" : "text-sm text-gray-400",
+                    isActive ? "text-xl" : "text-xs text-gray-400",
                   )}
                 >
                   {padNumber(option)}
@@ -144,7 +145,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
           })}
         </div>
       </div>
-      <span className="pb-1 font-serif text-xs font-semibold uppercase tracking-wide text-gray-500 mt-8">
+      <span className="pb-1 font-serif text-[11px] font-semibold uppercase tracking-wide text-gray-500 mt-4">
         {suffix}
       </span>
     </div>
@@ -184,7 +185,7 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
   )
 
   return (
-    <div className={cn("flex items-center justify-center gap-1.5", className)}>
+    <div className={cn("flex items-center justify-center gap-1", className)}>
       <TimerWheelColumn
         label="Hours"
         suffix="hr"
@@ -192,7 +193,7 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
         options={hourOptions}
         onSelect={(next) => handlePartChange("hours", next)}
       />
-      <span className="mt-1 text-2xl font-serif font-black text-gray-400">:</span>
+      <span className="mt-0.5 text-xl font-serif font-black text-gray-400">:</span>
       <TimerWheelColumn
         label="Minutes"
         suffix="min"
@@ -200,7 +201,7 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
         options={minuteSecondOptions}
         onSelect={(next) => handlePartChange("minutes", next)}
       />
-      <span className="mt-1 text-2xl font-serif font-black text-gray-400">:</span>
+      <span className="mt-0.5 text-xl font-serif font-black text-gray-400">:</span>
       <TimerWheelColumn
         label="Seconds"
         suffix="sec"

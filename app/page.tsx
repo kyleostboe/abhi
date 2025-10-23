@@ -3523,14 +3523,14 @@ export default function Home() {
                             <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
                               Duration
                             </Label>
-                            <div id="encoder-duration" className="mt-4 flex flex-col items-center gap-6">
-                              <TimerWheel
-                                value={encoderDurationDraft}
-                                onChange={handleDurationWheelChange}
-                                className="gap-6"
-                                maxHours={2}
-                              />
-                            </div>
+                              <div id="encoder-duration" className="mt-2 flex flex-col items-center gap-3">
+                                <TimerWheel
+                                  value={encoderDurationDraft}
+                                  onChange={handleDurationWheelChange}
+                                  className="gap-2"
+                                  maxHours={2}
+                                />
+                              </div>
                           </div>
                         </div>
                       </div>
