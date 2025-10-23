@@ -20,10 +20,6 @@ interface TimerWheelColumnProps {
 const padNumber = (value: number) => value.toString().padStart(2, "0")
 
 const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, value, options, onSelect }) => {
-  useEffect(() => {
-    console.log(`[v0] ${label} column - value:`, value, "options length:", options.length)
-  }, [label, value, options.length])
-
   const containerRef = useRef<HTMLDivElement>(null)
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasMountedRef = useRef(false)
@@ -33,9 +29,8 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
   const baseIndex = baseOptions.length
   const activeBaseIndex = useMemo(() => {
     const nextIndex = baseOptions.indexOf(value)
-    console.log(`[v0] ${label} - activeBaseIndex calculation: value=${value}, indexOf=${nextIndex}`)
     return nextIndex >= 0 ? nextIndex : 0
-  }, [baseOptions, value, label])
+  }, [baseOptions, value])
 
   const alignToValue = useCallback(
     (nextValue: number, behavior: ScrollBehavior = "smooth") => {
@@ -51,6 +46,8 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
   )
 
   useEffect(() => {
+    if (!containerRef.current) return
+
     const behavior = hasMountedRef.current ? "smooth" : "auto"
     alignToValue(value, behavior)
     hasMountedRef.current = true
