@@ -165,6 +165,12 @@ export interface TimerWheelProps {
 }
 
 export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, className, maxHours = 23 }) => {
+  useEffect(() => {
+    console.log("[v0] TimerWheel received value:", value)
+    const debugParts = convertSecondsToParts(value)
+    console.log("[v0] Converted to parts:", debugParts)
+  }, [value])
+
   const parts = useMemo(() => convertSecondsToParts(value), [value])
   const hoursLimit = useMemo(() => Math.max(maxHours, parts.hours), [maxHours, parts.hours])
   const hourOptions = useMemo(() => Array.from({ length: hoursLimit + 1 }, (_, index) => index), [hoursLimit])

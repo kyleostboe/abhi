@@ -582,6 +582,12 @@ export default function Home() {
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
   const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(600)
   const [encoderDurationDraft, setEncoderDurationDraft] = useState<number>(600)
+
+  useEffect(() => {
+    console.log("[v0] Initial encoderDurationDraft:", encoderDurationDraft)
+    console.log("[v0] Initial encoderTotalDuration:", encoderTotalDuration)
+  }, [])
+
   const [encoderTimelineOriginalDuration, setEncoderTimelineOriginalDuration] = useState<number | null>(null)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
   const lastEncoderDurationAdjustmentRef = useRef<number | null>(null)
