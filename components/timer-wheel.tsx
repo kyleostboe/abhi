@@ -171,13 +171,13 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
   const parts = useMemo(() => convertSecondsToParts(value), [value])
   const hoursLimit = useMemo(() => Math.max(maxHours, parts.hours), [maxHours, parts.hours])
   const hourOptions = useMemo(() => Array.from({ length: hoursLimit + 1 }, (_, index) => index), [hoursLimit])
-  const minuteSecondOptions = useMemo(() => Array.from({ length: 61 }, (_, index) => index), [])
+  const minuteSecondOptions = useMemo(() => Array.from({ length: 60 }, (_, index) => index), [])
 
   const handlePartChange = useCallback(
     (part: "hours" | "minutes" | "seconds", nextValue: number) => {
       const clampedHours = part === "hours" ? Math.max(0, Math.min(hoursLimit, nextValue)) : parts.hours
-      const clampedMinutes = part === "minutes" ? Math.max(0, Math.min(60, nextValue)) : parts.minutes
-      const clampedSeconds = part === "seconds" ? Math.max(0, Math.min(60, nextValue)) : parts.seconds
+      const clampedMinutes = part === "minutes" ? Math.max(0, Math.min(59, nextValue)) : parts.minutes
+      const clampedSeconds = part === "seconds" ? Math.max(0, Math.min(59, nextValue)) : parts.seconds
       const total = clampedHours * 3600 + clampedMinutes * 60 + clampedSeconds
       onChange(total)
     },
