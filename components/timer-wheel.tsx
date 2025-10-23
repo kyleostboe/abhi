@@ -90,20 +90,13 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
   useLayoutEffect(() => {
     if (!containerRef.current || baseOptions.length === 0) return
 
-    const nextIndex = baseOptions.indexOf(value)
-    const targetIndex = (nextIndex >= 0 ? nextIndex : 0) + baseIndex
-    const scrollTop = targetIndex * ITEM_HEIGHT
-
-    if (!hasMountedRef.current) {
-      containerRef.current.scrollTop = scrollTop
+    if (hasMountedRef.current) {
+      alignToValue(value, "smooth")
+    } else {
+      alignToValue(value, "auto")
       hasMountedRef.current = true
     }
-  }, [value, baseOptions, baseIndex])
-
-  useEffect(() => {
-    if (!hasMountedRef.current) return
-    alignToValue(value, "smooth")
-  }, [alignToValue, value])
+  }, [alignToValue, baseOptions.length, value])
 
   const handleScroll = useCallback(
     (event: React.UIEvent<HTMLDivElement>) => {
@@ -161,7 +154,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
           onScroll={handleScroll}
           role="listbox"
           aria-label={label}
-          className="overflow-y-scroll scrollbar-none rounded-xl bg-transparent"
+          className="overflow-y-auto scrollbar-none rounded-xl bg-transparent"
           style={{
             height: ITEM_HEIGHT * 3,
             scrollSnapType: "y mandatory",
