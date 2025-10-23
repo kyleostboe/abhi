@@ -64,6 +64,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
       if (modulo === 0) {
         return {
           normalizedIndex: 0,
+          clampedIndex: baseIndex,
           option: baseOptions[0] ?? 0,
           targetScrollTop: baseIndex * ITEM_HEIGHT,
         }
@@ -75,16 +76,16 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
       const option = baseOptions[normalizedIndex]
       const targetScrollTop = (normalizedIndex + baseIndex) * ITEM_HEIGHT
 
-      return { normalizedIndex, option, targetScrollTop }
+      return { normalizedIndex, clampedIndex, option, targetScrollTop }
     },
     [baseIndex, baseOptions, extendedOptions.length],
   )
 
-  const [activeIndex, setActiveIndex] = useState(activeBaseIndex)
+  const [activeExtendedIndex, setActiveExtendedIndex] = useState(baseIndex + activeBaseIndex)
 
   useEffect(() => {
-    setActiveIndex(activeBaseIndex)
-  }, [activeBaseIndex])
+    setActiveExtendedIndex(baseIndex + activeBaseIndex)
+  }, [activeBaseIndex, baseIndex])
 
   useLayoutEffect(() => {
     if (!containerRef.current || baseOptions.length === 0) return
@@ -111,13 +112,13 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
       }
 
       const target = event.currentTarget
-      const { normalizedIndex: immediateIndex } = computeScrollState(target.scrollTop)
-      setActiveIndex(immediateIndex)
+      const { clampedIndex: immediateIndex } = computeScrollState(target.scrollTop)
+      setActiveExtendedIndex(immediateIndex)
 
       scrollTimeoutRef.current = setTimeout(() => {
-        const { normalizedIndex, option, targetScrollTop } = computeScrollState(target.scrollTop)
+        const { normalizedIndex, clampedIndex, option, targetScrollTop } = computeScrollState(target.scrollTop)
 
-        setActiveIndex(normalizedIndex)
+        setActiveExtendedIndex(clampedIndex)
 
         if (option !== value) {
           onSelect(option)
@@ -142,14 +143,14 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
     (option: number) => {
       const nextIndex = baseOptions.indexOf(option)
       if (nextIndex >= 0) {
-        setActiveIndex(nextIndex)
+        setActiveExtendedIndex(baseIndex + nextIndex)
       }
       if (option !== value) {
         onSelect(option)
       }
       alignToValue(option)
     },
-    [alignToValue, baseOptions, onSelect, value],
+    [alignToValue, baseIndex, baseOptions, onSelect, value],
   )
 
   return (
@@ -171,8 +172,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
           }}
         >
           {extendedOptions.map((option, index) => {
-            const optionIndex = baseOptions.length === 0 ? 0 : index % baseOptions.length
-            const isActive = optionIndex === activeIndex
+            const isActive = index === activeExtendedIndex
             return (
               <button
                 key={`${option}-${index}`}
