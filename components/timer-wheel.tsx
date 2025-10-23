@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 
 import { cn } from "@/lib/utils"
 
@@ -23,6 +23,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
   const containerRef = useRef<HTMLDivElement>(null)
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasMountedRef = useRef(false)
+  const [hoveredOption, setHoveredOption] = useState<number | null>(null)
 
   const baseOptions = useMemo(() => (options.length > 0 ? options : [0]), [options])
   const extendedOptions = useMemo(() => [...baseOptions, ...baseOptions, ...baseOptions], [baseOptions])
@@ -63,6 +64,30 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
     alignToValue(value, "smooth")
   }, [alignToValue, value])
 
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  const getOptionFromScrollTop = useCallback(
+    (scrollTop: number) => {
+      const modulo = baseOptions.length
+      if (modulo === 0) {
+        return null
+      }
+
+      const rawIndex = Math.round(scrollTop / ITEM_HEIGHT)
+      const clampedIndex = Math.max(0, Math.min(rawIndex, extendedOptions.length - 1))
+      const normalizedIndex = ((clampedIndex % modulo) + modulo) % modulo
+
+      return baseOptions[normalizedIndex] ?? null
+    },
+    [baseOptions, extendedOptions.length],
+  )
+
   const handleScroll = useCallback(
     (event: React.UIEvent<HTMLDivElement>) => {
       if (scrollTimeoutRef.current) {
@@ -70,24 +95,23 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
       }
 
       const target = event.currentTarget
+      const optionAtScroll = getOptionFromScrollTop(target.scrollTop)
+      setHoveredOption(optionAtScroll)
+
       scrollTimeoutRef.current = setTimeout(() => {
-        const modulo = baseOptions.length
-        if (modulo === 0) {
+        const selectedOption = getOptionFromScrollTop(target.scrollTop)
+        if (selectedOption == null) {
           return
         }
 
-        const rawIndex = Math.round(target.scrollTop / ITEM_HEIGHT)
-        const clampedIndex = Math.max(0, Math.min(rawIndex, extendedOptions.length - 1))
-        const normalizedIndex = ((clampedIndex % modulo) + modulo) % modulo
-        const option = baseOptions[normalizedIndex]
-
-        if (option !== value) {
-          onSelect(option)
+        if (selectedOption !== value) {
+          onSelect(selectedOption)
         }
-        alignToValue(option, "auto")
+        alignToValue(selectedOption, "auto")
+        setHoveredOption(null)
       }, 80)
     },
-    [alignToValue, baseOptions, extendedOptions.length, onSelect, value],
+    [alignToValue, getOptionFromScrollTop, onSelect, value],
   )
 
   const handleOptionClick = useCallback(
@@ -119,7 +143,8 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
           }}
         >
           {extendedOptions.map((option, index) => {
-            const isActive = option === value
+            const activeValue = hoveredOption ?? value
+            const isActive = option === activeValue
             return (
               <button
                 key={`${option}-${index}`}
@@ -132,7 +157,10 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
                   isActive ? "text-gray-600" : "text-gray-300",
                 )}
                 style={{ height: ITEM_HEIGHT, scrollSnapAlign: "center" }}
-                onClick={() => handleOptionClick(option)}
+                onClick={() => {
+                  setHoveredOption(null)
+                  handleOptionClick(option)
+                }}
               >
                 <span
                   className={cn(
