@@ -22,7 +22,19 @@ const padNumber = (value: number) => value.toString().padStart(2, "0")
 const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, value, options, onSelect }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const alignRafRef = useRef<number | null>(null)
   const hasMountedRef = useRef(false)
+
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+      if (alignRafRef.current !== null) {
+        cancelAnimationFrame(alignRafRef.current)
+      }
+    }
+  }, [])
 
   const baseOptions = useMemo(() => (options.length > 0 ? options : [0]), [options])
   const extendedOptions = useMemo(() => [...baseOptions, ...baseOptions, ...baseOptions], [baseOptions])
@@ -84,10 +96,21 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
         if (option !== value) {
           onSelect(option)
         }
-        alignToValue(option, "auto")
+        const targetScrollTop = (normalizedIndex + baseIndex) * ITEM_HEIGHT
+        const hasDifferentOffset = Math.abs(target.scrollTop - targetScrollTop) > 0.5
+
+        if (hasDifferentOffset) {
+          if (alignRafRef.current !== null) {
+            cancelAnimationFrame(alignRafRef.current)
+          }
+          alignRafRef.current = requestAnimationFrame(() => {
+            alignRafRef.current = null
+            alignToValue(option)
+          })
+        }
       }, 80)
     },
-    [alignToValue, baseOptions, extendedOptions.length, onSelect, value],
+    [alignToValue, baseIndex, baseOptions, extendedOptions.length, onSelect, value],
   )
 
   const handleOptionClick = useCallback(
