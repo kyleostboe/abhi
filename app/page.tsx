@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card"
 import { Alert } from "@/components/ui/alert" // Import Alert component
 import {
   AlertTriangle,
-  Mic,
+  Music2Icon,Mic,
   StopCircle,
   Play,
   PlusCircle,
@@ -98,7 +98,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
             Recorder
           </h3>
         </div>
-        <div className="p-6 pt-3.5 space-y-4">
+        <div className="p-6 space-y-4 pt-3">
           <input
             id={inputId}
             value={recordingLabel}
@@ -3603,7 +3603,10 @@ export default function Home() {
                     >
                       <Card className="overflow-hidden border-none shadow-lg bg-white ">
                         <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-center">
-                          <h3 className="text-white font-black text-base tracking-tight">Sound Cues</h3>
+                          <h3 className="text-white flex items-center font-serif font-black">
+            <Music2Icon className="h-4 w-4 mr-2" />
+            Sound Cues
+          </h3>
                         </div>
                         <div className="p-6 flex flex-col space-y-4 pt-[3px]">
                           <div className="flex-1 h-auto">
@@ -3614,7 +3617,7 @@ export default function Home() {
                                     <span>Notes</span>
                                   </div>
                                 </AccordionTrigger>
-                                <div className="px-4 pb-2 border-b-0">
+                                <div className="px-4 border-b-0 pb-[7px]">
                                   <div className="flex items-center gap-4">
                                     <div className="flex items-center gap-2">
                                       <span className="text-xs text-gray-500">Type</span>
