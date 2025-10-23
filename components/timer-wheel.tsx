@@ -108,7 +108,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
           onScroll={handleScroll}
           role="listbox"
           aria-label={label}
-          className="overflow-y-auto rounded-xl bg-transparent"
+          className="overflow-y-scroll scrollbar-none rounded-xl bg-transparent"
           style={{
             height: ITEM_HEIGHT * 3,
             scrollSnapType: "y mandatory",
