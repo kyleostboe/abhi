@@ -3178,7 +3178,7 @@ export default function Home() {
                                 <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
                                   <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
                                     <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
-                                    <div className="uppercase text-gray-600 text-xs tracking-wide">
+                                    <div className="uppercase text-gray-600 text-xs tracking-tight">
                                       {durationLimits.min} min - {isMobileDevice ? "1 hour" : "2 hours"}
                                     </div>
                                   </div>
