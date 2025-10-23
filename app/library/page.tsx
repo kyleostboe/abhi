@@ -99,20 +99,36 @@ const QUICK_ADJUST_PRESETS_KEY = "library.quickAdjustPresets"
 const QUICK_ADJUST_DURATIONS_KEY = "library.quickAdjustDurations"
 
 const formatDurationLabelFromSeconds = (seconds: number) => {
-  if (!Number.isFinite(seconds) || seconds <= 0) {
+  if (!Number.isFinite(seconds)) {
     return "--"
   }
 
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
+  if (seconds <= 0) {
+    return "0s"
+  }
 
-  if (hours > 0 && minutes > 0) {
-    return `${hours}h ${minutes}m`
-  }
+  const totalSeconds = Math.max(0, Math.round(seconds))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const remainingSeconds = totalSeconds % 60
+
+  const parts: string[] = []
+
   if (hours > 0) {
-    return `${hours}h`
+    parts.push(`${hours}h`)
   }
-  return `${minutes}m`
+
+  if (minutes > 0) {
+    parts.push(`${minutes}m`)
+  }
+
+  if (remainingSeconds > 0 && hours === 0) {
+    parts.push(`${remainingSeconds}s`)
+  } else if (parts.length === 0) {
+    parts.push(`${remainingSeconds}s`)
+  }
+
+  return parts.join(" ")
 }
 
 const parseDurationInput = (value: string): number | null => {
@@ -706,9 +722,7 @@ export default function LibraryPage() {
   }
 
   const formatDuration = useCallback((seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, "0")}`
+    return formatDurationLabelFromSeconds(seconds)
   }, [])
 
   const formatDetailedTime = (seconds: number) => {
@@ -2538,7 +2552,7 @@ export default function LibraryPage() {
                 {isPlayerOpen && selectedMeditation && (
                   <motion.div
                     key="meditation-player"
-                    className="fixed inset-0 z-50 flex items-center justify-center"
+                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto px-4 py-6 sm:px-6"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -2552,14 +2566,14 @@ export default function LibraryPage() {
                       exit={{ opacity: 0 }}
                     />
                     <motion.div
-                      className="relative z-10 w-full max-w-xl px-4"
+                      className="relative z-10 w-full max-w-xl"
                       initial={{ opacity: 0, y: 30, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 30, scale: 0.95 }}
                       transition={{ type: "spring", stiffness: 260, damping: 24 }}
                       onClick={(event) => event.stopPropagation()}
                     >
-                      <Card className="relative overflow-hidden border-none bg-white p-6 shadow-2xl backdrop-blur">
+                      <Card className="relative overflow-hidden border-none bg-white shadow-2xl backdrop-blur max-h-[85vh] flex flex-col p-6">
                         <button
                           type="button"
                           className="absolute right-4 top-4 rounded-full  p-2 text-gray-500 transition hover:text-gray-700"
@@ -2569,12 +2583,13 @@ export default function LibraryPage() {
                           <X className="h-[16px] w-[16px]" />
                         </button>
 
-                        <div
-                          className={cn(
-                            "space-y-6 mx-0 my-0",
-                            isQuickAdjustProcessing ? "pointer-events-none select-none blur-[1px]" : "",
-                          )}
-                        >
+                        <div className="flex-1 overflow-y-auto scrollbar-none pt-8">
+                          <div
+                            className={cn(
+                              "space-y-6 mx-0 my-0",
+                              isQuickAdjustProcessing ? "pointer-events-none select-none blur-[1px]" : "",
+                            )}
+                          >
                           <div className="space-y-3">
                             <button className="bg-gradient-to-r from-muted to-stone-200 text-xs font-serif rounded-[7px] font-black text-gray-500 shadow-inner py-[5px] px-[13px] mb-[9px]">
                               {selectedMeditation.source === "adjuster" ? "Adjuster" : "Encoder"}
@@ -2610,7 +2625,7 @@ export default function LibraryPage() {
                               <h3 className="text-sm font-black text-gray-700 uppercase tracking-wide">
                                 Timeline Events
                               </h3>
-                              <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
+                              <div className="max-h-48 overflow-y-auto space-y-2 pr-2 scrollbar-none">
                                 {timelineEvents.map((timelineEvent, index) => {
                                   const colorClass =
                                     typeof timelineEvent.color === "string" && timelineEvent.color.trim().length > 0
@@ -2888,7 +2903,7 @@ export default function LibraryPage() {
                                           Add or remove preset durations. Use minutes (15), hours (1h), or mm:ss
                                           (12:30).
                                         </p>
-                                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1 scrollbar-none">
                                           {quickAdjustPresets.map((preset) => (
                                             <div
                                               key={preset.id}
@@ -3070,6 +3085,7 @@ export default function LibraryPage() {
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>
+                          </div>
                           </div>
                         </div>
 
