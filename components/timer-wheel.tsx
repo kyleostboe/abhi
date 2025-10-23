@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useCallback, useEffect, useMemo, useRef } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react"
 
 import { cn } from "@/lib/utils"
 
@@ -29,46 +29,36 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
   const baseIndex = baseOptions.length
   const activeBaseIndex = useMemo(() => {
     const nextIndex = baseOptions.indexOf(value)
-    console.log(`[v0] ${label} - value: ${value}, indexOf: ${nextIndex}`)
     return nextIndex >= 0 ? nextIndex : 0
-  }, [baseOptions, value, label])
+  }, [baseOptions, value])
 
   const alignToValue = useCallback(
     (nextValue: number, behavior: ScrollBehavior = "smooth") => {
-      console.log(
-        `[v0] ${label} - alignToValue called with value: ${nextValue}, containerRef exists: ${!!containerRef.current}`,
-      )
       if (!containerRef.current || baseOptions.length === 0) {
-        console.log(`[v0] ${label} - alignToValue early return`)
         return
       }
       const nextIndex = baseOptions.indexOf(nextValue)
       const targetIndex = (nextIndex >= 0 ? nextIndex : 0) + baseIndex
       const scrollTop = targetIndex * ITEM_HEIGHT
-      console.log(`[v0] ${label} - scrolling to index ${targetIndex}, scrollTop: ${scrollTop}`)
       containerRef.current.scrollTo({ top: scrollTop, behavior })
-      console.log(`[v0] ${label} - actual scrollTop after scroll: ${containerRef.current.scrollTop}`)
     },
-    [baseIndex, baseOptions, label],
+    [baseIndex, baseOptions],
   )
 
-  useEffect(() => {
-    console.log(`[v0] ${label} - useEffect triggered, containerRef exists: ${!!containerRef.current}, value: ${value}`)
-    if (!containerRef.current) return
+  useLayoutEffect(() => {
+    if (!containerRef.current || baseOptions.length === 0) return
 
-    const behavior = hasMountedRef.current ? "smooth" : "auto"
-    alignToValue(value, behavior)
+    const nextIndex = baseOptions.indexOf(value)
+    const targetIndex = (nextIndex >= 0 ? nextIndex : 0) + baseIndex
+    const scrollTop = targetIndex * ITEM_HEIGHT
+    containerRef.current.scrollTop = scrollTop
     hasMountedRef.current = true
-  }, [alignToValue, value, label])
+  }, []) // Only run on mount
 
   useEffect(() => {
-    return () => {
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current)
-        scrollTimeoutRef.current = null
-      }
-    }
-  }, [])
+    if (!hasMountedRef.current) return
+    alignToValue(value, "smooth")
+  }, [alignToValue, value])
 
   const handleScroll = useCallback(
     (event: React.UIEvent<HTMLDivElement>) => {
