@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react"
 import { cn } from "@/lib/utils"
 
 const ITEM_HEIGHT = 40
-const PADDING_ITEMS = 2
+const PADDING_ITEMS = 1
 
 interface TimerWheelColumnProps {
   label: string
@@ -105,8 +105,9 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
           onScroll={handleScroll}
           role="listbox"
           aria-label={label}
-          className="h-48 overflow-y-auto rounded-xl bg-transparent"
+          className="overflow-y-auto rounded-xl bg-transparent"
           style={{
+            height: ITEM_HEIGHT * 3,
             scrollSnapType: "y mandatory",
             scrollPaddingTop: ITEM_HEIGHT * PADDING_ITEMS,
             scrollPaddingBottom: ITEM_HEIGHT * PADDING_ITEMS,
@@ -181,7 +182,7 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
   )
 
   return (
-    <div className={cn("flex items-center justify-center gap-0.5", className)}>
+    <div className={cn("flex items-center justify-center -gap-2", className)}>
       <TimerWheelColumn
         label="Hours"
         suffix="hr"
