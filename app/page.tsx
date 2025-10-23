@@ -580,8 +580,8 @@ export default function Home() {
 
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
-  const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(300)
-  const [encoderDurationDraft, setEncoderDurationDraft] = useState<number>(300)
+  const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(600)
+  const [encoderDurationDraft, setEncoderDurationDraft] = useState<number>(600)
   const [encoderTimelineOriginalDuration, setEncoderTimelineOriginalDuration] = useState<number | null>(null)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
   const lastEncoderDurationAdjustmentRef = useRef<number | null>(null)
@@ -2842,7 +2842,9 @@ export default function Home() {
                 >
                   abhī
                 </h1>
-                <div className="font-black font-serif mb-[7px] text-xs text-logo-rose-600 tracking-tight">Meditation Tool</div>
+                <div className="font-black font-serif mb-[7px] text-xs text-logo-rose-600 tracking-tight">
+                  Meditation Tool
+                </div>
                 <div className="flex justify-center items-center mb-4 space-x-[3px]">
                   <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[13px] h-[13px] shadow-md"></div>
                   <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px] shadow"></div>
@@ -3162,7 +3164,9 @@ export default function Home() {
                                 <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
                                   <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
                                     <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
-                                    <div className="font-black text-gray-600 text-sm tracking-tight">{audioAnalysis.silenceRegions}</div>
+                                    <div className="font-black text-gray-600 text-sm tracking-tight">
+                                      {audioAnalysis.silenceRegions}
+                                    </div>
                                   </div>
                                 </div>
                                 <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
@@ -3260,7 +3264,9 @@ export default function Home() {
                                   {silenceThreshold.toFixed(3)}
                                 </span>
                               </div>
-                              <div className="text-center mt-0 text-gray-500 text-xs tracking-tight">Lower = more sensitive</div>
+                              <div className="text-center mt-0 text-gray-500 text-xs tracking-tight">
+                                Lower = more sensitive
+                              </div>
                             </div>
                           </Card>
                         </div>
@@ -3287,12 +3293,16 @@ export default function Home() {
                                 <span className="font-black text-gray-600 text-lg">{minSilenceDuration}</span>
                                 <span className="ml-1 text-gray-600 text-sm">seconds</span>
                               </div>
-                              <div className="text-center mt-0 text-gray-500 text-xs tracking-tight">Shorter = detect more pauses</div>
+                              <div className="text-center mt-0 text-gray-500 text-xs tracking-tight">
+                                Shorter = detect more pauses
+                              </div>
                             </div>
                           </Card>
                           <Card className="overflow-hidden border-none shadow-lg bg-white ">
                             <div className="bg-gradient-to-br from-orange-300 to-logo-rose-300 py-3 px-6 ">
-                              <h3 className="text-white font-black text-base tracking-tight">Min Spacing Btwn Content</h3>
+                              <h3 className="text-white font-black text-base tracking-tight">
+                                Min Spacing Btwn Content
+                              </h3>
                             </div>
                             <div className="p-6 px-11 py-6">
                               <div className="mb-4">
@@ -3319,7 +3329,9 @@ export default function Home() {
                           </Card>
                           <Card className="overflow-hidden border-none shadow-lg bg-white ">
                             <div className="bg-gradient-to-br from-pink-400 to-cyan-400 py-3 px-6 ">
-                              <h3 className="text-white font-black text-base tracking-tight">Preserve Natural Pacing</h3>
+                              <h3 className="text-white font-black text-base tracking-tight">
+                                Preserve Natural Pacing
+                              </h3>
                             </div>
                             <div className="p-6 px-11 py-6">
                               <div className="flex items-center justify-between">
@@ -3405,7 +3417,6 @@ export default function Home() {
                         radial-gradient(circle at 41% 5%, rgba(255, 255, 255, 0.9) 0.9px, transparent 1px),
                         linear-gradient(135deg, #4b5563 0%, #6b7280 100%)
                       `,
-                          
                         } as React.CSSProperties
                       }
                     >
@@ -3527,7 +3538,6 @@ export default function Home() {
                               <TimerWheel
                                 value={encoderDurationDraft}
                                 onChange={handleDurationWheelChange}
-                                className="gap-6"
                                 maxHours={2}
                               />
                             </div>
@@ -3859,7 +3869,6 @@ export default function Home() {
                         radial-gradient(circle at 37% 9%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
                         linear-gradient(135deg, #4b5563 0%, #6b7280 100%)
                       `,
-                          
                         } as React.CSSProperties
                       }
                     >
@@ -3937,7 +3946,6 @@ export default function Home() {
           </div>
         </motion.div>
       </div>
-
     </div>
   )
 }
