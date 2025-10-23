@@ -8,7 +8,6 @@ import { Card } from "@/components/ui/card"
 import { Alert } from "@/components/ui/alert" // Import Alert component
 import {
   AlertTriangle,
-  Music2Icon,
   Mic,
   StopCircle,
   Play,
@@ -582,11 +581,6 @@ export default function Home() {
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
   const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(600)
   const [encoderDurationDraft, setEncoderDurationDraft] = useState<number>(600)
-
-  useEffect(() => {
-    console.log("[v0] Initial encoderDurationDraft:", encoderDurationDraft)
-    console.log("[v0] Initial encoderTotalDuration:", encoderTotalDuration)
-  }, [])
 
   const [encoderTimelineOriginalDuration, setEncoderTimelineOriginalDuration] = useState<number | null>(null)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
@@ -3605,10 +3599,7 @@ export default function Home() {
                     >
                       <Card className="overflow-hidden border-none shadow-lg bg-white ">
                         <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-center">
-                          <h3 className="text-white flex items-center font-serif font-black text-base">
-                            <Music2Icon className="h-4 w-4 mr-2" />
-                            Sound Cues
-                          </h3>
+                          <h3 className="text-white font-black text-base tracking-tight">Sound Cues</h3>
                         </div>
                         <div className="p-6 flex flex-col space-y-4 pt-[3px]">
                           <div className="flex-1 h-auto">

@@ -51,9 +51,12 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
     const nextIndex = baseOptions.indexOf(value)
     const targetIndex = (nextIndex >= 0 ? nextIndex : 0) + baseIndex
     const scrollTop = targetIndex * ITEM_HEIGHT
-    containerRef.current.scrollTop = scrollTop
-    hasMountedRef.current = true
-  }, []) // Only run on mount
+
+    if (!hasMountedRef.current) {
+      containerRef.current.scrollTop = scrollTop
+      hasMountedRef.current = true
+    }
+  }, [value, baseOptions, baseIndex])
 
   useEffect(() => {
     if (!hasMountedRef.current) return
@@ -165,12 +168,6 @@ export interface TimerWheelProps {
 }
 
 export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, className, maxHours = 23 }) => {
-  useEffect(() => {
-    console.log("[v0] TimerWheel received value:", value)
-    const debugParts = convertSecondsToParts(value)
-    console.log("[v0] Converted to parts:", debugParts)
-  }, [value])
-
   const parts = useMemo(() => convertSecondsToParts(value), [value])
   const hoursLimit = useMemo(() => Math.max(maxHours, parts.hours), [maxHours, parts.hours])
   const hourOptions = useMemo(() => Array.from({ length: hoursLimit + 1 }, (_, index) => index), [hoursLimit])
