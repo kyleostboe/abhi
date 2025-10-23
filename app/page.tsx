@@ -18,6 +18,7 @@ import {
   Upload,
 } from "lucide-react" // Import Copy icon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { DurationControlCard } from "@/components/duration-control-card"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { motion, AnimatePresence } from "framer-motion"
@@ -3196,14 +3197,14 @@ export default function Home() {
                     className="mb-6"
                   >
                     <Tabs defaultValue={activeTab} className="w-full font-serif font-black">
-                      <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted p-1 rounded-sm ">
+                      <TabsList className="grid w-full grid-cols-2 gap-2 mb-6 rounded-sm">
                         <TabsTrigger
                           value="adjuster"
                           onClick={() => {
                             setActiveMode("adjuster")
                             setActiveTab("adjuster")
                           }}
-                          className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-[10px] "
+                          className="rounded-[10px]"
                         >
                           Settings
                         </TabsTrigger>
@@ -3212,168 +3213,147 @@ export default function Home() {
                           onClick={() => {
                             setActiveTab("adjuster") // Only change the tab, not the mode
                           }}
-                          className="data-[state=active]:bg-white data-[state=active]: data-[state=active]:shadow-sm rounded-[10px] "
+                          className="rounded-[10px]"
                         >
                           Advanced
                         </TabsTrigger>
                       </TabsList>
                       <TabsContent value="adjuster" className="mt-0 space-y-6">
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                            <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-cyan-500">
-                              <h3 className="text-white font-black text-base tracking-tight">Target Duration</h3>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <DurationControlCard
+                            title="Target Duration"
+                            gradientClassName="from-logo-blue-400 to-logo-amber-300"
+                          >
+                            <div>
+                              <Slider
+                                value={[targetDuration]}
+                                min={durationLimits?.min || 5}
+                                max={durationLimits?.max || (isMobileDevice ? 60 : 120)}
+                                step={1}
+                                onValueChange={(value) => setTargetDuration(value[0])}
+                                disabled={!durationLimits}
+                                className="py-4"
+                                rangeClassName="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300"
+                              />
                             </div>
-                            <div className="p-6 py-6 px-11 pb-6">
-                              <div className="mb-4">
-                                <Slider
-                                  value={[targetDuration]}
-                                  min={durationLimits?.min || 5}
-                                  max={durationLimits?.max || (isMobileDevice ? 60 : 120)}
-                                  step={1}
-                                  onValueChange={(value) => setTargetDuration(value[0])}
-                                  disabled={!durationLimits}
-                                  className="py-4"
-                                  rangeClassName="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 "
-                                />
-                              </div>
-                              <div className="text-center font-serif font-black tracking-tight">
-                                <span className="font-black text-gray-600 text-lg">{targetDuration}</span>
-                                <span className="ml-1 text-gray-600 text-sm tracking-normal">minutes</span>
-                              </div>
-                              {durationLimits && (
-                                <div className="text-center text-sm mt-0 text-gray-500">
-                                  Range: {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
-                                </div>
-                              )}
+                            <div className="text-center tracking-tight">
+                              <span className="text-lg text-gray-600 font-black">{targetDuration}</span>
+                              <span className="ml-1 text-sm text-gray-600 tracking-normal">minutes</span>
                             </div>
-                          </Card>
-                          <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                            <div className="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 py-3 px-6 ">
-                              <h3 className="text-white font-black text-base tracking-tight">Silence Threshold</h3>
+                            {durationLimits && (
+                              <p className="text-center text-sm text-gray-500">
+                                Range: {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
+                              </p>
+                            )}
+                          </DurationControlCard>
+                          <DurationControlCard
+                            title="Silence Threshold"
+                            gradientClassName="from-logo-rose-300 to-logo-emerald-500"
+                          >
+                            <div>
+                              <Slider
+                                value={[silenceThreshold]}
+                                min={0.001}
+                                max={0.05}
+                                step={0.001}
+                                onValueChange={(value) => setSilenceThreshold(value[0])}
+                                className="py-4"
+                                rangeClassName="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500"
+                              />
                             </div>
-                            <div className="p-6 px-11">
-                              <div className="mb-4">
-                                <Slider
-                                  value={[silenceThreshold]}
-                                  min={0.001}
-                                  max={0.05}
-                                  step={0.001}
-                                  onValueChange={(value) => setSilenceThreshold(value[0])}
-                                  className="py-4"
-                                  rangeClassName="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 "
-                                />
-                              </div>
-                              <div className="text-center tracking-tight">
-                                <span className="font-serif font-black text-gray-600 text-lg">
-                                  {silenceThreshold.toFixed(3)}
-                                </span>
-                              </div>
-                              <div className="text-center mt-0 text-gray-500 text-xs tracking-tight">
-                                Lower = more sensitive
-                              </div>
+                            <div className="text-center tracking-tight">
+                              <span className="text-lg text-gray-600 font-black">{silenceThreshold.toFixed(3)}</span>
                             </div>
-                          </Card>
+                            <p className="text-center text-xs text-gray-500 tracking-tight">
+                              Lower = more sensitive
+                            </p>
+                          </DurationControlCard>
                         </div>
                       </TabsContent>
                       <TabsContent value="encoder" className="mt-0 space-y-6">
-                        <div className="grid md:grid-cols-2 font-serif font-black gap-4">
-                          <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                            <div className="bg-gradient-to-br from-logo-purple-300 to-logo-emerald-500 py-3 px-6 ">
-                              <h3 className="text-white font-black text-base tracking-tight">Min Silence Duration</h3>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <DurationControlCard
+                            title="Min Silence Duration"
+                            gradientClassName="from-logo-purple-300 to-logo-emerald-500"
+                          >
+                            <div>
+                              <Slider
+                                value={[minSilenceDuration]}
+                                min={1}
+                                max={15}
+                                step={0.5}
+                                onValueChange={(value) => setMinSilenceDuration(value[0])}
+                                className="py-4"
+                                rangeClassName="bg-gradient-to-br from-logo-purple-300 to-logo-emerald-500"
+                              />
                             </div>
-                            <div className="p-6 font-serif font-black px-11 py-6">
-                              <div className="mb-4">
-                                <Slider
-                                  value={[minSilenceDuration]}
-                                  min={1}
-                                  max={15}
-                                  step={0.5}
-                                  onValueChange={(value) => setMinSilenceDuration(value[0])}
-                                  className="py-4"
-                                  rangeClassName="bg-gradient-to-br from-logo-purple-300 to-logo-emerald-500 "
-                                />
-                              </div>
-                              <div className="text-center tracking-tight">
-                                <span className="font-black text-gray-600 text-lg">{minSilenceDuration}</span>
-                                <span className="ml-1 text-gray-600 text-sm">seconds</span>
-                              </div>
-                              <div className="text-center mt-0 text-gray-500 text-xs tracking-tight">
-                                Shorter = detect more pauses
-                              </div>
+                            <div className="text-center tracking-tight">
+                              <span className="text-lg text-gray-600 font-black">{minSilenceDuration}</span>
+                              <span className="ml-1 text-sm text-gray-600">seconds</span>
                             </div>
-                          </Card>
-                          <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                            <div className="bg-gradient-to-br from-orange-300 to-logo-rose-300 py-3 px-6 ">
-                              <h3 className="text-white font-black text-base tracking-tight">
-                                Min Spacing Btwn Content
-                              </h3>
+                            <p className="text-center text-xs text-gray-500 tracking-tight">
+                              Shorter = detect more pauses
+                            </p>
+                          </DurationControlCard>
+                          <DurationControlCard
+                            title="Min Spacing Btwn Content"
+                            gradientClassName="from-orange-300 to-logo-rose-300"
+                          >
+                            <div>
+                              <Slider
+                                value={[minSpacingDuration]}
+                                min={0}
+                                max={5}
+                                step={0.1}
+                                onValueChange={(value) => setMinSpacingDuration(value[0])}
+                                className="py-4"
+                                rangeClassName="bg-gradient-to-r from-orange-300 to-logo-rose-300"
+                              />
                             </div>
-                            <div className="p-6 px-11 py-6">
-                              <div className="mb-4">
-                                <Slider
-                                  value={[minSpacingDuration]}
-                                  min={0.0}
-                                  max={5}
-                                  step={0.1}
-                                  onValueChange={(value) => setMinSpacingDuration(value[0])}
-                                  className="py-4"
-                                  rangeClassName="bg-gradient-to-r from-orange-300 to-logo-rose-300 "
-                                />
-                              </div>
-                              <div className="text-center tracking-tight">
-                                <span className="font-black text-gray-600 text-lg">
-                                  {minSpacingDuration.toFixed(1)}
-                                </span>
-                                <span className="ml-1 text-gray-600 text-sm">seconds</span>
-                              </div>
-                              <div className="text-center mt-0 text-gray-500 text-xs tracking-tight">
-                                Minimum pause between speaking parts
-                              </div>
+                            <div className="text-center tracking-tight">
+                              <span className="text-lg text-gray-600 font-black">{minSpacingDuration.toFixed(1)}</span>
+                              <span className="ml-1 text-sm text-gray-600">seconds</span>
                             </div>
-                          </Card>
-                          <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                            <div className="bg-gradient-to-br from-pink-400 to-cyan-400 py-3 px-6 ">
-                              <h3 className="text-white font-black text-base tracking-tight">
-                                Preserve Natural Pacing
-                              </h3>
+                            <p className="text-center text-xs text-gray-500 tracking-tight">
+                              Minimum pause between speaking parts
+                            </p>
+                          </DurationControlCard>
+                          <DurationControlCard
+                            title="Preserve Natural Pacing"
+                            gradientClassName="from-pink-400 to-cyan-400"
+                            bodyClassName="px-6 py-6"
+                          >
+                            <div className="flex items-center justify-between gap-4">
+                              <p className="text-xs text-gray-600 tracking-tight">
+                                Maintain the relative length of pauses
+                              </p>
+                              <Switch
+                                checked={preserveNaturalPacing}
+                                onCheckedChange={setPreserveNaturalPacing}
+                                className="data-[state=checked]:bg-gray-500"
+                              />
                             </div>
-                            <div className="p-6 px-11 py-6">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="mb-1 text-gray-600 mr-2 text-xs tracking-tight">
-                                    Maintain the relative length of pauses
-                                  </p>
-                                </div>
-                                <Switch
-                                  checked={preserveNaturalPacing}
-                                  onCheckedChange={setPreserveNaturalPacing}
-                                  className="data-[state=checked]:bg-gray-500 "
-                                />
-                              </div>
-                            </div>
-                          </Card>
-                          <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                            <div className="bg-gradient-to-br from-logo-teal-500 to-logo-amber-300 py-3 px-6 ">
-                              <h3 className="text-white font-black text-base tracking-tight">Compatibility Mode</h3>
-                            </div>
-                            <div className="p-6 px-11">
-                              <Select value={compatibilityMode} onValueChange={(value) => setCompatibilityMode(value)}>
-                                <SelectTrigger className="w-full mb-2 border-logo-teal-200 focus:ring-logo-teal-500 ">
-                                  <SelectValue placeholder="Select compatibility mode" />
-                                </SelectTrigger>
-                                <SelectContent className="">
-                                  <SelectItem value="standard">Standard Quality (Original SR)</SelectItem>
-                                  <SelectItem value="high">
-                                    High Compatibility (44.1kHz or 22.05kHz for Mobile Long Audio)
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <div className="text-xs mt-3.5 text-gray-500 tracking-tight">
-                                High Compatibility for better playback on mobile/AirPods. May reduce sample rate for
-                                long audio on mobile.
-                              </div>
-                            </div>
-                          </Card>
+                          </DurationControlCard>
+                          <DurationControlCard
+                            title="Compatibility Mode"
+                            gradientClassName="from-logo-teal-500 to-logo-amber-300"
+                          >
+                            <Select value={compatibilityMode} onValueChange={(value) => setCompatibilityMode(value)}>
+                              <SelectTrigger className="w-full border-logo-teal-200 focus:ring-logo-teal-500">
+                                <SelectValue placeholder="Select compatibility mode" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="standard">Standard Quality (Original SR)</SelectItem>
+                                <SelectItem value="high">
+                                  High Compatibility (44.1kHz or 22.05kHz for Mobile Long Audio)
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-gray-500 tracking-tight">
+                              High Compatibility for better playback on mobile/AirPods. May reduce sample rate for long audio on
+                              mobile.
+                            </p>
+                          </DurationControlCard>
                         </div>
                       </TabsContent>
                     </Tabs>
