@@ -2331,7 +2331,11 @@ export default function Home() {
     const normalizedActualDuration = Number(actualDuration)
     const normalizedOriginalDuration = Number(encoderTimelineOriginalDuration)
 
-    if (!Number.isFinite(normalizedActualDuration) || !Number.isFinite(normalizedOriginalDuration)) {
+    if (
+      !Number.isFinite(normalizedActualDuration) ||
+      !Number.isFinite(normalizedOriginalDuration) ||
+      normalizedActualDuration <= 0
+    ) {
       return
     }
 
