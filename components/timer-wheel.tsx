@@ -7,8 +7,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { cn } from "@/lib/utils"
 
 const ITEM_HEIGHT = 40
-const VISIBLE_OVERFLOW = 40
-const COLUMN_CONTAINER_HEIGHT = ITEM_HEIGHT + VISIBLE_OVERFLOW * 2
+const VISIBLE_ITEMS = 3 // Show 1 above, selected, 1 below
+const COLUMN_CONTAINER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS // 120px to show 3 items
 
 interface TimerWheelColumnProps {
   label: string
@@ -159,10 +159,8 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
           style={{
             height: COLUMN_CONTAINER_HEIGHT,
             scrollSnapType: "y mandatory",
-            scrollPaddingTop: VISIBLE_OVERFLOW,
-            scrollPaddingBottom: VISIBLE_OVERFLOW,
-            paddingTop: VISIBLE_OVERFLOW,
-            paddingBottom: VISIBLE_OVERFLOW,
+            paddingTop: ITEM_HEIGHT,
+            paddingBottom: ITEM_HEIGHT,
           }}
         >
           {extendedOptions.map((option, index) => {
@@ -242,7 +240,7 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
       />
       <span
         className="flex items-center justify-center text-2xl font-serif font-black text-gray-600"
-        style={{ height: ITEM_HEIGHT }}
+        style={{ height: COLUMN_CONTAINER_HEIGHT }}
       >
         :
       </span>
@@ -255,7 +253,7 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
       />
       <span
         className="flex items-center justify-center text-2xl font-serif font-black text-gray-600"
-        style={{ height: ITEM_HEIGHT }}
+        style={{ height: COLUMN_CONTAINER_HEIGHT }}
       >
         :
       </span>
