@@ -6,7 +6,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 
 import { cn } from "@/lib/utils"
 
-const ITEM_HEIGHT = 40
+const ITEM_HEIGHT = 48
 const PADDING_ITEMS = 1
 
 interface TimerWheelColumnProps {
@@ -147,7 +147,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
   )
 
   return (
-    <div className="flex w-14 flex-col items-center">
+    <div className="flex w-16 flex-col items-center">
       <div className="relative w-full h-auto">
         <div
           ref={containerRef}
@@ -173,7 +173,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
                 role="option"
                 aria-selected={option === value}
                 className={cn(
-                  "flex w-full items-end justify-center px-1 transition-all duration-150",
+                  "flex w-full items-end justify-center px-2 transition-all duration-150",
                   "focus:outline-none",
                   isActive ? "text-gray-600" : "text-gray-400",
                 )}
@@ -231,7 +231,7 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
   )
 
   return (
-    <div className={cn("flex items-center justify-center gap-0", className)}>
+    <div className={cn("flex items-center justify-center gap-6", className)}>
       <TimerWheelColumn
         label="Hours"
         suffix="hr"
@@ -239,7 +239,7 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
         options={hourOptions}
         onSelect={(next) => handlePartChange("hours", next)}
       />
-      <span className="-mx-2 mt-1 text-2xl font-serif font-black text-gray-600">:</span>
+      <span className="mx-1 mt-1 text-2xl font-serif font-black text-gray-600">:</span>
       <TimerWheelColumn
         label="Minutes"
         suffix="min"
@@ -247,7 +247,7 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
         options={minuteSecondOptions}
         onSelect={(next) => handlePartChange("minutes", next)}
       />
-      <span className="-mx-2 mt-1 text-2xl font-serif font-black text-gray-600">:</span>
+      <span className="mx-1 mt-1 text-2xl font-serif font-black text-gray-600">:</span>
       <TimerWheelColumn
         label="Seconds"
         suffix="sec"
