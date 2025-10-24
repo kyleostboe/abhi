@@ -7,7 +7,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { cn } from "@/lib/utils"
 
 const ITEM_HEIGHT = 48
-const PADDING_ITEMS = 1
+const VISIBLE_OVERFLOW = 7
+const COLUMN_CONTAINER_HEIGHT = ITEM_HEIGHT + VISIBLE_OVERFLOW * 2
 
 interface TimerWheelColumnProps {
   label: string
@@ -156,12 +157,12 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
           aria-label={label}
           className="overflow-y-auto scrollbar-none rounded-xl bg-transparent"
           style={{
-            height: ITEM_HEIGHT * 3,
+            height: COLUMN_CONTAINER_HEIGHT,
             scrollSnapType: "y mandatory",
-            scrollPaddingTop: ITEM_HEIGHT * PADDING_ITEMS,
-            scrollPaddingBottom: ITEM_HEIGHT * PADDING_ITEMS,
-            paddingTop: ITEM_HEIGHT * PADDING_ITEMS,
-            paddingBottom: ITEM_HEIGHT * PADDING_ITEMS,
+            scrollPaddingTop: VISIBLE_OVERFLOW,
+            scrollPaddingBottom: VISIBLE_OVERFLOW,
+            paddingTop: VISIBLE_OVERFLOW,
+            paddingBottom: VISIBLE_OVERFLOW,
           }}
         >
           {extendedOptions.map((option, index) => {
@@ -239,7 +240,12 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
         options={hourOptions}
         onSelect={(next) => handlePartChange("hours", next)}
       />
-      <span className="mx-1 mt-1 text-2xl font-serif font-black text-gray-600">:</span>
+      <span
+        className="mx-1 flex items-center justify-center text-2xl font-serif font-black text-gray-600"
+        style={{ height: COLUMN_CONTAINER_HEIGHT }}
+      >
+        :
+      </span>
       <TimerWheelColumn
         label="Minutes"
         suffix="min"
@@ -247,7 +253,12 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
         options={minuteSecondOptions}
         onSelect={(next) => handlePartChange("minutes", next)}
       />
-      <span className="mx-1 mt-1 text-2xl font-serif font-black text-gray-600">:</span>
+      <span
+        className="mx-1 flex items-center justify-center text-2xl font-serif font-black text-gray-600"
+        style={{ height: COLUMN_CONTAINER_HEIGHT }}
+      >
+        :
+      </span>
       <TimerWheelColumn
         label="Seconds"
         suffix="sec"
