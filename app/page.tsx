@@ -47,6 +47,7 @@ import { AudioInfoMenu } from "@/components/audio-info-menu"
 const ADJUSTER_SESSION_KEY = "abhi_last_adjuster_session"
 const ENCODER_SESSION_KEY = "abhi_last_encoder_session"
 const ACTIVE_MODE_SESSION_KEY = "abhi_last_active_mode"
+const DEFAULT_ENCODER_DURATION_SECONDS = 10 * 60
 
 interface RecorderSectionProps {
   className?: string
@@ -580,8 +581,8 @@ export default function Home() {
 
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
-  const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(600)
-  const [encoderDurationDraft, setEncoderDurationDraft] = useState<number>(600)
+  const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(DEFAULT_ENCODER_DURATION_SECONDS)
+  const [encoderDurationDraft, setEncoderDurationDraft] = useState<number>(DEFAULT_ENCODER_DURATION_SECONDS)
 
   const [encoderTimelineOriginalDuration, setEncoderTimelineOriginalDuration] = useState<number | null>(null)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
@@ -1196,11 +1197,21 @@ export default function Home() {
   }
 
   const normalizeDuration = useCallback((value: number) => {
-    return Math.max(1, Math.floor(Number.isFinite(value) ? value : 0))
+    if (!Number.isFinite(value)) {
+      return DEFAULT_ENCODER_DURATION_SECONDS
+    }
+
+    const normalized = Math.floor(value)
+    return normalized > 0 ? normalized : DEFAULT_ENCODER_DURATION_SECONDS
   }, [])
 
   const clampDurationDraft = useCallback((value: number) => {
-    return Math.max(0, Math.floor(Number.isFinite(value) ? value : 0))
+    if (!Number.isFinite(value)) {
+      return DEFAULT_ENCODER_DURATION_SECONDS
+    }
+
+    const clamped = Math.floor(value)
+    return clamped > 0 ? clamped : DEFAULT_ENCODER_DURATION_SECONDS
   }, [])
 
   const handleEncoderDurationChange = useCallback(
@@ -1679,9 +1690,11 @@ export default function Home() {
           0,
         )
         const totalDuration = Math.max(importData.duration ?? 0, reconstructedEnd)
-        setEncoderTotalDuration(totalDuration)
-        setEncoderTimelineOriginalDuration(totalDuration)
-        lastEncoderDurationAdjustmentRef.current = totalDuration
+        const safeTotalDuration =
+          totalDuration > 0 ? totalDuration : DEFAULT_ENCODER_DURATION_SECONDS
+        setEncoderTotalDuration(safeTotalDuration)
+        setEncoderTimelineOriginalDuration(safeTotalDuration)
+        lastEncoderDurationAdjustmentRef.current = safeTotalDuration
 
         setStatus({
           message: `Reconstructed "${importData.title}" with ${reconstructedEvents.length} timeline events.`,
@@ -1765,7 +1778,9 @@ export default function Home() {
         const rawDurationCandidate =
           Number.isFinite(importData.duration) && importData.duration > 0 ? importData.duration : buffer.duration
         const safeDuration =
-          Number.isFinite(rawDurationCandidate) && rawDurationCandidate > 0 ? rawDurationCandidate : 1
+          Number.isFinite(rawDurationCandidate) && rawDurationCandidate > 0
+            ? rawDurationCandidate
+            : DEFAULT_ENCODER_DURATION_SECONDS
         const recordedLabel =
           typeof importData.title === "string" && importData.title.trim().length > 0
             ? importData.title.trim()
@@ -2492,14 +2507,14 @@ export default function Home() {
 
         setEncoderTotalDuration((previousTotal) => {
           if (existingEventCount === 0) {
-            return Math.max(1, eventEndTime)
+            return eventEndTime > 0 ? eventEndTime : DEFAULT_ENCODER_DURATION_SECONDS
           }
           return Math.max(previousTotal, eventEndTime)
         })
 
         setEncoderTimelineOriginalDuration((previousOriginal) => {
           if (existingEventCount === 0) {
-            return Math.max(1, eventEndTime)
+            return eventEndTime > 0 ? eventEndTime : DEFAULT_ENCODER_DURATION_SECONDS
           }
           if (previousOriginal === null) {
             return previousOriginal
