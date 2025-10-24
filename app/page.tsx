@@ -3513,7 +3513,7 @@ export default function Home() {
                   >
                     <Card className="overflow-visible bg-white max-w-2xl mx-auto rounded-2xl shadow-none">
                       <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none text-center">
-                        <div className="grid grid-cols-1 text-gray-600 pb-2 justify-items-center gap-6">
+                        <div className="grid grid-cols-1 text-gray-600 justify-items-center pb-3 gap-2.5">
                           <div className="text-center">
                             <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
                               Title
@@ -3524,10 +3524,10 @@ export default function Home() {
                               value={meditationTitle}
                               onChange={handleMeditationTitleChange}
                               placeholder="My Custom Meditation"
-                              className="flex file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 text-center border-[3px] shadow-md h-9 w-60"
+                              className="flex file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 h-9 text-left w-[333px] border-0 shadow-2xl pb-4"
                             />
                           </div>
-                          <div className="text-center">
+                          <div className="text-center tracking-tight">
                             <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
                               Duration
                             </Label>
