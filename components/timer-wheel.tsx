@@ -6,8 +6,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 
 import { cn } from "@/lib/utils"
 
-const ITEM_HEIGHT = 48
-const VISIBLE_OVERFLOW = 7
+const ITEM_HEIGHT = 40
+const VISIBLE_OVERFLOW = 40
 const COLUMN_CONTAINER_HEIGHT = ITEM_HEIGHT + VISIBLE_OVERFLOW * 2
 
 interface TimerWheelColumnProps {
@@ -241,8 +241,8 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
         onSelect={(next) => handlePartChange("hours", next)}
       />
       <span
-        className="mx-1 flex items-center justify-center text-2xl font-serif font-black text-gray-600"
-        style={{ height: COLUMN_CONTAINER_HEIGHT }}
+        className="flex items-center justify-center text-2xl font-serif font-black text-gray-600"
+        style={{ height: ITEM_HEIGHT }}
       >
         :
       </span>
@@ -254,8 +254,8 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
         onSelect={(next) => handlePartChange("minutes", next)}
       />
       <span
-        className="mx-1 flex items-center justify-center text-2xl font-serif font-black text-gray-600"
-        style={{ height: COLUMN_CONTAINER_HEIGHT }}
+        className="flex items-center justify-center text-2xl font-serif font-black text-gray-600"
+        style={{ height: ITEM_HEIGHT }}
       >
         :
       </span>
