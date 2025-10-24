@@ -3513,7 +3513,7 @@ export default function Home() {
                   >
                     <Card className="overflow-visible bg-white max-w-2xl mx-auto rounded-2xl shadow-none">
                       <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none text-center">
-                        <div className="grid grid-cols-1 text-gray-600 justify-items-center pb-3 gap-2.5">
+                        <div className="grid grid-cols-1 text-gray-600 justify-items-center pb-3 gap-[9px]">
                           <div className="text-center">
                             <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
                               Title
