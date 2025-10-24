@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 
 const ITEM_HEIGHT = 40
 const VISIBLE_ITEMS = 3 // Show 1 above, selected, 1 below
-const COLUMN_CONTAINER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS + ITEM_HEIGHT * 2 // 200px (120px visible + 80px padding)
+const COLUMN_CONTAINER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS // 120px
 
 interface TimerWheelColumnProps {
   label: string
@@ -159,10 +159,9 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
           style={{
             height: COLUMN_CONTAINER_HEIGHT,
             scrollSnapType: "y mandatory",
-            paddingTop: ITEM_HEIGHT,
-            paddingBottom: ITEM_HEIGHT,
           }}
         >
+          <div style={{ height: ITEM_HEIGHT }} aria-hidden="true" />
           {extendedOptions.map((option, index) => {
             const isActive = index === activeExtendedIndex
             return (
@@ -190,6 +189,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
               </button>
             )
           })}
+          <div style={{ height: ITEM_HEIGHT }} aria-hidden="true" />
         </div>
       </div>
       <span className="mt-8 pb-1 font-serif text-sm font-black uppercase tracking-wide text-gray-600">{suffix}</span>
