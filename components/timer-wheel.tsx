@@ -174,7 +174,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
                 role="option"
                 aria-selected={option === value}
                 className={cn(
-                  "flex w-full items-end justify-center px-2 transition-all duration-150",
+                  "flex w-full items-center justify-center px-2 transition-all duration-150",
                   "focus:outline-none",
                   isActive ? "text-gray-600" : "text-gray-400",
                 )}

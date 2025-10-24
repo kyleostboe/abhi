@@ -8,7 +8,8 @@ import { Card } from "@/components/ui/card"
 import { Alert } from "@/components/ui/alert" // Import Alert component
 import {
   AlertTriangle,
-  Music2Icon,Mic,
+  Music2Icon,
+  Mic,
   StopCircle,
   Play,
   PlusCircle,
@@ -1690,8 +1691,7 @@ export default function Home() {
           0,
         )
         const totalDuration = Math.max(importData.duration ?? 0, reconstructedEnd)
-        const safeTotalDuration =
-          totalDuration > 0 ? totalDuration : DEFAULT_ENCODER_DURATION_SECONDS
+        const safeTotalDuration = totalDuration > 0 ? totalDuration : DEFAULT_ENCODER_DURATION_SECONDS
         setEncoderTotalDuration(safeTotalDuration)
         setEncoderTimelineOriginalDuration(safeTotalDuration)
         lastEncoderDurationAdjustmentRef.current = safeTotalDuration
@@ -3173,7 +3173,7 @@ export default function Home() {
                                     </div>
                                   </div>
                                 </div>
-                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
+                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
                                   <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-[3px] border-stone-200">
                                     <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
                                     <div className="font-black text-gray-600">
@@ -3279,9 +3279,7 @@ export default function Home() {
                             <div className="text-center tracking-tight">
                               <span className="text-lg text-gray-600 font-black">{silenceThreshold.toFixed(3)}</span>
                             </div>
-                            <p className="text-center text-xs text-gray-500 tracking-tight">
-                              Lower = more sensitive
-                            </p>
+                            <p className="text-center text-xs text-gray-500 tracking-tight">Lower = more sensitive</p>
                           </DurationControlCard>
                         </div>
                       </TabsContent>
@@ -3365,8 +3363,8 @@ export default function Home() {
                               </SelectContent>
                             </Select>
                             <p className="text-xs text-gray-500 tracking-tight">
-                              High Compatibility for better playback on mobile/AirPods. May reduce sample rate for long audio on
-                              mobile.
+                              High Compatibility for better playback on mobile/AirPods. May reduce sample rate for long
+                              audio on mobile.
                             </p>
                           </DurationControlCard>
                         </div>
@@ -3533,7 +3531,7 @@ export default function Home() {
                             <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
                               Duration
                             </Label>
-                            <div id="encoder-duration" className="mt-4 flex flex-col items-center gap-6">
+                            <div id="encoder-duration" className="mt-2 flex flex-col items-center gap-6">
                               <TimerWheel
                                 value={encoderDurationDraft}
                                 onChange={handleDurationWheelChange}
@@ -3599,9 +3597,9 @@ export default function Home() {
                       <Card className="overflow-hidden border-none shadow-lg bg-white ">
                         <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-center">
                           <h3 className="text-white flex items-center font-serif font-black">
-            <Music2Icon className="h-4 w-4 mr-2" />
-            Sound Cues
-          </h3>
+                            <Music2Icon className="h-4 w-4 mr-2" />
+                            Sound Cues
+                          </h3>
                         </div>
                         <div className="p-6 flex flex-col space-y-4 pt-[3px]">
                           <div className="flex-1 h-auto">
