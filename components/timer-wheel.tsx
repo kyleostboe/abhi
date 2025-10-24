@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 
 const ITEM_HEIGHT = 40
 const VISIBLE_ITEMS = 3 // Show 1 above, selected, 1 below
-const COLUMN_CONTAINER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS // 120px to show 3 items
+const COLUMN_CONTAINER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS + ITEM_HEIGHT * 2 // 200px (120px visible + 80px padding)
 
 interface TimerWheelColumnProps {
   label: string
