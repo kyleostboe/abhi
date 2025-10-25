@@ -192,7 +192,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
           <div style={{ height: ITEM_HEIGHT }} aria-hidden="true" />
         </div>
       </div>
-      <span className="pb-1 font-serif font-black lowercase tracking-wide mt-3 text-xs text-stone-500">{suffix}</span>
+      <span className="font-serif font-black lowercase tracking-wide mt-3 text-xs text-stone-500 border-0 border-stone-500 px-[3px] border-b-0">{suffix}</span>
     </div>
   )
 }
@@ -239,7 +239,7 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
         onSelect={(next) => handlePartChange("hours", next)}
       />
       <span
-        className="flex items-center justify-center font-serif font-black pb-[34px] text-gray-600 text-2xl"
+        className="flex items-center justify-center font-serif font-black text-gray-600 text-2xl pb-8"
         style={{ height: COLUMN_CONTAINER_HEIGHT }}
       >
         :
@@ -252,7 +252,7 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
         onSelect={(next) => handlePartChange("minutes", next)}
       />
       <span
-        className="flex items-center justify-center font-serif font-black pb-[34px] text-gray-600 text-2xl"
+        className="flex items-center justify-center font-serif font-black text-gray-600 text-2xl pb-8"
         style={{ height: COLUMN_CONTAINER_HEIGHT }}
       >
         :
