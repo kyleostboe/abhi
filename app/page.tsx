@@ -3486,7 +3486,7 @@ export default function Home() {
                             existingMeditationTitle={loadedLibraryContext?.title}
                             existingMeditationDuration={loadedLibraryContext?.duration}
                           >
-                            <Button className="w-44 py-3  rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-xs text-gray-600 font-serif font-black">
+                            <Button className="w-44 py-3 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-xs text-gray-600 font-serif font-black">
                               <BookmarkPlus className="h-4 w-4 mr-2" />
                               Save to Library
                             </Button>
@@ -3514,6 +3514,18 @@ export default function Home() {
                     <Card className="overflow-visible bg-white max-w-2xl mx-auto rounded-2xl shadow-none">
                       <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none text-center px-6">
                         <div className="grid grid-cols-1 text-gray-600 justify-items-center gap-3 pb-[15px]">
+                          <div className="text-center tracking-tight">
+                            <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
+                              Duration
+                            </Label>
+                            <div id="encoder-duration" className="mt-2 flex flex-col items-center gap-6">
+                              <TimerWheel
+                                value={encoderDurationDraft}
+                                onChange={handleDurationWheelChange}
+                                maxHours={2}
+                              />
+                            </div>
+                          </div>
                           <div className="text-center">
                             <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
                               Title
@@ -3526,18 +3538,6 @@ export default function Home() {
                               placeholder="My Custom Meditation"
                               className="flex file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 h-9 pb-4 shadow-md border-[3px] text-center w-[263px]"
                             />
-                          </div>
-                          <div className="text-center tracking-tight">
-                            <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
-                              Duration
-                            </Label>
-                            <div id="encoder-duration" className="mt-2 flex flex-col items-center gap-6">
-                              <TimerWheel
-                                value={encoderDurationDraft}
-                                onChange={handleDurationWheelChange}
-                                maxHours={2}
-                              />
-                            </div>
                           </div>
                         </div>
                       </div>
