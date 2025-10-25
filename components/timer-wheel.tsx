@@ -6,9 +6,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 
 import { cn } from "@/lib/utils"
 
-const ITEM_HEIGHT = 40
+const ITEM_HEIGHT = 32
 const VISIBLE_ITEMS = 3 // Show 1 above, selected, 1 below
-const COLUMN_CONTAINER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS // 120px
+const COLUMN_CONTAINER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS // 96px
 
 interface TimerWheelColumnProps {
   label: string
@@ -192,7 +192,9 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
           <div style={{ height: ITEM_HEIGHT }} aria-hidden="true" />
         </div>
       </div>
-      <span className="font-serif font-black lowercase tracking-wide mt-3 text-xs text-stone-500 border-0 border-stone-500 px-[3px] border-b-0">{suffix}</span>
+      <span className="font-serif font-black lowercase tracking-wide mt-3 text-xs text-stone-500 border-0 border-stone-500 px-[3px] border-b-0">
+        {suffix}
+      </span>
     </div>
   )
 }
