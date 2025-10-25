@@ -101,7 +101,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
             Recorder
           </h3>
         </div>
-        <div className="p-6 space-y-4 pt-3">
+        <div className="p-6 space-y-4 pt-3.5">
           <input
             id={inputId}
             value={recordingLabel}
@@ -3513,7 +3513,7 @@ export default function Home() {
                   >
                     <Card className="overflow-visible bg-white max-w-2xl mx-auto rounded-2xl shadow-none">
                       <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none text-center">
-                        <div className="grid grid-cols-1 text-gray-600 justify-items-center pb-3 gap-3">
+                        <div className="grid grid-cols-1 text-gray-600 justify-items-center gap-3 pb-[15px]">
                           <div className="text-center">
                             <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
                               Title
@@ -3524,7 +3524,7 @@ export default function Home() {
                               value={meditationTitle}
                               onChange={handleMeditationTitleChange}
                               placeholder="My Custom Meditation"
-                              className="flex file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 h-9 text-left w-[333px] border-0 shadow-2xl pb-4"
+                              className="flex file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 h-9 pb-4 shadow-md border-[3px] text-center w-[263px]"
                             />
                           </div>
                           <div className="text-center tracking-tight">
@@ -3610,7 +3610,7 @@ export default function Home() {
                                     <span>Notes</span>
                                   </div>
                                 </AccordionTrigger>
-                                <div className="px-4 border-b-0 pb-[7px]">
+                                <div className="px-4 border-b-0 pb-0">
                                   <div className="flex items-center gap-4">
                                     <div className="flex items-center gap-2">
                                       <span className="text-xs text-gray-500">Type</span>

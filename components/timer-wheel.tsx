@@ -171,7 +171,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
                 role="option"
                 aria-selected={option === value}
                 className={cn(
-                  "flex w-full items-center justify-center px-2 transition-all duration-150",
+                  "flex w-full items-center justify-center transition-all duration-150 px-2",
                   "focus:outline-none",
                   isActive ? "text-gray-600" : "text-gray-400",
                 )}
@@ -192,7 +192,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
           <div style={{ height: ITEM_HEIGHT }} aria-hidden="true" />
         </div>
       </div>
-      <span className="pb-1 font-serif font-black lowercase tracking-wide mt-3 text-xs text-stone-400">{suffix}</span>
+      <span className="pb-1 font-serif font-black lowercase tracking-wide mt-3 text-xs text-stone-500">{suffix}</span>
     </div>
   )
 }
@@ -230,7 +230,7 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
   )
 
   return (
-    <div className={cn("flex items-center justify-center gap-0", className)}>
+    <div className={cn("flex items-center justify-center gap-[3px]", className)}>
       <TimerWheelColumn
         label="Hours"
         suffix="hr"
