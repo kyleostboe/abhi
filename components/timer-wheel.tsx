@@ -192,7 +192,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
           <div style={{ height: ITEM_HEIGHT }} aria-hidden="true" />
         </div>
       </div>
-      <span className="font-serif font-black lowercase tracking-wide mt-3 text-xs text-stone-500 border-0 border-stone-500 px-[3px] border-b-0">
+      <span className="font-serif font-black lowercase tracking-wide text-stone-500 border-0 border-stone-500 px-[3px] border-b-0 text-sm mt-1.5">
         {suffix}
       </span>
     </div>
