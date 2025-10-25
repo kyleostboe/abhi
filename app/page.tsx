@@ -2934,7 +2934,7 @@ export default function Home() {
                     transition={{ duration: 0.2 }}
                     className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
                   >
-                    <p className="text-center px-4 pt-1.5 text-xs pb-1.5 text-stone-500">
+                    <p className="text-center px-4 pt-1.5 text-xs pb-0 text-stone-500">
                       Design custom guided meditations by pairing instructions with sound cues and/or using the
                       recorder, then arranging events on the timeline.
                     </p>
