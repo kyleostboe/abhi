@@ -2854,7 +2854,7 @@ export default function Home() {
                 transition={{ delay: 0.2, duration: 0.5 }}
               >
                 <h1
-                  className="text-5xl text-transparent bg-clip-text bg-gradient-to-bl from-logo-rose-300 to-logo-rose-500 transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 text-center mt-16 tracking-tighter"
+                  className="text-5xl text-transparent bg-clip-text bg-gradient-to-bl from-logo-rose-300 to-logo-rose-500 transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 text-center tracking-tighter mt-12"
                   style={{
                     fontFamily: 'Georgia, "Times New Roman", serif',
                     textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
