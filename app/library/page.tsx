@@ -2583,10 +2583,10 @@ export default function LibraryPage() {
                           <X className="h-[16px] w-[16px]" />
                         </button>
 
-                        <div className="flex-1 overflow-y-auto scrollbar-none pt-8">
+                        <div className="flex-1 overflow-y-auto scrollbar-none pt-0">
                           <div
                             className={cn(
-                              "space-y-6 mx-0 my-0",
+                              "space-y-6 mx-0 my-0 pl-1.5 pt-1.5 pr-1.5 pb-2",
                               isQuickAdjustProcessing ? "pointer-events-none select-none blur-[1px]" : "",
                             )}
                           >
