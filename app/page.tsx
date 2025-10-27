@@ -3028,7 +3028,7 @@ export default function Home() {
                     onDrop={handleDropAction}
                   >
                     <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
-                      <div className="p-10 md:p-16 text-center bg-white rounded-sm border-stone-200 border-0 shadow-none tracking-tight md:py-10 md:px-10">
+                      <div className="p-10 md:p-16 text-center bg-white rounded-sm shadow-none tracking-tight md:py-10 md:px-10 border-4 border-double border-stone-300">
                         <motion.div
                           initial={{ opacity: 0, y: 5 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -3061,7 +3061,7 @@ export default function Home() {
                         transition={{ type: "spring", stiffness: 500, damping: 30 }}
                         className="p-0.5 overflow-hidden bg-gradient-to-tl from-gray-500 to-stone-300 py-1 rounded-sm px-[5px] mb-3.5 shadow-none"
                       >
-                        <div className="bg-white p-5 py-4 rounded-[10px] border-stone-200 border-0 shadow-none">
+                        <div className="bg-white p-5 py-4 rounded-[10px] shadow-none border-4 border-double border-stone-300">
                           <div className="flex items-center">
                             <motion.div
                               initial={{ scale: 0 }}
@@ -3166,7 +3166,7 @@ export default function Home() {
 
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                 <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
-                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
+                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-300 border-double border-4">
                                     <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
                                     <div className="font-black text-gray-600">
                                       {formatTime(audioAnalysis.contentDuration)}
@@ -3174,7 +3174,7 @@ export default function Home() {
                                   </div>
                                 </div>
                                 <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
-                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-[3px] border-stone-200">
+                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-300 border-4 border-double">
                                     <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
                                     <div className="font-black text-gray-600">
                                       {formatTime(audioAnalysis.totalSilence)}
@@ -3182,7 +3182,7 @@ export default function Home() {
                                   </div>
                                 </div>
                                 <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
-                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
+                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-300 border-4 border-double">
                                     <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
                                     <div className="font-black text-gray-600 text-sm tracking-tight">
                                       {audioAnalysis.silenceRegions}
@@ -3190,7 +3190,7 @@ export default function Home() {
                                   </div>
                                 </div>
                                 <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
-                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-200 border-[3px]">
+                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-4 border-stone-300 border-double">
                                     <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
                                     <div className="uppercase text-gray-600 text-xs tracking-tight">
                                       {durationLimits.min} min - {isMobileDevice ? "1 hour" : "2 hours"}
@@ -3558,7 +3558,7 @@ export default function Home() {
                         className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                       >
                         <div className="p-0.5 bg-gradient-to-br from-logo-blue-400 to-stone-300  py-1 shadow-lg rounded-sm px-[5px]">
-                          <div className="bg-white p-4 rounded-[10px] shadow-nonee border-stone-200 pb-3 pt-1.5 border-0 shadow-inner">
+                          <div className="bg-white p-4 rounded-[10px] shadow-nonee pb-3 pt-1.5 shadow-inner border-stone-300 border-4 border-double">
                             <div className="text-center">
                               <Textarea
                                 id="custom-instruction"
@@ -3610,7 +3610,7 @@ export default function Home() {
                                     <span>Notes</span>
                                   </div>
                                 </AccordionTrigger>
-                                <div className="px-4 border-b-0 pb-0">
+                                <div className="px-4 border-b-0 pb-2">
                                   <div className="flex items-center gap-4">
                                     <div className="flex items-center gap-2">
                                       <span className="text-xs text-gray-500">Type</span>
