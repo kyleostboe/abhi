@@ -3535,7 +3535,7 @@ export default function Home() {
                               type="text"
                               value={meditationTitle}
                               onChange={handleMeditationTitleChange}
-                              placeholder="My Custom Meditation"
+                              placeholder="Title:"
                               className="flex file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 h-9 pb-4 shadow-md border-[3px] text-center w-[263px]"
                             />
                           </div>
