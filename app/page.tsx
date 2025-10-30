@@ -95,7 +95,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
       className={className}
     >
       <Card className="overflow-hidden border-none shadow-lg bg-white ">
-        <div className="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 py-3 px-6 text-center">
+        <div className="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 px-6 text-center py-2.5">
           <h3 className="text-white flex items-center font-serif font-black">
             <Mic className="h-4 w-4 mr-2" />
             Recorder
@@ -3595,7 +3595,7 @@ export default function Home() {
                       transition={{ delay: 0.3 }}
                     >
                       <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                        <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 py-3 px-6 text-center">
+                        <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 px-6 text-center py-2.5">
                           <h3 className="text-white flex items-center font-serif font-black">
                             <Music2Icon className="h-4 w-4 mr-2" />
                             Sound Cues
