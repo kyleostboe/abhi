@@ -21,7 +21,7 @@ export function DurationControlCard({
 }: DurationControlCardProps) {
   return (
     <Card className={cn("overflow-hidden border-none shadow-lg bg-white rounded-xl", className)}>
-      <div className={cn("px-6 text-white bg-gradient-to-br py-[9px]", gradientClassName)}>
+      <div className={cn("px-6 text-white bg-gradient-to-br text-center py-[9px]", gradientClassName)}>
         <h3 className="font-black tracking-tight text-base">{title}</h3>
       </div>
       <div className={cn("px-6 py-6 space-y-0", bodyClassName)}>{children}</div>
