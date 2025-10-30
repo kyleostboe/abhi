@@ -95,8 +95,8 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
       className={className}
     >
       <Card className="overflow-hidden border-none shadow-lg bg-white ">
-        <div className="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 px-6 text-center py-[9px]">
-          <h3 className="text-white flex items-center font-serif font-black">
+        <div className="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 px-6 py-[9px] text-center">
+          <h3 className="text-white flex items-center font-serif font-black text-left">
             <Mic className="h-4 w-4 mr-2" />
             Recorder
           </h3>
@@ -3595,8 +3595,8 @@ export default function Home() {
                       transition={{ delay: 0.3 }}
                     >
                       <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                        <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 px-6 text-center py-[9px]">
-                          <h3 className="text-white flex items-center font-serif font-black">
+                        <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 px-6 py-[9px] text-center">
+                          <h3 className="text-white flex items-center font-serif font-black text-center">
                             <Music2Icon className="h-4 w-4 mr-2" />
                             Sound Cues
                           </h3>
@@ -3789,7 +3789,7 @@ export default function Home() {
                     transition={{ delay: 0.5 }}
                   >
                     <Card ref={timelineEditorRef} className="overflow-hidden border-none shadow-lg bg-white ">
-                      <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-6 py-3 flex items-center justify-between gap-3 pr-3">
+                      <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-6 flex items-center justify-between gap-3 py-1.5 pr-1.5">
                         <h3 className="text-white font-black text-base">Timeline Editor</h3>
                         <div className="flex items-center gap-2">
                           <input
