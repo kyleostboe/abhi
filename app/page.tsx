@@ -21,7 +21,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DurationControlCard } from "@/components/duration-control-card"
 import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
 import { TimerWheel } from "@/components/timer-wheel"
@@ -529,7 +528,8 @@ export default function Home() {
   const [minSilenceDuration, setMinSilenceDuration] = useState<number>(3)
   const [minSpacingDuration, setMinSpacingDuration] = useState<number>(1.5)
   const [preserveNaturalPacing, setPreserveNaturalPacing] = useState<boolean>(true)
-  const [compatibilityMode, setCompatibilityMode] = useState<string>("high")
+  const [maxSilenceDuration, setMaxSilenceDuration] = useState<number>(10)
+
   const [status, setStatus] = useState<{ message: string; type: string } | null>(null)
   const [originalUrl, setOriginalUrl] = useState<string>("")
   const [processedUrl, setProcessedUrl] = useState<string>("")
@@ -1119,7 +1119,9 @@ export default function Home() {
       setGenerationProgress(80)
 
       const wavResult = await bufferToWav(rendered, {
-        preferCompatibility: compatibilityMode === "high",
+        // Use maxSilenceDuration
+        maxSilenceDuration: maxSilenceDuration * 1000, // convert to ms
+        // preferCompatibility: compatibilityMode === "high", // REMOVED: compatibilityMode undeclared
         maxBytes: 48 * 1024 * 1024, // 48MB limit (under 50MB)
         onProgress: (p) => setGenerationProgress(80 + Math.floor((p / 100) * 20)),
         isMobile: isMobileDevice,
@@ -2122,7 +2124,8 @@ export default function Home() {
           minSilenceDuration,
           minSpacingDuration,
           preserveNaturalPacing,
-          compatibilityMode,
+          // Removed compatibilityMode
+          maxSilenceDuration: maxSilenceDuration * 1000, // convert to ms
         },
         isMobileDevice,
         callbacks: {
@@ -3061,7 +3064,7 @@ export default function Home() {
                         transition={{ type: "spring", stiffness: 500, damping: 30 }}
                         className="p-0.5 overflow-hidden bg-gradient-to-tl from-gray-500 to-stone-300 py-1 rounded-sm px-[5px] mb-3.5 shadow-none"
                       >
-                        <div className="bg-white p-5 py-4 rounded-[10px] shadow-none border-4 border-double border-stone-300">
+                        <div className="bg-white p-5 py-4 rounded-[10px] shadow-nonee border-4 border-double border-stone-300">
                           <div className="flex items-center">
                             <motion.div
                               initial={{ scale: 0 }}
@@ -3348,23 +3351,26 @@ export default function Home() {
                             </div>
                           </DurationControlCard>
                           <DurationControlCard
-                            title="Compatibility Mode"
+                            title="Maximum Silence Duration"
                             gradientClassName="from-logo-teal-500 to-logo-amber-300"
                           >
-                            <Select value={compatibilityMode} onValueChange={(value) => setCompatibilityMode(value)}>
-                              <SelectTrigger className="w-full border-logo-teal-200 focus:ring-logo-teal-500">
-                                <SelectValue placeholder="Select compatibility mode" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="standard">Standard Quality (Original SR)</SelectItem>
-                                <SelectItem value="high">
-                                  High Compatibility (44.1kHz or 22.05kHz for Mobile Long Audio)
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <p className="text-xs text-gray-500 tracking-tight">
-                              High Compatibility for better playback on mobile/AirPods. May reduce sample rate for long
-                              audio on mobile.
+                            <div>
+                              <Slider
+                                value={[maxSilenceDuration]}
+                                min={5}
+                                max={30}
+                                step={1}
+                                onValueChange={(value) => setMaxSilenceDuration(value[0])}
+                                className="py-4"
+                                rangeClassName="bg-gradient-to-r from-logo-teal-500 to-logo-amber-300"
+                              />
+                            </div>
+                            <div className="text-center tracking-tight">
+                              <span className="text-lg text-gray-600 font-black">{maxSilenceDuration}</span>
+                              <span className="ml-1 text-sm text-gray-600">seconds</span>
+                            </div>
+                            <p className="text-center text-xs text-gray-500 tracking-tight">
+                              Cap the length of any single pause
                             </p>
                           </DurationControlCard>
                         </div>

@@ -255,7 +255,7 @@ interface AdjusterWorkflowSettings {
   minSilenceDuration: number
   minSpacingDuration: number
   preserveNaturalPacing: boolean
-  compatibilityMode: string
+  maxSilenceDuration: number
 }
 
 interface AdjusterWorkflowCallbacks {
@@ -295,7 +295,7 @@ export async function runAdjusterWorkflow({
     minSilenceDuration,
     minSpacingDuration,
     preserveNaturalPacing,
-    compatibilityMode,
+    maxSilenceDuration,
   } = settings
   const { onProgress = () => {}, onStep = () => {}, onMemoryWarning } = callbacks
 
@@ -304,14 +304,22 @@ export async function runAdjusterWorkflow({
 
   const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
 
+  const cappedSilenceRegions = silenceRegions.map((region) => {
+    const duration = region.end - region.start
+    if (duration > maxSilenceDuration) {
+      return { start: region.start, end: region.start + maxSilenceDuration }
+    }
+    return region
+  })
+
   onStep("Calculating adjustments (step 2/4)...")
   onProgress(25)
 
-  const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+  const totalSilenceDuration = cappedSilenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
   const audioContentDuration = buffer.duration - totalSilenceDuration
   const availableSilenceDuration = Math.max(
     targetDurationSeconds - audioContentDuration,
-    silenceRegions.length * minSpacingDuration,
+    cappedSilenceRegions.length * minSpacingDuration,
   )
   const scaleFactor = totalSilenceDuration > 0 ? availableSilenceDuration / totalSilenceDuration : 1
 
@@ -321,7 +329,7 @@ export async function runAdjusterWorkflow({
   const processedAudioBuffer = await rebuildAudioWithScaledPauses({
     audioContext,
     buffer,
-    regions: silenceRegions,
+    regions: cappedSilenceRegions,
     scaleFactor,
     minSpacingDuration,
     preserveNaturalPacing,
@@ -338,7 +346,7 @@ export async function runAdjusterWorkflow({
   onProgress(80)
 
   const wavResult = await bufferToWav(processedAudioBuffer, {
-    preferCompatibility: compatibilityMode === "high",
+    preferCompatibility: false,
     maxBytes: 48 * 1024 * 1024,
     isMobile: isMobileDevice,
     onProgress: (progress) => {
@@ -360,8 +368,8 @@ export async function runAdjusterWorkflow({
     processedBuffer: processedAudioBuffer,
     wavBlob,
     wavMetadata,
-    pausesAdjusted: silenceRegions.length,
-    silenceRegions,
+    pausesAdjusted: cappedSilenceRegions.length,
+    silenceRegions: cappedSilenceRegions,
     totalSilenceDuration,
     audioContentDuration,
     availableSilenceDuration,
