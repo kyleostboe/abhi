@@ -2124,8 +2124,7 @@ export default function Home() {
           minSilenceDuration,
           minSpacingDuration,
           preserveNaturalPacing,
-          // Removed compatibilityMode
-          maxSilenceDuration: maxSilenceDuration * 1000, // convert to ms
+          maxSilenceDuration,
         },
         isMobileDevice,
         callbacks: {
