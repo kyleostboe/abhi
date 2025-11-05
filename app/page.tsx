@@ -35,7 +35,7 @@ import {
   runAdjusterWorkflow,
   detectSilenceRegions as computeSilenceRegions,
   type DetectSilenceOptions,
-} from "@/lib/lib/adjuster-workflow"
+} from "@/lib/adjuster-workflow"
 import type { SavedMeditation } from "@/lib/meditation-library"
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
@@ -528,7 +528,7 @@ export default function Home() {
   const [minSilenceDuration, setMinSilenceDuration] = useState<number>(3)
   const [minSpacingDuration, setMinSpacingDuration] = useState<number>(1.5)
   const [preserveNaturalPacing, setPreserveNaturalPacing] = useState<boolean>(true)
-  const [maxSilenceDuration, setMaxSilenceDuration] = useState<number>(0) // Changed default from 10 to 0 (no limit)
+  const [maxSilenceDuration, setMaxSilenceDuration] = useState<number>(0)
 
   const [status, setStatus] = useState<{ message: string; type: string } | null>(null)
   const [originalUrl, setOriginalUrl] = useState<string>("")
@@ -3367,7 +3367,7 @@ export default function Home() {
                             </div>
                             <div className="text-center tracking-tight">
                               {maxSilenceDuration === 0 ? (
-                                <span className="text-lg text-gray-600 font-black">No limit</span>
+                                <span className="text-lg text-gray-600 font-black">No Limit</span>
                               ) : (
                                 <>
                                   <span className="text-lg text-gray-600 font-black">{maxSilenceDuration}</span>
@@ -3376,7 +3376,7 @@ export default function Home() {
                               )}
                             </div>
                             <p className="text-center text-xs text-gray-500 tracking-tight">
-                              Cap the length of any single pause (0 = no cap)
+                              Caps long pauses (0 = no limit)
                             </p>
                           </DurationControlCard>
                         </div>
