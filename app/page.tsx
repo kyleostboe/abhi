@@ -35,7 +35,7 @@ import {
   runAdjusterWorkflow,
   detectSilenceRegions as computeSilenceRegions,
   type DetectSilenceOptions,
-} from "@/lib/adjuster-workflow"
+} from "@/lib/lib/adjuster-workflow"
 import type { SavedMeditation } from "@/lib/meditation-library"
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
@@ -528,7 +528,7 @@ export default function Home() {
   const [minSilenceDuration, setMinSilenceDuration] = useState<number>(3)
   const [minSpacingDuration, setMinSpacingDuration] = useState<number>(1.5)
   const [preserveNaturalPacing, setPreserveNaturalPacing] = useState<boolean>(true)
-  const [maxSilenceDuration, setMaxSilenceDuration] = useState<number>(10)
+  const [maxSilenceDuration, setMaxSilenceDuration] = useState<number>(0) // Changed default from 10 to 0 (no limit)
 
   const [status, setStatus] = useState<{ message: string; type: string } | null>(null)
   const [originalUrl, setOriginalUrl] = useState<string>("")
@@ -3357,20 +3357,26 @@ export default function Home() {
                             <div>
                               <Slider
                                 value={[maxSilenceDuration]}
-                                min={5}
-                                max={30}
-                                step={1}
+                                min={0}
+                                max={300}
+                                step={5}
                                 onValueChange={(value) => setMaxSilenceDuration(value[0])}
                                 className="py-4"
                                 rangeClassName="bg-gradient-to-r from-logo-teal-500 to-logo-amber-300"
                               />
                             </div>
                             <div className="text-center tracking-tight">
-                              <span className="text-lg text-gray-600 font-black">{maxSilenceDuration}</span>
-                              <span className="ml-1 text-sm text-gray-600">seconds</span>
+                              {maxSilenceDuration === 0 ? (
+                                <span className="text-lg text-gray-600 font-black">No limit</span>
+                              ) : (
+                                <>
+                                  <span className="text-lg text-gray-600 font-black">{maxSilenceDuration}</span>
+                                  <span className="ml-1 text-sm text-gray-600">seconds</span>
+                                </>
+                              )}
                             </div>
                             <p className="text-center text-xs text-gray-500 tracking-tight">
-                              Cap the length of any single pause
+                              Cap the length of any single pause (0 = no cap)
                             </p>
                           </DurationControlCard>
                         </div>
