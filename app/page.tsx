@@ -1959,7 +1959,7 @@ export default function Home() {
   )
 
   useEffect(() => {
-    if (shouldScrollToAdjuster || activeMode !== "adjuster") {
+    if (!shouldScrollToAdjuster || activeMode !== "adjuster") {
       return
     }
 
