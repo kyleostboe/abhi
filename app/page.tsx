@@ -3644,7 +3644,7 @@ export default function Home() {
                                           setMultiNoteMode(!multiNoteMode)
                                           setSelectedNotes([])
                                         }}
-                                        className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
+                                        className={`relative inline-flex h-4 w-8 shrink-0 items-center rounded-full transition-colors ${
                                           multiNoteMode ? "bg-gray-500" : "bg-gray-200"
                                         }`}
                                       >
