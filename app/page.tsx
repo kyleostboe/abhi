@@ -528,7 +528,7 @@ export default function Home() {
   const [minSilenceDuration, setMinSilenceDuration] = useState<number>(3)
   const [minSpacingDuration, setMinSpacingDuration] = useState<number>(1.5)
   const [preserveNaturalPacing, setPreserveNaturalPacing] = useState<boolean>(true)
-  const [maxSilenceDuration, setMaxSilenceDuration] = useState<number>(0)
+  const [maxSilenceDuration, setMaxSilenceDuration] = useState<number>(0) // Updated default to 0 (no limit)
 
   const [status, setStatus] = useState<{ message: string; type: string } | null>(null)
   const [originalUrl, setOriginalUrl] = useState<string>("")
@@ -2124,7 +2124,8 @@ export default function Home() {
           minSilenceDuration,
           minSpacingDuration,
           preserveNaturalPacing,
-          maxSilenceDuration,
+          // Removed compatibilityMode
+          maxSilenceDuration: maxSilenceDuration * 1000, // convert to ms
         },
         isMobileDevice,
         callbacks: {
@@ -3356,7 +3357,7 @@ export default function Home() {
                             <div>
                               <Slider
                                 value={[maxSilenceDuration]}
-                                min={0}
+                                min={0} // Updated min to 0
                                 max={300}
                                 step={5}
                                 onValueChange={(value) => setMaxSilenceDuration(value[0])}
@@ -3375,7 +3376,9 @@ export default function Home() {
                               )}
                             </div>
                             <p className="text-center text-xs text-gray-500 tracking-tight">
-                              Caps long pauses (0 = no limit)
+                              {maxSilenceDuration === 0
+                                ? "No maximum cap on pause length"
+                                : "Cap the length of any single pause"}
                             </p>
                           </DurationControlCard>
                         </div>

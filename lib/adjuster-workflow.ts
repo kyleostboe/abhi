@@ -304,16 +304,16 @@ export async function runAdjusterWorkflow({
 
   const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
 
-  const cappedSilenceRegions =
-    maxSilenceDuration > 0
-      ? silenceRegions.map((region) => {
-          const duration = region.end - region.start
-          if (duration > maxSilenceDuration) {
-            return { start: region.start, end: region.start + maxSilenceDuration }
-          }
-          return region
-        })
-      : silenceRegions
+  const cappedSilenceRegions = silenceRegions.map((region) => {
+    if (maxSilenceDuration === 0) {
+      return region
+    }
+    const duration = region.end - region.start
+    if (duration > maxSilenceDuration) {
+      return { start: region.start, end: region.start + maxSilenceDuration }
+    }
+    return region
+  })
 
   onStep("Calculating adjustments (step 2/4)...")
   onProgress(25)
