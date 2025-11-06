@@ -3336,7 +3336,7 @@ export default function Home() {
                             gradientClassName="from-pink-400 to-cyan-400"
                             bodyClassName="px-6 py-6"
                           >
-                            <div className="flex items-center justify-between gap-4">
+                            <div className="peer inline-flex shrink-0 cursor-pointer items-center border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input rounded-full text-white w-11 h-5">
                               <p className="text-xs text-gray-600 tracking-tight">
                                 Maintain the relative length of pauses
                               </p>
