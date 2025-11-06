@@ -3353,11 +3353,11 @@ export default function Home() {
                           >
                             <div>
                               <Slider
-                                value={[maxSilenceDuration]}
+                                value={[maxSilenceDuration / 60]}
                                 min={0}
-                                max={3600} // Increased from 300 to 3600 seconds (60 minutes) for longer meditations
-                                step={30} // Increased step from 5 to 30 seconds for better control at higher values
-                                onValueChange={(value) => setMaxSilenceDuration(value[0])}
+                                max={60}
+                                step={0.5}
+                                onValueChange={(value) => setMaxSilenceDuration(value[0] * 60)}
                                 className="py-4"
                                 rangeClassName="bg-gradient-to-r from-logo-teal-500 to-logo-amber-300"
                               />
@@ -3367,8 +3367,10 @@ export default function Home() {
                                 <span className="text-lg text-gray-600 font-black">No Limit</span>
                               ) : (
                                 <>
-                                  <span className="text-lg text-gray-600 font-black">{maxSilenceDuration}</span>
-                                  <span className="ml-1 text-sm text-gray-600">seconds</span>
+                                  <span className="text-lg text-gray-600 font-black">{maxSilenceDuration / 60}</span>
+                                  <span className="ml-1 text-sm text-gray-600">
+                                    {maxSilenceDuration === 60 ? "minute" : "minutes"}
+                                  </span>
                                 </>
                               )}
                             </div>
