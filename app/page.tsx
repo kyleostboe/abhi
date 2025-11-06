@@ -3364,7 +3364,7 @@ export default function Home() {
                             </div>
                             <div className="text-center tracking-tight">
                               {maxSilenceDuration === 0 ? (
-                                <span className="text-lg text-gray-600 font-black">No Limit</span>
+                                <span className="text-gray-600 font-black text-lg">No Limit</span>
                               ) : (
                                 <>
                                   <span className="text-lg text-gray-600 font-black">{maxSilenceDuration / 60}</span>
