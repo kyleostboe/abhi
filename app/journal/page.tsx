@@ -429,7 +429,7 @@ export default function JournalPage() {
                       }}
                       className={cn(
                         "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
-                        activeTab === "date" ? "bg-white text-gray-600 shadow-sm" : "",
+                        activeTab === "date" ? "bg-white text-gray-600 shadow-md" : "",
                       )}
                     >
                       By Date
@@ -447,7 +447,7 @@ export default function JournalPage() {
                       }}
                       className={cn(
                         "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
-                        activeTab === "meditation" ? "bg-white text-gray-600 shadow-sm" : "",
+                        activeTab === "meditation" ? "bg-white text-gray-600 shadow-md" : "",
                       )}
                     >
                       By Meditation
