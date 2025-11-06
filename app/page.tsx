@@ -3126,10 +3126,7 @@ export default function Home() {
                             existingMeditationTitle={loadedLibraryContext?.title}
                             existingMeditationDuration={loadedLibraryContext?.duration}
                           >
-                            <Button
-                              className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500"
-                              disabled={!originalBuffer}
-                            >
+                            <Button className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500">
                               <BookmarkPlus className="w-4 h-4 mr-2" />
                               Save to Library
                             </Button>
@@ -3357,9 +3354,9 @@ export default function Home() {
                             <div>
                               <Slider
                                 value={[maxSilenceDuration]}
-                                min={0} // Updated min to 0
-                                max={300}
-                                step={5}
+                                min={0}
+                                max={3600} // Increased from 300 to 3600 seconds (60 minutes) for longer meditations
+                                step={30} // Increased step from 5 to 30 seconds for better control at higher values
                                 onValueChange={(value) => setMaxSilenceDuration(value[0])}
                                 className="py-4"
                                 rangeClassName="bg-gradient-to-r from-logo-teal-500 to-logo-amber-300"
@@ -3609,7 +3606,7 @@ export default function Home() {
                       transition={{ delay: 0.3 }}
                     >
                       <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                        <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 px-6 py-[9px] text-center">
+                        <div className="bg-gradient-to-br from-logo-blue-400 to-amber-300 px-6 py-[9px] text-center">
                           <h3 className="text-white flex items-center font-serif font-black text-center">
                             <Music2Icon className="h-4 w-4 mr-2" />
                             Sound Cues
