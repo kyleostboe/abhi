@@ -188,7 +188,7 @@ const normalizeSupabaseMeditation = (
 export class MeditationLibrary {
   static async saveMeditation(meditation: SaveMeditationInput): Promise<SavedMeditation> {
     const auth = getAuthState()
-    console.log("[v0] saveMeditation - Auth state:", { isAuthenticated: auth.isAuthenticated, userId: auth.userId })
+    console.log("[v0] saveMeditation - Auth state:", { status: auth.status, userId: auth.userId })
     
     const processedBlob: Blob | null =
       meditation.processedAudioData ?? (await resolveBlobFromUrl(meditation.processedAudioUrl))
@@ -216,7 +216,7 @@ export class MeditationLibrary {
       }
     }
 
-    if (!auth.isAuthenticated) {
+    if (auth.status !== "authenticated" || !auth.userId) {
       console.log("[v0] Saving to memory (unauthenticated)")
       const id = createId()
       const processedUrl = buildObjectUrl(processedBlob)
@@ -294,9 +294,9 @@ export class MeditationLibrary {
 
   static async getAllMeditations(): Promise<SavedMeditation[]> {
     const auth = getAuthState()
-    console.log("[v0] getAllMeditations - Auth state:", { isAuthenticated: auth.isAuthenticated, userId: auth.userId })
+    console.log("[v0] getAllMeditations - Auth state:", { status: auth.status, userId: auth.userId })
     
-    if (!auth.isAuthenticated) {
+    if (auth.status !== "authenticated" || !auth.userId) {
       const memoryMeds = getMemoryMeditations()
       console.log("[v0] Loaded from memory:", memoryMeds.length, "meditations")
       return memoryMeds
@@ -345,7 +345,7 @@ export class MeditationLibrary {
 
   static async getMeditation(id: string): Promise<SavedMeditation | null> {
     const auth = getAuthState()
-    if (!auth.isAuthenticated) {
+    if (auth.status !== "authenticated" || !auth.userId) {
       return getMemoryMeditation(id)
     }
 
@@ -373,7 +373,7 @@ export class MeditationLibrary {
 
   static async deleteMeditation(id: string): Promise<void> {
     const auth = getAuthState()
-    if (!auth.isAuthenticated) {
+    if (auth.status !== "authenticated" || !auth.userId) {
       deleteMemoryMeditation(id)
       return
     }
@@ -391,7 +391,7 @@ export class MeditationLibrary {
 
   static async getAllPlaylists(): Promise<Playlist[]> {
     const auth = getAuthState()
-    if (!auth.isAuthenticated) {
+    if (auth.status !== "authenticated" || !auth.userId) {
       return getMemoryPlaylists()
     }
 
@@ -433,7 +433,7 @@ export class MeditationLibrary {
 
   static async getPlaylist(id: string): Promise<Playlist | null> {
     const auth = getAuthState()
-    if (!auth.isAuthenticated) {
+    if (auth.status !== "authenticated" || !auth.userId) {
       return getMemoryPlaylists().find((playlist) => playlist.id === id) ?? null
     }
 
@@ -473,7 +473,7 @@ export class MeditationLibrary {
 
   static async createPlaylist(name: string, description: string): Promise<Playlist> {
     const auth = getAuthState()
-    if (!auth.isAuthenticated) {
+    if (auth.status !== "authenticated" || !auth.userId) {
       const playlist: Playlist = {
         id: createId(),
         name,
@@ -518,7 +518,7 @@ export class MeditationLibrary {
     updates: Partial<Pick<Playlist, "name" | "description">>,
   ): Promise<void> {
     const auth = getAuthState()
-    if (!auth.isAuthenticated) {
+    if (auth.status !== "authenticated" || !auth.userId) {
       const existing = getMemoryPlaylists().find((playlist) => playlist.id === id)
       if (existing) {
         upsertMemoryPlaylist({ ...existing, ...updates, updatedAt: new Date() })
@@ -549,7 +549,7 @@ export class MeditationLibrary {
 
   static async deletePlaylist(id: string): Promise<void> {
     const auth = getAuthState()
-    if (!auth.isAuthenticated) {
+    if (auth.status !== "authenticated" || !auth.userId) {
       deleteMemoryPlaylist(id)
       return
     }
@@ -571,7 +571,7 @@ export class MeditationLibrary {
 
   static async addToPlaylist(playlistId: string, meditationId: string): Promise<void> {
     const auth = getAuthState()
-    if (!auth.isAuthenticated) {
+    if (auth.status !== "authenticated" || !auth.userId) {
       addMeditationToMemoryPlaylist(playlistId, meditationId)
       return
     }
@@ -600,7 +600,7 @@ export class MeditationLibrary {
 
   static async removeFromPlaylist(playlistId: string, meditationId: string): Promise<void> {
     const auth = getAuthState()
-    if (!auth.isAuthenticated) {
+    if (auth.status !== "authenticated" || !auth.userId) {
       removeMeditationFromMemoryPlaylist(playlistId, meditationId)
       return
     }
@@ -628,7 +628,7 @@ export class MeditationLibrary {
 
   static async getPlaylistMeditations(playlistId: string): Promise<SavedMeditation[]> {
     const auth = getAuthState()
-    if (!auth.isAuthenticated) {
+    if (auth.status !== "authenticated" || !auth.userId) {
       const ids = getMemoryPlaylistMeditations(playlistId)
       return ids
         .map((id) => getMemoryMeditation(id))
@@ -660,7 +660,7 @@ export class MeditationLibrary {
 
   static async exportBackup(): Promise<Blob> {
     const auth = getAuthState()
-    if (!auth.isAuthenticated) {
+    if (auth.status !== "authenticated" || !auth.userId) {
       const meditations = getMemoryMeditations()
       const audio: AudioBackup[] = []
 
@@ -721,7 +721,7 @@ export class MeditationLibrary {
       throw new Error("Unsupported backup version")
     }
 
-    if (auth.isAuthenticated) {
+    if (auth.status === "authenticated" && auth.userId) {
       const supabase = createClient()
       if (payload.meditations?.length) {
         await supabase.from("meditations").upsert(
@@ -776,7 +776,7 @@ export class MeditationLibrary {
 
   static async getStorageUsage() {
     const auth = getAuthState()
-    if (!auth.isAuthenticated) {
+    if (auth.status !== "authenticated" || !auth.userId) {
       return { usedBytes: getMemoryUsageBytes() }
     }
     return estimateAudioUsage()
