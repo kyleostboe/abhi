@@ -11,6 +11,13 @@ export type AudioRecord = {
   timelineRecordings?: Record<string, Blob>
 }
 
+type StoredAudioRecord = {
+  id: string
+  processedAudio: SerializedBlob
+  sourceAudio?: SerializedBlob | null
+  timelineRecordings?: Record<string, SerializedBlob>
+}
+
 export type AudioBackup = {
   id: string
   processedAudio?: SerializedBlob | null
@@ -73,13 +80,31 @@ export async function saveAudioRecord(record: AudioRecord): Promise<void> {
   console.log("[v0] IndexedDB saveAudioRecord called for ID:", record.id)
   console.log("[v0] Audio sizes - processed:", record.processedAudio?.size, "source:", record.sourceAudio?.size, "timeline:", Object.keys(record.timelineRecordings || {}).length)
   
+  const storedRecord: StoredAudioRecord = {
+    id: record.id,
+    processedAudio: (await serializeBlob(record.processedAudio))!,
+    sourceAudio: await serializeBlob(record.sourceAudio ?? null),
+    timelineRecordings: {},
+  }
+
+  if (record.timelineRecordings) {
+    for (const [key, blob] of Object.entries(record.timelineRecordings)) {
+      const serialized = await serializeBlob(blob)
+      if (serialized) {
+        storedRecord.timelineRecordings![key] = serialized
+      }
+    }
+  }
+
+  console.log("[v0] Serialized audio data, now storing in IndexedDB...")
+  
   const db = await getDatabase()
   console.log("[v0] IndexedDB database opened successfully")
   
   await new Promise<void>((resolve, reject) => {
     const transaction = db.transaction(AUDIO_STORE, "readwrite")
     const store = transaction.objectStore(AUDIO_STORE)
-    const request = store.put(record)
+    const request = store.put(storedRecord)
     
     request.onsuccess = () => {
       console.log("[v0] IndexedDB put operation successful for ID:", record.id)
@@ -111,13 +136,32 @@ export async function getAudioRecord(id: string): Promise<AudioRecord | null> {
     const request = store.get(id)
     
     request.onsuccess = () => {
-      const result = (request.result as AudioRecord | undefined) ?? null
-      if (result) {
-        console.log("[v0] IndexedDB found audio record for ID:", id, "sizes - processed:", result.processedAudio?.size, "source:", result.sourceAudio?.size)
-      } else {
+      const stored = request.result as StoredAudioRecord | undefined
+      if (!stored) {
         console.log("[v0] IndexedDB no audio record found for ID:", id)
+        resolve(null)
+        return
       }
-      resolve(result)
+      
+      const timelineRecordings: Record<string, Blob> = {}
+      if (stored.timelineRecordings) {
+        for (const [key, serialized] of Object.entries(stored.timelineRecordings)) {
+          const blob = deserializeBlob(serialized)
+          if (blob) {
+            timelineRecordings[key] = blob
+          }
+        }
+      }
+      
+      const record: AudioRecord = {
+        id: stored.id,
+        processedAudio: deserializeBlob(stored.processedAudio)!,
+        sourceAudio: deserializeBlob(stored.sourceAudio ?? null),
+        timelineRecordings: Object.keys(timelineRecordings).length > 0 ? timelineRecordings : undefined,
+      }
+      
+      console.log("[v0] IndexedDB found audio record for ID:", id, "sizes - processed:", record.processedAudio?.size, "source:", record.sourceAudio?.size)
+      resolve(record)
     }
     
     request.onerror = () => {
@@ -200,16 +244,28 @@ export async function estimateAudioUsage(): Promise<{ usedBytes: number; quotaBy
       const store = transaction.objectStore(AUDIO_STORE)
       const request = store.getAll()
       request.onsuccess = () => {
-        const records = request.result as AudioRecord[]
-        console.log("[v0] Calculating storage for", records.length, "audio records")
-        const usedBytes = records.reduce((total, record) => {
-          let next = total + record.processedAudio.size
-          if (record.sourceAudio) next += record.sourceAudio.size
-          if (record.timelineRecordings) {
-            next += Object.values(record.timelineRecordings).reduce((sum, blob) => sum + blob.size, 0)
+        const storedRecords = request.result as StoredAudioRecord[]
+        console.log("[v0] Calculating storage for", storedRecords.length, "audio records")
+        
+        const usedBytes = storedRecords.reduce((total, stored) => {
+          let next = total
+          if (stored.processedAudio) {
+            const blob = deserializeBlob(stored.processedAudio)
+            if (blob) next += blob.size
+          }
+          if (stored.sourceAudio) {
+            const blob = deserializeBlob(stored.sourceAudio)
+            if (blob) next += blob.size
+          }
+          if (stored.timelineRecordings) {
+            Object.values(stored.timelineRecordings).forEach((serialized) => {
+              const blob = deserializeBlob(serialized)
+              if (blob) next += blob.size
+            })
           }
           return next
         }, 0)
+        
         console.log("[v0] Total audio storage:", usedBytes, "bytes")
         resolve({ usedBytes })
       }
