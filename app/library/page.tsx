@@ -1533,7 +1533,7 @@ export default function LibraryPage() {
       setIsAudioPlaying,
       setCurrentPlaybackRate,
       setIsQuickAdjustProcessing,
-      recordLastPlayedPlayedDuration,
+      recordLastPlayedDuration,
       savedDurationsMap,
       formatDurationLabelFromSeconds,
       cloneTimeline,
@@ -2182,7 +2182,7 @@ export default function LibraryPage() {
                           />
                         </div>
                       </div>
-                      <div className="mt-3 text-center text-center">
+                      <div className="mt-3 text-center">
                         <Dialog
                           open={isUploadDialogOpen}
                           onOpenChange={(open) => {
