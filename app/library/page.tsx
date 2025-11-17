@@ -2679,7 +2679,7 @@ export default function LibraryPage() {
                       <Card className="relative overflow-hidden border-none bg-white shadow-2xl backdrop-blur max-h-[85vh] flex flex-col p-6">
                         <button
                           type="button"
-                          className="absolute right-4 top-4 rounded-full p-2 text-gray-500 transition hover:text-gray-700 mb-0"
+                          className="absolute right-4 top-4 rounded-full p-2 text-gray-500 transition hover:text-gray-700 mb-0 pt-2 pr-2"
                           onClick={closeMeditationPlayer}
                           aria-label="Close player"
                         >
@@ -2696,7 +2696,7 @@ export default function LibraryPage() {
                           <div className="space-y-3">
                             
                             <div>
-                              <h2 className="text-2xl font-black text-gray-600 text-left mt-[21px]">
+                              <h2 className="font-black text-gray-600 text-left text-lg mt-3.5">
                                 {selectedMeditation.title}
                               </h2>
                               {(() => {
