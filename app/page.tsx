@@ -3443,7 +3443,7 @@ export default function Home() {
                       transition={{ delay: 0.4 }}
                     >
                       <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
-                        <div className="bg-gradient-to-br from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
+                        <div className="bg-gradient-to-br from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-1.5 ">
                           <div className="flex items-center justify-between">
                             <h3 className="text-white font-black text-base tracking-tight">New Audio</h3>
                             <AudioInfoMenu
