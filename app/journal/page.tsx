@@ -394,7 +394,7 @@ export default function JournalPage() {
               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm space-y-3 text-center p-6">
                 <p className="text-lg text-gray-800 font-serif font-black">Create account to save</p>
                 <p className="text-sm text-gray-600 max-w-xl">
-                  Journal history and library access are local-only until you create an account. Audio never leaves this device.
+                  Journal history and library access are local-only. Audio exists on your device and browser.
                 </p>
                 <Button onClick={login} className="bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 text-white">
                   Create account
