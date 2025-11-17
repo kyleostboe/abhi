@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { createClient } from "@/lib/supabase/client"
 import { TEST_PROFILE_ID } from "@/lib/test-profile"
+import { useAuth } from "@/hooks/use-auth"
 
 export type JournalEntry = {
   id: string
@@ -72,12 +73,19 @@ export function useJournal() {
   const supabase = useMemo(() => createClient(), [])
   const [entries, setEntries] = useState<JournalEntry[]>([])
   const entriesRef = useRef(entries)
+  const { isAuthenticated, userId } = useAuth()
+  const profileId = useMemo(() => userId || TEST_PROFILE_ID, [userId])
 
   useEffect(() => {
     entriesRef.current = entries
   }, [entries])
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setEntries([])
+      return
+    }
+
     let isActive = true
 
     const loadEntries = async () => {
@@ -85,7 +93,7 @@ export function useJournal() {
         const { data, error } = await supabase
           .from("journal_entries")
           .select("id, profile_id, meditation_id, entry_date, play_time, content, meditations(title)")
-          .eq("profile_id", TEST_PROFILE_ID)
+          .eq("profile_id", profileId)
           .order("play_time", { ascending: true })
 
         if (!isActive) {
@@ -112,7 +120,7 @@ export function useJournal() {
     return () => {
       isActive = false
     }
-  }, [supabase])
+  }, [supabase, isAuthenticated, profileId])
 
   const recordPlayback = useCallback(
     async (meditation: RecordPlaybackInput, options?: RecordPlaybackOptions) => {
@@ -136,6 +144,10 @@ export function useJournal() {
 
           setEntries((previous) => previous.map((entry) => (entry.id === updatedEntry.id ? updatedEntry : entry)))
 
+          if (!isAuthenticated) {
+            return updatedEntry
+          }
+
           const { data, error } = await supabase
             .from("journal_entries")
             .update({
@@ -144,7 +156,7 @@ export function useJournal() {
               content: updatedEntry.note ?? null,
             })
             .eq("id", updatedEntry.id)
-            .eq("profile_id", TEST_PROFILE_ID)
+            .eq("profile_id", profileId)
             .select("id, profile_id, meditation_id, entry_date, play_time, content, meditations(title)")
             .single()
 
@@ -176,11 +188,15 @@ export function useJournal() {
 
       setEntries((previous) => [...previous, newEntry])
 
+      if (!isAuthenticated) {
+        return newEntry
+      }
+
       const { data, error } = await supabase
         .from("journal_entries")
         .insert({
           id: newEntry.id,
-          profile_id: TEST_PROFILE_ID,
+          profile_id: profileId,
           meditation_id: newEntry.meditationId,
           entry_date: playedAtDate.toISOString().split("T")[0], // Extract date part
           play_time: newEntry.playedAt,
@@ -203,7 +219,7 @@ export function useJournal() {
 
       return newEntry
     },
-    [supabase],
+    [supabase, isAuthenticated, profileId],
   )
 
   const updateEntryNote = useCallback(
@@ -219,11 +235,15 @@ export function useJournal() {
       const optimisticEntry: JournalEntry = { ...previousEntry, note: nextNote }
       setEntries((previous) => previous.map((entry) => (entry.id === entryId ? optimisticEntry : entry)))
 
+      if (!isAuthenticated) {
+        return optimisticEntry
+      }
+
       const { data, error } = await supabase
         .from("journal_entries")
         .update({ content: nextNote ?? null })
         .eq("id", entryId)
-        .eq("profile_id", TEST_PROFILE_ID)
+        .eq("profile_id", profileId)
         .select("id, profile_id, meditation_id, entry_date, play_time, content, meditations(title)")
         .single()
 
@@ -241,7 +261,7 @@ export function useJournal() {
 
       return optimisticEntry
     },
-    [supabase],
+    [supabase, isAuthenticated, profileId],
   )
 
   const deleteEntry = useCallback(
@@ -249,11 +269,15 @@ export function useJournal() {
       const previousEntries = entriesRef.current
       setEntries((previous) => previous.filter((entry) => entry.id !== entryId))
 
+      if (!isAuthenticated) {
+        return true
+      }
+
       const { error } = await supabase
         .from("journal_entries")
         .delete()
         .eq("id", entryId)
-        .eq("profile_id", TEST_PROFILE_ID)
+        .eq("profile_id", profileId)
 
       if (error) {
         console.error("Failed to delete journal entry", error)
@@ -263,7 +287,7 @@ export function useJournal() {
 
       return true
     },
-    [supabase],
+    [supabase, isAuthenticated, profileId],
   )
 
   return {

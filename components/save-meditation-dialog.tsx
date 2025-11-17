@@ -13,6 +13,7 @@ import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/me
 import { bufferToMp3 } from "@/lib/audio-utils"
 import { BookmarkPlus, Plus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/use-auth"
 
 interface SaveMeditationDialogProps {
   audioUrl: string
@@ -91,6 +92,7 @@ export function SaveMeditationDialog({
   )
   const { toast } = useToast()
   const abortControllerRef = useRef<AbortController | null>(null)
+  const { isAuthenticated, login } = useAuth()
   const isPresetOptionAvailable = Boolean(existingMeditationId)
   const effectiveOriginalDuration =
     typeof existingMeditationDuration === "number" && Number.isFinite(existingMeditationDuration)
@@ -348,6 +350,20 @@ export function SaveMeditationDialog({
           Save your processed meditation audio to your personal library with optional playlist organization
         </div>
         <div className="space-y-4">
+          <div className="rounded-md bg-gray-50 p-3 text-xs text-gray-700">
+            {isAuthenticated ? (
+              <p>
+                Your metadata syncs to your account, but audio stays on this device. Keep local backups to avoid losing recordings.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <p>Current saves are local-only. Create an account to keep your meditations synced.</p>
+                <Button size="sm" variant="outline" onClick={login} className="self-start">
+                  Create account to save
+                </Button>
+              </div>
+            )}
+          </div>
           {isPresetOptionAvailable && (
             <div className="space-y-2">
               <Label className="text-xs font-semibold uppercase text-gray-500">Save option</Label>

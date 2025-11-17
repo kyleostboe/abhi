@@ -1,6 +1,31 @@
 import { createClient } from "@/lib/supabase/client"
 import type { BufferToWavMetadata } from "./audio-utils"
 import { TEST_PROFILE_ID, ensureTestProfile } from "./test-profile"
+import { getAuthState } from "./auth-state"
+import {
+  saveAudioRecord,
+  getAudioRecord,
+  deleteAudioRecord,
+  exportAudioRecords,
+  importAudioBackups,
+  estimateAudioUsage,
+  type AudioBackup,
+  type SerializedBlob,
+} from "./storage/indexed-db"
+import {
+  addMeditationToMemoryPlaylist,
+  deleteMemoryMeditation,
+  deleteMemoryPlaylist,
+  getMemoryAudio,
+  getMemoryMeditation,
+  getMemoryMeditations,
+  getMemoryPlaylists,
+  getMemoryPlaylistMeditations,
+  getMemoryUsageBytes,
+  removeMeditationFromMemoryPlaylist,
+  saveMemoryMeditation,
+  upsertMemoryPlaylist,
+} from "./storage/memory-store"
 
 export interface SavedMeditation {
   id: string
@@ -73,437 +98,298 @@ export interface Playlist {
   updatedAt: Date
 }
 
-export interface SaveMeditationInput extends Omit<SavedMeditation, "id" | "createdAt"> {
+export interface SaveMeditationInput extends Omit<SavedMeditation, "id" | "createdAt" | "processedAudioUrl"> {
   processedAudioData?: Blob | null
   sourceAudioData?: Blob | null
 }
 
+const createId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    try {
+      return crypto.randomUUID()
+    } catch (error) {
+      // fallthrough
+    }
+  }
+  return `meditation_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+}
+
+const resolveBlobFromUrl = async (value?: string | null) => {
+  if (!value) return null
+  if (value.startsWith("blob:") || value.startsWith("data:")) {
+    const response = await fetch(value)
+    return await response.blob()
+  }
+  return null
+}
+
+const buildObjectUrl = (blob?: Blob | null) => (blob ? URL.createObjectURL(blob) : "")
+
+const mapTimelineWithRecordings = (
+  metadata: SavedMeditation["metadata"],
+  recordings?: Record<string, Blob>,
+): SavedMeditation["metadata"] => {
+  if (!Array.isArray(metadata?.timeline)) return metadata
+  return {
+    ...metadata,
+    timeline: metadata.timeline.map((event) => {
+      const cloned = { ...event }
+      const key = event.recordingStoragePath || event.id
+      if (key && recordings?.[key]) {
+        cloned.recordingUrl = buildObjectUrl(recordings[key])
+      }
+      return cloned
+    }) as NonNullable<SavedMeditation["metadata"]["timeline"]>,
+  }
+}
+
+const sanitizeMetadataForStorage = (
+  metadata: SavedMeditation["metadata"],
+  timelineRecordings: Record<string, Blob>,
+  meditationId: string,
+) => {
+  if (!Array.isArray(metadata.timeline)) return metadata
+
+  const updatedTimeline = metadata.timeline.map((event) => {
+    const originalKey = event.recordingStoragePath || event.id
+    const storageKey = originalKey || `${meditationId}-${Math.random().toString(36).slice(2, 8)}`
+    const cloned = { ...event, recordingStoragePath: storageKey }
+    delete cloned.recordingUrl
+
+    if (originalKey && storageKey && timelineRecordings[originalKey]) {
+      if (storageKey !== originalKey) {
+        timelineRecordings[storageKey] = timelineRecordings[originalKey]
+        delete timelineRecordings[originalKey]
+      }
+    }
+
+    return cloned
+  })
+
+  return { ...metadata, timeline: updatedTimeline }
+}
+
+const normalizeSupabaseMeditation = (
+  row: any,
+  processedAudioUrl: string,
+  sourceAudioUrl?: string,
+  recordings?: Record<string, Blob>,
+): SavedMeditation => ({
+  id: row.id,
+  title: row.title,
+  originalFileName: row.original_filename || row.description || "Unknown",
+  processedAudioUrl,
+  sourceAudioUrl,
+  duration: row.duration || 0,
+  createdAt: new Date(row.created_at),
+  source: row.source as "adjuster" | "encoder",
+  metadata: mapTimelineWithRecordings(row.metadata || {}, recordings) || {},
+})
+
 export class MeditationLibrary {
   static async saveMeditation(meditation: SaveMeditationInput): Promise<SavedMeditation> {
-    console.log("[v0] MeditationLibrary.saveMeditation called with:", meditation)
+    const auth = getAuthState()
+    const processedBlob: Blob | null =
+      meditation.processedAudioData ?? (await resolveBlobFromUrl(meditation.processedAudioUrl))
 
-    try {
-      await ensureTestProfile()
+    if (!processedBlob) {
+      throw new Error("Invalid audio data: Unable to access processed audio blob.")
+    }
 
-      const supabase = createClient()
-      const meditationsBucket = supabase.storage.from("meditations")
+    const providedSourceBlob: Blob | null =
+      meditation.sourceAudioData ?? (await resolveBlobFromUrl(meditation.sourceAudioUrl))
 
-      const isBlobLikeUrl = (value?: string | null) =>
-        typeof value === "string" && (value.startsWith("blob:") || value.startsWith("data:"))
+    const timelineRecordings: Record<string, Blob> = {}
+    if (Array.isArray(meditation.metadata.timeline)) {
+      for (const event of meditation.metadata.timeline) {
+        if (event.recordingUrl?.startsWith("blob:") || event.recordingUrl?.startsWith("data:")) {
+          try {
+            const blob = await resolveBlobFromUrl(event.recordingUrl)
+            if (blob) {
+              timelineRecordings[event.id] = blob
+            }
+          } catch (error) {
+            console.warn("Unable to store timeline recording", error)
+          }
+        }
+      }
+    }
 
-      const processedBlob: Blob | null =
-        meditation.processedAudioData ??
-        (isBlobLikeUrl(meditation.processedAudioUrl)
-          ? await (async () => {
-              const response = await fetch(meditation.processedAudioUrl)
-              return await response.blob()
-            })()
-          : null)
-
-      if (!processedBlob) {
-        throw new Error("Invalid audio data: Unable to access processed audio blob.")
+    if (!auth.isAuthenticated) {
+      const id = createId()
+      const processedUrl = buildObjectUrl(processedBlob)
+      const sourceUrl = buildObjectUrl(providedSourceBlob)
+      const metadataToSave = sanitizeMetadataForStorage({ ...meditation.metadata }, timelineRecordings, id)
+      const savedMeditation: SavedMeditation = {
+        id,
+        title: meditation.title,
+        originalFileName: meditation.originalFileName,
+        processedAudioUrl: processedUrl,
+        sourceAudioUrl: sourceUrl || undefined,
+        duration: Math.round(meditation.duration),
+        createdAt: new Date(),
+        source: meditation.source,
+        metadata: mapTimelineWithRecordings(metadataToSave, timelineRecordings) || metadataToSave,
       }
 
-      console.log("[v0] Using direct client-side upload to bypass function payload limits")
-
-      console.log("[v0] Audio blob size:", processedBlob.size, "bytes")
-
-      // Generate unique filename
-      const timestamp = Date.now()
-      const randomId = Math.random().toString(36).substring(2, 15)
-      const sanitizedTitle = meditation.title.replace(/[^a-z0-9-_]+/gi, "_") || "meditation"
-      const inferExtensionFromMime = (mimeType?: string): string => {
-        if (!mimeType) {
-          return "webm"
-        }
-
-        if (mimeType.includes("mpeg")) {
-          return "mp3"
-        }
-        if (mimeType.includes("wav") || mimeType.includes("wave")) {
-          return "wav"
-        }
-        if (mimeType.includes("ogg")) {
-          return "ogg"
-        }
-        if (mimeType.includes("m4a") || mimeType.includes("mp4")) {
-          return "m4a"
-        }
-
-        const subtype = mimeType.split("/")[1]
-        return subtype || "webm"
-      }
-
-      const distributionExtension = inferExtensionFromMime(processedBlob.type)
-      const distributionContentType = processedBlob.type || `audio/${distributionExtension}`
-      const fileBase = `${sanitizedTitle}_${timestamp}_${randomId}`
-      const fileName = `${fileBase}.${distributionExtension}`
-      const sourceFileBase = `${fileBase}_source`
-
-      console.log("[v0] Uploading directly to Supabase Storage:", fileName)
-
-      // Upload distribution quality file
-      const { data: uploadData, error: uploadError } = await meditationsBucket.upload(fileName, processedBlob, {
-        contentType: distributionContentType,
-        upsert: false,
+      saveMemoryMeditation(id, savedMeditation, {
+        processedAudio: processedBlob,
+        sourceAudio: providedSourceBlob,
+        timelineRecordings,
       })
 
-      if (uploadError) {
-        console.error("[v0] Direct upload error:", uploadError)
-        throw new Error(`Upload failed: ${uploadError.message}`)
-      }
-
-      console.log("[v0] Upload successful:", uploadData.path)
-
-      // Get public URL for distribution file
-      const { data: urlData } = meditationsBucket.getPublicUrl(uploadData.path)
-
-      console.log("[v0] Public URL:", urlData.publicUrl)
-
-      let sourcePublicUrl: string | undefined =
-        isBlobLikeUrl(meditation.sourceAudioUrl) || meditation.sourceAudioUrl == null
-          ? undefined
-          : meditation.sourceAudioUrl
-      let sourceStoragePath: string | undefined
-      const metadataToSave: SavedMeditation["metadata"] = { ...meditation.metadata }
-
-      if (Array.isArray(metadataToSave.timeline) && metadataToSave.timeline.length > 0) {
-        const processedTimeline = await Promise.all(
-          metadataToSave.timeline.map(async (event) => {
-            const processedEvent = { ...event }
-
-            if (
-              processedEvent.recordingUrl &&
-              (processedEvent.recordingUrl.startsWith("blob:") || processedEvent.recordingUrl.startsWith("data:"))
-            ) {
-              try {
-                const response = await fetch(processedEvent.recordingUrl)
-                const recordingBlob = await response.blob()
-                const extension = inferExtensionFromMime(recordingBlob.type)
-                const recordingFileName = `timeline_recordings/${timestamp}_${Math.random()
-                  .toString(36)
-                  .slice(2)}_${processedEvent.id || "event"}.${extension}`
-
-                const { data: recordingUploadData, error: recordingUploadError } = await meditationsBucket.upload(
-                  recordingFileName,
-                  recordingBlob,
-                  {
-                    contentType: recordingBlob.type || "audio/webm",
-                    upsert: false,
-                  },
-                )
-
-                if (recordingUploadError) {
-                  console.error("[v0] Timeline recording upload error:", recordingUploadError)
-                } else if (recordingUploadData?.path) {
-                  const { data: recordingUrlData } = meditationsBucket.getPublicUrl(recordingUploadData.path)
-
-                  processedEvent.recordingUrl = recordingUrlData.publicUrl
-                  processedEvent.recordingStoragePath = recordingUploadData.path
-                }
-              } catch (error) {
-                console.error("[v0] Failed to upload timeline recording:", error)
-              }
-            }
-
-            return processedEvent
-          }),
-        )
-
-        metadataToSave.timeline = processedTimeline as NonNullable<SavedMeditation["metadata"]["timeline"]>
-      }
-      const providedSourceBlob: Blob | null =
-        meditation.sourceAudioData ??
-        (isBlobLikeUrl(meditation.sourceAudioUrl)
-          ? await (async () => {
-              if (!meditation.sourceAudioUrl) {
-                return null
-              }
-              const response = await fetch(meditation.sourceAudioUrl)
-              return await response.blob()
-            })()
-          : null)
-
-      const sharesProcessedBlob =
-        (!!meditation.sourceAudioData && meditation.sourceAudioData === meditation.processedAudioData) ||
-        (meditation.sourceAudioUrl && meditation.sourceAudioUrl === meditation.processedAudioUrl)
-
-      if (sharesProcessedBlob) {
-        sourcePublicUrl = urlData.publicUrl
-      } else if (providedSourceBlob) {
-        console.log("[v0] Source audio blob size:", providedSourceBlob.size, "bytes")
-
-        const sourceExtension = inferExtensionFromMime(providedSourceBlob.type)
-        const sourceContentType = providedSourceBlob.type || `audio/${sourceExtension}`
-        const sourceFileName = `${sourceFileBase}.${sourceExtension}`
-
-        console.log("[v0] Uploading high-quality source file:", sourceFileName)
-
-        const { data: sourceUploadData, error: sourceUploadError } = await meditationsBucket.upload(
-          sourceFileName,
-          providedSourceBlob,
-          {
-            contentType: sourceContentType,
-            upsert: false,
-          },
-        )
-
-        if (sourceUploadError) {
-          console.error("[v0] Source upload error:", sourceUploadError)
-          console.warn("[v0] Continuing without source file")
-        } else {
-          const { data: sourceUrlData } = meditationsBucket.getPublicUrl(sourceUploadData.path)
-          sourcePublicUrl = sourceUrlData.publicUrl
-          sourceStoragePath = sourceUploadData.path
-          console.log("[v0] Source public URL:", sourcePublicUrl)
-        }
-      }
-
-      const durationInSeconds = Math.round(meditation.duration)
-
-      const { data: dbData, error: dbError } = await supabase
-        .from("meditations")
-        .insert({
-          title: meditation.title,
-          description: `${meditation.source} meditation`,
-          audio_url: urlData.publicUrl,
-          source_audio_url: sourcePublicUrl,
-          duration: durationInSeconds,
-          source: meditation.source,
-          metadata: metadataToSave,
-          original_filename: meditation.originalFileName,
-          profile_id: TEST_PROFILE_ID,
-        })
-        .select()
-        .single()
-
-      if (dbError) {
-        console.error("[v0] Database insert error:", dbError)
-        await meditationsBucket.remove([uploadData.path])
-        if (sourceStoragePath) {
-          await meditationsBucket.remove([sourceStoragePath])
-        }
-        throw new Error(`Database save failed: ${dbError.message}`)
-      }
-
-      console.log("[v0] Client-side save successful:", dbData.id)
-
-      return {
-        id: dbData.id,
-        title: dbData.title,
-        originalFileName: dbData.original_filename,
-        processedAudioUrl: dbData.audio_url,
-        sourceAudioUrl: dbData.source_audio_url,
-        duration: dbData.duration,
-        createdAt: new Date(dbData.created_at),
-        source: dbData.source as "adjuster" | "encoder",
-        metadata: dbData.metadata || metadataToSave || {},
-      }
-    } catch (error) {
-      console.error("[v0] Error in saveMeditation:", error)
-      throw error
+      return savedMeditation
     }
+
+    await ensureTestProfile()
+    const supabase = createClient()
+
+    const metadataToPersist = sanitizeMetadataForStorage({ ...meditation.metadata }, timelineRecordings, "pending")
+    const durationInSeconds = Math.round(meditation.duration)
+
+    const { data, error } = await supabase
+      .from("meditations")
+      .insert({
+        title: meditation.title,
+        description: `${meditation.source} meditation`,
+        duration: durationInSeconds,
+        source: meditation.source,
+        metadata: metadataToPersist,
+        original_filename: meditation.originalFileName,
+        profile_id: auth.userId || TEST_PROFILE_ID,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("[v0] Database insert error:", error)
+      throw new Error(`Database save failed: ${error.message}`)
+    }
+
+    const meditationId = data.id as string
+    const finalizedMetadata = sanitizeMetadataForStorage({ ...meditation.metadata }, timelineRecordings, meditationId)
+
+    await supabase.from("meditations").update({ metadata: finalizedMetadata }).eq("id", meditationId)
+
+    await saveAudioRecord({
+      id: meditationId,
+      processedAudio: processedBlob,
+      sourceAudio: providedSourceBlob,
+      timelineRecordings,
+    })
+
+    return normalizeSupabaseMeditation(
+      { ...data, metadata: finalizedMetadata },
+      buildObjectUrl(processedBlob),
+      buildObjectUrl(providedSourceBlob),
+      timelineRecordings,
+    )
   }
 
   static async getAllMeditations(): Promise<SavedMeditation[]> {
-    try {
-      console.log("[v0] getAllMeditations - fetching from Supabase")
-      const supabase = createClient()
+    const auth = getAuthState()
+    if (!auth.isAuthenticated) {
+      return getMemoryMeditations()
+    }
 
-      const { data, error } = await supabase
-        .from("meditations")
-        .select("*")
-        .eq("profile_id", TEST_PROFILE_ID)
-        .order("created_at", { ascending: false })
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from("meditations")
+      .select("*")
+      .eq("profile_id", auth.userId || TEST_PROFILE_ID)
+      .order("created_at", { ascending: false })
 
-      if (error) {
-        console.error("[v0] Supabase select error:", error)
-        throw error
-      }
-
-      if (!data || data.length === 0) {
-        console.log("[v0] No meditations found in database")
-        return []
-      }
-
-      const meditations: SavedMeditation[] = data.map((row: any) => ({
-        id: row.id,
-        title: row.title,
-        originalFileName: row.original_filename || row.description || "Unknown",
-        processedAudioUrl: row.audio_url,
-        sourceAudioUrl: row.source_audio_url,
-        duration: row.duration || 0,
-        createdAt: new Date(row.created_at),
-        source: row.source as "adjuster" | "encoder",
-        metadata: row.metadata || {},
-      }))
-
-      console.log("[v0] Retrieved", meditations.length, "meditations from database")
-      return meditations
-    } catch (error) {
-      console.error("[v0] Error fetching meditations:", error)
+    if (error) {
+      console.error("[v0] Supabase select error:", error)
       return []
     }
+
+    if (!data || data.length === 0) {
+      return []
+    }
+
+    const meditations: SavedMeditation[] = []
+    for (const row of data) {
+      try {
+        const audio = await getAudioRecord(row.id)
+        const processedUrl = buildObjectUrl(audio?.processedAudio)
+        const sourceUrl = buildObjectUrl(audio?.sourceAudio ?? null)
+        meditations.push(normalizeSupabaseMeditation(row, processedUrl, sourceUrl, audio?.timelineRecordings))
+      } catch (error) {
+        console.warn("[v0] Unable to load audio from IndexedDB", row.id, error)
+        meditations.push(normalizeSupabaseMeditation(row, ""))
+      }
+    }
+
+    return meditations
   }
 
   static async getMeditation(id: string): Promise<SavedMeditation | null> {
-    try {
-      const supabase = createClient()
+    const auth = getAuthState()
+    if (!auth.isAuthenticated) {
+      return getMemoryMeditation(id)
+    }
 
-      const { data, error } = await supabase.from("meditations").select("*").eq("id", id).single()
+    const supabase = createClient()
 
-      if (error || !data) {
-        return null
-      }
+    const { data, error } = await supabase.from("meditations").select("*").eq("id", id).single()
 
-      return {
-        id: data.id,
-        title: data.title,
-        originalFileName: data.original_filename || data.description || "Unknown",
-        processedAudioUrl: data.audio_url,
-        sourceAudioUrl: data.source_audio_url,
-        duration: data.duration || 0,
-        createdAt: new Date(data.created_at),
-        source: data.source as "adjuster" | "encoder",
-        metadata: data.metadata || {},
-      }
-    } catch (error) {
-      console.error("[v0] Error fetching meditation:", error)
+    if (error || !data) {
       return null
+    }
+
+    try {
+      const audio = await getAudioRecord(id)
+      return normalizeSupabaseMeditation(
+        data,
+        buildObjectUrl(audio?.processedAudio),
+        buildObjectUrl(audio?.sourceAudio ?? null),
+        audio?.timelineRecordings,
+      )
+    } catch (err) {
+      console.warn("[v0] Unable to fetch audio for meditation", id, err)
+      return normalizeSupabaseMeditation(data, "")
     }
   }
 
   static async deleteMeditation(id: string): Promise<void> {
-    try {
-      const supabase = createClient()
+    const auth = getAuthState()
+    if (!auth.isAuthenticated) {
+      deleteMemoryMeditation(id)
+      return
+    }
 
-      const { data: meditation, error: fetchError } = await supabase
-        .from("meditations")
-        .select("audio_url, source_audio_url, metadata")
-        .eq("id", id)
-        .single()
+    const supabase = createClient()
+    const { error } = await supabase.from("meditations").delete().eq("id", id)
 
-      if (fetchError) {
-        console.error("[v0] Error fetching meditation for deletion:", fetchError)
-        throw fetchError
-      }
-
-      const { error: deleteError } = await supabase.from("meditations").delete().eq("id", id)
-
-      if (deleteError) {
-        console.error("[v0] Error deleting meditation from database:", deleteError)
-        throw deleteError
-      }
-
-      const filesToDelete: string[] = []
-
-      if (meditation?.audio_url) {
-        try {
-          const storageUrl = new URL(meditation.audio_url)
-          const pathSegments = storageUrl.pathname.split("/").filter(Boolean)
-          const publicIndex = pathSegments.findIndex((segment) => segment === "public")
-
-          if (publicIndex !== -1 && pathSegments.length > publicIndex + 2) {
-            const bucketName = pathSegments[publicIndex + 1]
-            const filePath = pathSegments.slice(publicIndex + 2).join("/")
-            filesToDelete.push(filePath)
-          }
-        } catch (error) {
-          console.warn("[v0] Could not parse audio_url:", error)
-        }
-      }
-
-      if (meditation?.source_audio_url) {
-        try {
-          const storageUrl = new URL(meditation.source_audio_url)
-          const pathSegments = storageUrl.pathname.split("/").filter(Boolean)
-          const publicIndex = pathSegments.findIndex((segment) => segment === "public")
-
-          if (publicIndex !== -1 && pathSegments.length > publicIndex + 2) {
-            const filePath = pathSegments.slice(publicIndex + 2).join("/")
-            filesToDelete.push(filePath)
-          }
-        } catch (error) {
-          console.warn("[v0] Could not parse source_audio_url:", error)
-        }
-      }
-
-      const timelineMetadata = Array.isArray(meditation?.metadata?.timeline)
-        ? (meditation.metadata.timeline as Array<{ recordingStoragePath?: string }>)
-        : []
-
-      for (const event of timelineMetadata) {
-        if (event.recordingStoragePath) {
-          filesToDelete.push(event.recordingStoragePath)
-        }
-      }
-
-      if (filesToDelete.length > 0) {
-        console.log(`[v0] Deleting ${filesToDelete.length} audio file(s) from storage:`, filesToDelete)
-        const { error: storageError } = await supabase.storage.from("meditations").remove(filesToDelete)
-
-        if (storageError) {
-          console.warn("[v0] Warning: Could not delete audio files from storage:", storageError)
-        } else {
-          console.log("[v0] Audio files deleted from storage successfully")
-        }
-      }
-
-      console.log("[v0] Meditation deleted successfully:", id)
-    } catch (error) {
-      console.error("[v0] Error in deleteMeditation:", error)
+    if (error) {
+      console.error("[v0] Error deleting meditation:", error)
       throw error
     }
-  }
 
-  static async createPlaylist(name: string, description = ""): Promise<Playlist> {
-    try {
-      await ensureTestProfile()
-
-      const supabase = createClient()
-
-      const { data, error } = await supabase
-        .from("playlists")
-        .insert({
-          name,
-          description,
-          profile_id: TEST_PROFILE_ID,
-        })
-        .select()
-        .single()
-
-      if (error) {
-        console.error("[v0] Error creating playlist:", error)
-        throw error
-      }
-
-      return {
-        id: data.id,
-        name: data.name,
-        description: data.description,
-        meditationIds: [],
-        createdAt: new Date(data.created_at),
-        updatedAt: new Date(data.updated_at),
-      }
-    } catch (error) {
-      console.error("[v0] Error in createPlaylist:", error)
-      throw error
-    }
+    await deleteAudioRecord(id)
   }
 
   static async getAllPlaylists(): Promise<Playlist[]> {
+    const auth = getAuthState()
+    if (!auth.isAuthenticated) {
+      return getMemoryPlaylists()
+    }
+
     try {
       const supabase = createClient()
 
       const { data, error } = await supabase
         .from("playlists")
-        .select(`
+        .select(
+          `
           *,
           playlist_meditations (
             meditation_id
           )
-        `)
-        .eq("profile_id", TEST_PROFILE_ID)
+        `,
+        )
+        .eq("profile_id", auth.userId || TEST_PROFILE_ID)
         .order("created_at", { ascending: false })
 
       if (error) {
@@ -528,17 +414,24 @@ export class MeditationLibrary {
   }
 
   static async getPlaylist(id: string): Promise<Playlist | null> {
+    const auth = getAuthState()
+    if (!auth.isAuthenticated) {
+      return getMemoryPlaylists().find((playlist) => playlist.id === id) ?? null
+    }
+
     try {
       const supabase = createClient()
 
       const { data, error } = await supabase
         .from("playlists")
-        .select(`
+        .select(
+          `
           *,
           playlist_meditations (
             meditation_id
           )
-        `)
+        `,
+        )
         .eq("id", id)
         .single()
 
@@ -560,7 +453,61 @@ export class MeditationLibrary {
     }
   }
 
-  static async updatePlaylist(id: string, updates: Partial<Pick<Playlist, "name" | "description">>): Promise<void> {
+  static async createPlaylist(name: string, description: string): Promise<Playlist> {
+    const auth = getAuthState()
+    if (!auth.isAuthenticated) {
+      const playlist: Playlist = {
+        id: createId(),
+        name,
+        description,
+        meditationIds: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+      upsertMemoryPlaylist(playlist)
+      return playlist
+    }
+
+    const supabase = createClient()
+
+    const { data, error } = await supabase
+      .from("playlists")
+      .insert({
+        name,
+        description,
+        profile_id: auth.userId || TEST_PROFILE_ID,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("[v0] Error creating playlist:", error)
+      throw error
+    }
+
+    return {
+      id: data.id,
+      name: data.name,
+      description: data.description,
+      meditationIds: [],
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+    }
+  }
+
+  static async updatePlaylist(
+    id: string,
+    updates: Partial<Pick<Playlist, "name" | "description">>,
+  ): Promise<void> {
+    const auth = getAuthState()
+    if (!auth.isAuthenticated) {
+      const existing = getMemoryPlaylists().find((playlist) => playlist.id === id)
+      if (existing) {
+        upsertMemoryPlaylist({ ...existing, ...updates, updatedAt: new Date() })
+      }
+      return
+    }
+
     try {
       const supabase = createClient()
 
@@ -583,6 +530,12 @@ export class MeditationLibrary {
   }
 
   static async deletePlaylist(id: string): Promise<void> {
+    const auth = getAuthState()
+    if (!auth.isAuthenticated) {
+      deleteMemoryPlaylist(id)
+      return
+    }
+
     try {
       const supabase = createClient()
 
@@ -599,6 +552,12 @@ export class MeditationLibrary {
   }
 
   static async addToPlaylist(playlistId: string, meditationId: string): Promise<void> {
+    const auth = getAuthState()
+    if (!auth.isAuthenticated) {
+      addMeditationToMemoryPlaylist(playlistId, meditationId)
+      return
+    }
+
     try {
       const supabase = createClient()
 
@@ -622,6 +581,12 @@ export class MeditationLibrary {
   }
 
   static async removeFromPlaylist(playlistId: string, meditationId: string): Promise<void> {
+    const auth = getAuthState()
+    if (!auth.isAuthenticated) {
+      removeMeditationFromMemoryPlaylist(playlistId, meditationId)
+      return
+    }
+
     try {
       const supabase = createClient()
 
@@ -644,25 +609,20 @@ export class MeditationLibrary {
   }
 
   static async getPlaylistMeditations(playlistId: string): Promise<SavedMeditation[]> {
+    const auth = getAuthState()
+    if (!auth.isAuthenticated) {
+      const ids = getMemoryPlaylistMeditations(playlistId)
+      return ids
+        .map((id) => getMemoryMeditation(id))
+        .filter((meditation): meditation is SavedMeditation => Boolean(meditation))
+    }
+
     try {
       const supabase = createClient()
 
       const { data, error } = await supabase
         .from("playlist_meditations")
-        .select(`
-          meditations (
-            id,
-            title,
-            description,
-            audio_url,
-            source_audio_url,
-            duration,
-            created_at,
-            source,
-            metadata,
-            original_filename
-          )
-        `)
+        .select("meditation_id")
         .eq("playlist_id", playlistId)
         .order("added_at", { ascending: true })
 
@@ -671,24 +631,158 @@ export class MeditationLibrary {
         return []
       }
 
-      if (!data) return []
-
-      return data
-        .filter((item: any) => item.meditations)
-        .map((item: any) => ({
-          id: item.meditations.id,
-          title: item.meditations.title,
-          originalFileName: item.meditations.original_filename || item.meditations.description || "Unknown",
-          processedAudioUrl: item.meditations.audio_url,
-          sourceAudioUrl: item.meditations.source_audio_url,
-          duration: item.meditations.duration || 0,
-          createdAt: new Date(item.meditations.created_at),
-          source: item.meditations.source as "adjuster" | "encoder",
-          metadata: item.meditations.metadata || {},
-        }))
+      const meditationIds = (data ?? []).map((item: any) => item.meditation_id)
+      const meditations = await Promise.all(meditationIds.map((id) => this.getMeditation(id)))
+      return meditations.filter((meditation): meditation is SavedMeditation => Boolean(meditation))
     } catch (error) {
       console.error("[v0] Error in getPlaylistMeditations:", error)
       return []
     }
   }
+
+  static async exportBackup(): Promise<Blob> {
+    const auth = getAuthState()
+    if (!auth.isAuthenticated) {
+      const meditations = getMemoryMeditations()
+      const audio: AudioBackup[] = []
+
+      for (const meditation of meditations) {
+        const audioRecord = getMemoryAudio(meditation.id)
+        const timelineRecordings: Record<string, SerializedBlob> = {}
+        if (audioRecord?.timelineRecordings) {
+          for (const [key, blob] of Object.entries(audioRecord.timelineRecordings)) {
+            const serialized = await serializeBlobForBackup(blob)
+            if (serialized) {
+              timelineRecordings[key] = serialized
+            }
+          }
+        }
+
+        audio.push({
+          id: meditation.id,
+          processedAudio: await serializeBlobForBackup(audioRecord?.processedAudio ?? null),
+          sourceAudio: await serializeBlobForBackup(audioRecord?.sourceAudio ?? null),
+          timelineRecordings: Object.keys(timelineRecordings).length > 0 ? timelineRecordings : undefined,
+        })
+      }
+
+      const metadata = meditations.map((meditation) => ({
+        ...meditation,
+        processedAudioUrl: "",
+        sourceAudioUrl: undefined,
+        createdAt: meditation.createdAt instanceof Date ? meditation.createdAt.toISOString() : meditation.createdAt,
+      }))
+
+      const payload = {
+        version: 1,
+        meditations: metadata,
+        audio,
+      }
+
+      return new Blob([JSON.stringify(payload)], { type: "application/json" })
+    }
+
+    const supabase = createClient()
+    const { data } = await supabase
+      .from("meditations")
+      .select("*")
+      .eq("profile_id", auth.userId || TEST_PROFILE_ID)
+
+    const meditations = (data ?? []).map((row) => normalizeSupabaseMeditation(row, ""))
+    const audio = await exportAudioRecords(meditations.map((m) => m.id))
+
+    const payload = { version: 1, meditations, audio }
+    return new Blob([JSON.stringify(payload)], { type: "application/json" })
+  }
+
+  static async importBackup(file: File): Promise<void> {
+    const text = await file.text()
+    const payload = JSON.parse(text) as { version: number; meditations: SavedMeditation[]; audio: AudioBackup[] }
+
+    const auth = getAuthState()
+    if (payload.version !== 1) {
+      throw new Error("Unsupported backup version")
+    }
+
+    if (auth.isAuthenticated) {
+      const supabase = createClient()
+      if (payload.meditations?.length) {
+        await supabase.from("meditations").upsert(
+          payload.meditations.map((meditation) => ({
+            id: meditation.id,
+            title: meditation.title,
+            description: meditation.originalFileName,
+            duration: meditation.duration,
+            source: meditation.source,
+            metadata: meditation.metadata,
+            original_filename: meditation.originalFileName,
+            profile_id: auth.userId || TEST_PROFILE_ID,
+          })),
+          { onConflict: "id" },
+        )
+      }
+      if (payload.audio?.length) {
+        await importAudioBackups(payload.audio)
+      }
+      return
+    }
+
+    if (payload.meditations) {
+      payload.meditations.forEach((meditation) => {
+        const audioBackup = payload.audio?.find((backup) => backup.id === meditation.id)
+        const processed = audioBackup?.processedAudio ? deserializeSerialized(audioBackup.processedAudio) : null
+        const source = audioBackup?.sourceAudio ? deserializeSerialized(audioBackup.sourceAudio) : null
+        const timelineRecordings: Record<string, Blob> = {}
+        if (audioBackup?.timelineRecordings) {
+          Object.entries(audioBackup.timelineRecordings).forEach(([key, serialized]) => {
+            const blob = deserializeSerialized(serialized)
+            if (blob) {
+              timelineRecordings[key] = blob
+            }
+          })
+        }
+        const meditationWithUrls: SavedMeditation = {
+          ...meditation,
+          processedAudioUrl: processed ? buildObjectUrl(processed) : "",
+          sourceAudioUrl: source ? buildObjectUrl(source) : undefined,
+          createdAt: new Date(meditation.createdAt ?? new Date()),
+          metadata: meditation.metadata || {},
+        }
+        saveMemoryMeditation(meditation.id, meditationWithUrls, {
+          processedAudio: processed ?? new Blob(),
+          sourceAudio: source,
+          timelineRecordings,
+        })
+      })
+    }
+  }
+
+  static async getStorageUsage() {
+    const auth = getAuthState()
+    if (!auth.isAuthenticated) {
+      return { usedBytes: getMemoryUsageBytes() }
+    }
+    return estimateAudioUsage()
+  }
+}
+
+async function serializeBlobForBackup(blob?: Blob | null) {
+  if (!blob) return null
+  const buffer = await blob.arrayBuffer()
+  const bytes = new Uint8Array(buffer)
+  let binary = ""
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  return { data: btoa(binary), type: blob.type }
+}
+
+function deserializeSerialized(value: { data: string; type: string } | null | undefined): Blob | null {
+  if (!value) return null
+  const binary = atob(value.data)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  return new Blob([bytes], { type: value.type })
 }
