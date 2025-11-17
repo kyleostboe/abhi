@@ -28,11 +28,11 @@ export default function LoginPage() {
         password,
       })
       if (error) throw error
-      router.push("/library")
-      router.refresh()
+      
+      await new Promise(resolve => setTimeout(resolve, 500))
+      window.location.href = '/'
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")
-    } finally {
       setIsLoading(false)
     }
   }

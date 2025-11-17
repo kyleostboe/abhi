@@ -35,10 +35,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!isMounted) return
 
         if (session?.user) {
+          console.log("[v0] Auth: User authenticated -", session.user.email)
           setStatus("authenticated")
           setUser(session.user)
           setAuthState({ status: "authenticated", userId: session.user.id })
         } else {
+          console.log("[v0] Auth: No session found")
           setStatus("unauthenticated")
           setUser(null)
           setAuthState({ status: "unauthenticated", userId: null })
@@ -58,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("[v0] Auth state changed:", _event, session?.user?.email)
       if (!isMounted) return
 
       if (session?.user) {
@@ -82,12 +85,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const logout = async () => {
+    console.log("[v0] Logging out user")
     const supabase = createClient()
     await supabase.auth.signOut()
     setStatus("unauthenticated")
     setUser(null)
     setAuthState({ status: "unauthenticated", userId: null })
-    router.push("/")
+    window.location.href = '/'
   }
 
   const value: AuthContextValue = {
