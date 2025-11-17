@@ -21,6 +21,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { useJournal, type JournalEntry } from "@/hooks/use-journal"
+import { useAuth } from "@/hooks/use-auth"
 import { MeditationLibrary, type SavedMeditation } from "@/lib/meditation-library"
 import { cn } from "@/lib/utils"
 
@@ -144,6 +145,7 @@ export default function JournalPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { toast } = useToast()
+  const { isAuthenticated, login } = useAuth()
 
   useEffect(() => {
     let isMounted = true
@@ -158,7 +160,7 @@ export default function JournalPage() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [isAuthenticated])
 
   useEffect(() => {
     setNoteDrafts((previous) => {
@@ -388,6 +390,17 @@ export default function JournalPage() {
       <main className="px-0">
         <div className="max-w-5xl mx-auto">
           <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out">
+            {!isAuthenticated && (
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm space-y-3 text-center p-6">
+                <p className="text-lg text-gray-800 font-serif font-black">Create account to save</p>
+                <p className="text-sm text-gray-600 max-w-xl">
+                  Journal history and library access are local-only until you create an account. Audio never leaves this device.
+                </p>
+                <Button onClick={login} className="bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 text-white">
+                  Create account
+                </Button>
+              </div>
+            )}
             <div className="relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
                 <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20" />

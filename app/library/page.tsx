@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useMemo, useCallback } from "react"
 import { createPortal } from "react-dom"
-import type { MouseEvent } from "react"
+import type { MouseEvent, ChangeEvent } from "react"
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -15,8 +15,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
 import { getAudioContext } from "@/lib/audio-utils"
 import { runAdjusterWorkflow } from "@/lib/adjuster-workflow"
-import { cn } from "@/lib/utils"
+import { cn, formatFileSize } from "@/lib/utils"
 import { useJournal } from "@/hooks/use-journal"
+import { useAuth } from "@/hooks/use-auth"
 import {
   Trash2,
   Clock,
@@ -39,6 +40,7 @@ import {
   Plus,
   NotebookPen,
   BookOpenCheck,
+  Upload,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useMobile } from "@/hooks/use-mobile"
@@ -319,10 +321,14 @@ export default function LibraryPage() {
   const [uploadTitle, setUploadTitle] = useState("")
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [storageUsage, setStorageUsage] = useState<{ usedBytes: number; quotaBytes?: number }>({ usedBytes: 0 })
+  const [isBackupLoading, setIsBackupLoading] = useState(false)
+  const { isAuthenticated, login } = useAuth()
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const timelineAudioRef = useRef<HTMLAudioElement | null>(null)
   const presetsPersistReadyRef = useRef(false)
   const durationsPersistReadyRef = useRef(false)
+  const backupInputRef = useRef<HTMLInputElement | null>(null)
   const { toast } = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -365,7 +371,7 @@ export default function LibraryPage() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [isAuthenticated])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -424,7 +430,66 @@ export default function LibraryPage() {
     })
     const playlistMeditationsMapData = Object.fromEntries(await Promise.all(playlistMeditationsPromises))
     setPlaylistMeditationsMap(playlistMeditationsMapData)
+    const usage = await MeditationLibrary.getStorageUsage()
+    setStorageUsage(usage)
   }
+
+  const handleExportBackup = useCallback(async () => {
+    try {
+      setIsBackupLoading(true)
+      const blob = await MeditationLibrary.exportBackup()
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement("a")
+      anchor.href = url
+      anchor.download = "meditations-backup.json"
+      anchor.click()
+      URL.revokeObjectURL(url)
+      toast({ title: "Backup exported", description: "Your meditations and audio were downloaded locally." })
+    } catch (error) {
+      console.error("Unable to export backup", error)
+      toast({
+        title: "Export failed",
+        description: "Could not create a backup. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsBackupLoading(false)
+    }
+  }, [toast])
+
+  const handleImportBackup = useCallback(
+    async (file: File) => {
+      try {
+        setIsBackupLoading(true)
+        await MeditationLibrary.importBackup(file)
+        await loadData()
+        toast({ title: "Backup imported", description: "Local audio has been restored." })
+      } catch (error) {
+        console.error("Unable to import backup", error)
+        toast({
+          title: "Import failed",
+          description: "We couldn't read that backup file.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsBackupLoading(false)
+        if (backupInputRef.current) {
+          backupInputRef.current.value = ""
+        }
+      }
+    },
+    [loadData, toast],
+  )
+
+  const handleBackupFileChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0]
+      if (file) {
+        void handleImportBackup(file)
+      }
+    },
+    [handleImportBackup],
+  )
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -2033,6 +2098,17 @@ export default function LibraryPage() {
       <Navigation />
 
       <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg  shadow-xl overflow-hidden transition-colors rounded-3xl duration-300 ease-in-out">
+        {!isAuthenticated && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm text-center p-6 space-y-3">
+            <p className="text-lg text-gray-800 font-serif font-black">Create account to save</p>
+            <p className="text-sm text-gray-600 max-w-xl">
+              Library and journal items stay in memory only until you create an account. Audio always stays on this device.
+            </p>
+            <Button onClick={login} className="bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 text-white">
+              Create account
+            </Button>
+          </div>
+        )}
         <div className="relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
             <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20"></div>
@@ -2055,6 +2131,33 @@ export default function LibraryPage() {
           </div>
 
           <div className="px-6 md:px-10 pb-6">
+            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="text-xs text-gray-600">
+                Storage used: {formatFileSize(storageUsage.usedBytes)}
+                {storageUsage.quotaBytes ? ` of ${formatFileSize(storageUsage.quotaBytes)}` : ""}. Audio is stored locally
+                {isAuthenticated ? " even when signed in." : " for guest sessions and clears on refresh."}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" onClick={handleExportBackup} disabled={isBackupLoading}>
+                  <Download className="h-4 w-4 mr-2" /> Export Backup
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => backupInputRef.current?.click()}
+                  disabled={isBackupLoading}
+                >
+                  <Upload className="h-4 w-4 mr-2" /> Import Backup
+                </Button>
+                <input
+                  ref={backupInputRef}
+                  type="file"
+                  accept="application/json"
+                  className="hidden"
+                  onChange={handleBackupFileChange}
+                />
+              </div>
+            </div>
             {/* Tab Navigation */}
             <div className="flex justify-center mb-[25px]">
               <div className="flex p-1 bg-muted flex-row rounded-sm shadow-inner text-sm text-gray-600">
