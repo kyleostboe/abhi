@@ -2679,7 +2679,7 @@ export default function LibraryPage() {
                       <Card className="relative overflow-hidden border-none bg-white shadow-2xl backdrop-blur max-h-[85vh] flex flex-col p-6">
                         <button
                           type="button"
-                          className="absolute right-4 top-4 rounded-full  p-2 text-gray-500 transition hover:text-gray-700"
+                          className="absolute right-4 top-4 rounded-full p-2 text-gray-500 transition hover:text-gray-700 mb-0"
                           onClick={closeMeditationPlayer}
                           aria-label="Close player"
                         >
@@ -2694,11 +2694,9 @@ export default function LibraryPage() {
                             )}
                           >
                           <div className="space-y-3">
-                            <button className="bg-gradient-to-r from-muted to-stone-200 text-xs font-serif rounded-[7px] font-black text-gray-500 shadow-inner py-[5px] px-[13px] mb-[9px]">
-                              {selectedMeditation.source === "adjuster" ? "Adjuster" : "Encoder"}
-                            </button>
+                            
                             <div>
-                              <h2 className="text-2xl font-black text-gray-600 text-left">
+                              <h2 className="text-2xl font-black text-gray-600 text-left mt-[21px]">
                                 {selectedMeditation.title}
                               </h2>
                               {(() => {
