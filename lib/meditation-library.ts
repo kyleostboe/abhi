@@ -276,13 +276,18 @@ export class MeditationLibrary {
     await supabase.from("meditations").update({ metadata: finalizedMetadata }).eq("id", meditationId)
 
     console.log("[v0] Saving audio to IndexedDB...")
-    await saveAudioRecord({
-      id: meditationId,
-      processedAudio: processedBlob,
-      sourceAudio: providedSourceBlob,
-      timelineRecordings,
-    })
-    console.log("[v0] Audio saved to IndexedDB successfully")
+    try {
+      await saveAudioRecord({
+        id: meditationId,
+        processedAudio: processedBlob,
+        sourceAudio: providedSourceBlob,
+        timelineRecordings,
+      })
+      console.log("[v0] Audio saved to IndexedDB successfully")
+    } catch (error) {
+      console.error("[v0] Failed to save audio to IndexedDB:", error)
+      throw error
+    }
 
     return normalizeSupabaseMeditation(
       { ...data, metadata: finalizedMetadata },

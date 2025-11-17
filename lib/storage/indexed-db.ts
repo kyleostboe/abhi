@@ -70,24 +70,60 @@ function getDatabase(): Promise<IDBDatabase> {
 }
 
 export async function saveAudioRecord(record: AudioRecord): Promise<void> {
+  console.log("[v0] IndexedDB saveAudioRecord called for ID:", record.id)
+  console.log("[v0] Audio sizes - processed:", record.processedAudio?.size, "source:", record.sourceAudio?.size, "timeline:", Object.keys(record.timelineRecordings || {}).length)
+  
   const db = await getDatabase()
+  console.log("[v0] IndexedDB database opened successfully")
+  
   await new Promise<void>((resolve, reject) => {
     const transaction = db.transaction(AUDIO_STORE, "readwrite")
     const store = transaction.objectStore(AUDIO_STORE)
-    store.put(record)
-    transaction.oncomplete = () => resolve()
-    transaction.onerror = () => reject(transaction.error)
+    const request = store.put(record)
+    
+    request.onsuccess = () => {
+      console.log("[v0] IndexedDB put operation successful for ID:", record.id)
+    }
+    
+    request.onerror = () => {
+      console.error("[v0] IndexedDB put operation failed:", request.error)
+    }
+    
+    transaction.oncomplete = () => {
+      console.log("[v0] IndexedDB transaction completed for ID:", record.id)
+      resolve()
+    }
+    
+    transaction.onerror = () => {
+      console.error("[v0] IndexedDB transaction failed:", transaction.error)
+      reject(transaction.error)
+    }
   })
 }
 
 export async function getAudioRecord(id: string): Promise<AudioRecord | null> {
+  console.log("[v0] IndexedDB getAudioRecord called for ID:", id)
+  
   const db = await getDatabase()
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(AUDIO_STORE, "readonly")
     const store = transaction.objectStore(AUDIO_STORE)
     const request = store.get(id)
-    request.onsuccess = () => resolve((request.result as AudioRecord | undefined) ?? null)
-    request.onerror = () => reject(request.error)
+    
+    request.onsuccess = () => {
+      const result = (request.result as AudioRecord | undefined) ?? null
+      if (result) {
+        console.log("[v0] IndexedDB found audio record for ID:", id, "sizes - processed:", result.processedAudio?.size, "source:", result.sourceAudio?.size)
+      } else {
+        console.log("[v0] IndexedDB no audio record found for ID:", id)
+      }
+      resolve(result)
+    }
+    
+    request.onerror = () => {
+      console.error("[v0] IndexedDB get operation failed:", request.error)
+      reject(request.error)
+    }
   })
 }
 
