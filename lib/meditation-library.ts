@@ -188,6 +188,8 @@ const normalizeSupabaseMeditation = (
 export class MeditationLibrary {
   static async saveMeditation(meditation: SaveMeditationInput): Promise<SavedMeditation> {
     const auth = getAuthState()
+    console.log("[v0] saveMeditation - Auth state:", { isAuthenticated: auth.isAuthenticated, userId: auth.userId })
+    
     const processedBlob: Blob | null =
       meditation.processedAudioData ?? (await resolveBlobFromUrl(meditation.processedAudioUrl))
 
@@ -215,6 +217,7 @@ export class MeditationLibrary {
     }
 
     if (!auth.isAuthenticated) {
+      console.log("[v0] Saving to memory (unauthenticated)")
       const id = createId()
       const processedUrl = buildObjectUrl(processedBlob)
       const sourceUrl = buildObjectUrl(providedSourceBlob)
@@ -240,6 +243,7 @@ export class MeditationLibrary {
       return savedMeditation
     }
 
+    console.log("[v0] Saving to Supabase + IndexedDB (authenticated)")
     const supabase = createClient()
 
     const metadataToPersist = sanitizeMetadataForStorage({ ...meditation.metadata }, timelineRecordings, "pending")
@@ -265,16 +269,20 @@ export class MeditationLibrary {
     }
 
     const meditationId = data.id as string
+    console.log("[v0] Saved to Supabase with ID:", meditationId)
+    
     const finalizedMetadata = sanitizeMetadataForStorage({ ...meditation.metadata }, timelineRecordings, meditationId)
 
     await supabase.from("meditations").update({ metadata: finalizedMetadata }).eq("id", meditationId)
 
+    console.log("[v0] Saving audio to IndexedDB...")
     await saveAudioRecord({
       id: meditationId,
       processedAudio: processedBlob,
       sourceAudio: providedSourceBlob,
       timelineRecordings,
     })
+    console.log("[v0] Audio saved to IndexedDB successfully")
 
     return normalizeSupabaseMeditation(
       { ...data, metadata: finalizedMetadata },
@@ -286,10 +294,15 @@ export class MeditationLibrary {
 
   static async getAllMeditations(): Promise<SavedMeditation[]> {
     const auth = getAuthState()
+    console.log("[v0] getAllMeditations - Auth state:", { isAuthenticated: auth.isAuthenticated, userId: auth.userId })
+    
     if (!auth.isAuthenticated) {
-      return getMemoryMeditations()
+      const memoryMeds = getMemoryMeditations()
+      console.log("[v0] Loaded from memory:", memoryMeds.length, "meditations")
+      return memoryMeds
     }
 
+    console.log("[v0] Loading from Supabase...")
     const supabase = createClient()
     const { data, error } = await supabase
       .from("meditations")
@@ -302,13 +315,21 @@ export class MeditationLibrary {
     }
 
     if (!data || data.length === 0) {
+      console.log("[v0] No meditations found in Supabase")
       return []
     }
 
+    console.log("[v0] Found", data.length, "meditations in Supabase, loading audio from IndexedDB...")
     const meditations: SavedMeditation[] = []
     for (const row of data) {
       try {
+        console.log("[v0] Loading audio for meditation:", row.id)
         const audio = await getAudioRecord(row.id)
+        if (!audio) {
+          console.warn("[v0] No audio found in IndexedDB for meditation:", row.id)
+        } else {
+          console.log("[v0] Successfully loaded audio from IndexedDB for:", row.id)
+        }
         const processedUrl = buildObjectUrl(audio?.processedAudio)
         const sourceUrl = buildObjectUrl(audio?.sourceAudio ?? null)
         meditations.push(normalizeSupabaseMeditation(row, processedUrl, sourceUrl, audio?.timelineRecordings))
@@ -318,6 +339,7 @@ export class MeditationLibrary {
       }
     }
 
+    console.log("[v0] Loaded", meditations.length, "complete meditations")
     return meditations
   }
 
