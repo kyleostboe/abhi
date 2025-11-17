@@ -18,34 +18,12 @@ import { runAdjusterWorkflow } from "@/lib/adjuster-workflow"
 import { cn, formatFileSize } from "@/lib/utils"
 import { useJournal } from "@/hooks/use-journal"
 import { useAuth } from "@/hooks/use-auth"
-import {
-  Trash2,
-  Clock,
-  Calendar,
-  FolderPlus,
-  Edit2,
-  X,
-  SlidersHorizontal,
-  MoreVertical,
-  SkipBack,
-  SkipForward,
-  Play,
-  Pause,
-  Download,
-  ChevronDown,
-  Music,
-  Volume2,
-  Wand2,
-  Loader2,
-  Plus,
-  NotebookPen,
-  BookOpenCheck,
-  Upload,
-} from "lucide-react"
+import { Trash2, Clock, Calendar, FolderPlus, Edit2, X, SlidersHorizontal, MoreVertical, SkipBack, SkipForward, Play, Pause, Download, ChevronDown, Music, Volume2, Wand2, Loader2, Plus, NotebookPen, BookOpenCheck, Upload } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
 import { useMobile } from "@/hooks/use-mobile"
 import { motion, AnimatePresence } from "framer-motion"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from 'next/navigation'
+import { StorageBar } from "@/components/storage-bar"
 
 type LibraryTimelineEntry = NonNullable<SavedMeditation["metadata"]["timeline"]>[number]
 
@@ -323,7 +301,7 @@ export default function LibraryPage() {
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [storageUsage, setStorageUsage] = useState<{ usedBytes: number; quotaBytes?: number }>({ usedBytes: 0 })
   const [isBackupLoading, setIsBackupLoading] = useState(false)
-  const { isAuthenticated, login } = useAuth()
+  const { isAuthenticated, login, status } = useAuth()
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const timelineAudioRef = useRef<HTMLAudioElement | null>(null)
   const presetsPersistReadyRef = useRef(false)
@@ -1555,7 +1533,7 @@ export default function LibraryPage() {
       setIsAudioPlaying,
       setCurrentPlaybackRate,
       setIsQuickAdjustProcessing,
-      recordLastPlayedDuration,
+      recordLastPlayedPlayedDuration,
       savedDurationsMap,
       formatDurationLabelFromSeconds,
       cloneTimeline,
@@ -2130,13 +2108,9 @@ export default function LibraryPage() {
             </div>
           </div>
 
+
           <div className="px-6 md:px-10 pb-6">
-            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="text-xs text-gray-600">
-                Storage used: {formatFileSize(storageUsage.usedBytes)}
-                {storageUsage.quotaBytes ? ` of ${formatFileSize(storageUsage.quotaBytes)}` : ""}. Audio is stored locally
-                {isAuthenticated ? " even when signed in." : " for guest sessions and clears on refresh."}
-              </div>
+            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="outline" onClick={handleExportBackup} disabled={isBackupLoading}>
                   <Download className="h-4 w-4 mr-2" /> Export Backup
@@ -3216,6 +3190,12 @@ export default function LibraryPage() {
             )}
         </div>
       </div>
+
+      <StorageBar
+        usedBytes={storageUsage.usedBytes}
+        quotaBytes={storageUsage.quotaBytes}
+        isAuthenticated={status === "authenticated"}
+      />
     </div>
   )
 }
