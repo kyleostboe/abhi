@@ -2102,7 +2102,7 @@ export default function LibraryPage() {
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm text-center p-6 space-y-3">
             <p className="text-lg text-gray-800 font-serif font-black">Create account to save</p>
             <p className="text-sm text-gray-600 max-w-xl">
-              Library and journal items stay in memory only until you create an account. Audio always stays on this device.
+              Library access is local-only. Audio exists on your device and browser.
             </p>
             <Button onClick={login} className="bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 text-white">
               Create account
