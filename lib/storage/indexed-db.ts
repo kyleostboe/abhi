@@ -157,11 +157,6 @@ export async function importAudioBackups(backups: AudioBackup[]): Promise<void> 
 }
 
 export async function estimateAudioUsage(): Promise<{ usedBytes: number; quotaBytes?: number }> {
-  if (typeof navigator !== "undefined" && navigator.storage?.estimate) {
-    const { usage, quota } = await navigator.storage.estimate()
-    return { usedBytes: usage ?? 0, quotaBytes: quota ?? undefined }
-  }
-
   try {
     const db = await getDatabase()
     return await new Promise<{ usedBytes: number; quotaBytes?: number }>((resolve) => {
@@ -170,6 +165,7 @@ export async function estimateAudioUsage(): Promise<{ usedBytes: number; quotaBy
       const request = store.getAll()
       request.onsuccess = () => {
         const records = request.result as AudioRecord[]
+        console.log("[v0] Calculating storage for", records.length, "audio records")
         const usedBytes = records.reduce((total, record) => {
           let next = total + record.processedAudio.size
           if (record.sourceAudio) next += record.sourceAudio.size
@@ -178,12 +174,13 @@ export async function estimateAudioUsage(): Promise<{ usedBytes: number; quotaBy
           }
           return next
         }, 0)
+        console.log("[v0] Total audio storage:", usedBytes, "bytes")
         resolve({ usedBytes })
       }
       request.onerror = () => resolve({ usedBytes: 0 })
     })
   } catch (error) {
-    console.warn("Unable to estimate audio usage", error)
+    console.warn("[v0] Unable to estimate audio usage", error)
     return { usedBytes: 0 }
   }
 }
