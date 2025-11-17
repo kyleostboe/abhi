@@ -1,7 +1,6 @@
 "use client"
 
-import { useState } from "react"
-import { Settings, LogOut } from "lucide-react"
+import { Settings, LogOut } from 'lucide-react'
 import Link from "next/link"
 import {
   DropdownMenu,
@@ -12,14 +11,23 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useAuth } from "@/hooks/use-auth"
 
 export function UserMenu() {
-  const [username] = useState("testuser")
+  const { user, logout, isAuthenticated } = useAuth()
 
-  const handleLogout = () => {
-    // TODO: Implement logout when auth is added
-    console.log("Logout clicked")
+  if (!isAuthenticated || !user) {
+    return null
   }
+
+  const displayName = (user.user_metadata?.display_name as string) || user.email || "User"
+  const email = user.email || ""
+  const initials = displayName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
 
   return (
     <DropdownMenu>
@@ -27,7 +35,7 @@ export function UserMenu() {
         <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-muted">
           <Avatar className="h-10 w-10 border-2 border-gray-300">
             <AvatarFallback className="bg-gradient-to-br from-gray-600 to-gray-500 text-white font-bold">
-              {username.charAt(0).toUpperCase()}
+              {initials}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -35,8 +43,8 @@ export function UserMenu() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <div className="flex items-center justify-start gap-2 p-2">
           <div className="flex flex-col space-y-1 leading-none">
-            <p className="font-medium text-sm">{username}</p>
-            <p className="text-xs text-muted-foreground">test@example.com</p>
+            <p className="font-medium text-sm">{displayName}</p>
+            <p className="text-xs text-muted-foreground">{email}</p>
           </div>
         </div>
         <DropdownMenuSeparator />
@@ -47,7 +55,7 @@ export function UserMenu() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">
+        <DropdownMenuItem onClick={() => logout()} className="cursor-pointer text-red-600">
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>

@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { createClient } from "@/lib/supabase/client"
-import { TEST_PROFILE_ID } from "@/lib/test-profile"
 import { useAuth } from "@/hooks/use-auth"
 
 export type JournalEntry = {
@@ -53,20 +52,17 @@ type JournalEntryRow = {
   id: string
   profile_id: string
   meditation_id: string
-  entry_date: string
-  play_time: string
-  content: string | null
-  meditations: {
-    title: string
-  } | null
+  meditation_title: string
+  played_at: string
+  note: string | null
 }
 
 const mapRowToEntry = (row: JournalEntryRow): JournalEntry => ({
   id: row.id,
   meditationId: row.meditation_id,
-  meditationTitle: sanitizeTitle(row.meditations?.title),
-  playedAt: row.play_time, // Using play_time as the timestamp
-  note: row.content ?? undefined,
+  meditationTitle: sanitizeTitle(row.meditation_title),
+  playedAt: row.played_at,
+  note: row.note ?? undefined,
 })
 
 export function useJournal() {
@@ -74,7 +70,6 @@ export function useJournal() {
   const [entries, setEntries] = useState<JournalEntry[]>([])
   const entriesRef = useRef(entries)
   const { isAuthenticated, userId } = useAuth()
-  const profileId = useMemo(() => userId || TEST_PROFILE_ID, [userId])
 
   useEffect(() => {
     entriesRef.current = entries
@@ -92,16 +87,15 @@ export function useJournal() {
       try {
         const { data, error } = await supabase
           .from("journal_entries")
-          .select("id, profile_id, meditation_id, entry_date, play_time, content, meditations(title)")
-          .eq("profile_id", profileId)
-          .order("play_time", { ascending: true })
+          .select("id, profile_id, meditation_id, meditation_title, played_at, note")
+          .order("played_at", { ascending: true })
 
         if (!isActive) {
           return
         }
 
         if (error) {
-          console.error("Failed to fetch journal entries", error)
+          console.error("[v0] Failed to fetch journal entries:", error)
           setEntries([])
           return
         }
@@ -109,7 +103,7 @@ export function useJournal() {
         setEntries(Array.isArray(data) ? data.map(mapRowToEntry) : [])
       } catch (error) {
         if (isActive) {
-          console.error("Unexpected error fetching journal entries", error)
+          console.error("[v0] Unexpected error fetching journal entries:", error)
           setEntries([])
         }
       }
@@ -120,7 +114,7 @@ export function useJournal() {
     return () => {
       isActive = false
     }
-  }, [supabase, isAuthenticated, profileId])
+  }, [supabase, isAuthenticated, userId])
 
   const recordPlayback = useCallback(
     async (meditation: RecordPlaybackInput, options?: RecordPlaybackOptions) => {
@@ -144,24 +138,23 @@ export function useJournal() {
 
           setEntries((previous) => previous.map((entry) => (entry.id === updatedEntry.id ? updatedEntry : entry)))
 
-          if (!isAuthenticated) {
+          if (!isAuthenticated || !userId) {
             return updatedEntry
           }
 
           const { data, error } = await supabase
             .from("journal_entries")
             .update({
-              entry_date: playedAtDate.toISOString().split("T")[0], // Extract date part
-              play_time: updatedEntry.playedAt,
-              content: updatedEntry.note ?? null,
+              played_at: updatedEntry.playedAt,
+              meditation_title: normalizedTitle,
+              note: updatedEntry.note ?? null,
             })
             .eq("id", updatedEntry.id)
-            .eq("profile_id", profileId)
-            .select("id, profile_id, meditation_id, entry_date, play_time, content, meditations(title)")
+            .select("id, profile_id, meditation_id, meditation_title, played_at, note")
             .single()
 
           if (error) {
-            console.error("Failed to update journal entry", error)
+            console.error("[v0] Failed to update journal entry:", error)
             setEntries((previous) =>
               previous.map((entry) => (entry.id === latestForMeditation.id ? latestForMeditation : entry)),
             )
@@ -188,7 +181,7 @@ export function useJournal() {
 
       setEntries((previous) => [...previous, newEntry])
 
-      if (!isAuthenticated) {
+      if (!isAuthenticated || !userId) {
         return newEntry
       }
 
@@ -196,17 +189,17 @@ export function useJournal() {
         .from("journal_entries")
         .insert({
           id: newEntry.id,
-          profile_id: profileId,
+          profile_id: userId,
           meditation_id: newEntry.meditationId,
-          entry_date: playedAtDate.toISOString().split("T")[0], // Extract date part
-          play_time: newEntry.playedAt,
-          content: newEntry.note ?? "",
+          meditation_title: newEntry.meditationTitle,
+          played_at: newEntry.playedAt,
+          note: newEntry.note ?? null,
         })
-        .select("id, profile_id, meditation_id, entry_date, play_time, content, meditations(title)")
+        .select("id, profile_id, meditation_id, meditation_title, played_at, note")
         .single()
 
       if (error) {
-        console.error("Failed to record journal entry", error)
+        console.error("[v0] Failed to record journal entry:", error)
         setEntries((previous) => previous.filter((entry) => entry.id !== newEntry.id))
         return null
       }
@@ -219,7 +212,7 @@ export function useJournal() {
 
       return newEntry
     },
-    [supabase, isAuthenticated, profileId],
+    [supabase, isAuthenticated, userId],
   )
 
   const updateEntryNote = useCallback(
@@ -235,20 +228,19 @@ export function useJournal() {
       const optimisticEntry: JournalEntry = { ...previousEntry, note: nextNote }
       setEntries((previous) => previous.map((entry) => (entry.id === entryId ? optimisticEntry : entry)))
 
-      if (!isAuthenticated) {
+      if (!isAuthenticated || !userId) {
         return optimisticEntry
       }
 
       const { data, error } = await supabase
         .from("journal_entries")
-        .update({ content: nextNote ?? null })
+        .update({ note: nextNote ?? null })
         .eq("id", entryId)
-        .eq("profile_id", profileId)
-        .select("id, profile_id, meditation_id, entry_date, play_time, content, meditations(title)")
+        .select("id, profile_id, meditation_id, meditation_title, played_at, note")
         .single()
 
       if (error) {
-        console.error("Failed to update journal note", error)
+        console.error("[v0] Failed to update journal note:", error)
         setEntries((previous) => previous.map((entry) => (entry.id === entryId ? previousEntry : entry)))
         return previousEntry
       }
@@ -261,7 +253,7 @@ export function useJournal() {
 
       return optimisticEntry
     },
-    [supabase, isAuthenticated, profileId],
+    [supabase, isAuthenticated, userId],
   )
 
   const deleteEntry = useCallback(
@@ -269,25 +261,21 @@ export function useJournal() {
       const previousEntries = entriesRef.current
       setEntries((previous) => previous.filter((entry) => entry.id !== entryId))
 
-      if (!isAuthenticated) {
+      if (!isAuthenticated || !userId) {
         return true
       }
 
-      const { error } = await supabase
-        .from("journal_entries")
-        .delete()
-        .eq("id", entryId)
-        .eq("profile_id", profileId)
+      const { error } = await supabase.from("journal_entries").delete().eq("id", entryId)
 
       if (error) {
-        console.error("Failed to delete journal entry", error)
+        console.error("[v0] Failed to delete journal entry:", error)
         setEntries([...previousEntries])
         return false
       }
 
       return true
     },
-    [supabase, isAuthenticated, profileId],
+    [supabase, isAuthenticated, userId],
   )
 
   return {

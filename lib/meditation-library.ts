@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/client"
 import type { BufferToWavMetadata } from "./audio-utils"
-import { TEST_PROFILE_ID, ensureTestProfile } from "./test-profile"
 import { getAuthState } from "./auth-state"
 import {
   saveAudioRecord,
@@ -241,7 +240,6 @@ export class MeditationLibrary {
       return savedMeditation
     }
 
-    await ensureTestProfile()
     const supabase = createClient()
 
     const metadataToPersist = sanitizeMetadataForStorage({ ...meditation.metadata }, timelineRecordings, "pending")
@@ -256,7 +254,7 @@ export class MeditationLibrary {
         source: meditation.source,
         metadata: metadataToPersist,
         original_filename: meditation.originalFileName,
-        profile_id: auth.userId || TEST_PROFILE_ID,
+        profile_id: auth.userId!,
       })
       .select()
       .single()
@@ -296,7 +294,6 @@ export class MeditationLibrary {
     const { data, error } = await supabase
       .from("meditations")
       .select("*")
-      .eq("profile_id", auth.userId || TEST_PROFILE_ID)
       .order("created_at", { ascending: false })
 
     if (error) {
@@ -389,7 +386,6 @@ export class MeditationLibrary {
           )
         `,
         )
-        .eq("profile_id", auth.userId || TEST_PROFILE_ID)
         .order("created_at", { ascending: false })
 
       if (error) {
@@ -475,7 +471,7 @@ export class MeditationLibrary {
       .insert({
         name,
         description,
-        profile_id: auth.userId || TEST_PROFILE_ID,
+        profile_id: auth.userId!,
       })
       .select()
       .single()
@@ -686,7 +682,6 @@ export class MeditationLibrary {
     const { data } = await supabase
       .from("meditations")
       .select("*")
-      .eq("profile_id", auth.userId || TEST_PROFILE_ID)
 
     const meditations = (data ?? []).map((row) => normalizeSupabaseMeditation(row, ""))
     const audio = await exportAudioRecords(meditations.map((m) => m.id))
@@ -716,7 +711,7 @@ export class MeditationLibrary {
             source: meditation.source,
             metadata: meditation.metadata,
             original_filename: meditation.originalFileName,
-            profile_id: auth.userId || TEST_PROFILE_ID,
+            profile_id: auth.userId!,
           })),
           { onConflict: "id" },
         )

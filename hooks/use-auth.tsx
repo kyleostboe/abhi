@@ -1,15 +1,16 @@
 "use client"
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react"
-
+import { createContext, useContext, useEffect, useState } from "react"
+import { useRouter } from 'next/navigation'
+import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
-import { TEST_PROFILE_ID } from "@/lib/test-profile"
 import { getAuthState, setAuthState } from "@/lib/auth-state"
 
 type AuthContextValue = {
   status: "loading" | "authenticated" | "unauthenticated"
   isAuthenticated: boolean
   userId: string | null
+  user: User | null
   login: () => void
   logout: () => void
 }
@@ -17,62 +18,83 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const supabase = useMemo(() => createClient(), [])
-  const [status, setStatus] = useState<"loading" | "authenticated" | "unauthenticated">(
-    typeof window === "undefined" ? "loading" : getAuthState().status,
-  )
-  const [userId, setUserId] = useState<string | null>(getAuthState().userId)
+  const [status, setStatus] = useState<"loading" | "authenticated" | "unauthenticated">("loading")
+  const [user, setUser] = useState<User | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
+    const supabase = createClient()
     let isMounted = true
 
-    const hydrateFromSession = async () => {
+    const checkSession = async () => {
       try {
-        const { data } = await supabase.auth.getSession()
-        const sessionUserId = data.session?.user?.id ?? null
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+
         if (!isMounted) return
 
-        if (sessionUserId) {
+        if (session?.user) {
           setStatus("authenticated")
-          setUserId(sessionUserId)
+          setUser(session.user)
+          setAuthState({ status: "authenticated", userId: session.user.id })
         } else {
           setStatus("unauthenticated")
-          setUserId(null)
+          setUser(null)
+          setAuthState({ status: "unauthenticated", userId: null })
         }
       } catch (error) {
-        console.warn("Unable to hydrate auth session", error)
-        if (!isMounted) return
-        setStatus("unauthenticated")
-        setUserId(null)
+        console.error("[v0] Auth session check failed:", error)
+        if (isMounted) {
+          setStatus("unauthenticated")
+          setUser(null)
+          setAuthState({ status: "unauthenticated", userId: null })
+        }
       }
     }
 
-    void hydrateFromSession()
+    void checkSession()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return
+
+      if (session?.user) {
+        setStatus("authenticated")
+        setUser(session.user)
+        setAuthState({ status: "authenticated", userId: session.user.id })
+      } else {
+        setStatus("unauthenticated")
+        setUser(null)
+        setAuthState({ status: "unauthenticated", userId: null })
+      }
+    })
 
     return () => {
       isMounted = false
+      subscription.unsubscribe()
     }
-  }, [supabase])
-
-  useEffect(() => {
-    setAuthState({ status, userId })
-  }, [status, userId])
+  }, [])
 
   const login = () => {
-    setStatus("authenticated")
-    setUserId(TEST_PROFILE_ID)
+    router.push("/auth/login")
   }
 
-  const logout = () => {
+  const logout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
     setStatus("unauthenticated")
-    setUserId(null)
-    void supabase.auth.signOut()
+    setUser(null)
+    setAuthState({ status: "unauthenticated", userId: null })
+    router.push("/")
   }
 
   const value: AuthContextValue = {
     status,
     isAuthenticated: status === "authenticated",
-    userId,
+    userId: user?.id ?? null,
+    user,
     login,
     logout,
   }
