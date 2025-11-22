@@ -9,8 +9,8 @@ export function Navigation() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-40 flex justify-center py-4 bg-gradient-to-b from-white/70 via-white/40 to-transparent backdrop-blur-xl">
-        <ul className="flex backdrop-blur-xl shadow-lg rounded-sm bg-white/80 border border-white/70 px-[9px] py-3.5 space-x-[9px]">
+      <nav className="fixed top-0 left-0 right-0 z-40 flex justify-center py-4 bg-white/95 shadow-[0_0_20px_rgba(0,0,0,0.12)] border border-white/80">
+        <ul className="flex rounded-sm bg-white/90 border border-white/70 px-[9px] py-3.5 space-x-[9px] shadow-sm">
           <li>
             <Link
               href="/"

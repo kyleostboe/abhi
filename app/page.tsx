@@ -44,7 +44,6 @@ import * as Tone from "tone"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
 import { AudioInfoMenu } from "@/components/audio-info-menu"
 import { UserMenu } from "@/components/user-menu" // Added UserMenu to top-right corner of main app card
-import { useAuth } from "@/hooks/use-auth"
 
 const ADJUSTER_SESSION_KEY = "abhi_last_adjuster_session"
 const ENCODER_SESSION_KEY = "abhi_last_encoder_session"
@@ -513,7 +512,6 @@ const playPianoNote = async (noteString: string, duration = 0.45, velocity = 0.9
 
 export default function Home() {
   const { toast } = useToast()
-  const { isAuthenticated, login } = useAuth()
 
   const [activeMode, setActiveMode] = useState<"adjuster" | "encoder">("adjuster")
   const [shouldScrollToAdjuster, setShouldScrollToAdjuster] = useState(false)
@@ -2809,18 +2807,6 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 pt-28 md:pt-32">
       <Navigation />
 
-      {!isAuthenticated && (
-        <div className="fixed top-[88px] left-1/2 z-50 -translate-x-1/2">
-          <Button
-            onClick={login}
-            size="sm"
-            className="bg-white text-gray-600 shadow-lg hover:shadow-sm hover:text-gray-900 hover:bg-white font-bold text-xs h-8 px-4 rounded-[8px] transition-all duration-200"
-          >
-            Login / Sign up
-          </Button>
-        </div>
-      )}
-
       <div className="relative">
 
         {typeof window !== "undefined" && window.location.hostname === "localhost" && (
@@ -2859,7 +2845,7 @@ export default function Home() {
           role="application"
         >
           <div className="absolute top-2 right-2 z-10">
-            <UserMenu />
+            <UserMenu showLoginButton />
           </div>
           <div className="relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
