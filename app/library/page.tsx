@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useRef, useState, useMemo, useCallback } from "react"
 import { createPortal } from "react-dom"
 import type { MouseEvent, ChangeEvent } from "react"
@@ -15,15 +17,38 @@ import { Textarea } from "@/components/ui/textarea"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
 import { getAudioContext } from "@/lib/audio-utils"
 import { runAdjusterWorkflow } from "@/lib/adjuster-workflow"
-import { cn, formatFileSize } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import { useJournal } from "@/hooks/use-journal"
 import { useAuth } from "@/hooks/use-auth"
-import { Trash2, Clock, Calendar, FolderPlus, Edit2, X, SlidersHorizontal, MoreVertical, SkipBack, SkipForward, Play, Pause, Download, ChevronDown, Music, Volume2, Wand2, Loader2, Plus, NotebookPen, BookOpenCheck, Upload } from 'lucide-react'
+import {
+  Trash2,
+  Clock,
+  Calendar,
+  FolderPlus,
+  Edit2,
+  X,
+  SlidersHorizontal,
+  MoreVertical,
+  SkipBack,
+  SkipForward,
+  Play,
+  Pause,
+  Download,
+  ChevronDown,
+  Music,
+  Volume2,
+  Wand2,
+  Loader2,
+  Plus,
+  NotebookPen,
+  BookOpenCheck,
+} from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useMobile } from "@/hooks/use-mobile"
 import { motion, AnimatePresence } from "framer-motion"
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from "next/navigation"
 import { StorageBar } from "@/components/storage-bar"
+import { UserMenu } from "@/components/user-menu"
 
 type LibraryTimelineEntry = NonNullable<SavedMeditation["metadata"]["timeline"]>[number]
 
@@ -300,13 +325,19 @@ export default function LibraryPage() {
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [storageUsage, setStorageUsage] = useState<{ usedBytes: number; quotaBytes?: number }>({ usedBytes: 0 })
+
+  const [showTitleDialog, setShowTitleDialog] = useState(false)
+  const [draggedFile, setDraggedFile] = useState<File | null>(null)
+  const [audioFileTitle, setAudioFileTitle] = useState("")
+
   const [isBackupLoading, setIsBackupLoading] = useState(false)
+  const [backupProgress, setBackupProgress] = useState<{ progress: number; message: string } | null>(null)
   const { isAuthenticated, login, status } = useAuth()
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const timelineAudioRef = useRef<HTMLAudioElement | null>(null)
   const presetsPersistReadyRef = useRef(false)
   const durationsPersistReadyRef = useRef(false)
-  const backupInputRef = useRef<HTMLInputElement | null>(null)
+  const backupInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -398,36 +429,51 @@ export default function LibraryPage() {
   }, [])
 
   const loadData = async () => {
-    const meditationsData = await MeditationLibrary.getAllMeditations()
-    setMeditations(meditationsData)
-    const playlistsData = await MeditationLibrary.getAllPlaylists()
-    setPlaylists(playlistsData)
-    const playlistMeditationsPromises = playlistsData.map(async (playlist) => {
-      const meditations = await MeditationLibrary.getPlaylistMeditations(playlist.id)
-      return [playlist.id, meditations] as [string, SavedMeditation[]]
-    })
-    const playlistMeditationsMapData = Object.fromEntries(await Promise.all(playlistMeditationsPromises))
-    setPlaylistMeditationsMap(playlistMeditationsMapData)
-    const usage = await MeditationLibrary.getStorageUsage()
-    setStorageUsage(usage)
+    try {
+      const meditationsData = await MeditationLibrary.getAllMeditations()
+      setMeditations(meditationsData)
+      const playlistsData = await MeditationLibrary.getAllPlaylists()
+      setPlaylists(playlistsData)
+      const playlistMeditationsPromises = playlistsData.map(async (playlist) => {
+        const meditations = await MeditationLibrary.getPlaylistMeditations(playlist.id)
+        return [playlist.id, meditations] as [string, SavedMeditation[]]
+      })
+      const playlistMeditationsMapData = Object.fromEntries(await Promise.all(playlistMeditationsPromises))
+      setPlaylistMeditationsMap(playlistMeditationsMapData)
+      const usage = await MeditationLibrary.getStorageUsage()
+      setStorageUsage(usage)
+    } catch (error) {
+      console.error("[v0] Failed to load library data:", error)
+      toast({
+        title: "Error loading library",
+        description: "Please refresh the page.",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleExportBackup = useCallback(async () => {
     try {
       setIsBackupLoading(true)
+      toast({ title: "Exporting backup...", description: "This may take a moment for large libraries." })
+
       const blob = await MeditationLibrary.exportBackup()
       const url = URL.createObjectURL(blob)
       const anchor = document.createElement("a")
       anchor.href = url
-      anchor.download = "meditations-backup.json"
+      anchor.download = `abhi-backup-${new Date().toISOString().split("T")[0]}.zip`
       anchor.click()
       URL.revokeObjectURL(url)
-      toast({ title: "Backup exported", description: "Your meditations and audio were downloaded locally." })
+
+      toast({
+        title: "Backup exported",
+        description: "Your meditations and audio were saved to a ZIP file.",
+      })
     } catch (error) {
       console.error("Unable to export backup", error)
       toast({
         title: "Export failed",
-        description: "Could not create a backup. Please try again.",
+        description: error instanceof Error ? error.message : "Could not create a backup. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -439,18 +485,28 @@ export default function LibraryPage() {
     async (file: File) => {
       try {
         setIsBackupLoading(true)
-        await MeditationLibrary.importBackup(file)
+        setBackupProgress({ progress: 0, message: "Starting import..." })
+
+        await MeditationLibrary.importBackup(file, (progress, message) => {
+          setBackupProgress({ progress, message })
+        })
+
         await loadData()
-        toast({ title: "Backup imported", description: "Local audio has been restored." })
+
+        toast({
+          title: "Backup restored",
+          description: "All meditations and audio have been restored successfully.",
+        })
       } catch (error) {
         console.error("Unable to import backup", error)
         toast({
           title: "Import failed",
-          description: "We couldn't read that backup file.",
+          description: error instanceof Error ? error.message : "We couldn't read that backup file.",
           variant: "destructive",
         })
       } finally {
         setIsBackupLoading(false)
+        setBackupProgress(null)
         if (backupInputRef.current) {
           backupInputRef.current.value = ""
         }
@@ -470,8 +526,6 @@ export default function LibraryPage() {
   )
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-
     const mediaQuery = window.matchMedia("(min-width: 1024px)")
 
     const updateLayout = () => {
@@ -1532,7 +1586,6 @@ export default function LibraryPage() {
       setPlayerTime,
       setIsAudioPlaying,
       setCurrentPlaybackRate,
-      setIsQuickAdjustProcessing,
       recordLastPlayedDuration,
       savedDurationsMap,
       formatDurationLabelFromSeconds,
@@ -2071,19 +2124,212 @@ export default function LibraryPage() {
   const baseFilterButtonClasses =
     "flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-sm py-1"
 
+  const handlePlay = useCallback(
+    (meditation: SavedMeditation) => {
+      if (!meditation.processedAudioUrl) {
+        toast({
+          title: "Audio not found",
+          description:
+            "The audio file for this meditation is missing from this device's storage. This can happen if you cleared your browser data or are on a new device.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      setSelectedMeditation(meditation)
+      setBaseMeditation(meditation)
+      setIsPlayerOpen(true)
+      setIsAudioPlaying(true)
+
+      // Reset player state
+      setPlayerTime(0)
+      setCurrentPlaybackRate(1)
+      setActiveDurationModeId("original")
+
+      // Reset timeline state
+      if (timelineAudioRef.current) {
+        timelineAudioRef.current.pause()
+        timelineAudioRef.current = null
+      }
+      setPlayingTimelineEventId(null)
+    },
+    [toast],
+  )
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }, [])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }, [])
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+
+      if (!isAuthenticated) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to upload files to your library.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const files = Array.from(e.dataTransfer.files)
+      if (files.length === 0) return
+
+      const file = files[0]
+
+      // Check if it's a backup ZIP file
+      if (file.name.endsWith(".zip") || file.type === "application/zip") {
+        await handleImportBackup(file)
+        return
+      }
+
+      // Check if it's an audio file
+      if (file.type.startsWith("audio/")) {
+        // Show title dialog for single audio file
+        setDraggedFile(file)
+        setAudioFileTitle(file.name.replace(/\.[^/.]+$/, "")) // Remove extension
+        setShowTitleDialog(true)
+        return
+      }
+
+      toast({
+        title: "Invalid file type",
+        description: "Please drop an audio file (.mp3, .wav, etc.) or a backup ZIP file.",
+        variant: "destructive",
+      })
+    },
+    [isAuthenticated, handleImportBackup, toast],
+  )
+
+  const handleUploadAudioFile = useCallback(async () => {
+    if (!draggedFile || !audioFileTitle.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please provide a title for your meditation.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setIsUploading(true)
+      setUploadError(null)
+
+      const audioContext = getAudioContext()
+      const arrayBuffer = await draggedFile.arrayBuffer()
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+      const duration = audioBuffer.duration
+
+      const blob = new Blob([arrayBuffer], { type: draggedFile.type })
+
+      await MeditationLibrary.saveMeditation({
+        title: audioFileTitle.trim(),
+        originalFileName: draggedFile.name,
+        duration,
+        source: "adjuster",
+        processedAudioData: blob,
+        metadata: {},
+      })
+
+      await loadData()
+
+      toast({
+        title: "Meditation uploaded",
+        description: `"${audioFileTitle.trim()}" has been added to your library.`,
+      })
+
+      setShowTitleDialog(false)
+      setDraggedFile(null)
+      setAudioFileTitle("")
+    } catch (error) {
+      console.error("Upload failed:", error)
+      setUploadError(error instanceof Error ? error.message : "Upload failed")
+      toast({
+        title: "Upload failed",
+        description: "Could not process the audio file. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUploading(false)
+    }
+  }, [draggedFile, audioFileTitle, loadData, toast])
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px] font-serif font-black">
       <Navigation />
 
-      <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg  shadow-xl overflow-hidden transition-colors rounded-3xl duration-300 ease-in-out">
+      <Dialog open={showTitleDialog} onOpenChange={setShowTitleDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Name Your Meditation</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <Label htmlFor="audio-title">Title</Label>
+              <Input
+                id="audio-title"
+                value={audioFileTitle}
+                onChange={(e) => setAudioFileTitle(e.target.value)}
+                placeholder="Enter meditation title"
+                disabled={isUploading}
+              />
+            </div>
+            {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowTitleDialog(false)
+                  setDraggedFile(null)
+                  setAudioFileTitle("")
+                }}
+                disabled={isUploading}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleUploadAudioFile} disabled={isUploading || !audioFileTitle.trim()}>
+                {isUploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  "Upload"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <div
+        className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg shadow-xl overflow-hidden transition-colors rounded-3xl duration-300 ease-in-out"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        <div className="absolute top-4 right-4 z-30">
+          <UserMenu />
+        </div>
         {!isAuthenticated && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm text-center p-6 space-y-3">
             <p className="text-lg text-gray-800 font-serif font-black">Create account to save</p>
             <p className="text-sm text-gray-600 max-w-xl">
               Library access is local-only. Audio exists on your device and browser.
             </p>
-            <Button onClick={login} className="bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 text-white">
-              Create account
+            <Button
+              onClick={login}
+              className="bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 text-white font-black shadow-md hover:shadow-lg transition-shadow"
+            >
+              Login / Sign up
             </Button>
           </div>
         )}
@@ -2108,30 +2354,17 @@ export default function LibraryPage() {
             </div>
           </div>
 
-
           <div className="px-6 md:px-10 pb-6">
-            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" onClick={handleExportBackup} disabled={isBackupLoading}>
-                  <Download className="h-4 w-4 mr-2" /> Export Backup
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => backupInputRef.current?.click()}
-                  disabled={isBackupLoading}
-                >
-                  <Upload className="h-4 w-4 mr-2" /> Import Backup
-                </Button>
-                <input
-                  ref={backupInputRef}
-                  type="file"
-                  accept="application/json"
-                  className="hidden"
-                  onChange={handleBackupFileChange}
-                />
+            {isAuthenticated && (
+              <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
+                {backupProgress && (
+                  <div className="text-sm text-muted-foreground">
+                    {backupProgress.message} ({Math.round(backupProgress.progress)}%)
+                  </div>
+                )}
               </div>
-            </div>
+            )}
+
             {/* Tab Navigation */}
             <div className="flex justify-center mb-[25px]">
               <div className="flex p-1 bg-muted flex-row rounded-sm shadow-inner text-sm text-gray-600">
@@ -2156,7 +2389,8 @@ export default function LibraryPage() {
 
             <AnimatePresence mode="wait">
               {activeTab === "meditations" && (
-                <motion.div className="tracking-normal"
+                <motion.div
+                  className="tracking-normal"
                   key="meditations"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -2171,7 +2405,7 @@ export default function LibraryPage() {
                         : "md:[grid-template-columns:minmax(0,1.15fr)_minmax(0,1fr)] md:items-start"
                     }`}
                   >
-                  <div className={`${shouldStackFilters ? "" : "md:[grid-row:span_2]"}`}>
+                    <div className={`${shouldStackFilters ? "" : "md:[grid-row:span_2]"}`}>
                       <div className="p-0.5 bg-gradient-to-br from-logo-rose-300 to-stone-300 rounded-sm shadow-lg py-1 px-[5px]">
                         <div className="bg-white rounded-sm">
                           <input
@@ -2374,18 +2608,24 @@ export default function LibraryPage() {
                                   <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
                                     <span className="flex items-center gap-1">
                                       <Clock className="h-4 w-4 text-gray-500" />
-                                      <span className="font-black truncate text-xs text-gray-500 tracking-tight">{durationDisplay}</span>
+                                      <span className="font-black truncate text-xs text-gray-500 tracking-tight">
+                                        {durationDisplay}
+                                      </span>
                                     </span>
                                     {isWideLayout && (
                                       <>
                                         <span className="flex items-center gap-1">
                                           <Calendar className="h-4 w-4 text-gray-500" />
-                                          <span className="font-black truncate text-xs text-gray-500 tracking-tight tracking-tightext-gray-500 tracking-tight">{formatDate(base.createdAt)}</span>
+                                          <span className="font-black truncate text-xs text-gray-500 tracking-tight tracking-tightext-gray-500 tracking-tight">
+                                            {formatDate(base.createdAt)}
+                                          </span>
                                         </span>
                                         {base.metadata.pausesAdjusted ? (
                                           <span className="flex items-center gap-1">
                                             <SlidersHorizontal className="h-4 w-4 text-gray-500" />
-                                            <span className="font-black truncate text-xs text-gray-500 tracking-tight">{base.metadata.pausesAdjusted} pauses adjusted</span>
+                                            <span className="font-black truncate text-xs text-gray-500 tracking-tight">
+                                              {base.metadata.pausesAdjusted} pauses adjusted
+                                            </span>
                                           </span>
                                         ) : base.metadata.instructionCount ? (
                                           <span className="flex items-center gap-1">
@@ -2418,7 +2658,7 @@ export default function LibraryPage() {
                                       >
                                         <DropdownMenuItem className="flex items-center gap-2 cursor-default">
                                           <Calendar className="h-4 w-4 text-gray-600" />
-                                          <span className="text-sm">{formatDate(base.createdAt)}</span>
+                                          <span className="text-xs">{formatDate(base.createdAt)}</span>
                                         </DropdownMenuItem>
                                         {base.metadata.pausesAdjusted ? (
                                           <DropdownMenuItem className="flex items-center gap-2 cursor-default">
@@ -2667,500 +2907,505 @@ export default function LibraryPage() {
                               isQuickAdjustProcessing ? "pointer-events-none select-none blur-[1px]" : "",
                             )}
                           >
-                          <div className="space-y-3">
-                            
-                            <div>
-                              <h2 className="font-black text-gray-600 text-left text-lg mt-3.5">
-                                {selectedMeditation.title}
-                              </h2>
-                              {(() => {
-                                const trimmedTitle = selectedMeditation.title.trim()
-                                const trimmedOriginal = selectedMeditation.originalFileName.trim()
-                                const showOriginalFileName =
-                                  trimmedOriginal.length > 0 &&
-                                  trimmedOriginal.localeCompare(trimmedTitle, undefined, {
-                                    sensitivity: "accent",
-                                  }) !== 0
-                                if (!showOriginalFileName) return null
-                                return null
-                              })()}
-                            </div>
-                          </div>
-
-                          {/* Player Content */}
-                          <audio
-                            ref={audioRef}
-                            src={selectedMeditation.processedAudioUrl}
-                            preload="metadata"
-                            className="hidden"
-                          />
-
-                          {hasTimelineEvents && (
                             <div className="space-y-3">
-                              <h3 className="text-sm font-black text-gray-700 uppercase tracking-wide">
-                                Timeline Events
-                              </h3>
-                              <div className="max-h-48 overflow-y-auto space-y-2 pr-2 scrollbar-none">
-                                {timelineEvents.map((timelineEvent, index) => {
-                                  const colorClass =
-                                    typeof timelineEvent.color === "string" && timelineEvent.color.trim().length > 0
-                                      ? timelineEvent.color
-                                      : "bg-gradient-to-br from-gray-300 to-gray-400"
-                                  const isRecording =
-                                    timelineEvent.eventType === "recorded_voice" || Boolean(timelineEvent.keepOriginal)
-                                  const isRecordingPlaying = playingTimelineEventId === timelineEvent.id && isRecording
-                                  const durationLabel =
-                                    typeof timelineEvent.duration === "number" &&
-                                    Number.isFinite(timelineEvent.duration)
-                                      ? formatTime(timelineEvent.duration)
-                                      : null
+                              <div>
+                                <h2 className="font-black text-gray-600 text-left text-lg mt-3.5">
+                                  {selectedMeditation.title}
+                                </h2>
+                                {(() => {
+                                  const trimmedTitle = selectedMeditation.title.trim()
+                                  const trimmedOriginal = selectedMeditation.originalFileName.trim()
+                                  const showOriginalFileName =
+                                    trimmedOriginal.length > 0 &&
+                                    trimmedOriginal.localeCompare(trimmedTitle, undefined, {
+                                      sensitivity: "accent",
+                                    }) !== 0
+                                  if (!showOriginalFileName) return null
+                                  return null
+                                })()}
+                              </div>
+                            </div>
 
-                                  return (
-                                    <div
-                                      key={timelineEvent.id}
-                                      className="bg-gradient-to-r from-gray-50 to-stone-50 rounded-lg p-3 border border-gray-200 shadow-sm"
-                                    >
-                                      <div className="flex items-start gap-3">
-                                        <div className="mt-0.5">
-                                          <div
-                                            className={cn(
-                                              "w-2.5 h-12 rounded-full shadow-sm",
-                                              colorClass,
-                                              colorClass.includes("bg-gradient") ? "" : "bg-gradient-to-b",
-                                            )}
-                                            aria-hidden="true"
-                                          />
-                                        </div>
-                                        <div className="flex-1 min-w-0 space-y-1">
-                                          <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-500">
-                                            <span className="font-black">#{index + 1}</span>
-                                            <span>at {formatTime(timelineEvent.startTime ?? 0)}</span>
-                                            {durationLabel && <span>• {durationLabel}</span>}
+                            {/* Player Content */}
+                            <audio
+                              ref={audioRef}
+                              src={selectedMeditation.processedAudioUrl}
+                              preload="metadata"
+                              className="hidden"
+                            />
+
+                            {hasTimelineEvents && (
+                              <div className="space-y-3">
+                                <h3 className="text-sm font-black text-gray-700 uppercase tracking-wide">
+                                  Timeline Events
+                                </h3>
+                                <div className="max-h-48 overflow-y-auto space-y-2 pr-2 scrollbar-none">
+                                  {timelineEvents.map((timelineEvent, index) => {
+                                    const colorClass =
+                                      typeof timelineEvent.color === "string" && timelineEvent.color.trim().length > 0
+                                        ? timelineEvent.color
+                                        : "bg-gradient-to-br from-gray-300 to-gray-400"
+                                    const isRecording =
+                                      timelineEvent.eventType === "recorded_voice" ||
+                                      Boolean(timelineEvent.keepOriginal)
+                                    const isRecordingPlaying =
+                                      playingTimelineEventId === timelineEvent.id && isRecording
+                                    const durationLabel =
+                                      typeof timelineEvent.duration === "number" &&
+                                      Number.isFinite(timelineEvent.duration)
+                                        ? formatTime(timelineEvent.duration)
+                                        : null
+
+                                    return (
+                                      <div
+                                        key={timelineEvent.id}
+                                        className="bg-gradient-to-r from-gray-50 to-stone-50 rounded-lg p-3 border border-gray-200 shadow-sm"
+                                      >
+                                        <div className="flex items-start gap-3">
+                                          <div className="mt-0.5">
+                                            <div
+                                              className={cn(
+                                                "w-2.5 h-12 rounded-full shadow-sm",
+                                                colorClass,
+                                                colorClass.includes("bg-gradient") ? "" : "bg-gradient-to-b",
+                                              )}
+                                              aria-hidden="true"
+                                            />
                                           </div>
-                                          <p className="text-xs font-black text-gray-800 truncate">
-                                            {timelineEvent.text}
-                                          </p>
-                                          <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-600">
-                                            {isRecording && (
-                                              <span className="flex items-center gap-1">
-                                                <Volume2 className="h-3 w-3 text-logo-rose-500" />
-                                                <span className="text-logo-rose-500 font-semibold">
-                                                  {timelineEvent.recordingLabel?.trim() || "Recording"}
+                                          <div className="flex-1 min-w-0 space-y-1">
+                                            <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-500">
+                                              <span className="font-black">#{index + 1}</span>
+                                              <span>at {formatTime(timelineEvent.startTime ?? 0)}</span>
+                                              {durationLabel && <span>• {durationLabel}</span>}
+                                            </div>
+                                            <p className="text-xs font-black text-gray-800 truncate">
+                                              {timelineEvent.text}
+                                            </p>
+                                            <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-600">
+                                              {isRecording && (
+                                                <span className="flex items-center gap-1">
+                                                  <Volume2 className="h-3 w-3 text-logo-rose-500" />
+                                                  <span className="text-logo-rose-500 font-semibold">
+                                                    {timelineEvent.recordingLabel?.trim() || "Recording"}
+                                                  </span>
                                                 </span>
+                                              )}
+                                              <span className="flex items-center gap-1">
+                                                <Music className="h-3 w-3 text-logo-teal-500" />
+                                                <span className="text-logo-teal-500 font-semibold">Cue</span>
                                               </span>
-                                            )}
-                                            <span className="flex items-center gap-1">
-                                              <Music className="h-3 w-3 text-logo-teal-500" />
-                                              <span className="text-logo-teal-500 font-semibold">Cue</span>
-                                            </span>
+                                            </div>
                                           </div>
-                                        </div>
-                                        <div className="flex flex-col items-end gap-2">
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                                            onClick={(event) => {
-                                              event.stopPropagation()
-                                              handlePlayTimelineEvent(timelineEvent)
-                                            }}
-                                            aria-label="Play timeline event"
-                                            disabled={isQuickAdjustProcessing}
-                                          >
-                                            {isRecordingPlaying ? (
-                                              <Pause className="h-4 w-4" />
-                                            ) : (
-                                              <Play className="h-4 w-4" />
-                                            )}
-                                          </Button>
+                                          <div className="flex flex-col items-end gap-2">
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                                              onClick={(event) => {
+                                                event.stopPropagation()
+                                                handlePlayTimelineEvent(timelineEvent)
+                                              }}
+                                              aria-label="Play timeline event"
+                                              disabled={isQuickAdjustProcessing}
+                                            >
+                                              {isRecordingPlaying ? (
+                                                <Pause className="h-4 w-4" />
+                                              ) : (
+                                                <Play className="h-4 w-4" />
+                                              )}
+                                            </Button>
+                                          </div>
                                         </div>
                                       </div>
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            </div>
-                          )}
-
-                          {!hasTimelineEvents && selectedMeditation.source === "encoder" && (
-                            <div className="space-y-3">
-                              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                                <p className="text-xs text-amber-800 font-black">
-                                  Timeline data not available for this meditation. Re-encode and save it again to see
-                                  the timeline events.
-                                </p>
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="space-y-3">
-                            <div
-                              className="relative h-2 rounded-full cursor-pointer shadow-inner bg-muted"
-                              onClick={handleSeek}
-                            >
-                              <div
-                                className="absolute top-0 left-0 h-full bg-gradient-to-r from-gray-500 to-gray-600 rounded-full transition-all duration-150"
-                                style={{ width: `${playbackProgress}%` }}
-                              />
-                            </div>
-
-                            <div className="flex justify-between text-xs font-black text-gray-600">
-                              <span>{formatDetailedTime(playerTime)}</span>
-                              <span>{formatDetailedTime(playerDuration)}</span>
-                            </div>
-
-                            <div className="flex items-center justify-center gap-[13px] mb-0 pb-[21px]">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleSkip(-10)}
-                                className="h-10 w-10 text-gray-600 hover:text-gray-800"
-                                disabled={isQuickAdjustProcessing}
-                              >
-                                <SkipBack className="h-5 w-5" />
-                              </Button>
-
-                              <Button
-                                onClick={togglePlayback}
-                                className="h-12 w-12 rounded-full shadow-md bg-gradient-to-br from-gray-600 to-gray-500  hover:shadow-none text-white"
-                                disabled={isQuickAdjustProcessing}
-                              >
-                                {isAudioPlaying ? (
-                                  <Pause className="h-10 w-10" />
-                                ) : (
-                                  <Play className="ml-0.5 w-10 h-10" />
-                                )}
-                              </Button>
-
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleSkip(10)}
-                                className="h-10 w-10 text-gray-600 hover:text-gray-800"
-                                disabled={isQuickAdjustProcessing}
-                              >
-                                <SkipForward className="h-5 w-5" />
-                              </Button>
-                            </div>
-
-                            {currentDurationModes.length > 0 && (
-                              <div className="mt-5 flex flex-wrap items-center justify-center gap-2 font-black font-serif">
-                                {currentDurationModes.map((mode) => {
-                                  const isActive = mode.id === activeDurationModeId
-                                  const label =
-                                    mode.id === "original"
-                                      ? `Original (${formatDuration(mode.seconds)})`
-                                      : `${mode.label}`
-                                  return (
-                                    <Button
-                                      key={mode.id}
-                                      size="sm"
-                                      variant={isActive ? "default" : "outline"}
-                                      className={`text-[11px] rounded-[10px] font-black ${
-                                        isActive
-                                          ? "bg-gradient-to-tl from-gray-600 to-gray-500 text-white"
-                                          : "text-gray-600"
-                                      }`}
-                                      onClick={() => handleSelectDurationMode(mode.id)}
-                                      disabled={isQuickAdjustProcessing}
-                                    >
-                                      <span className="flex items-center gap-1">
-                                        {label}
-                                        {!mode.persisted && mode.id !== "original" && (
-                                          <span className="text-[10px]">• Unsaved</span>
-                                        )}
-                                      </span>
-                                    </Button>
-                                  )
-                                })}
+                                    )
+                                  })}
+                                </div>
                               </div>
                             )}
 
-                            <div className="flex flex-wrap pt-0 gap-3 tracking-tight">
-                              <Button
-                                onClick={() => {
-                                  if (!selectedMeditation) return
-                                  router.push(`/journal?meditation=${selectedMeditation.id}`)
-                                }}
-                                variant="ghost"
-                                size="icon"
-                                className="h-10 w-10  rounded-[10px] text-gray-600 shadow-md hover:shadow-none"
-                                title="Open Journal"
-                                disabled={isQuickAdjustProcessing || !selectedMeditation}
-                              >
-                                <NotebookPen className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                onClick={handleDownloadMeditation}
-                                variant="ghost"
-                                size="icon"
-                                className="h-10 w-10 rounded-[10px] text-gray-600  shadow-md hover:shadow-none"
-                                title="Download"
-                                disabled={isQuickAdjustProcessing}
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
+                            {!hasTimelineEvents && selectedMeditation.source === "encoder" && (
+                              <div className="space-y-3">
+                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                  <p className="text-xs text-amber-800 font-black">
+                                    Timeline data not available for this meditation. Re-encode and save it again to see
+                                    the timeline events.
+                                  </p>
+                                </div>
+                              </div>
+                            )}
 
-                              <Dialog
-                                open={isQuickAdjustDialogOpen}
-                                onOpenChange={(open) => {
-                                  if (!open) {
-                                    setIsEditingPresets(false)
-                                    setNewPresetValue("")
-                                  }
-                                  setIsQuickAdjustDialogOpen(open)
-                                }}
+                            <div className="space-y-3">
+                              <div
+                                className="relative h-2 rounded-full cursor-pointer shadow-inner bg-muted"
+                                onClick={handleSeek}
                               >
-                                <DialogTrigger asChild>
-                                  <Button
-                                    className="flex-1 shadow-md bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 rounded-[10px] hover:shadow-none text-white font-black text-xs flex items-center justify-center gap-2"
-                                    disabled={isQuickAdjustProcessing}
-                                  >
-                                    <Wand2 className="h-4 w-4" />
-                                    Quick Adjust
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-md">
-                                  <DialogHeader>
-                                    <DialogTitle>Quick Adjust</DialogTitle>
-                                  </DialogHeader>
-                                  <div className="space-y-4">
-                                    {!isEditingPresets ? (
-                                      <>
-                                        <div className="grid gap-2 font-serif font-black">
-                                          {quickAdjustPresets.length === 0 && (
-                                            <div className="rounded-md border border-dashed border-gray-300 p-3 text-xs text-gray-500">
-                                              No presets yet. Switch to Edit Presets to add your first quick adjust
-                                              duration.
-                                            </div>
+                                <div
+                                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-gray-500 to-gray-600 rounded-full transition-all duration-150"
+                                  style={{ width: `${playbackProgress}%` }}
+                                />
+                              </div>
+
+                              <div className="flex justify-between text-xs font-black text-gray-600">
+                                <span>{formatDetailedTime(playerTime)}</span>
+                                <span>{formatDetailedTime(playerDuration)}</span>
+                              </div>
+
+                              <div className="flex items-center justify-center gap-[13px] mb-0 pb-[21px]">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleSkip(-10)}
+                                  className="h-10 w-10 text-gray-600 hover:text-gray-800"
+                                  disabled={isQuickAdjustProcessing}
+                                >
+                                  <SkipBack className="h-5 w-5" />
+                                </Button>
+
+                                <Button
+                                  onClick={togglePlayback}
+                                  className="h-12 w-12 rounded-full shadow-md bg-gradient-to-br from-gray-600 to-gray-500  hover:shadow-none text-white"
+                                  disabled={isQuickAdjustProcessing}
+                                >
+                                  {isAudioPlaying ? (
+                                    <Pause className="h-10 w-10" />
+                                  ) : (
+                                    <Play className="ml-0.5 w-10 h-10" />
+                                  )}
+                                </Button>
+
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleSkip(10)}
+                                  className="h-10 w-10 text-gray-600 hover:text-gray-800"
+                                  disabled={isQuickAdjustProcessing}
+                                >
+                                  <SkipForward className="h-5 w-5" />
+                                </Button>
+                              </div>
+
+                              {currentDurationModes.length > 0 && (
+                                <div className="mt-5 flex flex-wrap items-center justify-center gap-2 font-black font-serif">
+                                  {currentDurationModes.map((mode) => {
+                                    const isActive = mode.id === activeDurationModeId
+                                    const label =
+                                      mode.id === "original"
+                                        ? `Original (${formatDuration(mode.seconds)})`
+                                        : `${mode.label}`
+                                    return (
+                                      <Button
+                                        key={mode.id}
+                                        size="sm"
+                                        variant={isActive ? "default" : "outline"}
+                                        className={`text-[11px] rounded-[10px] font-black ${
+                                          isActive
+                                            ? "bg-gradient-to-tl from-gray-600 to-gray-500 text-white"
+                                            : "text-gray-600"
+                                        }`}
+                                        onClick={() => handleSelectDurationMode(mode.id)}
+                                        disabled={isQuickAdjustProcessing}
+                                      >
+                                        <span className="flex items-center gap-1">
+                                          {label}
+                                          {!mode.persisted && mode.id !== "original" && (
+                                            <span className="text-[10px]">• Unsaved</span>
                                           )}
-                                          {quickAdjustPresets.map((preset) => {
-                                            const isActive = selectedPresetId === preset.id
-                                            return (
-                                              <Button
+                                        </span>
+                                      </Button>
+                                    )
+                                  })}
+                                </div>
+                              )}
+
+                              <div className="flex flex-wrap pt-0 gap-3 tracking-tight">
+                                <Button
+                                  onClick={() => {
+                                    if (!selectedMeditation) return
+                                    router.push(`/journal?meditation=${selectedMeditation.id}`)
+                                  }}
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-10 w-10  rounded-[10px] text-gray-600 shadow-md hover:shadow-none"
+                                  title="Open Journal"
+                                  disabled={isQuickAdjustProcessing || !selectedMeditation}
+                                >
+                                  <NotebookPen className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  onClick={handleDownloadMeditation}
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-10 w-10 rounded-[10px] text-gray-600  shadow-md hover:shadow-none"
+                                  title="Download"
+                                  disabled={isQuickAdjustProcessing}
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+
+                                <Dialog
+                                  open={isQuickAdjustDialogOpen}
+                                  onOpenChange={(open) => {
+                                    if (!open) {
+                                      setIsEditingPresets(false)
+                                      setNewPresetValue("")
+                                    }
+                                    setIsQuickAdjustDialogOpen(open)
+                                  }}
+                                >
+                                  <DialogTrigger asChild>
+                                    <Button
+                                      className="flex-1 shadow-md bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 rounded-[10px] hover:shadow-none text-white font-black text-xs flex items-center justify-center gap-2"
+                                      disabled={isQuickAdjustProcessing}
+                                    >
+                                      <Wand2 className="h-4 w-4" />
+                                      Quick Adjust
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="sm:max-w-md">
+                                    <DialogHeader>
+                                      <DialogTitle>Quick Adjust</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-4">
+                                      {!isEditingPresets ? (
+                                        <>
+                                          <div className="grid gap-2 font-serif font-black">
+                                            {quickAdjustPresets.length === 0 && (
+                                              <div className="rounded-md border border-dashed border-gray-300 p-3 text-xs text-gray-500">
+                                                No presets yet. Switch to Edit Presets to add your first quick adjust
+                                                duration.
+                                              </div>
+                                            )}
+                                            {quickAdjustPresets.map((preset) => {
+                                              const isActive = selectedPresetId === preset.id
+                                              return (
+                                                <Button
+                                                  key={preset.id}
+                                                  variant={isActive ? "default" : "outline"}
+                                                  className={`justify-between text-xs font-black ${
+                                                    isActive
+                                                      ? "bg-gradient-to-r from-logo-teal-400 to-logo-emerald-500 text-white"
+                                                      : "text-gray-600"
+                                                  }`}
+                                                  onClick={() => setSelectedPresetId(preset.id)}
+                                                >
+                                                  <span>{preset.label}</span>
+                                                  <span className="text-[11px] opacity-80 font-black font-serif">
+                                                    {formatDuration(preset.seconds)}
+                                                  </span>
+                                                </Button>
+                                              )
+                                            })}
+                                          </div>
+                                          <div className="flex items-center justify-between gap-3 pt-1 font-serif font-black">
+                                            <Button
+                                              variant="outline"
+                                              onClick={() => setIsEditingPresets(true)}
+                                              size="sm"
+                                            >
+                                              Edit Presets
+                                            </Button>
+                                            <Button
+                                              onClick={handleQuickAdjust}
+                                              size="sm"
+                                              disabled={
+                                                !selectedPresetId ||
+                                                isQuickAdjustProcessing ||
+                                                quickAdjustPresets.length === 0
+                                              }
+                                            >
+                                              Adjust
+                                            </Button>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <p className="text-xs text-gray-500">
+                                            Add or remove preset durations. Use minutes (15), hours (1h), or mm:ss
+                                            (12:30).
+                                          </p>
+                                          <div className="space-y-2 max-h-48 overflow-y-auto pr-1 scrollbar-none">
+                                            {quickAdjustPresets.map((preset) => (
+                                              <div
                                                 key={preset.id}
-                                                variant={isActive ? "default" : "outline"}
-                                                className={`justify-between text-xs font-black ${
-                                                  isActive
-                                                    ? "bg-gradient-to-r from-logo-teal-400 to-logo-emerald-500 text-white"
-                                                    : "text-gray-600"
-                                                }`}
-                                                onClick={() => setSelectedPresetId(preset.id)}
+                                                className="flex items-center justify-between rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs"
                                               >
-                                                <span>{preset.label}</span>
-                                                <span className="text-[11px] opacity-80 font-black font-serif">
-                                                  {formatDuration(preset.seconds)}
-                                                </span>
-                                              </Button>
+                                                <div className="flex flex-col">
+                                                  <span className="font-black text-gray-700">{preset.label}</span>
+                                                  <span className="text-[11px] text-gray-500">
+                                                    {formatDuration(preset.seconds)}
+                                                  </span>
+                                                </div>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="h-7 w-7 text-gray-500 hover:text-red-500"
+                                                  onClick={() => handleRemovePreset(preset.id)}
+                                                >
+                                                  <Trash2 className="h-3.5 w-3.5" />
+                                                </Button>
+                                              </div>
+                                            ))}
+                                            {quickAdjustPresets.length === 0 && (
+                                              <div className="rounded-md border border-dashed border-gray-300 p-3 text-xs text-gray-500">
+                                                No presets yet. Add a duration below to get started.
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            <Input
+                                              placeholder="e.g. 45m"
+                                              value={newPresetValue}
+                                              onChange={(event) => setNewPresetValue(event.target.value)}
+                                              className="text-xs"
+                                            />
+                                            <Button type="button" size="sm" onClick={handleAddPreset}>
+                                              <Plus className="h-3.5 w-3.5 mr-1" />
+                                              Add
+                                            </Button>
+                                          </div>
+                                          <div className="flex justify-end">
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() => setIsEditingPresets(false)}
+                                            >
+                                              Done
+                                            </Button>
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
+
+                                <Dialog open={isJournalHistoryOpen} onOpenChange={setIsJournalHistoryOpen}>
+                                  <DialogTrigger asChild>
+                                    <Button
+                                      className="flex-1 shadow-md bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 rounded-[10px] hover:shadow-none text-white font-black text-xs flex items-center justify-center gap-2"
+                                      disabled={!selectedMeditation}
+                                    >
+                                      <BookOpenCheck className="h-4 w-4" />
+                                      Journal History
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="sm:max-w-3xl">
+                                    <DialogHeader>
+                                      <DialogTitle>Journal History</DialogTitle>
+                                    </DialogHeader>
+                                    {journalEntriesForSelectedMeditation.length === 0 ? (
+                                      <div className="text-center py-10 text-sm text-gray-500 font-serif font-black">
+                                        No journal reflections for this meditation yet.
+                                      </div>
+                                    ) : (
+                                      <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-1">
+                                          {journalEntriesForSelectedMeditation.map((entry) => {
+                                            const isActive = activeJournalEntry?.id === entry.id
+                                            return (
+                                              <button
+                                                key={entry.id}
+                                                onClick={() => setActiveJournalEntryId(entry.id)}
+                                                className={cn(
+                                                  "rounded-xl border-[3px] px-4 py-3 text-left transition-all",
+                                                  isActive
+                                                    ? "border-stone-300 bg-white shadow-md text-gray-700"
+                                                    : "border-gray-300/60 bg-muted/60 text-gray-500 hover:bg-white",
+                                                )}
+                                              >
+                                                <div className="text-[11px] uppercase tracking-[0.3em] text-gray-400 font-black mb-1">
+                                                  {formatJournalDateLabel(entry.playedAt)}
+                                                </div>
+                                                <div className="text-sm font-black text-gray-700 mb-1">
+                                                  {formatJournalTimeLabel(entry.playedAt)}
+                                                </div>
+                                                <div className="text-xs text-gray-500 line-clamp-3 font-serif">
+                                                  {entry.note ?? "Tap to add a reflection in the journal."}
+                                                </div>
+                                              </button>
                                             )
                                           })}
                                         </div>
-                                        <div className="flex items-center justify-between gap-3 pt-1 font-serif font-black">
-                                          <Button variant="outline" onClick={() => setIsEditingPresets(true)} size="sm">
-                                            Edit Presets
-                                          </Button>
-                                          <Button
-                                            onClick={handleQuickAdjust}
-                                            size="sm"
-                                            disabled={
-                                              !selectedPresetId ||
-                                              isQuickAdjustProcessing ||
-                                              quickAdjustPresets.length === 0
-                                            }
-                                          >
-                                            Adjust
-                                          </Button>
-                                        </div>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <p className="text-xs text-gray-500">
-                                          Add or remove preset durations. Use minutes (15), hours (1h), or mm:ss
-                                          (12:30).
-                                        </p>
-                                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1 scrollbar-none">
-                                          {quickAdjustPresets.map((preset) => (
-                                            <div
-                                              key={preset.id}
-                                              className="flex items-center justify-between rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs"
-                                            >
-                                              <div className="flex flex-col">
-                                                <span className="font-black text-gray-700">{preset.label}</span>
-                                                <span className="text-[11px] text-gray-500">
-                                                  {formatDuration(preset.seconds)}
+                                        <div className="rounded-xl border-[3px] border-muted bg-gradient-to-br from-white to-stone-50 p-5 shadow-md">
+                                          {activeJournalEntry ? (
+                                            <div className="space-y-4">
+                                              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 font-black">
+                                                <span className="flex items-center gap-1">
+                                                  <Calendar className="h-4 w-4" />
+                                                  {formatJournalDateLabel(activeJournalEntry.playedAt)}
+                                                </span>
+                                                <span className="flex items-center gap-1">
+                                                  <Clock className="h-4 w-4" />
+                                                  {formatJournalTimeLabel(activeJournalEntry.playedAt)}
                                                 </span>
                                               </div>
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-7 w-7 text-gray-500 hover:text-red-500"
-                                                onClick={() => handleRemovePreset(preset.id)}
-                                              >
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                              </Button>
+                                              <div className="text-sm text-gray-600 font-serif whitespace-pre-wrap leading-relaxed border border-muted bg-muted/60 rounded-md p-3 min-h-[120px]">
+                                                {activeJournalEntry.note ??
+                                                  "No notes recorded yet. Add one from the journal page."}
+                                              </div>
+                                              <div className="flex justify-end gap-2 flex-wrap">
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="text-gray-500 hover:text-gray-700"
+                                                  onClick={() =>
+                                                    router.push(
+                                                      `/journal?date=${getDateKeyFromIso(activeJournalEntry.playedAt)}`,
+                                                    )
+                                                  }
+                                                >
+                                                  View by Date
+                                                </Button>
+                                                <Button
+                                                  className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-400 text-white font-black shadow-md hover:shadow-none"
+                                                  onClick={() => {
+                                                    const basePath = selectedMeditation
+                                                      ? `/journal?meditation=${selectedMeditation.id}&entry=${activeJournalEntry.id}`
+                                                      : `/journal?entry=${activeJournalEntry.id}`
+                                                    router.push(basePath)
+                                                  }}
+                                                >
+                                                  Open Journal Page
+                                                </Button>
+                                              </div>
                                             </div>
-                                          ))}
-                                          {quickAdjustPresets.length === 0 && (
-                                            <div className="rounded-md border border-dashed border-gray-300 p-3 text-xs text-gray-500">
-                                              No presets yet. Add a duration below to get started.
+                                          ) : (
+                                            <div className="text-center py-12 text-sm text-gray-500 font-serif font-black">
+                                              Choose an entry to view its details.
                                             </div>
                                           )}
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                          <Input
-                                            placeholder="e.g. 45m"
-                                            value={newPresetValue}
-                                            onChange={(event) => setNewPresetValue(event.target.value)}
-                                            className="text-xs"
-                                          />
-                                          <Button type="button" size="sm" onClick={handleAddPreset}>
-                                            <Plus className="h-3.5 w-3.5 mr-1" />
-                                            Add
-                                          </Button>
-                                        </div>
-                                        <div className="flex justify-end">
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setIsEditingPresets(false)}
-                                          >
-                                            Done
-                                          </Button>
-                                        </div>
-                                      </>
+                                      </div>
                                     )}
-                                  </div>
-                                </DialogContent>
-                              </Dialog>
+                                  </DialogContent>
+                                </Dialog>
 
-                              <Dialog open={isJournalHistoryOpen} onOpenChange={setIsJournalHistoryOpen}>
-                                <DialogTrigger asChild>
-                                  <Button
-                                    className="flex-1 shadow-md bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 rounded-[10px] hover:shadow-none text-white font-black text-xs flex items-center justify-center gap-2"
-                                    disabled={!selectedMeditation}
-                                  >
-                                    <BookOpenCheck className="h-4 w-4" />
-                                    Journal History
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-3xl">
-                                  <DialogHeader>
-                                    <DialogTitle>Journal History</DialogTitle>
-                                  </DialogHeader>
-                                  {journalEntriesForSelectedMeditation.length === 0 ? (
-                                    <div className="text-center py-10 text-sm text-gray-500 font-serif font-black">
-                                      No journal reflections for this meditation yet.
-                                    </div>
-                                  ) : (
-                                    <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-1">
-                                        {journalEntriesForSelectedMeditation.map((entry) => {
-                                          const isActive = activeJournalEntry?.id === entry.id
-                                          return (
-                                            <button
-                                              key={entry.id}
-                                              onClick={() => setActiveJournalEntryId(entry.id)}
-                                              className={cn(
-                                                "rounded-xl border-[3px] px-4 py-3 text-left transition-all",
-                                                isActive
-                                                  ? "border-stone-300 bg-white shadow-md text-gray-700"
-                                                  : "border-gray-300/60 bg-muted/60 text-gray-500 hover:bg-white",
-                                              )}
-                                            >
-                                              <div className="text-[11px] uppercase tracking-[0.3em] text-gray-400 font-black mb-1">
-                                                {formatJournalDateLabel(entry.playedAt)}
-                                              </div>
-                                              <div className="text-sm font-black text-gray-700 mb-1">
-                                                {formatJournalTimeLabel(entry.playedAt)}
-                                              </div>
-                                              <div className="text-xs text-gray-500 line-clamp-3 font-serif">
-                                                {entry.note ?? "Tap to add a reflection in the journal."}
-                                              </div>
-                                            </button>
-                                          )
-                                        })}
-                                      </div>
-                                      <div className="rounded-xl border-[3px] border-muted bg-gradient-to-br from-white to-stone-50 p-5 shadow-md">
-                                        {activeJournalEntry ? (
-                                          <div className="space-y-4">
-                                            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 font-black">
-                                              <span className="flex items-center gap-1">
-                                                <Calendar className="h-4 w-4" />
-                                                {formatJournalDateLabel(activeJournalEntry.playedAt)}
-                                              </span>
-                                              <span className="flex items-center gap-1">
-                                                <Clock className="h-4 w-4" />
-                                                {formatJournalTimeLabel(activeJournalEntry.playedAt)}
-                                              </span>
-                                            </div>
-                                            <div className="text-sm text-gray-600 font-serif whitespace-pre-wrap leading-relaxed border border-muted bg-muted/60 rounded-md p-3 min-h-[120px]">
-                                              {activeJournalEntry.note ??
-                                                "No notes recorded yet. Add one from the journal page."}
-                                            </div>
-                                            <div className="flex justify-end gap-2 flex-wrap">
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-gray-500 hover:text-gray-700"
-                                                onClick={() =>
-                                                  router.push(
-                                                    `/journal?date=${getDateKeyFromIso(activeJournalEntry.playedAt)}`,
-                                                  )
-                                                }
-                                              >
-                                                View by Date
-                                              </Button>
-                                              <Button
-                                                className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-400 text-white font-black shadow-md hover:shadow-none"
-                                                onClick={() => {
-                                                  const basePath = selectedMeditation
-                                                    ? `/journal?meditation=${selectedMeditation.id}&entry=${activeJournalEntry.id}`
-                                                    : `/journal?entry=${activeJournalEntry.id}`
-                                                  router.push(basePath)
-                                                }}
-                                              >
-                                                Open Journal Page
-                                              </Button>
-                                            </div>
-                                          </div>
-                                        ) : (
-                                          <div className="text-center py-12 text-sm text-gray-500 font-serif font-black">
-                                            Choose an entry to view its details.
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-                                </DialogContent>
-                              </Dialog>
-
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    className="flex-1 shadow-md bg-gradient-to-b from-gray-600 via-gray-500 to-purple-300 rounded-[10px] hover:shadow-none text-white font-black text-xs"
-                                    disabled={isQuickAdjustProcessing}
-                                  >
-                                    Open In
-                                    <ChevronDown className="h-4 w-4 ml-2" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-40">
-                                  <DropdownMenuItem
-                                    onClick={() => handleOpenInTool("adjuster")}
-                                    className="cursor-pointer"
-                                  >
-                                    Adjuster
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleOpenInTool("encoder")}
-                                    className="cursor-pointer"
-                                  >
-                                    Encoder
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      className="flex-1 shadow-md bg-gradient-to-b from-gray-600 via-gray-500 to-purple-300 rounded-[10px] hover:shadow-none text-white font-black text-xs"
+                                      disabled={isQuickAdjustProcessing}
+                                    >
+                                      Open In
+                                      <ChevronDown className="h-4 w-4 ml-2" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-40">
+                                    <DropdownMenuItem
+                                      onClick={() => handleOpenInTool("adjuster")}
+                                      className="cursor-pointer"
+                                    >
+                                      Adjuster
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => handleOpenInTool("encoder")}
+                                      className="cursor-pointer"
+                                    >
+                                      Encoder
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
                             </div>
-                          </div>
                           </div>
                         </div>
 
@@ -3189,13 +3434,25 @@ export default function LibraryPage() {
               playerPortalElement,
             )}
         </div>
-      </div>
 
-      <StorageBar
-        usedBytes={storageUsage.usedBytes}
-        quotaBytes={storageUsage.quotaBytes}
-        isAuthenticated={status === "authenticated"}
-      />
+        <StorageBar
+          usedBytes={storageUsage?.usedBytes ?? 0}
+          quotaBytes={storageUsage?.quotaBytes}
+          isAuthenticated={status === "authenticated"}
+          onExportBackup={handleExportBackup}
+          onImportBackup={() => backupInputRef.current?.click()}
+          isBackupLoading={isBackupLoading}
+          backupProgress={backupProgress}
+        />
+
+        <input
+          ref={backupInputRef}
+          type="file"
+          accept=".zip,application/zip"
+          className="hidden"
+          onChange={handleBackupFileChange}
+        />
+      </div>
     </div>
   )
 }

@@ -8,6 +8,7 @@ import { CalendarDays, Clock, NotebookPen, BookOpenCheck, Sparkles } from "lucid
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { UserMenu } from "@/components/user-menu"
 import {
   Dialog,
   DialogClose,
@@ -45,7 +46,12 @@ const formatMonth = (date: Date) =>
     year: "numeric",
   }).format(date)
 
-const getDateKey = (date: Date) => date.toISOString().split("T")[0]
+const getDateKey = (date: Date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
 
 const parseDateKey = (key: string | null) => {
   if (!key) return null
@@ -390,12 +396,18 @@ export default function JournalPage() {
       <main className="px-0">
         <div className="max-w-5xl mx-auto">
           <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out">
+            <div className="absolute top-4 right-4 z-30">
+              <UserMenu />
+            </div>
             {!isAuthenticated && (
               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm space-y-3 text-center p-6">
                 <p className="text-lg text-gray-800 font-serif font-black">Create account to save</p>
-                
-                <Button onClick={login} className="bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 text-white">
-                  Create account
+
+                <Button
+                  onClick={login}
+                  className="bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 text-white font-black shadow-md hover:shadow-lg transition-shadow"
+                >
+                  Login / Sign up
                 </Button>
               </div>
             )}
@@ -479,7 +491,9 @@ export default function JournalPage() {
                         <div className="flex flex-col gap-6">
                           <div className="text-center">
                             {selectedDate && (
-                              <div className="font-black text-2xl text-gray-600 tracking-tight">{formatMonth(selectedDate)}</div>
+                              <div className="font-black text-2xl text-gray-600 tracking-tight">
+                                {formatMonth(selectedDate)}
+                              </div>
                             )}
                           </div>
 
@@ -560,7 +574,9 @@ export default function JournalPage() {
                                       <div>
                                         <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-gray-400 font-black">
                                           <CalendarDays className="h-4 w-4" />
-                                          <span className="font-serif tracking-normal">{formatLongDate(entryDate)}</span>
+                                          <span className="font-serif tracking-normal">
+                                            {formatLongDate(entryDate)}
+                                          </span>
                                         </div>
                                         <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-600 font-black">
                                           <span className="flex items-center gap-1">
@@ -809,8 +825,7 @@ export default function JournalPage() {
                                             <DialogHeader>
                                               <DialogTitle>Delete this journal entry?</DialogTitle>
                                               <DialogDescription>
-                                                This will permanently remove your reflection for
-                                                {" "}
+                                                This will permanently remove your reflection for{" "}
                                                 {formatLongDate(new Date(activeMeditationEntry.playedAt))}. This action
                                                 cannot be undone.
                                               </DialogDescription>

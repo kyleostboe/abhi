@@ -9,11 +9,16 @@ export type AudioRecord = {
   timelineRecordings?: Record<string, Blob>
 }
 
+export type SerializedBlob = {
+  data: string
+  type: string
+}
+
 export type AudioBackup = {
   id: string
-  processedAudio?: Blob | null
-  sourceAudio?: Blob | null
-  timelineRecordings?: Record<string, Blob>
+  processedAudio?: SerializedBlob | null
+  sourceAudio?: SerializedBlob | null
+  timelineRecordings?: Record<string, SerializedBlob>
 }
 
 function getDatabase(): Promise<IDBDatabase> {
@@ -132,11 +137,24 @@ export async function exportAudioRecords(ids: string[]): Promise<AudioBackup[]> 
       const record = await getAudioRecord(id)
       if (!record) continue
       
+      const processedSerialized = await serializeBlob(record.processedAudio)
+      const sourceSerialized = record.sourceAudio ? await serializeBlob(record.sourceAudio) : null
+      
+      const timelineRecordings: Record<string, SerializedBlob> = {}
+      if (record.timelineRecordings) {
+        for (const [key, blob] of Object.entries(record.timelineRecordings)) {
+          const serialized = await serializeBlob(blob)
+          if (serialized) {
+            timelineRecordings[key] = serialized
+          }
+        }
+      }
+      
       backups.push({
         id,
-        processedAudio: record.processedAudio,
-        sourceAudio: record.sourceAudio ?? null,
-        timelineRecordings: record.timelineRecordings,
+        processedAudio: processedSerialized,
+        sourceAudio: sourceSerialized,
+        timelineRecordings: Object.keys(timelineRecordings).length > 0 ? timelineRecordings : undefined,
       })
     } catch (error) {
       console.warn("Unable to export audio record", id, error)
@@ -149,15 +167,59 @@ export async function exportAudioRecords(ids: string[]): Promise<AudioBackup[]> 
 export async function importAudioBackups(backups: AudioBackup[]): Promise<void> {
   for (const backup of backups) {
     try {
+      const processedAudio = backup.processedAudio ? deserializeBlob(backup.processedAudio) : new Blob()
+      const sourceAudio = backup.sourceAudio ? deserializeBlob(backup.sourceAudio) : null
+      
+      const timelineRecordings: Record<string, Blob> = {}
+      if (backup.timelineRecordings) {
+        for (const [key, serialized] of Object.entries(backup.timelineRecordings)) {
+          const blob = deserializeBlob(serialized)
+          if (blob) {
+            timelineRecordings[key] = blob
+          }
+        }
+      }
+      
       await saveAudioRecord({
         id: backup.id,
-        processedAudio: backup.processedAudio ?? new Blob(),
-        sourceAudio: backup.sourceAudio,
-        timelineRecordings: backup.timelineRecordings,
+        processedAudio,
+        sourceAudio,
+        timelineRecordings: Object.keys(timelineRecordings).length > 0 ? timelineRecordings : undefined,
       })
     } catch (error) {
       console.warn("Unable to import audio backup", backup.id, error)
     }
+  }
+}
+
+async function serializeBlob(blob: Blob): Promise<SerializedBlob | null> {
+  if (!blob) return null
+  try {
+    const buffer = await blob.arrayBuffer()
+    const bytes = new Uint8Array(buffer)
+    let binary = ""
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i])
+    }
+    return { data: btoa(binary), type: blob.type }
+  } catch (error) {
+    console.error("Failed to serialize blob:", error)
+    return null
+  }
+}
+
+function deserializeBlob(serialized: SerializedBlob): Blob | null {
+  if (!serialized || !serialized.data) return null
+  try {
+    const binary = atob(serialized.data)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < bytes.length; i++) {
+      bytes[i] = binary.charCodeAt(i)
+    }
+    return new Blob([bytes], { type: serialized.type || 'audio/wav' })
+  } catch (error) {
+    console.error("Failed to deserialize blob:", error)
+    return null
   }
 }
 
@@ -198,4 +260,22 @@ export async function estimateAudioUsage(): Promise<{ usedBytes: number; quotaBy
     console.warn("[v0] Unable to estimate audio usage", error)
     return { usedBytes: 0 }
   }
+}
+
+export async function getAllAudioRecords(): Promise<AudioRecord[]> {
+  const db = await getDatabase()
+  
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(AUDIO_STORE, "readonly")
+    const store = transaction.objectStore(AUDIO_STORE)
+    const request = store.getAll()
+    
+    request.onsuccess = () => {
+      resolve(request.result as AudioRecord[])
+    }
+    
+    request.onerror = () => {
+      reject(request.error)
+    }
+  })
 }

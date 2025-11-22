@@ -43,6 +43,7 @@ import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
 import * as Tone from "tone"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
 import { AudioInfoMenu } from "@/components/audio-info-menu"
+import { UserMenu } from "@/components/user-menu" // Added UserMenu to top-right corner of main app card
 
 const ADJUSTER_SESSION_KEY = "abhi_last_adjuster_session"
 const ENCODER_SESSION_KEY = "abhi_last_encoder_session"
@@ -95,7 +96,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
     >
       <Card className="overflow-hidden border-none shadow-lg bg-white ">
         <div className="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 px-6 py-[9px] text-center">
-          <h3 className="text-white flex items-center font-serif font-black text-left">
+          <h3 className="text-white flex items-center font-serif font-black text-center">
             <Mic className="h-4 w-4 mr-2" />
             Recorder
           </h3>
@@ -2842,6 +2843,9 @@ export default function Home() {
           className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
           role="application"
         >
+          <div className="absolute top-2 right-2 z-10">
+            <UserMenu showLoginButton />
+          </div>
           <div className="relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
               <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 "></div>
@@ -2983,14 +2987,6 @@ export default function Home() {
                           Rob Burbea's talks &amp; retreats
                         </a>
                         <a
-                          href="https://tasshin.com/guided-meditations/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight"
-                        >
-                          Tasshin &amp; friend's meditations
-                        </a>
-                        <a
                           href="https://www.tarabrach.com/guided-meditations/"
                           target="_blank"
                           rel="noopener noreferrer"
@@ -3037,7 +3033,7 @@ export default function Home() {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.2 }}
                         >
-                          <div className="font-serif font-black text-gray-600 mb-[3px] text-base tracking-tight">
+                          <div className="font-serif font-black text-gray-600 mb-[3px] tracking-tight text-sm">
                             Drag &amp; drop your audio file here or click to browse
                           </div>
                           <div className="font-serif text-xs text-gray-500 tracking-tight">
@@ -3336,14 +3332,14 @@ export default function Home() {
                             gradientClassName="from-pink-400 to-cyan-400"
                             bodyClassName="px-6 py-6"
                           >
-                            <div className="peer inline-flex shrink-0 cursor-pointer items-center border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input rounded-full text-white w-11 h-5">
-                              <p className="text-xs text-gray-600 tracking-tight">
+                            <div className="flex items-center justify-between gap-4">
+                              <p className="text-xs text-gray-600 tracking-tight flex-1 text-left">
                                 Maintain the relative length of pauses
                               </p>
                               <Switch
                                 checked={preserveNaturalPacing}
                                 onCheckedChange={setPreserveNaturalPacing}
-                                className="data-[state=checked]:bg-gray-500"
+                                className="data-[state=checked]:bg-gray-500 shrink-0"
                               />
                             </div>
                           </DurationControlCard>
@@ -3422,9 +3418,9 @@ export default function Home() {
                         radial-gradient(circle at 38% 62%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
                         radial-gradient(circle at 83% 41%, rgba(255, 255, 255, 0.75) 1.4px, transparent 1.6px),
                         radial-gradient(circle at 19% 76%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
-                        radial-gradient(circle at 61% 28%, rgba(255, 255, 255, 0.85) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 94% 87%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
-                        radial-gradient(circle at 41% 5%, rgba(255, 255, 255, 0.9) 0.9px, transparent 1px),
+                        radial-gradient(circle at 58% 32%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.4px),
+                        radial-gradient(circle at 91% 81%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
+                        radial-gradient(circle at 37% 9%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
                         linear-gradient(135deg, #4b5563 0%, #6b7280 100%)
                       `,
                         } as React.CSSProperties
@@ -3491,9 +3487,6 @@ export default function Home() {
                               pausesAdjusted,
                               wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
                               timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
-                              ...(quickAdjustRange
-                                ? { quickAdjust: { range: { minSeconds: quickAdjustRange.minSeconds } } }
-                                : {}),
                             }}
                             existingMeditationId={loadedLibraryContext?.id}
                             existingMeditationTitle={loadedLibraryContext?.title}
@@ -3571,7 +3564,7 @@ export default function Home() {
                         className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
                       >
                         <div className="p-0.5 bg-gradient-to-br from-logo-blue-400 to-stone-300  py-1 shadow-lg rounded-sm px-[5px]">
-                          <div className="bg-white p-4 rounded-[10px] shadow-nonee pb-3 pt-1.5 shadow-inner border-stone-300 border-4 border-double">
+                          <div className="bg-white p-4 rounded-[10px] shadow-inner border-stone-300 border-4 border-double">
                             <div className="text-center">
                               <Textarea
                                 id="custom-instruction"
@@ -3743,7 +3736,7 @@ export default function Home() {
                                             })}
                                           </div>
                                         </AccordionContent>
-                                      </AccordionItem>
+                                      </Accordion>
                                     ))}
                                   </Accordion>
                                 </AccordionContent>

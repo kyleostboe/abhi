@@ -1,6 +1,6 @@
 "use client"
 
-import { Settings, LogOut } from 'lucide-react'
+import { Settings, LogOut } from "lucide-react"
 import Link from "next/link"
 import {
   DropdownMenu,
@@ -13,11 +13,25 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useAuth } from "@/hooks/use-auth"
 
-export function UserMenu() {
-  const { user, logout, isAuthenticated } = useAuth()
+interface UserMenuProps {
+  showLoginButton?: boolean
+}
+
+export function UserMenu({ showLoginButton = false }: UserMenuProps) {
+  const { user, logout, isAuthenticated, login } = useAuth()
 
   if (!isAuthenticated || !user) {
-    return null
+    if (!showLoginButton) return null
+
+    return (
+      <Button
+        onClick={login}
+        size="sm"
+        className="bg-white text-gray-600 shadow-lg hover:shadow-sm hover:text-gray-900 hover:bg-white font-bold text-xs h-8 px-4 rounded-[8px] transition-all duration-200"
+      >
+        Login / Sign up
+      </Button>
+    )
   }
 
   const displayName = (user.user_metadata?.display_name as string) || user.email || "User"

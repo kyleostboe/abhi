@@ -1,15 +1,14 @@
 import { createClient } from "@/lib/supabase/client"
 import type { BufferToWavMetadata } from "./audio-utils"
 import { getAuthState } from "./auth-state"
+import JSZip from "jszip"
 import {
   saveAudioRecord,
   getAudioRecord,
   deleteAudioRecord,
-  exportAudioRecords,
-  importAudioBackups,
+  getAllAudioRecords,
   estimateAudioUsage,
-  type AudioBackup,
-  type SerializedBlob,
+  type AudioRecord,
 } from "./storage/indexed-db"
 import {
   addMeditationToMemoryPlaylist,
@@ -330,11 +329,15 @@ export class MeditationLibrary {
       try {
         console.log("[v0] Loading audio for meditation:", row.id)
         const audio = await getAudioRecord(row.id)
+        
         if (!audio) {
-          console.warn("[v0] No audio found in IndexedDB for meditation:", row.id)
+          console.warn("[v0] MISSING AUDIO: No audio record found in IndexedDB for meditation:", row.id)
+          // We still return the meditation so the user sees the metadata, 
+          // but the UI will need to handle the missing audio URL.
         } else {
-          console.log("[v0] Successfully loaded audio from IndexedDB for:", row.id)
+          console.log("[v0] Successfully loaded audio from IndexedDB for:", row.id, "Size:", audio.processedAudio?.size)
         }
+        
         const processedUrl = buildObjectUrl(audio?.processedAudio)
         const sourceUrl = buildObjectUrl(audio?.sourceAudio ?? null)
         meditations.push(normalizeSupabaseMeditation(row, processedUrl, sourceUrl, audio?.timelineRecordings))
@@ -665,118 +668,157 @@ export class MeditationLibrary {
 
   static async exportBackup(): Promise<Blob> {
     const auth = getAuthState()
+    
     if (auth.status !== "authenticated" || !auth.userId) {
-      const meditations = getMemoryMeditations()
-      const audio: AudioBackup[] = []
-
-      for (const meditation of meditations) {
-        const audioRecord = getMemoryAudio(meditation.id)
-        const timelineRecordings: Record<string, SerializedBlob> = {}
-        if (audioRecord?.timelineRecordings) {
-          for (const [key, blob] of Object.entries(audioRecord.timelineRecordings)) {
-            const serialized = await serializeBlobForBackup(blob)
-            if (serialized) {
-              timelineRecordings[key] = serialized
-            }
-          }
-        }
-
-        audio.push({
-          id: meditation.id,
-          processedAudio: await serializeBlobForBackup(audioRecord?.processedAudio ?? null),
-          sourceAudio: await serializeBlobForBackup(audioRecord?.sourceAudio ?? null),
-          timelineRecordings: Object.keys(timelineRecordings).length > 0 ? timelineRecordings : undefined,
-        })
-      }
-
-      const metadata = meditations.map((meditation) => ({
-        ...meditation,
-        processedAudioUrl: "",
-        sourceAudioUrl: undefined,
-        createdAt: meditation.createdAt instanceof Date ? meditation.createdAt.toISOString() : meditation.createdAt,
-      }))
-
-      const payload = {
-        version: 1,
-        meditations: metadata,
-        audio,
-      }
-
-      return new Blob([JSON.stringify(payload)], { type: "application/json" })
+      throw new Error("Backup export is only available for authenticated users")
     }
 
     const supabase = createClient()
     const { data } = await supabase
       .from("meditations")
       .select("*")
+      .order("created_at", { ascending: false })
 
-    const meditations = (data ?? []).map((row) => normalizeSupabaseMeditation(row, ""))
-    const audio = await exportAudioRecords(meditations.map((m) => m.id))
+    if (!data || data.length === 0) {
+      throw new Error("No meditations to export")
+    }
 
-    const payload = { version: 1, meditations, audio }
-    return new Blob([JSON.stringify(payload)], { type: "application/json" })
+    const zip = new JSZip()
+
+    // Add metadata JSON (without audio URLs)
+    const metadata = data.map((row) => ({
+      id: row.id,
+      title: row.title,
+      originalFileName: row.original_filename || row.description || "Unknown",
+      duration: row.duration || 0,
+      createdAt: new Date(row.created_at).toISOString(),
+      source: row.source as "adjuster" | "encoder",
+      metadata: row.metadata || {},
+    }))
+
+    zip.file("meditations.json", JSON.stringify(metadata, null, 2))
+
+    // Add audio blobs as separate files
+    const audioRecords = await getAllAudioRecords()
+    const audioMap = new Map(audioRecords.map((record) => [record.id, record]))
+
+    for (const meditation of data) {
+      const audioRecord = audioMap.get(meditation.id)
+      if (!audioRecord) continue
+
+      // Add processed audio
+      if (audioRecord.processedAudio) {
+        zip.file(`audio-${meditation.id}.mp3`, audioRecord.processedAudio)
+      }
+
+      // Add source audio if exists
+      if (audioRecord.sourceAudio) {
+        zip.file(`source-${meditation.id}.mp3`, audioRecord.sourceAudio)
+      }
+
+      // Add timeline recordings if exist
+      if (audioRecord.timelineRecordings) {
+        for (const [key, blob] of Object.entries(audioRecord.timelineRecordings)) {
+          zip.file(`timeline-${meditation.id}-${key}.mp3`, blob)
+        }
+      }
+    }
+
+    return await zip.generateAsync({ type: "blob" })
   }
 
-  static async importBackup(file: File): Promise<void> {
-    const text = await file.text()
-    const payload = JSON.parse(text) as { version: number; meditations: SavedMeditation[]; audio: AudioBackup[] }
-
+  static async importBackup(file: File, onProgress?: (progress: number, message: string) => void): Promise<void> {
     const auth = getAuthState()
-    if (payload.version !== 1) {
-      throw new Error("Unsupported backup version")
+    
+    if (auth.status !== "authenticated" || !auth.userId) {
+      throw new Error("Backup import is only available for authenticated users")
     }
 
-    if (auth.status === "authenticated" && auth.userId) {
-      const supabase = createClient()
-      if (payload.meditations?.length) {
-        await supabase.from("meditations").upsert(
-          payload.meditations.map((meditation) => ({
-            id: meditation.id,
-            title: meditation.title,
-            description: meditation.originalFileName,
-            duration: meditation.duration,
-            source: meditation.source,
-            metadata: meditation.metadata,
-            original_filename: meditation.originalFileName,
-            profile_id: auth.userId!,
-          })),
-          { onConflict: "id" },
-        )
-      }
-      if (payload.audio?.length) {
-        await importAudioBackups(payload.audio)
-      }
-      return
+    const zip = await JSZip.loadAsync(file)
+    
+    // Read metadata
+    const metadataFile = zip.file("meditations.json")
+    if (!metadataFile) {
+      throw new Error("Invalid backup file: missing meditations.json")
     }
 
-    if (payload.meditations) {
-      payload.meditations.forEach((meditation) => {
-        const audioBackup = payload.audio?.find((backup) => backup.id === meditation.id)
-        const processed = audioBackup?.processedAudio ? deserializeSerialized(audioBackup.processedAudio) : null
-        const source = audioBackup?.sourceAudio ? deserializeSerialized(audioBackup.sourceAudio) : null
+    const metadataText = await metadataFile.async("text")
+    const meditations = JSON.parse(metadataText) as Array<{
+      id: string
+      title: string
+      originalFileName: string
+      duration: number
+      createdAt: string
+      source: "adjuster" | "encoder"
+      metadata: any
+    }>
+
+    onProgress?.(10, "Reading backup file...")
+
+    const supabase = createClient()
+    const totalSteps = meditations.length
+
+    // Import meditations one by one
+    for (let i = 0; i < meditations.length; i++) {
+      const meditation = meditations[i]
+      const progress = 10 + ((i + 1) / totalSteps) * 80
+
+      onProgress?.(progress, `Restoring meditation ${i + 1} of ${totalSteps}...`)
+
+      // Save metadata to Supabase
+      await supabase.from("meditations").upsert(
+        {
+          id: meditation.id,
+          title: meditation.title,
+          description: meditation.originalFileName,
+          duration: meditation.duration,
+          source: meditation.source,
+          metadata: meditation.metadata,
+          original_filename: meditation.originalFileName,
+          profile_id: auth.userId!,
+        },
+        { onConflict: "id" }
+      )
+
+      // Restore audio blobs from zip
+      const processedAudioFile = zip.file(`audio-${meditation.id}.mp3`)
+      const sourceAudioFile = zip.file(`source-${meditation.id}.mp3`)
+
+      if (processedAudioFile) {
+        const processedBlob = await processedAudioFile.async("blob")
+        const sourceBlob = sourceAudioFile ? await sourceAudioFile.async("blob") : null
+
+        // Find timeline recordings
         const timelineRecordings: Record<string, Blob> = {}
-        if (audioBackup?.timelineRecordings) {
-          Object.entries(audioBackup.timelineRecordings).forEach(([key, serialized]) => {
-            const blob = deserializeSerialized(serialized)
-            if (blob) {
-              timelineRecordings[key] = blob
-            }
-          })
-        }
-        const meditationWithUrls: SavedMeditation = {
-          ...meditation,
-          processedAudioUrl: processed ? buildObjectUrl(processed) : "",
-          sourceAudioUrl: source ? buildObjectUrl(source) : undefined,
-          createdAt: new Date(meditation.createdAt ?? new Date()),
-          metadata: meditation.metadata || {},
-        }
-        saveMemoryMeditation(meditation.id, meditationWithUrls, {
-          processedAudio: processed ?? new Blob(),
-          sourceAudio: source,
-          timelineRecordings,
+        const timelinePrefix = `timeline-${meditation.id}-`
+        
+        zip.forEach((relativePath, zipEntry) => {
+          if (relativePath.startsWith(timelinePrefix)) {
+            const key = relativePath.replace(timelinePrefix, "").replace(".mp3", "")
+            // We'll load these async below
+            timelineRecordings[key] = null as any // placeholder
+          }
         })
-      })
+
+        // Load timeline recordings
+        for (const key of Object.keys(timelineRecordings)) {
+          const timelineFile = zip.file(`${timelinePrefix}${key}.mp3`)
+          if (timelineFile) {
+            timelineRecordings[key] = await timelineFile.async("blob")
+          }
+        }
+
+        // Save to IndexedDB
+        await saveAudioRecord({
+          id: meditation.id,
+          processedAudio: processedBlob,
+          sourceAudio: sourceBlob,
+          timelineRecordings: Object.keys(timelineRecordings).length > 0 ? timelineRecordings : undefined,
+        })
+      }
     }
+
+    onProgress?.(100, "Backup restored successfully!")
   }
 
   static async getStorageUsage() {
@@ -786,25 +828,4 @@ export class MeditationLibrary {
     }
     return estimateAudioUsage()
   }
-}
-
-async function serializeBlobForBackup(blob?: Blob | null) {
-  if (!blob) return null
-  const buffer = await blob.arrayBuffer()
-  const bytes = new Uint8Array(buffer)
-  let binary = ""
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i])
-  }
-  return { data: btoa(binary), type: blob.type }
-}
-
-function deserializeSerialized(value: { data: string; type: string } | null | undefined): Blob | null {
-  if (!value) return null
-  const binary = atob(value.data)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = binary.charCodeAt(i)
-  }
-  return new Blob([bytes], { type: value.type })
 }
