@@ -46,8 +46,11 @@ export function UserMenu({ showLoginButton = false }: UserMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-muted">
-          <Avatar className="h-10 w-10 border-2 border-gray-300">
+        <Button
+          variant="ghost"
+          className="relative h-9 w-9 rounded-full bg-white shadow-[0_18px_38px_rgba(0,0,0,0.2)] transition-shadow hover:shadow-none hover:bg-white/90"
+        >
+          <Avatar className="h-9 w-9 border-2 border-gray-300">
             <AvatarFallback className="bg-gradient-to-br from-gray-600 to-gray-500 text-white font-bold">
               {initials}
             </AvatarFallback>
