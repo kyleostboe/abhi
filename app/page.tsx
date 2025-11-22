@@ -2810,7 +2810,7 @@ export default function Home() {
       <Navigation />
 
       {!isAuthenticated && (
-        <div className="fixed top-[88px] left-1/2 z-40 -translate-x-1/2">
+        <div className="fixed top-[88px] left-1/2 z-50 -translate-x-1/2">
           <Button
             onClick={login}
             size="sm"
