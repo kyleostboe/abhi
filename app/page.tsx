@@ -45,6 +45,7 @@ import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
 import * as Tone from "tone"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
 import { AudioInfoMenu } from "@/components/audio-info-menu"
+import { AuthButtons } from "@/components/auth-buttons"
 
 const ADJUSTER_SESSION_KEY = "abhi_last_adjuster_session"
 const ENCODER_SESSION_KEY = "abhi_last_encoder_session"
@@ -2806,25 +2807,12 @@ export default function Home() {
   const handleProcessAudio = processAudioAdjusterAction
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 pt-28 md:pt-32">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 pt-20 md:pt-24">
       <Navigation showProfileButton />
 
       {!isAuthenticated && (
         <div className="flex justify-center mb-6">
-          <div className="flex items-center gap-3 rounded-2xl bg-white/70 px-4 py-3 shadow-[0_0_20px_rgba(0,0,0,0.08)] backdrop-blur-sm">
-            <Button
-              onClick={login}
-              className="rounded-xl bg-white px-6 py-3 text-base font-black text-gray-600 shadow-[0_0_20px_rgba(0,0,0,0.12)] hover:shadow-lg"
-            >
-              Log In
-            </Button>
-            <Button
-              asChild
-              className="rounded-xl bg-gray-600 px-6 py-3 text-base font-black text-white shadow-[0_0_20px_rgba(0,0,0,0.12)] hover:bg-gray-700 hover:shadow-lg"
-            >
-              <Link href="/auth/sign-up">Sign Up</Link>
-            </Button>
-          </div>
+          <AuthButtons onLogin={login} />
         </div>
       )}
 
