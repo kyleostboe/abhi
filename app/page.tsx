@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import Link from "next/link"
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
@@ -28,6 +29,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/use-auth"
 import { VisualTimeline } from "@/components/visual-timeline"
 import { cn, formatTime, monitorMemory, formatFileSize } from "@/lib/utils"
 import { getAudioContext, bufferToWav, bufferToWebM, type BufferToWavMetadata } from "@/lib/audio-utils" // Import from audio-utils
@@ -43,7 +45,6 @@ import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
 import * as Tone from "tone"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
 import { AudioInfoMenu } from "@/components/audio-info-menu"
-import { UserMenu } from "@/components/user-menu" // Added UserMenu to top-right corner of main app card
 
 const ADJUSTER_SESSION_KEY = "abhi_last_adjuster_session"
 const ENCODER_SESSION_KEY = "abhi_last_encoder_session"
@@ -512,6 +513,7 @@ const playPianoNote = async (noteString: string, duration = 0.45, velocity = 0.9
 
 export default function Home() {
   const { toast } = useToast()
+  const { isAuthenticated, login } = useAuth()
 
   const [activeMode, setActiveMode] = useState<"adjuster" | "encoder">("adjuster")
   const [shouldScrollToAdjuster, setShouldScrollToAdjuster] = useState(false)
@@ -2805,7 +2807,26 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 pt-28 md:pt-32">
-      <Navigation />
+      <Navigation showProfileButton />
+
+      {!isAuthenticated && (
+        <div className="flex justify-center mb-6">
+          <div className="flex items-center gap-3 rounded-2xl bg-white/70 px-4 py-3 shadow-[0_0_20px_rgba(0,0,0,0.08)] backdrop-blur-sm">
+            <Button
+              onClick={login}
+              className="rounded-xl bg-white px-6 py-3 text-base font-black text-gray-600 shadow-[0_0_20px_rgba(0,0,0,0.12)] hover:shadow-lg"
+            >
+              Log In
+            </Button>
+            <Button
+              asChild
+              className="rounded-xl bg-gray-600 px-6 py-3 text-base font-black text-white shadow-[0_0_20px_rgba(0,0,0,0.12)] hover:bg-gray-700 hover:shadow-lg"
+            >
+              <Link href="/auth/sign-up">Sign Up</Link>
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="relative">
 
@@ -2844,9 +2865,6 @@ export default function Home() {
           className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
           role="application"
         >
-          <div className="absolute top-2 right-2 z-10">
-            <UserMenu showLoginButton />
-          </div>
           <div className="relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
               <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 "></div>

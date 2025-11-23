@@ -15,9 +15,10 @@ import { useAuth } from "@/hooks/use-auth"
 
 interface UserMenuProps {
   showLoginButton?: boolean
+  buttonVariant?: "default" | "nav"
 }
 
-export function UserMenu({ showLoginButton = false }: UserMenuProps) {
+export function UserMenu({ showLoginButton = false, buttonVariant = "default" }: UserMenuProps) {
   const { user, logout, isAuthenticated, login } = useAuth()
 
   if (!isAuthenticated || !user) {
@@ -43,13 +44,15 @@ export function UserMenu({ showLoginButton = false }: UserMenuProps) {
     .toUpperCase()
     .slice(0, 2)
 
+  const triggerClasses =
+    buttonVariant === "nav"
+      ? "relative h-9 w-9 rounded-full bg-white shadow-[0_0_20px_rgba(0,0,0,0.12)] transition-shadow hover:shadow-lg hover:bg-white"
+      : "relative h-9 w-9 rounded-full bg-white shadow-[0_18px_38px_rgba(0,0,0,0.2)] transition-shadow hover:shadow-none hover:bg-white/90"
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="relative h-9 w-9 rounded-full bg-white shadow-[0_18px_38px_rgba(0,0,0,0.2)] transition-shadow hover:shadow-none hover:bg-white/90"
-        >
+        <Button variant="ghost" className={triggerClasses}>
           <Avatar className="h-9 w-9 border-2 border-gray-300">
             <AvatarFallback className="bg-gradient-to-br from-gray-600 to-gray-500 text-white font-bold">
               {initials}
