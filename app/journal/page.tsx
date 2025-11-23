@@ -8,7 +8,7 @@ import { CalendarDays, Clock, NotebookPen, BookOpenCheck, Sparkles } from "lucid
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { UserMenu } from "@/components/user-menu"
+import { AuthButtons } from "@/components/auth-buttons"
 import {
   Dialog,
   DialogClose,
@@ -391,24 +391,15 @@ export default function JournalPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px]">
-      <Navigation />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 pt-20 md:pt-24">
+      <Navigation showProfileButton />
       <main className="px-0">
         <div className="max-w-5xl mx-auto">
           <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out">
-            <div className="absolute top-4 right-4 z-30">
-              <UserMenu />
-            </div>
             {!isAuthenticated && (
               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm space-y-3 text-center p-6">
                 <p className="text-lg text-gray-800 font-serif font-black">Create account to save</p>
-
-                <Button
-                  onClick={login}
-                  className="bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 text-white font-black shadow-md hover:shadow-lg transition-shadow"
-                >
-                  Login / Sign up
-                </Button>
+                <AuthButtons onLogin={login} className="bg-white/90" />
               </div>
             )}
             <div className="relative overflow-hidden">

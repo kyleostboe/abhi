@@ -16,8 +16,8 @@ export function Navigation({ showProfileButton = false }: NavigationProps) {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-40 flex justify-center py-4">
-        <div className="flex items-center gap-2">
+      <nav className="fixed top-0 left-0 right-0 z-40 flex justify-center py-4 px-4">
+        <div className="relative flex w-full max-w-4xl items-center justify-center">
           <ul className="flex rounded-sm bg-white px-[9px] py-3.5 shadow-[0_0_20px_rgba(0,0,0,0.12)] space-x-0">
             <li>
               <Link
@@ -59,15 +59,14 @@ export function Navigation({ showProfileButton = false }: NavigationProps) {
               </Link>
             </li>
           </ul>
-
           {showProfileButton && isAuthenticated && (
-            <div className="rounded-full shadow-[0_0_20px_rgba(0,0,0,0.12)]">
+            <div className="absolute right-0 rounded-full shadow-[0_0_20px_rgba(0,0,0,0.12)]">
               <UserMenu buttonVariant="nav" />
             </div>
           )}
         </div>
       </nav>
-      <div className="h-24" aria-hidden />
+      <div className="h-20" aria-hidden />
     </>
   )
 }

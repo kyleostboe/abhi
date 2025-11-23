@@ -48,7 +48,7 @@ import { useMobile } from "@/hooks/use-mobile"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter, useSearchParams } from "next/navigation"
 import { StorageBar } from "@/components/storage-bar"
-import { UserMenu } from "@/components/user-menu"
+import { AuthButtons } from "@/components/auth-buttons"
 
 type LibraryTimelineEntry = NonNullable<SavedMeditation["metadata"]["timeline"]>[number]
 
@@ -2263,8 +2263,8 @@ export default function LibraryPage() {
   }, [draggedFile, audioFileTitle, loadData, toast])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-[3px] font-serif font-black">
-      <Navigation />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 pt-20 md:pt-24 font-serif font-black">
+      <Navigation showProfileButton />
 
       <Dialog open={showTitleDialog} onOpenChange={setShowTitleDialog}>
         <DialogContent>
@@ -2316,21 +2316,13 @@ export default function LibraryPage() {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <div className="absolute top-4 right-4 z-30">
-          <UserMenu />
-        </div>
         {!isAuthenticated && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm text-center p-6 space-y-3">
             <p className="text-lg text-gray-800 font-serif font-black">Create account to save</p>
             <p className="text-sm text-gray-600 max-w-xl">
               Library access is local-only. Audio exists on your device and browser.
             </p>
-            <Button
-              onClick={login}
-              className="bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 text-white font-black shadow-md hover:shadow-lg transition-shadow"
-            >
-              Login / Sign up
-            </Button>
+            <AuthButtons onLogin={login} className="bg-white/90" />
           </div>
         )}
         <div className="relative overflow-hidden">
