@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-import Link from "next/link"
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
@@ -2810,14 +2809,7 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 pt-20 md:pt-24">
       <Navigation showProfileButton />
 
-      {!isAuthenticated && (
-        <div className="flex justify-center mb-6">
-          <AuthButtons onLogin={login} />
-        </div>
-      )}
-
       <div className="relative">
-
         {typeof window !== "undefined" && window.location.hostname === "localhost" && (
           <div className="fixed top-4 right-4 z-50">
             <Button
@@ -2853,6 +2845,12 @@ export default function Home() {
           className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
           role="application"
         >
+          {!isAuthenticated && (
+            <div className="flex justify-center p-4 text-center">
+              <AuthButtons onLogin={login} />
+            </div>
+          )}
+
           <div className="relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
               <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 "></div>
@@ -2868,7 +2866,7 @@ export default function Home() {
                 transition={{ delay: 0.2, duration: 0.5 }}
               >
                 <h1
-                  className="text-5xl text-transparent bg-clip-text bg-gradient-to-bl from-logo-rose-300 to-logo-rose-500 transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 text-center tracking-tighter mt-12"
+                  className="text-5xl text-transparent bg-clip-text bg-gradient-to-bl from-logo-rose-300 to-logo-rose-500 transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 text-center tracking-tighter mt-[55px]"
                   style={{
                     fontFamily: 'Georgia, "Times New Roman", serif',
                     textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",

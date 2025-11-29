@@ -398,8 +398,10 @@ export default function JournalPage() {
           <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out">
             {!isAuthenticated && (
               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm space-y-3 text-center p-6">
+                <div className="flex justify-end w-full absolute top-4 right-4">
+                  <AuthButtons onLogin={login} className="bg-white/90" />
+                </div>
                 <p className="text-lg text-gray-800 font-serif font-black">Create account to save</p>
-                <AuthButtons onLogin={login} className="bg-white/90" />
               </div>
             )}
             <div className="relative overflow-hidden">
