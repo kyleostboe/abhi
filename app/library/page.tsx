@@ -378,9 +378,33 @@ export default function LibraryPage() {
     [],
   )
 
+  const loadData = useCallback(async () => {
+    try {
+      const meditationsData = await MeditationLibrary.getAllMeditations()
+      setMeditations(meditationsData)
+      const playlistsData = await MeditationLibrary.getAllPlaylists()
+      setPlaylists(playlistsData)
+      const playlistMeditationsPromises = playlistsData.map(async (playlist) => {
+        const meditations = await MeditationLibrary.getPlaylistMeditations(playlist.id)
+        return [playlist.id, meditations] as [string, SavedMeditation[]]
+      })
+      const playlistMeditationsMapData = Object.fromEntries(await Promise.all(playlistMeditationsPromises))
+      setPlaylistMeditationsMap(playlistMeditationsMapData)
+      const usage = await MeditationLibrary.getStorageUsage()
+      setStorageUsage(usage)
+    } catch (error) {
+      console.error("[v0] Failed to load library data:", error)
+      toast({
+        title: "Error loading library",
+        description: "Please refresh the page.",
+        variant: "destructive",
+      })
+    }
+  }, [toast])
+
   useEffect(() => {
     loadData()
-  }, [isAuthenticated])
+  }, [isAuthenticated, loadData])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -427,30 +451,6 @@ export default function LibraryPage() {
       setPlayerPortalElement(null)
     }
   }, [])
-
-  const loadData = async () => {
-    try {
-      const meditationsData = await MeditationLibrary.getAllMeditations()
-      setMeditations(meditationsData)
-      const playlistsData = await MeditationLibrary.getAllPlaylists()
-      setPlaylists(playlistsData)
-      const playlistMeditationsPromises = playlistsData.map(async (playlist) => {
-        const meditations = await MeditationLibrary.getPlaylistMeditations(playlist.id)
-        return [playlist.id, meditations] as [string, SavedMeditation[]]
-      })
-      const playlistMeditationsMapData = Object.fromEntries(await Promise.all(playlistMeditationsPromises))
-      setPlaylistMeditationsMap(playlistMeditationsMapData)
-      const usage = await MeditationLibrary.getStorageUsage()
-      setStorageUsage(usage)
-    } catch (error) {
-      console.error("[v0] Failed to load library data:", error)
-      toast({
-        title: "Error loading library",
-        description: "Please refresh the page.",
-        variant: "destructive",
-      })
-    }
-  }
 
   const handleExportBackup = useCallback(async () => {
     try {
@@ -2921,7 +2921,7 @@ export default function LibraryPage() {
                             {/* Player Content */}
                             <audio
                               ref={audioRef}
-                              src={selectedMeditation.processedAudioUrl}
+                              src={selectedMeditation.processedAudioUrl || undefined}
                               preload="metadata"
                               className="hidden"
                             />

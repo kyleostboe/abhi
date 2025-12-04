@@ -1016,7 +1016,7 @@ export default function Home() {
 
             const instrument = event.instrument || noteType
             for (const [noteIndex, ns] of noteStrings.entries()) {
-              const match = ns.match(/([A-G])(\d)/)
+              const match = ns.match(/([A-G])([0-9])/)
               if (match) {
                 const note = match[1]
                 const octave = Number.parseInt(match[2])
@@ -1408,7 +1408,7 @@ export default function Home() {
       console.log(`[v0] Timeline playing single note: ${noteString} using ${noteType}`)
 
       // Parse note string (e.g., "C4" -> note="C", octave=4)
-      const match = noteString.match(/([A-G])(\d)/)
+      const match = noteString.match(/([A-G])([0-9])/)
       if (!match) {
         console.error("[v0] Invalid note string format:", noteString)
         return
@@ -2992,6 +2992,14 @@ export default function Home() {
                           Rob Burbea's talks &amp; retreats
                         </a>
                         <a
+                          href="https://tasshin.com/guided-meditations/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight"
+                        >
+                          Tasshin & Friend's meditations
+                        </a>
+                        <a
                           href="https://www.tarabrach.com/guided-meditations/"
                           target="_blank"
                           rel="noopener noreferrer"
@@ -3166,7 +3174,7 @@ export default function Home() {
                               </div>
 
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 shadow-md py-1 rounded-sm px-[5px]">
+                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
                                   <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-300 border-double border-4">
                                     <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
                                     <div className="font-black text-gray-600">
@@ -3174,7 +3182,7 @@ export default function Home() {
                                     </div>
                                   </div>
                                 </div>
-                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
+                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
                                   <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-300 border-4 border-double">
                                     <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
                                     <div className="font-black text-gray-600">
@@ -3182,7 +3190,7 @@ export default function Home() {
                                     </div>
                                   </div>
                                 </div>
-                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
+                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
                                   <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-300 border-4 border-double">
                                     <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
                                     <div className="font-black text-gray-600 text-sm tracking-tight">
@@ -3190,7 +3198,7 @@ export default function Home() {
                                     </div>
                                   </div>
                                 </div>
-                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-gray-500 py-1 rounded-sm shadow-md px-[5px]">
+                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
                                   <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-4 border-stone-300 border-double">
                                     <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
                                     <div className="uppercase text-gray-600 text-xs tracking-tight">
@@ -3257,7 +3265,7 @@ export default function Home() {
                               <span className="ml-1 text-sm text-gray-600 tracking-normal">minutes</span>
                             </div>
                             {durationLimits && (
-                              <p className="text-center text-sm text-gray-500">
+                              <p className="text-center text-gray-500 text-xs">
                                 Range: {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
                               </p>
                             )}
@@ -3741,7 +3749,7 @@ export default function Home() {
                                             })}
                                           </div>
                                         </AccordionContent>
-                                      </Accordion>
+                                      </AccordionItem>
                                     ))}
                                   </Accordion>
                                 </AccordionContent>
