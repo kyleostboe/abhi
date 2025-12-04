@@ -13,7 +13,7 @@ export function AuthButtons({ onLogin, className }: AuthButtonsProps) {
     <div
       data-id="auth-buttons-container"
       className={cn(
-        "flex items-center gap-3 bg-white/70 shadow-[0_0_20px_rgba(0,0,0,0.08)] backdrop-blur-sm shadow-2xl rounded-sm py-[9px] px-[9px]",
+        "flex items-center gap-3 rounded-sm py-[9px] px-[9px]",
         className,
       )}
     >
