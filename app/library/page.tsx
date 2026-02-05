@@ -2287,6 +2287,12 @@ export default function LibraryPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 pt-20 md:pt-24 font-serif font-black">
       <Navigation showProfileButton />
 
+      {!isAuthenticated && (
+        <div className="flex justify-center py-4 z-10">
+          <AuthButtons onLogin={login} />
+        </div>
+      )}
+
       <Dialog open={showTitleDialog} onOpenChange={setShowTitleDialog}>
         <DialogContent>
           <DialogHeader>

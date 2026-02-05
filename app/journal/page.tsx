@@ -394,7 +394,7 @@ export default function JournalPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 pt-20 md:pt-24">
       <Navigation showProfileButton />
       <main className="px-0">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto space-y-4">
           {!isAuthenticated && (
             <div className="flex justify-center py-4 z-10">
               <AuthButtons onLogin={login} />
