@@ -345,6 +345,27 @@ export default function LibraryPage() {
 
   const [playlistMeditationsMap, setPlaylistMeditationsMap] = useState<Record<string, SavedMeditation[]>>({})
 
+  const clearLibraryData = async () => {
+    if (!window.confirm("Are you sure you want to clear all library data? This cannot be undone.")) {
+      return
+    }
+    try {
+      await MeditationLibrary.clearAllData()
+      await loadData()
+      toast({
+        title: "Library cleared",
+        description: "All meditations and data have been removed.",
+      })
+    } catch (error) {
+      console.error("Failed to clear library:", error)
+      toast({
+        title: "Error",
+        description: "Failed to clear library data.",
+        variant: "destructive",
+      })
+    }
+  }
+
   const convertModeToStored = useCallback(
     (mode: DurationMode): StoredDurationMode => ({
       id: mode.id,
@@ -2317,11 +2338,6 @@ export default function LibraryPage() {
         onDrop={handleDrop}
       >
         {!isAuthenticated && (
-          <div className="flex justify-center py-4 z-10 absolute top-0 left-0 right-0 -translate-y-full">
-            <AuthButtons onLogin={login} />
-          </div>
-        )}
-        {!isAuthenticated && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm text-center p-6 space-y-3">
             <p className="text-lg text-gray-800 font-serif font-black">Create account to save</p>
             <p className="text-sm text-gray-600 max-w-xl">
@@ -2336,37 +2352,37 @@ export default function LibraryPage() {
           <div className="relative text-center px-8 pt-16 pb-0">
             {/* Custom underline matching home page but larger */}
             <div className="flex justify-center mb-[25px]">
-              <div className="relative">
-                <div className="flex justify-center items-center space-x-[5px]">
-                  <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px] shadow-md"></div>
-                  <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[11px] w-[11px] shadow"></div>
-                  <div className="w-5 bg-gradient-to-br from-logo-amber to-orange-300 rounded-[4px] transform h-[11px] shadow-sm"></div>
-                  <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-0 mx-0 border-[3px] bg-muted h-11 w-3 border-stone-200 shadow-md rounded-md"></div>
-                  <div className="w-5 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[4px] transform h-[11px] pl-0 ml-2 shadow-sm"></div>
-                  <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[11px] w-[11px] shadow"></div>
-                  <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[16px] h-[16px] shadow-md"></div>
-                </div>
+      <div className="relative">
+        {typeof window !== "undefined" && window.location.hostname === "localhost" && (
+          <div className="fixed top-4 right-4 z-50">
+            <Button
+              onClick={clearLibraryData}
+              variant="outline"
+              size="sm"
+              className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+            >
+              Clear Library (Debug)
+            </Button>
+          </div>
+        )}
+
+        {!isAuthenticated && (
+          <div className="flex justify-center py-4 z-10">
+            <AuthButtons onLogin={login} />
+          </div>
+        )}
+
+        <h1 className="text-4xl font-black text-gray-800 mb-1 tracking-tight">Library</h1>
+                <p className="text-sm text-gray-600 font-serif tracking-normal mb-6">
+                  Your saved meditations and playlists
+                </p>
               </div>
             </div>
-          </div>
-
-          <div className="px-6 md:px-10 pb-6">
-            {isAuthenticated && (
-              <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
-                {backupProgress && (
-                  <div className="text-sm text-muted-foreground">
-                    {backupProgress.message} ({Math.round(backupProgress.progress)}%)
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Tab Navigation */}
-            <div className="flex justify-center mb-[25px]">
-              <div className="flex p-1 bg-muted flex-row rounded-sm shadow-inner text-sm text-gray-600">
+            <div className="relative px-8 pb-10">
+              <div className="mb-6 flex items-center justify-center gap-2 bg-muted/60 p-1 rounded-sm">
                 <button
                   onClick={() => setActiveTab("meditations")}
-                  className={`transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600 ${
+                  className={`transition-all rounded-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600 text-sm ${
                     activeTab === "meditations" ? "bg-white text-gray-600 shadow-md" : "text-gray-600 "
                   }`}
                 >
