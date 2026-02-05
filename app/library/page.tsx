@@ -2317,12 +2317,16 @@ export default function LibraryPage() {
         onDrop={handleDrop}
       >
         {!isAuthenticated && (
+          <div className="flex justify-center py-4 z-10 absolute top-0 left-0 right-0 -translate-y-full">
+            <AuthButtons onLogin={login} />
+          </div>
+        )}
+        {!isAuthenticated && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm text-center p-6 space-y-3">
             <p className="text-lg text-gray-800 font-serif font-black">Create account to save</p>
             <p className="text-sm text-gray-600 max-w-xl">
               Library access is local-only. Audio exists on your device and browser.
             </p>
-            <AuthButtons onLogin={login} className="bg-white/90" />
           </div>
         )}
         <div className="relative overflow-hidden">

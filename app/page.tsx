@@ -2823,6 +2823,12 @@ export default function Home() {
           </div>
         )}
 
+        {!isAuthenticated && (
+          <div className="flex justify-center py-4 z-10">
+            <AuthButtons onLogin={login} />
+          </div>
+        )}
+
         {memoryWarning && activeMode === "adjuster" && (
           <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-yellow-100 to-amber-50 border border-yellow-300 shadow-sm ">
             <div className="flex items-start">
@@ -2842,16 +2848,15 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="relative max-w-4xl mx-auto bg-gradient-to-b from-transparent via-transparent to-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
+          className="relative max-w-4xl mx-auto backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
           role="application"
         >
-          {!isAuthenticated && (
-            <div className="flex justify-center p-4 text-center">
-              <AuthButtons onLogin={login} />
-            </div>
-          )}
-
           <div className="relative overflow-hidden">
+            {!isAuthenticated && (
+              <div className="absolute top-4 left-0 right-0 z-10 flex justify-center hidden">
+                <AuthButtons onLogin={login} />
+              </div>
+            )}
             <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
               <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 "></div>
               <div className="absolute top-2 left-8 w-16 h-12 bg-gradient-to-br from-emerald-300/30 to-teal-400/25 rounded-full transform rotate-12 "></div>
@@ -3191,7 +3196,7 @@ export default function Home() {
                                   </div>
                                 </div>
                                 <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
-                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-300 border-4 border-double">
+                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-4 border-stone-300 border-double">
                                     <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
                                     <div className="font-black text-gray-600 text-sm tracking-tight">
                                       {audioAnalysis.silenceRegions}
