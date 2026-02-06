@@ -52,7 +52,7 @@
     "jszip": "latest",
     "lamejs": "1.2.1",
     "lucide-react": "^0.454.0",
-    "next": "15.3.6",
+    "next": "15.3.8",
     "next-themes": "latest",
     "react": "^19",
     "react-day-picker": "latest",

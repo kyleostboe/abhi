@@ -106,18 +106,22 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
       }
 
       const target = event.currentTarget
-      const { clampedIndex: immediateIndex } = computeScrollState(target.scrollTop)
-      setActiveExtendedIndex(immediateIndex)
+      const scrollTop = target.scrollTop
+      
+      // Update active index immediately based on current scroll position
+      const rawIndex = Math.round(scrollTop / ITEM_HEIGHT)
+      const clampedIndex = Math.max(0, Math.min(rawIndex, extendedOptions.length - 1))
+      setActiveExtendedIndex(clampedIndex)
 
       scrollTimeoutRef.current = setTimeout(() => {
-        const { normalizedIndex, clampedIndex, option, targetScrollTop } = computeScrollState(target.scrollTop)
+        const { normalizedIndex, clampedIndex, option, targetScrollTop } = computeScrollState(scrollTop)
 
         setActiveExtendedIndex(clampedIndex)
 
         if (option !== value) {
           onSelect(option)
         }
-        const hasDifferentOffset = Math.abs(target.scrollTop - targetScrollTop) > 0.5
+        const hasDifferentOffset = Math.abs(scrollTop - targetScrollTop) > 0.5
 
         if (hasDifferentOffset) {
           if (alignRafRef.current !== null) {
@@ -130,7 +134,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
         }
       }, 80)
     },
-    [alignToValue, computeScrollState, onSelect, value],
+    [alignToValue, computeScrollState, extendedOptions.length, onSelect, value],
   )
 
   const handleOptionClick = useCallback(
