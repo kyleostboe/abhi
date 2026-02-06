@@ -3535,7 +3535,7 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
                   >
-                    <Card className="overflow-visible bg-white max-w-2xl mx-auto rounded-2xl shadow-none">
+                    <Card className="overflow-visible bg-transparent max-w-2xl mx-auto rounded-2xl shadow-none">
                       <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none text-center px-6">
                         <div className="grid grid-cols-1 text-gray-600 justify-items-center gap-3 pb-0">
                           <div className="text-center tracking-tight">
