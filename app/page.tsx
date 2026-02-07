@@ -3635,9 +3635,9 @@ export default function Home() {
                                   </div>
                                 </AccordionTrigger>
                                 <div className="px-4 border-b-0 pb-2">
-                                  <div className="flex items-center gap-4">
+                                  <div className="flex items-center gap-2">
                                     <div className="flex items-center gap-2">
-                                      <span className="text-xs text-gray-500">Type</span>
+                                      <span className="flex items-center gap-4 text-xs text-xs">Type</span>
                                       <select
                                         value={noteType}
                                         onChange={(e) => setNoteType(e.target.value as "piano" | "synth" | "harp")}
@@ -3649,7 +3649,7 @@ export default function Home() {
                                       </select>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                      <span className="text-xs text-gray-500">Multi-Note</span>
+                                      <span className="text-gray-500 text-xs">Multi-Note</span>
                                       <button
                                         onClick={() => {
                                           setMultiNoteMode(!multiNoteMode)
