@@ -3574,8 +3574,8 @@ export default function Home() {
                     transition={{ delay: 0.2 }}
                     className="bg-transparent py-3 pb-0 pt-0"
                   >
-                    <div className="p-0.5 bg-transparent py-1 shadow-none rounded-sm px-[5px]">
-                      <div className="bg-transparent p-4 rounded-[10px] shadow-none border-none">
+                    <div className="p-0.5 bg-transparent py-1 shadow-none rounded-sm px-[5px] pb-0">
+                      <div className="bg-transparent p-4 rounded-[10px] shadow-none border-none pb-0">
                         <div className="text-center">
                           <Textarea
                             id="custom-instruction"
@@ -3601,7 +3601,7 @@ export default function Home() {
                       transition={{ delay: 0.3 }}
                     >
                       <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                      <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 px-6 py-[9px] text-center">
+                      <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 px-6 py-[9px] text-center pt-[9px]">
                         <h3 className="text-white flex items-center font-serif font-black text-center">
                           <Music2Icon className="h-4 w-4 mr-2" />
                           Sound Cues
