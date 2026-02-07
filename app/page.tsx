@@ -3536,8 +3536,8 @@ export default function Home() {
                     transition={{ delay: 0.2 }}
                   >
                     <Card className="overflow-visible bg-transparent max-w-2xl mx-auto rounded-2xl shadow-none">
-                      <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none text-center px-6">
-                        <div className="grid grid-cols-1 text-gray-600 justify-items-center gap-3 pb-0 w-full lg:max-w-md">
+                      <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none text-center px-6 flex justify-center">
+                        <div className="grid grid-cols-1 text-gray-600 justify-items-center gap-3 pb-0 w-full max-w-md">
                           <div className="text-center tracking-tight">
                             <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
                               Duration
@@ -3572,7 +3572,7 @@ export default function Home() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="bg-transparent py-3 pb-0 pt-0"
+                    className="bg-transparent py-1 pb-0 pt-0"
                   >
                     <div className="p-0.5 bg-transparent py-1 shadow-none rounded-sm px-[5px] pb-0">
                       <div className="bg-transparent p-4 rounded-[10px] shadow-none border-none pb-0">
@@ -3593,7 +3593,7 @@ export default function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-4"
+                    className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-4 mt-1"
                   >
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
