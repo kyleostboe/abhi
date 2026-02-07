@@ -3550,22 +3550,47 @@ export default function Home() {
                               />
                             </div>
                           </div>
-                          <div className="text-center">
+                          <div className="text-center px-4 md:px-0">
                             <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
                               Title
                             </Label>
-                            <input
-                              id="meditation-title"
-                              type="text"
-                              value={meditationTitle}
-                              onChange={handleMeditationTitleChange}
-                              placeholder="Title:"
-                              className="flex file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 h-9 pb-4 shadow-md border-[3px] text-center w-[263px]"
-                            />
+                            <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 mt-1 shadow-lg rounded-sm px-[5px]">
+                              <div className="bg-white rounded-sm shadow-none border-4 border-double border-stone-300 p-1">
+                                <input
+                                  id="meditation-title"
+                                  type="text"
+                                  value={meditationTitle}
+                                  onChange={handleMeditationTitleChange}
+                                  placeholder="Title:"
+                                  className="w-full text-xs font-black text-gray-600 text-center bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none placeholder:text-gray-500"
+                                />
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </Card>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="px-4 bg-transparent py-3 pb-0 pt-0 lg:px-0"
+                  >
+                    <div className="p-0.5 bg-transparent py-1 shadow-none rounded-sm px-[5px]">
+                      <div className="bg-transparent p-4 rounded-[10px] shadow-none border-none">
+                        <div className="text-center">
+                          <Textarea
+                            id="custom-instruction"
+                            value={customInstructionText}
+                            onChange={handleCustomInstructionChange}
+                            placeholder="Enter an instruction..."
+                            className="mt-2 text-xs font-serif font-black text-indigo-400 placeholder-indigo-400 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </motion.div>
 
                   <motion.div
@@ -3575,26 +3600,6 @@ export default function Home() {
                     className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-4"
                   >
                     <div className="flex flex-col gap-4">
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
-                      >
-                        <div className="p-0.5 bg-transparent py-1 shadow-none rounded-sm px-[5px]">
-                          <div className="bg-transparent p-4 rounded-[10px] shadow-none border-none">
-                            <div className="text-center">
-                              <Textarea
-                                id="custom-instruction"
-                                value={customInstructionText}
-                                onChange={handleCustomInstructionChange}
-                                placeholder="Enter an instruction..."
-                                className="mt-2 text-xs font-serif font-black text-indigo-400 placeholder-indigo-400 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
                       <RecorderSection
                         className="hidden lg:block"
                         inputId="recording-label-desktop"
