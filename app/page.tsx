@@ -3550,22 +3550,18 @@ export default function Home() {
                               />
                             </div>
                           </div>
-                          <div className="text-center px-4 md:px-0">
+                          <div className="text-center">
                             <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
                               Title
                             </Label>
-                            <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 mt-1 shadow-lg rounded-sm px-[5px]">
-                              <div className="bg-white rounded-sm shadow-none border-4 border-double border-stone-300 p-1">
-                                <input
-                                  id="meditation-title"
-                                  type="text"
-                                  value={meditationTitle}
-                                  onChange={handleMeditationTitleChange}
-                                  placeholder="Title:"
-                                  className="w-full text-xs font-black text-gray-600 text-center bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none placeholder:text-gray-500"
-                                />
-                              </div>
-                            </div>
+                            <input
+                              id="meditation-title"
+                              type="text"
+                              value={meditationTitle}
+                              onChange={handleMeditationTitleChange}
+                              placeholder="Title:"
+                              className="flex file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 h-9 pb-4 shadow-md border-[3px] text-center px-4 md:px-auto"
+                            />
                           </div>
                         </div>
                       </div>
@@ -3599,25 +3595,6 @@ export default function Home() {
                     transition={{ delay: 0.2 }}
                     className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-4"
                   >
-                    <div className="flex flex-col gap-4">
-                      <RecorderSection
-                        className="hidden lg:block"
-                        inputId="recording-label-desktop"
-                        recordingLabel={recordingLabel}
-                        onRecordingLabelChange={handleRecordingLabelChange}
-                        isRecording={isRecording}
-                        startRecording={startRecording}
-                        stopRecording={stopRecording}
-                        readyToAddToTimelineRecording={readyToAddToTimelineRecording}
-                        timelineEvents={timelineEvents}
-                        addEventToTimeline={addEventToTimeline}
-                        setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
-                        setRecordedBlobs={setRecordedBlobs}
-                        setRecordingLabel={setRecordingLabel}
-                        recordingPreviewRef={recordingPreviewRef}
-                      />
-                    </div>
-
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -3793,6 +3770,25 @@ export default function Home() {
                         </div>
                       </Card>
                     </motion.div>
+
+                    <div className="flex flex-col gap-4">
+                      <RecorderSection
+                        className="hidden lg:block"
+                        inputId="recording-label-desktop"
+                        recordingLabel={recordingLabel}
+                        onRecordingLabelChange={handleRecordingLabelChange}
+                        isRecording={isRecording}
+                        startRecording={startRecording}
+                        stopRecording={stopRecording}
+                        readyToAddToTimelineRecording={readyToAddToTimelineRecording}
+                        timelineEvents={timelineEvents}
+                        addEventToTimeline={addEventToTimeline}
+                        setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
+                        setRecordedBlobs={setRecordedBlobs}
+                        setRecordingLabel={setRecordingLabel}
+                        recordingPreviewRef={recordingPreviewRef}
+                      />
+                    </div>
                   </motion.div>
                   <RecorderSection
                     className="lg:hidden"
