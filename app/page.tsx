@@ -3601,10 +3601,10 @@ export default function Home() {
                       transition={{ delay: 0.3 }}
                     >
                       <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                        <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 px-6 py-[9px] text-center">
-                          <h3 className="text-white flex items-center font-serif font-black text-center">
-                            <Music2Icon className="h-4 w-4 mr-2" />
-                            Sound Cues
+                      <div className="bg-gradient-to-br from-logo-blue-400 to-amber-300 px-6 py-[9px] text-center">
+                        <h3 className="text-white flex items-center font-serif font-black text-center">
+                          <Music2Icon className="h-4 w-4 mr-2" />
+                          Sound Cues
                           </h3>
                         </div>
                         <div className="p-6 flex flex-col space-y-4 pt-[3px]">
