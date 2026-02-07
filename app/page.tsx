@@ -3537,7 +3537,7 @@ export default function Home() {
                   >
                     <Card className="overflow-visible bg-transparent max-w-2xl mx-auto rounded-2xl shadow-none">
                       <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none text-center px-6">
-                        <div className="grid grid-cols-1 text-gray-600 justify-items-center gap-3 pb-0">
+                        <div className="grid grid-cols-1 text-gray-600 justify-items-center gap-3 pb-0 w-full lg:max-w-md">
                           <div className="text-center tracking-tight">
                             <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
                               Duration
@@ -3572,7 +3572,7 @@ export default function Home() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="px-4 bg-transparent py-3 pb-0 pt-0 lg:px-0"
+                    className="bg-transparent py-3 pb-0 pt-0"
                   >
                     <div className="p-0.5 bg-transparent py-1 shadow-none rounded-sm px-[5px]">
                       <div className="bg-transparent p-4 rounded-[10px] shadow-none border-none">
@@ -3582,7 +3582,7 @@ export default function Home() {
                             value={customInstructionText}
                             onChange={handleCustomInstructionChange}
                             placeholder="Enter an instruction..."
-                            className="mt-2 text-xs font-serif font-black text-indigo-400 placeholder-indigo-400 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
+                            className="mt-2 text-xs font-serif font-black text-indigo-400 placeholder-indigo-400 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none min-h-[60px] w-full overflow-y-auto"
                           />
                         </div>
                       </div>
