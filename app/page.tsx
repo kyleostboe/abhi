@@ -3597,18 +3597,18 @@ export default function Home() {
                       transition={{ delay: 0.2 }}
                       className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-4 space-y-4 lg:space-y-0"
                     >
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                      <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 px-6 py-[9px] text-center pt-[9px]">
-                        <h3 className="text-white flex items-center font-serif font-black text-center">
-                          <Music2Icon className="h-4 w-4 mr-2" />
-                          Sound Cues
-                          </h3>
-                        </div>
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                          <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 px-6 py-[9px] text-center pt-[9px]">
+                            <h3 className="text-white flex items-center font-serif font-black text-center">
+                              <Music2Icon className="h-4 w-4 mr-2" />
+                              Sound Cues
+                            </h3>
+                          </div>
                         <div className="p-6 flex flex-col space-y-4 pt-[3px]">
                           <div className="flex-1 h-auto">
                             <Accordion type="single" collapsible className="w-full">
@@ -3771,27 +3771,27 @@ export default function Home() {
                           </Button>
                         </div>
                       </Card>
-                    </motion.div>
+                      </motion.div>
 
-                    <div className="flex flex-col gap-4">
-                      <RecorderSection
-                        className="hidden lg:block"
-                        inputId="recording-label-desktop"
-                        recordingLabel={recordingLabel}
-                        onRecordingLabelChange={handleRecordingLabelChange}
-                        isRecording={isRecording}
-                        startRecording={startRecording}
-                        stopRecording={stopRecording}
-                        readyToAddToTimelineRecording={readyToAddToTimelineRecording}
-                        timelineEvents={timelineEvents}
-                        addEventToTimeline={addEventToTimeline}
-                        setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
-                        setRecordedBlobs={setRecordedBlobs}
-                        setRecordingLabel={setRecordingLabel}
-                        recordingPreviewRef={recordingPreviewRef}
-                      />
-                    </div>
-                  </motion.div>
+                      <div className="flex flex-col gap-4">
+                        <RecorderSection
+                          className="hidden lg:block"
+                          inputId="recording-label-desktop"
+                          recordingLabel={recordingLabel}
+                          onRecordingLabelChange={handleRecordingLabelChange}
+                          isRecording={isRecording}
+                          startRecording={startRecording}
+                          stopRecording={stopRecording}
+                          readyToAddToTimelineRecording={readyToAddToTimelineRecording}
+                          timelineEvents={timelineEvents}
+                          addEventToTimeline={addEventToTimeline}
+                          setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
+                          setRecordedBlobs={setRecordedBlobs}
+                          setRecordingLabel={setRecordingLabel}
+                          recordingPreviewRef={recordingPreviewRef}
+                        />
+                      </div>
+                    </motion.div>
 
                   <RecorderSection
                     className="lg:hidden"
