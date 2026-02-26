@@ -197,8 +197,9 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
             )}
           </AnimatePresence>
         </div>
-      </Card>
-    </motion.div>
+                    </Card>
+                  </motion.div>
+                </div>
   )
 }
 
@@ -3572,10 +3573,10 @@ export default function Home() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="bg-transparent pb-0 pt-0"
+                    className="bg-transparent"
                   >
-                    <div className="p-0.5 bg-transparent shadow-none rounded-sm px-[5px] pb-0">
-                      <div className="bg-transparent p-4 rounded-[10px] shadow-none border-none pb-0">
+                    <div className="p-0.5 bg-transparent shadow-none rounded-sm px-[5px]">
+                      <div className="bg-transparent p-4 rounded-[10px] shadow-none border-none">
                         <div className="text-center">
                           <Textarea
                             id="custom-instruction"
@@ -3589,12 +3590,13 @@ export default function Home() {
                     </div>
                   </motion.div>
 
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-4 space-y-4 lg:space-y-0"
-                  >
+                  <div className="flex flex-col gap-4">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-4 space-y-4 lg:space-y-0"
+                    >
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -3790,6 +3792,7 @@ export default function Home() {
                       />
                     </div>
                   </motion.div>
+
                   <RecorderSection
                     className="lg:hidden"
                     inputId="recording-label-mobile"
@@ -3812,7 +3815,6 @@ export default function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
-                    className="mt-0"
                   >
                     <Card ref={timelineEditorRef} className="overflow-hidden border-none shadow-lg bg-white ">
                       <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-6 flex items-center justify-between gap-3 py-1.5 pr-1.5">
