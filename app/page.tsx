@@ -3572,9 +3572,9 @@ export default function Home() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="bg-transparent py-1 pb-0 pt-0"
+                    className="bg-transparent pb-0 pt-0"
                   >
-                    <div className="p-0.5 bg-transparent py-1 shadow-none rounded-sm px-[5px] pb-0">
+                    <div className="p-0.5 bg-transparent shadow-none rounded-sm px-[5px] pb-0">
                       <div className="bg-transparent p-4 rounded-[10px] shadow-none border-none pb-0">
                         <div className="text-center">
                           <Textarea
@@ -3593,7 +3593,7 @@ export default function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-4 mt-1"
+                    className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-4 space-y-4 lg:space-y-0"
                   >
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -3812,6 +3812,7 @@ export default function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
+                    className="mt-0"
                   >
                     <Card ref={timelineEditorRef} className="overflow-hidden border-none shadow-lg bg-white ">
                       <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-6 flex items-center justify-between gap-3 py-1.5 pr-1.5">
