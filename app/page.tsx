@@ -3771,7 +3771,8 @@ export default function Home() {
                           </Button>
                         </div>
                       </Card>
-                      </motion.div>
+                    </motion.div>
+                  </div>
 
                       <div className="flex flex-col gap-4">
                         <RecorderSection
@@ -3791,32 +3792,33 @@ export default function Home() {
                           recordingPreviewRef={recordingPreviewRef}
                         />
                       </div>
+                      </motion.div>
                     </motion.div>
 
-                  <RecorderSection
-                    className="lg:hidden"
-                    inputId="recording-label-mobile"
-                    recordingLabel={recordingLabel}
-                    onRecordingLabelChange={handleRecordingLabelChange}
-                    isRecording={isRecording}
-                    startRecording={startRecording}
-                    stopRecording={stopRecording}
-                    readyToAddToTimelineRecording={readyToAddToTimelineRecording}
-                    timelineEvents={timelineEvents}
-                    addEventToTimeline={addEventToTimeline}
-                    setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
-                    setRecordedBlobs={setRecordedBlobs}
-                    setRecordingLabel={setRecordingLabel}
-                    recordingPreviewRef={recordingPreviewRef}
-                  />
+                    <RecorderSection
+                      className="lg:hidden"
+                      inputId="recording-label-mobile"
+                      recordingLabel={recordingLabel}
+                      onRecordingLabelChange={handleRecordingLabelChange}
+                      isRecording={isRecording}
+                      startRecording={startRecording}
+                      stopRecording={stopRecording}
+                      readyToAddToTimelineRecording={readyToAddToTimelineRecording}
+                      timelineEvents={timelineEvents}
+                      addEventToTimeline={addEventToTimeline}
+                      setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
+                      setRecordedBlobs={setRecordedBlobs}
+                      setRecordingLabel={setRecordingLabel}
+                      recordingPreviewRef={recordingPreviewRef}
+                    />
 
-                  {/* Timeline Editor for encoder */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                  >
-                    <Card ref={timelineEditorRef} className="overflow-hidden border-none shadow-lg bg-white ">
+                    {/* Timeline Editor for encoder */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                    >
+                      <Card ref={timelineEditorRef} className="overflow-hidden border-none shadow-lg bg-white ">
                       <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-6 flex items-center justify-between gap-3 py-1.5 pr-1.5">
                         <h3 className="text-white font-black text-base">Timeline Editor</h3>
                         <div className="flex items-center gap-2">
