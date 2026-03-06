@@ -2885,7 +2885,6 @@ export default function LibraryPage() {
               )}
             </AnimatePresence>
           </div>
-        </div>
 
           {playerPortalElement &&
             createPortal(
