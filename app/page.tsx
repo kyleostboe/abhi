@@ -3778,7 +3778,8 @@ export default function Home() {
                       />
                     </div>
                   </motion.div>
-                  <RecorderSection className="lg:hidden"
+                  <RecorderSection
+                    className="lg:hidden"
                     inputId="recording-label-mobile"
                     recordingLabel={recordingLabel}
                     onRecordingLabelChange={handleRecordingLabelChange}
