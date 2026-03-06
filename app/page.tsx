@@ -197,9 +197,8 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
             )}
           </AnimatePresence>
         </div>
-                    </Card>
-                  </motion.div>
-                </div>
+      </Card>
+    </motion.div>
   )
 }
 
@@ -3528,7 +3527,7 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="space-y-4"
+                  className="space-y-2"
                 >
                   <motion.div
                     className="text-gray-600"
@@ -3575,40 +3574,35 @@ export default function Home() {
                     transition={{ delay: 0.2 }}
                     className="bg-transparent"
                   >
-                    <div className="p-0.5 bg-transparent shadow-none rounded-sm px-[5px]">
-                      <div className="bg-transparent p-4 rounded-[10px] shadow-none border-none">
-                        <div className="text-center">
-                          <Textarea
-                            id="custom-instruction"
-                            value={customInstructionText}
-                            onChange={handleCustomInstructionChange}
-                            placeholder="Enter an instruction..."
-                            className="mt-2 text-xs font-serif font-black text-indigo-400 placeholder-indigo-400 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none min-h-[60px] w-full overflow-y-auto"
-                          />
-                        </div>
-                      </div>
+                    <div className="text-center">
+                      <Textarea
+                        id="custom-instruction"
+                        value={customInstructionText}
+                        onChange={handleCustomInstructionChange}
+                        placeholder="Enter an instruction..."
+                        className="text-xs font-serif font-black text-indigo-400 placeholder-indigo-400 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none min-h-[60px] w-full overflow-y-auto"
+                      />
                     </div>
                   </motion.div>
 
-                  <div className="flex flex-col gap-4">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="grid grid-cols-1 lg:grid-cols-2 gap-2"
+                  >
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-4 space-y-4 lg:space-y-0"
+                      transition={{ delay: 0.3 }}
                     >
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                      >
-                        <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                          <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 px-6 py-[9px] text-center pt-[9px]">
-                            <h3 className="text-white flex items-center font-serif font-black text-center">
-                              <Music2Icon className="h-4 w-4 mr-2" />
-                              Sound Cues
-                            </h3>
-                          </div>
+                      <Card className="overflow-hidden border-none shadow-lg bg-white ">
+                      <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 px-6 py-[9px] text-center pt-[9px]">
+                        <h3 className="text-white flex items-center font-serif font-black text-center">
+                          <Music2Icon className="h-4 w-4 mr-2" />
+                          Sound Cues
+                          </h3>
+                        </div>
                         <div className="p-6 flex flex-col space-y-4 pt-[3px]">
                           <div className="flex-1 h-auto">
                             <Accordion type="single" collapsible className="w-full">
@@ -3772,53 +3766,50 @@ export default function Home() {
                         </div>
                       </Card>
                     </motion.div>
-                  </div>
 
-                      <div className="flex flex-col gap-4">
-                        <RecorderSection
-                          className="hidden lg:block"
-                          inputId="recording-label-desktop"
-                          recordingLabel={recordingLabel}
-                          onRecordingLabelChange={handleRecordingLabelChange}
-                          isRecording={isRecording}
-                          startRecording={startRecording}
-                          stopRecording={stopRecording}
-                          readyToAddToTimelineRecording={readyToAddToTimelineRecording}
-                          timelineEvents={timelineEvents}
-                          addEventToTimeline={addEventToTimeline}
-                          setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
-                          setRecordedBlobs={setRecordedBlobs}
-                          setRecordingLabel={setRecordingLabel}
-                          recordingPreviewRef={recordingPreviewRef}
-                        />
-                      </div>
-                      </motion.div>
-                    </motion.div>
+                    <div className="flex flex-col gap-4">
+                      <RecorderSection
+                        className="hidden lg:block"
+                        inputId="recording-label-desktop"
+                        recordingLabel={recordingLabel}
+                        onRecordingLabelChange={handleRecordingLabelChange}
+                        isRecording={isRecording}
+                        startRecording={startRecording}
+                        stopRecording={stopRecording}
+                        readyToAddToTimelineRecording={readyToAddToTimelineRecording}
+                        timelineEvents={timelineEvents}
+                        addEventToTimeline={addEventToTimeline}
+                        setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
+                        setRecordedBlobs={setRecordedBlobs}
+                        setRecordingLabel={setRecordingLabel}
+                        recordingPreviewRef={recordingPreviewRef}
+                      />
+                    </div>
+                  </motion.div>
+                  <RecorderSection
+                    className="lg:hidden"
+                    inputId="recording-label-mobile"
+                    recordingLabel={recordingLabel}
+                    onRecordingLabelChange={handleRecordingLabelChange}
+                    isRecording={isRecording}
+                    startRecording={startRecording}
+                    stopRecording={stopRecording}
+                    readyToAddToTimelineRecording={readyToAddToTimelineRecording}
+                    timelineEvents={timelineEvents}
+                    addEventToTimeline={addEventToTimeline}
+                    setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
+                    setRecordedBlobs={setRecordedBlobs}
+                    setRecordingLabel={setRecordingLabel}
+                    recordingPreviewRef={recordingPreviewRef}
+                  />
 
-                    <RecorderSection
-                      className="lg:hidden"
-                      inputId="recording-label-mobile"
-                      recordingLabel={recordingLabel}
-                      onRecordingLabelChange={handleRecordingLabelChange}
-                      isRecording={isRecording}
-                      startRecording={startRecording}
-                      stopRecording={stopRecording}
-                      readyToAddToTimelineRecording={readyToAddToTimelineRecording}
-                      timelineEvents={timelineEvents}
-                      addEventToTimeline={addEventToTimeline}
-                      setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
-                      setRecordedBlobs={setRecordedBlobs}
-                      setRecordingLabel={setRecordingLabel}
-                      recordingPreviewRef={recordingPreviewRef}
-                    />
-
-                    {/* Timeline Editor for encoder */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5 }}
-                    >
-                      <Card ref={timelineEditorRef} className="overflow-hidden border-none shadow-lg bg-white ">
+                  {/* Timeline Editor for encoder */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <Card ref={timelineEditorRef} className="overflow-hidden border-none shadow-lg bg-white ">
                       <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-6 flex items-center justify-between gap-3 py-1.5 pr-1.5">
                         <h3 className="text-white font-black text-base">Timeline Editor</h3>
                         <div className="flex items-center gap-2">
