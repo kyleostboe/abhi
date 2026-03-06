@@ -3835,6 +3835,7 @@ export default function Home() {
                         />
                       </div>
                     </Card>
+                  </motion.div>
                   {/* Generate Audio Button */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
