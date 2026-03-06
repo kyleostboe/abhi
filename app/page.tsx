@@ -3569,23 +3569,6 @@ export default function Home() {
                   </motion.div>
 
                   <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="bg-transparent"
-                  >
-                    <div className="text-center">
-                      <Textarea
-                        id="custom-instruction"
-                        value={customInstructionText}
-                        onChange={handleCustomInstructionChange}
-                        placeholder="Enter an instruction..."
-                        className="text-xs font-serif font-black text-indigo-400 placeholder-indigo-400 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none min-h-[60px] w-full overflow-y-auto"
-                      />
-                    </div>
-                  </motion.div>
-
-                  <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
@@ -3602,6 +3585,16 @@ export default function Home() {
                           <Music2Icon className="h-4 w-4 mr-2" />
                           Sound Cues
                           </h3>
+                        </div>
+                        <div className="px-6 pt-3.5 pb-0">
+                          <input
+                            id="custom-instruction"
+                            type="text"
+                            value={customInstructionText}
+                            onChange={handleCustomInstructionChange}
+                            placeholder="Enter an instruction..."
+                            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-logo-blue-400 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-xs focus-visible: text-logo-blue-400 font-black text-gray-500 border-stone-300 border-0 shadow-2xl h-9"
+                          />
                         </div>
                         <div className="p-6 flex flex-col space-y-4 pt-[3px]">
                           <div className="flex-1 h-auto">
