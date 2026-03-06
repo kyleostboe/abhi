@@ -2409,6 +2409,7 @@ export default function LibraryPage() {
                 </button>
               </div>
             </div>
+
             <AnimatePresence mode="wait">
               {activeTab === "meditations" && (
                 <motion.div
