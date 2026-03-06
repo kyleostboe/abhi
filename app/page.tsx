@@ -3172,7 +3172,7 @@ export default function Home() {
                           exit={{ opacity: 0, y: -10 }}
                           transition={{ delay: 0.1 }}
                         >
-                          <Alert className="bg-white p-0 border-0 shadow-none">
+                          <Alert className="bg-transparent p-0 border-0 shadow-none">
                             <div className="p-3 text-center min-h-[76px] rounded-sm shadow-none bg-transparent pb-0.5 pt-0">
                               <div className="flex items-center mb-2 justify-center">
                                 {/* Removed the Info icon div */}
