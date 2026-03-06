@@ -2351,65 +2351,53 @@ export default function LibraryPage() {
             </p>
           </div>
         )}
-        {typeof window !== "undefined" && window.location.hostname === "localhost" && (
-          <div className="fixed top-4 right-4 z-50">
-            <Button
-              onClick={clearLibraryData}
-              variant="outline"
-              size="sm"
-              className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
-            >
-              Clear Library (Debug)
-            </Button>
-          </div>
-        )}
         <div className="relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20" />
-            <div className="absolute top-2 left-8 w-16 h-12 bg-gradient-to-br from-emerald-300/30 to-teal-400/25 rounded-full transform rotate-12" />
-            <div className="absolute top-6 right-12 w-20 h-8 bg-gradient-to-bl from-rose-300/25 to-purple-400/20 rounded-full transform -rotate-6" />
-            <div className="absolute top-1 left-1/3 w-12 h-16 bg-gradient-to-tr from-amber-300/20 to-orange-400/15 rounded-full transform rotate-45" />
-            <div className="absolute top-8 right-1/4 w-14 h-10 bg-gradient-to-tl from-blue-300/25 to-indigo-400/20 rounded-full transform -rotate-12" />
-          </div>
-          <div className="relative px-6 sm:px-8 lg:px-12 pt-16 pb-10">
-            <div className="text-center mb-8">
-              <div className="flex justify-center mb-[25px]">
-                <div className="relative">
-                  <div className="flex justify-center items-center space-x-[5px]">
-                    <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px] shadow-md" />
-                    <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[11px] w-[11px] shadow" />
-                    <div className="w-5 bg-gradient-to-br from-logo-amber to-orange-300 rounded-[4px] transform h-[11px] shadow-sm" />
-                    <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-0 mx-0 border-[3px] bg-muted h-11 w-3 border-stone-200 shadow-md rounded-md-md-full rounded-md" />
-                    <div className="w-5 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[4px] transform h-[11px] pl-0 ml-2 shadow-sm" />
-                    <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[11px] w-[11px] shadow" />
-                    <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[16px] h-[16px] shadow-md" />
-                  </div>
-                </div>
-              </div>
-            </div>
+        <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
+        <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20" />
+        <div className="absolute top-2 left-8 w-16 h-12 bg-gradient-to-br from-emerald-300/30 to-teal-400/25 rounded-full transform rotate-12" />
+        <div className="absolute top-6 right-12 w-20 h-8 bg-gradient-to-bl from-rose-300/25 to-purple-400/20 rounded-full transform -rotate-6" />
+        <div className="absolute top-1 left-1/3 w-12 h-16 bg-gradient-to-tr from-amber-300/20 to-orange-400/15 rounded-full transform rotate-45" />
+        <div className="absolute top-8 right-1/4 w-14 h-10 bg-gradient-to-tl from-blue-300/25 to-indigo-400/20 rounded-full transform -rotate-12" />
+        </div>
+        <div className="relative px-6 sm:px-8 lg:px-12 pt-16 pb-10">
+        <div className="text-center mb-8">
+        <div className="flex justify-center mb-[25px]">
+        <div className="relative">
+        <div className="flex justify-center items-center space-x-[5px]">
+        <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px] shadow-md" />
+        <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[11px] w-[11px] shadow" />
+        <div className="w-5 bg-gradient-to-br from-logo-amber to-orange-300 rounded-[4px] transform h-[11px] shadow-sm" />
+        <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-0 mx-0 border-[3px] bg-muted h-11 w-3 border-stone-200 shadow-md rounded-md-md-full rounded-md" />
+        <div className="w-5 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[4px] transform h-[11px] pl-0 ml-2 shadow-sm" />
+        <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[11px] w-[11px] shadow" />
+        <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[16px] h-[16px] shadow-md" />
+        </div>
+        </div>
+        </div>
+        </div>
 
-            <div className="flex justify-center mb-8">
-              <div className="flex p-1 bg-muted rounded-sm shadow-inner text-sm text-gray-600">
-                <button
-                  onClick={() => setActiveTab("meditations")}
-                  className={cn(
-                    "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
-                    activeTab === "meditations" ? "bg-white text-gray-600 shadow-md" : "",
-                  )}
-                >
-                  Meditations
-                </button>
-                <button
-                  onClick={() => setActiveTab("playlists")}
-                  className={cn(
-                    "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
-                    activeTab === "playlists" ? "bg-white text-gray-600 shadow-md" : "",
-                  )}
-                >
-                  Playlists
-                </button>
-              </div>
-            </div>
+        <div className="flex justify-center mb-8">
+        <div className="flex p-1 bg-muted rounded-sm shadow-inner text-sm text-gray-600">
+        <button
+          onClick={() => setActiveTab("meditations")}
+          className={cn(
+            "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
+            activeTab === "meditations" ? "bg-white text-gray-600 shadow-md" : "",
+          )}
+        >
+          Meditations
+        </button>
+        <button
+          onClick={() => setActiveTab("playlists")}
+          className={cn(
+            "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
+            activeTab === "playlists" ? "bg-white text-gray-600 shadow-md" : "",
+          )}
+        >
+          Playlists
+        </button>
+        </div>
+        </div>
 
             <AnimatePresence mode="wait">
               {activeTab === "meditations" && (
@@ -2884,8 +2872,8 @@ export default function LibraryPage() {
                   )}
                 </motion.div>
               )}
-            </AnimatePresence>
-          </div>
+        </AnimatePresence>
+        </div>
         </div>
 
         {playerPortalElement &&
