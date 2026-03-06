@@ -3527,7 +3527,7 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="space-y-2"
+                  className="flex flex-col gap-3"
                 >
                   <motion.div
                     className="text-gray-600"
@@ -3589,7 +3589,7 @@ export default function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="grid grid-cols-1 lg:grid-cols-2 gap-2"
+                    className="grid grid-cols-1 lg:grid-cols-2 gap-3"
                   >
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -3767,7 +3767,7 @@ export default function Home() {
                       </Card>
                     </motion.div>
 
-                    <div className="flex flex-col gap-4">
+                    <div>
                       <RecorderSection
                         className="hidden lg:block"
                         inputId="recording-label-desktop"
