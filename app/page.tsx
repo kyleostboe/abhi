@@ -3567,7 +3567,6 @@ export default function Home() {
                       </div>
                     </Card>
                   </motion.div>
-
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -3779,8 +3778,7 @@ export default function Home() {
                       />
                     </div>
                   </motion.div>
-                  <RecorderSection
-                    className="lg:hidden"
+                  <RecorderSection className="lg:hidden"
                     inputId="recording-label-mobile"
                     recordingLabel={recordingLabel}
                     onRecordingLabelChange={handleRecordingLabelChange}
@@ -3795,7 +3793,6 @@ export default function Home() {
                     setRecordingLabel={setRecordingLabel}
                     recordingPreviewRef={recordingPreviewRef}
                   />
-
                   {/* Timeline Editor for encoder */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -3837,8 +3834,6 @@ export default function Home() {
                         />
                       </div>
                     </Card>
-                  </motion.div>
-
                   {/* Generate Audio Button */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
