@@ -27,7 +27,7 @@ const createId = () => {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     try {
       return crypto.randomUUID()
-    } catch (error) {
+    } catch {
       // Fallback to timestamp-based id
     }
   }

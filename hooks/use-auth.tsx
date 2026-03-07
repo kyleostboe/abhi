@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter } from 'next/navigation'
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
-import { getAuthState, setAuthState } from "@/lib/auth-state"
+import { setAuthState } from "@/lib/auth-state"
 
 type AuthContextValue = {
   status: "loading" | "authenticated" | "unauthenticated"
