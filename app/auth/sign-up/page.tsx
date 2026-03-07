@@ -130,7 +130,7 @@ export default function SignUpPage() {
                   {error && <p className="text-sm text-red-500 font-serif">{error}</p>}
                   <Button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-logo-amber-300 to-logo-blue-400 text-white font-black shadow-md"
+                    className="w-full bg-gradient-to-br from-logo-amber-300 to-logo-blue-400 text-white font-black shadow-md"
                     disabled={isLoading}
                   >
                     {isLoading ? "Creating account..." : "Sign up"}
