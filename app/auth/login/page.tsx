@@ -96,9 +96,9 @@ export default function LoginPage() {
                     {isLoading ? "Logging in..." : "Login"}
                   </Button>
                 </div>
-                <div className="mt-4 text-center text-sm font-serif text-gray-600">
+                <div className="text-center font-serif text-gray-600 mt-5 text-xs">
                   Don't have an account?{" "}
-                  <Link href="/auth/sign-up" className="underline underline-offset-4 font-black text-logo-teal-600">
+                  <Link href="/auth/sign-up" className="underline underline-offset-4 font-black text-sm text-gray-500">
                     Sign up
                   </Link>
                 </div>
