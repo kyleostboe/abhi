@@ -130,15 +130,15 @@ export default function SignUpPage() {
                   {error && <p className="text-sm text-red-500 font-serif">{error}</p>}
                   <Button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 text-white font-black shadow-md"
+                    className="w-full bg-gradient-to-r from-logo-amber-300 to-logo-blue-400 text-white font-black shadow-md"
                     disabled={isLoading}
                   >
                     {isLoading ? "Creating account..." : "Sign up"}
                   </Button>
                 </div>
-                <div className="mt-4 text-center text-sm font-serif text-gray-600">
+                <div className="text-center font-serif text-gray-600 mt-5 text-xs">
                   Already have an account?{" "}
-                  <Link href="/auth/login" className="underline underline-offset-4 font-black text-logo-teal-600">
+                  <Link href="/auth/login" className="underline underline-offset-4 font-black text-sm text-gray-500">
                     Login
                   </Link>
                 </div>
