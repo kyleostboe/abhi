@@ -17,7 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html className="my-0" lang="en" suppressHydrationWarning>
       <body className={`bg-gradient-to-r from-gray-50 to-muted ${inter.className}`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           <AuthProvider>
             {children}
             <Toaster />
