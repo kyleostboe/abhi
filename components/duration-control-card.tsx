@@ -24,7 +24,7 @@ export function DurationControlCard({
       <div className={cn("px-6 text-white bg-gradient-to-br text-center py-[9px]", gradientClassName)}>
         <h3 className="font-black tracking-tight text-base">{title}</h3>
       </div>
-      <div className={cn("px-6 py-6 space-y-0", bodyClassName)}>{children}</div>
+      <div className={cn("px-6 py-6 space-y-0 bg-white", bodyClassName)}>{children}</div>
     </Card>
   )
 }

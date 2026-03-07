@@ -2823,6 +2823,12 @@ export default function Home() {
           </div>
         )}
 
+        {!isAuthenticated && (
+          <div className="flex justify-center py-4 z-10">
+            <AuthButtons onLogin={login} />
+          </div>
+        )}
+
         {memoryWarning && activeMode === "adjuster" && (
           <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-yellow-100 to-amber-50 border border-yellow-300 shadow-sm ">
             <div className="flex items-start">
@@ -2842,16 +2848,15 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="relative max-w-4xl mx-auto bg-gradient-to-b from-transparent via-transparent to-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
+          className="relative max-w-4xl mx-auto backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
           role="application"
         >
-          {!isAuthenticated && (
-            <div className="flex justify-center p-4 text-center">
-              <AuthButtons onLogin={login} />
-            </div>
-          )}
-
           <div className="relative overflow-hidden">
+            {!isAuthenticated && (
+              <div className="absolute top-4 left-0 right-0 z-10 flex justify-center hidden">
+                <AuthButtons onLogin={login} />
+              </div>
+            )}
             <div className="absolute top-0 left-0 w-full h-32 blur-3xl transform -translate-y-1/2">
               <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-rose-300/15 via-purple-400/10 to-teal-300/20 "></div>
               <div className="absolute top-2 left-8 w-16 h-12 bg-gradient-to-br from-emerald-300/30 to-teal-400/25 rounded-full transform rotate-12 "></div>
@@ -2979,7 +2984,7 @@ export default function Home() {
                           href="https://dharmaseed.org/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight"
+                          className="font-black text-gray-600 px-5 py-1 transition-all duration-200 ease-out hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight bg-white"
                         >
                           Dharma Seed
                         </a>
@@ -2987,7 +2992,7 @@ export default function Home() {
                           href="https://dharmaseed.org/teacher/210/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight"
+                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight bg-white"
                         >
                           Rob Burbea's talks &amp; retreats
                         </a>
@@ -2995,7 +3000,7 @@ export default function Home() {
                           href="https://tasshin.com/guided-meditations/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight"
+                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight bg-white"
                         >
                           Tasshin & Friend's meditations
                         </a>
@@ -3003,7 +3008,7 @@ export default function Home() {
                           href="https://www.tarabrach.com/guided-meditations/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight"
+                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight bg-white"
                         >
                           Tara Brach's meditations
                         </a>
@@ -3011,7 +3016,7 @@ export default function Home() {
                           href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDDo3?usp=drive_link"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight"
+                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight bg-white"
                         >
                           Toby Sola's meditations
                         </a>
@@ -3019,7 +3024,7 @@ export default function Home() {
                           href="https://meditofoundation.org/meditations"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight"
+                          className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight bg-white"
                         >
                           Medito Foundation
                         </a>
@@ -3167,7 +3172,7 @@ export default function Home() {
                           exit={{ opacity: 0, y: -10 }}
                           transition={{ delay: 0.1 }}
                         >
-                          <Alert className="bg-white p-0 border-0 shadow-none">
+                          <Alert className="bg-transparent p-0 border-0 shadow-none">
                             <div className="p-3 text-center min-h-[76px] rounded-sm shadow-none bg-transparent pb-0.5 pt-0">
                               <div className="flex items-center mb-2 justify-center">
                                 {/* Removed the Info icon div */}
@@ -3191,7 +3196,7 @@ export default function Home() {
                                   </div>
                                 </div>
                                 <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
-                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-300 border-4 border-double">
+                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-4 border-stone-300 border-double">
                                     <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
                                     <div className="font-black text-gray-600 text-sm tracking-tight">
                                       {audioAnalysis.silenceRegions}
@@ -3522,7 +3527,7 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="space-y-4"
+                  className="flex flex-col gap-3"
                 >
                   <motion.div
                     className="text-gray-600"
@@ -3530,9 +3535,9 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
                   >
-                    <Card className="overflow-visible bg-white max-w-2xl mx-auto rounded-2xl shadow-none">
-                      <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none text-center px-6">
-                        <div className="grid grid-cols-1 text-gray-600 justify-items-center gap-3 pb-0">
+                    <Card className="overflow-visible bg-transparent max-w-2xl mx-auto rounded-2xl shadow-none">
+                      <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none text-center px-6 flex justify-center">
+                        <div className="grid grid-cols-1 text-gray-600 justify-items-center gap-3 pb-0 w-full max-w-md">
                           <div className="text-center tracking-tight">
                             <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
                               Duration
@@ -3555,70 +3560,40 @@ export default function Home() {
                               value={meditationTitle}
                               onChange={handleMeditationTitleChange}
                               placeholder="Title:"
-                              className="flex file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 h-9 pb-4 shadow-md border-[3px] text-center w-[263px]"
+                              className="flex file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 mt-1 text-xs font-black text-gray-600 h-9 pb-4 shadow-md border-[3px] text-center px-4 md:px-auto"
                             />
                           </div>
                         </div>
                       </div>
                     </Card>
                   </motion.div>
-
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-4"
+                    className="grid grid-cols-1 lg:grid-cols-2 gap-3"
                   >
-                    <div className="flex flex-col gap-4">
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="p-6 bg-transparent px-0 py-3 pb-0 pt-0"
-                      >
-                        <div className="p-0.5 bg-gradient-to-br from-logo-blue-400 to-stone-300  py-1 shadow-lg rounded-sm px-[5px]">
-                          <div className="bg-white p-4 rounded-[10px] shadow-inner border-stone-300 border-4 border-double">
-                            <div className="text-center">
-                              <Textarea
-                                id="custom-instruction"
-                                value={customInstructionText}
-                                onChange={handleCustomInstructionChange}
-                                placeholder="Enter an instruction..."
-                                className="mt-2 text-xs font-serif font-black text-indigo-400 placeholder-indigo-400 resize-none bg-transparent border-none focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                      <RecorderSection
-                        className="hidden lg:block"
-                        inputId="recording-label-desktop"
-                        recordingLabel={recordingLabel}
-                        onRecordingLabelChange={handleRecordingLabelChange}
-                        isRecording={isRecording}
-                        startRecording={startRecording}
-                        stopRecording={stopRecording}
-                        readyToAddToTimelineRecording={readyToAddToTimelineRecording}
-                        timelineEvents={timelineEvents}
-                        addEventToTimeline={addEventToTimeline}
-                        setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
-                        setRecordedBlobs={setRecordedBlobs}
-                        setRecordingLabel={setRecordingLabel}
-                        recordingPreviewRef={recordingPreviewRef}
-                      />
-                    </div>
-
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3 }}
                     >
                       <Card className="overflow-hidden border-none shadow-lg bg-white ">
-                        <div className="bg-gradient-to-br from-logo-blue-400 to-amber-300 px-6 py-[9px] text-center">
-                          <h3 className="text-white flex items-center font-serif font-black text-center">
-                            <Music2Icon className="h-4 w-4 mr-2" />
-                            Sound Cues
+                      <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 px-6 py-[9px] text-center pt-[9px]">
+                        <h3 className="text-white flex items-center font-serif font-black text-center">
+                          <Music2Icon className="h-4 w-4 mr-2" />
+                          Sound Cues
                           </h3>
+                        </div>
+                        <div className="px-6 pt-3.5 pb-0">
+                          <input
+                            id="custom-instruction"
+                            type="text"
+                            value={customInstructionText}
+                            onChange={handleCustomInstructionChange}
+                            placeholder="Enter an instruction..."
+                            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-logo-blue-400 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-xs focus-visible: text-logo-blue-400 font-black text-gray-500 border-stone-300 border-0 shadow-2xl h-9"
+                          />
                         </div>
                         <div className="p-6 flex flex-col space-y-4 pt-[3px]">
                           <div className="flex-1 h-auto">
@@ -3630,9 +3605,9 @@ export default function Home() {
                                   </div>
                                 </AccordionTrigger>
                                 <div className="px-4 border-b-0 pb-2">
-                                  <div className="flex items-center gap-4">
+                                  <div className="flex items-center gap-2">
                                     <div className="flex items-center gap-2">
-                                      <span className="text-xs text-gray-500">Type</span>
+                                      <span className="flex items-center gap-4 text-xs text-xs">Type</span>
                                       <select
                                         value={noteType}
                                         onChange={(e) => setNoteType(e.target.value as "piano" | "synth" | "harp")}
@@ -3644,7 +3619,7 @@ export default function Home() {
                                       </select>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                      <span className="text-xs text-gray-500">Multi-Note</span>
+                                      <span className="text-gray-500 text-xs">Multi-Note</span>
                                       <button
                                         onClick={() => {
                                           setMultiNoteMode(!multiNoteMode)
@@ -3783,6 +3758,25 @@ export default function Home() {
                         </div>
                       </Card>
                     </motion.div>
+
+                    <div>
+                      <RecorderSection
+                        className="hidden lg:block"
+                        inputId="recording-label-desktop"
+                        recordingLabel={recordingLabel}
+                        onRecordingLabelChange={handleRecordingLabelChange}
+                        isRecording={isRecording}
+                        startRecording={startRecording}
+                        stopRecording={stopRecording}
+                        readyToAddToTimelineRecording={readyToAddToTimelineRecording}
+                        timelineEvents={timelineEvents}
+                        addEventToTimeline={addEventToTimeline}
+                        setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
+                        setRecordedBlobs={setRecordedBlobs}
+                        setRecordingLabel={setRecordingLabel}
+                        recordingPreviewRef={recordingPreviewRef}
+                      />
+                    </div>
                   </motion.div>
                   <RecorderSection
                     className="lg:hidden"
@@ -3800,7 +3794,6 @@ export default function Home() {
                     setRecordingLabel={setRecordingLabel}
                     recordingPreviewRef={recordingPreviewRef}
                   />
-
                   {/* Timeline Editor for encoder */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -3843,7 +3836,6 @@ export default function Home() {
                       </div>
                     </Card>
                   </motion.div>
-
                   {/* Generate Audio Button */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}

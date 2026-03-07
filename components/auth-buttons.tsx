@@ -10,13 +10,7 @@ interface AuthButtonsProps {
 
 export function AuthButtons({ onLogin, className }: AuthButtonsProps) {
   return (
-    <div
-      data-id="auth-buttons-container"
-      className={cn(
-        "flex items-center gap-3 rounded-sm py-[9px] px-[9px]",
-        className,
-      )}
-    >
+    <div data-id="auth-buttons-container" className={cn("flex items-center gap-3", className)}>
       <button
         data-id="login-button"
         onClick={onLogin}

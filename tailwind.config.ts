@@ -9,6 +9,11 @@ const config = {
     "./src/**/*.{ts,tsx}",
     "*.{js,ts,jsx,tsx,mdx}",
   ],
+  safelist: [
+    "to-logo-amber-300",
+    "from-logo-blue-400",
+    "bg-gradient-to-br",
+  ],
   prefix: "",
   theme: {
     container: {

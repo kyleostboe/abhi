@@ -444,23 +444,27 @@ export function VisualTimeline({
         <div
           className={cn("flex justify-between px-2 mt-2 font-black text-gray-600", isMobile ? "text-xs" : "text-sm")}
         >
-          {timeMarkers.map((time, index) => (
-            <div key={`time-${index}`} className="text-center flex flex-col">
-              <span
-                className={cn(
-                  "leading-tight",
-                  isMobile && index > 0 && index < timeMarkers.length - 1 ? "hidden sm:block" : "",
-                )}
-              >
-                {isMobile ? Math.floor(time / 60) : formatTime(time)}
-              </span>
-              {isMobile && (
-                <span className="text-xs opacity-60">
-                  {index === 0 ? "0m" : index === timeMarkers.length - 1 ? `${Math.floor(totalDuration / 60)}m` : ""}
+          {timeMarkers.map((time, index) => {
+            const isLastMarker = index === timeMarkers.length - 1
+            const displayTime = isLastMarker ? totalDuration : time
+            return (
+              <div key={`time-${index}`} className="text-center flex flex-col">
+                <span
+                  className={cn(
+                    "leading-tight",
+                    isMobile && index > 0 && index < timeMarkers.length - 1 ? "hidden sm:block" : "",
+                  )}
+                >
+                  {isMobile ? Math.floor(displayTime / 60) : formatTime(displayTime)}
                 </span>
-              )}
-            </div>
-          ))}
+                {isMobile && (
+                  <span className="text-xs opacity-60">
+                    {index === 0 ? "0m" : isLastMarker ? `${Math.floor(totalDuration / 60)}m` : ""}
+                  </span>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 
