@@ -90,7 +90,7 @@ export default function LoginPage() {
                   {error && <p className="text-sm text-red-500 font-serif">{error}</p>}
                   <Button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 text-white font-black shadow-md"
+                    className="w-full bg-gradient-to-r from-logo-rose-300 to-logo-teal-500 text-white font-black shadow-md"
                     disabled={isLoading}
                   >
                     {isLoading ? "Logging in..." : "Login"}
