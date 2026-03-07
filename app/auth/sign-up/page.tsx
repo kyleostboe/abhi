@@ -84,7 +84,7 @@ export default function SignUpPage() {
                       placeholder="Your name"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      className="border-[3px] border-muted"
+                      className="bg-transparent shadow-2xl rounded-sm border border-muted text-gray-700 placeholder:text-gray-500"
                     />
                   </div>
                   <div className="grid gap-2">
@@ -98,7 +98,7 @@ export default function SignUpPage() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="border-[3px] border-muted"
+                      className="bg-transparent shadow-2xl rounded-sm border border-muted text-gray-700 placeholder:text-gray-500"
                     />
                   </div>
                   <div className="grid gap-2">
@@ -111,7 +111,7 @@ export default function SignUpPage() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="border-[3px] border-muted"
+                      className="bg-transparent shadow-2xl rounded-sm border border-muted text-gray-700 placeholder:text-gray-500"
                     />
                   </div>
                   <div className="grid gap-2">
@@ -124,7 +124,7 @@ export default function SignUpPage() {
                       required
                       value={repeatPassword}
                       onChange={(e) => setRepeatPassword(e.target.value)}
-                      className="border-[3px] border-muted"
+                      className="bg-transparent shadow-2xl rounded-sm border border-muted text-gray-700 placeholder:text-gray-500"
                     />
                   </div>
                   {error && <p className="text-sm text-red-500 font-serif">{error}</p>}
