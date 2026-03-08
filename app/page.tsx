@@ -2824,7 +2824,7 @@ export default function Home() {
         )}
 
         {!isAuthenticated && (
-          <div className="flex justify-center py-4 z-10">
+          <div className="flex justify-center py-4 z-10 pb-4 pt-0">
             <AuthButtons onLogin={login} />
           </div>
         )}
