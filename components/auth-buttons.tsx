@@ -10,7 +10,7 @@ interface AuthButtonsProps {
 
 export function AuthButtons({ onLogin, className }: AuthButtonsProps) {
   return (
-    <div data-id="auth-buttons-container" className={cn("flex items-center", className)}>
+    <div data-id="auth-buttons-container" className={cn("flex items-center relative z-20", className)}>
       <Link
         data-id="login-button"
         href="/auth/login"
