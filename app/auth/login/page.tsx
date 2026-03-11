@@ -71,7 +71,7 @@ export default function LoginPage() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="border-[3px] border-muted"
+                      className="bg-white shadow-2xl rounded-sm border-0 text-gray-700 placeholder:text-gray-500 focus-visible:ring-0 focus-visible:ring-offset-0"
                     />
                   </div>
                   <div className="grid gap-2">
@@ -84,21 +84,21 @@ export default function LoginPage() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="border-[3px] border-muted"
+                      className="bg-white shadow-2xl rounded-sm border-0 text-gray-700 placeholder:text-gray-500 focus-visible:ring-0 focus-visible:ring-offset-0"
                     />
                   </div>
                   {error && <p className="text-sm text-red-500 font-serif">{error}</p>}
                   <Button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 text-white font-black shadow-md"
+                    className="w-full bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500  text-white font-black shadow-md"
                     disabled={isLoading}
                   >
                     {isLoading ? "Logging in..." : "Login"}
                   </Button>
                 </div>
-                <div className="mt-4 text-center text-sm font-serif text-gray-600">
+                <div className="text-center font-serif text-gray-600 mt-5 text-xs">
                   Don't have an account?{" "}
-                  <Link href="/auth/sign-up" className="underline underline-offset-4 font-black text-logo-teal-600">
+                  <Link href="/auth/sign-up" className="underline underline-offset-4 font-black text-sm text-gray-500">
                     Sign up
                   </Link>
                 </div>

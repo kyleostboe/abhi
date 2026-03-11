@@ -2824,7 +2824,7 @@ export default function Home() {
         )}
 
         {!isAuthenticated && (
-          <div className="flex justify-center py-4 z-10">
+          <div className="flex justify-center py-4 z-10 pt-0 pb-7">
             <AuthButtons onLogin={login} />
           </div>
         )}
@@ -3585,7 +3585,7 @@ export default function Home() {
                           Sound Cues
                           </h3>
                         </div>
-                        <div className="px-6 pt-3.5 pb-0">
+                        <div className="px-6 pb-0 pt-[21px]">
                           <input
                             id="custom-instruction"
                             type="text"
