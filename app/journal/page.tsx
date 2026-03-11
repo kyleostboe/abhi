@@ -396,7 +396,7 @@ export default function JournalPage() {
       <main className="px-0">
         <div className="max-w-5xl mx-auto space-y-4">
           {!isAuthenticated && (
-            <div className="flex justify-center py-4 z-10">
+            <div className="flex justify-center py-4 z-10 pt-0 pb-7">
               <AuthButtons onLogin={login} />
             </div>
           )}
