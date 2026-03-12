@@ -3605,7 +3605,7 @@ export default function Home() {
                                   </div>
                                 </AccordionTrigger>
                                 <div className="px-4 border-b-0 pb-2">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-5">
                                     <div className="flex items-center gap-2">
                                       <span className="flex items-center gap-4 text-xs text-xs">Type</span>
                                       <select
