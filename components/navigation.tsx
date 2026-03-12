@@ -17,12 +17,12 @@ export function Navigation({ showProfileButton = false }: NavigationProps) {
   return (
     <nav className="fixed top-0 left-0 right-0 z-40 flex justify-center py-3.5 px-4 pb-3.5">
       <div className="relative flex w-full max-w-4xl items-center justify-center">
-        <ul className="flex rounded-sm bg-white px-2 py-3 space-x-0 shadow-2xl">
+        <ul className="flex rounded-sm bg-white px-2 space-x-0 shadow-2xl py-[13px]">
           <li>
             <Link
               href="/"
               className={cn(
-                "py-1.5 transition-colors font-black font-serif text-xs shadow-none rounded-sm tracking-tight px-3",
+                "transition-colors font-black font-serif text-xs shadow-none rounded-sm tracking-tight px-3 py-2",
                 pathname === "/"
                   ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md"
                   : "text-gray-600 rounded-[9px] border-[3px] border-transparent",
@@ -35,7 +35,7 @@ export function Navigation({ showProfileButton = false }: NavigationProps) {
             <Link
               href="/library"
               className={cn(
-                "py-1.5 transition-colors font-black font-serif text-xs shadow-none rounded-sm tracking-tight px-3",
+                "transition-colors font-black font-serif text-xs shadow-none rounded-sm tracking-tight px-3 py-2",
                 pathname === "/library"
                   ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md"
                   : "text-gray-600 rounded-[9px] border-[3px] border-transparent",
@@ -48,7 +48,7 @@ export function Navigation({ showProfileButton = false }: NavigationProps) {
             <Link
               href="/journal"
               className={cn(
-                "py-1.5 text-xs transition-colors font-black font-serif shadow-none rounded-sm tracking-tight px-3",
+                "text-xs transition-colors font-black font-serif shadow-none rounded-sm tracking-tight px-3 py-2",
                 pathname === "/journal"
                   ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md"
                   : "text-gray-600 rounded-[9px] border-[3px] border-transparent",

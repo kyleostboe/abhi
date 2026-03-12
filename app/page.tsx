@@ -2901,7 +2901,7 @@ export default function Home() {
                         setActiveTab("adjuster")
                       }}
                       className={cn(
-                        "inline-flex items-center justify-center whitespace-nowrap px-4 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black py-3 tracking-tight text-sm rounded-sm",
+                        "inline-flex items-center justify-center whitespace-nowrap px-4 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black py-3 tracking-tight rounded-sm text-sm",
                         activeMode === "adjuster" ? "bg-white text-gray-600 shadow-md " : "text-gray-600 ",
                       )}
                     >
