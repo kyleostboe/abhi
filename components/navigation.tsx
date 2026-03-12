@@ -24,8 +24,8 @@ export function Navigation({ showProfileButton = false }: NavigationProps) {
               className={cn(
                 "py-2 transition-colors font-black font-serif text-sm shadow-none rounded-sm tracking-tight px-[13px]",
                 pathname === "/"
-                  ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md "
-                  : "text-gray-600 rounded-[9px]  ",
+                  ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md"
+                  : "text-gray-600 rounded-[9px] border-[3px] border-transparent",
               )}
             >
               Home
@@ -37,8 +37,8 @@ export function Navigation({ showProfileButton = false }: NavigationProps) {
               className={cn(
                 "py-2 transition-colors font-black font-serif text-sm shadow-none rounded-sm tracking-tight px-[13px]",
                 pathname === "/library"
-                  ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md "
-                  : "text-gray-600 rounded-[9px]  ",
+                  ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md"
+                  : "text-gray-600 rounded-[9px] border-[3px] border-transparent",
               )}
             >
               Library
@@ -50,8 +50,8 @@ export function Navigation({ showProfileButton = false }: NavigationProps) {
               className={cn(
                 "py-2 text-sm transition-colors font-black font-serif shadow-none rounded-sm tracking-tight px-[13px]",
                 pathname === "/journal"
-                  ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md "
-                  : "text-gray-600 rounded-[9px] ",
+                  ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md"
+                  : "text-gray-600 rounded-[9px] border-[3px] border-transparent",
               )}
             >
               Journal
