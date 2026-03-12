@@ -2806,7 +2806,7 @@ export default function Home() {
   const handleProcessAudio = processAudioAdjusterAction
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 pt-20 md:pt-24">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-0 md:p-8 pt-20 md:pt-24">
       <Navigation showProfileButton />
 
       <div className="relative">
@@ -2848,7 +2848,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="relative max-w-4xl mx-auto backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
+          className="relative w-full md:max-w-4xl md:mx-auto backdrop-blur-lg rounded-none md:rounded-3xl shadow-none md:shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
           role="application"
         >
           <div className="relative overflow-hidden">

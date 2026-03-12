@@ -394,13 +394,13 @@ export default function JournalPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 pt-20 md:pt-24">
       <Navigation showProfileButton />
       <main className="px-0">
-        <div className="max-w-5xl mx-auto space-y-0">
+        <div className="w-full md:max-w-5xl md:mx-auto space-y-0">
           {!isAuthenticated && (
             <div className="flex justify-center py-4 z-10 pt-0 pb-7">
               <AuthButtons onLogin={login} />
             </div>
           )}
-          <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out">
+          <div className="relative w-full md:max-w-4xl md:mx-auto bg-white/80 backdrop-blur-lg rounded-none md:rounded-3xl shadow-none md:shadow-xl overflow-hidden transition-colors duration-300 ease-in-out">
             {!isAuthenticated && (
               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm space-y-3 text-center p-6">
                 <p className="text-lg text-gray-800 font-serif font-black">Create account to save</p>

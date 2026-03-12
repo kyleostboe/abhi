@@ -2284,7 +2284,7 @@ export default function LibraryPage() {
   }, [draggedFile, audioFileTitle, loadData, toast])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 pt-20 md:pt-24 font-serif font-black">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-0 md:p-8 pt-20 md:pt-24 font-serif font-black">
       <Navigation showProfileButton />
 
       {!isAuthenticated && (
@@ -2338,7 +2338,7 @@ export default function LibraryPage() {
       </Dialog>
 
       <div
-        className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg shadow-xl overflow-hidden transition-colors rounded-3xl duration-300 ease-in-out"
+        className="relative w-full md:max-w-4xl md:mx-auto bg-white/80 backdrop-blur-lg shadow-none md:shadow-xl overflow-hidden transition-colors rounded-none md:rounded-3xl duration-300 ease-in-out"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
