@@ -14,6 +14,7 @@ import { bufferToMp3 } from "@/lib/audio-utils"
 import { BookmarkPlus, Plus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
+import { useRouter } from "next/navigation"
 
 interface SaveMeditationDialogProps {
   audioUrl: string
@@ -93,6 +94,7 @@ export function SaveMeditationDialog({
   const { toast } = useToast()
   const abortControllerRef = useRef<AbortController | null>(null)
   const { isAuthenticated, login } = useAuth()
+  const router = useRouter()
   const isPresetOptionAvailable = Boolean(existingMeditationId)
   const effectiveOriginalDuration =
     typeof existingMeditationDuration === "number" && Number.isFinite(existingMeditationDuration)
@@ -332,8 +334,16 @@ export function SaveMeditationDialog({
     }
   }
 
+  const handleOpenChange = (next: boolean) => {
+    if (next && !isAuthenticated) {
+      router.push("/auth/login")
+      return
+    }
+    setOpen(next)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {children || (
           <Button className="bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 hover:from-logo-teal-600 hover:to-logo-blue-500 text-white">
