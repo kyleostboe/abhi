@@ -454,14 +454,20 @@ export default function JournalPage() {
                     </button>
                     <button
                       onClick={() => {
+                        setActiveTab("date")
+                        setShouldAutoSelectMeditation(false)
+                      }}
+                      className={cn(
+                        "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
+                        activeTab === "date" ? "bg-white text-gray-600 shadow-md" : "",
+                      )}
+                    >
+                      By Date
+                    </button>
+                    <button
+                      onClick={() => {
                         setActiveTab("meditation")
                         setShouldAutoSelectMeditation(false)
-                        router.replace(
-                          buildJournalHref({
-                            meditation: selectedMeditationId,
-                            entry: activeMeditationEntryId,
-                          }),
-                        )
                       }}
                       className={cn(
                         "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
