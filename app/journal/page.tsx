@@ -435,25 +435,6 @@ export default function JournalPage() {
                   <div className="flex p-1 bg-muted rounded-sm shadow-inner text-sm text-gray-600">
                     <button
                       onClick={() => {
-                        const nextDateKey =
-                          selectedDateKey ?? availableDayKeys[availableDayKeys.length - 1] ?? getDateKey(new Date())
-                        setActiveTab("date")
-                        setSelectedDateKey(nextDateKey)
-                        router.replace(
-                          buildJournalHref({
-                            date: nextDateKey,
-                          }),
-                        )
-                      }}
-                      className={cn(
-                        "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
-                        activeTab === "date" ? "bg-white text-gray-600 shadow-md" : "",
-                      )}
-                    >
-                      By Date
-                    </button>
-                    <button
-                      onClick={() => {
                         setActiveTab("date")
                         setShouldAutoSelectMeditation(false)
                       }}
