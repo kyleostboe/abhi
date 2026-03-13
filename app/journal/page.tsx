@@ -477,10 +477,10 @@ export default function JournalPage() {
                   {activeTab === "date" && (
                     <motion.div
                       key="date"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.2 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
                     >
                       <Card className="p-6 lg:p-8  shadow-none border-none">
                         <div className="flex flex-col gap-6">
@@ -652,10 +652,10 @@ export default function JournalPage() {
                   {activeTab === "meditation" && (
                     <motion.div
                       key="meditation"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.2 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
                     >
                       <Card className="p-6 lg:p-8 bg-transparent border-none">
                         <div className="grid gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
