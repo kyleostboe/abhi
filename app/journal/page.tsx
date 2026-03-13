@@ -400,7 +400,7 @@ export default function JournalPage() {
               <AuthButtons onLogin={login} />
             </div>
           )}
-          <div className="relative w-full md:max-w-4xl md:mx-auto bg-white/80 backdrop-blur-lg rounded-none md:rounded-3xl shadow-none md:shadow-xl overflow-hidden transition-colors duration-300 ease-in-out">
+          <div className="relative w-full md:max-w-4xl md:mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-none md:shadow-xl overflow-hidden transition-colors duration-300 ease-in-out">
             {!isAuthenticated && (
               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm space-y-3 text-center p-6">
                 <p className="text-lg text-gray-800 font-serif font-black">Create account to save</p>
