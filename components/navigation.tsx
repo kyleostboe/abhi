@@ -21,6 +21,7 @@ export function Navigation({ showProfileButton = false }: NavigationProps) {
           <li>
             <Link
               href="/"
+              scroll={false}
               className={cn(
                 "transition-colors font-black font-serif text-xs shadow-none rounded-sm tracking-tight px-3 py-2",
                 pathname === "/"
@@ -34,6 +35,7 @@ export function Navigation({ showProfileButton = false }: NavigationProps) {
           <li>
             <Link
               href="/library"
+              scroll={false}
               className={cn(
                 "transition-colors font-black font-serif text-xs shadow-none rounded-sm tracking-tight px-3 py-2",
                 pathname === "/library"
@@ -47,6 +49,7 @@ export function Navigation({ showProfileButton = false }: NavigationProps) {
           <li>
             <Link
               href="/journal"
+              scroll={false}
               className={cn(
                 "text-xs transition-colors font-black font-serif shadow-none rounded-sm tracking-tight px-3 py-2",
                 pathname === "/journal"

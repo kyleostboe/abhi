@@ -26,7 +26,7 @@ export function UserMenu({ showLoginButton = false, buttonVariant = "default" }:
 
     return (
       <Button
-        onClick={login}
+        onClick={() => login()}
         size="sm"
         className="bg-white text-gray-600 shadow-lg hover:shadow-sm hover:text-gray-900 hover:bg-white font-bold text-xs h-8 px-4 rounded-[8px] transition-all duration-200"
       >
