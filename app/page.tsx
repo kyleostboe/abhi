@@ -3815,7 +3815,7 @@ export default function Home() {
                           </Button>
                         </div>
                       </div>
-                      <div className="p-6 px-7">
+                      <div className="p-6 px-6">
                         <VisualTimeline
                           events={timelineEvents}
                           totalDuration={encoderTotalDuration}
