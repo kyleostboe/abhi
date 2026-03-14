@@ -2887,7 +2887,7 @@ export default function Home() {
                   <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px] shadow"></div>
                   <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-[3px] transform h-[9px] shadow-sm"></div>
                   <div className="w-4 bg-gradient-to-r from-gray-600 to-gray-500 border-2 border-stone-200 h-[34px] shadow-md rounded w-[9px]"></div>
-                  <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[3px] transform h-[9px] pl-0 ml-2 shadow-sm"></div>
+                  <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[3px] transform h-[9px] pl-0 shadow-sm"></div>
                   <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[9px] w-[9px] shadow"></div>
                   <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[13px] h-[13px] shadow-md"></div>
                 </div>
