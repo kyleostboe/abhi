@@ -256,9 +256,7 @@
   }
 }
 
-* {
-  border-color: var(--border);
-}
+
 
 body {
   background-color: var(--background);
