@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from 'next/navigation'
+import { useMemo, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,12 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const returnTo = useMemo(() => {
+    const candidate = searchParams.get("returnTo")
+    if (!candidate || !candidate.startsWith("/")) return "/"
+    return candidate
+  }, [searchParams])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,9 +34,10 @@ export default function LoginPage() {
         password,
       })
       if (error) throw error
-      
-      await new Promise(resolve => setTimeout(resolve, 500))
-      window.location.href = '/'
+
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      router.push(returnTo)
+      router.refresh()
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")
       setIsLoading(false)
@@ -96,11 +103,16 @@ export default function LoginPage() {
                     {isLoading ? "Logging in..." : "Login"}
                   </Button>
                 </div>
-                <div className="text-center font-serif text-gray-600 mt-5 text-xs">
-                  Don't have an account?{" "}
-                  <Link href="/auth/sign-up" className="underline underline-offset-4 font-black text-sm text-gray-500">
-                    Sign up
-                  </Link>
+                <div className="text-center font-serif text-gray-600 mt-5 text-xs space-y-2">
+                  <div>
+                    Don't have an account?{" "}
+                    <Link href="/auth/sign-up" className="underline underline-offset-4 font-black text-sm text-gray-500">
+                      Sign up
+                    </Link>
+                  </div>
+                  <Button type="button" variant="ghost" className="text-xs" onClick={() => router.push(returnTo)}>
+                    Back to app
+                  </Button>
                 </div>
               </form>
             </CardContent>

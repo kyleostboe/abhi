@@ -11,7 +11,7 @@ type AuthContextValue = {
   isAuthenticated: boolean
   userId: string | null
   user: User | null
-  login: () => void
+  login: (returnTo?: string) => void
   logout: () => void
 }
 
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event: unknown, session: any) => {
       console.log("[v0] Auth state changed:", _event, session?.user?.email)
       if (!isMounted) return
 
@@ -80,8 +80,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const login = () => {
-    router.push("/auth/login")
+  const login = (returnTo?: string) => {
+    const targetReturnTo =
+      typeof returnTo === "string" && returnTo.trim().length > 0
+        ? returnTo.trim()
+        : typeof window !== "undefined"
+          ? `${window.location.pathname}${window.location.search}${window.location.hash}`
+          : "/"
+
+    const params = new URLSearchParams({ returnTo: targetReturnTo })
+    router.push(`/auth/login?${params.toString()}`)
   }
 
   const logout = async () => {
