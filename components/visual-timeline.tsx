@@ -350,7 +350,7 @@ export function VisualTimeline({
       <div className="relative">
         <div
           ref={timelineRef}
-          className="relative h-20 bg-gradient-to-br from-muted to-gray-200/70 cursor-pointer overflow-visible shadow-inner border-gray-700 border-0 rounded-sm"
+          className="relative bg-gradient-to-br from-muted to-gray-200/70 cursor-pointer overflow-visible shadow-inner border-gray-700 border-0 rounded-sm h-[69px]"
         >
           {timeMarkers.slice(1, -1).map((time, index) => (
             <div
