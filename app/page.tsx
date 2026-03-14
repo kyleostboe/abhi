@@ -2672,44 +2672,37 @@ export default function Home() {
           const blob = new Blob(blobs, { type: mimeType })
           const url = URL.createObjectURL(blob)
 
-          // Create a temporary audio element to load metadata and get duration
-          const tempAudio = new Audio()
-          tempAudio.preload = "metadata"
-          tempAudio.src = url
-
-          tempAudio.onloadedmetadata = async () => {
-            let duration =
-              tempAudio.duration && !isNaN(tempAudio.duration) && isFinite(tempAudio.duration) ? tempAudio.duration : 0
-
-            if (!duration) {
-              try {
-                const arrayBuffer = await blob.arrayBuffer()
-                const audioBuffer = await getAudioContext().decodeAudioData(arrayBuffer)
-                duration = audioBuffer.duration
-              } catch (error) {
-                console.error("Error decoding audio for duration:", error)
-              }
+          // Get duration via AudioContext (more reliable than Audio element for recorded blobs)
+          const getDuration = async (): Promise<number> => {
+            try {
+              const arrayBuffer = await blob.arrayBuffer()
+              const audioBuffer = await getAudioContext().decodeAudioData(arrayBuffer)
+              return audioBuffer.duration
+            } catch (error) {
+              console.error("Error decoding audio for duration:", error)
+              // Fallback: try Audio element
+              return new Promise((resolve) => {
+                const tempAudio = new Audio()
+                tempAudio.preload = "metadata"
+                tempAudio.onloadedmetadata = () => {
+                  const dur = tempAudio.duration
+                  resolve(dur && !isNaN(dur) && isFinite(dur) ? dur : 0)
+                }
+                tempAudio.onerror = () => resolve(0)
+                tempAudio.src = url
+              })
             }
-
-            setReadyToAddToTimelineRecording({
-              url,
-              duration,
-              label: recordingLabel.trim(),
-            })
-            setRecordedBlobs([blob]) // Keep the blob for potential future use if needed
-            toast({ title: "Recording Stopped", description: `Duration: ${formatTime(duration)}` })
           }
 
-          tempAudio.onerror = (e) => {
-            console.error("Error loading recorded audio metadata:", e)
-            toast({
-              title: "Recording Error",
-              description: "Could not load recorded audio metadata. Try again.",
-              variant: "destructive",
-            })
-            URL.revokeObjectURL(url)
-            setReadyToAddToTimelineRecording(null)
-          }
+          const duration = await getDuration()
+          
+          setReadyToAddToTimelineRecording({
+            url,
+            duration,
+            label: recordingLabel.trim(),
+          })
+          setRecordedBlobs([blob]) // Keep the blob for potential future use if needed
+          toast({ title: "Recording Stopped", description: `Duration: ${formatTime(duration)}` })
 
           // Stop all tracks to release microphone
           if (mediaRecorderRef.current?.stream) {
@@ -2806,7 +2799,7 @@ export default function Home() {
   const handleProcessAudio = processAudioAdjusterAction
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 pt-20 md:pt-24">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-0 md:p-8 pt-20 md:pt-24">
       <Navigation showProfileButton />
 
       <div className="relative">
@@ -2848,7 +2841,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="relative max-w-4xl mx-auto backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
+          className="relative w-full md:max-w-4xl md:mx-auto backdrop-blur-lg rounded-3xl shadow-none md:shadow-xl overflow-hidden transition-colors duration-300 ease-in-out"
           role="application"
         >
           <div className="relative overflow-hidden">
@@ -2887,7 +2880,7 @@ export default function Home() {
                   <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px] shadow"></div>
                   <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-[3px] transform h-[9px] shadow-sm"></div>
                   <div className="w-4 bg-gradient-to-r from-gray-600 to-gray-500 border-2 border-stone-200 h-[34px] shadow-md rounded w-[9px]"></div>
-                  <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[3px] transform h-[9px] pl-0 ml-2 shadow-sm"></div>
+                  <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[3px] transform h-[9px] pl-0 shadow-sm"></div>
                   <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[9px] w-[9px] shadow"></div>
                   <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[13px] h-[13px] shadow-md"></div>
                 </div>
@@ -2901,7 +2894,7 @@ export default function Home() {
                         setActiveTab("adjuster")
                       }}
                       className={cn(
-                        "inline-flex items-center justify-center whitespace-nowrap px-4 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black py-3 tracking-tight text-sm rounded-sm",
+                        "inline-flex items-center justify-center whitespace-nowrap px-4 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black py-3 tracking-tight rounded-sm text-sm",
                         activeMode === "adjuster" ? "bg-white text-gray-600 shadow-md " : "text-gray-600 ",
                       )}
                     >
@@ -3605,7 +3598,7 @@ export default function Home() {
                                   </div>
                                 </AccordionTrigger>
                                 <div className="px-4 border-b-0 pb-2">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-5">
                                     <div className="flex items-center gap-2">
                                       <span className="flex items-center gap-4 text-xs text-xs">Type</span>
                                       <select
@@ -3642,7 +3635,7 @@ export default function Home() {
                                   {multiNoteMode && (
                                     <div className="p-3 bg-gray-50 rounded-sm mb-1.5 shadow-inner py-3 px-3">
                                       <div className="flex items-center justify-between">
-                                        <div className="text-gray-500 text-sm">
+                                        <div className="text-gray-500 text-xs">
                                           {selectedNotes.length > 0 ? selectedNotes.join(", ") : "None"}
                                         </div>
                                         {selectedNotes.length > 1 && (
@@ -3822,7 +3815,7 @@ export default function Home() {
                           </Button>
                         </div>
                       </div>
-                      <div className="p-6 px-7">
+                      <div className="p-6 px-6">
                         <VisualTimeline
                           events={timelineEvents}
                           totalDuration={encoderTotalDuration}

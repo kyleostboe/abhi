@@ -394,13 +394,13 @@ export default function JournalPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 pt-20 md:pt-24">
       <Navigation showProfileButton />
       <main className="px-0">
-        <div className="max-w-5xl mx-auto space-y-0">
+        <div className="w-full md:max-w-5xl md:mx-auto space-y-0">
           {!isAuthenticated && (
             <div className="flex justify-center py-4 z-10 pt-0 pb-7">
               <AuthButtons onLogin={login} />
             </div>
           )}
-          <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out">
+          <div className="relative w-full md:max-w-4xl md:mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-none md:shadow-xl overflow-hidden transition-colors duration-300 ease-in-out">
             {!isAuthenticated && (
               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm space-y-3 text-center p-6">
                 <p className="text-lg text-gray-800 font-serif font-black">Create account to save</p>
@@ -435,15 +435,8 @@ export default function JournalPage() {
                   <div className="flex p-1 bg-muted rounded-sm shadow-inner text-sm text-gray-600">
                     <button
                       onClick={() => {
-                        const nextDateKey =
-                          selectedDateKey ?? availableDayKeys[availableDayKeys.length - 1] ?? getDateKey(new Date())
                         setActiveTab("date")
-                        setSelectedDateKey(nextDateKey)
-                        router.replace(
-                          buildJournalHref({
-                            date: nextDateKey,
-                          }),
-                        )
+                        setShouldAutoSelectMeditation(false)
                       }}
                       className={cn(
                         "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
@@ -456,12 +449,6 @@ export default function JournalPage() {
                       onClick={() => {
                         setActiveTab("meditation")
                         setShouldAutoSelectMeditation(false)
-                        router.replace(
-                          buildJournalHref({
-                            meditation: selectedMeditationId,
-                            entry: activeMeditationEntryId,
-                          }),
-                        )
                       }}
                       className={cn(
                         "transition-all rounded-sm text-sm tracking-tight font-black font-serif py-3 px-4 text-gray-600",
@@ -477,10 +464,10 @@ export default function JournalPage() {
                   {activeTab === "date" && (
                     <motion.div
                       key="date"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.2 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
                     >
                       <Card className="p-6 lg:p-8  shadow-none border-none">
                         <div className="flex flex-col gap-6">
@@ -652,10 +639,10 @@ export default function JournalPage() {
                   {activeTab === "meditation" && (
                     <motion.div
                       key="meditation"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.2 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
                     >
                       <Card className="p-6 lg:p-8 bg-transparent border-none">
                         <div className="grid gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
