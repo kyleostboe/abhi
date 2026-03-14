@@ -225,6 +225,8 @@
   --color-logo-blue-950: hsl(210 80% 5%);
   --color-logo-blue-foreground: hsl(0 0% 100%);
 
+  --color-stone-200: hsl(0 0% 93%);
+
   --radius-lg: 1rem;
   --radius-md: calc(1rem - 2px);
   --radius-sm: calc(1rem - 4px);
