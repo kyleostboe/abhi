@@ -2672,44 +2672,37 @@ export default function Home() {
           const blob = new Blob(blobs, { type: mimeType })
           const url = URL.createObjectURL(blob)
 
-          // Create a temporary audio element to load metadata and get duration
-          const tempAudio = new Audio()
-          tempAudio.preload = "metadata"
-          tempAudio.src = url
-
-          tempAudio.onloadedmetadata = async () => {
-            let duration =
-              tempAudio.duration && !isNaN(tempAudio.duration) && isFinite(tempAudio.duration) ? tempAudio.duration : 0
-
-            if (!duration) {
-              try {
-                const arrayBuffer = await blob.arrayBuffer()
-                const audioBuffer = await getAudioContext().decodeAudioData(arrayBuffer)
-                duration = audioBuffer.duration
-              } catch (error) {
-                console.error("Error decoding audio for duration:", error)
-              }
+          // Get duration via AudioContext (more reliable than Audio element for recorded blobs)
+          const getDuration = async (): Promise<number> => {
+            try {
+              const arrayBuffer = await blob.arrayBuffer()
+              const audioBuffer = await getAudioContext().decodeAudioData(arrayBuffer)
+              return audioBuffer.duration
+            } catch (error) {
+              console.error("Error decoding audio for duration:", error)
+              // Fallback: try Audio element
+              return new Promise((resolve) => {
+                const tempAudio = new Audio()
+                tempAudio.preload = "metadata"
+                tempAudio.onloadedmetadata = () => {
+                  const dur = tempAudio.duration
+                  resolve(dur && !isNaN(dur) && isFinite(dur) ? dur : 0)
+                }
+                tempAudio.onerror = () => resolve(0)
+                tempAudio.src = url
+              })
             }
-
-            setReadyToAddToTimelineRecording({
-              url,
-              duration,
-              label: recordingLabel.trim(),
-            })
-            setRecordedBlobs([blob]) // Keep the blob for potential future use if needed
-            toast({ title: "Recording Stopped", description: `Duration: ${formatTime(duration)}` })
           }
 
-          tempAudio.onerror = (e) => {
-            console.error("Error loading recorded audio metadata:", e)
-            toast({
-              title: "Recording Error",
-              description: "Could not load recorded audio metadata. Try again.",
-              variant: "destructive",
-            })
-            URL.revokeObjectURL(url)
-            setReadyToAddToTimelineRecording(null)
-          }
+          const duration = await getDuration()
+          
+          setReadyToAddToTimelineRecording({
+            url,
+            duration,
+            label: recordingLabel.trim(),
+          })
+          setRecordedBlobs([blob]) // Keep the blob for potential future use if needed
+          toast({ title: "Recording Stopped", description: `Duration: ${formatTime(duration)}` })
 
           // Stop all tracks to release microphone
           if (mediaRecorderRef.current?.stream) {
