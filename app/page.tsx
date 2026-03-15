@@ -3543,7 +3543,7 @@ export default function Home() {
                               />
                             </div>
                           </div>
-                          <div className="text-center">
+                          <div className="text-center px-6">
                             <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
                               Title
                             </Label>
@@ -3553,7 +3553,7 @@ export default function Home() {
                               value={meditationTitle}
                               onChange={handleMeditationTitleChange}
                               placeholder="Title:"
-                              className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-xs font-black text-gray-600 border-stone-300 border-0 shadow-2xl h-9"
+                              className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-xs font-black text-gray-600 border-stone-300 border-0 shadow-2xl h-9 mt-2"
                             />
                           </div>
                         </div>
