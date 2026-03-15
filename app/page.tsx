@@ -3553,7 +3553,7 @@ export default function Home() {
                               value={meditationTitle}
                               onChange={handleMeditationTitleChange}
                               placeholder="Title:"
-                              className="flex file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 border-gray-500 text-xs font-black text-gray-600 h-9 pb-4 shadow-md border-[3px] text-center px-4 md:px-auto mt-[3px] mb-[17px]"
+                              className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-xs font-black text-gray-600 border-stone-300 border-0 shadow-2xl h-9"
                             />
                           </div>
                         </div>
