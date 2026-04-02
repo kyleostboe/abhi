@@ -3449,33 +3449,31 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
-                      <div className="border-2 border-yellow-200 rounded-lg shadow-md p-6 bg-white">
-                        <div className="rounded-sm p-3 px-0 shadow-none border-gray-500 bg-transparent border-0 mb-0">
-                          <audio controls className="w-full" src={processedUrl}></audio>
-                        </div>
-                        <div className="px-3.5 text-center tracking-tight mt-4">
-                          <SaveMeditationDialog
-                            audioUrl={processedUrl}
-                            mp3Blob={processedDistributionBlob ?? undefined}
-                            originalFileName={file?.name || "meditation"}
-                            duration={actualDuration || targetDuration * 60}
-                            source="adjuster"
-                            metadata={{
-                              targetDuration,
-                              pausesAdjusted,
-                              wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
-                              timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
-                            }}
-                            existingMeditationId={loadedLibraryContext?.id}
-                            existingMeditationTitle={loadedLibraryContext?.title}
-                            existingMeditationDuration={loadedLibraryContext?.duration}
-                          >
-                            <Button className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500">
-                              <BookmarkPlus className="h-4 w-4 mr-2" />
-                              Save to Library
-                            </Button>
-                          </SaveMeditationDialog>
-                        </div>
+                      <div className="rounded-sm p-3 px-0 shadow-none border-gray-500 bg-transparent border-0 mb-0">
+                        <audio controls className="w-full" src={processedUrl}></audio>
+                      </div>
+                      <div className="px-3.5 text-center tracking-tight">
+                        <SaveMeditationDialog
+                          audioUrl={processedUrl}
+                          mp3Blob={processedDistributionBlob ?? undefined}
+                          originalFileName={file?.name || "meditation"}
+                          duration={actualDuration || targetDuration * 60}
+                          source="adjuster"
+                          metadata={{
+                            targetDuration,
+                            pausesAdjusted,
+                            wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
+                            timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
+                          }}
+                          existingMeditationId={loadedLibraryContext?.id}
+                          existingMeditationTitle={loadedLibraryContext?.title}
+                          existingMeditationDuration={loadedLibraryContext?.duration}
+                        >
+                          <Button className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500">
+                            <BookmarkPlus className="h-4 w-4 mr-2" />
+                            Save to Library
+                          </Button>
+                        </SaveMeditationDialog>
                       </div>
                     </motion.div>
                   )}
