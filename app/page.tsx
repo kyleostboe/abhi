@@ -3445,71 +3445,36 @@ export default function Home() {
 
                   {isProcessingComplete && processedUrl && (
                     <motion.div
-                      initial={{ opacity: 0, y: 20 }}
+                      initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 }}
+                      transition={{ delay: 0.2 }}
                     >
-                      <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
-                        <div className="bg-gradient-to-br from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-1.5 ">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-white font-black text-base tracking-tight">New Audio</h3>
-                            <AudioInfoMenu
-                              items={[
-                                {
-                                  label: "Actual Duration",
-                                  value: actualDuration ? formatTime(actualDuration) : "--",
-                                },
-                                {
-                                  label: "Target Duration",
-                                  value: formatTime(targetDuration * 60),
-                                },
-                                {
-                                  label: "Pauses Adjusted",
-                                  value: pausesAdjusted,
-                                },
-                                {
-                                  label: "File Size",
-                                  value: formatFileSize(processedFileSize),
-                                },
-                                ...(processedAudioMetadata
-                                  ? [
-                                      {
-                                        label: "Output Format",
-                                        value: `Mono • ${processedAudioMetadata.sampleRate.toLocaleString()} Hz • ${processedAudioMetadata.bitDepth.toLocaleString()}-bit`,
-                                      },
-                                    ]
-                                  : []),
-                              ]}
-                            />
-                          </div>
-                        </div>
-                        <div className="p-6 px-3.5 py-4 space-y-4 text-center tracking-tight">
-                          <div className="p-3 rounded-sm px-0 mb-0 bg-transparent shadow-none pb-0 pt-0">
-                            <audio controls className="w-full" src={processedUrl}></audio>
-                          </div>
-                          <SaveMeditationDialog
-                            audioUrl={processedUrl}
-                            mp3Blob={processedDistributionBlob ?? undefined}
-                            originalFileName={file?.name || "meditation"}
-                            duration={actualDuration || targetDuration * 60}
-                            source="adjuster"
-                            metadata={{
-                              targetDuration,
-                              pausesAdjusted,
-                              wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
-                              timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
-                            }}
-                            existingMeditationId={loadedLibraryContext?.id}
-                            existingMeditationTitle={loadedLibraryContext?.title}
-                            existingMeditationDuration={loadedLibraryContext?.duration}
-                          >
-                            <Button className="w-44 py-3 rounded-[11px] shadow-md bg-white hover:shadow-sm hover:bg-white text-xs text-gray-600 font-serif font-black">
-                              <BookmarkPlus className="h-4 w-4 mr-2" />
-                              Save to Library
-                            </Button>
-                          </SaveMeditationDialog>
-                        </div>
-                      </Card>
+                      <div className="rounded-sm p-3 px-0 shadow-none border-gray-500 bg-transparent border-0 mb-0">
+                        <audio controls className="w-full" src={processedUrl}></audio>
+                      </div>
+                      <div className="px-3.5 text-center tracking-tight">
+                        <SaveMeditationDialog
+                          audioUrl={processedUrl}
+                          mp3Blob={processedDistributionBlob ?? undefined}
+                          originalFileName={file?.name || "meditation"}
+                          duration={actualDuration || targetDuration * 60}
+                          source="adjuster"
+                          metadata={{
+                            targetDuration,
+                            pausesAdjusted,
+                            wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
+                            timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
+                          }}
+                          existingMeditationId={loadedLibraryContext?.id}
+                          existingMeditationTitle={loadedLibraryContext?.title}
+                          existingMeditationDuration={loadedLibraryContext?.duration}
+                        >
+                          <Button className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500">
+                            <BookmarkPlus className="h-4 w-4 mr-2" />
+                            Save to Library
+                          </Button>
+                        </SaveMeditationDialog>
+                      </div>
                     </motion.div>
                   )}
                 </div>
