@@ -213,46 +213,45 @@ export async function rebuildAudioWithScaledPauses({
 
   const totalSamples = Math.floor(buffer.duration * buffer.sampleRate)
 
-    if (regions.length > 0 && regions[0].start > 0) {
-      const samplesToCopy = Math.floor(regions[0].start * buffer.sampleRate)
-      for (let i = 0; i < samplesToCopy && writeIndex < newData.length; i++) {
-        newData[writeIndex++] = getMonoSample(readIndex++)
-      }
+  if (regions.length > 0 && regions[0].start > 0) {
+    const samplesToCopy = Math.floor(regions[0].start * buffer.sampleRate)
+    for (let i = 0; i < samplesToCopy && writeIndex < newData.length; i++) {
+      newData[writeIndex++] = getMonoSample(readIndex++)
+    }
+  }
+
+  for (let i = 0; i < regions.length; i++) {
+    if (i % (isMobileDevice ? 5 : 10) === 0) {
+      await sleep(0)
+      onProgress(10 + Math.floor((i / Math.max(1, regions.length)) * 80))
     }
 
-    for (let i = 0; i < regions.length; i++) {
-      if (i % (isMobileDevice ? 5 : 10) === 0) {
-        await sleep(0)
-        onProgress(10 + Math.floor((i / Math.max(1, regions.length)) * 80))
-      }
+    const region = regions[i]
+    const processedRegion = processedRegions[i]
 
-      const region = regions[i]
-      const processedRegion = processedRegions[i]
+    readIndex = Math.floor(region.end * buffer.sampleRate)
 
-      readIndex = Math.floor(region.end * buffer.sampleRate)
-
-      const newSilenceLength = Math.floor(processedRegion.newDuration * buffer.sampleRate)
-      for (let j = 0; j < newSilenceLength && writeIndex < newData.length; j++) {
-        newData[writeIndex++] = 0
-      }
-
-      const nextRegionStart =
-        i < regions.length - 1 ? Math.floor(regions[i + 1].start * buffer.sampleRate) : totalSamples
-
-      const segmentStart = Math.max(readIndex, 0)
-      const segmentEnd = Math.min(nextRegionStart, totalSamples)
-
-      for (let j = segmentStart; j < segmentEnd && writeIndex < newData.length; j++) {
-        newData[writeIndex++] = getMonoSample(j)
-      }
-
-      readIndex = segmentEnd
+    const newSilenceLength = Math.floor(processedRegion.newDuration * buffer.sampleRate)
+    for (let j = 0; j < newSilenceLength && writeIndex < newData.length; j++) {
+      newData[writeIndex++] = 0
     }
 
-    if (regions.length === 0) {
-      for (let i = 0; i < totalSamples && writeIndex < newData.length; i++) {
-        newData[writeIndex++] = getMonoSample(i)
-      }
+    const nextRegionStart =
+      i < regions.length - 1 ? Math.floor(regions[i + 1].start * buffer.sampleRate) : totalSamples
+
+    const segmentStart = Math.max(readIndex, 0)
+    const segmentEnd = Math.min(nextRegionStart, totalSamples)
+
+    for (let j = segmentStart; j < segmentEnd && writeIndex < newData.length; j++) {
+      newData[writeIndex++] = getMonoSample(j)
+    }
+
+    readIndex = segmentEnd
+  }
+
+  if (regions.length === 0) {
+    for (let i = 0; i < totalSamples && writeIndex < newData.length; i++) {
+      newData[writeIndex++] = getMonoSample(i)
     }
   }
 

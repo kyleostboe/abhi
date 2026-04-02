@@ -1496,8 +1496,7 @@ export default function Home() {
 
       const arrayBuffer = await selectedFile.arrayBuffer()
       const buffer = await context.decodeAudioData(arrayBuffer)
-      // Free the ArrayBuffer immediately to save ~50MB
-      arrayBuffer = null as any
+      // Note: arrayBuffer is automatically freed by GC after decodeAudioData takes ownership
       setOriginalBuffer(buffer)
       playbackUrl = URL.createObjectURL(selectedFile)
       setOriginalUrl(playbackUrl)
