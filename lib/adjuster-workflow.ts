@@ -181,8 +181,10 @@ export async function rebuildAudioWithScaledPauses({
 
   let newBuffer: AudioBuffer
   try {
+    // Output as mono to halve memory footprint (~160MB instead of ~320MB for stereo)
+    // Meditation files are typically mono or mixed-to-mono anyway
     newBuffer = audioContext.createBuffer(
-      buffer.numberOfChannels,
+      1,
       Math.max(1, Math.floor(newTotalDuration * buffer.sampleRate)),
       buffer.sampleRate,
     )
@@ -195,17 +197,26 @@ export async function rebuildAudioWithScaledPauses({
 
   onProgress(10)
 
-  for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-    const originalData = buffer.getChannelData(channel)
-    const newData = newBuffer.getChannelData(channel)
-    let writeIndex = 0
-    let readIndex = 0
-    const totalSamples = originalData.length
+  // Process single mono output channel
+  const newData = newBuffer.getChannelData(0)
+  let writeIndex = 0
+  let readIndex = 0
+
+  // Get mixed-down mono from all input channels
+  const getMonoSample = (sampleIndex: number): number => {
+    let sum = 0
+    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+      sum += buffer.getChannelData(channel)[sampleIndex]
+    }
+    return sum / buffer.numberOfChannels
+  }
+
+  const totalSamples = Math.floor(buffer.duration * buffer.sampleRate)
 
     if (regions.length > 0 && regions[0].start > 0) {
       const samplesToCopy = Math.floor(regions[0].start * buffer.sampleRate)
       for (let i = 0; i < samplesToCopy && writeIndex < newData.length; i++) {
-        newData[writeIndex++] = originalData[readIndex++]
+        newData[writeIndex++] = getMonoSample(readIndex++)
       }
     }
 
@@ -232,7 +243,7 @@ export async function rebuildAudioWithScaledPauses({
       const segmentEnd = Math.min(nextRegionStart, totalSamples)
 
       for (let j = segmentStart; j < segmentEnd && writeIndex < newData.length; j++) {
-        newData[writeIndex++] = originalData[j]
+        newData[writeIndex++] = getMonoSample(j)
       }
 
       readIndex = segmentEnd
@@ -240,7 +251,7 @@ export async function rebuildAudioWithScaledPauses({
 
     if (regions.length === 0) {
       for (let i = 0; i < totalSamples && writeIndex < newData.length; i++) {
-        newData[writeIndex++] = originalData[i]
+        newData[writeIndex++] = getMonoSample(i)
       }
     }
   }

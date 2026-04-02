@@ -84,6 +84,168 @@ export const bufferToWav = async (
 
   const bitDepths: Array<8 | 16> = [16, 8]
 
+  // Single-pass processing: convert to mono, resample, and write WAV
+  // No intermediate mono or resampled buffers — everything happens in one loop
+  let selectedSampleRate = buffer.sampleRate
+  let selectedBitDepth: 8 | 16 = 16
+  let estimatedSize = 44 + buffer.length * (selectedBitDepth / 8)
+  let foundCombination = false
+
+  outer: for (const depth of bitDepths) {
+    for (const rate of candidateRates) {
+      const ratio = rate / buffer.sampleRate
+      const estimatedSamples = Math.max(1, Math.floor(buffer.length * ratio))
+      const bytesPerSample = depth / 8
+      const estimate = 44 + estimatedSamples * bytesPerSample
+
+      if (estimate <= maxBytes) {
+        selectedSampleRate = rate
+        selectedBitDepth = depth
+        estimatedSize = estimate
+        foundCombination = true
+        break outer
+      }
+    }
+  }
+
+  if (!foundCombination && estimatedSize > maxBytes) {
+    throw new Error(
+      `Unable to fit WAV under ${formatFileSize(maxBytes)} even at ${candidateRates.at(-1) || buffer.sampleRate}Hz / 8-bit.`,
+    )
+  }
+
+  onProgress(15)
+
+  // Calculate output parameters
+  const ratio = selectedSampleRate / buffer.sampleRate
+  const numOutputSamples = Math.max(1, Math.floor(buffer.length * ratio))
+  const bytesPerSample = selectedBitDepth / 8
+  const dataSize = numOutputSamples * bytesPerSample
+  const fileSize = 44 + dataSize
+
+  let finalArrayBuffer: ArrayBuffer
+  try {
+    finalArrayBuffer = new ArrayBuffer(fileSize)
+  } catch (e) {
+    throw new Error(
+      `Failed to create WAV data buffer (size: ${formatFileSize(fileSize)}). Memory limit likely exceeded.`,
+    )
+  }
+
+  const view = new DataView(finalArrayBuffer)
+
+  const writeString = (offset: number, string: string) => {
+    for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i))
+  }
+
+  writeString(0, "RIFF")
+  view.setUint32(4, 36 + dataSize, true)
+  writeString(8, "WAVE")
+  writeString(12, "fmt ")
+  view.setUint32(16, 16, true)
+  view.setUint16(20, 1, true)
+  view.setUint16(22, 1, true)
+  view.setUint32(24, selectedSampleRate, true)
+  view.setUint32(28, selectedSampleRate * bytesPerSample, true)
+  view.setUint16(32, bytesPerSample, true)
+  view.setUint16(34, selectedBitDepth, true)
+  writeString(36, "data")
+  view.setUint32(40, dataSize, true)
+
+  onProgress(20)
+
+  // Single pass: read from input buffer, mix down to mono, resample, and write directly to WAV
+  let offset = 44
+  for (let i = 0; i < numOutputSamples; i++) {
+    if (i % (selectedSampleRate * (isMobile ? 1 : 2)) === 0) {
+      await sleep(0)
+      onProgress(20 + Math.floor((i / numOutputSamples) * 80))
+    }
+
+    // Resample using linear interpolation
+    const inputIndex = (i / ratio)
+    const index = Math.floor(inputIndex)
+    const frac = inputIndex - index
+
+    // Mix down to mono on-the-fly
+    let sample1 = 0
+    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+      const channelData = buffer.getChannelData(channel)
+      sample1 += (channelData[Math.min(index, channelData.length - 1)] || 0)
+    }
+    sample1 /= buffer.numberOfChannels
+
+    let sample2 = 0
+    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+      const channelData = buffer.getChannelData(channel)
+      sample2 += (channelData[Math.min(index + 1, channelData.length - 1)] || 0)
+    }
+    sample2 /= buffer.numberOfChannels
+
+    // Linear interpolation
+    const interpolated = sample1 + (sample2 - sample1) * frac
+    const sample = Math.max(-1, Math.min(1, interpolated))
+
+    // Write directly to WAV
+    if (selectedBitDepth === 16) {
+      view.setInt16(offset, sample * 0x7fff, true)
+    } else {
+      const intSample = Math.max(0, Math.min(255, Math.round((sample + 1) * 127.5)))
+      view.setUint8(offset, intSample)
+    }
+    offset += bytesPerSample
+  }
+
+  onProgress(100)
+
+  const metadata: BufferToWavMetadata = {
+    sampleRate: selectedSampleRate,
+    bitDepth: selectedBitDepth,
+    channels: 1,
+  }
+
+  return {
+    ...metadata,
+    blob: new Blob([finalArrayBuffer], { type: "audio/wav" }),
+  }
+}
+
+// Old code below removed to save context
+export const bufferToWav_unused = async (
+  buffer: AudioBuffer,
+  {
+    maxBytes = Number.POSITIVE_INFINITY,
+    preferCompatibility = true,
+    isMobile = false,
+    onProgress = () => {},
+  }: BufferToWavOptions = {},
+): Promise<BufferToWavResult> => {
+  const currentAudioContext = Tone.context.rawContext as AudioContext
+  if (!currentAudioContext) throw new Error("Audio context not available for WAV conversion")
+
+  onProgress(0)
+
+  const candidateRates = (() => {
+    const base = preferCompatibility
+      ? [44100, 32000, 22050, 16000, 12000, 11025, 8000]
+      : [buffer.sampleRate, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000]
+
+    const normalized = base
+      .map((rate) => Math.max(1, Math.round(rate)))
+      .map((rate) => {
+        if (buffer.sampleRate <= 0) return rate
+        return rate > buffer.sampleRate ? buffer.sampleRate : rate
+      })
+
+    const unique = Array.from(new Set(normalized)).sort((a, b) => b - a)
+    if (!unique.length) {
+      return [buffer.sampleRate || 44100]
+    }
+    return unique
+  })()
+
+  const bitDepths: Array<8 | 16> = [16, 8]
+
   const monoBuffer = await (async () => {
     if (buffer.numberOfChannels === 1) {
       return buffer
