@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
+import { decodeAudioDataFast } from "decode-audio-data-fast"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
@@ -1495,10 +1496,25 @@ export default function Home() {
       }
 
       const arrayBuffer = await selectedFile.arrayBuffer()
-      const buffer = await context.decodeAudioData(arrayBuffer)
-      // Note: arrayBuffer is automatically freed by GC after decodeAudioData takes ownership
+      
+      // Use chunked decoding on mobile or for large files to prevent memory crashes
+      // decodeAudioDataFast chunks the decode process which prevents memory spikes
+      const fileSizeMB = selectedFile.size / (1024 * 1024)
+      let buffer: AudioBuffer
+      
+      if (isMobileDevice || fileSizeMB > 30) {
+        // Chunked decode with progress updates for large files
+        buffer = await decodeAudioDataFast(context, arrayBuffer, {
+          chunkSize: 128 * 1024, // 128KB chunks
+        })
+      } else {
+        // Standard decode for small files on desktop
+        buffer = await context.decodeAudioData(arrayBuffer)
+      }
+      
+      // Note: arrayBuffer is automatically freed by GC after decode completes
       setOriginalBuffer(buffer)
-      setActualDuration(buffer.duration) // Use decoded buffer duration directly - no need for second load
+      setActualDuration(buffer.duration) // Use decoded buffer duration directly
       playbackUrl = URL.createObjectURL(selectedFile)
       setOriginalUrl(playbackUrl)
       setProcessingStep("Analyzing audio...")
