@@ -553,6 +553,8 @@ export default function Home() {
   const [processedFileSize, setProcessedFileSize] = useState<number>(0)
   const isMobileDevice = useMobile() // Use the useMobile hook
   const [memoryWarning, setMemoryWarning] = useState<boolean>(false) // Corrected type to boolean
+  const [debugLog, setDebugLog] = useState<string[]>([]) // On-screen debug log for mobile
+  const addDebugLog = (msg: string) => setDebugLog(prev => [...prev.slice(-10), `${new Date().toLocaleTimeString()}: ${msg}`])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadAreaRef = useRef<HTMLDivElement>(null)
   const adjusterSectionRef = useRef<HTMLDivElement>(null)
@@ -1487,35 +1489,35 @@ export default function Home() {
 
     let playbackUrl: string | null = null
     try {
-      console.log("[v0] handleFile: Starting file processing, size:", (selectedFile.size / 1024 / 1024).toFixed(2), "MB")
+      addDebugLog(`START: File ${(selectedFile.size / 1024 / 1024).toFixed(1)}MB`)
       
       const context = audioContextRef.current || new AudioContext()
       audioContextRef.current = context
-      console.log("[v0] handleFile: AudioContext created/retrieved, state:", context.state)
+      addDebugLog(`AudioContext: ${context.state}`)
 
       if (context.state === "suspended") {
         await context.resume()
-        console.log("[v0] handleFile: AudioContext resumed")
+        addDebugLog("AudioContext resumed")
       }
 
-      console.log("[v0] handleFile: Starting arrayBuffer read...")
+      addDebugLog("Reading file to ArrayBuffer...")
       const arrayBuffer = await selectedFile.arrayBuffer()
-      console.log("[v0] handleFile: arrayBuffer read complete, size:", (arrayBuffer.byteLength / 1024 / 1024).toFixed(2), "MB")
+      addDebugLog(`ArrayBuffer: ${(arrayBuffer.byteLength / 1024 / 1024).toFixed(1)}MB`)
       
-      console.log("[v0] handleFile: Starting decodeAudioData...")
+      addDebugLog("Decoding audio (this may take a while)...")
       const buffer = await context.decodeAudioData(arrayBuffer)
-      console.log("[v0] handleFile: decodeAudioData complete, duration:", buffer.duration.toFixed(2), "s, channels:", buffer.numberOfChannels, "sampleRate:", buffer.sampleRate)
+      addDebugLog(`Decoded: ${buffer.duration.toFixed(0)}s, ${buffer.numberOfChannels}ch, ${buffer.sampleRate}Hz`)
       
       // Note: arrayBuffer is automatically freed by GC after decodeAudioData takes ownership
       setOriginalBuffer(buffer)
-      console.log("[v0] handleFile: setOriginalBuffer called")
+      addDebugLog("Buffer stored, creating playback URL...")
       
       playbackUrl = URL.createObjectURL(selectedFile)
       setOriginalUrl(playbackUrl)
       setProcessingStep("Analyzing audio...")
       setAnalysisProgress(0)
       setStatus({ message: "Analyzing audio...", type: "info" })
-      console.log("[v0] handleFile: File processing complete, starting analysis")
+      addDebugLog("Starting silence analysis...")
 
       const metadataUrl = URL.createObjectURL(selectedFile)
       const tempAudio = new Audio(metadataUrl)
@@ -2247,11 +2249,15 @@ export default function Home() {
 
     const recomputeAnalysis = async () => {
       try {
+        addDebugLog("Analysis starting...")
         const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration, {
           signal: controller.signal,
           onProgress: (progress) => {
             if (controller.signal.aborted) {
               return
+            }
+            if (progress % 25 === 0) {
+              addDebugLog(`Analysis: ${progress}%`)
             }
             setAnalysisProgress((prev) => (prev === progress ? prev : progress))
             setStatus((prev) => {
@@ -2262,6 +2268,7 @@ export default function Home() {
             })
           },
         })
+        addDebugLog(`Analysis complete: ${silenceRegions.length} regions found`)
 
         if (controller.signal.aborted) {
           return
@@ -3075,6 +3082,24 @@ export default function Home() {
                       onChange={handleFileSelectAction}
                     />
                   </motion.div>
+
+                  {/* Debug Panel - shows processing steps on mobile */}
+                  {debugLog.length > 0 && (
+                    <div className="mb-4 p-3 bg-gray-900 text-green-400 rounded-lg text-xs font-mono overflow-auto max-h-40">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-gray-400">Debug Log (for troubleshooting)</span>
+                        <button 
+                          onClick={() => setDebugLog([])} 
+                          className="text-gray-500 hover:text-white text-xs"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                      {debugLog.map((log, i) => (
+                        <div key={i} className="py-0.5">{log}</div>
+                      ))}
+                    </div>
+                  )}
 
                   <AnimatePresence>
                     {file && (
