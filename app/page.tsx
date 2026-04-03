@@ -1487,22 +1487,35 @@ export default function Home() {
 
     let playbackUrl: string | null = null
     try {
+      console.log("[v0] handleFile: Starting file processing, size:", (selectedFile.size / 1024 / 1024).toFixed(2), "MB")
+      
       const context = audioContextRef.current || new AudioContext()
       audioContextRef.current = context
+      console.log("[v0] handleFile: AudioContext created/retrieved, state:", context.state)
 
       if (context.state === "suspended") {
         await context.resume()
+        console.log("[v0] handleFile: AudioContext resumed")
       }
 
+      console.log("[v0] handleFile: Starting arrayBuffer read...")
       const arrayBuffer = await selectedFile.arrayBuffer()
+      console.log("[v0] handleFile: arrayBuffer read complete, size:", (arrayBuffer.byteLength / 1024 / 1024).toFixed(2), "MB")
+      
+      console.log("[v0] handleFile: Starting decodeAudioData...")
       const buffer = await context.decodeAudioData(arrayBuffer)
+      console.log("[v0] handleFile: decodeAudioData complete, duration:", buffer.duration.toFixed(2), "s, channels:", buffer.numberOfChannels, "sampleRate:", buffer.sampleRate)
+      
       // Note: arrayBuffer is automatically freed by GC after decodeAudioData takes ownership
       setOriginalBuffer(buffer)
+      console.log("[v0] handleFile: setOriginalBuffer called")
+      
       playbackUrl = URL.createObjectURL(selectedFile)
       setOriginalUrl(playbackUrl)
       setProcessingStep("Analyzing audio...")
       setAnalysisProgress(0)
       setStatus({ message: "Analyzing audio...", type: "info" })
+      console.log("[v0] handleFile: File processing complete, starting analysis")
 
       const metadataUrl = URL.createObjectURL(selectedFile)
       const tempAudio = new Audio(metadataUrl)

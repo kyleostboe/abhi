@@ -19,9 +19,13 @@ export async function detectSilenceRegions(
   minDuration: number,
   options: DetectSilenceOptions = {},
 ): Promise<SilenceRegion[]> {
+  console.log("[v0] detectSilenceRegions: Starting, buffer duration:", buffer.duration.toFixed(2), "s")
+  
   const BUFFER_SECONDS = 0.3
   const sampleRate = buffer.sampleRate
   const channelData = buffer.getChannelData(0)
+  console.log("[v0] detectSilenceRegions: Got channelData, length:", channelData.length, "samples")
+  
   const windowSize = Math.floor(sampleRate * 0.01)
   const minSamples = Math.floor(minDuration * sampleRate)
   const totalSamples = channelData.length
