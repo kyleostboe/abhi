@@ -1498,23 +1498,12 @@ export default function Home() {
       const buffer = await context.decodeAudioData(arrayBuffer)
       // Note: arrayBuffer is automatically freed by GC after decodeAudioData takes ownership
       setOriginalBuffer(buffer)
+      setActualDuration(buffer.duration) // Use decoded buffer duration directly - no need for second load
       playbackUrl = URL.createObjectURL(selectedFile)
       setOriginalUrl(playbackUrl)
       setProcessingStep("Analyzing audio...")
       setAnalysisProgress(0)
       setStatus({ message: "Analyzing audio...", type: "info" })
-
-      const metadataUrl = URL.createObjectURL(selectedFile)
-      const tempAudio = new Audio(metadataUrl)
-      tempAudio.preload = "metadata"
-      tempAudio.onloadedmetadata = () => {
-        setActualDuration(tempAudio.duration)
-        URL.revokeObjectURL(metadataUrl)
-      }
-      tempAudio.onerror = () => {
-        console.error("Error loading audio metadata for duration.")
-        URL.revokeObjectURL(metadataUrl)
-      }
     } catch (error) {
       console.error("Error accessing audio context:", error)
       setStatus({ message: `Audio system error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
