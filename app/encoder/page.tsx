@@ -6,10 +6,9 @@ import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
-import { BookmarkPlus, Download } from "lucide-react"
+import { BookmarkPlus } from "lucide-react"
 import * as Tone from "tone"
-import { bufferToWav, bufferToMp3, type BufferToWavMetadata } from "@/lib/audio-utils"
-import { useAuth } from "@/hooks/use-auth"
+import { bufferToWav, type BufferToWavMetadata } from "@/lib/audio-utils"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 type SpeechRecognitionAlternative = {
@@ -132,9 +131,7 @@ export default function EncoderPage() {
 
   const [multiNoteMode, setMultiNoteMode] = useState(false)
   const [selectedNotes, setSelectedNotes] = useState<string[]>([])
-  const [isDownloading, setIsDownloading] = useState(false)
 
-  const { isAuthenticated } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const uploadAreaRef = useRef<HTMLDivElement>(null)
@@ -718,41 +715,15 @@ export default function EncoderPage() {
     }
   }
 
-  const downloadEncodedAudio = async () => {
-    if (!encodedAudioUrl || !file || isDownloading) return
+  const downloadEncodedAudio = () => {
+    if (!encodedAudioUrl || !file) return
 
-    setIsDownloading(true)
-    try {
-      // Fetch the WAV and convert to MP3 for download
-      const response = await fetch(encodedAudioUrl)
-      const wavBlob = await response.blob()
-      const arrayBuffer = await wavBlob.arrayBuffer()
-      
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-      try {
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-        const mp3Result = await bufferToMp3(audioBuffer, {
-          bitrate: 128,
-          onProgress: () => {},
-        })
-        
-        const url = URL.createObjectURL(mp3Result.blob)
-        const a = document.createElement("a")
-        a.href = url
-        a.download = `${file.name.split(".")[0]}_encoded.mp3`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-      } finally {
-        await audioContext.close()
-      }
-    } catch (error) {
-      console.error("[v0] Download failed:", error)
-      setStatus({ message: "Failed to download audio", type: "error" })
-    } finally {
-      setIsDownloading(false)
-    }
+    const a = document.createElement("a")
+    a.href = encodedAudioUrl
+    a.download = `${file.name.split(".")[0]}_encoded.wav`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
 
   const formatTime = (seconds: number): string => {
@@ -1065,17 +1036,7 @@ export default function EncoderPage() {
               <div className="rounded-sm p-3 px-0 shadow-none border-gray-500 bg-transparent border-0 mb-0">
                 <audio controls className="w-full" src={encodedAudioUrl} />
               </div>
-              <div className="px-3.5 text-center tracking-tight flex flex-col items-center gap-3">
-                {!isAuthenticated && (
-                  <Button 
-                    onClick={downloadEncodedAudio}
-                    disabled={isDownloading}
-                    className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    {isDownloading ? "Converting..." : "Download MP3"}
-                  </Button>
-                )}
+              <div className="px-3.5 text-center tracking-tight">
                 <SaveMeditationDialog
                   audioUrl={encodedAudioUrl}
                   originalFileName={file?.name || "meditation"}
