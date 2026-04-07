@@ -1498,7 +1498,7 @@ export default function Home() {
       const buffer = await context.decodeAudioData(arrayBuffer)
       // Note: arrayBuffer is automatically freed by GC after decodeAudioData takes ownership
       setOriginalBuffer(buffer)
-      setActualDuration(buffer.duration) // Use decoded buffer duration directly - no need for second load
+      setActualDuration(buffer.duration) // Use decoded buffer duration directly
       playbackUrl = URL.createObjectURL(selectedFile)
       setOriginalUrl(playbackUrl)
       setProcessingStep("Analyzing audio...")
