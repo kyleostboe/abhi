@@ -1487,8 +1487,30 @@ export default function Home() {
 
     let playbackUrl: string | null = null
     try {
-      const context = audioContextRef.current || new AudioContext()
-      audioContextRef.current = context
+      // On mobile with large files, use a lower sample rate context to reduce memory
+      // A 44100Hz buffer uses ~2x the memory of a 22050Hz buffer
+      // For silence detection and meditation audio, 22050Hz is perfectly adequate
+      const fileSizeMB = selectedFile.size / (1024 * 1024)
+      const needsLowMemoryMode = isMobileDevice && fileSizeMB > 20
+      
+      // Create or reuse context - on mobile with large files, use lower sample rate
+      let context: AudioContext
+      if (needsLowMemoryMode) {
+        // Close existing context if it exists to free memory
+        if (audioContextRef.current) {
+          try {
+            await audioContextRef.current.close()
+          } catch (e) {
+            // Ignore close errors
+          }
+        }
+        // Create new context at lower sample rate for memory efficiency
+        context = new AudioContext({ sampleRate: 22050 })
+        audioContextRef.current = context
+      } else {
+        context = audioContextRef.current || new AudioContext()
+        audioContextRef.current = context
+      }
 
       if (context.state === "suspended") {
         await context.resume()
