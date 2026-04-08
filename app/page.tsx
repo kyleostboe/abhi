@@ -20,7 +20,7 @@ import {
 } from "lucide-react" // Import Copy icon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DurationControlCard } from "@/components/duration-control-card"
-import { Switch } from "@/components/ui/switch"
+
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
 import { TimerWheel } from "@/components/timer-wheel"
@@ -529,9 +529,7 @@ export default function Home() {
   const [targetDuration, setTargetDuration] = useState<number>(20)
   const [silenceThreshold, setSilenceThreshold] = useState<number>(0.01)
   const [minSilenceDuration, setMinSilenceDuration] = useState<number>(3)
-  const [minSpacingDuration, setMinSpacingDuration] = useState<number>(1.5)
-  const [preserveNaturalPacing, setPreserveNaturalPacing] = useState<boolean>(true)
-  const [maxSilenceDuration, setMaxSilenceDuration] = useState<number>(0) // Updated default to 0 (no limit)
+  const [maxSilenceDuration, setMaxSilenceDuration] = useState<number>(0) // 0 = no limit
 
   const [status, setStatus] = useState<{ message: string; type: string } | null>(null)
   const [originalUrl, setOriginalUrl] = useState<string>("")
@@ -575,13 +573,14 @@ export default function Home() {
       return null
     }
 
-    const minSeconds = audioAnalysis.contentDuration + audioAnalysis.silenceRegions * minSpacingDuration
+    // Minimum is content duration plus 0.3s per pause (minimum spacing from weighted algorithm)
+    const minSeconds = audioAnalysis.contentDuration + audioAnalysis.silenceRegions * 0.3
     if (!Number.isFinite(minSeconds) || minSeconds <= 0) {
       return null
     }
 
     return Math.max(1, Math.round(minSeconds))
-  }, [audioAnalysis, minSpacingDuration])
+  }, [audioAnalysis])
 
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
@@ -2098,7 +2097,6 @@ export default function Home() {
   }, [importFromLibrary])
 
   const processAudioAdjusterAction = async () => {
-    console.log("[v0] Processing button clicked")
     setIsProcessingComplete(false)
     const currentAudioContext = audioContextRef.current
     if (!originalBuffer || !currentAudioContext) {
@@ -2139,17 +2137,32 @@ export default function Home() {
     try {
       setStatus({ message: "Processing audio...", type: "info" })
       const targetDurationSeconds = targetDuration * 60
+      
+      // For very long target durations (>90 min), resample to lower sample rate to prevent memory issues
+      // A 2-hour buffer at 44100Hz needs ~1.27GB, but at 22050Hz only needs ~635MB
+      let bufferToProcess = originalBuffer
+      if (targetDurationSeconds > 90 * 60 && originalBuffer.sampleRate > 22050) {
+        setProcessingStep("Optimizing for long duration...")
+        const targetSampleRate = 22050
+        const ratio = targetSampleRate / originalBuffer.sampleRate
+        const newLength = Math.floor(originalBuffer.length * ratio)
+        
+        const offlineCtx = new OfflineAudioContext(1, newLength, targetSampleRate)
+        const source = offlineCtx.createBufferSource()
+        source.buffer = originalBuffer
+        source.connect(offlineCtx.destination)
+        source.start(0)
+        
+        bufferToProcess = await offlineCtx.startRendering()
+      }
 
       const result = await runAdjusterWorkflow({
         audioContext: currentAudioContext,
-        buffer: originalBuffer,
+        buffer: bufferToProcess,
         settings: {
           targetDurationSeconds,
           silenceThreshold,
           minSilenceDuration,
-          minSpacingDuration,
-          preserveNaturalPacing,
-          // Removed compatibilityMode
           maxSilenceDuration: maxSilenceDuration * 1000, // convert to ms
         },
         isMobileDevice,
@@ -2169,9 +2182,10 @@ export default function Home() {
       setProcessedFileSize(result.wavBlob.size)
       setProcessedAudioMetadata(result.wavMetadata)
       setPausesAdjusted(result.pausesAdjusted)
+      // Minimum is content + 0.3s per pause (from weighted algorithm minimum)
       const minimumDurationSeconds = Math.max(
         1,
-        Math.round(result.audioContentDuration + result.silenceRegions.length * minSpacingDuration),
+        Math.round(result.audioContentDuration + result.silenceRegions.length * 0.3),
       )
       setQuickAdjustRange({ minSeconds: minimumDurationSeconds })
       setProcessingProgress(100)
@@ -2358,7 +2372,7 @@ export default function Home() {
   useEffect(() => {
     // This effect no longer resets isProcessingComplete.
     // It's now reset at the start of processAudioAdjusterAction or handleFile.
-  }, [targetDuration, silenceThreshold, minSilenceDuration, minSpacingDuration, preserveNaturalPacing])
+  }, [targetDuration, silenceThreshold, minSilenceDuration])
 
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined
@@ -3337,45 +3351,6 @@ export default function Home() {
                             <p className="text-center text-xs text-gray-500 tracking-tight">
                               Shorter = detect more pauses
                             </p>
-                          </DurationControlCard>
-                          <DurationControlCard
-                            title="Min Spacing Btwn Content"
-                            gradientClassName="from-orange-300 to-logo-rose-300"
-                          >
-                            <div>
-                              <Slider
-                                value={[minSpacingDuration]}
-                                min={0}
-                                max={5}
-                                step={0.1}
-                                onValueChange={(value) => setMinSpacingDuration(value[0])}
-                                className="py-4"
-                                rangeClassName="bg-gradient-to-r from-orange-300 to-logo-rose-300"
-                              />
-                            </div>
-                            <div className="text-center tracking-tight">
-                              <span className="text-lg text-gray-600 font-black">{minSpacingDuration.toFixed(1)}</span>
-                              <span className="ml-1 text-sm text-gray-600">seconds</span>
-                            </div>
-                            <p className="text-center text-xs text-gray-500 tracking-tight">
-                              Minimum pause between speaking parts
-                            </p>
-                          </DurationControlCard>
-                          <DurationControlCard
-                            title="Preserve Natural Pacing"
-                            gradientClassName="from-pink-400 to-cyan-400"
-                            bodyClassName="px-6 py-6"
-                          >
-                            <div className="flex items-center justify-between gap-4">
-                              <p className="text-xs text-gray-600 tracking-tight flex-1 text-left">
-                                Maintain the relative length of pauses
-                              </p>
-                              <Switch
-                                checked={preserveNaturalPacing}
-                                onCheckedChange={setPreserveNaturalPacing}
-                                className="data-[state=checked]:bg-gray-500 shrink-0"
-                              />
-                            </div>
                           </DurationControlCard>
                           <DurationControlCard
                             title="Maximum Silence Duration"

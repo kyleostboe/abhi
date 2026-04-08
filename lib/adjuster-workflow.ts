@@ -127,12 +127,115 @@ interface RebuildOptions {
   buffer: AudioBuffer
   regions: SilenceRegion[]
   scaleFactor: number
-  minSpacingDuration: number
-  preserveNaturalPacing: boolean
   targetTotalSilence: number
   isMobileDevice: boolean
   onProgress?: (progress: number) => void
   onMemoryWarning?: () => void
+}
+
+/**
+ * Weighted pause scaling algorithm that preserves natural rhythm
+ * 
+ * Key insight: Human perception of pause length isn't linear.
+ * - Short pauses (< 1s) are conversational/breath pauses - should barely change
+ * - Medium pauses (1-3s) are transitional - moderate scaling
+ * - Long pauses (> 3s) are contemplative - absorb most of the time change
+ * 
+ * This works for BOTH extending and shrinking:
+ * - Extending: Long pauses grow more, short pauses stay natural
+ * - Shrinking: Long pauses shrink more, short pauses protected from becoming too short
+ */
+function calculateWeightedPauseDurations(
+  regions: SilenceRegion[],
+  scaleFactor: number,
+  targetTotalSilence: number,
+): { region: SilenceRegion; newDuration: number }[] {
+  if (regions.length === 0) return []
+  
+  const currentTotalSilence = regions.reduce((sum, r) => sum + (r.end - r.start), 0)
+  if (currentTotalSilence === 0) return regions.map(r => ({ region: r, newDuration: 0 }))
+  
+  // Classify pauses and assign weights
+  // Longer pauses get exponentially more weight
+  const pauseData = regions.map(region => {
+    const duration = region.end - region.start
+    let weight: number
+    
+    if (duration < 1) {
+      // Short pauses: minimal weight (protected)
+      weight = 0.5
+    } else if (duration < 3) {
+      // Medium pauses: moderate weight
+      weight = 1.0 + (duration - 1) * 0.5 // 1.0 to 2.0
+    } else {
+      // Long pauses: high weight (absorb most change)
+      weight = 2.0 + (duration - 3) * 0.3 // 2.0+
+    }
+    
+    return { region, duration, weight }
+  })
+  
+  const totalWeight = pauseData.reduce((sum, p) => sum + p.duration * p.weight, 0)
+  
+  // Calculate new durations based on weighted distribution
+  const isExtending = scaleFactor > 1
+  const isShrinking = scaleFactor < 1
+  
+  const result = pauseData.map(({ region, duration, weight }) => {
+    let newDuration: number
+    
+    if (Math.abs(scaleFactor - 1) < 0.01) {
+      // No significant change requested
+      newDuration = duration
+    } else {
+      // Calculate this pause's share of the total change
+      const weightedShare = (duration * weight) / totalWeight
+      const totalChange = targetTotalSilence - currentTotalSilence
+      const thisChange = totalChange * weightedShare
+      
+      newDuration = duration + thisChange
+      
+      // Apply constraints based on direction
+      if (isExtending) {
+        // When extending, cap short pause growth
+        if (duration < 1) {
+          newDuration = Math.min(newDuration, duration * 1.3) // Max 30% growth for short pauses
+        }
+        // Minimum duration is the original
+        newDuration = Math.max(newDuration, duration * 0.8)
+      } else if (isShrinking) {
+        // When shrinking, protect short pauses from becoming too short
+        if (duration < 1) {
+          newDuration = Math.max(newDuration, duration * 0.7) // Keep at least 70% for short pauses
+        }
+        // Absolute minimum of 0.3s for any pause
+        newDuration = Math.max(newDuration, 0.3)
+      }
+    }
+    
+    return { region, newDuration: Math.max(0.1, newDuration) }
+  })
+  
+  // Redistribute any excess/deficit from capped pauses to uncapped ones
+  const actualTotal = result.reduce((sum, r) => sum + r.newDuration, 0)
+  const difference = targetTotalSilence - actualTotal
+  
+  if (Math.abs(difference) > 0.1) {
+    // Find pauses that can absorb the difference (long pauses)
+    const adjustablePauses = result.filter(r => {
+      const originalDuration = r.region.end - r.region.start
+      return originalDuration >= 3 // Only adjust long pauses
+    })
+    
+    if (adjustablePauses.length > 0) {
+      const adjustmentPerPause = difference / adjustablePauses.length
+      adjustablePauses.forEach(p => {
+        p.newDuration = Math.max(0.5, p.newDuration + adjustmentPerPause)
+      })
+    }
+  }
+  
+  return result
 }
 
 export async function rebuildAudioWithScaledPauses({
@@ -140,8 +243,6 @@ export async function rebuildAudioWithScaledPauses({
   buffer,
   regions,
   scaleFactor,
-  minSpacingDuration,
-  preserveNaturalPacing,
   targetTotalSilence,
   isMobileDevice,
   onProgress = () => {},
@@ -149,22 +250,8 @@ export async function rebuildAudioWithScaledPauses({
 }: RebuildOptions): Promise<AudioBuffer> {
   onProgress(0)
 
-  let dynamicScale = scaleFactor
-  if (!preserveNaturalPacing && regions.length > 0) {
-    const currentTotalSilence = regions.reduce((sum, r) => sum + (r.end - r.start), 0)
-    dynamicScale = currentTotalSilence > 0 ? targetTotalSilence / currentTotalSilence : 1
-    if (!Number.isFinite(dynamicScale) || dynamicScale <= 0) dynamicScale = 1
-  }
-
-  const processedRegions = regions.map((region) => {
-    const duration = region.end - region.start
-    const newDuration = preserveNaturalPacing
-      ? Math.max(duration * dynamicScale, minSpacingDuration)
-      : regions.length > 0
-        ? Math.max(minSpacingDuration, targetTotalSilence / regions.length)
-        : minSpacingDuration
-    return { ...region, newDuration }
-  })
+  // Use weighted scaling algorithm for natural rhythm preservation
+  const processedRegions = calculateWeightedPauseDurations(regions, scaleFactor, targetTotalSilence)
 
   const audioContentDuration = buffer.duration - regions.reduce((sum, r) => sum + (r.end - r.start), 0)
   const newSilenceDuration = processedRegions.reduce((sum, r) => sum + r.newDuration, 0)
@@ -191,9 +278,7 @@ export async function rebuildAudioWithScaledPauses({
     const outputSampleRate = buffer.sampleRate
     const outputSamples = Math.max(1, Math.floor(newTotalDuration * outputSampleRate))
     
-    // Log the allocation we're about to attempt
-    const estimatedMB = (outputSamples * 4) / (1024 * 1024)
-    console.log(`[v0] Creating output buffer: ${outputSamples} samples @ ${outputSampleRate}Hz (~${estimatedMB.toFixed(1)}MB)`)
+
     
     newBuffer = audioContext.createBuffer(1, outputSamples, outputSampleRate)
   } catch (error) {
@@ -228,24 +313,23 @@ export async function rebuildAudioWithScaledPauses({
     }
   }
 
-  for (let i = 0; i < regions.length; i++) {
+  for (let i = 0; i < processedRegions.length; i++) {
     if (i % (isMobileDevice ? 5 : 10) === 0) {
       await sleep(0)
-      onProgress(10 + Math.floor((i / Math.max(1, regions.length)) * 80))
+      onProgress(10 + Math.floor((i / Math.max(1, processedRegions.length)) * 80))
     }
 
-    const region = regions[i]
-    const processedRegion = processedRegions[i]
+    const { region, newDuration } = processedRegions[i]
 
     readIndex = Math.floor(region.end * buffer.sampleRate)
 
-    const newSilenceLength = Math.floor(processedRegion.newDuration * buffer.sampleRate)
+    const newSilenceLength = Math.floor(newDuration * buffer.sampleRate)
     for (let j = 0; j < newSilenceLength && writeIndex < newData.length; j++) {
       newData[writeIndex++] = 0
     }
 
     const nextRegionStart =
-      i < regions.length - 1 ? Math.floor(regions[i + 1].start * buffer.sampleRate) : totalSamples
+      i < processedRegions.length - 1 ? Math.floor(processedRegions[i + 1].region.start * buffer.sampleRate) : totalSamples
 
     const segmentStart = Math.max(readIndex, 0)
     const segmentEnd = Math.min(nextRegionStart, totalSamples)
@@ -271,8 +355,6 @@ interface AdjusterWorkflowSettings {
   targetDurationSeconds: number
   silenceThreshold: number
   minSilenceDuration: number
-  minSpacingDuration: number
-  preserveNaturalPacing: boolean
   maxSilenceDuration: number
 }
 
@@ -311,8 +393,6 @@ export async function runAdjusterWorkflow({
     targetDurationSeconds,
     silenceThreshold,
     minSilenceDuration,
-    minSpacingDuration,
-    preserveNaturalPacing,
     maxSilenceDuration,
   } = settings
   const { onProgress = () => {}, onStep = () => {}, onMemoryWarning } = callbacks
@@ -338,9 +418,10 @@ export async function runAdjusterWorkflow({
 
   const totalSilenceDuration = cappedSilenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
   const audioContentDuration = buffer.duration - totalSilenceDuration
+  // Calculate the target total silence - minimum is 0.3s per pause (built into weighted algorithm)
   const availableSilenceDuration = Math.max(
     targetDurationSeconds - audioContentDuration,
-    cappedSilenceRegions.length * minSpacingDuration,
+    cappedSilenceRegions.length * 0.3, // Minimum 0.3s per pause
   )
   const scaleFactor = totalSilenceDuration > 0 ? availableSilenceDuration / totalSilenceDuration : 1
 
@@ -352,8 +433,6 @@ export async function runAdjusterWorkflow({
     buffer,
     regions: cappedSilenceRegions,
     scaleFactor,
-    minSpacingDuration,
-    preserveNaturalPacing,
     targetTotalSilence: availableSilenceDuration,
     isMobileDevice,
     onProgress: (progress) => {
