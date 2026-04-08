@@ -174,20 +174,28 @@ export async function rebuildAudioWithScaledPauses({
     throw new Error("Calculated new total duration is zero or negative.")
   }
 
-  if (isMobileDevice && newTotalDuration > 45 * 60) {
+  // For very long durations, warn the user
+  if (newTotalDuration > 90 * 60) {
     onMemoryWarning?.()
-    console.warn(`Mobile device: Output duration ${formatTime(newTotalDuration)} may cause issues.`)
+    console.warn(`Long duration: Output duration ${formatTime(newTotalDuration)} - processing may take a while.`)
   }
+
+  // Force garbage collection before allocating large buffer
+  forceGarbageCollection()
+  await sleep(100) // Give GC time to run
 
   let newBuffer: AudioBuffer
   try {
-    // Output as mono to halve memory footprint (~160MB instead of ~320MB for stereo)
-    // Meditation files are typically mono or mixed-to-mono anyway
-    newBuffer = audioContext.createBuffer(
-      1,
-      Math.max(1, Math.floor(newTotalDuration * buffer.sampleRate)),
-      buffer.sampleRate,
-    )
+    // Output as mono to halve memory footprint
+    // Use the input buffer's sample rate (which may already be reduced on mobile)
+    const outputSampleRate = buffer.sampleRate
+    const outputSamples = Math.max(1, Math.floor(newTotalDuration * outputSampleRate))
+    
+    // Log the allocation we're about to attempt
+    const estimatedMB = (outputSamples * 4) / (1024 * 1024)
+    console.log(`[v0] Creating output buffer: ${outputSamples} samples @ ${outputSampleRate}Hz (~${estimatedMB.toFixed(1)}MB)`)
+    
+    newBuffer = audioContext.createBuffer(1, outputSamples, outputSampleRate)
   } catch (error) {
     forceGarbageCollection()
     throw new Error(

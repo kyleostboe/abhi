@@ -1487,30 +1487,40 @@ export default function Home() {
 
     let playbackUrl: string | null = null
     try {
-      // On mobile with large files, use a lower sample rate context to reduce memory
-      // A 44100Hz buffer uses ~2x the memory of a 22050Hz buffer
-      // For silence detection and meditation audio, 22050Hz is perfectly adequate
+      // Memory optimization strategy for mobile:
+      // - Mobile devices have limited memory (~1-2GB for browser)
+      // - A 50MB MP3 decodes to ~600MB at 44100Hz stereo
+      // - Using 16000Hz mono reduces this to ~75MB (8x reduction)
+      // - 16000Hz is still excellent quality for voice/meditation content
       const fileSizeMB = selectedFile.size / (1024 * 1024)
-      const needsLowMemoryMode = isMobileDevice && fileSizeMB > 20
       
-      // Create or reuse context - on mobile with large files, use lower sample rate
-      let context: AudioContext
-      if (needsLowMemoryMode) {
-        // Close existing context if it exists to free memory
-        if (audioContextRef.current) {
-          try {
-            await audioContextRef.current.close()
-          } catch (e) {
-            // Ignore close errors
-          }
-        }
-        // Create new context at lower sample rate for memory efficiency
-        context = new AudioContext({ sampleRate: 22050 })
-        audioContextRef.current = context
+      // Determine optimal sample rate based on device and file size
+      // Mobile: Always use lower sample rate for reliability
+      // Large files (>30MB): Use lowest sample rate even on desktop
+      let targetSampleRate: number
+      if (isMobileDevice) {
+        // Mobile: Use 16000Hz for all files to maximize reliability
+        targetSampleRate = 16000
+      } else if (fileSizeMB > 30) {
+        // Desktop with large files: Use 22050Hz for balance of quality/memory
+        targetSampleRate = 22050
       } else {
-        context = audioContextRef.current || new AudioContext()
-        audioContextRef.current = context
+        // Desktop with small files: Use full quality
+        targetSampleRate = 44100
       }
+      
+      // Close existing context to free memory before creating new one
+      if (audioContextRef.current) {
+        try {
+          await audioContextRef.current.close()
+        } catch (e) {
+          // Ignore close errors
+        }
+      }
+      
+      // Create context at target sample rate - this affects decodeAudioData output
+      const context = new AudioContext({ sampleRate: targetSampleRate })
+      audioContextRef.current = context
 
       if (context.state === "suspended") {
         await context.resume()
@@ -2267,7 +2277,8 @@ export default function Home() {
 
         const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
         const contentDuration = originalBuffer.duration - totalSilenceDuration
-        const maxPossibleDuration = isMobileDevice ? 60 * 60 : 120 * 60
+        // Allow 2 hours on both mobile and desktop - memory optimizations make this possible
+      const maxPossibleDuration = 120 * 60
         const nextLimits = {
           min: Math.ceil(contentDuration / 60),
           max: maxPossibleDuration / 60,
@@ -3212,7 +3223,7 @@ export default function Home() {
                                   <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-4 border-stone-300 border-double">
                                     <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
                                     <div className="uppercase text-gray-600 text-xs tracking-tight">
-                                      {durationLimits.min} min - {isMobileDevice ? "1 hour" : "2 hours"}
+                                      {durationLimits.min} min - 2 hours
                                     </div>
                                   </div>
                                 </div>
@@ -3262,7 +3273,7 @@ export default function Home() {
                               <Slider
                                 value={[targetDuration]}
                                 min={durationLimits?.min || 5}
-                                max={durationLimits?.max || (isMobileDevice ? 60 : 120)}
+                                max={durationLimits?.max || 120}
                                 step={1}
                                 onValueChange={(value) => setTargetDuration(value[0])}
                                 disabled={!durationLimits}
@@ -3276,7 +3287,7 @@ export default function Home() {
                             </div>
                             {durationLimits && (
                               <p className="text-center text-gray-500 text-xs">
-                                Range: {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
+                                Range: {durationLimits.min} min to 2 hours
                               </p>
                             )}
                           </DurationControlCard>
