@@ -2126,39 +2126,49 @@ export default function Home() {
       return
     }
     if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
+    // Increase timeout for very long durations - 30 minutes should be enough for any processing
+    const timeoutMs = isMobileDevice ? 300000 : 1800000 // 5 min mobile, 30 min desktop
     processingTimeoutRef.current = setTimeout(
       () => {
+        console.log("[v0] Processing timed out after", timeoutMs / 1000, "seconds")
         setIsProcessing(false)
-        setStatus({ message: "Processing timed out.", type: "error" })
+        setStatus({ message: "Processing timed out. Try a shorter duration.", type: "error" })
       },
-      isMobileDevice ? 120000 : 600000,
+      timeoutMs,
     )
 
     try {
       setStatus({ message: "Processing audio...", type: "info" })
       const targetDurationSeconds = targetDuration * 60
+      console.log("[v0] Starting processing, target duration:", targetDurationSeconds, "seconds")
       
       // For very long target durations (>90 min), resample to much lower sample rate to prevent memory issues
       // At 2 hours and 22050Hz we still need ~635MB just for output buffer
-      // Using 16000Hz reduces this to ~460MB, and with input buffer freed immediately, stays manageable
-      let bufferToProcess = originalBuffer
+      // Using 16000Hz reduces this to ~460MB
+      let bufferToProcess: AudioBuffer = originalBuffer
       const needsAggressiveDownsampling = targetDurationSeconds > 100 * 60
       const targetSampleRateForLongDuration = needsAggressiveDownsampling ? 16000 : 22050
       
       if (targetDurationSeconds > 90 * 60 && originalBuffer.sampleRate > targetSampleRateForLongDuration) {
+        console.log("[v0] Downsampling for long duration, target SR:", targetSampleRateForLongDuration)
         setProcessingStep("Optimizing for long duration...")
         const ratio = targetSampleRateForLongDuration / originalBuffer.sampleRate
         const newLength = Math.floor(originalBuffer.length * ratio)
         
-        const offlineCtx = new OfflineAudioContext(1, newLength, targetSampleRateForLongDuration)
-        const source = offlineCtx.createBufferSource()
-        source.buffer = originalBuffer
-        source.connect(offlineCtx.destination)
-        source.start(0)
-        
-        bufferToProcess = await offlineCtx.startRendering()
-        // Explicitly null the original to help GC
-        originalBuffer = null as any
+        try {
+          const offlineCtx = new OfflineAudioContext(1, newLength, targetSampleRateForLongDuration)
+          const source = offlineCtx.createBufferSource()
+          source.buffer = originalBuffer
+          source.connect(offlineCtx.destination)
+          source.start(0)
+          
+          bufferToProcess = await offlineCtx.startRendering()
+          console.log("[v0] Downsampling complete, new length:", bufferToProcess.length)
+        } catch (resampleError) {
+          console.error("[v0] Downsampling failed:", resampleError)
+          // Continue with original buffer if downsampling fails
+          bufferToProcess = originalBuffer
+        }
       }
 
       const result = await runAdjusterWorkflow({

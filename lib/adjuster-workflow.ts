@@ -277,11 +277,14 @@ export async function rebuildAudioWithScaledPauses({
     // Use the input buffer's sample rate (which may already be reduced on mobile)
     const outputSampleRate = buffer.sampleRate
     const outputSamples = Math.max(1, Math.floor(newTotalDuration * outputSampleRate))
+    const estimatedMB = (outputSamples * 4) / (1024 * 1024)
     
-
+    console.log(`[v0] Creating output buffer: ${outputSamples} samples @ ${outputSampleRate}Hz (~${estimatedMB.toFixed(1)}MB) for ${(newTotalDuration / 60).toFixed(1)} minutes`)
     
     newBuffer = audioContext.createBuffer(1, outputSamples, outputSampleRate)
+    console.log("[v0] Output buffer created successfully")
   } catch (error) {
+    console.error("[v0] Failed to create output buffer:", error)
     forceGarbageCollection()
     throw new Error(
       `Failed to create output buffer (duration: ${newTotalDuration.toFixed(2)}s). Memory limit likely exceeded. Try a shorter target duration.`,
