@@ -2138,22 +2138,27 @@ export default function Home() {
       setStatus({ message: "Processing audio...", type: "info" })
       const targetDurationSeconds = targetDuration * 60
       
-      // For very long target durations (>90 min), resample to lower sample rate to prevent memory issues
-      // A 2-hour buffer at 44100Hz needs ~1.27GB, but at 22050Hz only needs ~635MB
+      // For very long target durations (>90 min), resample to much lower sample rate to prevent memory issues
+      // At 2 hours and 22050Hz we still need ~635MB just for output buffer
+      // Using 16000Hz reduces this to ~460MB, and with input buffer freed immediately, stays manageable
       let bufferToProcess = originalBuffer
-      if (targetDurationSeconds > 90 * 60 && originalBuffer.sampleRate > 22050) {
+      const needsAggressiveDownsampling = targetDurationSeconds > 100 * 60
+      const targetSampleRateForLongDuration = needsAggressiveDownsampling ? 16000 : 22050
+      
+      if (targetDurationSeconds > 90 * 60 && originalBuffer.sampleRate > targetSampleRateForLongDuration) {
         setProcessingStep("Optimizing for long duration...")
-        const targetSampleRate = 22050
-        const ratio = targetSampleRate / originalBuffer.sampleRate
+        const ratio = targetSampleRateForLongDuration / originalBuffer.sampleRate
         const newLength = Math.floor(originalBuffer.length * ratio)
         
-        const offlineCtx = new OfflineAudioContext(1, newLength, targetSampleRate)
+        const offlineCtx = new OfflineAudioContext(1, newLength, targetSampleRateForLongDuration)
         const source = offlineCtx.createBufferSource()
         source.buffer = originalBuffer
         source.connect(offlineCtx.destination)
         source.start(0)
         
         bufferToProcess = await offlineCtx.startRendering()
+        // Explicitly null the original to help GC
+        originalBuffer = null as any
       }
 
       const result = await runAdjusterWorkflow({
@@ -2215,7 +2220,15 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Error during audio processing:", error)
-      setStatus({ message: `Processing error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
+      const errorMsg = error instanceof Error ? error.message : String(error)
+      if (errorMsg.includes("QuotaExceededError") || errorMsg.includes("memory")) {
+        setStatus({ 
+          message: "Out of memory: Try a shorter duration, use a smaller input file, or restart the browser.", 
+          type: "error" 
+        })
+      } else {
+        setStatus({ message: `Processing error: ${errorMsg}`, type: "error" })
+      }
     } finally {
       setIsProcessing(false)
       if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
