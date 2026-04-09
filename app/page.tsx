@@ -1489,17 +1489,17 @@ export default function Home() {
       // Memory optimization strategy for mobile:
       // - Mobile devices have limited memory (~1-2GB for browser)
       // - A 50MB MP3 decodes to ~600MB at 44100Hz stereo
-      // - Using 16000Hz mono reduces this to ~75MB (8x reduction)
-      // - 16000Hz is still excellent quality for voice/meditation content
+      // - Using 22050Hz mono reduces this to ~300MB (2x reduction, maintains quality)
+      // - 22050Hz is excellent quality for voice/meditation content
       const fileSizeMB = selectedFile.size / (1024 * 1024)
       
       // Determine optimal sample rate based on device and file size
       // Mobile: Always use lower sample rate for reliability
-      // Large files (>30MB): Use lowest sample rate even on desktop
+      // Large files (>30MB): Use lower sample rate even on desktop
       let targetSampleRate: number
       if (isMobileDevice) {
-        // Mobile: Use 16000Hz for all files to maximize reliability
-        targetSampleRate = 16000
+        // Mobile: Use 22050Hz for all files for reliability while maintaining quality
+        targetSampleRate = 22050
       } else if (fileSizeMB > 30) {
         // Desktop with large files: Use 22050Hz for balance of quality/memory
         targetSampleRate = 22050
@@ -2142,12 +2142,11 @@ export default function Home() {
       const targetDurationSeconds = targetDuration * 60
       console.log("[v0] Starting processing, target duration:", targetDurationSeconds, "seconds")
       
-      // For very long target durations (>90 min), resample to much lower sample rate to prevent memory issues
-      // At 2 hours and 22050Hz we still need ~635MB just for output buffer
-      // Using 16000Hz reduces this to ~460MB
+      // For very long target durations (>90 min), resample to lower sample rate to reduce memory
+      // Use 22050Hz which maintains good audio quality while reducing memory requirements
+      // At 22050Hz, a 2-hour buffer needs ~635MB which is at the edge of browser limits
       let bufferToProcess: AudioBuffer = originalBuffer
-      const needsAggressiveDownsampling = targetDurationSeconds > 100 * 60
-      const targetSampleRateForLongDuration = needsAggressiveDownsampling ? 16000 : 22050
+      const targetSampleRateForLongDuration = 22050
       
       if (targetDurationSeconds > 90 * 60 && originalBuffer.sampleRate > targetSampleRateForLongDuration) {
         console.log("[v0] Downsampling for long duration, target SR:", targetSampleRateForLongDuration)

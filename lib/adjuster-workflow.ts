@@ -136,14 +136,13 @@ interface RebuildOptions {
 /**
  * Weighted pause scaling algorithm that preserves natural rhythm
  * 
- * Key insight: Human perception of pause length isn't linear.
- * - Short pauses (< 1s) are conversational/breath pauses - should barely change
- * - Medium pauses (1-3s) are transitional - moderate scaling
- * - Long pauses (> 3s) are contemplative - absorb most of the time change
+ * Key insight: The maximum pause extension should be proportional to the duration change.
+ * If extending 1.5x, longest pauses can be 1.5x longer. If extending 2x, they can be 2x longer.
+ * Short pauses remain protected to maintain conversational rhythm.
  * 
  * This works for BOTH extending and shrinking:
- * - Extending: Long pauses grow more, short pauses stay natural
- * - Shrinking: Long pauses shrink more, short pauses protected from becoming too short
+ * - Extending: Long pauses grow by scaleFactor, short pauses stay natural
+ * - Shrinking: Long pauses shrink by scaleFactor, short pauses protected from becoming too short
  */
 function calculateWeightedPauseDurations(
   regions: SilenceRegion[],
@@ -162,7 +161,7 @@ function calculateWeightedPauseDurations(
     let weight: number
     
     if (duration < 1) {
-      // Short pauses: minimal weight (protected)
+      // Short pauses: minimal weight (protected from large changes)
       weight = 0.5
     } else if (duration < 3) {
       // Medium pauses: moderate weight
@@ -197,9 +196,13 @@ function calculateWeightedPauseDurations(
       
       // Apply constraints based on direction
       if (isExtending) {
-        // When extending, cap short pause growth
+        // When extending, cap short pause growth proportionally
         if (duration < 1) {
-          newDuration = Math.min(newDuration, duration * 1.3) // Max 30% growth for short pauses
+          // Short pauses: max growth is limited, but scaled with overall change
+          // If extending 1.5x overall, short pauses grow max 1.2x
+          // If extending 2x overall, short pauses grow max 1.3x
+          const maxMultiplier = 1 + (Math.min(scaleFactor, 2) - 1) * 0.2
+          newDuration = Math.min(newDuration, duration * maxMultiplier)
         }
         // Minimum duration is the original
         newDuration = Math.max(newDuration, duration * 0.8)
@@ -210,6 +213,12 @@ function calculateWeightedPauseDurations(
         }
         // Absolute minimum of 0.3s for any pause
         newDuration = Math.max(newDuration, 0.3)
+      }
+      
+      // Apply maximum multiplier cap based on scale factor for long pauses
+      if (duration >= 3) {
+        const maxMultiplier = scaleFactor
+        newDuration = Math.min(newDuration, duration * maxMultiplier)
       }
     }
     
@@ -236,6 +245,7 @@ function calculateWeightedPauseDurations(
   }
   
   return result
+}
 }
 
 export async function rebuildAudioWithScaledPauses({
