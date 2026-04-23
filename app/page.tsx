@@ -529,7 +529,7 @@ export default function Home() {
   const audioContextRef = useRef<AudioContext | null>(null) // Still needed for Adjuster's specific context management
   const [targetDuration, setTargetDuration] = useState<number>(20)
   const [silenceThreshold, setSilenceThreshold] = useState<number>(0.01)
-  const [minSilenceDuration, setMinSilenceDuration] = useState<number>(0.5) // Detect all pauses, failsafes handle scaling limits
+  const [minSilenceDuration, setMinSilenceDuration] = useState<number>(3)
   const [maxSilenceDuration, setMaxSilenceDuration] = useState<number>(0) // 0 = no limit
   const [contentSpeedMultiplier, setContentSpeedMultiplier] = useState<number>(1.0) // 1.0 = no speedup, up to 1.15x
   const [showSpeedOptions, setShowSpeedOptions] = useState<boolean>(false)
@@ -3329,72 +3329,6 @@ export default function Home() {
                           </DurationControlCard>
                         </div>
 
-                        <AnimatePresence>
-                          {analysisProgress !== null && (
-                            <motion.div
-                              key="analysis-progress"
-                              initial={{ opacity: 0, y: 6 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -6 }}
-                              transition={{ duration: 0.2 }}
-                              className="flex items-center justify-center text-xs text-gray-600 gap-2"
-                            >
-                              <CircleDotDashed className="h-4 w-4 animate-spin" />
-                              <span className="tracking-tight">
-                                Analyzing audio{analysisProgress >= 0 ? ` (${Math.round(analysisProgress)}%)` : ""}...
-                              </span>
-                            </motion.div>
-                          )}
-                          {audioAnalysis && durationLimits && (
-                            <motion.div
-                              key="analysis-cards"
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ delay: 0.1 }}
-                            >
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
-                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-300 border-double border-4">
-                                    <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
-                                    <div className="font-black text-gray-600">
-                                      {formatTime(contentSpeedMultiplier > 1 ? audioAnalysis.contentDuration / contentSpeedMultiplier : audioAnalysis.contentDuration)}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
-                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-300 border-4 border-double">
-                                    <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
-                                    <div className="font-black text-gray-600">
-                                      {formatTime(audioAnalysis.totalSilence)}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
-                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-4 border-stone-300 border-double">
-                                    <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
-                                    <div className="font-black text-gray-600 text-sm tracking-tight">
-                                      {audioAnalysis.silenceRegions}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
-                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-4 border-stone-300 border-double">
-                                    <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
-                                    <div className="font-black text-gray-600 text-sm tracking-tight">
-                                      {(() => {
-                                        const s = durationLimits.trueMinSeconds
-                                        const mn = Math.floor(s / 60)
-                                        const sec = s % 60
-                                        return sec > 0 ? `${mn}m ${sec}s – 2h` : `${mn}m – 2h`
-                                      })()}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
                       </TabsContent>
                       <TabsContent value="encoder" className="mt-0 space-y-6">
                         <div className="grid gap-4 md:grid-cols-2">
@@ -3457,6 +3391,74 @@ export default function Home() {
                         </div>
                       </TabsContent>
                     </Tabs>
+
+                    <AnimatePresence>
+                      {analysisProgress !== null && (
+                        <motion.div
+                          key="analysis-progress"
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex items-center justify-center text-xs text-gray-600 gap-2 mt-4"
+                        >
+                          <CircleDotDashed className="h-4 w-4 animate-spin" />
+                          <span className="tracking-tight">
+                            Analyzing audio{analysisProgress >= 0 ? ` (${Math.round(analysisProgress)}%)` : ""}...
+                          </span>
+                        </motion.div>
+                      )}
+                      {audioAnalysis && durationLimits && (
+                        <motion.div
+                          key="analysis-cards"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ delay: 0.1 }}
+                          className="mt-4"
+                        >
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-300 border-double border-4">
+                                <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
+                                <div className="font-black text-gray-600">
+                                  {formatTime(contentSpeedMultiplier > 1 ? audioAnalysis.contentDuration / contentSpeedMultiplier : audioAnalysis.contentDuration)}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-300 border-4 border-double">
+                                <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
+                                <div className="font-black text-gray-600">
+                                  {formatTime(audioAnalysis.totalSilence)}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-4 border-stone-300 border-double">
+                                <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
+                                <div className="font-black text-gray-600 text-sm tracking-tight">
+                                  {audioAnalysis.silenceRegions}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
+                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-4 border-stone-300 border-double">
+                                <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
+                                <div className="font-black text-gray-600 text-sm tracking-tight">
+                                  {(() => {
+                                    const s = durationLimits.trueMinSeconds
+                                    const mn = Math.floor(s / 60)
+                                    const sec = s % 60
+                                    return sec > 0 ? `${mn}m ${sec}s – 2h` : `${mn}m – 2h`
+                                  })()}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </motion.div>
 
                   {/* Process Audio Button */}
