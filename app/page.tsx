@@ -2328,7 +2328,7 @@ export default function Home() {
         }
 
         setDurationLimits((prev) => {
-          if (prev && prev.min === nextLimits.min && prev.max === nextLimits.max) {
+          if (prev && prev.min === nextLimits.min && prev.max === nextLimits.max && prev.trueMinSeconds === nextLimits.trueMinSeconds) {
             return prev
           }
           return nextLimits
@@ -3264,13 +3264,13 @@ export default function Home() {
                                 </div>
                                 <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
                                   <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-4 border-stone-300 border-double">
-                                    <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Min:</div>
+                                    <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
                                     <div className="font-black text-gray-600 text-sm tracking-tight">
                                       {(() => {
                                         const s = durationLimits.trueMinSeconds
                                         const m = Math.floor(s / 60)
                                         const sec = s % 60
-                                        return sec > 0 ? `${m}m ${sec}s` : `${m}m`
+                                        return sec > 0 ? `${m}m ${sec}s – 2h` : `${m}m – 2h`
                                       })()}
                                     </div>
                                   </div>
