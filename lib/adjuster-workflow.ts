@@ -128,6 +128,8 @@ interface RebuildOptions {
   regions: SilenceRegion[]
   scaleFactor: number
   targetTotalSilence: number
+  pauseFloor: number
+  contentSpeedMultiplier: number
   isMobileDevice: boolean
   onProgress?: (progress: number) => void
   onMemoryWarning?: () => void
@@ -149,6 +151,7 @@ function calculateUniformScaledPauseDurations(
   regions: SilenceRegion[],
   scaleFactor: number,
   targetTotalSilence: number,
+  pauseFloor: number, // user-set minimum pause duration (minSilenceDuration), 0.3s failsafe if 0
 ): { region: SilenceRegion; newDuration: number }[] {
   if (regions.length === 0) return []
   
@@ -156,7 +159,7 @@ function calculateUniformScaledPauseDurations(
   if (currentTotalSilence === 0) return regions.map(r => ({ region: r, newDuration: 0 }))
 
   // Perceptual limits
-  const FLOOR = 0.3 // Minimum pause duration - prevents stitching
+  const FLOOR = Math.max(0.3, pauseFloor) // User-set minimum, 0.3s absolute failsafe prevents stitching
   const SHORT_PAUSE_THRESHOLD = 2.0 // Pauses under this are considered "short"
   const SHORT_PAUSE_CEILING = 2.5 // Short pauses shouldn't grow beyond this
   
@@ -232,6 +235,8 @@ export async function rebuildAudioWithScaledPauses({
   regions,
   scaleFactor,
   targetTotalSilence,
+  pauseFloor,
+  contentSpeedMultiplier,
   isMobileDevice,
   onProgress = () => {},
   onMemoryWarning,
@@ -239,7 +244,7 @@ export async function rebuildAudioWithScaledPauses({
   onProgress(0)
 
   // Use uniform scaling with perceptual failsafes for natural rhythm preservation
-  const processedRegions = calculateUniformScaledPauseDurations(regions, scaleFactor, targetTotalSilence)
+  const processedRegions = calculateUniformScaledPauseDurations(regions, scaleFactor, targetTotalSilence, pauseFloor)
 
   const audioContentDuration = buffer.duration - regions.reduce((sum, r) => sum + (r.end - r.start), 0)
   const newSilenceDuration = processedRegions.reduce((sum, r) => sum + r.newDuration, 0)
@@ -281,22 +286,53 @@ export async function rebuildAudioWithScaledPauses({
   let writeIndex = 0
   let readIndex = 0
 
-  // Get mixed-down mono from all input channels
+  // Get mixed-down mono from all input channels with linear interpolation for fractional positions
+  const channelData = Array.from({ length: buffer.numberOfChannels }, (_, c) => buffer.getChannelData(c))
+  const totalSamples = Math.floor(buffer.duration * buffer.sampleRate)
+
   const getMonoSample = (sampleIndex: number): number => {
+    const idx = Math.min(Math.floor(sampleIndex), totalSamples - 1)
     let sum = 0
-    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-      sum += buffer.getChannelData(channel)[sampleIndex]
-    }
-    return sum / buffer.numberOfChannels
+    for (let c = 0; c < channelData.length; c++) sum += channelData[c][idx]
+    return sum / channelData.length
   }
 
-  const totalSamples = Math.floor(buffer.duration * buffer.sampleRate)
+  // Linear interpolation for speed-up: reads fractional sample positions
+  const getMonoSampleInterp = (pos: number): number => {
+    const idx = Math.floor(pos)
+    const frac = pos - idx
+    if (frac === 0 || idx >= totalSamples - 1) return getMonoSample(idx)
+    let s0 = 0, s1 = 0
+    for (let c = 0; c < channelData.length; c++) {
+      s0 += channelData[c][Math.min(idx, totalSamples - 1)]
+      s1 += channelData[c][Math.min(idx + 1, totalSamples - 1)]
+    }
+    return (s0 + (s1 - s0) * frac) / channelData.length
+  }
+
+  // Copy speech segment from srcStart to srcEnd into output, applying speed multiplier
+  const copySpeechSegment = (srcStart: number, srcEnd: number) => {
+    if (srcEnd <= srcStart) return
+    if (Math.abs(contentSpeedMultiplier - 1.0) < 0.001) {
+      // No speed change - direct copy
+      for (let j = srcStart; j < srcEnd && writeIndex < newData.length; j++) {
+        newData[writeIndex++] = getMonoSample(j)
+      }
+    } else {
+      // Speed up: output fewer samples by stepping through source faster
+      const srcLength = srcEnd - srcStart
+      const outLength = Math.floor(srcLength / contentSpeedMultiplier)
+      for (let j = 0; j < outLength && writeIndex < newData.length; j++) {
+        const srcPos = srcStart + j * contentSpeedMultiplier
+        newData[writeIndex++] = getMonoSampleInterp(srcPos)
+      }
+    }
+  }
 
   if (regions.length > 0 && regions[0].start > 0) {
     const samplesToCopy = Math.floor(regions[0].start * buffer.sampleRate)
-    for (let i = 0; i < samplesToCopy && writeIndex < newData.length; i++) {
-      newData[writeIndex++] = getMonoSample(readIndex++)
-    }
+    copySpeechSegment(readIndex, readIndex + samplesToCopy)
+    readIndex += samplesToCopy
   }
 
   for (let i = 0; i < processedRegions.length; i++) {
@@ -320,17 +356,12 @@ export async function rebuildAudioWithScaledPauses({
     const segmentStart = Math.max(readIndex, 0)
     const segmentEnd = Math.min(nextRegionStart, totalSamples)
 
-    for (let j = segmentStart; j < segmentEnd && writeIndex < newData.length; j++) {
-      newData[writeIndex++] = getMonoSample(j)
-    }
-
+    copySpeechSegment(segmentStart, segmentEnd)
     readIndex = segmentEnd
   }
 
   if (regions.length === 0) {
-    for (let i = 0; i < totalSamples && writeIndex < newData.length; i++) {
-      newData[writeIndex++] = getMonoSample(i)
-    }
+    copySpeechSegment(0, totalSamples)
   }
 
   onProgress(100)
@@ -342,6 +373,7 @@ interface AdjusterWorkflowSettings {
   silenceThreshold: number
   minSilenceDuration: number
   maxSilenceDuration: number
+  contentSpeedMultiplier: number // 1.0 = no change, 1.05-1.15 = subtle speedup for shrink boost
 }
 
 interface AdjusterWorkflowCallbacks {
@@ -380,6 +412,7 @@ export async function runAdjusterWorkflow({
     silenceThreshold,
     minSilenceDuration,
     maxSilenceDuration,
+    contentSpeedMultiplier,
   } = settings
   const { onProgress = () => {}, onStep = () => {}, onMemoryWarning } = callbacks
 
@@ -404,10 +437,12 @@ export async function runAdjusterWorkflow({
 
   const totalSilenceDuration = cappedSilenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
   const audioContentDuration = buffer.duration - totalSilenceDuration
-  // Calculate the target total silence - minimum is 0.3s per pause (built into weighted algorithm)
+  // Speed-up reduces effective content duration, creating more room for pauses
+  const effectiveContentDuration = audioContentDuration / contentSpeedMultiplier
+  const pauseFloor = Math.max(0.3, minSilenceDuration)
   const availableSilenceDuration = Math.max(
-    targetDurationSeconds - audioContentDuration,
-    cappedSilenceRegions.length * 0.3, // Minimum 0.3s per pause
+    targetDurationSeconds - effectiveContentDuration,
+    cappedSilenceRegions.length * pauseFloor,
   )
   const scaleFactor = totalSilenceDuration > 0 ? availableSilenceDuration / totalSilenceDuration : 1
 
@@ -420,6 +455,8 @@ export async function runAdjusterWorkflow({
     regions: cappedSilenceRegions,
     scaleFactor,
     targetTotalSilence: availableSilenceDuration,
+    pauseFloor,
+    contentSpeedMultiplier,
     isMobileDevice,
     onProgress: (progress) => {
       const normalized = Math.max(0, Math.min(100, progress))

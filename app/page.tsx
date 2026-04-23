@@ -530,6 +530,8 @@ export default function Home() {
   const [silenceThreshold, setSilenceThreshold] = useState<number>(0.01)
   const [minSilenceDuration, setMinSilenceDuration] = useState<number>(0.5) // Detect all pauses, failsafes handle scaling limits
   const [maxSilenceDuration, setMaxSilenceDuration] = useState<number>(0) // 0 = no limit
+  const [contentSpeedMultiplier, setContentSpeedMultiplier] = useState<number>(1.0) // 1.0 = no speedup, up to 1.15x
+  const [showSpeedOptions, setShowSpeedOptions] = useState<boolean>(false)
 
   const [status, setStatus] = useState<{ message: string; type: string } | null>(null)
   const [originalUrl, setOriginalUrl] = useState<string>("")
@@ -573,14 +575,16 @@ export default function Home() {
       return null
     }
 
-    // Minimum is content duration plus 0.3s per pause (minimum spacing from weighted algorithm)
-    const minSeconds = audioAnalysis.contentDuration + audioAnalysis.silenceRegions * 0.3
+    // True minimum: content at chosen speed + every pause at the floor value
+    const pauseFloor = Math.max(0.3, minSilenceDuration)
+    const effectiveContentDuration = audioAnalysis.contentDuration / contentSpeedMultiplier
+    const minSeconds = effectiveContentDuration + audioAnalysis.silenceRegions * pauseFloor
     if (!Number.isFinite(minSeconds) || minSeconds <= 0) {
       return null
     }
 
-    return Math.max(1, Math.round(minSeconds))
-  }, [audioAnalysis])
+    return Math.max(1, Math.ceil(minSeconds / 60) * 60) // Round up to nearest second
+  }, [audioAnalysis, minSilenceDuration, contentSpeedMultiplier])
 
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
@@ -1930,14 +1934,16 @@ export default function Home() {
             type: "error",
           })
           setFile(null)
-          setDisplayedFileName(null)
-          setOriginalBuffer(null)
-          setOriginalUrl("")
-          setAudioAnalysis(null)
-          setDurationLimits(null)
-          setAnalysisProgress(null)
-        }
-      }
+  setDisplayedFileName(null)
+  setOriginalBuffer(null)
+  setOriginalUrl("")
+  setAudioAnalysis(null)
+  setDurationLimits(null)
+  setAnalysisProgress(null)
+  setContentSpeedMultiplier(1.0)
+  setShowSpeedOptions(false)
+  }
+  }
 
       if (sourceTab === "adjuster") {
         await importIntoAdjuster(importData)
@@ -2175,6 +2181,7 @@ export default function Home() {
           silenceThreshold,
           minSilenceDuration,
           maxSilenceDuration: maxSilenceDuration * 1000, // convert to ms
+          contentSpeedMultiplier,
         },
         isMobileDevice,
         callbacks: {
@@ -2310,10 +2317,12 @@ export default function Home() {
 
         const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
         const contentDuration = originalBuffer.duration - totalSilenceDuration
-        // Allow 2 hours on both mobile and desktop - memory optimizations make this possible
-      const maxPossibleDuration = 120 * 60
+        const pauseFloor = Math.max(0.3, minSilenceDuration)
+        const effectiveContentDuration = contentDuration / contentSpeedMultiplier
+        const trueMinSeconds = effectiveContentDuration + silenceRegions.length * pauseFloor
+        const maxPossibleDuration = 120 * 60
         const nextLimits = {
-          min: Math.ceil(contentDuration / 60),
+          min: Math.max(1, Math.ceil(trueMinSeconds / 60)),
           max: maxPossibleDuration / 60,
         }
 
@@ -2391,7 +2400,7 @@ export default function Home() {
   useEffect(() => {
     // This effect no longer resets isProcessingComplete.
     // It's now reset at the start of processAudioAdjusterAction or handleFile.
-  }, [targetDuration, silenceThreshold, minSilenceDuration])
+  }, [targetDuration, silenceThreshold, minSilenceDuration, contentSpeedMultiplier])
 
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined
@@ -3323,6 +3332,37 @@ export default function Home() {
                                 Range: {durationLimits.min} min to 2 hours
                               </p>
                             )}
+                            {/* Shrink boost: subtly speeds up spoken content to unlock shorter durations */}
+                            <div className="flex items-center justify-center gap-2 pt-1">
+                              {!showSpeedOptions ? (
+                                <button
+                                  onClick={() => setShowSpeedOptions(true)}
+                                  className="flex items-center justify-center w-8 h-8 rounded-full border border-gray-300 bg-white text-xs font-black text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
+                                  title="Shrink boost: subtly speed up spoken content to unlock shorter durations"
+                                >
+                                  {contentSpeedMultiplier === 1.0 ? "1x" : `${contentSpeedMultiplier}x`}
+                                </button>
+                              ) : (
+                                <div className="flex items-center gap-1.5">
+                                  {[1.0, 1.05, 1.1, 1.15].map((m) => (
+                                    <button
+                                      key={m}
+                                      onClick={() => {
+                                        setContentSpeedMultiplier(m)
+                                        setShowSpeedOptions(false)
+                                      }}
+                                      className={`flex items-center justify-center h-8 px-2.5 rounded-full text-xs font-black transition-colors border ${
+                                        contentSpeedMultiplier === m
+                                          ? "bg-gray-700 text-white border-gray-700"
+                                          : "bg-white text-gray-500 border-gray-300 hover:border-gray-400 hover:text-gray-700"
+                                      }`}
+                                    >
+                                      {m === 1.0 ? "1x" : `${m}x`}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </DurationControlCard>
                           <DurationControlCard
                             title="Silence Threshold"
