@@ -315,6 +315,8 @@ export async function rebuildAudioWithScaledPauses({
   // Copy speech segment from srcStart to srcEnd into output, applying speed multiplier
   const copySpeechSegment = (srcStart: number, srcEnd: number) => {
     if (srcEnd <= srcStart) return
+    if (writeIndex >= newData.length) return // Safety: don't write past buffer
+    
     if (Math.abs(contentSpeedMultiplier - 1.0) < 0.001) {
       // No speed change - direct copy
       for (let j = srcStart; j < srcEnd && writeIndex < newData.length; j++) {
@@ -366,48 +368,12 @@ export async function rebuildAudioWithScaledPauses({
     copySpeechSegment(0, totalSamples)
   }
 
-  onProgress(95)
-
-  // Pitch correction: speed-up raises pitch proportionally.
-  // To correct: render each speech segment at 1/multiplier playback rate (pitch down),
-  // which produces longer audio, then sample-drop back to original segment length.
-  // Net effect: original pitch, original duration — just sped up in time.
-  if (Math.abs(contentSpeedMultiplier - 1.0) > 0.001) {
-    const sampleRate = newBuffer.sampleRate
-    const outputData = newBuffer.getChannelData(0)
-    const correctedData = new Float32Array(outputData.length)
-
-    // Identify speech vs silence regions in the output buffer by scanning for non-zero runs
-    // Instead, simpler: pitch-correct the entire output at once using two-pass resample.
-    // Pass 1: play output at pitchRate into a longer buffer (pitch down, time stretch)
-    // Pass 2: re-sample the longer buffer back down to original length (fix time stretch)
-    const pitchRate = 1 / contentSpeedMultiplier
-    const stretchedLength = Math.floor(outputData.length / pitchRate) // longer buffer
-
-    const pass1Ctx = new OfflineAudioContext(1, stretchedLength, sampleRate)
-    const pass1Source = pass1Ctx.createBufferSource()
-    pass1Source.buffer = newBuffer
-    pass1Source.playbackRate.value = pitchRate // slower = lower pitch + stretched
-    pass1Source.connect(pass1Ctx.destination)
-    pass1Source.start(0)
-    const stretchedBuffer = await pass1Ctx.startRendering()
-    const stretchedData = stretchedBuffer.getChannelData(0)
-
-    // Pass 2: re-sample stretchedData back to original length (time-compress without pitch change)
-    const ratio = stretchedData.length / outputData.length
-    for (let i = 0; i < outputData.length; i++) {
-      const pos = i * ratio
-      const idx = Math.floor(pos)
-      const frac = pos - idx
-      const a = stretchedData[Math.min(idx, stretchedData.length - 1)]
-      const b = stretchedData[Math.min(idx + 1, stretchedData.length - 1)]
-      correctedData[i] = a + (b - a) * frac
-    }
-
-    const correctedBuffer = audioContext.createBuffer(1, outputData.length, sampleRate)
-    correctedBuffer.getChannelData(0).set(correctedData)
+  // Trim the buffer to the actual amount written (in case of rounding discrepancies)
+  if (writeIndex < newData.length) {
+    const trimmedBuffer = audioContext.createBuffer(1, writeIndex, newBuffer.sampleRate)
+    trimmedBuffer.getChannelData(0).set(newData.subarray(0, writeIndex))
     onProgress(100)
-    return correctedBuffer
+    return trimmedBuffer
   }
 
   onProgress(100)
