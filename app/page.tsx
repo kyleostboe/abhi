@@ -3242,13 +3242,8 @@ export default function Home() {
                                   <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-300 border-double border-4">
                                     <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
                                     <div className="font-black text-gray-600">
-                                      {formatTime(audioAnalysis.contentDuration)}
+                                      {formatTime(contentSpeedMultiplier > 1 ? audioAnalysis.contentDuration / contentSpeedMultiplier : audioAnalysis.contentDuration)}
                                     </div>
-                                    {contentSpeedMultiplier > 1 && (
-                                      <div className="text-xs text-gray-400 mt-0.5">
-                                        {formatTime(audioAnalysis.contentDuration / contentSpeedMultiplier)} @ {contentSpeedMultiplier}x
-                                      </div>
-                                    )}
                                   </div>
                                 </div>
                                 <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
@@ -3269,13 +3264,13 @@ export default function Home() {
                                 </div>
                                 <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
                                   <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-4 border-stone-300 border-double">
-                                    <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
-                                    <div className="text-gray-600 text-xs tracking-tight">
+                                    <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Min:</div>
+                                    <div className="font-black text-gray-600 text-sm tracking-tight">
                                       {(() => {
                                         const s = durationLimits.trueMinSeconds
                                         const m = Math.floor(s / 60)
                                         const sec = s % 60
-                                        return sec > 0 ? `${m}m ${sec}s – 2h` : `${m}m – 2h`
+                                        return sec > 0 ? `${m}m ${sec}s` : `${m}m`
                                       })()}
                                     </div>
                                   </div>
@@ -3335,19 +3330,24 @@ export default function Home() {
                               />
                             </div>
                             <div className="text-center tracking-tight">
-                              <span className="text-lg text-gray-600 font-black">{targetDuration}</span>
-                              <span className="ml-1 text-sm text-gray-600 tracking-normal">minutes</span>
+                              {durationLimits && targetDuration === durationLimits.min ? (
+                                <>
+                                  <span className="text-lg text-gray-600 font-black">
+                                    {(() => {
+                                      const s = durationLimits.trueMinSeconds
+                                      const m = Math.floor(s / 60)
+                                      const sec = s % 60
+                                      return sec > 0 ? `${m}m ${sec}s` : `${m}m`
+                                    })()}
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="text-lg text-gray-600 font-black">{targetDuration}</span>
+                                  <span className="ml-1 text-sm text-gray-600 tracking-normal">minutes</span>
+                                </>
+                              )}
                             </div>
-                            {durationLimits && (
-                              <p className="text-center text-gray-500 text-xs">
-                                {(() => {
-                                  const s = durationLimits.trueMinSeconds
-                                  const m = Math.floor(s / 60)
-                                  const sec = s % 60
-                                  return sec > 0 ? `Min: ${m}m ${sec}s` : `Min: ${m}m`
-                                })()}
-                              </p>
-                            )}
                             {/* Shrink boost: subtly speeds up spoken content to unlock shorter durations */}
                             <div className="flex items-center justify-center gap-2 pt-1">
                               {!showSpeedOptions ? (
