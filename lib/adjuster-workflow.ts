@@ -248,7 +248,9 @@ export async function rebuildAudioWithScaledPauses({
 
   const audioContentDuration = buffer.duration - regions.reduce((sum, r) => sum + (r.end - r.start), 0)
   const newSilenceDuration = processedRegions.reduce((sum, r) => sum + r.newDuration, 0)
-  const newTotalDuration = audioContentDuration + newSilenceDuration
+  // Account for speed-up: content becomes shorter when sped up
+  const effectiveContentDuration = audioContentDuration / contentSpeedMultiplier
+  const newTotalDuration = effectiveContentDuration + newSilenceDuration
 
   if (newTotalDuration <= 0) {
     throw new Error("Calculated new total duration is zero or negative.")
