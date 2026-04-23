@@ -3328,6 +3328,7 @@ export default function Home() {
                           </DurationControlCard>
                         </div>
 
+                        <div className="pt-6 border-t border-gray-200">
                         <AnimatePresence>
                           {analysisProgress !== null && (
                             <motion.div
@@ -3394,6 +3395,7 @@ export default function Home() {
                             </motion.div>
                           )}
                         </AnimatePresence>
+                        </div>
                       </TabsContent>
                       <TabsContent value="encoder" className="mt-0 space-y-6">
                         <div className="grid gap-4 md:grid-cols-2">
