@@ -540,7 +540,7 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false) // Corrected type to boolean
   const [processingProgress, setProcessingProgress] = useState<number>(0)
   const [processingStep, setProcessingStep] = useState<string>("")
-  const [durationLimits, setDurationLimits] = useState<{ min: number; max: number } | null>(null)
+  const [durationLimits, setDurationLimits] = useState<{ min: number; max: number; trueMinSeconds: number } | null>(null)
   const [audioAnalysis, setAudioAnalysis] = useState<{
     totalSilence: number
     contentDuration: number
@@ -583,7 +583,7 @@ export default function Home() {
       return null
     }
 
-    return Math.max(1, Math.ceil(minSeconds / 60) * 60) // Round up to nearest second
+    return Math.max(1, Math.ceil(minSeconds)) // Return exact seconds, ceiling to avoid going under
   }, [audioAnalysis, minSilenceDuration, contentSpeedMultiplier])
 
   // == States for Labs ==
@@ -2322,8 +2322,9 @@ export default function Home() {
         const trueMinSeconds = effectiveContentDuration + silenceRegions.length * pauseFloor
         const maxPossibleDuration = 120 * 60
         const nextLimits = {
-          min: Math.max(1, Math.ceil(trueMinSeconds / 60)),
+          min: Math.max(1, Math.ceil(trueMinSeconds / 60)), // whole minutes for slider
           max: maxPossibleDuration / 60,
+          trueMinSeconds: Math.max(1, Math.ceil(trueMinSeconds)), // exact seconds for display
         }
 
         setDurationLimits((prev) => {
@@ -3243,6 +3244,11 @@ export default function Home() {
                                     <div className="font-black text-gray-600">
                                       {formatTime(audioAnalysis.contentDuration)}
                                     </div>
+                                    {contentSpeedMultiplier > 1 && (
+                                      <div className="text-xs text-gray-400 mt-0.5">
+                                        {formatTime(audioAnalysis.contentDuration / contentSpeedMultiplier)} @ {contentSpeedMultiplier}x
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
@@ -3264,9 +3270,17 @@ export default function Home() {
                                 <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
                                   <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-4 border-stone-300 border-double">
                                     <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
-                                    <div className="uppercase text-gray-600 text-xs tracking-tight">
-                                      {durationLimits.min} min - 2 hours
+                                    <div className="text-gray-600 text-xs tracking-tight">
+                                      {(() => {
+                                        const s = durationLimits.trueMinSeconds
+                                        const m = Math.floor(s / 60)
+                                        const sec = s % 60
+                                        return sec > 0 ? `${m}m ${sec}s – 2h` : `${m}m – 2h`
+                                      })()}
                                     </div>
+                                    {contentSpeedMultiplier > 1 && (
+                                      <div className="text-xs text-gray-400 mt-0.5">@ {contentSpeedMultiplier}x boost</div>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -3329,7 +3343,13 @@ export default function Home() {
                             </div>
                             {durationLimits && (
                               <p className="text-center text-gray-500 text-xs">
-                                Range: {durationLimits.min} min to 2 hours
+                                {(() => {
+                                  const s = durationLimits.trueMinSeconds
+                                  const m = Math.floor(s / 60)
+                                  const sec = s % 60
+                                  const minStr = sec > 0 ? `${m}m ${sec}s` : `${m}m`
+                                  return `Min: ${minStr} — Max: 2h`
+                                })()}
                               </p>
                             )}
                             {/* Shrink boost: subtly speeds up spoken content to unlock shorter durations */}
@@ -3337,13 +3357,17 @@ export default function Home() {
                               {!showSpeedOptions ? (
                                 <button
                                   onClick={() => setShowSpeedOptions(true)}
-                                  className="flex items-center justify-center w-8 h-8 rounded-full border border-gray-300 bg-white text-xs font-black text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
+                                  className={`text-xs font-black px-2 py-1 transition-colors border-b ${
+                                    contentSpeedMultiplier > 1
+                                      ? "text-gray-700 border-gray-700"
+                                      : "text-gray-400 border-transparent hover:text-gray-600 hover:border-gray-400"
+                                  }`}
                                   title="Shrink boost: subtly speed up spoken content to unlock shorter durations"
                                 >
                                   {contentSpeedMultiplier === 1.0 ? "1x" : `${contentSpeedMultiplier}x`}
                                 </button>
                               ) : (
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-3">
                                   {[1.0, 1.05, 1.1, 1.15].map((m) => (
                                     <button
                                       key={m}
@@ -3351,10 +3375,10 @@ export default function Home() {
                                         setContentSpeedMultiplier(m)
                                         setShowSpeedOptions(false)
                                       }}
-                                      className={`flex items-center justify-center h-8 px-2.5 rounded-full text-xs font-black transition-colors border ${
+                                      className={`text-xs font-black px-1 py-1 transition-colors border-b ${
                                         contentSpeedMultiplier === m
-                                          ? "bg-gray-700 text-white border-gray-700"
-                                          : "bg-white text-gray-500 border-gray-300 hover:border-gray-400 hover:text-gray-700"
+                                          ? "text-gray-700 border-gray-700"
+                                          : "text-gray-400 border-transparent hover:text-gray-600 hover:border-gray-400"
                                       }`}
                                     >
                                       {m === 1.0 ? "1x" : `${m}x`}
