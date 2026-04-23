@@ -528,7 +528,7 @@ export default function Home() {
   const audioContextRef = useRef<AudioContext | null>(null) // Still needed for Adjuster's specific context management
   const [targetDuration, setTargetDuration] = useState<number>(20)
   const [silenceThreshold, setSilenceThreshold] = useState<number>(0.01)
-  const [minSilenceDuration, setMinSilenceDuration] = useState<number>(3)
+  const [minSilenceDuration, setMinSilenceDuration] = useState<number>(0.5) // Detect all pauses, failsafes handle scaling limits
   const [maxSilenceDuration, setMaxSilenceDuration] = useState<number>(0) // 0 = no limit
 
   const [status, setStatus] = useState<{ message: string; type: string } | null>(null)
@@ -2140,7 +2140,6 @@ export default function Home() {
     try {
       setStatus({ message: "Processing audio...", type: "info" })
       const targetDurationSeconds = targetDuration * 60
-      console.log("[v0] Starting processing, target duration:", targetDurationSeconds, "seconds")
       
       // For very long target durations (>90 min), resample to lower sample rate to reduce memory
       // Use 22050Hz which maintains good audio quality while reducing memory requirements
@@ -2149,7 +2148,6 @@ export default function Home() {
       const targetSampleRateForLongDuration = 22050
       
       if (targetDurationSeconds > 90 * 60 && originalBuffer.sampleRate > targetSampleRateForLongDuration) {
-        console.log("[v0] Downsampling for long duration, target SR:", targetSampleRateForLongDuration)
         setProcessingStep("Optimizing for long duration...")
         const ratio = targetSampleRateForLongDuration / originalBuffer.sampleRate
         const newLength = Math.floor(originalBuffer.length * ratio)
@@ -2162,7 +2160,6 @@ export default function Home() {
           source.start(0)
           
           bufferToProcess = await offlineCtx.startRendering()
-          console.log("[v0] Downsampling complete, new length:", bufferToProcess.length)
         } catch (resampleError) {
           console.error("[v0] Downsampling failed:", resampleError)
           // Continue with original buffer if downsampling fails

@@ -134,17 +134,18 @@ interface RebuildOptions {
 }
 
 /**
- * Weighted pause scaling algorithm that preserves natural rhythm
+ * Uniform pause scaling with perceptual failsafes
  * 
- * Key insight: The maximum pause extension should be proportional to the duration change.
- * If extending 1.5x, longest pauses can be 1.5x longer. If extending 2x, they can be 2x longer.
- * Short pauses remain protected to maintain conversational rhythm.
+ * Philosophy: Treat audio like fabric - scale ALL pauses uniformly to preserve
+ * the original proportionality. Then apply physical/perceptual limits:
  * 
- * This works for BOTH extending and shrinking:
- * - Extending: Long pauses grow by scaleFactor, short pauses stay natural
- * - Shrinking: Long pauses shrink by scaleFactor, short pauses protected from becoming too short
+ * FLOOR: No pause below 0.3s (would stitch content together unnaturally)
+ * CEILING: Short pauses (originally < 2s) shouldn't exceed ~2.5s (would tear content apart)
+ * 
+ * Any time borrowed/excess from clamped pauses is redistributed proportionally
+ * to all unclamped pauses, preserving their ratios to each other.
  */
-function calculateWeightedPauseDurations(
+function calculateUniformScaledPauseDurations(
   regions: SilenceRegion[],
   scaleFactor: number,
   targetTotalSilence: number,
@@ -153,99 +154,76 @@ function calculateWeightedPauseDurations(
   
   const currentTotalSilence = regions.reduce((sum, r) => sum + (r.end - r.start), 0)
   if (currentTotalSilence === 0) return regions.map(r => ({ region: r, newDuration: 0 }))
+
+  // Perceptual limits
+  const FLOOR = 0.3 // Minimum pause duration - prevents stitching
+  const SHORT_PAUSE_THRESHOLD = 2.0 // Pauses under this are considered "short"
+  const SHORT_PAUSE_CEILING = 2.5 // Short pauses shouldn't grow beyond this
   
-  // Classify pauses and assign weights
-  // Longer pauses get exponentially more weight
+  // Step 1: Apply uniform scaling to all pauses
   const pauseData = regions.map(region => {
-    const duration = region.end - region.start
-    let weight: number
-    
-    if (duration < 1) {
-      // Short pauses: minimal weight (protected from large changes)
-      weight = 0.5
-    } else if (duration < 3) {
-      // Medium pauses: moderate weight
-      weight = 1.0 + (duration - 1) * 0.5 // 1.0 to 2.0
-    } else {
-      // Long pauses: high weight (absorb most change)
-      weight = 2.0 + (duration - 3) * 0.3 // 2.0+
+    const originalDuration = region.end - region.start
+    const scaledDuration = originalDuration * scaleFactor
+    return { 
+      region, 
+      originalDuration, 
+      scaledDuration,
+      finalDuration: scaledDuration,
+      isClamped: false
     }
-    
-    return { region, duration, weight }
   })
   
-  const totalWeight = pauseData.reduce((sum, p) => sum + p.duration * p.weight, 0)
+  // Step 2: Apply perceptual clamps
+  let totalBorrowedOrExcess = 0
   
-  // Calculate new durations based on weighted distribution
-  const isExtending = scaleFactor > 1
-  const isShrinking = scaleFactor < 1
-  
-  const result = pauseData.map(({ region, duration, weight }) => {
-    let newDuration: number
+  pauseData.forEach(pause => {
+    const { originalDuration, scaledDuration } = pause
+    let clampedDuration = scaledDuration
     
-    if (Math.abs(scaleFactor - 1) < 0.01) {
-      // No significant change requested
-      newDuration = duration
-    } else {
-      // Calculate this pause's share of the total change
-      const weightedShare = (duration * weight) / totalWeight
-      const totalChange = targetTotalSilence - currentTotalSilence
-      const thisChange = totalChange * weightedShare
-      
-      newDuration = duration + thisChange
-      
-      // Apply constraints based on direction
-      if (isExtending) {
-        // When extending, cap short pause growth proportionally
-        if (duration < 1) {
-          // Short pauses: max growth is limited, but scaled with overall change
-          // If extending 1.5x overall, short pauses grow max 1.2x
-          // If extending 2x overall, short pauses grow max 1.3x
-          const maxMultiplier = 1 + (Math.min(scaleFactor, 2) - 1) * 0.2
-          newDuration = Math.min(newDuration, duration * maxMultiplier)
-        }
-        // Minimum duration is the original
-        newDuration = Math.max(newDuration, duration * 0.8)
-      } else if (isShrinking) {
-        // When shrinking, protect short pauses from becoming too short
-        if (duration < 1) {
-          newDuration = Math.max(newDuration, duration * 0.7) // Keep at least 70% for short pauses
-        }
-        // Absolute minimum of 0.3s for any pause
-        newDuration = Math.max(newDuration, 0.3)
-      }
-      
-      // Apply maximum multiplier cap based on scale factor for long pauses
-      if (duration >= 3) {
-        const maxMultiplier = scaleFactor
-        newDuration = Math.min(newDuration, duration * maxMultiplier)
-      }
+    // Floor: prevent stitching (applies to all pauses)
+    if (scaledDuration < FLOOR) {
+      clampedDuration = FLOOR
+      pause.isClamped = true
     }
     
-    return { region, newDuration: Math.max(0.1, newDuration) }
+    // Ceiling: prevent short pauses from tearing content apart
+    if (originalDuration < SHORT_PAUSE_THRESHOLD && scaledDuration > SHORT_PAUSE_CEILING) {
+      clampedDuration = SHORT_PAUSE_CEILING
+      pause.isClamped = true
+    }
+    
+    if (pause.isClamped) {
+      totalBorrowedOrExcess += scaledDuration - clampedDuration
+      pause.finalDuration = clampedDuration
+    }
   })
   
-  // Redistribute any excess/deficit from capped pauses to uncapped ones
-  const actualTotal = result.reduce((sum, r) => sum + r.newDuration, 0)
-  const difference = targetTotalSilence - actualTotal
-  
-  if (Math.abs(difference) > 0.1) {
-    // Find pauses that can absorb the difference (long pauses)
-    const adjustablePauses = result.filter(r => {
-      const originalDuration = r.region.end - r.region.start
-      return originalDuration >= 3 // Only adjust long pauses
-    })
+  // Step 3: Redistribute borrowed/excess time proportionally to unclamped pauses
+  if (Math.abs(totalBorrowedOrExcess) > 0.01) {
+    const unclampedPauses = pauseData.filter(p => !p.isClamped)
     
-    if (adjustablePauses.length > 0) {
-      const adjustmentPerPause = difference / adjustablePauses.length
-      adjustablePauses.forEach(p => {
-        p.newDuration = Math.max(0.5, p.newDuration + adjustmentPerPause)
+    if (unclampedPauses.length > 0) {
+      // Calculate total scaled duration of unclamped pauses for proportional distribution
+      const totalUnclampedScaled = unclampedPauses.reduce((sum, p) => sum + p.scaledDuration, 0)
+      
+      unclampedPauses.forEach(pause => {
+        // Each unclamped pause gets a share proportional to its scaled size
+        const share = pause.scaledDuration / totalUnclampedScaled
+        const adjustment = totalBorrowedOrExcess * share
+        pause.finalDuration = Math.max(FLOOR, pause.scaledDuration + adjustment)
+      })
+    } else {
+      // Edge case: all pauses are clamped - distribute evenly to longest pauses
+      const sortedByDuration = [...pauseData].sort((a, b) => b.originalDuration - a.originalDuration)
+      const topHalf = sortedByDuration.slice(0, Math.max(1, Math.ceil(sortedByDuration.length / 2)))
+      const adjustmentPerPause = totalBorrowedOrExcess / topHalf.length
+      topHalf.forEach(pause => {
+        pause.finalDuration = Math.max(FLOOR, pause.finalDuration + adjustmentPerPause)
       })
     }
   }
   
-  return result
-}
+  return pauseData.map(p => ({ region: p.region, newDuration: p.finalDuration }))
 }
 
 export async function rebuildAudioWithScaledPauses({
@@ -260,8 +238,8 @@ export async function rebuildAudioWithScaledPauses({
 }: RebuildOptions): Promise<AudioBuffer> {
   onProgress(0)
 
-  // Use weighted scaling algorithm for natural rhythm preservation
-  const processedRegions = calculateWeightedPauseDurations(regions, scaleFactor, targetTotalSilence)
+  // Use uniform scaling with perceptual failsafes for natural rhythm preservation
+  const processedRegions = calculateUniformScaledPauseDurations(regions, scaleFactor, targetTotalSilence)
 
   const audioContentDuration = buffer.duration - regions.reduce((sum, r) => sum + (r.end - r.start), 0)
   const newSilenceDuration = processedRegions.reduce((sum, r) => sum + r.newDuration, 0)
@@ -287,14 +265,9 @@ export async function rebuildAudioWithScaledPauses({
     // Use the input buffer's sample rate (which may already be reduced on mobile)
     const outputSampleRate = buffer.sampleRate
     const outputSamples = Math.max(1, Math.floor(newTotalDuration * outputSampleRate))
-    const estimatedMB = (outputSamples * 4) / (1024 * 1024)
-    
-    console.log(`[v0] Creating output buffer: ${outputSamples} samples @ ${outputSampleRate}Hz (~${estimatedMB.toFixed(1)}MB) for ${(newTotalDuration / 60).toFixed(1)} minutes`)
     
     newBuffer = audioContext.createBuffer(1, outputSamples, outputSampleRate)
-    console.log("[v0] Output buffer created successfully")
   } catch (error) {
-    console.error("[v0] Failed to create output buffer:", error)
     forceGarbageCollection()
     throw new Error(
       `Failed to create output buffer (duration: ${newTotalDuration.toFixed(2)}s). Memory limit likely exceeded. Try a shorter target duration.`,
