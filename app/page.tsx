@@ -3278,9 +3278,6 @@ export default function Home() {
                                         return sec > 0 ? `${m}m ${sec}s – 2h` : `${m}m – 2h`
                                       })()}
                                     </div>
-                                    {contentSpeedMultiplier > 1 && (
-                                      <div className="text-xs text-gray-400 mt-0.5">@ {contentSpeedMultiplier}x boost</div>
-                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -3347,8 +3344,7 @@ export default function Home() {
                                   const s = durationLimits.trueMinSeconds
                                   const m = Math.floor(s / 60)
                                   const sec = s % 60
-                                  const minStr = sec > 0 ? `${m}m ${sec}s` : `${m}m`
-                                  return `Min: ${minStr} — Max: 2h`
+                                  return sec > 0 ? `Min: ${m}m ${sec}s` : `Min: ${m}m`
                                 })()}
                               </p>
                             )}
