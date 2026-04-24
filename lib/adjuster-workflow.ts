@@ -1,5 +1,6 @@
 import { bufferToWav, type BufferToWavMetadata } from "@/lib/audio-utils"
 import { forceGarbageCollection, formatTime, sleep } from "@/lib/utils"
+import SoundTouchJS from 'soundtouchjs'
 
 export type SilenceRegion = { start: number; end: number }
 
@@ -312,24 +313,50 @@ export async function rebuildAudioWithScaledPauses({
     return (s0 + (s1 - s0) * frac) / channelData.length
   }
 
-  // Copy speech segment from srcStart to srcEnd into output, applying speed multiplier
-  const copySpeechSegment = (srcStart: number, srcEnd: number) => {
-    if (srcEnd <= srcStart) return
-    if (writeIndex >= newData.length) return // Safety: don't write past buffer
+  // Apply time-stretch to speech segments while preserving pitch using SoundTouchJS
+  const timeStretchSegment = (srcStart: number, srcEnd: number): Float32Array => {
+    if (srcEnd <= srcStart) return new Float32Array(0)
     
     if (Math.abs(contentSpeedMultiplier - 1.0) < 0.001) {
       // No speed change - direct copy
-      for (let j = srcStart; j < srcEnd && writeIndex < newData.length; j++) {
-        newData[writeIndex++] = getMonoSample(j)
-      }
-    } else {
-      // Speed up: output fewer samples by stepping through source faster
       const srcLength = srcEnd - srcStart
-      const outLength = Math.floor(srcLength / contentSpeedMultiplier)
-      for (let j = 0; j < outLength && writeIndex < newData.length; j++) {
-        const srcPos = srcStart + j * contentSpeedMultiplier
-        newData[writeIndex++] = getMonoSampleInterp(srcPos)
+      const out = new Float32Array(srcLength)
+      for (let j = 0; j < srcLength; j++) {
+        out[j] = getMonoSample(srcStart + j)
       }
+      return out
+    }
+
+    // Extract source segment into a temporary buffer
+    const srcLength = srcEnd - srcStart
+    const srcBuffer = audioContext.createBuffer(1, srcLength, buffer.sampleRate)
+    const srcData = srcBuffer.getChannelData(0)
+    for (let j = 0; j < srcLength; j++) {
+      srcData[j] = getMonoSample(srcStart + j)
+    }
+
+    // Apply time-stretching via SoundTouchJS (preserves pitch, changes duration)
+    const soundTouch = new SoundTouchJS()
+    soundTouch.setRate(contentSpeedMultiplier)
+    soundTouch.setSampleRate(buffer.sampleRate)
+    soundTouch.putSamples(srcData)
+    soundTouch.flush()
+
+    const outputSamples = soundTouch.numSamples()
+    const stretchedData = new Float32Array(outputSamples)
+    soundTouch.receiveSamples(stretchedData)
+
+    return stretchedData
+  }
+
+  // Copy segment using time-stretch (pitch-preserving)
+  const copySpeechSegment = (srcStart: number, srcEnd: number) => {
+    if (srcEnd <= srcStart) return
+    if (writeIndex >= newData.length) return
+
+    const stretchedData = timeStretchSegment(srcStart, srcEnd)
+    for (let i = 0; i < stretchedData.length && writeIndex < newData.length; i++) {
+      newData[writeIndex++] = stretchedData[i]
     }
   }
 
