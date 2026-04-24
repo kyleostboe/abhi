@@ -528,8 +528,8 @@ export default function Home() {
   const [processedAudioMetadata, setProcessedAudioMetadata] = useState<BufferToWavMetadata | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null) // Still needed for Adjuster's specific context management
   const [targetDuration, setTargetDuration] = useState<number>(20)
-  const [silenceThreshold, setSilenceThreshold] = useState<number>(0.01)
-  const [minSilenceDuration, setMinSilenceDuration] = useState<number>(3)
+  const [silenceThreshold, setSilenceThreshold] = useState<number>(0.025)
+  const [minSilenceDuration, setMinSilenceDuration] = useState<number>(1)
   const [maxSilenceDuration, setMaxSilenceDuration] = useState<number>(0) // 0 = no limit
   const [contentSpeedMultiplier, setContentSpeedMultiplier] = useState<number>(1.0) // 1.0 = no speedup, up to 1.15x
   const [showSpeedOptions, setShowSpeedOptions] = useState<boolean>(false)
@@ -3324,6 +3324,7 @@ export default function Home() {
                             </div>
                             <div className="text-center tracking-tight">
                               <span className="text-lg text-gray-600 font-black">{silenceThreshold.toFixed(3)}</span>
+                              <span className="ml-1 text-sm text-gray-600">threshold</span>
                             </div>
                             <p className="text-center text-xs text-gray-500 tracking-tight">Lower = more sensitive</p>
                           </DurationControlCard>
