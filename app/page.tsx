@@ -3340,7 +3340,7 @@ export default function Home() {
                             <div>
                               <Slider
                                 value={[minSilenceDuration]}
-                                min={1}
+                                min={0}
                                 max={15}
                                 step={0.5}
                                 onValueChange={(value) => setMinSilenceDuration(value[0])}
