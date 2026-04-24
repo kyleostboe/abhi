@@ -3419,27 +3419,27 @@ export default function Home() {
                           className="mt-4"
                         >
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <div className="bg-white p-3 text-center min-h-[76px] rounded-sm shadow-md">
-                              <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
-                              <div className="font-black text-gray-600">
+                            <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center p-4 min-h-[80px]">
+                              <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Content</div>
+                              <div className="text-lg font-black text-gray-600">
                                 {formatTime(contentSpeedMultiplier > 1 ? audioAnalysis.contentDuration / contentSpeedMultiplier : audioAnalysis.contentDuration)}
                               </div>
                             </div>
-                            <div className="bg-white p-3 text-center min-h-[76px] rounded-sm shadow-md">
-                              <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
-                              <div className="font-black text-gray-600">
+                            <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center p-4 min-h-[80px]">
+                              <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Silence</div>
+                              <div className="text-lg font-black text-gray-600">
                                 {formatTime(audioAnalysis.totalSilence)}
                               </div>
                             </div>
-                            <div className="bg-white p-3 text-center min-h-[76px] rounded-sm shadow-md">
-                              <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
-                              <div className="font-black text-gray-600 text-sm tracking-tight">
+                            <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center p-4 min-h-[80px]">
+                              <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Pauses</div>
+                              <div className="text-lg font-black text-gray-600">
                                 {audioAnalysis.silenceRegions}
                               </div>
                             </div>
-                            <div className="bg-white p-3 text-center min-h-[76px] rounded-sm shadow-md">
-                              <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
-                              <div className="font-black text-gray-600 text-sm tracking-tight">
+                            <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center p-4 min-h-[80px]">
+                              <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Range</div>
+                              <div className="text-sm font-black text-gray-600">
                                 {(() => {
                                   const s = durationLimits.trueMinSeconds
                                   const mn = Math.floor(s / 60)
