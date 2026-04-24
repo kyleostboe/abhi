@@ -3419,41 +3419,33 @@ export default function Home() {
                           className="mt-4"
                         >
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-300 border-double border-4">
-                                <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
-                                <div className="font-black text-gray-600">
-                                  {formatTime(contentSpeedMultiplier > 1 ? audioAnalysis.contentDuration / contentSpeedMultiplier : audioAnalysis.contentDuration)}
-                                </div>
+                            <div className="bg-white p-3 text-center min-h-[76px] rounded-sm shadow-md">
+                              <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
+                              <div className="font-black text-gray-600">
+                                {formatTime(contentSpeedMultiplier > 1 ? audioAnalysis.contentDuration / contentSpeedMultiplier : audioAnalysis.contentDuration)}
                               </div>
                             </div>
-                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-300 border-4 border-double">
-                                <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
-                                <div className="font-black text-gray-600">
-                                  {formatTime(audioAnalysis.totalSilence)}
-                                </div>
+                            <div className="bg-white p-3 text-center min-h-[76px] rounded-sm shadow-md">
+                              <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
+                              <div className="font-black text-gray-600">
+                                {formatTime(audioAnalysis.totalSilence)}
                               </div>
                             </div>
-                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-4 border-stone-300 border-double">
-                                <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
-                                <div className="font-black text-gray-600 text-sm tracking-tight">
-                                  {audioAnalysis.silenceRegions}
-                                </div>
+                            <div className="bg-white p-3 text-center min-h-[76px] rounded-sm shadow-md">
+                              <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
+                              <div className="font-black text-gray-600 text-sm tracking-tight">
+                                {audioAnalysis.silenceRegions}
                               </div>
                             </div>
-                            <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
-                              <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-4 border-stone-300 border-double">
-                                <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
-                                <div className="font-black text-gray-600 text-sm tracking-tight">
-                                  {(() => {
-                                    const s = durationLimits.trueMinSeconds
-                                    const mn = Math.floor(s / 60)
-                                    const sec = s % 60
-                                    return sec > 0 ? `${mn}m ${sec}s – 2h` : `${mn}m – 2h`
-                                  })()}
-                                </div>
+                            <div className="bg-white p-3 text-center min-h-[76px] rounded-sm shadow-md">
+                              <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
+                              <div className="font-black text-gray-600 text-sm tracking-tight">
+                                {(() => {
+                                  const s = durationLimits.trueMinSeconds
+                                  const mn = Math.floor(s / 60)
+                                  const sec = s % 60
+                                  return sec > 0 ? `${mn}m ${sec}s – 2h` : `${mn}m – 2h`
+                                })()}
                               </div>
                             </div>
                           </div>
