@@ -2397,7 +2397,8 @@ export default function Home() {
     return () => {
       controller.abort()
     }
-  }, [originalBuffer, detectSilenceRegions, silenceThreshold, minSilenceDuration, contentSpeedMultiplier, isMobileDevice])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [originalBuffer, detectSilenceRegions, silenceThreshold, minSilenceDuration, contentSpeedMultiplier])
 
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined
