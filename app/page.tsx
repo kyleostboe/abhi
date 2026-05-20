@@ -2316,11 +2316,23 @@ export default function Home() {
           return
         }
 
-        const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
-        const contentDuration = originalBuffer.duration - totalSilenceDuration
+        // Cap silence regions the same way processing does (respecting maxSilenceDuration)
+        const cappedSilenceRegions = silenceRegions.map((region) => {
+          if (maxSilenceDuration === 0) {
+            return region
+          }
+          const duration = region.end - region.start
+          if (duration > maxSilenceDuration) {
+            return { start: region.start, end: region.start + maxSilenceDuration }
+          }
+          return region
+        })
+
+        const totalSilenceDuration = cappedSilenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+        const contentDuration = originalBuffer.duration - silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
         const pauseFloor = Math.max(0.3, minSilenceDuration)
         const effectiveContentDuration = contentDuration / contentSpeedMultiplier
-        const trueMinSeconds = effectiveContentDuration + silenceRegions.length * pauseFloor
+        const trueMinSeconds = effectiveContentDuration + cappedSilenceRegions.length * pauseFloor
         const maxPossibleDuration = 120 * 60
         const nextLimits = {
           min: Math.max(1, Math.ceil(trueMinSeconds / 60)), // whole minutes for slider
@@ -2397,7 +2409,7 @@ export default function Home() {
     return () => {
       controller.abort()
     }
-  }, [originalBuffer, detectSilenceRegions, silenceThreshold, minSilenceDuration, contentSpeedMultiplier, isMobileDevice])
+  }, [originalBuffer, detectSilenceRegions, silenceThreshold, minSilenceDuration, maxSilenceDuration, contentSpeedMultiplier, isMobileDevice])
 
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined
