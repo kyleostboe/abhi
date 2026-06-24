@@ -3340,7 +3340,7 @@ export default function Home() {
                               <span className="text-lg text-gray-600 font-black">{silenceThreshold.toFixed(3)}</span>
                               <span className="ml-1 text-sm text-gray-600"></span>
                             </div>
-                            <p className="text-center text-xs text-gray-500 tracking-tight">Lower = more sensitive</p>
+                            <p className="text-center text-xs text-gray-500 tracking-tight">higher = detect more pauses</p>
                           </DurationControlCard>
                         </div>
 
