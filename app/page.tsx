@@ -3306,11 +3306,12 @@ export default function Home() {
                                         setContentSpeedMultiplier(m)
                                         setShowSpeedOptions(false)
                                       }}
+                                      disabled={!originalBuffer}
                                       className={`text-xs font-black px-1 py-1 transition-colors border-b ${
                                         contentSpeedMultiplier === m
                                           ? "text-gray-700 border-gray-700"
                                           : "text-gray-400 border-transparent hover:text-gray-600 hover:border-gray-400"
-                                      }`}
+                                      } ${!originalBuffer ? "opacity-50 cursor-not-allowed" : ""}`}
                                     >
                                       {m === 1.0 ? "1x" : `${m}x`}
                                     </button>
@@ -3330,6 +3331,7 @@ export default function Home() {
                                 max={0.05}
                                 step={0.001}
                                 onValueChange={(value) => setSilenceThreshold(value[0])}
+                                disabled={!originalBuffer}
                                 className="py-4"
                                 rangeClassName="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500"
                               />
@@ -3356,6 +3358,7 @@ export default function Home() {
                                 max={15}
                                 step={0.5}
                                 onValueChange={(value) => setMinSilenceDuration(value[0])}
+                                disabled={!originalBuffer}
                                 className="py-4"
                                 rangeClassName="bg-gradient-to-br from-logo-purple-300 to-logo-emerald-500"
                               />
@@ -3379,6 +3382,7 @@ export default function Home() {
                                 max={60}
                                 step={0.5}
                                 onValueChange={(value) => setMaxSilenceDuration(value[0] * 60)}
+                                disabled={!originalBuffer}
                                 className="py-4"
                                 rangeClassName="bg-gradient-to-r from-logo-teal-500 to-logo-amber-300"
                               />
