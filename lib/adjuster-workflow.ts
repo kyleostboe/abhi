@@ -147,7 +147,7 @@ interface RebuildOptions {
  * Any time borrowed/excess from clamped pauses is redistributed proportionally
  * to all unclamped pauses, preserving their ratios to each other.
  */
-function calculateUniformScaledPauseDurations(
+export function calculateUniformScaledPauseDurations(
   regions: SilenceRegion[],
   scaleFactor: number,
   targetTotalSilence: number,
@@ -243,8 +243,6 @@ export async function rebuildAudioWithScaledPauses({
 }: RebuildOptions): Promise<AudioBuffer> {
   onProgress(0)
 
-  console.log("[v0] rebuildAudioWithScaledPauses called with contentSpeedMultiplier:", contentSpeedMultiplier)
-
   // Use uniform scaling with perceptual failsafes for natural rhythm preservation
   const processedRegions = calculateUniformScaledPauseDurations(regions, scaleFactor, targetTotalSilence, pauseFloor)
 
@@ -253,8 +251,6 @@ export async function rebuildAudioWithScaledPauses({
   // Account for speed-up: content becomes shorter when sped up
   const effectiveContentDuration = audioContentDuration / contentSpeedMultiplier
   const newTotalDuration = effectiveContentDuration + newSilenceDuration
-
-  console.log("[v0] audioContentDuration:", audioContentDuration, "effectiveContentDuration:", effectiveContentDuration, "newSilenceDuration:", newSilenceDuration, "newTotalDuration:", newTotalDuration)
 
   if (newTotalDuration <= 0) {
     throw new Error("Calculated new total duration is zero or negative.")

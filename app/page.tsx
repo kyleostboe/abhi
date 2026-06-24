@@ -36,6 +36,7 @@ import { getAudioContext, bufferToWav, bufferToWebM, type BufferToWavMetadata } 
 import {
   runAdjusterWorkflow,
   detectSilenceRegions as computeSilenceRegions,
+  calculateUniformScaledPauseDurations,
   type DetectSilenceOptions,
 } from "@/lib/adjuster-workflow"
 import type { SavedMeditation } from "@/lib/meditation-library"
@@ -2332,7 +2333,19 @@ export default function Home() {
         const contentDuration = originalBuffer.duration - silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
         const pauseFloor = Math.max(0.3, minSilenceDuration)
         const effectiveContentDuration = contentDuration / contentSpeedMultiplier
-        const trueMinSeconds = effectiveContentDuration + cappedSilenceRegions.length * pauseFloor
+
+        // Simulate actual pause scaling at minimum (scaleFactor targeting pauseFloor * numRegions)
+        // This mirrors exactly what runAdjusterWorkflow does, including SHORT_PAUSE_CEILING clamping
+        const minAvailableSilence = cappedSilenceRegions.length * pauseFloor
+        const minScaleFactor = totalSilenceDuration > 0 ? minAvailableSilence / totalSilenceDuration : 1
+        const simulatedPauses = calculateUniformScaledPauseDurations(
+          cappedSilenceRegions,
+          minScaleFactor,
+          minAvailableSilence,
+          pauseFloor,
+        )
+        const simulatedSilenceDuration = simulatedPauses.reduce((sum, p) => sum + p.newDuration, 0)
+        const trueMinSeconds = effectiveContentDuration + simulatedSilenceDuration
         const maxPossibleDuration = 120 * 60
         const nextLimits = {
           min: Math.max(1, Math.ceil(trueMinSeconds / 60)), // whole minutes for slider
