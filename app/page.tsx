@@ -3255,8 +3255,8 @@ export default function Home() {
                             <div>
                               <Slider
                                 value={[targetDuration]}
-                                min={durationLimits?.min || 5}
-                                max={durationLimits?.max || 120}
+                                min={5}
+                                max={120}
                                 step={1}
                                 onValueChange={(value) => setTargetDuration(value[0])}
                                 disabled={!durationLimits}
