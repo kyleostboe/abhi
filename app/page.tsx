@@ -3334,7 +3334,7 @@ export default function Home() {
                                 </button>
                               ) : (
                                 <div className="flex items-center gap-3">
-                                  {[1.0, 1.05, 1.1, 1.15].map((m) => (
+                                  {[1.0, 1.1, 1.25, 1.5].map((m) => (
                                     <button
                                       key={m}
                                       onClick={() => {
