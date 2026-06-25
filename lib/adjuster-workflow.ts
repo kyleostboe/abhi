@@ -126,6 +126,7 @@ interface RebuildOptions {
   audioContext: AudioContext
   buffer: AudioBuffer
   regions: SilenceRegion[]
+  uncappedSilenceDuration: number
   scaleFactor: number
   targetTotalSilence: number
   pauseFloor: number
@@ -233,6 +234,7 @@ export async function rebuildAudioWithScaledPauses({
   audioContext,
   buffer,
   regions,
+  uncappedSilenceDuration,
   scaleFactor,
   targetTotalSilence,
   pauseFloor,
@@ -246,7 +248,8 @@ export async function rebuildAudioWithScaledPauses({
   // Use uniform scaling with perceptual failsafes for natural rhythm preservation
   const processedRegions = calculateUniformScaledPauseDurations(regions, scaleFactor, targetTotalSilence, pauseFloor)
 
-  const audioContentDuration = buffer.duration - regions.reduce((sum, r) => sum + (r.end - r.start), 0)
+  // Use uncapped silence duration so capped silence isn't mistakenly counted as content
+  const audioContentDuration = buffer.duration - uncappedSilenceDuration
   const newSilenceDuration = processedRegions.reduce((sum, r) => sum + r.newDuration, 0)
   // Account for speed-up: content becomes shorter when sped up
   const effectiveContentDuration = audioContentDuration / contentSpeedMultiplier
@@ -449,7 +452,9 @@ export async function runAdjusterWorkflow({
   onProgress(25)
 
   const totalSilenceDuration = cappedSilenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
-  const audioContentDuration = buffer.duration - totalSilenceDuration
+  // Use original uncapped silence to get true content duration (capped time is still silence, not content)
+  const uncappedSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+  const audioContentDuration = buffer.duration - uncappedSilenceDuration
   // Speed-up reduces effective content duration, creating more room for pauses
   const effectiveContentDuration = audioContentDuration / contentSpeedMultiplier
   const pauseFloor = Math.max(0.3, minSilenceDuration)
@@ -466,6 +471,7 @@ export async function runAdjusterWorkflow({
     audioContext,
     buffer,
     regions: cappedSilenceRegions,
+    uncappedSilenceDuration,
     scaleFactor,
     targetTotalSilence: availableSilenceDuration,
     pauseFloor,
