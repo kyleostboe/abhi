@@ -98,6 +98,9 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.2.8
         version: 1.2.8(@types/react-dom@19.2.3(@types/react@19.2.13))(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@soundtouchjs/core':
+        specifier: ^2.0.4
+        version: 2.0.4
       '@supabase/ssr':
         specifier: ^0.9.0
         version: 0.9.0(@supabase/supabase-js@2.99.1)
@@ -1140,6 +1143,12 @@ packages:
         optional: true
       react-redux:
         optional: true
+
+  '@soundtouchjs/core@2.0.4':
+    resolution: {integrity: sha512-QVCEtyyVPPFGA4WW9NAXKZb/ujLpUGZeMexkuqJYwh0lVZ5fV+iWQHfI86xLpBSo676E0M+5cskBd6gecV8pUA==}
+
+  '@soundtouchjs/interpolation-strategy-lanczos@2.0.4':
+    resolution: {integrity: sha512-yjmKTFqxcfZbR34gVybaMjrYJETvYk6gKzgRpZ1NQsIdQdLJnbFnvn88H2HH7NUUZgcUTtC+y9fsQWFurw755w==}
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -2766,6 +2775,12 @@ snapshots:
     optionalDependencies:
       react: 19.2.4
       react-redux: 9.2.0(@types/react@19.2.13)(react@19.2.4)(redux@5.0.1)
+
+  '@soundtouchjs/core@2.0.4':
+    dependencies:
+      '@soundtouchjs/interpolation-strategy-lanczos': 2.0.4
+
+  '@soundtouchjs/interpolation-strategy-lanczos@2.0.4': {}
 
   '@standard-schema/spec@1.1.0': {}
 

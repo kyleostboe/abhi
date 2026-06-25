@@ -3,6 +3,97 @@ import { forceGarbageCollection, formatTime, sleep } from "@/lib/utils"
 
 export type SilenceRegion = { start: number; end: number }
 
+/**
+ * WSOLA (Waveform Similarity Overlap-Add) time-stretch.
+ * Speeds up `input` by `tempo` (e.g. 1.25) without changing pitch.
+ * Returns a new Float32Array containing the time-stretched audio.
+ */
+function wsolaTimeStretch(input: Float32Array, tempo: number, sampleRate: number): Float32Array {
+  if (Math.abs(tempo - 1.0) < 0.001) return input.slice()
+
+  // WSOLA parameters (tuned for speech)
+  const overlapMs = 12      // crossfade window in ms
+  const sequenceMs = 82     // processing sequence in ms
+  const seekWindowMs = 28   // seek window in ms
+
+  const overlapLen = Math.floor(sampleRate * overlapMs / 1000)
+  const sequenceLen = Math.floor(sampleRate * sequenceMs / 1000)
+  const seekLen = Math.floor(sampleRate * seekWindowMs / 1000)
+
+  const outputLen = Math.floor(input.length / tempo)
+  const output = new Float32Array(outputLen)
+
+  let inputPos = 0
+  let outputPos = 0
+
+  // Hann window for smooth overlap-add crossfading
+  const window = new Float32Array(overlapLen)
+  for (let i = 0; i < overlapLen; i++) {
+    window[i] = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (overlapLen - 1)))
+  }
+
+  // Find best overlap position using cross-correlation within seek window
+  const findBestOverlapOffset = (refPos: number, seekStart: number): number => {
+    let bestCorr = -Infinity
+    let bestOffset = 0
+    const end = Math.min(seekLen, input.length - seekStart - overlapLen)
+    for (let i = 0; i < end; i++) {
+      let corr = 0
+      for (let j = 0; j < overlapLen; j++) {
+        corr += input[refPos + j] * input[seekStart + i + j]
+      }
+      if (corr > bestCorr) {
+        bestCorr = corr
+        bestOffset = i
+      }
+    }
+    return bestOffset
+  }
+
+  while (outputPos + sequenceLen < outputLen) {
+    // Overlap-add the current overlap region
+    const seekStart = Math.floor(inputPos + sequenceLen - seekLen / 2)
+    const safeSeekStart = Math.max(0, Math.min(seekStart, input.length - seekLen - overlapLen))
+    const offset = findBestOverlapOffset(Math.floor(inputPos), safeSeekStart)
+    const overlapSrc = safeSeekStart + offset
+
+    // Write overlap-add region (crossfade between tail of previous block and start of new block)
+    const overlapWritePos = outputPos + sequenceLen - overlapLen
+    for (let i = 0; i < overlapLen && overlapWritePos + i < outputLen; i++) {
+      const fade = window[i]
+      const existing = output[overlapWritePos + i]
+      const incoming = input[overlapSrc + i]
+      output[overlapWritePos + i] = existing * (1 - fade) + incoming * fade
+    }
+
+    // Write non-overlap body of new block
+    const bodyStart = overlapWritePos + overlapLen
+    const bodyLen = Math.min(sequenceLen - overlapLen, outputLen - bodyStart)
+    for (let i = 0; i < bodyLen; i++) {
+      const srcIdx = overlapSrc + overlapLen + i
+      if (srcIdx < input.length) {
+        output[bodyStart + i] = input[srcIdx]
+      }
+    }
+
+    // Advance input position by tempo * sequence length (this is the time-stretch)
+    inputPos += tempo * sequenceLen
+    outputPos += sequenceLen
+  }
+
+  // Copy any remaining samples
+  if (outputPos < outputLen) {
+    const remaining = outputLen - outputPos
+    const srcStart = Math.floor(inputPos)
+    for (let i = 0; i < remaining; i++) {
+      const srcIdx = srcStart + i
+      output[outputPos + i] = srcIdx < input.length ? input[srcIdx] : 0
+    }
+  }
+
+  return output
+}
+
 export interface DetectSilenceOptions {
   onProgress?: (progress: number) => void
   signal?: AbortSignal
@@ -315,24 +406,28 @@ export async function rebuildAudioWithScaledPauses({
     return (s0 + (s1 - s0) * frac) / channelData.length
   }
 
-  // Copy speech segment from srcStart to srcEnd into output, applying speed multiplier
+  // Copy speech segment from srcStart to srcEnd into output.
+  // Uses WSOLA time-stretch when speed > 1x so pitch is preserved.
   const copySpeechSegment = (srcStart: number, srcEnd: number) => {
     if (srcEnd <= srcStart) return
-    if (writeIndex >= newData.length) return // Safety: don't write past buffer
-    
+    if (writeIndex >= newData.length) return
+
     if (Math.abs(contentSpeedMultiplier - 1.0) < 0.001) {
-      // No speed change - direct copy
+      // No speed change — direct copy
       for (let j = srcStart; j < srcEnd && writeIndex < newData.length; j++) {
         newData[writeIndex++] = getMonoSample(j)
       }
     } else {
-      // Speed up: output fewer samples by stepping through source faster
+      // Extract segment as mono Float32Array
       const srcLength = srcEnd - srcStart
-      const outLength = Math.floor(srcLength / contentSpeedMultiplier)
-      console.log("[v0] copySpeechSegment: srcLength:", srcLength, "outLength:", outLength, "multiplier:", contentSpeedMultiplier)
-      for (let j = 0; j < outLength && writeIndex < newData.length; j++) {
-        const srcPos = srcStart + j * contentSpeedMultiplier
-        newData[writeIndex++] = getMonoSampleInterp(srcPos)
+      const segment = new Float32Array(srcLength)
+      for (let j = 0; j < srcLength; j++) {
+        segment[j] = getMonoSample(srcStart + j)
+      }
+      // WSOLA: speed up in time without shifting pitch
+      const stretched = wsolaTimeStretch(segment, contentSpeedMultiplier, buffer.sampleRate)
+      for (let i = 0; i < stretched.length && writeIndex < newData.length; i++) {
+        newData[writeIndex++] = stretched[i]
       }
     }
   }
