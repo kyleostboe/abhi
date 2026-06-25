@@ -678,6 +678,8 @@ export default function Home() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const recordingPreviewRef = useRef<HTMLAudioElement | null>(null)
   const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const processedAudioSectionRef = useRef<HTMLDivElement | null>(null)
+  const encoderAudioSectionRef = useRef<HTMLDivElement | null>(null)
   const currentItemStartTimeRef = useRef<number>(0)
 
   const [multiNoteMode, setMultiNoteMode] = useState(false)
@@ -703,6 +705,20 @@ export default function Home() {
       processedQualityWarningShownRef.current = false
     }
   }, [processedQualityWarning, processedAudioMetadata, toast])
+
+  // Scroll to processed audio when processing completes
+  useEffect(() => {
+    if (isProcessingComplete && processedAudioSectionRef.current) {
+      processedAudioSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }, [isProcessingComplete])
+
+  // Scroll to encoder audio when generation completes
+  useEffect(() => {
+    if (generatedAudioUrl && encoderAudioSectionRef.current) {
+      encoderAudioSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }, [generatedAudioUrl])
 
   useEffect(() => {
     if (generatedQualityWarning && generatedAudioMetadata && !generatedQualityWarningShownRef.current) {
@@ -3542,6 +3558,7 @@ export default function Home() {
 
                   {isProcessingComplete && processedUrl && (
                     <motion.div
+                      ref={processedAudioSectionRef}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
@@ -3943,6 +3960,7 @@ export default function Home() {
 
                   {generatedAudioUrl && (
                     <motion.div
+                      ref={encoderAudioSectionRef}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.7 }}
