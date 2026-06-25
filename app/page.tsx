@@ -2147,7 +2147,13 @@ export default function Home() {
 
     try {
       setStatus({ message: "Processing audio...", type: "info" })
-      const targetDurationSeconds = targetDuration * 60
+      // If slider is at its minimum position, use the exact trueMinSeconds rather than
+      // the whole-minute floor, so the output matches the displayed minimum precisely
+      const rawTargetSeconds = targetDuration * 60
+      const targetDurationSeconds =
+        durationLimits && targetDuration <= durationLimits.min
+          ? durationLimits.trueMinSeconds
+          : rawTargetSeconds
       
       // For very long target durations (>90 min), resample to lower sample rate to reduce memory
       // Use 22050Hz which maintains good audio quality while reducing memory requirements
@@ -2348,7 +2354,7 @@ export default function Home() {
         const trueMinSeconds = effectiveContentDuration + simulatedSilenceDuration
         const maxPossibleDuration = 120 * 60
         const nextLimits = {
-          min: Math.max(1, Math.ceil(trueMinSeconds / 60)), // whole minutes for slider
+          min: Math.max(1, Math.floor(trueMinSeconds / 60)), // floor so slider min is reachable
           max: maxPossibleDuration / 60,
           trueMinSeconds: Math.max(1, Math.ceil(trueMinSeconds)), // exact seconds for display
         }
