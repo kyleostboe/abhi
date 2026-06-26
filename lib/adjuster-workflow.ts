@@ -7,88 +7,89 @@ export type SilenceRegion = { start: number; end: number }
  * WSOLA (Waveform Similarity Overlap-Add) time-stretch.
  * Speeds up `input` by `tempo` (e.g. 1.25) without changing pitch.
  * Returns a new Float32Array containing the time-stretched audio.
+ *
+ * Algorithm:
+ *  - Divide input into overlapping frames spaced `step` samples apart (in INPUT time)
+ *  - For each frame, find the best-matching position within a seek window
+ *  - Overlap-add frames into output spaced `frameLen - overlapLen` apart (in OUTPUT time)
+ *  - Net effect: output plays faster by `tempo` with same pitch
  */
 function wsolaTimeStretch(input: Float32Array, tempo: number, sampleRate: number): Float32Array {
   if (Math.abs(tempo - 1.0) < 0.001) return input.slice()
 
-  // WSOLA parameters (tuned for speech)
-  const overlapMs = 12      // crossfade window in ms
-  const sequenceMs = 82     // processing sequence in ms
-  const seekWindowMs = 28   // seek window in ms
+  // Parameters tuned for speech clarity
+  const overlapMs   = 12   // ms — crossfade length between consecutive frames
+  const frameMs     = 40   // ms — total frame length (overlap + body)
+  const seekMs      = 14   // ms — half-width of seek window for best-match
 
-  const overlapLen = Math.floor(sampleRate * overlapMs / 1000)
-  const sequenceLen = Math.floor(sampleRate * sequenceMs / 1000)
-  const seekLen = Math.floor(sampleRate * seekWindowMs / 1000)
+  const overlapLen  = Math.round(sampleRate * overlapMs  / 1000)
+  const frameLen    = Math.round(sampleRate * frameMs    / 1000)
+  const seekHalf    = Math.round(sampleRate * seekMs     / 1000)
 
-  const outputLen = Math.floor(input.length / tempo)
-  const output = new Float32Array(outputLen)
+  // In output time, each frame advances by (frameLen - overlapLen) samples
+  const outputStep  = frameLen - overlapLen
+  // In input time, each frame advances by outputStep * tempo
+  const inputStep   = outputStep * tempo
 
-  let inputPos = 0
-  let outputPos = 0
+  const outputLen   = Math.max(1, Math.floor(input.length / tempo))
+  const output      = new Float32Array(outputLen)
+  // Track how much each output sample has been accumulated (for proper OLA normalisation)
+  const weight      = new Float32Array(outputLen)
 
-  // Hann window for smooth overlap-add crossfading
-  const window = new Float32Array(overlapLen)
-  for (let i = 0; i < overlapLen; i++) {
-    window[i] = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (overlapLen - 1)))
+  // Raised-cosine (Hann) window — guarantees unity gain across overlap-add
+  const hannWin = new Float32Array(frameLen)
+  for (let i = 0; i < frameLen; i++) {
+    hannWin[i] = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (frameLen - 1)))
   }
 
-  // Find best overlap position using cross-correlation within seek window
-  const findBestOverlapOffset = (refPos: number, seekStart: number): number => {
-    let bestCorr = -Infinity
-    let bestOffset = 0
-    const end = Math.min(seekLen, input.length - seekStart - overlapLen)
-    for (let i = 0; i < end; i++) {
-      let corr = 0
-      for (let j = 0; j < overlapLen; j++) {
-        corr += input[refPos + j] * input[seekStart + i + j]
+  // Cross-correlate a window of `overlapLen` samples from `refPos` in output
+  // against candidates near `nominalPos` in input to find best splice point
+  const findBestPos = (nominalPos: number, refPos: number): number => {
+    let bestScore = -Infinity
+    let bestPos   = nominalPos
+    const lo = Math.max(0,                          nominalPos - seekHalf)
+    const hi = Math.min(input.length - frameLen,    nominalPos + seekHalf)
+    for (let p = lo; p <= hi; p++) {
+      let score = 0
+      for (let k = 0; k < overlapLen; k++) {
+        // Compare the tail of what we've already written (output[refPos+k] / weight)
+        // against the start of the candidate frame in input
+        const outSample = weight[refPos + k] > 0 ? output[refPos + k] / weight[refPos + k] : 0
+        score += outSample * input[p + k]
       }
-      if (corr > bestCorr) {
-        bestCorr = corr
-        bestOffset = i
-      }
+      if (score > bestScore) { bestScore = score; bestPos = p }
     }
-    return bestOffset
+    return bestPos
   }
 
-  while (outputPos + sequenceLen < outputLen) {
-    // Overlap-add the current overlap region
-    const seekStart = Math.floor(inputPos + sequenceLen - seekLen / 2)
-    const safeSeekStart = Math.max(0, Math.min(seekStart, input.length - seekLen - overlapLen))
-    const offset = findBestOverlapOffset(Math.floor(inputPos), safeSeekStart)
-    const overlapSrc = safeSeekStart + offset
+  let inputPos  = 0   // current nominal read position in input (float)
+  let outputPos = 0   // current write position in output
 
-    // Write overlap-add region (crossfade between tail of previous block and start of new block)
-    const overlapWritePos = outputPos + sequenceLen - overlapLen
-    for (let i = 0; i < overlapLen && overlapWritePos + i < outputLen; i++) {
-      const fade = window[i]
-      const existing = output[overlapWritePos + i]
-      const incoming = input[overlapSrc + i]
-      output[overlapWritePos + i] = existing * (1 - fade) + incoming * fade
+  while (outputPos < outputLen) {
+    const nom    = Math.round(inputPos)
+    const refOut = Math.max(0, outputPos - overlapLen)
+
+    // Find best-matching frame start near `nom`
+    const srcPos = (nom + seekHalf < input.length - frameLen)
+      ? findBestPos(nom, refOut)
+      : Math.min(nom, input.length - frameLen)
+
+    // Overlap-add this frame into output with Hann window
+    for (let k = 0; k < frameLen && outputPos - overlapLen + k < outputLen; k++) {
+      const outIdx = outputPos - overlapLen + k
+      if (outIdx < 0) continue
+      const w = hannWin[k]
+      output[outIdx] += input[srcPos + k] * w
+      weight[outIdx] += w
     }
 
-    // Write non-overlap body of new block
-    const bodyStart = overlapWritePos + overlapLen
-    const bodyLen = Math.min(sequenceLen - overlapLen, outputLen - bodyStart)
-    for (let i = 0; i < bodyLen; i++) {
-      const srcIdx = overlapSrc + overlapLen + i
-      if (srcIdx < input.length) {
-        output[bodyStart + i] = input[srcIdx]
-      }
-    }
-
-    // Advance input position by tempo * sequence length (this is the time-stretch)
-    inputPos += tempo * sequenceLen
-    outputPos += sequenceLen
+    inputPos  += inputStep
+    outputPos += outputStep
   }
 
-  // Copy any remaining samples
-  if (outputPos < outputLen) {
-    const remaining = outputLen - outputPos
-    const srcStart = Math.floor(inputPos)
-    for (let i = 0; i < remaining; i++) {
-      const srcIdx = srcStart + i
-      output[outputPos + i] = srcIdx < input.length ? input[srcIdx] : 0
-    }
+  // Normalise: divide by accumulated Hann weights to get unity gain
+  for (let i = 0; i < outputLen; i++) {
+    if (weight[i] > 1e-6) output[i] /= weight[i]
   }
 
   return output
