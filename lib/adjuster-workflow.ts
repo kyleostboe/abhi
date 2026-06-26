@@ -377,57 +377,46 @@ export async function rebuildAudioWithScaledPauses({
 
   onProgress(10)
 
-  // Process single mono output channel
-  const newData = newBuffer.getChannelData(0)
-  let writeIndex = 0
-  let readIndex = 0
-
-  // Get mixed-down mono from all input channels with linear interpolation for fractional positions
+  // Mix down to mono once up front
   const channelData = Array.from({ length: buffer.numberOfChannels }, (_, c) => buffer.getChannelData(c))
   const totalSamples = Math.floor(buffer.duration * buffer.sampleRate)
 
-  const getMonoSample = (sampleIndex: number): number => {
-    const idx = Math.min(Math.floor(sampleIndex), totalSamples - 1)
+  const monoSource = new Float32Array(totalSamples)
+  for (let i = 0; i < totalSamples; i++) {
     let sum = 0
-    for (let c = 0; c < channelData.length; c++) sum += channelData[c][idx]
-    return sum / channelData.length
+    for (let c = 0; c < channelData.length; c++) sum += channelData[c][i]
+    monoSource[i] = sum / channelData.length
   }
 
-  // Linear interpolation for speed-up: reads fractional sample positions
-  const getMonoSampleInterp = (pos: number): number => {
-    const idx = Math.floor(pos)
-    const frac = pos - idx
-    if (frac === 0 || idx >= totalSamples - 1) return getMonoSample(idx)
-    let s0 = 0, s1 = 0
-    for (let c = 0; c < channelData.length; c++) {
-      s0 += channelData[c][Math.min(idx, totalSamples - 1)]
-      s1 += channelData[c][Math.min(idx + 1, totalSamples - 1)]
-    }
-    return (s0 + (s1 - s0) * frac) / channelData.length
-  }
+  // If speed > 1x, WSOLA-stretch the entire buffer once so state is continuous
+  // (no per-segment restarts that cause clicks/static at boundaries).
+  // Speech segments will be read from stretchedSource; silences are written as zeros directly.
+  const needsStretch = Math.abs(contentSpeedMultiplier - 1.0) > 0.001
+  const stretchedSource = needsStretch
+    ? wsolaTimeStretch(monoSource, contentSpeedMultiplier, buffer.sampleRate)
+    : monoSource
 
-  // Copy speech segment from srcStart to srcEnd into output.
-  // Uses WSOLA time-stretch when speed > 1x so pitch is preserved.
+  // Process single mono output channel
+  const newData = newBuffer.getChannelData(0)
+  let writeIndex = 0
+  let readIndex = 0  // tracks position in ORIGINAL buffer (samples)
+
+  // Copy speech segment from original buffer range [srcStart, srcEnd).
+  // Maps to the corresponding range in stretchedSource via the speed multiplier.
   const copySpeechSegment = (srcStart: number, srcEnd: number) => {
     if (srcEnd <= srcStart) return
     if (writeIndex >= newData.length) return
 
-    if (Math.abs(contentSpeedMultiplier - 1.0) < 0.001) {
-      // No speed change — direct copy
+    if (!needsStretch) {
       for (let j = srcStart; j < srcEnd && writeIndex < newData.length; j++) {
-        newData[writeIndex++] = getMonoSample(j)
+        newData[writeIndex++] = monoSource[j]
       }
     } else {
-      // Extract segment as mono Float32Array
-      const srcLength = srcEnd - srcStart
-      const segment = new Float32Array(srcLength)
-      for (let j = 0; j < srcLength; j++) {
-        segment[j] = getMonoSample(srcStart + j)
-      }
-      // WSOLA: speed up in time without shifting pitch
-      const stretched = wsolaTimeStretch(segment, contentSpeedMultiplier, buffer.sampleRate)
-      for (let i = 0; i < stretched.length && writeIndex < newData.length; i++) {
-        newData[writeIndex++] = stretched[i]
+      // Map original sample positions to stretched buffer positions
+      const stretchedStart = Math.floor(srcStart / contentSpeedMultiplier)
+      const stretchedEnd = Math.floor(srcEnd / contentSpeedMultiplier)
+      for (let j = stretchedStart; j < stretchedEnd && writeIndex < newData.length; j++) {
+        newData[writeIndex++] = j < stretchedSource.length ? stretchedSource[j] : 0
       }
     }
   }
