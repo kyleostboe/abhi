@@ -415,10 +415,12 @@ export function VisualTimeline({
                           left: getPositionFromTime(displayTime),
                           width: `${widthPercent}%`,
                           minWidth: "2.25rem",
+                          top: "50%",
                           transform: "translateY(-50%)",
                         }
                       : {
                           left: `calc(${getPositionFromTime(displayTime)} - 20px)`,
+                          top: "50%",
                           transform: "translateY(-50%)",
                         }
                   }
