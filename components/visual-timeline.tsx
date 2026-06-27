@@ -400,11 +400,11 @@ export function VisualTimeline({
               return (
                 <motion.div
                   key={event.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+                  initial={{ opacity: 0, y: "-50%" }}
+                  animate={{ opacity: 1, y: "-50%" }}
+                  exit={{ opacity: 0, y: "-50%" }}
                   className={cn(
-                    "absolute top-1/2 -translate-y-1/2 shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-white",
+                    "absolute shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-white",
                     isRecording ? "h-9 rounded-[9px]" : "rounded-full w-9 h-9",
                     draggedEvent === event.id ? "z-30 shadow-lg ring-2 ring-white/50" : "z-10",
                     getEventColor(event),
@@ -416,12 +416,10 @@ export function VisualTimeline({
                           width: `${widthPercent}%`,
                           minWidth: "2.25rem",
                           top: "50%",
-                          transform: "translateY(-50%)",
                         }
                       : {
                           left: `calc(${getPositionFromTime(displayTime)} - 20px)`,
                           top: "50%",
-                          transform: "translateY(-50%)",
                         }
                   }
                   onMouseDown={(e) => handleMouseDown(event.id, e, event)}
