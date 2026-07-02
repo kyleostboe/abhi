@@ -3599,7 +3599,7 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="flex flex-col gap-4"
+                  className="flex flex-col gap-6"
                 >
                   <motion.div
                     className="text-gray-600"
@@ -3643,7 +3643,7 @@ export default function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+                    className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-6"
                   >
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
