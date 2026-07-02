@@ -3831,41 +3831,23 @@ export default function Home() {
                       </Card>
                     </motion.div>
 
-                    <div>
-                      <RecorderSection
-                        className="hidden lg:block"
-                        inputId="recording-label-desktop"
-                        recordingLabel={recordingLabel}
-                        onRecordingLabelChange={handleRecordingLabelChange}
-                        isRecording={isRecording}
-                        startRecording={startRecording}
-                        stopRecording={stopRecording}
-                        readyToAddToTimelineRecording={readyToAddToTimelineRecording}
-                        timelineEvents={timelineEvents}
-                        addEventToTimeline={addEventToTimeline}
-                        setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
-                        setRecordedBlobs={setRecordedBlobs}
-                        setRecordingLabel={setRecordingLabel}
-                        recordingPreviewRef={recordingPreviewRef}
-                      />
-                    </div>
+                    <RecorderSection
+                      className=""
+                      inputId="recording-label"
+                      recordingLabel={recordingLabel}
+                      onRecordingLabelChange={handleRecordingLabelChange}
+                      isRecording={isRecording}
+                      startRecording={startRecording}
+                      stopRecording={stopRecording}
+                      readyToAddToTimelineRecording={readyToAddToTimelineRecording}
+                      timelineEvents={timelineEvents}
+                      addEventToTimeline={addEventToTimeline}
+                      setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
+                      setRecordedBlobs={setRecordedBlobs}
+                      setRecordingLabel={setRecordingLabel}
+                      recordingPreviewRef={recordingPreviewRef}
+                    />
                   </motion.div>
-                  <RecorderSection
-                    className="lg:hidden"
-                    inputId="recording-label-mobile"
-                    recordingLabel={recordingLabel}
-                    onRecordingLabelChange={handleRecordingLabelChange}
-                    isRecording={isRecording}
-                    startRecording={startRecording}
-                    stopRecording={stopRecording}
-                    readyToAddToTimelineRecording={readyToAddToTimelineRecording}
-                    timelineEvents={timelineEvents}
-                    addEventToTimeline={addEventToTimeline}
-                    setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
-                    setRecordedBlobs={setRecordedBlobs}
-                    setRecordingLabel={setRecordingLabel}
-                    recordingPreviewRef={recordingPreviewRef}
-                  />
                   {/* Timeline Editor for encoder */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
