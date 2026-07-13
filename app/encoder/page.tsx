@@ -673,8 +673,11 @@ export default function EncoderPage() {
     // Reset Tone.js to use the main context
     Tone.setContext(audioCtx)
 
+    // Unwrap ToneAudioBuffer → native AudioBuffer so our helpers accept it
+    const nativeBuffer = renderedBuffer.get() as AudioBuffer
+
     // Change 2: try Opus first (~32 kbps, WebCodecs worker); fall back to WAV
-    const opusResult = await encodeOpusViaWorker(renderedBuffer, { bitrate: 32000 })
+    const opusResult = await encodeOpusViaWorker(nativeBuffer, { bitrate: 32000 })
     if (opusResult) {
       setEncodedIsOpus(true)
       setEncodedAudioMetadata(null) // no WAV metadata for Opus output
@@ -683,7 +686,7 @@ export default function EncoderPage() {
 
     // Fallback: WAV
     setEncodedIsOpus(false)
-    const wavResult = await bufferToWav(renderedBuffer, {
+    const wavResult = await bufferToWav(nativeBuffer, {
       preferCompatibility: true,
       maxBytes: 48 * 1024 * 1024,
     })
