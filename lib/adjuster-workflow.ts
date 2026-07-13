@@ -1,4 +1,4 @@
-import { bufferToOpus, type AudioExportMetadata } from "@/lib/audio-utils"
+import { bufferToWav, type BufferToWavMetadata } from "@/lib/audio-utils"
 import { forceGarbageCollection, formatTime, sleep } from "@/lib/utils"
 
 export type SilenceRegion = { start: number; end: number }
@@ -486,7 +486,7 @@ interface AdjusterWorkflowCallbacks {
 export interface AdjusterWorkflowResult {
   processedBuffer: AudioBuffer
   wavBlob: Blob
-  wavMetadata: AudioExportMetadata
+  wavMetadata: BufferToWavMetadata
   pausesAdjusted: number
   silenceRegions: SilenceRegion[]
   totalSilenceDuration: number
@@ -572,17 +572,24 @@ export async function runAdjusterWorkflow({
   onStep("Creating audio file (step 4/4)...")
   onProgress(80)
 
-  const opusResult = await bufferToOpus(processedAudioBuffer, {
-    bitrate: 96000,
+  const wavResult = await bufferToWav(processedAudioBuffer, {
+    preferCompatibility: false,
+    maxBytes: 48 * 1024 * 1024,
+    isMobile: isMobileDevice,
     onProgress: (progress) => {
       const normalized = Math.max(0, Math.min(100, progress))
       onProgress(80 + Math.floor((normalized / 100) * 20))
     },
   })
-  const { blob: wavBlob, ...wavMetadata } = opusResult
+
+  if (wavResult.blob.size === 0) {
+    throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
+  }
 
   onProgress(100)
   onStep("Complete!")
+
+  const { blob: wavBlob, ...wavMetadata } = wavResult
 
   return {
     processedBuffer: processedAudioBuffer,

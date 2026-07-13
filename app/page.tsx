@@ -32,7 +32,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
 import { VisualTimeline } from "@/components/visual-timeline"
 import { cn, formatTime, monitorMemory, formatFileSize } from "@/lib/utils"
-import { getAudioContext, bufferToOpus, type AudioExportMetadata, type BufferToWavMetadata } from "@/lib/audio-utils" // Import from audio-utils
+import { getAudioContext, bufferToWav, bufferToWebM, type BufferToWavMetadata } from "@/lib/audio-utils" // Import from audio-utils
 import {
   runAdjusterWorkflow,
   detectSilenceRegions as computeSilenceRegions,
@@ -233,9 +233,9 @@ const deriveMeditationFileName = (meditation: any): string => {
 
   const derivedTitle = deriveMeditationTitle(meditation).trim() || "Imported Meditation"
   const lower = derivedTitle.toLowerCase()
-  const hasExtension = [".wav", ".mp3", ".m4a", ".ogg", ".opus"].some((ext) => lower.endsWith(ext))
+  const hasExtension = [".wav", ".mp3", ".m4a", ".ogg"].some((ext) => lower.endsWith(ext))
 
-  return hasExtension ? derivedTitle : `${derivedTitle}.opus`
+  return hasExtension ? derivedTitle : `${derivedTitle}.wav`
 }
 
 interface TimelineItem {
@@ -526,7 +526,7 @@ export default function Home() {
   const [displayedFileName, setDisplayedFileName] = useState<string | null>(null)
   const [originalBuffer, setOriginalBuffer] = useState<AudioBuffer | null>(null)
   const [processedBufferState, setProcessedBufferState] = useState<AudioBuffer | null>(null)
-  const [processedAudioMetadata, setProcessedAudioMetadata] = useState<AudioExportMetadata | BufferToWavMetadata | null>(null)
+  const [processedAudioMetadata, setProcessedAudioMetadata] = useState<BufferToWavMetadata | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null) // Still needed for Adjuster's specific context management
   const [targetDuration, setTargetDuration] = useState<number>(20)
   const [silenceThreshold, setSilenceThreshold] = useState<number>(0.025)
@@ -562,6 +562,8 @@ export default function Home() {
   const timelineUploadInputRef = useRef<HTMLInputElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const silenceAnalysisAbortRef = useRef<AbortController | null>(null)
+  const adjusterCompressionTokenRef = useRef(0)
+  const encoderCompressionTokenRef = useRef(0)
   const [processedDistributionBlob, setProcessedDistributionBlob] = useState<Blob | null>(null)
   const [generatedDistributionBlob, setGeneratedDistributionBlob] = useState<Blob | null>(null)
   const [loadedLibraryContext, setLoadedLibraryContext] = useState<{
@@ -665,7 +667,7 @@ export default function Home() {
   const [generationStep, setGenerationStep] = useState<string>("")
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
   const [generatedAudioFileSize, setGeneratedAudioFileSize] = useState<number>(0)
-  const [generatedAudioMetadata, setGeneratedAudioMetadata] = useState<AudioExportMetadata | BufferToWavMetadata | null>(null)
+  const [generatedAudioMetadata, setGeneratedAudioMetadata] = useState<BufferToWavMetadata | null>(null)
 
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
   const [currentTab, setCurrentTab] = useState<string>("instructions")
@@ -1131,31 +1133,62 @@ export default function Home() {
       console.log("Starting audio rendering...")
 
       const rendered = await ctx.startRendering()
-      console.log("Audio rendering complete, creating Ogg Opus file...")
+      console.log("Audio rendering complete, creating WAV blob...")
 
       if (rendered.length === 0) {
         throw new Error("Rendered audio buffer is empty. No audio content was generated.")
       }
 
-      setGenerationStep("Encoding Opus audio...")
+      setGenerationStep("Creating audio file...")
       setGenerationProgress(80)
 
-      const opusResult = await bufferToOpus(rendered, {
-        bitrate: 96000,
-        onProgress: (progress) => setGenerationProgress(80 + Math.floor((progress / 100) * 20)),
+      const wavResult = await bufferToWav(rendered, {
+        // Use maxSilenceDuration
+        maxSilenceDuration: maxSilenceDuration * 1000, // convert to ms
+        // preferCompatibility: compatibilityMode === "high", // REMOVED: compatibilityMode undeclared
+        maxBytes: 48 * 1024 * 1024, // 48MB limit (under 50MB)
+        onProgress: (p) => setGenerationProgress(80 + Math.floor((p / 100) * 20)),
+        isMobile: isMobileDevice,
       })
-      const { blob: opusBlob, ...metadata } = opusResult
-      const url = URL.createObjectURL(opusBlob)
+
+      if (wavResult.blob.size === 0) {
+        throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
+      }
+
+      const { blob: wavBlob, ...metadata } = wavResult
+      const url = URL.createObjectURL(wavBlob)
 
       setGeneratedAudioUrl(url)
-      setGeneratedDistributionBlob(opusBlob)
-      setGeneratedAudioFileSize(opusBlob.size)
+      setGeneratedDistributionBlob(wavBlob)
+      setGeneratedAudioFileSize(wavBlob.size)
       setGeneratedAudioMetadata(metadata)
       setGenerationProgress(100)
       setGenerationStep("Complete!")
 
-      console.log("Ogg Opus export completed successfully!")
-      toast({ title: "Export Complete", description: "Timeline audio exported as an Opus file." })
+      console.log("Audio export completed successfully!")
+      toast({ title: "Export Complete", description: "Timeline audio exported with sound cues included!" })
+
+      if (
+        typeof window !== "undefined" &&
+        typeof MediaRecorder !== "undefined" &&
+        MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+      ) {
+        const compressionToken = ++encoderCompressionTokenRef.current
+        void (async () => {
+          try {
+            await ensureTone()
+            const { blob } = await bufferToWebM(rendered, {})
+            if (encoderCompressionTokenRef.current === compressionToken) {
+              setGeneratedDistributionBlob(blob)
+              setGeneratedAudioFileSize(blob.size)
+            }
+          } catch (compressionError) {
+            if (encoderCompressionTokenRef.current === compressionToken) {
+              console.warn("[v0] Failed to prepare compressed encoder distribution:", compressionError)
+            }
+          }
+        })()
+      }
     } catch (error) {
       console.error("Audio export failed:", error)
       toast({
@@ -1661,7 +1694,7 @@ export default function Home() {
         const response = await fetch(importData.processedAudioUrl)
         const audioBlob = await response.blob()
         const reconstructedFileName = deriveMeditationFileName(importData)
-        const audioFile = new File([audioBlob], reconstructedFileName, { type: audioBlob.type || "audio/ogg; codecs=opus" })
+        const audioFile = new File([audioBlob], reconstructedFileName, { type: "audio/wav" })
 
         // Set the file for encoder
         setFile(audioFile)
@@ -1715,7 +1748,7 @@ export default function Home() {
           message: `Reconstructed "${importData.title}" with ${reconstructedEvents.length} timeline events.`,
           type: "success",
         })
-        setGeneratedAudioMetadata(importData.metadata?.audioExport ?? importData.metadata?.wav ?? null)
+        setGeneratedAudioMetadata(importData.metadata?.wav ?? null)
       } catch (error) {
         console.error("[v0] Error reconstructing encoder meditation:", error)
         setStatus({
@@ -1727,7 +1760,7 @@ export default function Home() {
         const response = await fetch(importData.processedAudioUrl)
         const audioBlob = await response.blob()
         const fallbackFileName = deriveMeditationFileName(importData)
-        const audioFile = new File([audioBlob], fallbackFileName, { type: audioBlob.type || "audio/ogg; codecs=opus" })
+        const audioFile = new File([audioBlob], fallbackFileName, { type: "audio/wav" })
         setFile(audioFile)
         setOriginalUrl(URL.createObjectURL(audioFile))
         setDisplayedFileName(fallbackFileName)
@@ -1756,7 +1789,7 @@ export default function Home() {
         const response = await fetch(importData.processedAudioUrl)
         const audioBlob = await response.blob()
         const recordedBlockFileName = deriveMeditationFileName(importData)
-        const audioFile = new File([audioBlob], recordedBlockFileName, { type: audioBlob.type || "audio/ogg; codecs=opus" })
+        const audioFile = new File([audioBlob], recordedBlockFileName, { type: "audio/wav" })
         const objectUrl = URL.createObjectURL(audioFile)
 
         setFile(audioFile)
@@ -1815,7 +1848,7 @@ export default function Home() {
         setEncoderTotalDuration(safeDuration)
         setEncoderTimelineOriginalDuration(safeDuration)
         lastEncoderDurationAdjustmentRef.current = safeDuration
-        setGeneratedAudioMetadata(importData.metadata?.audioExport ?? importData.metadata?.wav ?? null)
+        setGeneratedAudioMetadata(importData.metadata?.wav ?? null)
       } catch (error) {
         console.error("[v0] Error importing as recorded block:", error)
         setStatus({
@@ -1871,7 +1904,7 @@ export default function Home() {
           const response = await fetch(data.processedAudioUrl)
           const audioBlob = await response.blob()
           const importedFileName = deriveMeditationFileName(data)
-          const audioFile = new File([audioBlob], importedFileName, { type: audioBlob.type || "audio/ogg; codecs=opus" })
+          const audioFile = new File([audioBlob], importedFileName, { type: "audio/wav" })
 
           setFile(audioFile)
           setDisplayedFileName(importedFileName)
@@ -2201,6 +2234,27 @@ export default function Home() {
       setStatus({ message: "Audio processing completed successfully!", type: "success" })
       setIsProcessingComplete(true)
 
+      if (
+        typeof window !== "undefined" &&
+        typeof MediaRecorder !== "undefined" &&
+        MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+      ) {
+        const compressionToken = ++adjusterCompressionTokenRef.current
+        void (async () => {
+          try {
+            await ensureTone()
+            const { blob } = await bufferToWebM(result.processedBuffer, {})
+            if (adjusterCompressionTokenRef.current === compressionToken) {
+              setProcessedDistributionBlob(blob)
+              setProcessedFileSize(blob.size)
+            }
+          } catch (compressionError) {
+            if (adjusterCompressionTokenRef.current === compressionToken) {
+              console.warn("[v0] Failed to prepare compressed distribution:", compressionError)
+            }
+          }
+        })()
+      }
     } catch (error) {
       console.error("Error during audio processing:", error)
       const errorMsg = error instanceof Error ? error.message : String(error)
@@ -3175,7 +3229,7 @@ export default function Home() {
                         <div className="px-3.5 text-center tracking-tight">
                           <SaveMeditationDialog
                             audioUrl={originalUrl}
-                            processedAudioBlob={file ?? undefined}
+                            mp3Blob={file ?? undefined}
                             originalFileName={file?.name || "original-audio"}
                             duration={originalBuffer?.duration || 0}
                             source="adjuster"
@@ -3515,17 +3569,13 @@ export default function Home() {
                       <div className="px-3.5 text-center tracking-tight">
                         <SaveMeditationDialog
                           audioUrl={processedUrl}
-                          processedAudioBlob={processedDistributionBlob ?? undefined}
+                          mp3Blob={processedDistributionBlob ?? undefined}
                           originalFileName={file?.name || "meditation"}
                           duration={actualDuration || targetDuration * 60}
                           source="adjuster"
                           metadata={{
                             targetDuration,
                             pausesAdjusted,
-                            audioExport:
-                              processedAudioMetadata && "format" in processedAudioMetadata
-                                ? processedAudioMetadata
-                                : undefined,
                             wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
                             timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                           }}
@@ -3933,17 +3983,13 @@ export default function Home() {
                           </div>
                           <SaveMeditationDialog
                             audioUrl={generatedAudioUrl}
-                            processedAudioBlob={generatedDistributionBlob ?? undefined}
+                            mp3Blob={generatedDistributionBlob ?? undefined}
                             originalFileName={meditationTitle || "meditation"}
                             duration={encoderTotalDuration}
                             source="encoder"
                             metadata={{
                               instructionCount: timelineEvents.length,
                               meditationTitle,
-                              audioExport:
-                                generatedAudioMetadata && "format" in generatedAudioMetadata
-                                  ? generatedAudioMetadata
-                                  : undefined,
                               wav: generatedAudioMetadata ? { ...generatedAudioMetadata } : undefined,
                               timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                             }}

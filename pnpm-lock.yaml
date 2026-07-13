@@ -137,9 +137,6 @@ importers:
       lamejs:
         specifier: ^1.2.1
         version: 1.2.1
-      libopus-wasm:
-        specifier: ^0.2.0
-        version: 0.2.0
       lucide-react:
         specifier: ^0.454.0
         version: 0.454.0(react@19.2.4)
@@ -1513,10 +1510,6 @@ packages:
 
   lamejs@1.2.1:
     resolution: {integrity: sha512-s7bxvjvYthw6oPLCm5pFxvA84wUROODB8jEO2+CE1adhKgrIvVOlmMgY8zyugxGrvRaDHNJanOiS21/emty6dQ==}
-
-  libopus-wasm@0.2.0:
-    resolution: {integrity: sha512-x/2Gu1/C6L3IICY09zyfp984AWiOYjn53u4WfdY3yh+3KTzMN8Xkm77q3lenWMVIk5SnSzjGEkQT+VQMFHLBHQ==}
-    engines: {node: '>=20'}
 
   lie@3.3.0:
     resolution: {integrity: sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ==}
@@ -3106,8 +3099,6 @@ snapshots:
   lamejs@1.2.1:
     dependencies:
       use-strict: 1.0.1
-
-  libopus-wasm@0.2.0: {}
 
   lie@3.3.0:
     dependencies:

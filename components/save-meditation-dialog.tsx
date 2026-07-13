@@ -10,14 +10,14 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
-import { bufferToOpus } from "@/lib/audio-utils"
+import { bufferToMp3 } from "@/lib/audio-utils"
 import { BookmarkPlus, Plus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
 
 interface SaveMeditationDialogProps {
   audioUrl: string
-  processedAudioBlob?: Blob | null // Optional pre-generated distribution blob (normally Ogg Opus)
+  mp3Blob?: Blob | null // Optional pre-generated distribution blob (e.g., WebM/MP3)
   originalFileName: string
   duration: number
   source: "adjuster" | "encoder"
@@ -59,7 +59,7 @@ const formatClockDuration = (seconds: number) => {
 
 export function SaveMeditationDialog({
   audioUrl,
-  processedAudioBlob, // Accept pre-created Ogg Opus audio
+  mp3Blob, // Accept pre-created MP3
   originalFileName,
   duration,
   source,
@@ -176,11 +176,11 @@ export function SaveMeditationDialog({
     try {
       let distributionBlob: Blob
 
-      if (processedAudioBlob) {
+      if (mp3Blob) {
         console.log("[v0] Using pre-generated audio blob")
-        distributionBlob = processedAudioBlob
+        distributionBlob = mp3Blob
       } else {
-        console.log("[v0] No pre-created processed audio blob, encoding Opus now...")
+        console.log("[v0] No pre-created MP3, encoding now...")
         const response = await fetch(audioUrl)
         const audioBlob = await response.blob()
 
@@ -190,13 +190,16 @@ export function SaveMeditationDialog({
           const arrayBuffer = await audioBlob.arrayBuffer()
           const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer)
 
-          const opusResult = await bufferToOpus(decodedBuffer, {
-            bitrate: 96000,
+          const mp3Result = await bufferToMp3(decodedBuffer, {
+            bitrate: 96,
+            onProgress: (progress) => {
+              // Progress tracking without console spam
+            },
             signal: abortControllerRef.current.signal,
           })
-          distributionBlob = opusResult.blob
+          distributionBlob = mp3Result.blob
 
-          console.log("[v0] Opus encoding complete")
+          console.log("[v0] MP3 encoding complete")
         } finally {
           if (audioContext) {
             try {
