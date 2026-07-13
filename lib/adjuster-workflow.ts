@@ -1,5 +1,11 @@
 import { bufferToWav, type BufferToWavMetadata } from "@/lib/audio-utils"
-import opusEncode from "@audio/encode-opus"
+
+// Pre-setup Module for opusscript WASM loading
+const setupOpusscriptModule = async (wasmBuffer: ArrayBuffer) => {
+  const globalModule = (globalThis as any).Module || {}
+  globalModule.wasmBinary = new Uint8Array(wasmBuffer)
+  ;(globalThis as any).Module = globalModule
+}
 import { forceGarbageCollection, formatTime, sleep } from "@/lib/utils"
 
 export type SilenceRegion = { start: number; end: number }
@@ -590,6 +596,14 @@ export async function runAdjusterWorkflow({
     const wasmArrayBuffer = await wasmResponse.arrayBuffer()
     console.log("[OPUS] WASM fetched successfully, size:", wasmArrayBuffer.byteLength, "bytes")
 
+    // Pre-populate Module.wasmBinary before opusscript import to avoid sync fetch
+    await setupOpusscriptModule(wasmArrayBuffer)
+    console.log("[OPUS] Module.wasmBinary pre-loaded, importing @audio/encode-opus...")
+
+    // Import @audio/encode-opus (which will import opusscript and find WASM in Module.wasmBinary)
+    const opusEncode = (await import('@audio/encode-opus')).default
+    console.log("[OPUS] @audio/encode-opus imported successfully")
+
     // Mix down to mono Float32Array
     const totalSamples = processedAudioBuffer.length
     const mono = new Float32Array(totalSamples)
@@ -603,17 +617,15 @@ export async function runAdjusterWorkflow({
 
     onProgress(85)
 
-    console.log("[OPUS] Mono mix-down complete, initialising encoder with WASM...")
+    console.log("[OPUS] Mono mix-down complete, initialising encoder...")
 
-    // Initialise encoder with preloaded WASM binary
+    // Initialise encoder with WASM already preloaded
     const encoder = await opusEncode({
       sampleRate: processedAudioBuffer.sampleRate,
       channels: 1,
       bitrate: 32,
       application: "voip",
-      // Pass WASM bytes directly to avoid sync fetch
-      wasmBinary: new Uint8Array(wasmArrayBuffer),
-    } as any)
+    })
 
     console.log("[OPUS] Encoder ready, encoding in 5-second chunks...")
 
@@ -631,7 +643,6 @@ export async function runAdjusterWorkflow({
       const pct = 85 + Math.round(((offset - 0) / totalSamples) * 12)
       onProgress(pct)
 
-      // Yield to event loop between chunks
       await sleep(0)
     }
 
@@ -652,7 +663,7 @@ export async function runAdjusterWorkflow({
 
     wavBlob = opusBlob
     wavMetadata = {
-      sampleRate: processedAudioBuffer.sampleRate,
+      sampleRate: 48000,
       bitDepth: 16,
       channels: 1,
     }
