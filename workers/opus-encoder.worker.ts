@@ -1,6 +1,5 @@
 /// <reference lib="webworker" />
 
-import { Application, Signal, createEncoder } from "../vendor/libopus-wasm/index.js"
 import { muxOggOpus } from "@/lib/ogg-opus-muxer"
 
 type EncodeRequest = {
@@ -20,10 +19,13 @@ const worker = self as DedicatedWorkerGlobalScope
 
 worker.onmessage = async (event: MessageEvent<EncodeRequest>) => {
   const { id, pcm, sampleRate, sourceSampleRate, bitrate } = event.data
-  let encoder: Awaited<ReturnType<typeof createEncoder>> | null = null
+  let encoder: any = null
 
   try {
     if (sampleRate !== 48000) throw new Error(`Opus worker requires 48 kHz PCM; received ${sampleRate} Hz`)
+
+    // Lazy-load opusscript dynamically to avoid webpack trying to resolve node:module at build time
+    const { Application, Signal, createEncoder } = await import("../vendor/libopus-wasm/index.js")
 
     const samples = new Float32Array(pcm)
     encoder = await createEncoder({
