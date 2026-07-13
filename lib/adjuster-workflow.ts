@@ -39,19 +39,21 @@ export async function detectSilenceRegionsVAD(
     signal,
   } = options
 
-  // Build mono PCM from the AudioBuffer (mix down all channels)
-  const totalSamples = buffer.length
-  const mono = new Float32Array(totalSamples)
-  for (let c = 0; c < buffer.numberOfChannels; c++) {
+  // Build mono PCM from the AudioBuffer (mix down all channels into a single
+  // transferable ArrayBuffer — one allocation, then transferred to the worker
+  // with zero-copy so the main thread heap is freed immediately).
+  const totalSamples   = buffer.length
+  const numCh          = buffer.numberOfChannels
+  const mono           = new Float32Array(totalSamples)
+  const ch0            = buffer.getChannelData(0)
+  for (let i = 0; i < totalSamples; i++) mono[i] = ch0[i]
+  for (let c = 1; c < numCh; c++) {
     const ch = buffer.getChannelData(c)
-    for (let i = 0; i < totalSamples; i++) {
-      mono[i] += ch[i]
-    }
+    for (let i = 0; i < totalSamples; i++) mono[i] += ch[i]
   }
-  if (buffer.numberOfChannels > 1) {
-    for (let i = 0; i < totalSamples; i++) {
-      mono[i] /= buffer.numberOfChannels
-    }
+  if (numCh > 1) {
+    const inv = 1 / numCh
+    for (let i = 0; i < totalSamples; i++) mono[i] *= inv
   }
 
   return new Promise<SilenceRegion[]>((resolve, reject) => {
@@ -84,18 +86,17 @@ export async function detectSilenceRegionsVAD(
       reject(new Error(`VAD worker error: ${err.message}`))
     }
 
-    // Transfer the mono PCM buffer to avoid copying
-    const transferBuffer = mono.buffer.slice(0) as ArrayBuffer
+    // Transfer ownership of the buffer to the worker (zero-copy)
     worker.postMessage(
       {
         type: "RUN_VAD",
-        pcm: new Float32Array(transferBuffer),
+        pcm: mono,
         sampleRate: buffer.sampleRate,
         positiveSpeechThreshold,
-        negativeSpeechThreshold: Math.max(0, positiveSpeechThreshold - 0.15),
+        negativeSpeechThreshold: Math.max(0.05, positiveSpeechThreshold - 0.15),
         minSilenceMs: minSilenceDuration * 1000,
       },
-      [transferBuffer],
+      [mono.buffer],
     )
   })
 }
@@ -110,19 +111,19 @@ export async function computeOtsuThreshold(buffer: AudioBuffer): Promise<number>
     return 0.025
   }
 
-  // Build mono PCM
-  const totalSamples = buffer.length
-  const mono = new Float32Array(totalSamples)
-  for (let c = 0; c < buffer.numberOfChannels; c++) {
+  // Build mono PCM (single allocation, transferred to worker)
+  const totalSamples   = buffer.length
+  const numCh          = buffer.numberOfChannels
+  const mono           = new Float32Array(totalSamples)
+  const ch0            = buffer.getChannelData(0)
+  for (let i = 0; i < totalSamples; i++) mono[i] = ch0[i]
+  for (let c = 1; c < numCh; c++) {
     const ch = buffer.getChannelData(c)
-    for (let i = 0; i < totalSamples; i++) {
-      mono[i] += ch[i]
-    }
+    for (let i = 0; i < totalSamples; i++) mono[i] += ch[i]
   }
-  if (buffer.numberOfChannels > 1) {
-    for (let i = 0; i < totalSamples; i++) {
-      mono[i] /= buffer.numberOfChannels
-    }
+  if (numCh > 1) {
+    const inv = 1 / numCh
+    for (let i = 0; i < totalSamples; i++) mono[i] *= inv
   }
 
   return new Promise<number>((resolve) => {
@@ -143,14 +144,13 @@ export async function computeOtsuThreshold(buffer: AudioBuffer): Promise<number>
       resolve(0.025)
     }
 
-    const transferBuffer = mono.buffer.slice(0) as ArrayBuffer
     worker.postMessage(
       {
         type: "COMPUTE_OTSU",
-        pcm: new Float32Array(transferBuffer),
+        pcm: mono,
         sampleRate: buffer.sampleRate,
       },
-      [transferBuffer],
+      [mono.buffer],
     )
   })
 }

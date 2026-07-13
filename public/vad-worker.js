@@ -6,7 +6,7 @@
  * Messages FROM main thread:
  *   { type: 'RUN_VAD',  pcm: Float32Array, sampleRate: number,
  *                        positiveSpeechThreshold: 0.5, negativeSpeechThreshold: 0.35,
- *                        minSilenceMs: 500 }
+ *                        minSilenceMs: 1000 }   ← in MILLISECONDS
  *   { type: 'COMPUTE_OTSU', pcm: Float32Array, sampleRate: number }
  *
  * Messages TO main thread:
@@ -43,7 +43,6 @@ function resampleMono(pcm, fromSR, toSR) {
 // Run Silero VAD via ORT InferenceSession
 // ---------------------------------------------------------------------------
 async function runVAD(pcm16k, positiveSpeechThreshold, negativeSpeechThreshold, minSilenceMs) {
-  // ort is available on self after importScripts
   const ort = self.ort
   if (!ort) throw new Error('onnxruntime-web not loaded')
 
@@ -55,8 +54,10 @@ async function runVAD(pcm16k, positiveSpeechThreshold, negativeSpeechThreshold, 
 
   postMessage({ type: 'PROGRESS', progress: 8 })
 
+  // Enable SIMD + single thread (threads require SharedArrayBuffer / COOP headers)
   const session = await ort.InferenceSession.create(modelBuffer, {
     executionProviders: ['wasm'],
+    executionMode:      'sequential',
   })
 
   postMessage({ type: 'PROGRESS', progress: 12 })
@@ -72,7 +73,7 @@ async function runVAD(pcm16k, positiveSpeechThreshold, negativeSpeechThreshold, 
     const frame = pcm16k.subarray(frameIdx * FRAME_SAMPLES, (frameIdx + 1) * FRAME_SAMPLES)
 
     const feeds = {
-      input: new ort.Tensor('float32', frame, [1, FRAME_SAMPLES]),
+      input: new ort.Tensor('float32', new Float32Array(frame), [1, FRAME_SAMPLES]),
       sr:    new ort.Tensor('int64',   BigInt64Array.from([BigInt(TARGET_SR)]), []),
       h:     new ort.Tensor('float32', new Float32Array(h), [2, 1, 64]),
       c:     new ort.Tensor('float32', new Float32Array(c), [2, 1, 64]),
@@ -86,7 +87,6 @@ async function runVAD(pcm16k, positiveSpeechThreshold, negativeSpeechThreshold, 
     if (frameIdx % 200 === 0) {
       const pct = 12 + Math.floor((frameIdx / TOTAL_FRAMES) * 78)
       postMessage({ type: 'PROGRESS', progress: pct })
-      // yield to the event loop to avoid watchdog timeouts
       await new Promise(resolve => setTimeout(resolve, 0))
     }
   }
@@ -94,86 +94,115 @@ async function runVAD(pcm16k, positiveSpeechThreshold, negativeSpeechThreshold, 
   postMessage({ type: 'PROGRESS', progress: 90 })
 
   // -------------------------------------------------------------------------
-  // Probability sequence → pause regions
+  // Probability sequence → pause regions using Silero's proper state machine
+  //
+  // Rules:
+  //   - Enter SPEECH when prob >= positiveSpeechThreshold
+  //   - Stay in SPEECH even if prob < negativeSpeechThreshold (hysteresis buffer)
+  //   - Leave SPEECH only after gap of >= minSilenceFrames frames all below
+  //     negativeSpeechThreshold
   // -------------------------------------------------------------------------
-  const frameDurationSec = FRAME_SAMPLES / TARGET_SR
-  const frameDurationMs  = frameDurationSec * 1000
-  const minSilenceFrames = Math.ceil(minSilenceMs / frameDurationMs)
+  const frameDurationSec = FRAME_SAMPLES / TARGET_SR  // ≈ 0.032 s per frame
+  const minSilenceFrames = Math.max(1, Math.round((minSilenceMs / 1000) / frameDurationSec))
 
-  const isSpeech = new Uint8Array(TOTAL_FRAMES)
-  for (let i = 0; i < TOTAL_FRAMES; i++) {
-    isSpeech[i] = probs[i] >= positiveSpeechThreshold ? 1 : 0
-  }
+  console.log(
+    '[vad-worker] posThresh:', positiveSpeechThreshold,
+    'negThresh:', negativeSpeechThreshold,
+    'minSilenceMs:', minSilenceMs,
+    'minSilenceFrames:', minSilenceFrames,
+    'totalFrames:', TOTAL_FRAMES,
+    'frameDurSec:', frameDurationSec.toFixed(4),
+  )
 
-  // Collect speech segments with hysteresis: only end a segment when the gap
-  // is at least minSilenceFrames long
+  // Collect speech segments
   const speechSegments = []
-  let inSpeech = false
-  let segStart = 0
+  let inSpeech      = false
+  let segStart      = 0
+  let silenceCount  = 0  // consecutive sub-negative frames while still in speech
 
-  for (let i = 0; i <= TOTAL_FRAMES; i++) {
-    const speaking = i < TOTAL_FRAMES && isSpeech[i] === 1
+  for (let i = 0; i < TOTAL_FRAMES; i++) {
+    const prob = probs[i]
 
-    if (!inSpeech && speaking) {
-      inSpeech = true
-      segStart = i
-    } else if (inSpeech && !speaking) {
-      // Measure gap length
-      let gapLen = 0
-      let j = i
-      while (j < TOTAL_FRAMES && isSpeech[j] === 0) { gapLen++; j++ }
-
-      if (gapLen >= minSilenceFrames || j === TOTAL_FRAMES) {
-        speechSegments.push({
-          start: segStart * frameDurationSec,
-          end:   i       * frameDurationSec,
-        })
-        inSpeech = false
+    if (!inSpeech) {
+      if (prob >= positiveSpeechThreshold) {
+        inSpeech     = true
+        segStart     = i
+        silenceCount = 0
+      }
+    } else {
+      // In speech: count consecutive low-probability frames
+      if (prob < negativeSpeechThreshold) {
+        silenceCount++
+        if (silenceCount >= minSilenceFrames) {
+          // End the speech segment at the point where silence started
+          const segEnd = i - silenceCount + 1
+          speechSegments.push({
+            start: segStart * frameDurationSec,
+            end:   segEnd   * frameDurationSec,
+          })
+          inSpeech     = false
+          silenceCount = 0
+        }
+      } else {
+        silenceCount = 0  // reset on any frame above negativeSpeechThreshold
       }
     }
   }
 
-  // Pause regions = complement of speech
-  const totalDuration = pcm16k.length / TARGET_SR
-  const pauseRegions  = []
+  // Close any open segment at end of file
+  if (inSpeech) {
+    speechSegments.push({
+      start: segStart     * frameDurationSec,
+      end:   TOTAL_FRAMES * frameDurationSec,
+    })
+  }
+
+  console.log('[vad-worker] speech segments:', speechSegments.length)
+
+  // -------------------------------------------------------------------------
+  // Pause regions = complement of speech segments
+  // Only include pauses >= minSilenceMs / 1000 seconds
+  // Apply a small inward buffer (matching detectSilenceRegions contract)
+  // -------------------------------------------------------------------------
+  const minPauseSec  = minSilenceMs / 1000
+  const totalDur     = pcm16k.length / TARGET_SR
+  const BUFFER_SEC   = 0.15  // inward edge buffer
+
+  const rawPauses = []
 
   if (speechSegments.length === 0) {
-    pauseRegions.push({ start: 0, end: totalDuration })
+    // Entire file is silence
+    rawPauses.push({ start: 0, end: totalDur })
   } else {
-    if (speechSegments[0].start > 0.5) {
-      pauseRegions.push({ start: 0, end: speechSegments[0].start })
+    // Gap before first speech
+    if (speechSegments[0].start > minPauseSec) {
+      rawPauses.push({ start: 0, end: speechSegments[0].start })
     }
+    // Gaps between speech segments
     for (let i = 0; i < speechSegments.length - 1; i++) {
       const gapStart = speechSegments[i].end
       const gapEnd   = speechSegments[i + 1].start
-      if (gapEnd - gapStart >= minSilenceMs / 1000) {
-        pauseRegions.push({ start: gapStart, end: gapEnd })
+      if (gapEnd - gapStart >= minPauseSec) {
+        rawPauses.push({ start: gapStart, end: gapEnd })
       }
     }
+    // Gap after last speech
     const lastEnd = speechSegments[speechSegments.length - 1].end
-    if (totalDuration - lastEnd > 0.5) {
-      pauseRegions.push({ start: lastEnd, end: totalDuration })
+    if (totalDur - lastEnd >= minPauseSec) {
+      rawPauses.push({ start: lastEnd, end: totalDur })
     }
   }
 
-  // Apply 0.3 s inward buffer (same contract as detectSilenceRegions)
-  const BUFFER   = 0.3
-  const minPause = minSilenceMs / 1000
+  // Apply inward buffer and filter too-short results
   const buffered = []
-
-  for (const r of pauseRegions) {
-    const bs = r.start + BUFFER
-    const be = r.end   - BUFFER
-    if (be - bs < minPause) continue
-    if (buffered.length > 0) {
-      const prev     = buffered[buffered.length - 1]
-      const adjStart = Math.max(bs, prev.end + BUFFER)
-      if (be > adjStart) buffered.push({ start: adjStart, end: be })
-    } else {
-      buffered.push({ start: bs, end: be })
-    }
+  for (const r of rawPauses) {
+    const bs = r.start + BUFFER_SEC
+    const be = r.end   - BUFFER_SEC
+    if (be - bs < minPauseSec * 0.5) continue  // after buffering, still too short
+    buffered.push({ start: parseFloat(bs.toFixed(4)), end: parseFloat(be.toFixed(4)) })
   }
 
+  console.log('[vad-worker] pause regions after buffer:', buffered.length)
   postMessage({ type: 'PROGRESS', progress: 100 })
   return buffered
 }
@@ -182,7 +211,7 @@ async function runVAD(pcm16k, positiveSpeechThreshold, negativeSpeechThreshold, 
 // Otsu on RMS histogram – lightweight auto-suggest for manual threshold mode
 // ---------------------------------------------------------------------------
 function computeOtsu(pcm, sampleRate) {
-  const WINDOW = Math.max(1, Math.floor(sampleRate * 0.01)) // 10 ms
+  const WINDOW = Math.max(1, Math.floor(sampleRate * 0.01)) // 10 ms windows
   const BINS   = 256
 
   const rmsValues = []
@@ -227,19 +256,20 @@ function computeOtsu(pcm, sampleRate) {
 }
 
 // ---------------------------------------------------------------------------
-// Bootstrap
+// Bootstrap – load ORT via importScripts and configure SIMD wasm paths
 // ---------------------------------------------------------------------------
-
-// Load ORT via importScripts (UMD build)
 try {
   importScripts('/vad/ort.wasm.min.js')
-  // Point the wasm loader at our public/vad/ directory
   if (self.ort && self.ort.env) {
+    // Point wasm loader at /vad/ where we copied the .wasm files
     self.ort.env.wasm.wasmPaths = '/vad/'
-    self.ort.env.wasm.numThreads = 1 // single-threaded for simplicity
+    // Single-threaded: threads require SharedArrayBuffer + COOP/COEP headers
+    self.ort.env.wasm.numThreads = 1
+    // Enable SIMD if the runtime can (it auto-detects at run time)
+    // Setting simd=true tells ORT to prefer the simd wasm variant
+    self.ort.env.wasm.simd = true
   }
 } catch (e) {
-  // Will be caught when RUN_VAD is called; ORT simply won't exist
   console.warn('[vad-worker] Failed to load ORT:', e)
 }
 
@@ -251,12 +281,12 @@ self.onmessage = async (event) => {
         pcm, sampleRate,
         positiveSpeechThreshold = 0.5,
         negativeSpeechThreshold = 0.35,
-        minSilenceMs = 500,
+        minSilenceMs = 1000,         // milliseconds
       } = event.data
 
       postMessage({ type: 'PROGRESS', progress: 0 })
 
-      // Resample to 16 kHz if needed
+      // Resample to 16 kHz if needed (Silero requires 16 kHz)
       const pcm16k = sampleRate !== TARGET_SR
         ? resampleMono(pcm, sampleRate, TARGET_SR)
         : pcm

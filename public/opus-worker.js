@@ -1,7 +1,9 @@
 /**
  * Opus Encoder Worker
  * Encodes a mono Float32Array (any sample rate) to WebM/Opus at ~32 kbps
- * using the WebCodecs AudioEncoder API + webm-muxer.
+ * using the WebCodecs AudioEncoder API + webm-muxer (loaded via importScripts).
+ *
+ * Uses importScripts (not import()) so this works as a plain worker in all browsers.
  *
  * Falls back gracefully: if WebCodecs / Opus are unavailable the worker
  * posts UNSUPPORTED and the main thread keeps its existing WAV path.
@@ -17,87 +19,91 @@
  *   { type: 'ERROR', message: string }
  */
 
+// Load webm-muxer UMD build.  After this, self.WebMMuxer is populated.
+try {
+  importScripts('/webm-muxer.js')
+} catch (e) {
+  // Will be caught below when we check self.WebMMuxer
+  console.warn('[opus-worker] Failed to load webm-muxer:', e)
+}
+
 self.onmessage = async (event) => {
   const { type } = event.data
   if (type !== 'ENCODE') return
 
-  const { pcm, sampleRate, numChannels = 1, targetBitrate = 32000 } = event.data
+  const { pcm, sampleRate, targetBitrate = 32000 } = event.data
 
-  // Feature-detect WebCodecs AudioEncoder
+  // ── Feature detection ────────────────────────────────────────────────────
+
   if (typeof AudioEncoder === 'undefined') {
+    console.log('[opus-worker] AudioEncoder not available → UNSUPPORTED')
     postMessage({ type: 'UNSUPPORTED' })
     return
   }
 
-  // Check Opus support
-  const support = await AudioEncoder.isConfigSupported({
-    codec:       'opus',
-    sampleRate:  48000,
-    numberOfChannels: 1,
-    bitrate:     targetBitrate,
-  }).catch(() => ({ supported: false }))
-
-  if (!support.supported) {
+  if (!self.WebMMuxer) {
+    console.warn('[opus-worker] webm-muxer not loaded → UNSUPPORTED')
     postMessage({ type: 'UNSUPPORTED' })
     return
   }
+
+  let supported = false
+  try {
+    const result = await AudioEncoder.isConfigSupported({
+      codec:            'opus',
+      sampleRate:       48000,
+      numberOfChannels: 1,
+      bitrate:          targetBitrate,
+    })
+    supported = result.supported
+  } catch (_) {
+    supported = false
+  }
+
+  if (!supported) {
+    console.log('[opus-worker] Opus config not supported → UNSUPPORTED')
+    postMessage({ type: 'UNSUPPORTED' })
+    return
+  }
+
+  console.log('[opus-worker] Opus supported, starting encode at', targetBitrate, 'bps')
 
   try {
-    // Dynamically import webm-muxer (bundled via Next.js public static ESM)
-    // We use a CDN-style import-map fallback: load the ESM build from node_modules
-    // In a public worker we can't use module imports directly, so we import via URL.
-    // The webm-muxer package ships both CJS and ESM. We'll self-host the ESM build
-    // under /webm-muxer.mjs which next.config copies there.
-    // If that fails, fall back to UNSUPPORTED.
-    let Muxer, ArrayBufferTarget
-    try {
-      const mod = await import('/webm-muxer.mjs')
-      Muxer = mod.Muxer
-      ArrayBufferTarget = mod.ArrayBufferTarget
-    } catch (_importErr) {
-      postMessage({ type: 'UNSUPPORTED' })
-      return
-    }
+    const { Muxer, ArrayBufferTarget } = self.WebMMuxer
 
-    postMessage({ type: 'PROGRESS', progress: 2 })
+    const ENCODER_SR        = 48000
+    const CHANNELS          = 1
+    const FRAME_DURATION_MS = 60  // 60 ms frames
+    const FRAME_SIZE        = Math.floor(ENCODER_SR * FRAME_DURATION_MS / 1000)
 
-    const ENCODER_SR = 48000
-    const CHANNELS   = 1  // force mono for voice
-    const FRAME_DURATION_MS = 60 // 60 ms frames
-    const FRAME_SIZE = Math.floor(ENCODER_SR * FRAME_DURATION_MS / 1000)
-
-    // Resample PCM to 48000 Hz (required by WebCodecs Opus)
+    // Resample to 48 kHz (required by WebCodecs Opus)
     const pcm48k = resampleMono(pcm, sampleRate, ENCODER_SR)
+
+    postMessage({ type: 'PROGRESS', progress: 3 })
 
     const target = new ArrayBufferTarget()
     const muxer  = new Muxer({
       target,
       audio: {
-        codec:        'A_OPUS',
-        sampleRate:   ENCODER_SR,
+        codec:            'A_OPUS',
+        sampleRate:       ENCODER_SR,
         numberOfChannels: CHANNELS,
       },
       firstTimestampBehavior: 'offset',
     })
 
-    postMessage({ type: 'PROGRESS', progress: 5 })
-
     const chunks = []
     const encoder = new AudioEncoder({
-      output: (chunk, meta) => {
-        chunks.push({ chunk, meta })
-      },
-      error: (err) => {
-        throw new Error('AudioEncoder error: ' + err.message)
-      },
+      output: (chunk, meta) => { chunks.push({ chunk, meta }) },
+      error:  (err) => { throw new Error('AudioEncoder error: ' + err.message) },
     })
 
     encoder.configure({
-      codec:             'opus',
-      sampleRate:        ENCODER_SR,
-      numberOfChannels:  CHANNELS,
-      bitrate:           targetBitrate,
-      bitrateMode:       'constant',
+      codec:            'opus',
+      sampleRate:       ENCODER_SR,
+      numberOfChannels: CHANNELS,
+      bitrate:          targetBitrate,
+      bitrateMode:      'constant',
     })
 
     const totalFrames = Math.ceil(pcm48k.length / FRAME_SIZE)
@@ -115,33 +121,34 @@ self.onmessage = async (event) => {
       }
 
       const audioData = new AudioData({
-        format:          'f32',
-        sampleRate:      ENCODER_SR,
-        numberOfFrames:  FRAME_SIZE,
+        format:           'f32',
+        sampleRate:       ENCODER_SR,
+        numberOfFrames:   FRAME_SIZE,
         numberOfChannels: CHANNELS,
-        timestamp:       Math.round(frameIdx * FRAME_DURATION_MS * 1000), // microseconds
-        data:            frameData,
+        timestamp:        Math.round(frameIdx * FRAME_DURATION_MS * 1000), // microseconds
+        data:             frameData,
       })
 
       encoder.encode(audioData)
       audioData.close()
 
-      if (frameIdx % 100 === 0) {
+      // Periodically flush encoder → muxer to keep memory bounded
+      if (frameIdx % 80 === 0 && frameIdx > 0) {
         await encoder.flush()
-        // Feed muxer
         for (const { chunk, meta } of chunks.splice(0)) {
           muxer.addAudioChunk(chunk, meta)
         }
-        const pct = 5 + Math.floor((frameIdx / totalFrames) * 88)
+        const pct = 3 + Math.floor((frameIdx / totalFrames) * 90)
         postMessage({ type: 'PROGRESS', progress: pct })
-        await new Promise(resolve => setTimeout(resolve, 0))
+        // Yield to avoid watchdog timeouts on long files
+        await new Promise(r => setTimeout(r, 0))
       }
     }
 
+    // Final flush
     await encoder.flush()
     encoder.close()
 
-    // Feed remaining chunks to muxer
     for (const { chunk, meta } of chunks) {
       muxer.addAudioChunk(chunk, meta)
     }
@@ -150,12 +157,12 @@ self.onmessage = async (event) => {
 
     postMessage({ type: 'PROGRESS', progress: 98 })
 
-    const buffer = target.buffer
-    const blob   = new Blob([buffer], { type: 'audio/webm' })
+    const blob = new Blob([target.buffer], { type: 'audio/webm' })
+    console.log('[opus-worker] Encode done, size:', blob.size, 'bytes')
 
     postMessage({ type: 'ENCODED', blob })
-    postMessage({ type: 'PROGRESS', progress: 100 })
   } catch (err) {
+    console.error('[opus-worker] Encode error:', err)
     postMessage({ type: 'ERROR', message: err instanceof Error ? err.message : String(err) })
   }
 }

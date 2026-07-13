@@ -535,7 +535,11 @@ export default function Home() {
   const [silenceThreshold, setSilenceThreshold] = useState<number>(0.025)
   // VAD mode state (Change 1)
   const [detectionMode, setDetectionMode] = useState<"vad" | "manual">("vad")
+  // vadProbThreshold: live slider value (updates on every drag)
+  // vadProbThresholdCommitted: debounced value that actually triggers VAD re-analysis
   const [vadProbThreshold, setVadProbThreshold] = useState<number>(0.5)
+  const [vadProbThresholdCommitted, setVadProbThresholdCommitted] = useState<number>(0.5)
+  const vadDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [otsuSuggestedThreshold, setOtsuSuggestedThreshold] = useState<number | null>(null)
   // Pre-computed VAD regions – shared across analysis + processing passes
   const vadRegionsRef = useRef<SilenceRegion[] | null>(null)
@@ -2250,16 +2254,18 @@ export default function Home() {
       setStatus({ message: "Audio processing completed successfully!", type: "success" })
       setIsProcessingComplete(true)
 
-      // Change 2: encode to Opus/WebM at ~32 kbps via WebCodecs worker.
+      // Encode to Opus/WebM at ~32 kbps via WebCodecs worker.
       // Falls back to MediaRecorder WebM, then keeps WAV if both unavailable.
       if (typeof window !== "undefined") {
         const compressionToken = ++adjusterCompressionTokenRef.current
         void (async () => {
           try {
-            // Try WebCodecs Opus worker first (~32 kbps, off main thread, chunked)
+            console.log("[v0] Starting Opus compression pass")
+            // Try WebCodecs Opus worker first (~32 kbps, off main thread)
             const opusResult = await encodeOpusViaWorker(result.processedBuffer, { bitrate: 32000 })
 
             if (opusResult && adjusterCompressionTokenRef.current === compressionToken) {
+              console.log("[v0] Using Opus blob, size:", opusResult.blob.size)
               setProcessedDistributionBlob(opusResult.blob)
               setProcessedFileSize(opusResult.blob.size)
               return
@@ -2270,14 +2276,17 @@ export default function Home() {
               typeof MediaRecorder !== "undefined" &&
               MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
             ) {
+              console.log("[v0] Opus worker unavailable, trying MediaRecorder WebM")
               await ensureTone()
               const { blob } = await bufferToWebM(result.processedBuffer, {})
               if (adjusterCompressionTokenRef.current === compressionToken) {
+                console.log("[v0] Using MediaRecorder WebM blob, size:", blob.size)
                 setProcessedDistributionBlob(blob)
                 setProcessedFileSize(blob.size)
               }
+            } else {
+              console.log("[v0] No Opus encoding available, keeping WAV blob")
             }
-            // else: keep the WAV blob already set above
           } catch (compressionError) {
             if (adjusterCompressionTokenRef.current === compressionToken) {
               console.warn("[v0] Compression failed, keeping WAV:", compressionError)
@@ -2367,7 +2376,7 @@ export default function Home() {
           setStatus({ message: "Running Voice Activity Detection...", type: "info" })
 
           silenceRegions = await detectSilenceRegionsVAD(originalBuffer, {
-            positiveSpeechThreshold: vadProbThreshold,
+            positiveSpeechThreshold: vadProbThresholdCommitted,
             minSilenceDuration: Math.max(0.5, minSilenceDuration),
             signal: controller.signal,
             onProgress: (progress) => {
@@ -2521,7 +2530,7 @@ export default function Home() {
       setIsVadRunning(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [originalBuffer, detectionMode, vadProbThreshold, silenceThreshold, minSilenceDuration, maxSilenceDuration, contentSpeedMultiplier, isMobileDevice])
+  }, [originalBuffer, detectionMode, vadProbThresholdCommitted, silenceThreshold, minSilenceDuration, maxSilenceDuration, contentSpeedMultiplier, isMobileDevice])
 
   // Auto-compute Otsu-suggested threshold whenever we switch to manual mode or load a new file
   useEffect(() => {
@@ -3497,7 +3506,14 @@ export default function Home() {
                                   min={0.1}
                                   max={0.9}
                                   step={0.05}
-                                  onValueChange={(value) => setVadProbThreshold(value[0])}
+                                  onValueChange={(value) => {
+                                    setVadProbThreshold(value[0])
+                                    // Debounce: only commit (trigger analysis) 800ms after user stops dragging
+                                    if (vadDebounceRef.current) clearTimeout(vadDebounceRef.current)
+                                    vadDebounceRef.current = setTimeout(() => {
+                                      setVadProbThresholdCommitted(value[0])
+                                    }, 800)
+                                  }}
                                   disabled={!originalBuffer || isVadRunning}
                                   className="py-4"
                                   rangeClassName="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500"

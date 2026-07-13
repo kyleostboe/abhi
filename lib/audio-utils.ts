@@ -442,6 +442,7 @@ export async function encodeOpusViaWorker(
   }
 
   return new Promise<OpusEncodeResult | null>((resolve) => {
+    console.log("[v0] encodeOpusViaWorker: spawning worker, bitrate", bitrate)
     const worker = new Worker("/opus-worker.js")
 
     worker.onmessage = (evt) => {
@@ -450,6 +451,7 @@ export async function encodeOpusViaWorker(
         onProgress(evt.data.progress as number)
       } else if (type === "ENCODED") {
         worker.terminate()
+        console.log("[v0] encodeOpusViaWorker: ENCODED, size", (evt.data.blob as Blob).size)
         resolve({
           blob: evt.data.blob as Blob,
           mimeType: "audio/webm",
@@ -457,30 +459,31 @@ export async function encodeOpusViaWorker(
         })
       } else if (type === "UNSUPPORTED") {
         worker.terminate()
+        console.log("[v0] encodeOpusViaWorker: Opus/AudioEncoder UNSUPPORTED → falling back")
         resolve(null)
       } else if (type === "ERROR") {
         worker.terminate()
-        console.warn("[v0] Opus worker error:", evt.data.message)
+        console.warn("[v0] encodeOpusViaWorker ERROR:", evt.data.message)
         resolve(null)
       }
     }
 
     worker.onerror = (err) => {
       worker.terminate()
-      console.warn("[v0] Opus worker failed to load:", err.message)
+      console.warn("[v0] encodeOpusViaWorker: worker load error:", err.message)
       resolve(null)
     }
 
-    const transferBuffer = mono.buffer.slice(0) as ArrayBuffer
+    // Transfer mono buffer directly (zero-copy; mono is no longer usable here)
     worker.postMessage(
       {
-        type:        "ENCODE",
-        pcm:         new Float32Array(transferBuffer),
-        sampleRate:  buffer.sampleRate,
-        numChannels: 1,
+        type:          "ENCODE",
+        pcm:           mono,
+        sampleRate:    buffer.sampleRate,
+        numChannels:   1,
         targetBitrate: bitrate,
       },
-      [transferBuffer],
+      [mono.buffer],
     )
   })
 }
