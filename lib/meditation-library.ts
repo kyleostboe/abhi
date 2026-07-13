@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client"
-import type { BufferToWavMetadata } from "./audio-utils"
+import type { AudioExportMetadata, BufferToWavMetadata } from "./audio-utils"
 import { getAuthState } from "./auth-state"
 import JSZip from "jszip"
 import {
@@ -70,7 +70,8 @@ export interface SavedMeditation {
       color?: string
       recordingStoragePath?: string
     }>
-    // Shared audio export metadata
+    // Generic metadata for new exports; wav remains for legacy saved records.
+    audioExport?: AudioExportMetadata
     wav?: BufferToWavMetadata
     quickAdjust?: {
       lastPresetId?: string | null
@@ -96,7 +97,7 @@ export interface Playlist {
   updatedAt: Date
 }
 
-export interface SaveMeditationInput extends Omit<SavedMeditation, "id" | "createdAt" | "processedAudioUrl"> {
+export interface SaveMeditationInput extends Omit<SavedMeditation, "id" | "createdAt"> {
   processedAudioData?: Blob | null
   sourceAudioData?: Blob | null
 }

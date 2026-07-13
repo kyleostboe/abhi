@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
 import { BookmarkPlus } from "lucide-react"
 import * as Tone from "tone"
-import { bufferToWav, type BufferToWavMetadata } from "@/lib/audio-utils"
+import { bufferToOpus, type AudioExportMetadata, type BufferToWavMetadata } from "@/lib/audio-utils"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 type SpeechRecognitionAlternative = {
@@ -122,7 +122,7 @@ export default function EncoderPage() {
   const [isEncoding, setIsEncoding] = useState<boolean>(false)
   const [encodingProgress, setEncodingProgress] = useState(0)
   const [encodedAudioUrl, setEncodedAudioUrl] = useState<string>("")
-  const [encodedAudioMetadata, setEncodedAudioMetadata] = useState<BufferToWavMetadata | null>(null)
+  const [encodedAudioMetadata, setEncodedAudioMetadata] = useState<AudioExportMetadata | BufferToWavMetadata | null>(null)
   const [status, setStatus] = useState<{ message: string; type: "info" | "success" | "error" } | null>(null)
   const [fullTranscript, setFullTranscript] = useState<string>("")
   const [isListening, setIsListening] = useState(false)
@@ -672,12 +672,11 @@ export default function EncoderPage() {
     // Reset Tone.js to use the main context
     Tone.setContext(audioCtx)
 
-    // Convert to WAV blob
-    const wavResult = await bufferToWav(renderedBuffer, {
-      preferCompatibility: true,
-      maxBytes: 48 * 1024 * 1024,
-    })
-    const { blob, ...metadata } = wavResult
+    // Convert the rendered timeline to a standards-compliant Ogg Opus file.
+    const nativeBuffer = renderedBuffer.get()
+    if (!nativeBuffer) throw new Error("Rendered audio buffer is unavailable")
+    const opusResult = await bufferToOpus(nativeBuffer, { bitrate: 96000 })
+    const { blob, ...metadata } = opusResult
     setEncodedAudioMetadata(metadata)
     return URL.createObjectURL(blob)
   }
@@ -720,7 +719,7 @@ export default function EncoderPage() {
 
     const a = document.createElement("a")
     a.href = encodedAudioUrl
-    a.download = `${file.name.split(".")[0]}_encoded.wav`
+    a.download = `${file.name.replace(/\.[^.]+$/, "")}_encoded.opus`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -743,7 +742,9 @@ export default function EncoderPage() {
       }
 
       const audioBlob = await response.blob()
-      const audioFile = new File([audioBlob], importData.originalFileName, { type: "audio/wav" })
+      const audioFile = new File([audioBlob], importData.originalFileName, {
+        type: audioBlob.type || "audio/ogg; codecs=opus",
+      })
 
       // Set file and audio URL
       setFile(audioFile)
@@ -930,7 +931,7 @@ export default function EncoderPage() {
             >
               <input ref={fileInputRef} type="file" accept="audio/*" onChange={handleFileChange} className="hidden" />
               <div className="space-y-2">
-                <div className="text-4xl">🎵</div>
+                <div className="text-4xl">���</div>
                 <p className="text-lg font-semibold text-gray-700 ">
                   {file ? file.name : "Drop your audio file here or click to browse"}
                 </p>

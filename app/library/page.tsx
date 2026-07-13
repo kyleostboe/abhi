@@ -1230,6 +1230,7 @@ export default function LibraryPage() {
         ...baseMeditation.metadata,
         targetDuration: processedDurationSeconds,
         pausesAdjusted: result.pausesAdjusted,
+        audioExport: result.wavMetadata,
         wav: result.wavMetadata,
         timeline: scaledTimeline,
         adjusterSettings: {

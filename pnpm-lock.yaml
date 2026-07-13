@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@audio/encode-opus':
-        specifier: ^1.2.2
-        version: 1.2.2
       '@breezystack/lamejs':
         specifier: ^1.2.7
         version: 1.2.7
@@ -140,6 +137,9 @@ importers:
       lamejs:
         specifier: ^1.2.1
         version: 1.2.1
+      libopus-wasm:
+        specifier: ^0.2.0
+        version: 0.2.0
       lucide-react:
         specifier: ^0.454.0
         version: 0.454.0(react@19.2.4)
@@ -149,9 +149,6 @@ importers:
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      opusscript:
-        specifier: ^0.1.1
-        version: 0.1.1
       react:
         specifier: ^19.2.4
         version: 19.2.4
@@ -219,10 +216,6 @@ packages:
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
-
-  '@audio/encode-opus@1.2.2':
-    resolution: {integrity: sha512-QP7AxpzRTGnLTQUWdgkoFwx7R/XHo6GJ4oi8/CELoy1iCZsCTDSCybCg6mcugA/y1vItPosS4BNrcRgI6cjetQ==}
-    engines: {node: '>=18'}
 
   '@babel/runtime@7.28.6':
     resolution: {integrity: sha512-05WQkdpL9COIMz4LjTxGpPNCdlpyimKppYNoJ5Di5EUObifl8t4tuLuUBBZEpoLYOmfvIWrsp9fCl0HoPRVTdA==}
@@ -1521,6 +1514,10 @@ packages:
   lamejs@1.2.1:
     resolution: {integrity: sha512-s7bxvjvYthw6oPLCm5pFxvA84wUROODB8jEO2+CE1adhKgrIvVOlmMgY8zyugxGrvRaDHNJanOiS21/emty6dQ==}
 
+  libopus-wasm@0.2.0:
+    resolution: {integrity: sha512-x/2Gu1/C6L3IICY09zyfp984AWiOYjn53u4WfdY3yh+3KTzMN8Xkm77q3lenWMVIk5SnSzjGEkQT+VQMFHLBHQ==}
+    engines: {node: '>=20'}
+
   lie@3.3.0:
     resolution: {integrity: sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ==}
 
@@ -1643,9 +1640,6 @@ packages:
         optional: true
       sass:
         optional: true
-
-  opusscript@0.1.1:
-    resolution: {integrity: sha512-mL0fZZOUnXdZ78woRXp18lApwpp0lF5tozJOD1Wut0dgrA9WuQTgSels/CSmFleaAZrJi/nci5KOVtbuxeWoQA==}
 
   pako@1.0.11:
     resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==}
@@ -1901,10 +1895,6 @@ packages:
 snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
-
-  '@audio/encode-opus@1.2.2':
-    dependencies:
-      opusscript: 0.1.1
 
   '@babel/runtime@7.28.6': {}
 
@@ -3117,6 +3107,8 @@ snapshots:
     dependencies:
       use-strict: 1.0.1
 
+  libopus-wasm@0.2.0: {}
+
   lie@3.3.0:
     dependencies:
       immediate: 3.0.6
@@ -3213,8 +3205,6 @@ snapshots:
     transitivePeerDependencies:
       - '@babel/core'
       - babel-plugin-macros
-
-  opusscript@0.1.1: {}
 
   pako@1.0.11: {}
 

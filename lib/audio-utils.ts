@@ -1,7 +1,6 @@
 import * as Tone from "tone"
 import { sleep, formatFileSize } from "./utils"
 import lamejs from "@breezystack/lamejs"
-import opusEncode from "@audio/encode-opus"
 
 // Initialize Tone.js
 export const initializeTone = async (): Promise<void> => {
@@ -392,6 +391,148 @@ export const bufferToWav_unused = async (
     ...metadata,
     blob: new Blob([finalArrayBuffer], { type: "audio/wav" }),
   }
+}
+
+export interface AudioExportMetadata {
+  format: "opus"
+  mimeType: "audio/ogg; codecs=opus"
+  extension: "opus"
+  sampleRate: number
+  sourceSampleRate: number
+  channels: number
+  bitDepth: 16
+  bitrate: number
+  duration: number
+  preSkip: number
+}
+
+export interface BufferToOpusResult extends AudioExportMetadata {
+  blob: Blob
+}
+
+export interface BufferToOpusOptions {
+  bitrate?: number
+  onProgress?: (progress: number) => void
+  signal?: AbortSignal
+}
+
+const hasAsciiSignature = (bytes: Uint8Array, signature: string) => {
+  const encoded = new TextEncoder().encode(signature)
+  outer: for (let offset = 0; offset <= bytes.length - encoded.length; offset++) {
+    for (let index = 0; index < encoded.length; index++) {
+      if (bytes[offset + index] !== encoded[index]) continue outer
+    }
+    return true
+  }
+  return false
+}
+
+export const bufferToOpus = async (
+  buffer: AudioBuffer,
+  { bitrate = 96000, onProgress = () => {}, signal }: BufferToOpusOptions = {},
+): Promise<BufferToOpusResult> => {
+  if (signal?.aborted) throw new DOMException("Opus encoding aborted", "AbortError")
+  onProgress(0)
+
+  const targetSampleRate = 48000
+  const targetLength = Math.max(1, Math.round(buffer.duration * targetSampleRate))
+  const offlineContext = new OfflineAudioContext(1, targetLength, targetSampleRate)
+  const monoBuffer = offlineContext.createBuffer(1, buffer.length, buffer.sampleRate)
+  const mono = monoBuffer.getChannelData(0)
+
+  for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+    const source = buffer.getChannelData(channel)
+    for (let index = 0; index < buffer.length; index++) {
+      mono[index] += source[index] / buffer.numberOfChannels
+    }
+  }
+
+  const source = offlineContext.createBufferSource()
+  source.buffer = monoBuffer
+  source.connect(offlineContext.destination)
+  source.start()
+  const rendered = await offlineContext.startRendering()
+  const pcm = rendered.getChannelData(0).slice()
+  onProgress(10)
+
+  return new Promise<BufferToOpusResult>((resolve, reject) => {
+    const worker = new Worker(new URL("../workers/opus-encoder.worker.ts", import.meta.url), { type: "module" })
+    const id = crypto.randomUUID()
+
+    const cleanup = () => {
+      worker.terminate()
+      signal?.removeEventListener("abort", handleAbort)
+    }
+    const handleAbort = () => {
+      cleanup()
+      reject(new DOMException("Opus encoding aborted", "AbortError"))
+    }
+
+    signal?.addEventListener("abort", handleAbort, { once: true })
+    worker.onerror = (event) => {
+      cleanup()
+      reject(new Error(`Opus worker failed: ${event.message}`))
+    }
+    worker.onmessage = (event: MessageEvent<{
+      id: string
+      type: "progress" | "complete" | "error"
+      progress?: number
+      bytes?: ArrayBuffer
+      preSkip?: number
+      message?: string
+    }>) => {
+      if (event.data.id !== id) return
+      if (event.data.type === "progress") {
+        onProgress(10 + Math.round((event.data.progress ?? 0) * 0.9))
+        return
+      }
+      if (event.data.type === "error") {
+        cleanup()
+        reject(new Error(event.data.message || "Opus worker failed"))
+        return
+      }
+
+      if (!event.data.bytes) {
+        cleanup()
+        reject(new Error("Opus worker completed without audio bytes"))
+        return
+      }
+      const bytes = new Uint8Array(event.data.bytes)
+      if (
+        bytes.length === 0 ||
+        !hasAsciiSignature(bytes.subarray(0, Math.min(bytes.length, 256)), "OggS") ||
+        !hasAsciiSignature(bytes.subarray(0, Math.min(bytes.length, 512)), "OpusHead") ||
+        !hasAsciiSignature(bytes.subarray(0, Math.min(bytes.length, 1024)), "OpusTags")
+      ) {
+        cleanup()
+        reject(new Error("Opus worker returned an invalid Ogg Opus stream"))
+        return
+      }
+
+      const blob = new Blob([bytes], { type: "audio/ogg; codecs=opus" })
+      cleanup()
+      onProgress(100)
+      resolve({
+        blob,
+        format: "opus",
+        mimeType: "audio/ogg; codecs=opus",
+        extension: "opus",
+        sampleRate: targetSampleRate,
+        sourceSampleRate: buffer.sampleRate,
+        channels: 1,
+        bitDepth: 16,
+        bitrate,
+        duration: buffer.duration,
+        preSkip: event.data.preSkip ?? 0,
+      })
+    }
+
+    const transferable = pcm.buffer.slice(pcm.byteOffset, pcm.byteOffset + pcm.byteLength)
+    worker.postMessage(
+      { id, pcm: transferable, sampleRate: targetSampleRate, sourceSampleRate: buffer.sampleRate, bitrate },
+      [transferable],
+    )
+  })
 }
 
 export interface BufferToMp3Options {
