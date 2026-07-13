@@ -1,9 +1,18 @@
 import { bufferToWav, type BufferToWavMetadata } from "@/lib/audio-utils"
 
-// Pre-setup Module for opusscript WASM loading
+// Setup Module with locateFile callback to provide WASM at runtime
 const setupOpusscriptModule = async (wasmBuffer: ArrayBuffer) => {
+  const wasmData = new Uint8Array(wasmBuffer)
   const globalModule = (globalThis as any).Module || {}
-  globalModule.wasmBinary = new Uint8Array(wasmBuffer)
+  globalModule.wasmBinary = wasmData
+  globalModule.locateFile = (path: string) => {
+    if (path.endsWith('.wasm')) {
+      // Return a data URL for the WASM so Emscripten uses our preloaded buffer
+      const blob = new Blob([wasmData], { type: 'application/wasm' })
+      return URL.createObjectURL(blob)
+    }
+    return path
+  }
   ;(globalThis as any).Module = globalModule
 }
 import { forceGarbageCollection, formatTime, sleep } from "@/lib/utils"
@@ -598,11 +607,12 @@ export async function runAdjusterWorkflow({
 
     // Pre-populate Module.wasmBinary before opusscript import to avoid sync fetch
     await setupOpusscriptModule(wasmArrayBuffer)
-    console.log("[OPUS] Module.wasmBinary pre-loaded, importing @audio/encode-opus...")
+    console.log("[OPUS] Module with locateFile pre-loaded, importing opusscript...")
 
-    // Import @audio/encode-opus (which will import opusscript and find WASM in Module.wasmBinary)
-    const opusEncode = (await import('@audio/encode-opus')).default
-    console.log("[OPUS] @audio/encode-opus imported successfully")
+    // Import opusscript directly now that Module.locateFile will serve WASM from our buffer
+    const opusscriptModule = await import('opusscript')
+    const OpusScript = opusscriptModule.default || opusscriptModule
+    console.log("[OPUS] opusscript imported successfully, Module.locateFile active")
 
     // Mix down to mono Float32Array
     const totalSamples = processedAudioBuffer.length
@@ -617,38 +627,56 @@ export async function runAdjusterWorkflow({
 
     onProgress(85)
 
-    console.log("[OPUS] Mono mix-down complete, initialising encoder...")
+    console.log("[OPUS] Mono mix-down complete, resampling to 48kHz...")
 
-    // Initialise encoder with WASM already preloaded
-    const encoder = await opusEncode({
-      sampleRate: processedAudioBuffer.sampleRate,
-      channels: 1,
-      bitrate: 32,
-      application: "voip",
-    })
+    // Resample to 48kHz (Opus native rate) if needed
+    let pcmData = mono
+    let inputRate = processedAudioBuffer.sampleRate
+    if (inputRate !== 48000) {
+      console.log("[OPUS] Resampling from", inputRate, "Hz to 48000 Hz")
+      const ratio = 48000 / inputRate
+      const resampledLen = Math.ceil(mono.length * ratio)
+      const resampled = new Float32Array(resampledLen)
+      for (let i = 0; i < resampledLen; i++) {
+        const srcIdx = i / ratio
+        const srcIdxFloor = Math.floor(srcIdx)
+        const frac = srcIdx - srcIdxFloor
+        const s0 = mono[Math.min(srcIdxFloor, mono.length - 1)] || 0
+        const s1 = mono[Math.min(srcIdxFloor + 1, mono.length - 1)] || 0
+        resampled[i] = s0 + (s1 - s0) * frac
+      }
+      pcmData = resampled
+      inputRate = 48000
+    }
 
-    console.log("[OPUS] Encoder ready, encoding in 5-second chunks...")
+    console.log("[OPUS] Initialising Opus encoder at", inputRate, "Hz...")
 
-    const chunkSize = Math.round(processedAudioBuffer.sampleRate * 5)
+    // Create encoder with 48kHz: OpusScript(sampleRate, channels, application)
+    const encoder = new (OpusScript as any)(inputRate, 1, (OpusScript as any).Application.VOIP)
+    encoder.setBitrate(32000)
+
+    console.log("[OPUS] Encoder ready, encoding in chunks...")
+
     const pages: Uint8Array[] = []
     let offset = 0
+    const frameSize = Math.round(inputRate * 0.02) // 20ms frame
 
-    while (offset < totalSamples) {
-      const end = Math.min(offset + chunkSize, totalSamples)
-      const chunk = mono.subarray(offset, end)
-      const page = encoder.encode([chunk])
-      if (page.length > 0) pages.push(page)
+    while (offset < pcmData.length) {
+      const end = Math.min(offset + frameSize, pcmData.length)
+      const frame = pcmData.subarray(offset, end)
+      const encoded = (encoder as any).encode_float(frame)
+      if (encoded && encoded.length > 0) pages.push(encoded)
 
       offset = end
-      const pct = 85 + Math.round(((offset - 0) / totalSamples) * 12)
+      const pct = 85 + Math.round(((offset / pcmData.length) * 12))
       onProgress(pct)
 
       await sleep(0)
     }
 
-    const tail = encoder.flush()
-    if (tail.length > 0) pages.push(tail)
-    encoder.free()
+    // Flush any remaining data
+    const tail = (encoder as any).encode_float(new Float32Array(0))
+    if (tail && tail.length > 0) pages.push(tail)
 
     const opusBlob = new Blob(pages as BlobPart[], { type: "audio/ogg; codecs=opus" })
 
