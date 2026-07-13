@@ -282,7 +282,7 @@ export default function LibraryPage() {
   const [activeTab, setActiveTab] = useState<"meditations" | "playlists">("meditations")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null)
-  const [sourceFilter, setSourceFilter] = useState<"all" | "adjuster" | "encoder">("all")
+  const [sourceFilter, setSourceFilter] = useState<"all" | "adjuster" | "creator">("all")
   const [newPlaylistName, setNewPlaylistName] = useState("")
   const [newPlaylistDescription, setNewPlaylistDescription] = useState("")
   const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null)
@@ -738,7 +738,7 @@ export default function LibraryPage() {
     }
   }
 
-  const handleSourceFilterChange = (filter: "all" | "adjuster" | "encoder") => {
+  const handleSourceFilterChange = (filter: "all" | "adjuster" | "creator") => {
     setSourceFilter(filter)
     setSelectedPlaylist(null)
   }
@@ -1903,11 +1903,11 @@ export default function LibraryPage() {
   )
 
   const handleOpenInTool = useCallback(
-    (tool?: "adjuster" | "encoder") => {
+    (tool?: "adjuster" | "creator") => {
       if (!selectedMeditation) return
 
       // Determine target tool - use parameter if provided, otherwise use original logic
-      const targetTool = tool || (selectedMeditation.source === "adjuster" ? "adjuster" : "encoder")
+      const targetTool = tool || (selectedMeditation.source === "adjuster" ? "adjuster" : "creator")
 
       const audioUrlToUse = selectedMeditation.sourceAudioUrl || selectedMeditation.processedAudioUrl
 
@@ -1949,13 +1949,13 @@ export default function LibraryPage() {
           setIsPlayerOpen(false)
           router.push("/#adjuster", { scroll: false })
         } else {
-          localStorage.setItem("abhi_encoder_import", JSON.stringify(payload))
+          localStorage.setItem("abhi_creator_import", JSON.stringify(payload))
           toast({
-            title: "Opening Encoder",
-            description: `"${selectedMeditation.title}" will load in the Encoder tool${selectedMeditation.sourceAudioUrl ? " (using high-quality source)" : ""}.`,
+            title: "Opening Creator",
+            description: `"${selectedMeditation.title}" will load in the Creator tool${selectedMeditation.sourceAudioUrl ? " (using high-quality source)" : ""}.`,
           })
           setIsPlayerOpen(false)
-          router.push("/#encoder", { scroll: false })
+          router.push("/#creator", { scroll: false })
         }
       } catch (error) {
         toast({
@@ -2545,14 +2545,14 @@ export default function LibraryPage() {
                         Adjuster
                       </button>
                       <button
-                        onClick={() => handleSourceFilterChange("encoder")}
+                        onClick={() => handleSourceFilterChange("creator")}
                         className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
-                          !selectedPlaylist && sourceFilter === "encoder"
+                          !selectedPlaylist && sourceFilter === "creator"
                             ? " border-stone-300"
                             : "bg-white border-gray-500 hover:shadow-none"
                         }`}
                       >
-                        Encoder
+                        Creator
                       </button>
                       {playlists.map((playlist) => (
                         <button
@@ -2621,7 +2621,7 @@ export default function LibraryPage() {
                                       : "bg-gradient-to-r from-muted to-stone-200"
                                   }`}
                                 >
-                                  {base.source === "adjuster" ? "Adjuster" : "Encoder"}
+                                  {base.source === "adjuster" ? "Adjuster" : "Creator"}
                                 </Badge>
 
                                 <div className="flex-1 min-w-0">
@@ -3046,7 +3046,7 @@ export default function LibraryPage() {
                               </div>
                             )}
 
-                            {!hasTimelineEvents && selectedMeditation.source === "encoder" && (
+                            {!hasTimelineEvents && selectedMeditation.source === "creator" && (
                               <div className="space-y-3">
                                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                                   <p className="text-xs text-amber-800 font-black">
@@ -3420,10 +3420,10 @@ export default function LibraryPage() {
                                       Adjuster
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                      onClick={() => handleOpenInTool("encoder")}
+                                      onClick={() => handleOpenInTool("creator")}
                                       className="cursor-pointer"
                                     >
-                                      Encoder
+                                      Creator
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>

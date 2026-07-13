@@ -49,9 +49,9 @@ import { AudioInfoMenu } from "@/components/audio-info-menu"
 import { AuthButtons } from "@/components/auth-buttons"
 
 const ADJUSTER_SESSION_KEY = "abhi_last_adjuster_session"
-const ENCODER_SESSION_KEY = "abhi_last_encoder_session"
+const CREATOR_SESSION_KEY = "abhi_last_creator_session"
 const ACTIVE_MODE_SESSION_KEY = "abhi_last_active_mode"
-const DEFAULT_ENCODER_DURATION_SECONDS = 10 * 60
+const DEFAULT_CREATOR_DURATION_SECONDS = 10 * 60
 
 interface RecorderSectionProps {
   className?: string
@@ -517,9 +517,9 @@ export default function Home() {
   const { toast } = useToast()
   const { isAuthenticated, login } = useAuth()
 
-  const [activeMode, setActiveMode] = useState<"adjuster" | "encoder">("adjuster")
+  const [activeMode, setActiveMode] = useState<"adjuster" | "creator">("adjuster")
   const [shouldScrollToAdjuster, setShouldScrollToAdjuster] = useState(false)
-  const [activeTab, setActiveTab] = useState<"adjuster" | "encoder">("adjuster") // State for tab navigation
+  const [activeTab, setActiveTab] = useState<"adjuster" | "creator">("adjuster") // State for tab navigation
 
   // == States for Length Adjuster ==
   const [file, setFile] = useState<File | null>(null)
@@ -563,7 +563,7 @@ export default function Home() {
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const silenceAnalysisAbortRef = useRef<AbortController | null>(null)
   const adjusterCompressionTokenRef = useRef(0)
-  const encoderCompressionTokenRef = useRef(0)
+  const creatorCompressionTokenRef = useRef(0)
   const [processedDistributionBlob, setProcessedDistributionBlob] = useState<Blob | null>(null)
   const [generatedDistributionBlob, setGeneratedDistributionBlob] = useState<Blob | null>(null)
   const [loadedLibraryContext, setLoadedLibraryContext] = useState<{
@@ -590,12 +590,12 @@ export default function Home() {
 
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
-  const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(DEFAULT_ENCODER_DURATION_SECONDS)
-  const [encoderDurationDraft, setEncoderDurationDraft] = useState<number>(DEFAULT_ENCODER_DURATION_SECONDS)
+  const [creatorTotalDuration, setCreatorTotalDuration] = useState<number>(DEFAULT_CREATOR_DURATION_SECONDS)
+  const [creatorDurationDraft, setCreatorDurationDraft] = useState<number>(DEFAULT_CREATOR_DURATION_SECONDS)
 
-  const [encoderTimelineOriginalDuration, setEncoderTimelineOriginalDuration] = useState<number | null>(null)
+  const [creatorTimelineOriginalDuration, setCreatorTimelineOriginalDuration] = useState<number | null>(null)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
-  const lastEncoderDurationAdjustmentRef = useRef<number | null>(null)
+  const lastCreatorDurationAdjustmentRef = useRef<number | null>(null)
   const exportableTimelineMetadata = useMemo(() => {
     return timelineEvents.map((event) => {
       const isRecording = event.type === "recorded_voice"
@@ -631,7 +631,7 @@ export default function Home() {
     })
   }, [timelineEvents])
 
-  const encoderSoundCuesUsed = useMemo(() => {
+  const creatorSoundCuesUsed = useMemo(() => {
     const cues = new Set<string>()
 
     for (const event of timelineEvents) {
@@ -658,7 +658,7 @@ export default function Home() {
   } | null>(null)
   const [recordedBlobs, setRecordedBlobs] = useState<Blob[]>([])
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const encoderAudioRef = useRef<HTMLAudioElement | null>(null)
+  const creatorAudioRef = useRef<HTMLAudioElement | null>(null)
   const [recordingLabel, setRecordingLabel] = useState<string>("")
 
   // Audio generation states
@@ -679,7 +679,7 @@ export default function Home() {
   const recordingPreviewRef = useRef<HTMLAudioElement | null>(null)
   const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const processedAudioSectionRef = useRef<HTMLDivElement | null>(null)
-  const encoderAudioSectionRef = useRef<HTMLDivElement | null>(null)
+  const creatorAudioSectionRef = useRef<HTMLDivElement | null>(null)
   const currentItemStartTimeRef = useRef<number>(0)
 
   const [multiNoteMode, setMultiNoteMode] = useState(false)
@@ -713,10 +713,10 @@ export default function Home() {
     }
   }, [isProcessingComplete])
 
-  // Scroll to encoder audio when generation completes
+  // Scroll to creator audio when generation completes
   useEffect(() => {
-    if (generatedAudioUrl && encoderAudioSectionRef.current) {
-      encoderAudioSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" })
+    if (generatedAudioUrl && creatorAudioSectionRef.current) {
+      creatorAudioSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" })
     }
   }, [generatedAudioUrl])
 
@@ -765,7 +765,7 @@ export default function Home() {
     [activeItemIndex],
   )
 
-  const playEncoderSound = useCallback(
+  const playCreatorSound = useCallback(
     async (src: string) => {
       const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.src === src)
 
@@ -781,12 +781,12 @@ export default function Home() {
 
       try {
         // Play the sound cue using the audio element
-        if (encoderAudioRef.current) {
-          encoderAudioRef.current.src = soundCue.src
-          encoderAudioRef.current.play().catch((e) => console.error("Error playing sound cue:", e))
+        if (creatorAudioRef.current) {
+          creatorAudioRef.current.src = soundCue.src
+          creatorAudioRef.current.play().catch((e) => console.error("Error playing sound cue:", e))
         }
       } catch (error) {
-        console.error("Error playing encoder sound:", error)
+        console.error("Error playing creator sound:", error)
         toast({
           title: "Sound Playback Error",
           description: "Failed to play the selected sound.",
@@ -816,7 +816,7 @@ export default function Home() {
               setActiveItemIndex(i)
               // Play sound cue when it becomes active
               if (item.type === "sound" && item.content && typeof item.content.src === "string") {
-                playEncoderSound(item.content.src) // Pass src string to playLabsSound
+                playCreatorSound(item.content.src) // Pass src string to playLabsSound
               }
             }
             foundActiveItem = true
@@ -840,7 +840,7 @@ export default function Home() {
         return newTime
       })
     }, 100) // Update every 100ms
-  }, [timeline, currentPlaybackTime, totalDuration, activeItemIndex, playEncoderSound])
+  }, [timeline, currentPlaybackTime, totalDuration, activeItemIndex, playCreatorSound])
 
   const pausePlayback = useCallback(() => {
     if (playbackIntervalRef.current) {
@@ -896,7 +896,7 @@ export default function Home() {
       console.log("Starting audio export with events:", timelineEvents)
 
       // Calculate the maximum end time needed for the OfflineAudioContext
-      const maxAudioDuration = encoderTotalDuration // Start with the user-defined total duration
+      const maxAudioDuration = creatorTotalDuration // Start with the user-defined total duration
 
       const ctx = new OfflineAudioContext({
         numberOfChannels: 1,
@@ -1173,18 +1173,18 @@ export default function Home() {
         typeof MediaRecorder !== "undefined" &&
         MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
       ) {
-        const compressionToken = ++encoderCompressionTokenRef.current
+        const compressionToken = ++creatorCompressionTokenRef.current
         void (async () => {
           try {
             await ensureTone()
             const { blob } = await bufferToWebM(rendered, {})
-            if (encoderCompressionTokenRef.current === compressionToken) {
+            if (creatorCompressionTokenRef.current === compressionToken) {
               setGeneratedDistributionBlob(blob)
               setGeneratedAudioFileSize(blob.size)
             }
           } catch (compressionError) {
-            if (encoderCompressionTokenRef.current === compressionToken) {
-              console.warn("[v0] Failed to prepare compressed encoder distribution:", compressionError)
+            if (creatorCompressionTokenRef.current === compressionToken) {
+              console.warn("[v0] Failed to prepare compressed creator distribution:", compressionError)
             }
           }
         })()
@@ -1225,40 +1225,40 @@ export default function Home() {
 
   const normalizeDuration = useCallback((value: number) => {
     if (!Number.isFinite(value)) {
-      return DEFAULT_ENCODER_DURATION_SECONDS
+      return DEFAULT_CREATOR_DURATION_SECONDS
     }
 
     const normalized = Math.floor(value)
-    return normalized > 0 ? normalized : DEFAULT_ENCODER_DURATION_SECONDS
+    return normalized > 0 ? normalized : DEFAULT_CREATOR_DURATION_SECONDS
   }, [])
 
   const clampDurationDraft = useCallback((value: number) => {
     if (!Number.isFinite(value)) {
-      return DEFAULT_ENCODER_DURATION_SECONDS
+      return DEFAULT_CREATOR_DURATION_SECONDS
     }
 
     const clamped = Math.floor(value)
-    return clamped > 0 ? clamped : DEFAULT_ENCODER_DURATION_SECONDS
+    return clamped > 0 ? clamped : DEFAULT_CREATOR_DURATION_SECONDS
   }, [])
 
-  const handleEncoderDurationChange = useCallback(
+  const handleCreatorDurationChange = useCallback(
     (totalSeconds: number) => {
       const clamped = clampDurationDraft(totalSeconds)
-      setEncoderDurationDraft(clamped)
-      setEncoderTotalDuration(normalizeDuration(clamped))
+      setCreatorDurationDraft(clamped)
+      setCreatorTotalDuration(normalizeDuration(clamped))
     },
     [clampDurationDraft, normalizeDuration],
   )
 
   useEffect(() => {
-    setEncoderDurationDraft(clampDurationDraft(encoderTotalDuration))
-  }, [clampDurationDraft, encoderTotalDuration])
+    setCreatorDurationDraft(clampDurationDraft(creatorTotalDuration))
+  }, [clampDurationDraft, creatorTotalDuration])
 
   const handleDurationWheelChange = useCallback(
     (totalSeconds: number) => {
-      handleEncoderDurationChange(totalSeconds)
+      handleCreatorDurationChange(totalSeconds)
     },
-    [handleEncoderDurationChange],
+    [handleCreatorDurationChange],
   )
 
   const playSingleNote = async (note: string, octave: number, noteType: string) => {
@@ -1460,7 +1460,7 @@ export default function Home() {
       localStorage.removeItem("abhi_meditation_library")
       localStorage.removeItem("abhi_meditation_playlists")
       localStorage.removeItem("abhi_adjuster_import")
-      localStorage.removeItem("abhi_encoder_import")
+      localStorage.removeItem("abhi_creator_import")
       toast({
         title: "Library cleared",
         description: "All meditation data has been cleared for testing.",
@@ -1685,9 +1685,9 @@ export default function Home() {
     return events.sort((a, b) => a.startTime - b.startTime)
   }, [])
 
-  const reconstructEncoderMeditation = useCallback(
+  const reconstructCreatorMeditation = useCallback(
     async (importData: any) => {
-      console.log("[v0] Reconstructing encoder meditation with original cues:", importData)
+      console.log("[v0] Reconstructing creator meditation with original cues:", importData)
 
       try {
         // Load the audio for analysis
@@ -1696,7 +1696,7 @@ export default function Home() {
         const reconstructedFileName = deriveMeditationFileName(importData)
         const audioFile = new File([audioBlob], reconstructedFileName, { type: "audio/wav" })
 
-        // Set the file for encoder
+        // Set the file for creator
         setFile(audioFile)
         setOriginalUrl(URL.createObjectURL(audioFile))
         setDisplayedFileName(reconstructedFileName)
@@ -1739,10 +1739,10 @@ export default function Home() {
           0,
         )
         const totalDuration = Math.max(importData.duration ?? 0, reconstructedEnd)
-        const safeTotalDuration = totalDuration > 0 ? totalDuration : DEFAULT_ENCODER_DURATION_SECONDS
-        setEncoderTotalDuration(safeTotalDuration)
-        setEncoderTimelineOriginalDuration(safeTotalDuration)
-        lastEncoderDurationAdjustmentRef.current = safeTotalDuration
+        const safeTotalDuration = totalDuration > 0 ? totalDuration : DEFAULT_CREATOR_DURATION_SECONDS
+        setCreatorTotalDuration(safeTotalDuration)
+        setCreatorTimelineOriginalDuration(safeTotalDuration)
+        lastCreatorDurationAdjustmentRef.current = safeTotalDuration
 
         setStatus({
           message: `Reconstructed "${importData.title}" with ${reconstructedEvents.length} timeline events.`,
@@ -1750,7 +1750,7 @@ export default function Home() {
         })
         setGeneratedAudioMetadata(importData.metadata?.wav ?? null)
       } catch (error) {
-        console.error("[v0] Error reconstructing encoder meditation:", error)
+        console.error("[v0] Error reconstructing creator meditation:", error)
         setStatus({
           message: "Failed to reconstruct meditation timeline. Loading as basic audio file.",
           type: "error",
@@ -1764,8 +1764,8 @@ export default function Home() {
         setFile(audioFile)
         setOriginalUrl(URL.createObjectURL(audioFile))
         setDisplayedFileName(fallbackFileName)
-        setEncoderTimelineOriginalDuration(null)
-        lastEncoderDurationAdjustmentRef.current = null
+        setCreatorTimelineOriginalDuration(null)
+        lastCreatorDurationAdjustmentRef.current = null
       }
     },
     [
@@ -1773,9 +1773,9 @@ export default function Home() {
       setOriginalUrl,
       setMeditationTitle,
       setTimelineEvents,
-      setEncoderTotalDuration,
+      setCreatorTotalDuration,
       setStatus,
-      setEncoderTimelineOriginalDuration,
+      setCreatorTimelineOriginalDuration,
       parseTimelineMetadata,
     ],
   )
@@ -1822,13 +1822,13 @@ export default function Home() {
           URL.revokeObjectURL(metadataUrl)
         }
 
-        // Create a single recorded block event for encoder
+        // Create a single recorded block event for creator
         const rawDurationCandidate =
           Number.isFinite(importData.duration) && importData.duration > 0 ? importData.duration : buffer.duration
         const safeDuration =
           Number.isFinite(rawDurationCandidate) && rawDurationCandidate > 0
             ? rawDurationCandidate
-            : DEFAULT_ENCODER_DURATION_SECONDS
+            : DEFAULT_CREATOR_DURATION_SECONDS
         const recordedLabel =
           typeof importData.title === "string" && importData.title.trim().length > 0
             ? importData.title.trim()
@@ -1845,9 +1845,9 @@ export default function Home() {
         }
 
         setTimelineEvents([recordedEvent])
-        setEncoderTotalDuration(safeDuration)
-        setEncoderTimelineOriginalDuration(safeDuration)
-        lastEncoderDurationAdjustmentRef.current = safeDuration
+        setCreatorTotalDuration(safeDuration)
+        setCreatorTimelineOriginalDuration(safeDuration)
+        lastCreatorDurationAdjustmentRef.current = safeDuration
         setGeneratedAudioMetadata(importData.metadata?.wav ?? null)
       } catch (error) {
         console.error("[v0] Error importing as recorded block:", error)
@@ -1865,8 +1865,8 @@ export default function Home() {
       setProcessingStep,
       setActualDuration,
       setTimelineEvents,
-      setEncoderTotalDuration,
-      setEncoderTimelineOriginalDuration,
+      setCreatorTotalDuration,
+      setCreatorTimelineOriginalDuration,
       setStatus,
       silenceAnalysisAbortRef,
       setAnalysisProgress,
@@ -1874,17 +1874,17 @@ export default function Home() {
   )
 
   const importFromLibrary = useCallback(
-    async (importData: any, sourceTab: "adjuster" | "encoder") => {
+    async (importData: any, sourceTab: "adjuster" | "creator") => {
       console.log("[v0] Importing from library:", importData, "to tab:", sourceTab)
 
-      const persistSessionForMode = (mode: "adjuster" | "encoder", data: any) => {
+      const persistSessionForMode = (mode: "adjuster" | "creator", data: any) => {
         if (typeof window === "undefined") return
         try {
           if (mode === "adjuster") {
             window.sessionStorage.setItem(ADJUSTER_SESSION_KEY, JSON.stringify(data))
-            window.sessionStorage.removeItem(ENCODER_SESSION_KEY)
+            window.sessionStorage.removeItem(CREATOR_SESSION_KEY)
           } else {
-            window.sessionStorage.setItem(ENCODER_SESSION_KEY, JSON.stringify(data))
+            window.sessionStorage.setItem(CREATOR_SESSION_KEY, JSON.stringify(data))
             window.sessionStorage.removeItem(ADJUSTER_SESSION_KEY)
           }
         } catch (error) {
@@ -1969,14 +1969,14 @@ export default function Home() {
         if (importData.crossToolOpening && !isMobileDevice) {
           setShouldScrollToAdjuster(true)
         }
-      } else if (sourceTab === "encoder") {
+      } else if (sourceTab === "creator") {
         const hasTimelineMetadata = Array.isArray(importData.metadata?.timeline)
           ? importData.metadata.timeline.length > 0
           : false
 
         if (hasTimelineMetadata || importData.crossToolOpening) {
-          await reconstructEncoderMeditation(importData)
-          persistSessionForMode("encoder", importData)
+          await reconstructCreatorMeditation(importData)
+          persistSessionForMode("creator", importData)
           if (typeof window !== "undefined") {
             requestAnimationFrame(() => {
               timelineEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
@@ -1984,7 +1984,7 @@ export default function Home() {
           }
         } else {
           await importAsRecordedBlock(importData)
-          persistSessionForMode("encoder", importData)
+          persistSessionForMode("creator", importData)
           if (typeof window !== "undefined") {
             requestAnimationFrame(() => {
               timelineEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
@@ -1994,7 +1994,7 @@ export default function Home() {
       }
     },
     [
-      reconstructEncoderMeditation,
+      reconstructCreatorMeditation,
       importAsRecordedBlock,
       isMobileDevice,
       setActiveMode,
@@ -2039,9 +2039,9 @@ export default function Home() {
 
     const handleHashChange = () => {
       const hash = window.location.hash.substring(1)
-      if (hash === "adjuster" || hash === "encoder") {
-        setActiveTab(hash as "adjuster" | "encoder")
-        setActiveMode(hash as "adjuster" | "encoder")
+      if (hash === "adjuster" || hash === "creator") {
+        setActiveTab(hash as "adjuster" | "creator")
+        setActiveMode(hash as "adjuster" | "creator")
       }
     }
 
@@ -2064,18 +2064,18 @@ export default function Home() {
         handled = true
       }
 
-      const encoderImport = window.localStorage.getItem("abhi_encoder_import")
-      if (encoderImport) {
+      const creatorImport = window.localStorage.getItem("abhi_creator_import")
+      if (creatorImport) {
         try {
-          const importData = JSON.parse(encoderImport)
-          console.log("[v0] Loading meditation from library into encoder:", importData)
-          setActiveTab("encoder")
-          setActiveMode("encoder")
-          void importFromLibrary(importData, "encoder")
+          const importData = JSON.parse(creatorImport)
+          console.log("[v0] Loading meditation from library into creator:", importData)
+          setActiveTab("creator")
+          setActiveMode("creator")
+          void importFromLibrary(importData, "creator")
         } catch (error) {
-          console.error("[v0] Error loading encoder import:", error)
+          console.error("[v0] Error loading creator import:", error)
         } finally {
-          window.localStorage.removeItem("abhi_encoder_import")
+          window.localStorage.removeItem("abhi_creator_import")
         }
         handled = true
       }
@@ -2085,7 +2085,7 @@ export default function Home() {
       }
 
       try {
-        const lastMode = window.sessionStorage.getItem(ACTIVE_MODE_SESSION_KEY) as "adjuster" | "encoder" | null
+        const lastMode = window.sessionStorage.getItem(ACTIVE_MODE_SESSION_KEY) as "adjuster" | "creator" | null
 
         if (lastMode === "adjuster") {
           const persistedAdjuster = window.sessionStorage.getItem(ADJUSTER_SESSION_KEY)
@@ -2096,14 +2096,14 @@ export default function Home() {
             setActiveMode("adjuster")
             void importFromLibrary(importData, "adjuster")
           }
-        } else if (lastMode === "encoder") {
-          const persistedEncoder = window.sessionStorage.getItem(ENCODER_SESSION_KEY)
-          if (persistedEncoder) {
-            const importData = JSON.parse(persistedEncoder)
-            console.log("[v0] Restoring persisted encoder meditation:", importData)
-            setActiveTab("encoder")
-            setActiveMode("encoder")
-            void importFromLibrary(importData, "encoder")
+        } else if (lastMode === "creator") {
+          const persistedCreator = window.sessionStorage.getItem(CREATOR_SESSION_KEY)
+          if (persistedCreator) {
+            const importData = JSON.parse(persistedCreator)
+            console.log("[v0] Restoring persisted creator meditation:", importData)
+            setActiveTab("creator")
+            setActiveMode("creator")
+            void importFromLibrary(importData, "creator")
           }
         }
       } catch (error) {
@@ -2455,12 +2455,12 @@ export default function Home() {
   }, [isProcessing])
 
   useEffect(() => {
-    if (actualDuration === null || timelineEvents.length === 0 || encoderTimelineOriginalDuration === null) {
+    if (actualDuration === null || timelineEvents.length === 0 || creatorTimelineOriginalDuration === null) {
       return
     }
 
     const normalizedActualDuration = Number(actualDuration)
-    const normalizedOriginalDuration = Number(encoderTimelineOriginalDuration)
+    const normalizedOriginalDuration = Number(creatorTimelineOriginalDuration)
 
     if (
       !Number.isFinite(normalizedActualDuration) ||
@@ -2470,7 +2470,7 @@ export default function Home() {
       return
     }
 
-    const previousDuration = lastEncoderDurationAdjustmentRef.current ?? normalizedOriginalDuration
+    const previousDuration = lastCreatorDurationAdjustmentRef.current ?? normalizedOriginalDuration
 
     if (!Number.isFinite(previousDuration) || previousDuration <= 0) {
       return
@@ -2499,24 +2499,24 @@ export default function Home() {
       return updatedEvent
     })
 
-    lastEncoderDurationAdjustmentRef.current = normalizedActualDuration
+    lastCreatorDurationAdjustmentRef.current = normalizedActualDuration
     setTimelineEvents(rescaledEvents)
-    setEncoderTotalDuration(normalizedActualDuration)
-  }, [actualDuration, encoderTimelineOriginalDuration, timelineEvents, setTimelineEvents, setEncoderTotalDuration])
+    setCreatorTotalDuration(normalizedActualDuration)
+  }, [actualDuration, creatorTimelineOriginalDuration, timelineEvents, setTimelineEvents, setCreatorTotalDuration])
 
   // == Effects and Handlers for Labs ==
   useEffect(() => {
-    encoderAudioRef.current = new Audio()
-    encoderAudioRef.current.preload = "none"
-    encoderAudioRef.current.volume = 0.7
-    if (encoderAudioRef.current) {
-      encoderAudioRef.current.onerror = (e) => console.warn("Encoder Audio error:", e)
+    creatorAudioRef.current = new Audio()
+    creatorAudioRef.current.preload = "none"
+    creatorAudioRef.current.volume = 0.7
+    if (creatorAudioRef.current) {
+      creatorAudioRef.current.onerror = (e) => console.warn("Creator Audio error:", e)
     }
     return () => {
-      if (encoderAudioRef.current) {
-        encoderAudioRef.current.pause()
-        encoderAudioRef.current.src = ""
-        encoderAudioRef.current = null
+      if (creatorAudioRef.current) {
+        creatorAudioRef.current.pause()
+        creatorAudioRef.current.src = ""
+        creatorAudioRef.current = null
       }
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
         mediaRecorderRef.current.stop()
@@ -2620,16 +2620,16 @@ export default function Home() {
 
         const eventEndTime = newStartTime + safeDuration
 
-        setEncoderTotalDuration((previousTotal) => {
+        setCreatorTotalDuration((previousTotal) => {
           if (existingEventCount === 0) {
-            return eventEndTime > 0 ? eventEndTime : DEFAULT_ENCODER_DURATION_SECONDS
+            return eventEndTime > 0 ? eventEndTime : DEFAULT_CREATOR_DURATION_SECONDS
           }
           return Math.max(previousTotal, eventEndTime)
         })
 
-        setEncoderTimelineOriginalDuration((previousOriginal) => {
+        setCreatorTimelineOriginalDuration((previousOriginal) => {
           if (existingEventCount === 0) {
-            return eventEndTime > 0 ? eventEndTime : DEFAULT_ENCODER_DURATION_SECONDS
+            return eventEndTime > 0 ? eventEndTime : DEFAULT_CREATOR_DURATION_SECONDS
           }
           if (previousOriginal === null) {
             return previousOriginal
@@ -2638,7 +2638,7 @@ export default function Home() {
         })
 
         if (existingEventCount === 0) {
-          lastEncoderDurationAdjustmentRef.current = Math.max(1, eventEndTime)
+          lastCreatorDurationAdjustmentRef.current = Math.max(1, eventEndTime)
         }
 
         toast({
@@ -2658,7 +2658,7 @@ export default function Home() {
         })
       }
     },
-    [addEventToTimeline, timelineEvents, setEncoderTotalDuration, setEncoderTimelineOriginalDuration, toast],
+    [addEventToTimeline, timelineEvents, setCreatorTotalDuration, setCreatorTimelineOriginalDuration, toast],
   )
 
   const handleTimelineUploadChange = useCallback(
@@ -3011,15 +3011,15 @@ export default function Home() {
                     </button>
                     <button
                       onClick={() => {
-                        setActiveMode("encoder")
-                        setActiveTab("encoder")
+                        setActiveMode("creator")
+                        setActiveTab("creator")
                       }}
                       className={cn(
                         "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm",
-                        activeMode === "encoder" ? "bg-white text-gray-600 shadow-md " : "text-gray-600 ",
+                        activeMode === "creator" ? "bg-white text-gray-600 shadow-md " : "text-gray-600 ",
                       )}
                     >
-                      Encoder
+                      Creator
                     </button>
                   </div>
                 </div>
@@ -3044,9 +3044,9 @@ export default function Home() {
                     </p>
                   </motion.div>
                 )}
-                {activeMode === "encoder" && (
+                {activeMode === "creator" && (
                   <motion.div
-                    key="encoder-note"
+                    key="creator-note"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
@@ -3272,7 +3272,7 @@ export default function Home() {
                           Settings
                         </TabsTrigger>
                         <TabsTrigger
-                          value="encoder"
+                          value="creator"
                           onClick={() => {
                             setActiveTab("adjuster") // Only change the tab, not the mode
                           }}
@@ -3380,7 +3380,7 @@ export default function Home() {
                         </div>
 
                       </TabsContent>
-                      <TabsContent value="encoder" className="mt-0 space-y-6">
+                      <TabsContent value="creator" className="mt-0 space-y-6">
                         <div className="grid gap-4 md:grid-cols-2">
                           <DurationControlCard
                             title="Min Silence Duration"
@@ -3593,9 +3593,9 @@ export default function Home() {
                   )}
                 </div>
               ) : (
-                // == Encoder UI ==
+                // == Creator UI ==
                 <motion.div
-                  key="encoder-content"
+                  key="creator-content"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
@@ -3611,12 +3611,12 @@ export default function Home() {
                       <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none text-center px-6 flex justify-center">
                         <div className="grid grid-cols-1 text-gray-600 justify-items-center gap-3 pb-0 w-full max-w-md">
                           <div className="text-center tracking-tight">
-                            <Label htmlFor="encoder-duration" className="text-gray-600 text-sm font-black">
+                            <Label htmlFor="creator-duration" className="text-gray-600 text-sm font-black">
                               Duration
                             </Label>
-                            <div id="encoder-duration" className="mt-2 flex flex-col items-center gap-6">
+                            <div id="creator-duration" className="mt-2 flex flex-col items-center gap-6">
                               <TimerWheel
-                                value={encoderDurationDraft}
+                                value={creatorDurationDraft}
                                 onChange={handleDurationWheelChange}
                                 maxHours={2}
                               />
@@ -3848,7 +3848,7 @@ export default function Home() {
                       recordingPreviewRef={recordingPreviewRef}
                     />
                   </motion.div>
-                  {/* Timeline Editor for encoder */}
+                  {/* Timeline Editor for creator */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -3879,7 +3879,7 @@ export default function Home() {
                       <div className="p-6 px-6">
                         <VisualTimeline
                           events={timelineEvents}
-                          totalDuration={encoderTotalDuration}
+                          totalDuration={creatorTotalDuration}
                           onUpdateEvent={updateEventStartTime}
                           onRemoveEvent={removeTimelineEvent}
                           onDuplicateEvent={handleDuplicateEvent}
@@ -3942,7 +3942,7 @@ export default function Home() {
 
                   {generatedAudioUrl && (
                     <motion.div
-                      ref={encoderAudioSectionRef}
+                      ref={creatorAudioSectionRef}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.7 }}
@@ -3955,7 +3955,7 @@ export default function Home() {
                               items={[
                                 {
                                   label: "Duration",
-                                  value: formatTime(encoderTotalDuration),
+                                  value: formatTime(creatorTotalDuration),
                                 },
                                 {
                                   label: "Instructions",
@@ -3979,14 +3979,14 @@ export default function Home() {
                         </div>
                         <div className="p-6 px-3.5 py-4 space-y-4 text-center shadow-none pb-4">
                           <div className="p-3 rounded-sm px-0 bg-transparent pb-0 mb-0 shadow-none pt-0">
-                            <audio ref={encoderAudioRef} controls className="w-full" src={generatedAudioUrl}></audio>
+                            <audio ref={creatorAudioRef} controls className="w-full" src={generatedAudioUrl}></audio>
                           </div>
                           <SaveMeditationDialog
                             audioUrl={generatedAudioUrl}
                             mp3Blob={generatedDistributionBlob ?? undefined}
                             originalFileName={meditationTitle || "meditation"}
-                            duration={encoderTotalDuration}
-                            source="encoder"
+                            duration={creatorTotalDuration}
+                            source="creator"
                             metadata={{
                               instructionCount: timelineEvents.length,
                               meditationTitle,
