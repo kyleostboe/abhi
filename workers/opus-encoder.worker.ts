@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-import { Application, Signal, createEncoder } from "libopus-wasm"
+import { Application, Signal, createEncoder } from "../vendor/libopus-wasm/index.js"
 import { muxOggOpus } from "@/lib/ogg-opus-muxer"
 
 type EncodeRequest = {

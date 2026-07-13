@@ -2004,7 +2004,7 @@ export default function LibraryPage() {
           return originalExtension
         }
 
-        return "wav"
+        return selectedMeditation.metadata.audioExport?.extension ?? "wav"
       }
 
       const fileExtension = extractExtension(selectedMeditation.processedAudioUrl)
@@ -2224,7 +2224,7 @@ export default function LibraryPage() {
 
       toast({
         title: "Invalid file type",
-        description: "Please drop an audio file (.mp3, .wav, etc.) or a backup ZIP file.",
+        description: "Please drop an audio file (.opus, .ogg, .mp3, .wav, etc.) or a backup ZIP file.",
         variant: "destructive",
       })
     },

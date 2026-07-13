@@ -562,8 +562,6 @@ export default function Home() {
   const timelineUploadInputRef = useRef<HTMLInputElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const silenceAnalysisAbortRef = useRef<AbortController | null>(null)
-  const adjusterCompressionTokenRef = useRef(0)
-  const encoderCompressionTokenRef = useRef(0)
   const [processedDistributionBlob, setProcessedDistributionBlob] = useState<Blob | null>(null)
   const [generatedDistributionBlob, setGeneratedDistributionBlob] = useState<Blob | null>(null)
   const [loadedLibraryContext, setLoadedLibraryContext] = useState<{
@@ -1717,7 +1715,7 @@ export default function Home() {
           message: `Reconstructed "${importData.title}" with ${reconstructedEvents.length} timeline events.`,
           type: "success",
         })
-        setGeneratedAudioMetadata(importData.metadata?.wav ?? null)
+        setGeneratedAudioMetadata(importData.metadata?.audioExport ?? importData.metadata?.wav ?? null)
       } catch (error) {
         console.error("[v0] Error reconstructing encoder meditation:", error)
         setStatus({
@@ -1817,7 +1815,7 @@ export default function Home() {
         setEncoderTotalDuration(safeDuration)
         setEncoderTimelineOriginalDuration(safeDuration)
         lastEncoderDurationAdjustmentRef.current = safeDuration
-        setGeneratedAudioMetadata(importData.metadata?.wav ?? null)
+        setGeneratedAudioMetadata(importData.metadata?.audioExport ?? importData.metadata?.wav ?? null)
       } catch (error) {
         console.error("[v0] Error importing as recorded block:", error)
         setStatus({
@@ -2203,27 +2201,6 @@ export default function Home() {
       setStatus({ message: "Audio processing completed successfully!", type: "success" })
       setIsProcessingComplete(true)
 
-      if (
-        typeof window !== "undefined" &&
-        typeof MediaRecorder !== "undefined" &&
-        MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-      ) {
-        const compressionToken = ++adjusterCompressionTokenRef.current
-        void (async () => {
-          try {
-            await ensureTone()
-            const { blob } = await bufferToWebM(result.processedBuffer, {})
-            if (adjusterCompressionTokenRef.current === compressionToken) {
-              setProcessedDistributionBlob(blob)
-              setProcessedFileSize(blob.size)
-            }
-          } catch (compressionError) {
-            if (adjusterCompressionTokenRef.current === compressionToken) {
-              console.warn("[v0] Failed to prepare compressed distribution:", compressionError)
-            }
-          }
-        })()
-      }
     } catch (error) {
       console.error("Error during audio processing:", error)
       const errorMsg = error instanceof Error ? error.message : String(error)

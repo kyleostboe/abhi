@@ -761,7 +761,7 @@ export default function EncoderPage() {
       const audioBuffer = await context.decodeAudioData(arrayBuffer)
       originalAudioBufferRef.current = audioBuffer
       setAudioDuration(audioBuffer.duration)
-      setEncodedAudioMetadata(importData.metadata?.wav ?? null)
+      setEncodedAudioMetadata(importData.metadata?.audioExport ?? importData.metadata?.wav ?? null)
 
       if (importData.source === "encoder" && !importData.crossToolOpening) {
         // Reconstruct original cues/recordings structure

@@ -17,7 +17,7 @@ import { useAuth } from "@/hooks/use-auth"
 
 interface SaveMeditationDialogProps {
   audioUrl: string
-  processedAudioBlob?: Blob | null // Optional pre-generated distribution blob (e.g., WebM/MP3)
+  processedAudioBlob?: Blob | null // Optional pre-generated distribution blob (normally Ogg Opus)
   originalFileName: string
   duration: number
   source: "adjuster" | "encoder"
@@ -59,7 +59,7 @@ const formatClockDuration = (seconds: number) => {
 
 export function SaveMeditationDialog({
   audioUrl,
-  processedAudioBlob, // Accept pre-created MP3
+  processedAudioBlob, // Accept pre-created Ogg Opus audio
   originalFileName,
   duration,
   source,
