@@ -393,6 +393,98 @@ export const bufferToWav_unused = async (
   }
 }
 
+// ============================================================================
+// Opus encoding via WebCodecs + webm-muxer worker (Change 2)
+// ============================================================================
+
+export interface OpusEncodeOptions {
+  /** Target bitrate in bps. Default 32000 (32 kbps, voice-optimised). */
+  bitrate?: number
+  onProgress?: (progress: number) => void
+}
+
+export interface OpusEncodeResult {
+  blob: Blob
+  /** Always "audio/webm" – contains Opus audio */
+  mimeType: "audio/webm"
+  /** The effective bitrate in kbps */
+  bitrateKbps: number
+}
+
+/**
+ * Encode an AudioBuffer to WebM/Opus at ~32 kbps using a WebCodecs AudioEncoder
+ * running in a dedicated Web Worker.  The entire encode is off the main thread
+ * and is done in chunks so it never loads the full decoded PCM into memory twice.
+ *
+ * Feature-detects WebCodecs + Opus support in the worker before running.
+ * Returns null if unsupported (caller should fall back to WAV/WebM MediaRecorder path).
+ *
+ * The output .webm plays on iOS Safari 17+, Android Chrome, and desktop browsers.
+ */
+export async function encodeOpusViaWorker(
+  buffer: AudioBuffer,
+  { bitrate = 32000, onProgress = () => {} }: OpusEncodeOptions = {},
+): Promise<OpusEncodeResult | null> {
+  if (typeof window === "undefined" || typeof Worker === "undefined") {
+    return null
+  }
+
+  // Build mono PCM (worker resamples to 48 kHz itself)
+  const totalSamples = buffer.length
+  const numChannels = buffer.numberOfChannels
+  const mono = new Float32Array(totalSamples)
+  for (let c = 0; c < numChannels; c++) {
+    const ch = buffer.getChannelData(c)
+    for (let i = 0; i < totalSamples; i++) mono[i] += ch[i]
+  }
+  if (numChannels > 1) {
+    for (let i = 0; i < totalSamples; i++) mono[i] /= numChannels
+  }
+
+  return new Promise<OpusEncodeResult | null>((resolve) => {
+    const worker = new Worker("/opus-worker.js")
+
+    worker.onmessage = (evt) => {
+      const { type } = evt.data
+      if (type === "PROGRESS") {
+        onProgress(evt.data.progress as number)
+      } else if (type === "ENCODED") {
+        worker.terminate()
+        resolve({
+          blob: evt.data.blob as Blob,
+          mimeType: "audio/webm",
+          bitrateKbps: Math.round(bitrate / 1000),
+        })
+      } else if (type === "UNSUPPORTED") {
+        worker.terminate()
+        resolve(null)
+      } else if (type === "ERROR") {
+        worker.terminate()
+        console.warn("[v0] Opus worker error:", evt.data.message)
+        resolve(null)
+      }
+    }
+
+    worker.onerror = (err) => {
+      worker.terminate()
+      console.warn("[v0] Opus worker failed to load:", err.message)
+      resolve(null)
+    }
+
+    const transferBuffer = mono.buffer.slice(0) as ArrayBuffer
+    worker.postMessage(
+      {
+        type:        "ENCODE",
+        pcm:         new Float32Array(transferBuffer),
+        sampleRate:  buffer.sampleRate,
+        numChannels: 1,
+        targetBitrate: bitrate,
+      },
+      [transferBuffer],
+    )
+  })
+}
+
 export interface BufferToMp3Options {
   bitrate?: number
   onProgress?: (progress: number) => void

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
 import { BookmarkPlus } from "lucide-react"
 import * as Tone from "tone"
-import { bufferToWav, type BufferToWavMetadata } from "@/lib/audio-utils"
+import { bufferToWav, encodeOpusViaWorker, type BufferToWavMetadata } from "@/lib/audio-utils"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 type SpeechRecognitionAlternative = {
@@ -123,6 +123,7 @@ export default function EncoderPage() {
   const [encodingProgress, setEncodingProgress] = useState(0)
   const [encodedAudioUrl, setEncodedAudioUrl] = useState<string>("")
   const [encodedAudioMetadata, setEncodedAudioMetadata] = useState<BufferToWavMetadata | null>(null)
+  const [encodedIsOpus, setEncodedIsOpus] = useState(false)
   const [status, setStatus] = useState<{ message: string; type: "info" | "success" | "error" } | null>(null)
   const [fullTranscript, setFullTranscript] = useState<string>("")
   const [isListening, setIsListening] = useState(false)
@@ -672,7 +673,16 @@ export default function EncoderPage() {
     // Reset Tone.js to use the main context
     Tone.setContext(audioCtx)
 
-    // Convert to WAV blob
+    // Change 2: try Opus first (~32 kbps, WebCodecs worker); fall back to WAV
+    const opusResult = await encodeOpusViaWorker(renderedBuffer, { bitrate: 32000 })
+    if (opusResult) {
+      setEncodedIsOpus(true)
+      setEncodedAudioMetadata(null) // no WAV metadata for Opus output
+      return URL.createObjectURL(opusResult.blob)
+    }
+
+    // Fallback: WAV
+    setEncodedIsOpus(false)
     const wavResult = await bufferToWav(renderedBuffer, {
       preferCompatibility: true,
       maxBytes: 48 * 1024 * 1024,
@@ -718,9 +728,10 @@ export default function EncoderPage() {
   const downloadEncodedAudio = () => {
     if (!encodedAudioUrl || !file) return
 
+    const ext = encodedIsOpus ? "webm" : "wav"
     const a = document.createElement("a")
     a.href = encodedAudioUrl
-    a.download = `${file.name.split(".")[0]}_encoded.wav`
+    a.download = `${file.name.split(".")[0]}_encoded.${ext}`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -930,7 +941,7 @@ export default function EncoderPage() {
             >
               <input ref={fileInputRef} type="file" accept="audio/*" onChange={handleFileChange} className="hidden" />
               <div className="space-y-2">
-                <div className="text-4xl">🎵</div>
+                <div className="text-4xl">���</div>
                 <p className="text-lg font-semibold text-gray-700 ">
                   {file ? file.name : "Drop your audio file here or click to browse"}
                 </p>

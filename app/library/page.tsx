@@ -2099,6 +2099,83 @@ export default function LibraryPage() {
     }
   }, [selectedMeditation, currentPlaybackRate, baseMeditation, setPlayerTime, setPlayerDuration])
 
+  // ─── Change 3: Media Session API ──────────────────────────────────────────
+  // Registers metadata and action handlers so the OS lock-screen / notification
+  // controls (play, pause, seek) work on iOS Safari and Android Chrome.
+  useEffect(() => {
+    if (typeof window === "undefined" || !("mediaSession" in navigator)) return
+    const audio = audioRef.current
+
+    if (!selectedMeditation || !audio) {
+      navigator.mediaSession.metadata = null
+      return
+    }
+
+    // Set track metadata
+    const artwork: MediaImage[] = []
+    // Use the app icon as artwork if available
+    try {
+      artwork.push({ src: "/apple-icon.png", sizes: "180x180", type: "image/png" })
+    } catch (_) { /* ignore */ }
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title:  selectedMeditation.title || "Meditation",
+      artist: "Abhi",
+      album:  "Meditations",
+      artwork,
+    })
+
+    const SEEK_OFFSET = 10 // seconds
+
+    const onPlay    = () => audio.play().catch(() => {})
+    const onPause   = () => audio.pause()
+    const onSeekBwd = () => { audio.currentTime = Math.max(0, audio.currentTime - SEEK_OFFSET) }
+    const onSeekFwd = () => { audio.currentTime = Math.min(audio.duration || Infinity, audio.currentTime + SEEK_OFFSET) }
+    const onSeekTo  = (details: MediaSessionActionDetails) => {
+      if (details.seekTime !== undefined) {
+        audio.currentTime = details.seekTime
+      }
+    }
+
+    navigator.mediaSession.setActionHandler("play",         onPlay)
+    navigator.mediaSession.setActionHandler("pause",        onPause)
+    navigator.mediaSession.setActionHandler("seekbackward", onSeekBwd)
+    navigator.mediaSession.setActionHandler("seekforward",  onSeekFwd)
+    navigator.mediaSession.setActionHandler("seekto",       onSeekTo)
+
+    // Keep position state in sync so the OS shows the correct scrubber position
+    const updatePositionState = () => {
+      if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0) return
+      try {
+        navigator.mediaSession.setPositionState({
+          duration:     audio.duration,
+          playbackRate: audio.playbackRate || 1,
+          position:     Math.min(audio.currentTime, audio.duration),
+        })
+      } catch (_) { /* ignore unsupported */ }
+    }
+
+    audio.addEventListener("timeupdate", updatePositionState)
+    audio.addEventListener("durationchange", updatePositionState)
+
+    // Set initial position state
+    updatePositionState()
+
+    return () => {
+      audio.removeEventListener("timeupdate", updatePositionState)
+      audio.removeEventListener("durationchange", updatePositionState)
+
+      try {
+        navigator.mediaSession.setActionHandler("play",         null)
+        navigator.mediaSession.setActionHandler("pause",        null)
+        navigator.mediaSession.setActionHandler("seekbackward", null)
+        navigator.mediaSession.setActionHandler("seekforward",  null)
+        navigator.mediaSession.setActionHandler("seekto",       null)
+      } catch (_) { /* ignore */ }
+    }
+  }, [selectedMeditation, audioRef])
+  // ─────────────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     if (!selectedMeditation && timelineAudioRef.current) {
       timelineAudioRef.current.pause()
@@ -2950,10 +3027,13 @@ export default function LibraryPage() {
                             </div>
 
                             {/* Player Content */}
+                            {/* preload="auto" + playsInline lets iOS Safari keep the audio session
+                                active when the screen locks, so background playback continues. */}
                             <audio
                               ref={audioRef}
                               src={selectedMeditation.processedAudioUrl || undefined}
-                              preload="metadata"
+                              preload="auto"
+                              playsInline
                               className="hidden"
                             />
 

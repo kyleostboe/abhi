@@ -3,6 +3,158 @@ import { forceGarbageCollection, formatTime, sleep } from "@/lib/utils"
 
 export type SilenceRegion = { start: number; end: number }
 
+// ============================================================================
+// VAD-based silence detection (Change 1)
+// Runs Silero VAD in a Web Worker; output matches detectSilenceRegions shape.
+// ============================================================================
+
+export interface VadDetectOptions {
+  /** positiveSpeechThreshold maps to slider value 0-1; default 0.5 */
+  positiveSpeechThreshold?: number
+  /** Pauses shorter than this are ignored (seconds); default 0.5 */
+  minSilenceDuration?: number
+  onProgress?: (progress: number) => void
+  signal?: AbortSignal
+}
+
+/**
+ * Run Silero VAD in a dedicated Web Worker on a downmixed mono 16 kHz Float32Array.
+ * Returns pause regions in the same {start, end} format as detectSilenceRegions.
+ *
+ * Processes in the worker so the main thread (and any calling worker) is not blocked.
+ * Falls back to an empty array if the worker cannot load (SSR, non-browser env).
+ */
+export async function detectSilenceRegionsVAD(
+  buffer: AudioBuffer,
+  options: VadDetectOptions = {},
+): Promise<SilenceRegion[]> {
+  if (typeof window === "undefined" || typeof Worker === "undefined") {
+    return []
+  }
+
+  const {
+    positiveSpeechThreshold = 0.5,
+    minSilenceDuration = 0.5,
+    onProgress,
+    signal,
+  } = options
+
+  // Build mono PCM from the AudioBuffer (mix down all channels)
+  const totalSamples = buffer.length
+  const mono = new Float32Array(totalSamples)
+  for (let c = 0; c < buffer.numberOfChannels; c++) {
+    const ch = buffer.getChannelData(c)
+    for (let i = 0; i < totalSamples; i++) {
+      mono[i] += ch[i]
+    }
+  }
+  if (buffer.numberOfChannels > 1) {
+    for (let i = 0; i < totalSamples; i++) {
+      mono[i] /= buffer.numberOfChannels
+    }
+  }
+
+  return new Promise<SilenceRegion[]>((resolve, reject) => {
+    const worker = new Worker("/vad-worker.js")
+
+    const onAbort = () => {
+      worker.terminate()
+      reject(new DOMException("Aborted", "AbortError"))
+    }
+    signal?.addEventListener("abort", onAbort)
+
+    worker.onmessage = (evt) => {
+      const { type } = evt.data
+      if (type === "PROGRESS") {
+        onProgress?.(evt.data.progress as number)
+      } else if (type === "VAD_RESULT") {
+        signal?.removeEventListener("abort", onAbort)
+        worker.terminate()
+        resolve(evt.data.regions as SilenceRegion[])
+      } else if (type === "ERROR") {
+        signal?.removeEventListener("abort", onAbort)
+        worker.terminate()
+        reject(new Error(evt.data.message as string))
+      }
+    }
+
+    worker.onerror = (err) => {
+      signal?.removeEventListener("abort", onAbort)
+      worker.terminate()
+      reject(new Error(`VAD worker error: ${err.message}`))
+    }
+
+    // Transfer the mono PCM buffer to avoid copying
+    const transferBuffer = mono.buffer.slice(0) as ArrayBuffer
+    worker.postMessage(
+      {
+        type: "RUN_VAD",
+        pcm: new Float32Array(transferBuffer),
+        sampleRate: buffer.sampleRate,
+        positiveSpeechThreshold,
+        negativeSpeechThreshold: Math.max(0, positiveSpeechThreshold - 0.15),
+        minSilenceMs: minSilenceDuration * 1000,
+      },
+      [transferBuffer],
+    )
+  })
+}
+
+/**
+ * Compute an Otsu-based auto-suggested silence threshold for manual mode.
+ * Runs in the VAD worker (lightweight pass, no ONNX).
+ * Returns a threshold value in the range [0.001, 0.05] for the existing slider.
+ */
+export async function computeOtsuThreshold(buffer: AudioBuffer): Promise<number> {
+  if (typeof window === "undefined" || typeof Worker === "undefined") {
+    return 0.025
+  }
+
+  // Build mono PCM
+  const totalSamples = buffer.length
+  const mono = new Float32Array(totalSamples)
+  for (let c = 0; c < buffer.numberOfChannels; c++) {
+    const ch = buffer.getChannelData(c)
+    for (let i = 0; i < totalSamples; i++) {
+      mono[i] += ch[i]
+    }
+  }
+  if (buffer.numberOfChannels > 1) {
+    for (let i = 0; i < totalSamples; i++) {
+      mono[i] /= buffer.numberOfChannels
+    }
+  }
+
+  return new Promise<number>((resolve) => {
+    const worker = new Worker("/vad-worker.js")
+
+    worker.onmessage = (evt) => {
+      if (evt.data.type === "OTSU_RESULT") {
+        worker.terminate()
+        resolve(evt.data.threshold as number)
+      } else if (evt.data.type === "ERROR") {
+        worker.terminate()
+        resolve(0.025) // safe fallback
+      }
+    }
+
+    worker.onerror = () => {
+      worker.terminate()
+      resolve(0.025)
+    }
+
+    const transferBuffer = mono.buffer.slice(0) as ArrayBuffer
+    worker.postMessage(
+      {
+        type: "COMPUTE_OTSU",
+        pcm: new Float32Array(transferBuffer),
+        sampleRate: buffer.sampleRate,
+      },
+      [transferBuffer],
+    )
+  })
+}
+
 /**
  * WSOLA (Waveform Similarity Overlap-Add) time-stretch.
  * Speeds up `input` by `tempo` (e.g. 1.25) without changing pitch.
@@ -475,6 +627,11 @@ interface AdjusterWorkflowSettings {
   minSilenceDuration: number
   maxSilenceDuration: number
   contentSpeedMultiplier: number // 1.0 = no change, 1.05-1.15 = subtle speedup for shrink boost
+  /**
+   * When provided, skip the built-in amplitude detection and use these
+   * pre-computed regions (e.g. from VAD). Must be in the same {start,end} format.
+   */
+  precomputedSilenceRegions?: SilenceRegion[]
 }
 
 interface AdjusterWorkflowCallbacks {
@@ -514,13 +671,18 @@ export async function runAdjusterWorkflow({
     minSilenceDuration,
     maxSilenceDuration,
     contentSpeedMultiplier,
+    precomputedSilenceRegions,
   } = settings
   const { onProgress = () => {}, onStep = () => {}, onMemoryWarning } = callbacks
 
   onStep("Detecting silence regions (step 1/4)...")
   onProgress(10)
 
-  const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
+  // Use pre-computed regions (e.g. from VAD worker) when provided; otherwise run
+  // the built-in amplitude threshold detector on the main thread.
+  const silenceRegions = precomputedSilenceRegions
+    ? precomputedSilenceRegions
+    : await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
 
   const cappedSilenceRegions = silenceRegions.map((region) => {
     if (maxSilenceDuration === 0) {

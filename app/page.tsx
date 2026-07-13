@@ -32,12 +32,15 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
 import { VisualTimeline } from "@/components/visual-timeline"
 import { cn, formatTime, monitorMemory, formatFileSize } from "@/lib/utils"
-import { getAudioContext, bufferToWav, bufferToWebM, type BufferToWavMetadata } from "@/lib/audio-utils" // Import from audio-utils
+import { getAudioContext, bufferToWav, bufferToWebM, encodeOpusViaWorker, type BufferToWavMetadata } from "@/lib/audio-utils" // Import from audio-utils
 import {
   runAdjusterWorkflow,
   detectSilenceRegions as computeSilenceRegions,
+  detectSilenceRegionsVAD,
+  computeOtsuThreshold,
   calculateUniformScaledPauseDurations,
   type DetectSilenceOptions,
+  type SilenceRegion,
 } from "@/lib/adjuster-workflow"
 import type { SavedMeditation } from "@/lib/meditation-library"
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
@@ -530,6 +533,14 @@ export default function Home() {
   const audioContextRef = useRef<AudioContext | null>(null) // Still needed for Adjuster's specific context management
   const [targetDuration, setTargetDuration] = useState<number>(20)
   const [silenceThreshold, setSilenceThreshold] = useState<number>(0.025)
+  // VAD mode state (Change 1)
+  const [detectionMode, setDetectionMode] = useState<"vad" | "manual">("vad")
+  const [vadProbThreshold, setVadProbThreshold] = useState<number>(0.5)
+  const [otsuSuggestedThreshold, setOtsuSuggestedThreshold] = useState<number | null>(null)
+  // Pre-computed VAD regions – shared across analysis + processing passes
+  const vadRegionsRef = useRef<SilenceRegion[] | null>(null)
+  const [isVadRunning, setIsVadRunning] = useState(false)
+  const vadAbortRef = useRef<AbortController | null>(null)
   const [minSilenceDuration, setMinSilenceDuration] = useState<number>(1)
   const [maxSilenceDuration, setMaxSilenceDuration] = useState<number>(0) // 0 = no limit
   const [contentSpeedMultiplier, setContentSpeedMultiplier] = useState<number>(1.0) // 1.0 = no speedup, up to 1.15x
@@ -2206,6 +2217,11 @@ export default function Home() {
           minSilenceDuration,
           maxSilenceDuration: maxSilenceDuration * 1000, // convert to ms
           contentSpeedMultiplier,
+          // Pass pre-computed VAD regions when in VAD mode so the workflow
+          // skips amplitude detection and uses speech/pause boundaries directly.
+          precomputedSilenceRegions: detectionMode === "vad" && vadRegionsRef.current
+            ? vadRegionsRef.current
+            : undefined,
         },
         isMobileDevice,
         callbacks: {
@@ -2234,23 +2250,37 @@ export default function Home() {
       setStatus({ message: "Audio processing completed successfully!", type: "success" })
       setIsProcessingComplete(true)
 
-      if (
-        typeof window !== "undefined" &&
-        typeof MediaRecorder !== "undefined" &&
-        MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-      ) {
+      // Change 2: encode to Opus/WebM at ~32 kbps via WebCodecs worker.
+      // Falls back to MediaRecorder WebM, then keeps WAV if both unavailable.
+      if (typeof window !== "undefined") {
         const compressionToken = ++adjusterCompressionTokenRef.current
         void (async () => {
           try {
-            await ensureTone()
-            const { blob } = await bufferToWebM(result.processedBuffer, {})
-            if (adjusterCompressionTokenRef.current === compressionToken) {
-              setProcessedDistributionBlob(blob)
-              setProcessedFileSize(blob.size)
+            // Try WebCodecs Opus worker first (~32 kbps, off main thread, chunked)
+            const opusResult = await encodeOpusViaWorker(result.processedBuffer, { bitrate: 32000 })
+
+            if (opusResult && adjusterCompressionTokenRef.current === compressionToken) {
+              setProcessedDistributionBlob(opusResult.blob)
+              setProcessedFileSize(opusResult.blob.size)
+              return
             }
+
+            // Fallback: MediaRecorder WebM (browser-native, ~96 kbps)
+            if (
+              typeof MediaRecorder !== "undefined" &&
+              MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+            ) {
+              await ensureTone()
+              const { blob } = await bufferToWebM(result.processedBuffer, {})
+              if (adjusterCompressionTokenRef.current === compressionToken) {
+                setProcessedDistributionBlob(blob)
+                setProcessedFileSize(blob.size)
+              }
+            }
+            // else: keep the WAV blob already set above
           } catch (compressionError) {
             if (adjusterCompressionTokenRef.current === compressionToken) {
-              console.warn("[v0] Failed to prepare compressed distribution:", compressionError)
+              console.warn("[v0] Compression failed, keeping WAV:", compressionError)
             }
           }
         })()
@@ -2304,7 +2334,13 @@ export default function Home() {
         silenceAnalysisAbortRef.current.abort()
         silenceAnalysisAbortRef.current = null
       }
+      if (vadAbortRef.current) {
+        vadAbortRef.current.abort()
+        vadAbortRef.current = null
+      }
+      vadRegionsRef.current = null
       setAnalysisProgress(null)
+      setIsVadRunning(false)
       return
     }
 
@@ -2312,28 +2348,55 @@ export default function Home() {
     if (silenceAnalysisAbortRef.current) {
       silenceAnalysisAbortRef.current.abort()
     }
+    if (vadAbortRef.current) {
+      vadAbortRef.current.abort()
+    }
     silenceAnalysisAbortRef.current = controller
+    vadAbortRef.current = controller
 
     setAnalysisProgress((prev) => (prev === null ? 0 : prev))
     setProcessingStep("Analyzing audio...")
 
     const recomputeAnalysis = async () => {
       try {
-        const silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration, {
-          signal: controller.signal,
-          onProgress: (progress) => {
-            if (controller.signal.aborted) {
-              return
-            }
-            setAnalysisProgress((prev) => (prev === progress ? prev : progress))
-            setStatus((prev) => {
-              if (prev?.type === "error") {
-                return prev
-              }
-              return { message: `Analyzing audio (${progress}%)...`, type: "info" }
-            })
-          },
-        })
+        let silenceRegions: SilenceRegion[]
+
+        if (detectionMode === "vad") {
+          // VAD path: run Silero VAD in a worker, cache results
+          setIsVadRunning(true)
+          setStatus({ message: "Running Voice Activity Detection...", type: "info" })
+
+          silenceRegions = await detectSilenceRegionsVAD(originalBuffer, {
+            positiveSpeechThreshold: vadProbThreshold,
+            minSilenceDuration: Math.max(0.5, minSilenceDuration),
+            signal: controller.signal,
+            onProgress: (progress) => {
+              if (controller.signal.aborted) return
+              setAnalysisProgress((prev) => (prev === progress ? prev : progress))
+              setStatus((prev) => {
+                if (prev?.type === "error") return prev
+                return { message: `VAD analysis (${progress}%)...`, type: "info" }
+              })
+            },
+          })
+
+          vadRegionsRef.current = silenceRegions
+          setIsVadRunning(false)
+        } else {
+          // Manual / amplitude threshold path
+          vadRegionsRef.current = null
+          silenceRegions = await detectSilenceRegions(originalBuffer, silenceThreshold, minSilenceDuration, {
+            signal: controller.signal,
+            onProgress: (progress) => {
+              if (controller.signal.aborted) return
+              setAnalysisProgress((prev) => (prev === progress ? prev : progress))
+              setStatus((prev) => {
+                if (prev?.type === "error") return prev
+                return { message: `Analyzing audio (${progress}%)...`, type: "info" }
+              })
+            },
+          })
+        }
 
         if (controller.signal.aborted) {
           return
@@ -2423,7 +2486,18 @@ export default function Home() {
           return { message: "Audio loaded and analyzed. Ready to adjust.", type: "success" }
         })
       } catch (error) {
+        setIsVadRunning(false)
         if (isAbortError(error)) {
+          return
+        }
+        // If VAD failed, auto-fall-back to manual mode
+        if (detectionMode === "vad") {
+          console.error("[v0] VAD failed, falling back to manual mode:", error)
+          setDetectionMode("manual")
+          setStatus({
+            message: "VAD unavailable — switched to manual threshold mode.",
+            type: "info",
+          })
           return
         }
         console.error("[v0] Error updating audio analysis:", error)
@@ -2433,6 +2507,7 @@ export default function Home() {
           type: "error",
         })
       } finally {
+        setIsVadRunning(false)
         if (silenceAnalysisAbortRef.current === controller) {
           silenceAnalysisAbortRef.current = null
         }
@@ -2443,8 +2518,28 @@ export default function Home() {
 
     return () => {
       controller.abort()
+      setIsVadRunning(false)
     }
-  }, [originalBuffer, detectSilenceRegions, silenceThreshold, minSilenceDuration, maxSilenceDuration, contentSpeedMultiplier, isMobileDevice])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [originalBuffer, detectionMode, vadProbThreshold, silenceThreshold, minSilenceDuration, maxSilenceDuration, contentSpeedMultiplier, isMobileDevice])
+
+  // Auto-compute Otsu-suggested threshold whenever we switch to manual mode or load a new file
+  useEffect(() => {
+    if (!originalBuffer || detectionMode !== "manual") {
+      return
+    }
+    let cancelled = false
+    computeOtsuThreshold(originalBuffer)
+      .then((threshold) => {
+        if (!cancelled) {
+          setOtsuSuggestedThreshold(threshold)
+          // Pre-load the slider with the suggested value (user can still override)
+          setSilenceThreshold(threshold)
+        }
+      })
+      .catch(() => { /* silent fail */ })
+    return () => { cancelled = true }
+  }, [originalBuffer, detectionMode])
 
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined
@@ -3356,26 +3451,92 @@ export default function Home() {
                             </div>
                           </DurationControlCard>
                           <DurationControlCard
-                            title="Silence Threshold"
+                            title="Pause Detection"
                             gradientClassName="from-logo-rose-300 to-logo-emerald-500"
                           >
-                            <div>
-                              <Slider
-                                value={[silenceThreshold]}
-                                min={0.001}
-                                max={0.05}
-                                step={0.001}
-                                onValueChange={(value) => setSilenceThreshold(value[0])}
+                            {/* VAD / Manual mode toggle */}
+                            <div className="flex items-center justify-center gap-2 mb-1">
+                              <button
+                                onClick={() => {
+                                  if (detectionMode !== "vad") {
+                                    vadRegionsRef.current = null
+                                    setDetectionMode("vad")
+                                  }
+                                }}
                                 disabled={!originalBuffer}
-                                className="py-4"
-                                rangeClassName="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500"
-                              />
+                                className={`text-xs font-black px-2 py-1 transition-colors border-b ${
+                                  detectionMode === "vad"
+                                    ? "text-gray-700 border-gray-700"
+                                    : "text-gray-400 border-transparent hover:text-gray-600 hover:border-gray-400"
+                                } ${!originalBuffer ? "opacity-50 cursor-not-allowed" : ""}`}
+                              >
+                                VAD
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (detectionMode !== "manual") {
+                                    setDetectionMode("manual")
+                                  }
+                                }}
+                                disabled={!originalBuffer}
+                                className={`text-xs font-black px-2 py-1 transition-colors border-b ${
+                                  detectionMode === "manual"
+                                    ? "text-gray-700 border-gray-700"
+                                    : "text-gray-400 border-transparent hover:text-gray-600 hover:border-gray-400"
+                                } ${!originalBuffer ? "opacity-50 cursor-not-allowed" : ""}`}
+                              >
+                                Manual
+                              </button>
+                            </div>
+                            {/* Unified sensitivity slider: maps to VAD prob cutoff in VAD mode,
+                                or amplitude threshold in manual mode */}
+                            <div>
+                              {detectionMode === "vad" ? (
+                                <Slider
+                                  value={[vadProbThreshold]}
+                                  min={0.1}
+                                  max={0.9}
+                                  step={0.05}
+                                  onValueChange={(value) => setVadProbThreshold(value[0])}
+                                  disabled={!originalBuffer || isVadRunning}
+                                  className="py-4"
+                                  rangeClassName="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500"
+                                />
+                              ) : (
+                                <Slider
+                                  value={[silenceThreshold]}
+                                  min={0.001}
+                                  max={0.05}
+                                  step={0.001}
+                                  onValueChange={(value) => setSilenceThreshold(value[0])}
+                                  disabled={!originalBuffer}
+                                  className="py-4"
+                                  rangeClassName="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500"
+                                />
+                              )}
                             </div>
                             <div className="text-center tracking-tight">
-                              <span className="text-lg text-gray-600 font-black">{silenceThreshold.toFixed(3)}</span>
-                              <span className="ml-1 text-sm text-gray-600"></span>
+                              {detectionMode === "vad" ? (
+                                <>
+                                  <span className="text-lg text-gray-600 font-black">{vadProbThreshold.toFixed(2)}</span>
+                                  <span className="ml-1 text-sm text-gray-600">cutoff</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="text-lg text-gray-600 font-black">{silenceThreshold.toFixed(3)}</span>
+                                  {otsuSuggestedThreshold !== null && (
+                                    <span className="ml-1 text-xs text-gray-400">
+                                      (suggested {otsuSuggestedThreshold.toFixed(3)})
+                                    </span>
+                                  )}
+                                </>
+                              )}
                             </div>
-                            <p className="text-center text-xs text-gray-500 tracking-tight">higher = detect more pauses</p>
+                            <p className="text-center text-xs text-gray-500 tracking-tight">
+                              {detectionMode === "vad"
+                                ? (isVadRunning ? "Running VAD..." : "lower = detect more pauses (VAD)")
+                                : "higher = detect more pauses"}
+                            </p>
                           </DurationControlCard>
                         </div>
 
