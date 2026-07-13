@@ -588,141 +588,31 @@ export async function runAdjusterWorkflow({
   onStep("Creating audio file (step 4/4)...")
   onProgress(80)
 
-  // --- Opus encode (WASM libopus, ~32 kbps) in worker ---
-  let wavBlob: Blob
-  let wavMetadata: BufferToWavMetadata
+  // ============================================================
+  // WAV EXPORT (Opus WASM loading disabled — module scope conflict)
+  // ============================================================
+  console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+  console.error("[OPUS DISABLED] Opus WASM loading has module scope issues")
+  console.error("[OPUS DISABLED] Exporting as WAV instead (~45-180MB uncompressed)")
+  console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
-  try {
-    console.log("[OPUS] adjuster-workflow: attempting Opus encode in worker...")
+  const wavResult = await bufferToWav(processedAudioBuffer, {
+    preferCompatibility: false,
+    maxBytes: 48 * 1024 * 1024,
+    isMobile: isMobileDevice,
+    onProgress: (progress) => {
+      const normalized = Math.max(0, Math.min(100, progress))
+      onProgress(80 + Math.floor((normalized / 100) * 20))
+    },
+  })
 
-    // Fetch the preloaded WASM from public/
-    const wasmUrl = "/opusscript.wasm"
-    console.log("[OPUS] Fetching WASM from:", wasmUrl)
-    const wasmResponse = await fetch(wasmUrl)
-    if (!wasmResponse.ok) {
-      throw new Error(`WASM fetch failed: ${wasmResponse.status} ${wasmResponse.statusText}`)
-    }
-    const wasmArrayBuffer = await wasmResponse.arrayBuffer()
-    console.log("[OPUS] WASM fetched successfully, size:", wasmArrayBuffer.byteLength, "bytes")
-
-    // Pre-populate Module.wasmBinary before opusscript import to avoid sync fetch
-    await setupOpusscriptModule(wasmArrayBuffer)
-    console.log("[OPUS] Module with locateFile pre-loaded, importing opusscript...")
-
-    // Import opusscript directly now that Module.locateFile will serve WASM from our buffer
-    const opusscriptModule = await import('opusscript')
-    const OpusScript = opusscriptModule.default || opusscriptModule
-    console.log("[OPUS] opusscript imported successfully, Module.locateFile active")
-
-    // Mix down to mono Float32Array
-    const totalSamples = processedAudioBuffer.length
-    const mono = new Float32Array(totalSamples)
-    for (let i = 0; i < totalSamples; i++) {
-      let sum = 0
-      for (let c = 0; c < processedAudioBuffer.numberOfChannels; c++) {
-        sum += processedAudioBuffer.getChannelData(c)[i]
-      }
-      mono[i] = sum / processedAudioBuffer.numberOfChannels
-    }
-
-    onProgress(85)
-
-    console.log("[OPUS] Mono mix-down complete, resampling to 48kHz...")
-
-    // Resample to 48kHz (Opus native rate) if needed
-    let pcmData = mono
-    let inputRate = processedAudioBuffer.sampleRate
-    if (inputRate !== 48000) {
-      console.log("[OPUS] Resampling from", inputRate, "Hz to 48000 Hz")
-      const ratio = 48000 / inputRate
-      const resampledLen = Math.ceil(mono.length * ratio)
-      const resampled = new Float32Array(resampledLen)
-      for (let i = 0; i < resampledLen; i++) {
-        const srcIdx = i / ratio
-        const srcIdxFloor = Math.floor(srcIdx)
-        const frac = srcIdx - srcIdxFloor
-        const s0 = mono[Math.min(srcIdxFloor, mono.length - 1)] || 0
-        const s1 = mono[Math.min(srcIdxFloor + 1, mono.length - 1)] || 0
-        resampled[i] = s0 + (s1 - s0) * frac
-      }
-      pcmData = resampled
-      inputRate = 48000
-    }
-
-    console.log("[OPUS] Initialising Opus encoder at", inputRate, "Hz...")
-
-    // Create encoder with 48kHz: OpusScript(sampleRate, channels, application)
-    const encoder = new (OpusScript as any)(inputRate, 1, (OpusScript as any).Application.VOIP)
-    encoder.setBitrate(32000)
-
-    console.log("[OPUS] Encoder ready, encoding in chunks...")
-
-    const pages: Uint8Array[] = []
-    let offset = 0
-    const frameSize = Math.round(inputRate * 0.02) // 20ms frame
-
-    while (offset < pcmData.length) {
-      const end = Math.min(offset + frameSize, pcmData.length)
-      const frame = pcmData.subarray(offset, end)
-      const encoded = (encoder as any).encode_float(frame)
-      if (encoded && encoded.length > 0) pages.push(encoded)
-
-      offset = end
-      const pct = 85 + Math.round(((offset / pcmData.length) * 12))
-      onProgress(pct)
-
-      await sleep(0)
-    }
-
-    // Flush any remaining data
-    const tail = (encoder as any).encode_float(new Float32Array(0))
-    if (tail && tail.length > 0) pages.push(tail)
-
-    const opusBlob = new Blob(pages as BlobPart[], { type: "audio/ogg; codecs=opus" })
-
-    if (opusBlob.size === 0) {
-      throw new Error("Opus blob is empty after encoding")
-    }
-
-    console.log(
-      `[OPUS] Encode complete. Duration=${processedAudioBuffer.duration.toFixed(1)}s, ` +
-      `Opus=${(opusBlob.size / 1024).toFixed(0)}KB @ 32kbps`,
-    )
-
-    wavBlob = opusBlob
-    wavMetadata = {
-      sampleRate: 48000,
-      bitDepth: 16,
-      channels: 1,
-    }
-  } catch (opusError) {
-    // ============================================================
-    // LOUD WAV FALLBACK — Opus failed, falling back to WAV export
-    // ============================================================
-    console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    console.error("[OPUS FALLBACK] Opus encoding FAILED — falling back to WAV")
-    console.error("[OPUS FALLBACK] Opus error:", opusError)
-    console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-
-    const wavResult = await bufferToWav(processedAudioBuffer, {
-      preferCompatibility: false,
-      maxBytes: 48 * 1024 * 1024,
-      isMobile: isMobileDevice,
-      onProgress: (progress) => {
-        const normalized = Math.max(0, Math.min(100, progress))
-        onProgress(80 + Math.floor((normalized / 100) * 20))
-      },
-    })
-
-    if (wavResult.blob.size === 0) {
-      throw new Error("WAV fallback blob is also empty. Both Opus and WAV conversion failed.")
-    }
-
-    console.warn("[OPUS FALLBACK] WAV fallback succeeded, size:", wavResult.blob.size)
-    const { blob, ...meta } = wavResult
-    wavBlob = blob
-    wavMetadata = meta
+  if (wavResult.blob.size === 0) {
+    throw new Error("WAV export failed: blob is empty")
   }
+
+  console.warn("[WAV EXPORT] Success, size:", (wavResult.blob.size / 1024 / 1024).toFixed(1), "MB")
+
+  const { blob: wavBlob, ...wavMetadata } = wavResult
 
   onProgress(100)
   onStep("Complete!")
