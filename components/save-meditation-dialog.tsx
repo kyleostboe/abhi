@@ -20,7 +20,7 @@ interface SaveMeditationDialogProps {
   mp3Blob?: Blob | null // Optional pre-generated distribution blob (e.g., WebM/MP3)
   originalFileName: string
   duration: number
-  source: "adjuster" | "encoder"
+  source: "adjuster" | "creator"
   metadata: SavedMeditation["metadata"]
   children?: React.ReactNode
   existingMeditationId?: string | null

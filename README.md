@@ -12,7 +12,7 @@ A meditation tool that allows users to adjust the length of guided meditations b
 - Advanced settings for silence threshold, minimum silence duration, and pacing preservation.
 - Download the processed audio.
 
-### Encoder
+### Creator
 
 
 - Create custom meditation timelines.
