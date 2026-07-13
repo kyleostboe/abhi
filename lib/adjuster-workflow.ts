@@ -1,4 +1,4 @@
-import { bufferToWav, type BufferToWavMetadata } from "@/lib/audio-utils"
+import { bufferToWav, bufferToOpus, type BufferToWavMetadata } from "@/lib/audio-utils"
 import { forceGarbageCollection, formatTime, sleep } from "@/lib/utils"
 
 export type SilenceRegion = { start: number; end: number }
@@ -572,24 +572,63 @@ export async function runAdjusterWorkflow({
   onStep("Creating audio file (step 4/4)...")
   onProgress(80)
 
-  const wavResult = await bufferToWav(processedAudioBuffer, {
-    preferCompatibility: false,
-    maxBytes: 48 * 1024 * 1024,
-    isMobile: isMobileDevice,
-    onProgress: (progress) => {
-      const normalized = Math.max(0, Math.min(100, progress))
-      onProgress(80 + Math.floor((normalized / 100) * 20))
-    },
-  })
+  // --- Opus encode (WASM libopus, ~32 kbps) ---
+  let wavBlob: Blob
+  let wavMetadata: BufferToWavMetadata
 
-  if (wavResult.blob.size === 0) {
-    throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
+  try {
+    console.log("[OPUS] adjuster-workflow: attempting Opus encode...")
+    const opusResult = await bufferToOpus(processedAudioBuffer, {
+      bitrate: 32,
+      chunkSeconds: 5,
+      onProgress: (progress) => {
+        const normalized = Math.max(0, Math.min(100, progress))
+        onProgress(80 + Math.floor((normalized / 100) * 20))
+      },
+    })
+
+    if (opusResult.blob.size === 0) {
+      throw new Error("Opus blob is empty after encoding")
+    }
+
+    console.log("[OPUS] adjuster-workflow: Opus encode succeeded, size:", opusResult.blob.size)
+    wavBlob = opusResult.blob
+    wavMetadata = {
+      sampleRate: opusResult.sampleRate,
+      bitDepth: 16,   // opus doesn't have a bit depth; 16 is a sensible placeholder
+      channels: opusResult.channels,
+    }
+  } catch (opusError) {
+    // ============================================================
+    // LOUD WAV FALLBACK — Opus failed, falling back to WAV export
+    // ============================================================
+    console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    console.error("[OPUS FALLBACK] Opus encoding FAILED — falling back to WAV")
+    console.error("[OPUS FALLBACK] Opus error:", opusError)
+    console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+
+    const wavResult = await bufferToWav(processedAudioBuffer, {
+      preferCompatibility: false,
+      maxBytes: 48 * 1024 * 1024,
+      isMobile: isMobileDevice,
+      onProgress: (progress) => {
+        const normalized = Math.max(0, Math.min(100, progress))
+        onProgress(80 + Math.floor((normalized / 100) * 20))
+      },
+    })
+
+    if (wavResult.blob.size === 0) {
+      throw new Error("WAV fallback blob is also empty. Both Opus and WAV conversion failed.")
+    }
+
+    console.warn("[OPUS FALLBACK] WAV fallback succeeded, size:", wavResult.blob.size)
+    const { blob, ...meta } = wavResult
+    wavBlob = blob
+    wavMetadata = meta
   }
 
   onProgress(100)
   onStep("Complete!")
-
-  const { blob: wavBlob, ...wavMetadata } = wavResult
 
   return {
     processedBuffer: processedAudioBuffer,

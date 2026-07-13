@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@audio/encode-opus':
+        specifier: ^1.2.2
+        version: 1.2.2
       '@breezystack/lamejs':
         specifier: ^1.2.7
         version: 1.2.7
@@ -213,6 +216,10 @@ packages:
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
+
+  '@audio/encode-opus@1.2.2':
+    resolution: {integrity: sha512-QP7AxpzRTGnLTQUWdgkoFwx7R/XHo6GJ4oi8/CELoy1iCZsCTDSCybCg6mcugA/y1vItPosS4BNrcRgI6cjetQ==}
+    engines: {node: '>=18'}
 
   '@babel/runtime@7.28.6':
     resolution: {integrity: sha512-05WQkdpL9COIMz4LjTxGpPNCdlpyimKppYNoJ5Di5EUObifl8t4tuLuUBBZEpoLYOmfvIWrsp9fCl0HoPRVTdA==}
@@ -1634,6 +1641,9 @@ packages:
       sass:
         optional: true
 
+  opusscript@0.1.1:
+    resolution: {integrity: sha512-mL0fZZOUnXdZ78woRXp18lApwpp0lF5tozJOD1Wut0dgrA9WuQTgSels/CSmFleaAZrJi/nci5KOVtbuxeWoQA==}
+
   pako@1.0.11:
     resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==}
 
@@ -1888,6 +1898,10 @@ packages:
 snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
+
+  '@audio/encode-opus@1.2.2':
+    dependencies:
+      opusscript: 0.1.1
 
   '@babel/runtime@7.28.6': {}
 
@@ -3196,6 +3210,8 @@ snapshots:
     transitivePeerDependencies:
       - '@babel/core'
       - babel-plugin-macros
+
+  opusscript@0.1.1: {}
 
   pako@1.0.11: {}
 
