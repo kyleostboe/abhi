@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client"
-import type { BufferToWavMetadata } from "./audio-utils"
+import { extensionForContainer, type AudioFormatMetadata, type BufferToWavMetadata } from "./audio-utils"
 import { getAuthState } from "./auth-state"
 import JSZip from "jszip"
 import {
@@ -71,7 +71,8 @@ export interface SavedMeditation {
       recordingStoragePath?: string
     }>
     // Shared audio export metadata
-    wav?: BufferToWavMetadata
+    wav?: BufferToWavMetadata // legacy — only for records that are genuinely WAV
+    audioFormat?: AudioFormatMetadata
     quickAdjust?: {
       lastPresetId?: string | null
       lastDurationId?: string | null
@@ -122,6 +123,35 @@ const resolveBlobFromUrl = async (value?: string | null) => {
 }
 
 const buildObjectUrl = (blob?: Blob | null) => (blob ? URL.createObjectURL(blob) : "")
+
+const resolveAudioExtension = (
+  metadata: SavedMeditation["metadata"] | undefined,
+  blob: Blob | null | undefined,
+): string => {
+  if (metadata?.audioFormat?.container) {
+    return extensionForContainer(metadata.audioFormat.container)
+  }
+  const mime = blob?.type || ""
+  if (mime.includes("ogg")) return "ogg"
+  if (mime.includes("mp3") || mime.includes("mpeg")) return "mp3"
+  if (mime.includes("wav")) return "wav"
+  if (metadata?.wav) return "wav"
+  // Legacy records predate audioFormat/reliable blob typing and were always zipped as .mp3
+  return "mp3"
+}
+
+const KNOWN_AUDIO_EXTENSIONS = ["ogg", "mp3", "wav"]
+
+const findZipAudioFile = (zip: JSZip, baseName: string, preferredExt?: string) => {
+  const candidates = preferredExt
+    ? [preferredExt, ...KNOWN_AUDIO_EXTENSIONS.filter((ext) => ext !== preferredExt)]
+    : KNOWN_AUDIO_EXTENSIONS
+  for (const ext of candidates) {
+    const found = zip.file(`${baseName}.${ext}`)
+    if (found) return { file: found, ext }
+  }
+  return null
+}
 
 const mapTimelineWithRecordings = (
   metadata: SavedMeditation["metadata"],
@@ -685,41 +715,47 @@ export class MeditationLibrary {
 
     const zip = new JSZip()
 
-    // Add metadata JSON (without audio URLs)
-    const metadata = data.map((row) => ({
-      id: row.id,
-      title: row.title,
-      originalFileName: row.original_filename || row.description || "Unknown",
-      duration: row.duration || 0,
-      createdAt: new Date(row.created_at).toISOString(),
-      source: row.source as "adjuster" | "creator",
-      metadata: row.metadata || {},
-    }))
-
-    zip.file("meditations.json", JSON.stringify(metadata, null, 2))
-
     // Add audio blobs as separate files
     const audioRecords = await getAllAudioRecords()
     const audioMap = new Map(audioRecords.map((record) => [record.id, record]))
 
-    for (const meditation of data) {
-      const audioRecord = audioMap.get(meditation.id)
+    // Add metadata JSON (without audio URLs), including the real extension of each zipped file
+    const metadata = data.map((row: any) => {
+      const audioRecord = audioMap.get(row.id)
+      const rowMetadata = (row.metadata || {}) as SavedMeditation["metadata"]
+      return {
+        id: row.id,
+        title: row.title,
+        originalFileName: row.original_filename || row.description || "Unknown",
+        duration: row.duration || 0,
+        createdAt: new Date(row.created_at).toISOString(),
+        source: row.source as "adjuster" | "creator",
+        metadata: rowMetadata,
+        audioExt: resolveAudioExtension(rowMetadata, audioRecord?.processedAudio),
+        sourceExt: resolveAudioExtension(rowMetadata, audioRecord?.sourceAudio),
+      }
+    })
+
+    zip.file("meditations.json", JSON.stringify(metadata, null, 2))
+
+    for (const entry of metadata) {
+      const audioRecord = audioMap.get(entry.id)
       if (!audioRecord) continue
 
       // Add processed audio
       if (audioRecord.processedAudio) {
-        zip.file(`audio-${meditation.id}.mp3`, audioRecord.processedAudio)
+        zip.file(`audio-${entry.id}.${entry.audioExt}`, audioRecord.processedAudio)
       }
 
       // Add source audio if exists
       if (audioRecord.sourceAudio) {
-        zip.file(`source-${meditation.id}.mp3`, audioRecord.sourceAudio)
+        zip.file(`source-${entry.id}.${entry.sourceExt}`, audioRecord.sourceAudio)
       }
 
       // Add timeline recordings if exist
       if (audioRecord.timelineRecordings) {
         for (const [key, blob] of Object.entries(audioRecord.timelineRecordings)) {
-          zip.file(`timeline-${meditation.id}-${key}.mp3`, blob)
+          zip.file(`timeline-${entry.id}-${key}.${resolveAudioExtension(entry.metadata, blob)}`, blob)
         }
       }
     }
@@ -751,6 +787,8 @@ export class MeditationLibrary {
       createdAt: string
       source: "adjuster" | "creator"
       metadata: any
+      audioExt?: string
+      sourceExt?: string
     }>
 
     onProgress?.(10, "Reading backup file...")
@@ -780,21 +818,22 @@ export class MeditationLibrary {
         { onConflict: "id" }
       )
 
-      // Restore audio blobs from zip
-      const processedAudioFile = zip.file(`audio-${meditation.id}.mp3`)
-      const sourceAudioFile = zip.file(`source-${meditation.id}.mp3`)
+      // Restore audio blobs from zip (prefer the extension recorded at export time; fall back to
+      // probing known extensions for backup ZIPs exported before extensions were tracked)
+      const processedAudioMatch = findZipAudioFile(zip, `audio-${meditation.id}`, meditation.audioExt)
+      const sourceAudioMatch = findZipAudioFile(zip, `source-${meditation.id}`, meditation.sourceExt)
 
-      if (processedAudioFile) {
-        const processedBlob = await processedAudioFile.async("blob")
-        const sourceBlob = sourceAudioFile ? await sourceAudioFile.async("blob") : null
+      if (processedAudioMatch) {
+        const processedBlob = await processedAudioMatch.file.async("blob")
+        const sourceBlob = sourceAudioMatch ? await sourceAudioMatch.file.async("blob") : null
 
         // Find timeline recordings
         const timelineRecordings: Record<string, Blob> = {}
         const timelinePrefix = `timeline-${meditation.id}-`
-        
+
         zip.forEach((relativePath, zipEntry) => {
-          if (relativePath.startsWith(timelinePrefix)) {
-            const key = relativePath.replace(timelinePrefix, "").replace(".mp3", "")
+          if (relativePath.startsWith(timelinePrefix) && !zipEntry.dir) {
+            const key = relativePath.replace(timelinePrefix, "").replace(/\.[^/.]+$/, "")
             // We'll load these async below
             timelineRecordings[key] = null as any // placeholder
           }
@@ -802,9 +841,9 @@ export class MeditationLibrary {
 
         // Load timeline recordings
         for (const key of Object.keys(timelineRecordings)) {
-          const timelineFile = zip.file(`${timelinePrefix}${key}.mp3`)
-          if (timelineFile) {
-            timelineRecordings[key] = await timelineFile.async("blob")
+          const timelineMatch = findZipAudioFile(zip, `${timelinePrefix}${key}`)
+          if (timelineMatch) {
+            timelineRecordings[key] = await timelineMatch.file.async("blob")
           }
         }
 

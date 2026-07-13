@@ -10,14 +10,15 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
-import { bufferToMp3 } from "@/lib/audio-utils"
+import { encodeDistributionAudio, type AudioFormatMetadata } from "@/lib/audio-utils"
 import { BookmarkPlus, Plus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
 
 interface SaveMeditationDialogProps {
   audioUrl: string
-  mp3Blob?: Blob | null // Optional pre-generated distribution blob (e.g., WebM/MP3)
+  distributionBlob?: Blob | null // Optional pre-generated distribution blob (Opus/MP3)
+  distributionFormat?: AudioFormatMetadata | null // Format metadata for distributionBlob, if known
   originalFileName: string
   duration: number
   source: "adjuster" | "creator"
@@ -59,7 +60,8 @@ const formatClockDuration = (seconds: number) => {
 
 export function SaveMeditationDialog({
   audioUrl,
-  mp3Blob, // Accept pre-created MP3
+  distributionBlob: providedDistributionBlob,
+  distributionFormat: providedDistributionFormat,
   originalFileName,
   duration,
   source,
@@ -175,12 +177,14 @@ export function SaveMeditationDialog({
 
     try {
       let distributionBlob: Blob
+      let distributionFormat: AudioFormatMetadata | undefined
 
-      if (mp3Blob) {
-        console.log("[v0] Using pre-generated audio blob")
-        distributionBlob = mp3Blob
+      if (providedDistributionBlob) {
+        console.log("[v0] Using pre-generated distribution blob")
+        distributionBlob = providedDistributionBlob
+        distributionFormat = providedDistributionFormat ?? undefined
       } else {
-        console.log("[v0] No pre-created MP3, encoding now...")
+        console.log("[v0] No pre-generated distribution blob, encoding now...")
         const response = await fetch(audioUrl)
         const audioBlob = await response.blob()
 
@@ -190,16 +194,18 @@ export function SaveMeditationDialog({
           const arrayBuffer = await audioBlob.arrayBuffer()
           const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer)
 
-          const mp3Result = await bufferToMp3(decodedBuffer, {
-            bitrate: 96,
+          const encodeResult = await encodeDistributionAudio(decodedBuffer, {
+            bitrate: 96000,
+            maxBytes: 48 * 1024 * 1024,
             onProgress: (progress) => {
               // Progress tracking without console spam
             },
             signal: abortControllerRef.current.signal,
           })
-          distributionBlob = mp3Result.blob
+          distributionBlob = encodeResult.blob
+          distributionFormat = encodeResult.format
 
-          console.log("[v0] MP3 encoding complete")
+          console.log(`[v0] ${encodeResult.format.codec.toUpperCase()} encoding complete`)
         } finally {
           if (audioContext) {
             try {
@@ -221,6 +227,9 @@ export function SaveMeditationDialog({
       console.log(`[v0] Saving meditation. File size: ${Math.round(distributionBlob.size / 1024 / 1024)}MB`)
 
       const metadataForSave: SavedMeditation["metadata"] = { ...metadata }
+      if (distributionFormat && !metadataForSave.audioFormat) {
+        metadataForSave.audioFormat = distributionFormat
+      }
       const metadataRecord = metadataForSave as Record<string, unknown>
 
       const existingDurationId =

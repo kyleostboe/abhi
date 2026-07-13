@@ -8,7 +8,13 @@ import { Button } from "@/components/ui/button"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
 import { BookmarkPlus } from "lucide-react"
 import * as Tone from "tone"
-import { bufferToWav, type BufferToWavMetadata } from "@/lib/audio-utils"
+import {
+  bufferToWav,
+  encodeDistributionAudio,
+  extensionForContainer,
+  type BufferToWavMetadata,
+  type AudioFormatMetadata,
+} from "@/lib/audio-utils"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 type SpeechRecognitionAlternative = {
@@ -123,6 +129,9 @@ export default function CreatorPage() {
   const [encodingProgress, setEncodingProgress] = useState(0)
   const [encodedAudioUrl, setEncodedAudioUrl] = useState<string>("")
   const [encodedAudioMetadata, setEncodedAudioMetadata] = useState<BufferToWavMetadata | null>(null)
+  const [encodedDistributionBlob, setEncodedDistributionBlob] = useState<Blob | null>(null)
+  const [encodedDistributionMetadata, setEncodedDistributionMetadata] = useState<AudioFormatMetadata | null>(null)
+  const [isCompressingEncodedAudio, setIsCompressingEncodedAudio] = useState<boolean>(false)
   const [status, setStatus] = useState<{ message: string; type: "info" | "success" | "error" } | null>(null)
   const [fullTranscript, setFullTranscript] = useState<string>("")
   const [isListening, setIsListening] = useState(false)
@@ -623,7 +632,7 @@ export default function CreatorPage() {
     updateInstruction(instructionId, { soundId })
   }
 
-  const simulateEncoding = async (): Promise<string> => {
+  const simulateEncoding = async (): Promise<{ previewUrl: string; renderedBuffer: AudioBuffer }> => {
     console.log("Encoding audio with instructions:", mappedInstructions)
 
     // Simulate processing time
@@ -672,14 +681,14 @@ export default function CreatorPage() {
     // Reset Tone.js to use the main context
     Tone.setContext(audioCtx)
 
-    // Convert to WAV blob
+    // Convert to a fast WAV preview
     const wavResult = await bufferToWav(renderedBuffer, {
       preferCompatibility: true,
       maxBytes: 48 * 1024 * 1024,
     })
     const { blob, ...metadata } = wavResult
     setEncodedAudioMetadata(metadata)
-    return URL.createObjectURL(blob)
+    return { previewUrl: URL.createObjectURL(blob), renderedBuffer }
   }
 
   const handleEncoding = async () => {
@@ -692,18 +701,52 @@ export default function CreatorPage() {
     setEncodingProgress(0)
     setStatus({ message: "Encoding audio with sound cues...", type: "info" })
     setEncodedAudioMetadata(null)
+    setEncodedDistributionBlob(null)
+    setEncodedDistributionMetadata(null)
 
     try {
       const progressInterval = setInterval(() => {
-        setEncodingProgress((prev) => Math.min(prev + 10, 90))
+        setEncodingProgress((prev) => Math.min(prev + 10, 80))
       }, 300)
 
-      const encodedUrl = await simulateEncoding()
+      const { previewUrl, renderedBuffer } = await simulateEncoding()
 
       clearInterval(progressInterval)
-      setEncodingProgress(100)
-      setEncodedAudioUrl(encodedUrl)
-      setStatus({ message: "Audio encoding completed successfully!", type: "success" })
+      setEncodingProgress(90)
+      setEncodedAudioUrl(previewUrl)
+      setStatus({ message: "Preview ready, compressing for export...", type: "info" })
+
+      setIsCompressingEncodedAudio(true)
+      try {
+        const { blob: distributionBlob, format: distributionMetadata } = await encodeDistributionAudio(
+          renderedBuffer,
+          {
+            maxBytes: 48 * 1024 * 1024,
+            bitrate: 96000,
+            onProgress: (p) => setEncodingProgress(90 + Math.floor((p / 100) * 10)),
+          },
+        )
+
+        setEncodedDistributionBlob(distributionBlob)
+        setEncodedDistributionMetadata(distributionMetadata)
+
+        const distributionUrl = URL.createObjectURL(distributionBlob)
+        setEncodedAudioUrl((previousUrl) => {
+          if (previousUrl) URL.revokeObjectURL(previousUrl)
+          return distributionUrl
+        })
+
+        setEncodingProgress(100)
+        setStatus({ message: "Audio encoding completed successfully!", type: "success" })
+      } catch (compressionError) {
+        console.error("Compression error:", compressionError)
+        setStatus({
+          message: `Compression failed: ${compressionError instanceof Error ? compressionError.message : "Unknown error"}`,
+          type: "error",
+        })
+      } finally {
+        setIsCompressingEncodedAudio(false)
+      }
     } catch (error) {
       console.error("Encoding error:", error)
       setStatus({
@@ -716,14 +759,17 @@ export default function CreatorPage() {
   }
 
   const downloadEncodedAudio = () => {
-    if (!encodedAudioUrl || !file) return
+    if (!encodedDistributionBlob || !file) return
 
+    const url = URL.createObjectURL(encodedDistributionBlob)
+    const extension = extensionForContainer(encodedDistributionMetadata?.container)
     const a = document.createElement("a")
-    a.href = encodedAudioUrl
-    a.download = `${file.name.split(".")[0]}_encoded.wav`
+    a.href = url
+    a.download = `${file.name.split(".")[0]}_encoded.${extension}`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   const formatTime = (seconds: number): string => {
@@ -743,7 +789,7 @@ export default function CreatorPage() {
       }
 
       const audioBlob = await response.blob()
-      const audioFile = new File([audioBlob], importData.originalFileName, { type: "audio/wav" })
+      const audioFile = new File([audioBlob], importData.originalFileName, { type: audioBlob.type || "audio/wav" })
 
       // Set file and audio URL
       setFile(audioFile)
@@ -1039,6 +1085,8 @@ export default function CreatorPage() {
               <div className="px-3.5 text-center tracking-tight">
                 <SaveMeditationDialog
                   audioUrl={encodedAudioUrl}
+                  distributionBlob={encodedDistributionBlob ?? undefined}
+                  distributionFormat={encodedDistributionMetadata ?? undefined}
                   originalFileName={file?.name || "meditation"}
                   duration={audioDuration}
                   source="creator"
@@ -1056,11 +1104,15 @@ export default function CreatorPage() {
                       soundVolume: instr.soundVolume,
                     })),
                     wav: encodedAudioMetadata ? { ...encodedAudioMetadata } : undefined,
+                    audioFormat: encodedDistributionMetadata ?? undefined,
                   }}
                 >
-                  <Button className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500">
+                  <Button
+                    disabled={isCompressingEncodedAudio || !encodedDistributionBlob}
+                    className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500"
+                  >
                     <BookmarkPlus className="w-4 h-4 mr-2" />
-                    Save to Library
+                    {isCompressingEncodedAudio ? "Compressing…" : "Save to Library"}
                   </Button>
                 </SaveMeditationDialog>
               </div>
