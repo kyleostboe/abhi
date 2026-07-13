@@ -15,7 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
-import { getAudioContext } from "@/lib/audio-utils"
+import { getAudioContext, extensionForContainer } from "@/lib/audio-utils"
 import { runAdjusterWorkflow } from "@/lib/adjuster-workflow"
 import { cn } from "@/lib/utils"
 import { useJournal } from "@/hooks/use-journal"
@@ -1224,13 +1224,14 @@ export default function LibraryPage() {
       }
 
       setQuickAdjustStep("Saving to library...")
-      objectUrl = URL.createObjectURL(result.wavBlob)
+      objectUrl = URL.createObjectURL(result.distributionBlob)
 
       const metadataForSave: SavedMeditation["metadata"] = {
         ...baseMeditation.metadata,
         targetDuration: processedDurationSeconds,
         pausesAdjusted: result.pausesAdjusted,
-        wav: result.wavMetadata,
+        wav: undefined,
+        audioFormat: result.distributionMetadata,
         timeline: scaledTimeline,
         adjusterSettings: {
           silenceThreshold: settings.silenceThreshold,
@@ -1251,7 +1252,7 @@ export default function LibraryPage() {
         title: baseMeditation.title,
         originalFileName: baseMeditation.originalFileName,
         processedAudioUrl: objectUrl,
-        processedAudioData: result.wavBlob,
+        processedAudioData: result.distributionBlob,
         sourceAudioUrl: baseMeditation.sourceAudioUrl ?? objectUrl,
         duration: Math.max(1, Math.round(processedDurationSeconds)),
         source: baseMeditation.source,
@@ -1977,6 +1978,10 @@ export default function LibraryPage() {
       const safeTitle = selectedMeditation.title.trim().replace(/\s+/g, "_") || "meditation"
 
       const extractExtension = (url: string) => {
+        if (selectedMeditation.metadata?.audioFormat?.container) {
+          return extensionForContainer(selectedMeditation.metadata.audioFormat.container)
+        }
+
         const getExtensionFromPath = (path: string) => {
           const filename = path.split("/").pop() || ""
           const match = filename.match(/\.([\w-]+)$/)
@@ -1996,6 +2001,10 @@ export default function LibraryPage() {
         const extensionFromDirectPath = getExtensionFromPath(url)
         if (extensionFromDirectPath) {
           return extensionFromDirectPath
+        }
+
+        if (selectedMeditation.metadata?.wav) {
+          return "wav"
         }
 
         const originalExtension = selectedMeditation.originalFileName.split(".").pop()?.toLowerCase()

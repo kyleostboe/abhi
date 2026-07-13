@@ -32,7 +32,14 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
 import { VisualTimeline } from "@/components/visual-timeline"
 import { cn, formatTime, monitorMemory, formatFileSize } from "@/lib/utils"
-import { getAudioContext, bufferToWav, bufferToWebM, type BufferToWavMetadata } from "@/lib/audio-utils" // Import from audio-utils
+import {
+  getAudioContext,
+  bufferToWav,
+  encodeDistributionAudio,
+  extensionForContainer,
+  type BufferToWavMetadata,
+  type AudioFormatMetadata,
+} from "@/lib/audio-utils" // Import from audio-utils
 import {
   runAdjusterWorkflow,
   detectSilenceRegions as computeSilenceRegions,
@@ -234,8 +241,10 @@ const deriveMeditationFileName = (meditation: any): string => {
   const derivedTitle = deriveMeditationTitle(meditation).trim() || "Imported Meditation"
   const lower = derivedTitle.toLowerCase()
   const hasExtension = [".wav", ".mp3", ".m4a", ".ogg"].some((ext) => lower.endsWith(ext))
+  if (hasExtension) return derivedTitle
 
-  return hasExtension ? derivedTitle : `${derivedTitle}.wav`
+  const container = meditation?.metadata?.audioFormat?.container as AudioFormatMetadata["container"] | undefined
+  return `${derivedTitle}.${extensionForContainer(container)}`
 }
 
 interface TimelineItem {
@@ -562,10 +571,12 @@ export default function Home() {
   const timelineUploadInputRef = useRef<HTMLInputElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const silenceAnalysisAbortRef = useRef<AbortController | null>(null)
-  const adjusterCompressionTokenRef = useRef(0)
-  const creatorCompressionTokenRef = useRef(0)
   const [processedDistributionBlob, setProcessedDistributionBlob] = useState<Blob | null>(null)
+  const [processedDistributionMetadata, setProcessedDistributionMetadata] = useState<AudioFormatMetadata | null>(null)
+  const [isCompressingDistribution, setIsCompressingDistribution] = useState<boolean>(false)
   const [generatedDistributionBlob, setGeneratedDistributionBlob] = useState<Blob | null>(null)
+  const [generatedDistributionMetadata, setGeneratedDistributionMetadata] = useState<AudioFormatMetadata | null>(null)
+  const [isCompressingCreatorDistribution, setIsCompressingCreatorDistribution] = useState<boolean>(false)
   const [loadedLibraryContext, setLoadedLibraryContext] = useState<{
     id: string
     title: string
@@ -1155,39 +1166,51 @@ export default function Home() {
         throw new Error("Generated WAV blob is empty. WAV conversion failed or resulted in no data.")
       }
 
-      const { blob: wavBlob, ...metadata } = wavResult
-      const url = URL.createObjectURL(wavBlob)
+      const { blob: previewBlob, ...previewMetadata } = wavResult
+      const previewUrl = URL.createObjectURL(previewBlob)
 
-      setGeneratedAudioUrl(url)
-      setGeneratedDistributionBlob(wavBlob)
-      setGeneratedAudioFileSize(wavBlob.size)
-      setGeneratedAudioMetadata(metadata)
-      setGenerationProgress(100)
-      setGenerationStep("Complete!")
+      setGeneratedAudioUrl(previewUrl)
+      setGeneratedDistributionBlob(null)
+      setGeneratedAudioFileSize(previewBlob.size)
+      setGeneratedAudioMetadata(previewMetadata)
+      setGeneratedDistributionMetadata(null)
+      setGenerationProgress(90)
+      setGenerationStep("Preview ready, compressing for export...")
 
-      console.log("Audio export completed successfully!")
-      toast({ title: "Export Complete", description: "Timeline audio exported with sound cues included!" })
+      console.log("Preview ready, compressing for export...")
 
-      if (
-        typeof window !== "undefined" &&
-        typeof MediaRecorder !== "undefined" &&
-        MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-      ) {
-        const compressionToken = ++creatorCompressionTokenRef.current
-        void (async () => {
-          try {
-            await ensureTone()
-            const { blob } = await bufferToWebM(rendered, {})
-            if (creatorCompressionTokenRef.current === compressionToken) {
-              setGeneratedDistributionBlob(blob)
-              setGeneratedAudioFileSize(blob.size)
-            }
-          } catch (compressionError) {
-            if (creatorCompressionTokenRef.current === compressionToken) {
-              console.warn("[v0] Failed to prepare compressed creator distribution:", compressionError)
-            }
-          }
-        })()
+      setIsCompressingCreatorDistribution(true)
+      try {
+        const { blob: distributionBlob, format: distributionMetadata } = await encodeDistributionAudio(rendered, {
+          maxBytes: 48 * 1024 * 1024,
+          bitrate: 96000,
+          onProgress: (p) => setGenerationProgress(90 + Math.floor((p / 100) * 10)),
+        })
+
+        setGeneratedDistributionBlob(distributionBlob)
+        setGeneratedDistributionMetadata(distributionMetadata)
+        setGeneratedAudioFileSize(distributionBlob.size)
+
+        const distributionUrl = URL.createObjectURL(distributionBlob)
+        setGeneratedAudioUrl((previousUrl) => {
+          if (previousUrl) URL.revokeObjectURL(previousUrl)
+          return distributionUrl
+        })
+
+        setGenerationProgress(100)
+        setGenerationStep("Complete!")
+        console.log("Audio export completed successfully!")
+        toast({ title: "Export Complete", description: "Timeline audio exported with sound cues included!" })
+      } catch (compressionError) {
+        console.error("[v0] Failed to compress creator distribution:", compressionError)
+        toast({
+          title: "Compression Failed",
+          description:
+            compressionError instanceof Error ? compressionError.message : "Could not compress the exported audio.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsCompressingCreatorDistribution(false)
       }
     } catch (error) {
       console.error("Audio export failed:", error)
@@ -1694,7 +1717,7 @@ export default function Home() {
         const response = await fetch(importData.processedAudioUrl)
         const audioBlob = await response.blob()
         const reconstructedFileName = deriveMeditationFileName(importData)
-        const audioFile = new File([audioBlob], reconstructedFileName, { type: "audio/wav" })
+        const audioFile = new File([audioBlob], reconstructedFileName, { type: audioBlob.type || "audio/wav" })
 
         // Set the file for creator
         setFile(audioFile)
@@ -1760,7 +1783,7 @@ export default function Home() {
         const response = await fetch(importData.processedAudioUrl)
         const audioBlob = await response.blob()
         const fallbackFileName = deriveMeditationFileName(importData)
-        const audioFile = new File([audioBlob], fallbackFileName, { type: "audio/wav" })
+        const audioFile = new File([audioBlob], fallbackFileName, { type: audioBlob.type || "audio/wav" })
         setFile(audioFile)
         setOriginalUrl(URL.createObjectURL(audioFile))
         setDisplayedFileName(fallbackFileName)
@@ -1789,7 +1812,7 @@ export default function Home() {
         const response = await fetch(importData.processedAudioUrl)
         const audioBlob = await response.blob()
         const recordedBlockFileName = deriveMeditationFileName(importData)
-        const audioFile = new File([audioBlob], recordedBlockFileName, { type: "audio/wav" })
+        const audioFile = new File([audioBlob], recordedBlockFileName, { type: audioBlob.type || "audio/wav" })
         const objectUrl = URL.createObjectURL(audioFile)
 
         setFile(audioFile)
@@ -1904,7 +1927,7 @@ export default function Home() {
           const response = await fetch(data.processedAudioUrl)
           const audioBlob = await response.blob()
           const importedFileName = deriveMeditationFileName(data)
-          const audioFile = new File([audioBlob], importedFileName, { type: "audio/wav" })
+          const audioFile = new File([audioBlob], importedFileName, { type: audioBlob.type || "audio/wav" })
 
           setFile(audioFile)
           setDisplayedFileName(importedFileName)
@@ -2197,6 +2220,9 @@ export default function Home() {
         }
       }
 
+      setProcessedDistributionBlob(null)
+      setProcessedDistributionMetadata(null)
+
       const result = await runAdjusterWorkflow({
         audioContext: currentAudioContext,
         buffer: bufferToProcess,
@@ -2212,17 +2238,30 @@ export default function Home() {
           onProgress: (progress) => setProcessingProgress(Math.max(0, Math.min(100, Math.round(progress)))),
           onStep: (step) => setProcessingStep(step),
           onMemoryWarning: () => setMemoryWarning(true),
+          onPreviewReady: (previewBlob, previewMetadata) => {
+            const previewUrl = URL.createObjectURL(previewBlob)
+            setProcessedUrl(previewUrl)
+            setProcessedFileSize(previewBlob.size)
+            setProcessedAudioMetadata(previewMetadata)
+            setIsProcessingComplete(true)
+            setIsCompressingDistribution(true)
+          },
         },
       })
 
-      const url = URL.createObjectURL(result.wavBlob)
+      setProcessedDistributionBlob(result.distributionBlob)
+      setProcessedDistributionMetadata(result.distributionMetadata)
+      setProcessedFileSize(result.distributionBlob.size)
+      setIsCompressingDistribution(false)
 
-      setProcessedUrl(url)
-      setProcessedDistributionBlob(result.wavBlob)
+      const distributionUrl = URL.createObjectURL(result.distributionBlob)
+      setProcessedUrl((previousUrl) => {
+        if (previousUrl) URL.revokeObjectURL(previousUrl)
+        return distributionUrl
+      })
+
       setActualDuration(result.processedBuffer.duration)
       setProcessedBufferState(result.processedBuffer)
-      setProcessedFileSize(result.wavBlob.size)
-      setProcessedAudioMetadata(result.wavMetadata)
       setPausesAdjusted(result.pausesAdjusted)
       // Minimum is content + 0.3s per pause (from weighted algorithm minimum)
       const minimumDurationSeconds = Math.max(
@@ -2233,28 +2272,6 @@ export default function Home() {
       setProcessingProgress(100)
       setStatus({ message: "Audio processing completed successfully!", type: "success" })
       setIsProcessingComplete(true)
-
-      if (
-        typeof window !== "undefined" &&
-        typeof MediaRecorder !== "undefined" &&
-        MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-      ) {
-        const compressionToken = ++adjusterCompressionTokenRef.current
-        void (async () => {
-          try {
-            await ensureTone()
-            const { blob } = await bufferToWebM(result.processedBuffer, {})
-            if (adjusterCompressionTokenRef.current === compressionToken) {
-              setProcessedDistributionBlob(blob)
-              setProcessedFileSize(blob.size)
-            }
-          } catch (compressionError) {
-            if (adjusterCompressionTokenRef.current === compressionToken) {
-              console.warn("[v0] Failed to prepare compressed distribution:", compressionError)
-            }
-          }
-        })()
-      }
     } catch (error) {
       console.error("Error during audio processing:", error)
       const errorMsg = error instanceof Error ? error.message : String(error)
@@ -2268,6 +2285,7 @@ export default function Home() {
       }
     } finally {
       setIsProcessing(false)
+      setIsCompressingDistribution(false)
       if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
       if (currentAudioContext && currentAudioContext.state === "running") {
         currentAudioContext.suspend().catch((err) => console.warn("Error suspending AudioContext post-process:", err))
@@ -3229,7 +3247,7 @@ export default function Home() {
                         <div className="px-3.5 text-center tracking-tight">
                           <SaveMeditationDialog
                             audioUrl={originalUrl}
-                            mp3Blob={file ?? undefined}
+                            distributionBlob={file ?? undefined}
                             originalFileName={file?.name || "original-audio"}
                             duration={originalBuffer?.duration || 0}
                             source="adjuster"
@@ -3569,7 +3587,8 @@ export default function Home() {
                       <div className="px-3.5 text-center tracking-tight">
                         <SaveMeditationDialog
                           audioUrl={processedUrl}
-                          mp3Blob={processedDistributionBlob ?? undefined}
+                          distributionBlob={processedDistributionBlob ?? undefined}
+                          distributionFormat={processedDistributionMetadata ?? undefined}
                           originalFileName={file?.name || "meditation"}
                           duration={actualDuration || targetDuration * 60}
                           source="adjuster"
@@ -3577,15 +3596,19 @@ export default function Home() {
                             targetDuration,
                             pausesAdjusted,
                             wav: processedAudioMetadata ? { ...processedAudioMetadata } : undefined,
+                            audioFormat: processedDistributionMetadata ?? undefined,
                             timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                           }}
                           existingMeditationId={loadedLibraryContext?.id}
                           existingMeditationTitle={loadedLibraryContext?.title}
                           existingMeditationDuration={loadedLibraryContext?.duration}
                         >
-                          <Button className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500">
+                          <Button
+                            disabled={isCompressingDistribution || !processedDistributionBlob}
+                            className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500"
+                          >
                             <BookmarkPlus className="h-4 w-4 mr-2" />
-                            Save to Library
+                            {isCompressingDistribution ? "Compressing…" : "Save to Library"}
                           </Button>
                         </SaveMeditationDialog>
                       </div>
@@ -3963,16 +3986,25 @@ export default function Home() {
                                 },
                                 {
                                   label: "File Size",
-                                  value: formatFileSize(generatedAudioFileSize || 0),
+                                  value: formatFileSize((generatedDistributionBlob?.size ?? generatedAudioFileSize) || 0),
                                 },
-                                ...(generatedAudioMetadata
+                                ...(generatedDistributionMetadata
                                   ? [
                                       {
                                         label: "Output Format",
-                                        value: `Mono • ${generatedAudioMetadata.sampleRate.toLocaleString()} Hz • ${generatedAudioMetadata.bitDepth.toLocaleString()}-bit`,
+                                        value: `${generatedDistributionMetadata.codec.toUpperCase()} • ${generatedDistributionMetadata.sampleRate.toLocaleString()} Hz${generatedDistributionMetadata.bitrate ? ` • ${generatedDistributionMetadata.bitrate}kbps` : ""}`,
                                       },
                                     ]
-                                  : []),
+                                  : generatedAudioMetadata
+                                    ? [
+                                        {
+                                          label: "Output Format",
+                                          value: isCompressingCreatorDistribution
+                                            ? "Compressing…"
+                                            : `Mono • ${generatedAudioMetadata.sampleRate.toLocaleString()} Hz • ${generatedAudioMetadata.bitDepth.toLocaleString()}-bit`,
+                                        },
+                                      ]
+                                    : []),
                               ]}
                             />
                           </div>
@@ -3983,7 +4015,8 @@ export default function Home() {
                           </div>
                           <SaveMeditationDialog
                             audioUrl={generatedAudioUrl}
-                            mp3Blob={generatedDistributionBlob ?? undefined}
+                            distributionBlob={generatedDistributionBlob ?? undefined}
+                            distributionFormat={generatedDistributionMetadata ?? undefined}
                             originalFileName={meditationTitle || "meditation"}
                             duration={creatorTotalDuration}
                             source="creator"
@@ -3991,12 +4024,16 @@ export default function Home() {
                               instructionCount: timelineEvents.length,
                               meditationTitle,
                               wav: generatedAudioMetadata ? { ...generatedAudioMetadata } : undefined,
+                              audioFormat: generatedDistributionMetadata ?? undefined,
                               timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                             }}
                           >
-                            <Button className="w-44 py-3 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-xs text-gray-600 font-serif font-black mt-3">
+                            <Button
+                              disabled={isCompressingCreatorDistribution || !generatedDistributionBlob}
+                              className="w-44 py-3 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-xs text-gray-600 font-serif font-black mt-3"
+                            >
                               <BookmarkPlus className="h-4 w-4 mr-2" />
-                              Save to Library
+                              {isCompressingCreatorDistribution ? "Compressing…" : "Save to Library"}
                             </Button>
                           </SaveMeditationDialog>
                         </div>

@@ -1,6 +1,7 @@
 import * as Tone from "tone"
 import { sleep, formatFileSize } from "./utils"
 import lamejs from "@breezystack/lamejs"
+import { bufferToOpus, isOpusEncodingSupported } from "./opus-encoder"
 
 // Initialize Tone.js
 export const initializeTone = async (): Promise<void> => {
@@ -210,295 +211,16 @@ export const bufferToWav = async (
   }
 }
 
-// Old code below removed to save context
-export const bufferToWav_unused = async (
-  buffer: AudioBuffer,
-  {
-    maxBytes = Number.POSITIVE_INFINITY,
-    preferCompatibility = true,
-    isMobile = false,
-    onProgress = () => {},
-  }: BufferToWavOptions = {},
-): Promise<BufferToWavResult> => {
-  const currentAudioContext = Tone.context.rawContext as AudioContext
-  if (!currentAudioContext) throw new Error("Audio context not available for WAV conversion")
-
-  onProgress(0)
-
-  const candidateRates = (() => {
-    const base = preferCompatibility
-      ? [44100, 32000, 22050, 16000, 12000, 11025, 8000]
-      : [buffer.sampleRate, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000]
-
-    const normalized = base
-      .map((rate) => Math.max(1, Math.round(rate)))
-      .map((rate) => {
-        if (buffer.sampleRate <= 0) return rate
-        return rate > buffer.sampleRate ? buffer.sampleRate : rate
-      })
-
-    const unique = Array.from(new Set(normalized)).sort((a, b) => b - a)
-    if (!unique.length) {
-      return [buffer.sampleRate || 44100]
-    }
-    return unique
-  })()
-
-  const bitDepths: Array<8 | 16> = [16, 8]
-
-  const monoBuffer = await (async () => {
-    if (buffer.numberOfChannels === 1) {
-      return buffer
-    }
-
-    const mono = currentAudioContext.createBuffer(1, buffer.length, buffer.sampleRate)
-    const output = mono.getChannelData(0)
-    const totalChannels = buffer.numberOfChannels
-    for (let i = 0; i < buffer.length; i++) {
-      if (i % (buffer.sampleRate * (isMobile ? 1 : 2)) === 0) {
-        await sleep(0)
-        onProgress(Math.min(10, Math.floor((i / buffer.length) * 10)))
-      }
-      let sum = 0
-      for (let channel = 0; channel < totalChannels; channel++) {
-        sum += buffer.getChannelData(channel)[i]
-      }
-      output[i] = sum / totalChannels
-    }
-    return mono
-  })()
-
-  onProgress(10)
-
-  let selectedSampleRate = monoBuffer.sampleRate
-  let selectedBitDepth: 8 | 16 = 16
-  let estimatedSize = 44 + monoBuffer.length * (selectedBitDepth / 8)
-  let foundCombination = false
-
-  outer: for (const depth of bitDepths) {
-    for (const rate of candidateRates) {
-      const ratio = rate / monoBuffer.sampleRate
-      const estimatedSamples = Math.max(1, Math.floor(monoBuffer.length * ratio))
-      const bytesPerSample = depth / 8
-      const estimate = 44 + estimatedSamples * bytesPerSample
-
-      if (estimate <= maxBytes) {
-        selectedSampleRate = rate
-        selectedBitDepth = depth
-        estimatedSize = estimate
-        foundCombination = true
-        break outer
-      }
-    }
-  }
-
-  if (!foundCombination && estimatedSize > maxBytes) {
-    throw new Error(
-      `Unable to fit WAV under ${formatFileSize(maxBytes)} even at ${candidateRates.at(-1) || monoBuffer.sampleRate}Hz / 8-bit.`,
-    )
-  }
-
-  let resampledBuffer = monoBuffer
-  if (monoBuffer.sampleRate !== selectedSampleRate) {
-    const ratio = selectedSampleRate / monoBuffer.sampleRate
-    const newLength = Math.max(1, Math.floor(monoBuffer.length * ratio))
-    try {
-      resampledBuffer = currentAudioContext.createBuffer(1, newLength, selectedSampleRate)
-    } catch (e) {
-      throw new Error(
-        `Failed to create resample buffer (target SR: ${selectedSampleRate}Hz). Memory limit likely exceeded.`,
-      )
-    }
-    onProgress(15)
-    const oldData = monoBuffer.getChannelData(0)
-    const newData = resampledBuffer.getChannelData(0)
-    for (let i = 0; i < newLength; i++) {
-      if (i % (selectedSampleRate * (isMobile ? 1 : 2)) === 0) {
-        await sleep(0)
-        onProgress(15 + Math.floor((i / newLength) * 35))
-      }
-      const oldIndex = i / ratio
-      const index = Math.floor(oldIndex)
-      const frac = oldIndex - index
-      const samp1 = oldData[Math.min(index, oldData.length - 1)]
-      const samp2 = oldData[Math.min(index + 1, oldData.length - 1)]
-      newData[i] = samp1 + (samp2 - samp1) * frac
-    }
-  } else {
-    onProgress(50)
-  }
-
-  const numSamples = resampledBuffer.length
-  const bytesPerSample = selectedBitDepth / 8
-  const dataSize = numSamples * bytesPerSample
-  const fileSize = 44 + dataSize
-
-  let finalArrayBuffer: ArrayBuffer
-  try {
-    finalArrayBuffer = new ArrayBuffer(fileSize)
-  } catch (e) {
-    throw new Error(
-      `Failed to create WAV data buffer (size: ${formatFileSize(fileSize)}). Memory limit likely exceeded.`,
-    )
-  }
-
-  const view = new DataView(finalArrayBuffer)
-
-  const writeString = (offset: number, string: string) => {
-    for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i))
-  }
-
-  writeString(0, "RIFF")
-  view.setUint32(4, 36 + dataSize, true)
-  writeString(8, "WAVE")
-  writeString(12, "fmt ")
-  view.setUint32(16, 16, true)
-  view.setUint16(20, 1, true)
-  view.setUint16(22, 1, true)
-  view.setUint32(24, selectedSampleRate, true)
-  view.setUint32(28, selectedSampleRate * bytesPerSample, true)
-  view.setUint16(32, bytesPerSample, true)
-  view.setUint16(34, selectedBitDepth, true)
-  writeString(36, "data")
-  view.setUint32(40, dataSize, true)
-
-  const channelData = resampledBuffer.getChannelData(0)
-  let offset = 44
-  for (let i = 0; i < numSamples; i++) {
-    if (i % (selectedSampleRate * (isMobile ? 1 : 2)) === 0) {
-      await sleep(0)
-      onProgress(50 + Math.floor((i / numSamples) * 50))
-    }
-    const sample = Math.max(-1, Math.min(1, channelData[i]))
-    if (selectedBitDepth === 16) {
-      view.setInt16(offset, sample * 0x7fff, true)
-    } else {
-      const intSample = Math.max(0, Math.min(255, Math.round((sample + 1) * 127.5)))
-      view.setUint8(offset, intSample)
-    }
-    offset += bytesPerSample
-  }
-
-  onProgress(100)
-
-  const metadata: BufferToWavMetadata = {
-    sampleRate: selectedSampleRate,
-    bitDepth: selectedBitDepth,
-    channels: 1,
-  }
-
-  return {
-    ...metadata,
-    blob: new Blob([finalArrayBuffer], { type: "audio/wav" }),
-  }
-}
-
 export interface BufferToMp3Options {
   bitrate?: number
   onProgress?: (progress: number) => void
   signal?: AbortSignal
 }
 
-export interface BufferToWebMOptions {
-  bitrate?: number
-  onProgress?: (progress: number) => void
-}
-
-/**
- * Convert AudioBuffer to WebM/Opus using browser's native MediaRecorder
- * This is MUCH faster than MP3 encoding and produces smaller files
- */
-export const bufferToWebM = async (
-  buffer: AudioBuffer,
-  { bitrate = 96000, onProgress = () => {} }: BufferToWebMOptions = {},
-): Promise<{ blob: Blob; sampleRate: number; bitrate: number; channels: number }> => {
-  onProgress(0)
-
-  // Create an offline audio context to render the buffer
-  const offlineContext = new OfflineAudioContext(1, buffer.length, buffer.sampleRate)
-
-  // Create a buffer source
-  const source = offlineContext.createBufferSource()
-  source.buffer = buffer
-  source.connect(offlineContext.destination)
-  source.start(0)
-
-  onProgress(10)
-
-  // Render the audio
-  const renderedBuffer = await offlineContext.startRendering()
-
-  onProgress(30)
-
-  // Create a MediaStreamDestination to capture audio
-  const audioContext = Tone.context.rawContext as AudioContext
-  const destination = audioContext.createMediaStreamDestination()
-
-  // Create a buffer source for the rendered audio
-  const playbackSource = audioContext.createBufferSource()
-  playbackSource.buffer = renderedBuffer
-  playbackSource.connect(destination)
-
-  onProgress(50)
-
-  // Create MediaRecorder with WebM/Opus codec
-  const mediaRecorder = new MediaRecorder(destination.stream, {
-    mimeType: "audio/webm;codecs=opus",
-    audioBitsPerSecond: bitrate,
-  })
-
-  const chunks: Blob[] = []
-
-  return new Promise((resolve, reject) => {
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        chunks.push(e.data)
-      }
-    }
-
-    mediaRecorder.onstop = () => {
-      onProgress(100)
-      const blob = new Blob(chunks, { type: "audio/webm" })
-
-      console.log(
-        `[v0] WebM encoding complete. Original size: ${Math.round((buffer.length * buffer.numberOfChannels * 4) / 1024 / 1024)}MB (uncompressed), WebM size: ${Math.round(blob.size / 1024 / 1024)}MB (${Math.round(bitrate / 1000)}kbps)`,
-      )
-
-      resolve({
-        blob,
-        sampleRate: buffer.sampleRate,
-        bitrate: Math.round(bitrate / 1000),
-        channels: 1,
-      })
-    }
-
-    mediaRecorder.onerror = (e) => {
-      reject(new Error(`MediaRecorder error: ${e}`))
-    }
-
-    // Start recording
-    mediaRecorder.start()
-    onProgress(70)
-
-    // Play the audio (this triggers recording)
-    playbackSource.start(0)
-
-    // Stop recording after the audio duration
-    setTimeout(
-      () => {
-        mediaRecorder.stop()
-        playbackSource.stop()
-        onProgress(90)
-      },
-      renderedBuffer.duration * 1000 + 100,
-    )
-  })
-}
-
 /**
  * Convert AudioBuffer to MP3 using lamejs encoder
- * Encodes directly on main thread (no Web Worker to avoid module import issues)
- * NOTE: This is SLOW - prefer bufferToWebM for faster encoding
+ * Encodes directly on main thread. Used as the fallback distribution format
+ * when Opus encoding (see bufferToOpus/encodeDistributionAudio) isn't supported.
  */
 export const bufferToMp3 = async (
   buffer: AudioBuffer,
@@ -600,5 +322,100 @@ export const bufferToMp3 = async (
     sampleRate: monoBuffer.sampleRate,
     bitrate,
     channels: 1,
+  }
+}
+
+export interface AudioFormatMetadata {
+  container: "ogg" | "mp3" | "wav"
+  codec: "opus" | "mp3" | "pcm"
+  sampleRate: number
+  channels: number
+  bitrate?: number // kbps, compressed formats only
+  bitDepth?: 8 | 16 // wav only
+}
+
+export const extensionForContainer = (container: AudioFormatMetadata["container"] | undefined | null): string => {
+  switch (container) {
+    case "ogg":
+      return "ogg"
+    case "mp3":
+      return "mp3"
+    default:
+      return "wav"
+  }
+}
+
+const MP3_BITRATE_LADDER = [96, 64, 48, 32]
+
+const pickMp3Bitrate = (durationSeconds: number, maxBytes: number, preferred: number): number => {
+  const candidates = Array.from(new Set([preferred, ...MP3_BITRATE_LADDER])).sort((a, b) => b - a)
+  for (const bitrate of candidates) {
+    if ((bitrate * 1000) / 8 * durationSeconds <= maxBytes) {
+      return bitrate
+    }
+  }
+  return candidates[candidates.length - 1]
+}
+
+export interface EncodeDistributionAudioOptions {
+  maxBytes?: number
+  bitrate?: number
+  onProgress?: (progress: number) => void
+  signal?: AbortSignal
+}
+
+export interface EncodeDistributionAudioResult {
+  blob: Blob
+  format: AudioFormatMetadata
+}
+
+/**
+ * The single entry point for producing the audio actually saved/downloaded by the Adjuster
+ * and Creator tools: Opus (via WebCodecs) when the browser can both encode and play it back,
+ * MP3 otherwise. Never silently falls back to WAV — MP3 is the floor.
+ */
+export const encodeDistributionAudio = async (
+  buffer: AudioBuffer,
+  { maxBytes = Number.POSITIVE_INFINITY, bitrate = 96000, onProgress = () => {}, signal }: EncodeDistributionAudioOptions = {},
+): Promise<EncodeDistributionAudioResult> => {
+  if (await isOpusEncodingSupported(bitrate)) {
+    try {
+      const result = await bufferToOpus(buffer, { bitrate, maxBytes, onProgress, signal })
+      return {
+        blob: result.blob,
+        format: {
+          container: result.container,
+          codec: result.codec,
+          sampleRate: result.sampleRate,
+          channels: result.channels,
+          bitrate: result.bitrate,
+        },
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message === "Encoding aborted") {
+        throw error
+      }
+      console.warn("[v0] Opus encoding failed, falling back to MP3:", error)
+    }
+  }
+
+  const mp3Bitrate = pickMp3Bitrate(buffer.duration, maxBytes, 96)
+  const mp3Result = await bufferToMp3(buffer, { bitrate: mp3Bitrate, onProgress, signal })
+
+  if (mp3Result.blob.size > maxBytes) {
+    throw new Error(
+      `Unable to fit audio under ${formatFileSize(maxBytes)} even at the lowest supported bitrate (${mp3Bitrate}kbps MP3).`,
+    )
+  }
+
+  return {
+    blob: mp3Result.blob,
+    format: {
+      container: "mp3",
+      codec: "mp3",
+      sampleRate: mp3Result.sampleRate,
+      channels: mp3Result.channels,
+      bitrate: mp3Result.bitrate,
+    },
   }
 }
