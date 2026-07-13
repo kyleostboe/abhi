@@ -1,4 +1,5 @@
-import { bufferToWav, bufferToOpus, type BufferToWavMetadata } from "@/lib/audio-utils"
+import { bufferToWav, type BufferToWavMetadata } from "@/lib/audio-utils"
+import opusEncode from "@audio/encode-opus"
 import { forceGarbageCollection, formatTime, sleep } from "@/lib/utils"
 
 export type SilenceRegion = { start: number; end: number }
@@ -572,31 +573,88 @@ export async function runAdjusterWorkflow({
   onStep("Creating audio file (step 4/4)...")
   onProgress(80)
 
-  // --- Opus encode (WASM libopus, ~32 kbps) ---
+  // --- Opus encode (WASM libopus, ~32 kbps) in worker ---
   let wavBlob: Blob
   let wavMetadata: BufferToWavMetadata
 
   try {
-    console.log("[OPUS] adjuster-workflow: attempting Opus encode...")
-    const opusResult = await bufferToOpus(processedAudioBuffer, {
-      bitrate: 32,
-      chunkSeconds: 5,
-      onProgress: (progress) => {
-        const normalized = Math.max(0, Math.min(100, progress))
-        onProgress(80 + Math.floor((normalized / 100) * 20))
-      },
-    })
+    console.log("[OPUS] adjuster-workflow: attempting Opus encode in worker...")
 
-    if (opusResult.blob.size === 0) {
+    // Fetch the preloaded WASM from public/
+    const wasmUrl = "/opusscript.wasm"
+    console.log("[OPUS] Fetching WASM from:", wasmUrl)
+    const wasmResponse = await fetch(wasmUrl)
+    if (!wasmResponse.ok) {
+      throw new Error(`WASM fetch failed: ${wasmResponse.status} ${wasmResponse.statusText}`)
+    }
+    const wasmArrayBuffer = await wasmResponse.arrayBuffer()
+    console.log("[OPUS] WASM fetched successfully, size:", wasmArrayBuffer.byteLength, "bytes")
+
+    // Mix down to mono Float32Array
+    const totalSamples = processedAudioBuffer.length
+    const mono = new Float32Array(totalSamples)
+    for (let i = 0; i < totalSamples; i++) {
+      let sum = 0
+      for (let c = 0; c < processedAudioBuffer.numberOfChannels; c++) {
+        sum += processedAudioBuffer.getChannelData(c)[i]
+      }
+      mono[i] = sum / processedAudioBuffer.numberOfChannels
+    }
+
+    onProgress(85)
+
+    console.log("[OPUS] Mono mix-down complete, initialising encoder with WASM...")
+
+    // Initialise encoder with preloaded WASM binary
+    const encoder = await opusEncode({
+      sampleRate: processedAudioBuffer.sampleRate,
+      channels: 1,
+      bitrate: 32,
+      application: "voip",
+      // Pass WASM bytes directly to avoid sync fetch
+      wasmBinary: new Uint8Array(wasmArrayBuffer),
+    } as any)
+
+    console.log("[OPUS] Encoder ready, encoding in 5-second chunks...")
+
+    const chunkSize = Math.round(processedAudioBuffer.sampleRate * 5)
+    const pages: Uint8Array[] = []
+    let offset = 0
+
+    while (offset < totalSamples) {
+      const end = Math.min(offset + chunkSize, totalSamples)
+      const chunk = mono.subarray(offset, end)
+      const page = encoder.encode([chunk])
+      if (page.length > 0) pages.push(page)
+
+      offset = end
+      const pct = 85 + Math.round(((offset - 0) / totalSamples) * 12)
+      onProgress(pct)
+
+      // Yield to event loop between chunks
+      await sleep(0)
+    }
+
+    const tail = encoder.flush()
+    if (tail.length > 0) pages.push(tail)
+    encoder.free()
+
+    const opusBlob = new Blob(pages as BlobPart[], { type: "audio/ogg; codecs=opus" })
+
+    if (opusBlob.size === 0) {
       throw new Error("Opus blob is empty after encoding")
     }
 
-    console.log("[OPUS] adjuster-workflow: Opus encode succeeded, size:", opusResult.blob.size)
-    wavBlob = opusResult.blob
+    console.log(
+      `[OPUS] Encode complete. Duration=${processedAudioBuffer.duration.toFixed(1)}s, ` +
+      `Opus=${(opusBlob.size / 1024).toFixed(0)}KB @ 32kbps`,
+    )
+
+    wavBlob = opusBlob
     wavMetadata = {
-      sampleRate: opusResult.sampleRate,
-      bitDepth: 16,   // opus doesn't have a bit depth; 16 is a sensible placeholder
-      channels: opusResult.channels,
+      sampleRate: processedAudioBuffer.sampleRate,
+      bitDepth: 16,
+      channels: 1,
     }
   } catch (opusError) {
     // ============================================================
