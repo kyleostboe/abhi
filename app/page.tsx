@@ -49,9 +49,9 @@ import { AudioInfoMenu } from "@/components/audio-info-menu"
 import { AuthButtons } from "@/components/auth-buttons"
 
 const ADJUSTER_SESSION_KEY = "abhi_last_adjuster_session"
-const ENCODER_SESSION_KEY = "abhi_last_encoder_session"
+const CREATOR_SESSION_KEY = "abhi_last_creator_session"
 const ACTIVE_MODE_SESSION_KEY = "abhi_last_active_mode"
-const DEFAULT_ENCODER_DURATION_SECONDS = 10 * 60
+const DEFAULT_CREATOR_DURATION_SECONDS = 10 * 60
 
 interface RecorderSectionProps {
   className?: string
@@ -517,9 +517,9 @@ export default function Home() {
   const { toast } = useToast()
   const { isAuthenticated, login } = useAuth()
 
-  const [activeMode, setActiveMode] = useState<"adjuster" | "encoder">("adjuster")
+  const [activeMode, setActiveMode] = useState<"adjuster" | "creator">("adjuster")
   const [shouldScrollToAdjuster, setShouldScrollToAdjuster] = useState(false)
-  const [activeTab, setActiveTab] = useState<"adjuster" | "encoder">("adjuster") // State for tab navigation
+  const [activeTab, setActiveTab] = useState<"adjuster" | "creator">("adjuster") // State for tab navigation
 
   // == States for Length Adjuster ==
   const [file, setFile] = useState<File | null>(null)
@@ -563,7 +563,7 @@ export default function Home() {
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const silenceAnalysisAbortRef = useRef<AbortController | null>(null)
   const adjusterCompressionTokenRef = useRef(0)
-  const encoderCompressionTokenRef = useRef(0)
+  const creatorCompressionTokenRef = useRef(0)
   const [processedDistributionBlob, setProcessedDistributionBlob] = useState<Blob | null>(null)
   const [generatedDistributionBlob, setGeneratedDistributionBlob] = useState<Blob | null>(null)
   const [loadedLibraryContext, setLoadedLibraryContext] = useState<{
@@ -590,12 +590,12 @@ export default function Home() {
 
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
-  const [encoderTotalDuration, setEncoderTotalDuration] = useState<number>(DEFAULT_ENCODER_DURATION_SECONDS)
-  const [encoderDurationDraft, setEncoderDurationDraft] = useState<number>(DEFAULT_ENCODER_DURATION_SECONDS)
-
-  const [encoderTimelineOriginalDuration, setEncoderTimelineOriginalDuration] = useState<number | null>(null)
+  const [creatorTotalDuration, setCreatorTotalDuration] = useState<number>(DEFAULT_CREATOR_DURATION_SECONDS)
+  const [creatorDurationDraft, setCreatorDurationDraft] = useState<number>(DEFAULT_CREATOR_DURATION_SECONDS)
+  
+  const [creatorTimelineOriginalDuration, setCreatorTimelineOriginalDuration] = useState<number | null>(null)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
-  const lastEncoderDurationAdjustmentRef = useRef<number | null>(null)
+  const lastCreatorDurationAdjustmentRef = useRef<number | null>(null)
   const exportableTimelineMetadata = useMemo(() => {
     return timelineEvents.map((event) => {
       const isRecording = event.type === "recorded_voice"
@@ -631,7 +631,7 @@ export default function Home() {
     })
   }, [timelineEvents])
 
-  const encoderSoundCuesUsed = useMemo(() => {
+  const creatorSoundCuesUsed = useMemo(() => {
     const cues = new Set<string>()
 
     for (const event of timelineEvents) {

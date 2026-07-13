@@ -111,7 +111,7 @@ const availableSounds: SoundDefinition[] = [
   { id: "wood_block", name: "Wood Block", description: "A sharp, percussive wood block sound." },
 ]
 
-export default function EncoderPage() {
+export default function CreatorPage() {
   const [file, setFile] = useState<File | null>(null)
   const [originalAudioUrl, setOriginalAudioUrl] = useState<string>("")
   const [transcriptionMethod, setTranscriptionMethod] = useState<"browser" | "manual">("browser")
@@ -205,24 +205,24 @@ export default function EncoderPage() {
 
   useEffect(() => {
     const handleImportFromLibrary = () => {
-      const encoderImport = localStorage.getItem("abhi_encoder_import")
-      if (encoderImport) {
+      const creatorImport = localStorage.getItem("abhi_creator_import")
+      if (creatorImport) {
         try {
-          const importData = JSON.parse(encoderImport)
-          console.log("[v0] Loading meditation from library into encoder:", importData)
+          const importData = JSON.parse(creatorImport)
+          console.log("[v0] Loading meditation from library into creator:", importData)
 
           handleImportedMeditation(importData)
 
           // Clear the import data
-          localStorage.removeItem("abhi_encoder_import")
+          localStorage.removeItem("abhi_creator_import")
 
           setStatus({
             message: `Loaded "${importData.title}" from library.`,
             type: "success",
           })
         } catch (error) {
-          console.error("[v0] Error loading encoder import:", error)
-          localStorage.removeItem("abhi_encoder_import")
+          console.error("[v0] Error loading creator import:", error)
+          localStorage.removeItem("abhi_creator_import")
         }
       }
     }
@@ -734,7 +734,7 @@ export default function EncoderPage() {
 
   const handleImportedMeditation = async (importData: any) => {
     try {
-      console.log("[v0] Handling imported meditation in encoder:", importData)
+      console.log("[v0] Handling imported meditation in creator:", importData)
 
       // Load the audio file
       const response = await fetch(importData.processedAudioUrl)
@@ -762,7 +762,7 @@ export default function EncoderPage() {
       setAudioDuration(audioBuffer.duration)
       setEncodedAudioMetadata(importData.metadata?.wav ?? null)
 
-      if (importData.source === "encoder" && !importData.crossToolOpening) {
+      if (importData.source === "creator" && !importData.crossToolOpening) {
         // Reconstruct original cues/recordings structure
         await reconstructOriginalStructure(importData)
       } else {
@@ -791,7 +791,7 @@ export default function EncoderPage() {
         })
       }
     } catch (error) {
-      console.error("[v0] Error handling imported meditation in encoder:", error)
+      console.error("[v0] Error handling imported meditation in creator:", error)
       setStatus({
         message: "Failed to load meditation from library. Please try again.",
         type: "error",
@@ -800,7 +800,7 @@ export default function EncoderPage() {
   }
 
   const reconstructOriginalStructure = async (importData: any) => {
-    console.log("[v0] Reconstructing original encoder structure:", importData)
+    console.log("[v0] Reconstructing original creator structure:", importData)
 
     try {
       if (importData.metadata?.instructionCount && importData.metadata.instructionCount > 0) {
@@ -1041,7 +1041,7 @@ export default function EncoderPage() {
                   audioUrl={encodedAudioUrl}
                   originalFileName={file?.name || "meditation"}
                   duration={audioDuration}
-                  source="encoder"
+                  source="creator"
                   metadata={{
                     instructionCount: mappedInstructions.length,
                     soundCuesUsed: [...new Set(mappedInstructions.map((instr) => instr.soundId))],

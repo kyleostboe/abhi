@@ -33,7 +33,7 @@ export interface SavedMeditation {
   sourceAudioUrl?: string
   duration: number
   createdAt: Date
-  source: "adjuster" | "encoder"
+  source: "adjuster" | "creator"
   metadata: {
     // Shared metadata
     meditationTitle?: string
@@ -47,7 +47,7 @@ export interface SavedMeditation {
       preserveNaturalPacing?: boolean
       compatibilityMode?: string
     }
-    // For encoder meditations
+    // For creator meditations
     instructionCount?: number
     soundCuesUsed?: string[]
     timeline?: Array<{
@@ -180,7 +180,7 @@ const normalizeSupabaseMeditation = (
   sourceAudioUrl,
   duration: row.duration || 0,
   createdAt: new Date(row.created_at),
-  source: row.source as "adjuster" | "encoder",
+  source: row.source as "adjuster" | "creator",
   metadata: mapTimelineWithRecordings(row.metadata || {}, recordings) || {},
 })
 
@@ -692,8 +692,8 @@ export class MeditationLibrary {
       originalFileName: row.original_filename || row.description || "Unknown",
       duration: row.duration || 0,
       createdAt: new Date(row.created_at).toISOString(),
-      source: row.source as "adjuster" | "encoder",
-      metadata: row.metadata || {},
+  source: row.source as "adjuster" | "creator",
+  metadata: row.metadata || {},
     }))
 
     zip.file("meditations.json", JSON.stringify(metadata, null, 2))
@@ -749,8 +749,8 @@ export class MeditationLibrary {
       originalFileName: string
       duration: number
       createdAt: string
-      source: "adjuster" | "encoder"
-      metadata: any
+  source: "adjuster" | "creator"
+  metadata: any
     }>
 
     onProgress?.(10, "Reading backup file...")
