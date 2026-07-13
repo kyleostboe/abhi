@@ -3,6 +3,98 @@ import { forceGarbageCollection, formatTime, sleep } from "@/lib/utils"
 
 export type SilenceRegion = { start: number; end: number }
 
+/**
+ * WSOLA (Waveform Similarity Overlap-Add) time-stretch.
+ * Speeds up `input` by `tempo` (e.g. 1.25) without changing pitch.
+ * Returns a new Float32Array containing the time-stretched audio.
+ *
+ * Algorithm:
+ *  - Divide input into overlapping frames spaced `step` samples apart (in INPUT time)
+ *  - For each frame, find the best-matching position within a seek window
+ *  - Overlap-add frames into output spaced `frameLen - overlapLen` apart (in OUTPUT time)
+ *  - Net effect: output plays faster by `tempo` with same pitch
+ */
+function wsolaTimeStretch(input: Float32Array, tempo: number, sampleRate: number): Float32Array {
+  if (Math.abs(tempo - 1.0) < 0.001) return input.slice()
+
+  // Parameters tuned for speech clarity
+  const overlapMs   = 12   // ms — crossfade length between consecutive frames
+  const frameMs     = 40   // ms — total frame length (overlap + body)
+  const seekMs      = 14   // ms — half-width of seek window for best-match
+
+  const overlapLen  = Math.round(sampleRate * overlapMs  / 1000)
+  const frameLen    = Math.round(sampleRate * frameMs    / 1000)
+  const seekHalf    = Math.round(sampleRate * seekMs     / 1000)
+
+  // In output time, each frame advances by (frameLen - overlapLen) samples
+  const outputStep  = frameLen - overlapLen
+  // In input time, each frame advances by outputStep * tempo
+  const inputStep   = outputStep * tempo
+
+  const outputLen   = Math.max(1, Math.floor(input.length / tempo))
+  const output      = new Float32Array(outputLen)
+  // Track how much each output sample has been accumulated (for proper OLA normalisation)
+  const weight      = new Float32Array(outputLen)
+
+  // Raised-cosine (Hann) window — guarantees unity gain across overlap-add
+  const hannWin = new Float32Array(frameLen)
+  for (let i = 0; i < frameLen; i++) {
+    hannWin[i] = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (frameLen - 1)))
+  }
+
+  // Cross-correlate a window of `overlapLen` samples from `refPos` in output
+  // against candidates near `nominalPos` in input to find best splice point
+  const findBestPos = (nominalPos: number, refPos: number): number => {
+    let bestScore = -Infinity
+    let bestPos   = nominalPos
+    const lo = Math.max(0,                          nominalPos - seekHalf)
+    const hi = Math.min(input.length - frameLen,    nominalPos + seekHalf)
+    for (let p = lo; p <= hi; p++) {
+      let score = 0
+      for (let k = 0; k < overlapLen; k++) {
+        // Compare the tail of what we've already written (output[refPos+k] / weight)
+        // against the start of the candidate frame in input
+        const outSample = weight[refPos + k] > 0 ? output[refPos + k] / weight[refPos + k] : 0
+        score += outSample * input[p + k]
+      }
+      if (score > bestScore) { bestScore = score; bestPos = p }
+    }
+    return bestPos
+  }
+
+  let inputPos  = 0   // current nominal read position in input (float)
+  let outputPos = 0   // current write position in output
+
+  while (outputPos < outputLen) {
+    const nom    = Math.round(inputPos)
+    const refOut = Math.max(0, outputPos - overlapLen)
+
+    // Find best-matching frame start near `nom`
+    const srcPos = (nom + seekHalf < input.length - frameLen)
+      ? findBestPos(nom, refOut)
+      : Math.min(nom, input.length - frameLen)
+
+    // Overlap-add this frame into output with Hann window
+    for (let k = 0; k < frameLen && outputPos - overlapLen + k < outputLen; k++) {
+      const outIdx = outputPos - overlapLen + k
+      if (outIdx < 0) continue
+      const w = hannWin[k]
+      output[outIdx] += input[srcPos + k] * w
+      weight[outIdx] += w
+    }
+
+    inputPos  += inputStep
+    outputPos += outputStep
+  }
+
+  // Normalise: divide by accumulated Hann weights to get unity gain
+  for (let i = 0; i < outputLen; i++) {
+    if (weight[i] > 1e-6) output[i] /= weight[i]
+  }
+
+  return output
+}
+
 export interface DetectSilenceOptions {
   onProgress?: (progress: number) => void
   signal?: AbortSignal
@@ -126,68 +218,157 @@ interface RebuildOptions {
   audioContext: AudioContext
   buffer: AudioBuffer
   regions: SilenceRegion[]
+  uncappedSilenceDuration: number
   scaleFactor: number
-  minSpacingDuration: number
-  preserveNaturalPacing: boolean
   targetTotalSilence: number
+  pauseFloor: number
+  contentSpeedMultiplier: number
   isMobileDevice: boolean
   onProgress?: (progress: number) => void
   onMemoryWarning?: () => void
+}
+
+/**
+ * Uniform pause scaling with perceptual failsafes
+ * 
+ * Philosophy: Treat audio like fabric - scale ALL pauses uniformly to preserve
+ * the original proportionality. Then apply physical/perceptual limits:
+ * 
+ * FLOOR: No pause below 0.3s (would stitch content together unnaturally)
+ * CEILING: Short pauses (originally < 2s) shouldn't exceed ~2.5s (would tear content apart)
+ * 
+ * Any time borrowed/excess from clamped pauses is redistributed proportionally
+ * to all unclamped pauses, preserving their ratios to each other.
+ */
+export function calculateUniformScaledPauseDurations(
+  regions: SilenceRegion[],
+  scaleFactor: number,
+  targetTotalSilence: number,
+  pauseFloor: number, // user-set minimum pause duration (minSilenceDuration), 0.3s failsafe if 0
+): { region: SilenceRegion; newDuration: number }[] {
+  if (regions.length === 0) return []
+  
+  const currentTotalSilence = regions.reduce((sum, r) => sum + (r.end - r.start), 0)
+  if (currentTotalSilence === 0) return regions.map(r => ({ region: r, newDuration: 0 }))
+
+  // Perceptual limits
+  const FLOOR = Math.max(0.3, pauseFloor) // User-set minimum, 0.3s absolute failsafe prevents stitching
+  const SHORT_PAUSE_THRESHOLD = 2.0 // Pauses under this are considered "short"
+  const SHORT_PAUSE_CEILING = 2.5 // Short pauses shouldn't grow beyond this
+  
+  // Step 1: Apply uniform scaling to all pauses
+  const pauseData = regions.map(region => {
+    const originalDuration = region.end - region.start
+    const scaledDuration = originalDuration * scaleFactor
+    return { 
+      region, 
+      originalDuration, 
+      scaledDuration,
+      finalDuration: scaledDuration,
+      isClamped: false
+    }
+  })
+  
+  // Step 2: Apply perceptual clamps
+  let totalBorrowedOrExcess = 0
+  
+  pauseData.forEach(pause => {
+    const { originalDuration, scaledDuration } = pause
+    let clampedDuration = scaledDuration
+    
+    // Floor: prevent stitching (applies to all pauses)
+    if (scaledDuration < FLOOR) {
+      clampedDuration = FLOOR
+      pause.isClamped = true
+    }
+    
+    // Ceiling: prevent short pauses from tearing content apart
+    if (originalDuration < SHORT_PAUSE_THRESHOLD && scaledDuration > SHORT_PAUSE_CEILING) {
+      clampedDuration = SHORT_PAUSE_CEILING
+      pause.isClamped = true
+    }
+    
+    if (pause.isClamped) {
+      totalBorrowedOrExcess += scaledDuration - clampedDuration
+      pause.finalDuration = clampedDuration
+    }
+  })
+  
+  // Step 3: Redistribute borrowed/excess time proportionally to unclamped pauses
+  if (Math.abs(totalBorrowedOrExcess) > 0.01) {
+    const unclampedPauses = pauseData.filter(p => !p.isClamped)
+    
+    if (unclampedPauses.length > 0) {
+      // Calculate total scaled duration of unclamped pauses for proportional distribution
+      const totalUnclampedScaled = unclampedPauses.reduce((sum, p) => sum + p.scaledDuration, 0)
+      
+      unclampedPauses.forEach(pause => {
+        // Each unclamped pause gets a share proportional to its scaled size
+        const share = pause.scaledDuration / totalUnclampedScaled
+        const adjustment = totalBorrowedOrExcess * share
+        pause.finalDuration = Math.max(FLOOR, pause.scaledDuration + adjustment)
+      })
+    } else {
+      // Edge case: all pauses are clamped - distribute evenly to longest pauses
+      const sortedByDuration = [...pauseData].sort((a, b) => b.originalDuration - a.originalDuration)
+      const topHalf = sortedByDuration.slice(0, Math.max(1, Math.ceil(sortedByDuration.length / 2)))
+      const adjustmentPerPause = totalBorrowedOrExcess / topHalf.length
+      topHalf.forEach(pause => {
+        pause.finalDuration = Math.max(FLOOR, pause.finalDuration + adjustmentPerPause)
+      })
+    }
+  }
+  
+  return pauseData.map(p => ({ region: p.region, newDuration: p.finalDuration }))
 }
 
 export async function rebuildAudioWithScaledPauses({
   audioContext,
   buffer,
   regions,
+  uncappedSilenceDuration,
   scaleFactor,
-  minSpacingDuration,
-  preserveNaturalPacing,
   targetTotalSilence,
+  pauseFloor,
+  contentSpeedMultiplier,
   isMobileDevice,
   onProgress = () => {},
   onMemoryWarning,
 }: RebuildOptions): Promise<AudioBuffer> {
   onProgress(0)
 
-  let dynamicScale = scaleFactor
-  if (!preserveNaturalPacing && regions.length > 0) {
-    const currentTotalSilence = regions.reduce((sum, r) => sum + (r.end - r.start), 0)
-    dynamicScale = currentTotalSilence > 0 ? targetTotalSilence / currentTotalSilence : 1
-    if (!Number.isFinite(dynamicScale) || dynamicScale <= 0) dynamicScale = 1
-  }
+  // Use uniform scaling with perceptual failsafes for natural rhythm preservation
+  const processedRegions = calculateUniformScaledPauseDurations(regions, scaleFactor, targetTotalSilence, pauseFloor)
 
-  const processedRegions = regions.map((region) => {
-    const duration = region.end - region.start
-    const newDuration = preserveNaturalPacing
-      ? Math.max(duration * dynamicScale, minSpacingDuration)
-      : regions.length > 0
-        ? Math.max(minSpacingDuration, targetTotalSilence / regions.length)
-        : minSpacingDuration
-    return { ...region, newDuration }
-  })
-
-  const audioContentDuration = buffer.duration - regions.reduce((sum, r) => sum + (r.end - r.start), 0)
+  // Use uncapped silence duration so capped silence isn't mistakenly counted as content
+  const audioContentDuration = buffer.duration - uncappedSilenceDuration
   const newSilenceDuration = processedRegions.reduce((sum, r) => sum + r.newDuration, 0)
-  const newTotalDuration = audioContentDuration + newSilenceDuration
+  // Account for speed-up: content becomes shorter when sped up
+  const effectiveContentDuration = audioContentDuration / contentSpeedMultiplier
+  const newTotalDuration = effectiveContentDuration + newSilenceDuration
 
   if (newTotalDuration <= 0) {
     throw new Error("Calculated new total duration is zero or negative.")
   }
 
-  if (isMobileDevice && newTotalDuration > 45 * 60) {
+  // For very long durations, warn the user
+  if (newTotalDuration > 90 * 60) {
     onMemoryWarning?.()
-    console.warn(`Mobile device: Output duration ${formatTime(newTotalDuration)} may cause issues.`)
+    console.warn(`Long duration: Output duration ${formatTime(newTotalDuration)} - processing may take a while.`)
   }
+
+  // Force garbage collection before allocating large buffer
+  forceGarbageCollection()
+  await sleep(100) // Give GC time to run
 
   let newBuffer: AudioBuffer
   try {
-    // Output as mono to halve memory footprint (~160MB instead of ~320MB for stereo)
-    // Meditation files are typically mono or mixed-to-mono anyway
-    newBuffer = audioContext.createBuffer(
-      1,
-      Math.max(1, Math.floor(newTotalDuration * buffer.sampleRate)),
-      buffer.sampleRate,
-    )
+    // Output as mono to halve memory footprint
+    // Use the input buffer's sample rate (which may already be reduced on mobile)
+    const outputSampleRate = buffer.sampleRate
+    const outputSamples = Math.max(1, Math.floor(newTotalDuration * outputSampleRate))
+    
+    newBuffer = audioContext.createBuffer(1, outputSamples, outputSampleRate)
   } catch (error) {
     forceGarbageCollection()
     throw new Error(
@@ -197,62 +378,91 @@ export async function rebuildAudioWithScaledPauses({
 
   onProgress(10)
 
+  // Mix down to mono once up front
+  const channelData = Array.from({ length: buffer.numberOfChannels }, (_, c) => buffer.getChannelData(c))
+  const totalSamples = Math.floor(buffer.duration * buffer.sampleRate)
+
+  const monoSource = new Float32Array(totalSamples)
+  for (let i = 0; i < totalSamples; i++) {
+    let sum = 0
+    for (let c = 0; c < channelData.length; c++) sum += channelData[c][i]
+    monoSource[i] = sum / channelData.length
+  }
+
+  // If speed > 1x, WSOLA-stretch the entire buffer once so state is continuous
+  // (no per-segment restarts that cause clicks/static at boundaries).
+  // Speech segments will be read from stretchedSource; silences are written as zeros directly.
+  const needsStretch = Math.abs(contentSpeedMultiplier - 1.0) > 0.001
+  const stretchedSource = needsStretch
+    ? wsolaTimeStretch(monoSource, contentSpeedMultiplier, buffer.sampleRate)
+    : monoSource
+
   // Process single mono output channel
   const newData = newBuffer.getChannelData(0)
   let writeIndex = 0
-  let readIndex = 0
+  let readIndex = 0  // tracks position in ORIGINAL buffer (samples)
 
-  // Get mixed-down mono from all input channels
-  const getMonoSample = (sampleIndex: number): number => {
-    let sum = 0
-    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-      sum += buffer.getChannelData(channel)[sampleIndex]
+  // Copy speech segment from original buffer range [srcStart, srcEnd).
+  // Maps to the corresponding range in stretchedSource via the speed multiplier.
+  const copySpeechSegment = (srcStart: number, srcEnd: number) => {
+    if (srcEnd <= srcStart) return
+    if (writeIndex >= newData.length) return
+
+    if (!needsStretch) {
+      for (let j = srcStart; j < srcEnd && writeIndex < newData.length; j++) {
+        newData[writeIndex++] = monoSource[j]
+      }
+    } else {
+      // Map original sample positions to stretched buffer positions
+      const stretchedStart = Math.floor(srcStart / contentSpeedMultiplier)
+      const stretchedEnd = Math.floor(srcEnd / contentSpeedMultiplier)
+      for (let j = stretchedStart; j < stretchedEnd && writeIndex < newData.length; j++) {
+        newData[writeIndex++] = j < stretchedSource.length ? stretchedSource[j] : 0
+      }
     }
-    return sum / buffer.numberOfChannels
   }
-
-  const totalSamples = Math.floor(buffer.duration * buffer.sampleRate)
 
   if (regions.length > 0 && regions[0].start > 0) {
     const samplesToCopy = Math.floor(regions[0].start * buffer.sampleRate)
-    for (let i = 0; i < samplesToCopy && writeIndex < newData.length; i++) {
-      newData[writeIndex++] = getMonoSample(readIndex++)
-    }
+    copySpeechSegment(readIndex, readIndex + samplesToCopy)
+    readIndex += samplesToCopy
   }
 
-  for (let i = 0; i < regions.length; i++) {
+  for (let i = 0; i < processedRegions.length; i++) {
     if (i % (isMobileDevice ? 5 : 10) === 0) {
       await sleep(0)
-      onProgress(10 + Math.floor((i / Math.max(1, regions.length)) * 80))
+      onProgress(10 + Math.floor((i / Math.max(1, processedRegions.length)) * 80))
     }
 
-    const region = regions[i]
-    const processedRegion = processedRegions[i]
+    const { region, newDuration } = processedRegions[i]
 
     readIndex = Math.floor(region.end * buffer.sampleRate)
 
-    const newSilenceLength = Math.floor(processedRegion.newDuration * buffer.sampleRate)
+    const newSilenceLength = Math.floor(newDuration * buffer.sampleRate)
     for (let j = 0; j < newSilenceLength && writeIndex < newData.length; j++) {
       newData[writeIndex++] = 0
     }
 
     const nextRegionStart =
-      i < regions.length - 1 ? Math.floor(regions[i + 1].start * buffer.sampleRate) : totalSamples
+      i < processedRegions.length - 1 ? Math.floor(processedRegions[i + 1].region.start * buffer.sampleRate) : totalSamples
 
     const segmentStart = Math.max(readIndex, 0)
     const segmentEnd = Math.min(nextRegionStart, totalSamples)
 
-    for (let j = segmentStart; j < segmentEnd && writeIndex < newData.length; j++) {
-      newData[writeIndex++] = getMonoSample(j)
-    }
-
+    copySpeechSegment(segmentStart, segmentEnd)
     readIndex = segmentEnd
   }
 
   if (regions.length === 0) {
-    for (let i = 0; i < totalSamples && writeIndex < newData.length; i++) {
-      newData[writeIndex++] = getMonoSample(i)
-    }
+    copySpeechSegment(0, totalSamples)
+  }
+
+  // Trim the buffer to the actual amount written (in case of rounding discrepancies)
+  if (writeIndex < newData.length) {
+    const trimmedBuffer = audioContext.createBuffer(1, writeIndex, newBuffer.sampleRate)
+    trimmedBuffer.getChannelData(0).set(newData.subarray(0, writeIndex))
+    onProgress(100)
+    return trimmedBuffer
   }
 
   onProgress(100)
@@ -263,9 +473,8 @@ interface AdjusterWorkflowSettings {
   targetDurationSeconds: number
   silenceThreshold: number
   minSilenceDuration: number
-  minSpacingDuration: number
-  preserveNaturalPacing: boolean
   maxSilenceDuration: number
+  contentSpeedMultiplier: number // 1.0 = no change, 1.05-1.15 = subtle speedup for shrink boost
 }
 
 interface AdjusterWorkflowCallbacks {
@@ -303,9 +512,8 @@ export async function runAdjusterWorkflow({
     targetDurationSeconds,
     silenceThreshold,
     minSilenceDuration,
-    minSpacingDuration,
-    preserveNaturalPacing,
     maxSilenceDuration,
+    contentSpeedMultiplier,
   } = settings
   const { onProgress = () => {}, onStep = () => {}, onMemoryWarning } = callbacks
 
@@ -329,10 +537,15 @@ export async function runAdjusterWorkflow({
   onProgress(25)
 
   const totalSilenceDuration = cappedSilenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
-  const audioContentDuration = buffer.duration - totalSilenceDuration
+  // Use original uncapped silence to get true content duration (capped time is still silence, not content)
+  const uncappedSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+  const audioContentDuration = buffer.duration - uncappedSilenceDuration
+  // Speed-up reduces effective content duration, creating more room for pauses
+  const effectiveContentDuration = audioContentDuration / contentSpeedMultiplier
+  const pauseFloor = Math.max(0.3, minSilenceDuration)
   const availableSilenceDuration = Math.max(
-    targetDurationSeconds - audioContentDuration,
-    cappedSilenceRegions.length * minSpacingDuration,
+    targetDurationSeconds - effectiveContentDuration,
+    cappedSilenceRegions.length * pauseFloor,
   )
   const scaleFactor = totalSilenceDuration > 0 ? availableSilenceDuration / totalSilenceDuration : 1
 
@@ -343,10 +556,11 @@ export async function runAdjusterWorkflow({
     audioContext,
     buffer,
     regions: cappedSilenceRegions,
+    uncappedSilenceDuration,
     scaleFactor,
-    minSpacingDuration,
-    preserveNaturalPacing,
     targetTotalSilence: availableSilenceDuration,
+    pauseFloor,
+    contentSpeedMultiplier,
     isMobileDevice,
     onProgress: (progress) => {
       const normalized = Math.max(0, Math.min(100, progress))

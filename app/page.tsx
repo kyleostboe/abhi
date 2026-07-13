@@ -1,5 +1,6 @@
 "use client"
 
+// v39 rebuild trigger
 import type React from "react"
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
@@ -20,7 +21,7 @@ import {
 } from "lucide-react" // Import Copy icon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DurationControlCard } from "@/components/duration-control-card"
-import { Switch } from "@/components/ui/switch"
+
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
 import { TimerWheel } from "@/components/timer-wheel"
@@ -35,6 +36,7 @@ import { getAudioContext, bufferToWav, bufferToWebM, type BufferToWavMetadata } 
 import {
   runAdjusterWorkflow,
   detectSilenceRegions as computeSilenceRegions,
+  calculateUniformScaledPauseDurations,
   type DetectSilenceOptions,
 } from "@/lib/adjuster-workflow"
 import type { SavedMeditation } from "@/lib/meditation-library"
@@ -527,11 +529,11 @@ export default function Home() {
   const [processedAudioMetadata, setProcessedAudioMetadata] = useState<BufferToWavMetadata | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null) // Still needed for Adjuster's specific context management
   const [targetDuration, setTargetDuration] = useState<number>(20)
-  const [silenceThreshold, setSilenceThreshold] = useState<number>(0.01)
-  const [minSilenceDuration, setMinSilenceDuration] = useState<number>(3)
-  const [minSpacingDuration, setMinSpacingDuration] = useState<number>(1.5)
-  const [preserveNaturalPacing, setPreserveNaturalPacing] = useState<boolean>(true)
-  const [maxSilenceDuration, setMaxSilenceDuration] = useState<number>(0) // Updated default to 0 (no limit)
+  const [silenceThreshold, setSilenceThreshold] = useState<number>(0.025)
+  const [minSilenceDuration, setMinSilenceDuration] = useState<number>(1)
+  const [maxSilenceDuration, setMaxSilenceDuration] = useState<number>(0) // 0 = no limit
+  const [contentSpeedMultiplier, setContentSpeedMultiplier] = useState<number>(1.0) // 1.0 = no speedup, up to 1.15x
+  const [showSpeedOptions, setShowSpeedOptions] = useState<boolean>(false)
 
   const [status, setStatus] = useState<{ message: string; type: string } | null>(null)
   const [originalUrl, setOriginalUrl] = useState<string>("")
@@ -540,7 +542,7 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false) // Corrected type to boolean
   const [processingProgress, setProcessingProgress] = useState<number>(0)
   const [processingStep, setProcessingStep] = useState<string>("")
-  const [durationLimits, setDurationLimits] = useState<{ min: number; max: number } | null>(null)
+  const [durationLimits, setDurationLimits] = useState<{ min: number; max: number; trueMinSeconds: number } | null>(null)
   const [audioAnalysis, setAudioAnalysis] = useState<{
     totalSilence: number
     contentDuration: number
@@ -575,13 +577,16 @@ export default function Home() {
       return null
     }
 
-    const minSeconds = audioAnalysis.contentDuration + audioAnalysis.silenceRegions * minSpacingDuration
+    // True minimum: content at chosen speed + every pause at the floor value
+    const pauseFloor = Math.max(0.3, minSilenceDuration)
+    const effectiveContentDuration = audioAnalysis.contentDuration / contentSpeedMultiplier
+    const minSeconds = effectiveContentDuration + audioAnalysis.silenceRegions * pauseFloor
     if (!Number.isFinite(minSeconds) || minSeconds <= 0) {
       return null
     }
 
-    return Math.max(1, Math.round(minSeconds))
-  }, [audioAnalysis, minSpacingDuration])
+    return Math.max(1, Math.ceil(minSeconds)) // Return exact seconds, ceiling to avoid going under
+  }, [audioAnalysis, minSilenceDuration, contentSpeedMultiplier])
 
   // == States for Labs ==
   const [meditationTitle, setMeditationTitle] = useState<string>("My Custom Meditation")
@@ -673,6 +678,8 @@ export default function Home() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const recordingPreviewRef = useRef<HTMLAudioElement | null>(null)
   const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const processedAudioSectionRef = useRef<HTMLDivElement | null>(null)
+  const encoderAudioSectionRef = useRef<HTMLDivElement | null>(null)
   const currentItemStartTimeRef = useRef<number>(0)
 
   const [multiNoteMode, setMultiNoteMode] = useState(false)
@@ -698,6 +705,20 @@ export default function Home() {
       processedQualityWarningShownRef.current = false
     }
   }, [processedQualityWarning, processedAudioMetadata, toast])
+
+  // Scroll to processed audio when processing completes
+  useEffect(() => {
+    if (isProcessingComplete && processedAudioSectionRef.current) {
+      processedAudioSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }, [isProcessingComplete])
+
+  // Scroll to encoder audio when generation completes
+  useEffect(() => {
+    if (generatedAudioUrl && encoderAudioSectionRef.current) {
+      encoderAudioSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }, [generatedAudioUrl])
 
   useEffect(() => {
     if (generatedQualityWarning && generatedAudioMetadata && !generatedQualityWarningShownRef.current) {
@@ -1487,30 +1508,40 @@ export default function Home() {
 
     let playbackUrl: string | null = null
     try {
-      // On mobile with large files, use a lower sample rate context to reduce memory
-      // A 44100Hz buffer uses ~2x the memory of a 22050Hz buffer
-      // For silence detection and meditation audio, 22050Hz is perfectly adequate
+      // Memory optimization strategy for mobile:
+      // - Mobile devices have limited memory (~1-2GB for browser)
+      // - A 50MB MP3 decodes to ~600MB at 44100Hz stereo
+      // - Using 22050Hz mono reduces this to ~300MB (2x reduction, maintains quality)
+      // - 22050Hz is excellent quality for voice/meditation content
       const fileSizeMB = selectedFile.size / (1024 * 1024)
-      const needsLowMemoryMode = isMobileDevice && fileSizeMB > 20
       
-      // Create or reuse context - on mobile with large files, use lower sample rate
-      let context: AudioContext
-      if (needsLowMemoryMode) {
-        // Close existing context if it exists to free memory
-        if (audioContextRef.current) {
-          try {
-            await audioContextRef.current.close()
-          } catch (e) {
-            // Ignore close errors
-          }
-        }
-        // Create new context at lower sample rate for memory efficiency
-        context = new AudioContext({ sampleRate: 22050 })
-        audioContextRef.current = context
+      // Determine optimal sample rate based on device and file size
+      // Mobile: Always use lower sample rate for reliability
+      // Large files (>30MB): Use lower sample rate even on desktop
+      let targetSampleRate: number
+      if (isMobileDevice) {
+        // Mobile: Use 22050Hz for all files for reliability while maintaining quality
+        targetSampleRate = 22050
+      } else if (fileSizeMB > 30) {
+        // Desktop with large files: Use 22050Hz for balance of quality/memory
+        targetSampleRate = 22050
       } else {
-        context = audioContextRef.current || new AudioContext()
-        audioContextRef.current = context
+        // Desktop with small files: Use full quality
+        targetSampleRate = 44100
       }
+      
+      // Close existing context to free memory before creating new one
+      if (audioContextRef.current) {
+        try {
+          await audioContextRef.current.close()
+        } catch (e) {
+          // Ignore close errors
+        }
+      }
+      
+      // Create context at target sample rate - this affects decodeAudioData output
+      const context = new AudioContext({ sampleRate: targetSampleRate })
+      audioContextRef.current = context
 
       if (context.state === "suspended") {
         await context.resume()
@@ -1921,14 +1952,16 @@ export default function Home() {
             type: "error",
           })
           setFile(null)
-          setDisplayedFileName(null)
-          setOriginalBuffer(null)
-          setOriginalUrl("")
-          setAudioAnalysis(null)
-          setDurationLimits(null)
-          setAnalysisProgress(null)
-        }
-      }
+  setDisplayedFileName(null)
+  setOriginalBuffer(null)
+  setOriginalUrl("")
+  setAudioAnalysis(null)
+  setDurationLimits(null)
+  setAnalysisProgress(null)
+  setContentSpeedMultiplier(1.0)
+  setShowSpeedOptions(false)
+  }
+  }
 
       if (sourceTab === "adjuster") {
         await importIntoAdjuster(importData)
@@ -2088,7 +2121,6 @@ export default function Home() {
   }, [importFromLibrary])
 
   const processAudioAdjusterAction = async () => {
-    console.log("[v0] Processing button clicked")
     setIsProcessingComplete(false)
     const currentAudioContext = audioContextRef.current
     if (!originalBuffer || !currentAudioContext) {
@@ -2118,29 +2150,62 @@ export default function Home() {
       return
     }
     if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
+    // Increase timeout for very long durations - 30 minutes should be enough for any processing
+    const timeoutMs = isMobileDevice ? 300000 : 1800000 // 5 min mobile, 30 min desktop
     processingTimeoutRef.current = setTimeout(
       () => {
+        console.log("[v0] Processing timed out after", timeoutMs / 1000, "seconds")
         setIsProcessing(false)
-        setStatus({ message: "Processing timed out.", type: "error" })
+        setStatus({ message: "Processing timed out. Try a shorter duration.", type: "error" })
       },
-      isMobileDevice ? 120000 : 600000,
+      timeoutMs,
     )
 
     try {
       setStatus({ message: "Processing audio...", type: "info" })
-      const targetDurationSeconds = targetDuration * 60
+      // If slider is at its minimum position, use the exact trueMinSeconds rather than
+      // the whole-minute floor, so the output matches the displayed minimum precisely
+      const rawTargetSeconds = targetDuration * 60
+      const targetDurationSeconds =
+        durationLimits && targetDuration <= durationLimits.min
+          ? durationLimits.trueMinSeconds
+          : rawTargetSeconds
+      
+      // For very long target durations (>90 min), resample to lower sample rate to reduce memory
+      // Use 22050Hz which maintains good audio quality while reducing memory requirements
+      // At 22050Hz, a 2-hour buffer needs ~635MB which is at the edge of browser limits
+      let bufferToProcess: AudioBuffer = originalBuffer
+      const targetSampleRateForLongDuration = 22050
+      
+      if (targetDurationSeconds > 90 * 60 && originalBuffer.sampleRate > targetSampleRateForLongDuration) {
+        setProcessingStep("Optimizing for long duration...")
+        const ratio = targetSampleRateForLongDuration / originalBuffer.sampleRate
+        const newLength = Math.floor(originalBuffer.length * ratio)
+        
+        try {
+          const offlineCtx = new OfflineAudioContext(1, newLength, targetSampleRateForLongDuration)
+          const source = offlineCtx.createBufferSource()
+          source.buffer = originalBuffer
+          source.connect(offlineCtx.destination)
+          source.start(0)
+          
+          bufferToProcess = await offlineCtx.startRendering()
+        } catch (resampleError) {
+          console.error("[v0] Downsampling failed:", resampleError)
+          // Continue with original buffer if downsampling fails
+          bufferToProcess = originalBuffer
+        }
+      }
 
       const result = await runAdjusterWorkflow({
         audioContext: currentAudioContext,
-        buffer: originalBuffer,
+        buffer: bufferToProcess,
         settings: {
           targetDurationSeconds,
           silenceThreshold,
           minSilenceDuration,
-          minSpacingDuration,
-          preserveNaturalPacing,
-          // Removed compatibilityMode
           maxSilenceDuration: maxSilenceDuration * 1000, // convert to ms
+          contentSpeedMultiplier,
         },
         isMobileDevice,
         callbacks: {
@@ -2159,9 +2224,10 @@ export default function Home() {
       setProcessedFileSize(result.wavBlob.size)
       setProcessedAudioMetadata(result.wavMetadata)
       setPausesAdjusted(result.pausesAdjusted)
+      // Minimum is content + 0.3s per pause (from weighted algorithm minimum)
       const minimumDurationSeconds = Math.max(
         1,
-        Math.round(result.audioContentDuration + result.silenceRegions.length * minSpacingDuration),
+        Math.round(result.audioContentDuration + result.silenceRegions.length * 0.3),
       )
       setQuickAdjustRange({ minSeconds: minimumDurationSeconds })
       setProcessingProgress(100)
@@ -2191,7 +2257,15 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Error during audio processing:", error)
-      setStatus({ message: `Processing error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
+      const errorMsg = error instanceof Error ? error.message : String(error)
+      if (errorMsg.includes("QuotaExceededError") || errorMsg.includes("memory")) {
+        setStatus({ 
+          message: "Out of memory: Try a shorter duration, use a smaller input file, or restart the browser.", 
+          type: "error" 
+        })
+      } else {
+        setStatus({ message: `Processing error: ${errorMsg}`, type: "error" })
+      }
     } finally {
       setIsProcessing(false)
       if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
@@ -2265,16 +2339,44 @@ export default function Home() {
           return
         }
 
-        const totalSilenceDuration = silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
-        const contentDuration = originalBuffer.duration - totalSilenceDuration
-        const maxPossibleDuration = isMobileDevice ? 60 * 60 : 120 * 60
+        // Cap silence regions the same way processing does (respecting maxSilenceDuration)
+        const cappedSilenceRegions = silenceRegions.map((region) => {
+          if (maxSilenceDuration === 0) {
+            return region
+          }
+          const duration = region.end - region.start
+          if (duration > maxSilenceDuration) {
+            return { start: region.start, end: region.start + maxSilenceDuration }
+          }
+          return region
+        })
+
+        const totalSilenceDuration = cappedSilenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+        const contentDuration = originalBuffer.duration - silenceRegions.reduce((sum, region) => sum + (region.end - region.start), 0)
+        const pauseFloor = Math.max(0.3, minSilenceDuration)
+        const effectiveContentDuration = contentDuration / contentSpeedMultiplier
+
+        // Simulate actual pause scaling at minimum (scaleFactor targeting pauseFloor * numRegions)
+        // This mirrors exactly what runAdjusterWorkflow does, including SHORT_PAUSE_CEILING clamping
+        const minAvailableSilence = cappedSilenceRegions.length * pauseFloor
+        const minScaleFactor = totalSilenceDuration > 0 ? minAvailableSilence / totalSilenceDuration : 1
+        const simulatedPauses = calculateUniformScaledPauseDurations(
+          cappedSilenceRegions,
+          minScaleFactor,
+          minAvailableSilence,
+          pauseFloor,
+        )
+        const simulatedSilenceDuration = simulatedPauses.reduce((sum, p) => sum + p.newDuration, 0)
+        const trueMinSeconds = effectiveContentDuration + simulatedSilenceDuration
+        const maxPossibleDuration = 120 * 60
         const nextLimits = {
-          min: Math.ceil(contentDuration / 60),
+          min: Math.max(1, Math.floor(trueMinSeconds / 60)), // floor so slider min is reachable
           max: maxPossibleDuration / 60,
+          trueMinSeconds: Math.max(1, Math.ceil(trueMinSeconds)), // exact seconds for display
         }
 
         setDurationLimits((prev) => {
-          if (prev && prev.min === nextLimits.min && prev.max === nextLimits.max) {
+          if (prev && prev.min === nextLimits.min && prev.max === nextLimits.max && prev.trueMinSeconds === nextLimits.trueMinSeconds) {
             return prev
           }
           return nextLimits
@@ -2342,12 +2444,7 @@ export default function Home() {
     return () => {
       controller.abort()
     }
-  }, [originalBuffer, detectSilenceRegions, silenceThreshold, minSilenceDuration, isMobileDevice])
-
-  useEffect(() => {
-    // This effect no longer resets isProcessingComplete.
-    // It's now reset at the start of processAudioAdjusterAction or handleFile.
-  }, [targetDuration, silenceThreshold, minSilenceDuration, minSpacingDuration, preserveNaturalPacing])
+  }, [originalBuffer, detectSilenceRegions, silenceThreshold, minSilenceDuration, maxSilenceDuration, contentSpeedMultiplier, isMobileDevice])
 
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined
@@ -3154,75 +3251,7 @@ export default function Home() {
                       </motion.div>
                     )}
 
-                    <AnimatePresence>
-                      {analysisProgress !== null && (
-                        <motion.div
-                          key="analysis-progress"
-                          initial={{ opacity: 0, y: 6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -6 }}
-                          transition={{ duration: 0.2 }}
-                          className="flex items-center justify-center text-xs text-gray-600 gap-2"
-                        >
-                          <CircleDotDashed className="h-4 w-4 animate-spin" />
-                          <span className="tracking-tight">
-                            Analyzing audio{analysisProgress >= 0 ? ` (${Math.round(analysisProgress)}%)` : ""}...
-                          </span>
-                        </motion.div>
-                      )}
-                      {audioAnalysis && durationLimits && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          transition={{ delay: 0.1 }}
-                        >
-                          <Alert className="bg-transparent p-0 border-0 shadow-none">
-                            <div className="p-3 text-center min-h-[76px] rounded-sm shadow-none bg-transparent pb-0.5 pt-0">
-                              <div className="flex items-center mb-2 justify-center">
-                                {/* Removed the Info icon div */}
-                              </div>
-
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
-                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-300 border-double border-4">
-                                    <div className="uppercase tracking-wide mb-1 text-gray-600 text-xs">Content:</div>
-                                    <div className="font-black text-gray-600">
-                                      {formatTime(audioAnalysis.contentDuration)}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
-                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-stone-300 border-4 border-double">
-                                    <div className="text-xs uppercase tracking-wide mb-1 text-gray-600">Silence:</div>
-                                    <div className="font-black text-gray-600">
-                                      {formatTime(audioAnalysis.totalSilence)}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
-                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-4 border-stone-300 border-double">
-                                    <div className="font-black text-gray-600 text-xs tracking-wide">PAUSES:</div>
-                                    <div className="font-black text-gray-600 text-sm tracking-tight">
-                                      {audioAnalysis.silenceRegions}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="p-[3px] bg-gradient-to-r from-gray-500 to-stone-300 py-1 rounded-sm shadow-md px-[5px]">
-                                  <div className="bg-white p-3 text-center min-h-[76px] rounded-sm border-4 border-stone-300 border-double">
-                                    <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">Range:</div>
-                                    <div className="uppercase text-gray-600 text-xs tracking-tight">
-                                      {durationLimits.min} min - {isMobileDevice ? "1 hour" : "2 hours"}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </Alert>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                    </div>
 
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -3262,7 +3291,7 @@ export default function Home() {
                               <Slider
                                 value={[targetDuration]}
                                 min={durationLimits?.min || 5}
-                                max={durationLimits?.max || (isMobileDevice ? 60 : 120)}
+                                max={durationLimits?.max || 120}
                                 step={1}
                                 onValueChange={(value) => setTargetDuration(value[0])}
                                 disabled={!durationLimits}
@@ -3271,14 +3300,60 @@ export default function Home() {
                               />
                             </div>
                             <div className="text-center tracking-tight">
-                              <span className="text-lg text-gray-600 font-black">{targetDuration}</span>
-                              <span className="ml-1 text-sm text-gray-600 tracking-normal">minutes</span>
+                              {durationLimits && targetDuration === durationLimits.min ? (
+                                <>
+                                  <span className="text-lg text-gray-600 font-black">
+                                    {(() => {
+                                      const s = durationLimits.trueMinSeconds
+                                      const m = Math.floor(s / 60)
+                                      const sec = s % 60
+                                      return sec > 0 ? `${m}m ${sec}s` : `${m}m`
+                                    })()}
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="text-lg text-gray-600 font-black">{targetDuration}</span>
+                                  <span className="ml-1 text-sm text-gray-600 tracking-normal">minutes</span>
+                                </>
+                              )}
                             </div>
-                            {durationLimits && (
-                              <p className="text-center text-gray-500 text-xs">
-                                Range: {durationLimits.min} min to {isMobileDevice ? "1 hour" : "2 hours"}
-                              </p>
-                            )}
+                            {/* Shrink boost: subtly speeds up spoken content to unlock shorter durations */}
+                            <div className="flex items-center justify-center gap-2 pt-1">
+                              {!showSpeedOptions ? (
+                                <button
+                                  onClick={() => setShowSpeedOptions(true)}
+                                  className={`text-xs font-black px-2 py-1 transition-colors border-b ${
+                                    contentSpeedMultiplier > 1
+                                      ? "text-gray-700 border-gray-700"
+                                      : "text-gray-400 border-transparent hover:text-gray-600 hover:border-gray-400"
+                                  }`}
+                                  title="Shrink boost: subtly speed up spoken content to unlock shorter durations"
+                                >
+                                  {contentSpeedMultiplier === 1.0 ? "1x" : `${contentSpeedMultiplier}x`}
+                                </button>
+                              ) : (
+                                <div className="flex items-center gap-3">
+                                  {[1.0, 1.1, 1.25, 1.5].map((m) => (
+                                    <button
+                                      key={m}
+                                      onClick={() => {
+                                        setContentSpeedMultiplier(m)
+                                        setShowSpeedOptions(false)
+                                      }}
+                                      disabled={!originalBuffer}
+                                      className={`text-xs font-black px-1 py-1 transition-colors border-b ${
+                                        contentSpeedMultiplier === m
+                                          ? "text-gray-700 border-gray-700"
+                                          : "text-gray-400 border-transparent hover:text-gray-600 hover:border-gray-400"
+                                      } ${!originalBuffer ? "opacity-50 cursor-not-allowed" : ""}`}
+                                    >
+                                      {m === 1.0 ? "1x" : `${m}x`}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </DurationControlCard>
                           <DurationControlCard
                             title="Silence Threshold"
@@ -3291,16 +3366,19 @@ export default function Home() {
                                 max={0.05}
                                 step={0.001}
                                 onValueChange={(value) => setSilenceThreshold(value[0])}
+                                disabled={!originalBuffer}
                                 className="py-4"
                                 rangeClassName="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500"
                               />
                             </div>
                             <div className="text-center tracking-tight">
                               <span className="text-lg text-gray-600 font-black">{silenceThreshold.toFixed(3)}</span>
+                              <span className="ml-1 text-sm text-gray-600"></span>
                             </div>
-                            <p className="text-center text-xs text-gray-500 tracking-tight">Lower = more sensitive</p>
+                            <p className="text-center text-xs text-gray-500 tracking-tight">higher = detect more pauses</p>
                           </DurationControlCard>
                         </div>
+
                       </TabsContent>
                       <TabsContent value="encoder" className="mt-0 space-y-6">
                         <div className="grid gap-4 md:grid-cols-2">
@@ -3311,10 +3389,11 @@ export default function Home() {
                             <div>
                               <Slider
                                 value={[minSilenceDuration]}
-                                min={1}
+                                min={0}
                                 max={15}
                                 step={0.5}
                                 onValueChange={(value) => setMinSilenceDuration(value[0])}
+                                disabled={!originalBuffer}
                                 className="py-4"
                                 rangeClassName="bg-gradient-to-br from-logo-purple-300 to-logo-emerald-500"
                               />
@@ -3328,45 +3407,6 @@ export default function Home() {
                             </p>
                           </DurationControlCard>
                           <DurationControlCard
-                            title="Min Spacing Btwn Content"
-                            gradientClassName="from-orange-300 to-logo-rose-300"
-                          >
-                            <div>
-                              <Slider
-                                value={[minSpacingDuration]}
-                                min={0}
-                                max={5}
-                                step={0.1}
-                                onValueChange={(value) => setMinSpacingDuration(value[0])}
-                                className="py-4"
-                                rangeClassName="bg-gradient-to-r from-orange-300 to-logo-rose-300"
-                              />
-                            </div>
-                            <div className="text-center tracking-tight">
-                              <span className="text-lg text-gray-600 font-black">{minSpacingDuration.toFixed(1)}</span>
-                              <span className="ml-1 text-sm text-gray-600">seconds</span>
-                            </div>
-                            <p className="text-center text-xs text-gray-500 tracking-tight">
-                              Minimum pause between speaking parts
-                            </p>
-                          </DurationControlCard>
-                          <DurationControlCard
-                            title="Preserve Natural Pacing"
-                            gradientClassName="from-pink-400 to-cyan-400"
-                            bodyClassName="px-6 py-6"
-                          >
-                            <div className="flex items-center justify-between gap-4">
-                              <p className="text-xs text-gray-600 tracking-tight flex-1 text-left">
-                                Maintain the relative length of pauses
-                              </p>
-                              <Switch
-                                checked={preserveNaturalPacing}
-                                onCheckedChange={setPreserveNaturalPacing}
-                                className="data-[state=checked]:bg-gray-500 shrink-0"
-                              />
-                            </div>
-                          </DurationControlCard>
-                          <DurationControlCard
                             title="Maximum Silence Duration"
                             gradientClassName="from-logo-teal-500 to-logo-amber-300"
                           >
@@ -3377,6 +3417,7 @@ export default function Home() {
                                 max={60}
                                 step={0.5}
                                 onValueChange={(value) => setMaxSilenceDuration(value[0] * 60)}
+                                disabled={!originalBuffer}
                                 className="py-4"
                                 rangeClassName="bg-gradient-to-r from-logo-teal-500 to-logo-amber-300"
                               />
@@ -3402,6 +3443,66 @@ export default function Home() {
                         </div>
                       </TabsContent>
                     </Tabs>
+
+                    <AnimatePresence>
+                      {analysisProgress !== null && (
+                        <motion.div
+                          key="analysis-progress"
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex items-center justify-center text-xs text-gray-600 gap-2 mt-4"
+                        >
+                          <CircleDotDashed className="h-4 w-4 animate-spin" />
+                          <span className="tracking-tight">
+                            Analyzing audio{analysisProgress >= 0 ? ` (${Math.round(analysisProgress)}%)` : ""}...
+                          </span>
+                        </motion.div>
+                      )}
+                      {audioAnalysis && durationLimits && (
+                        <motion.div
+                          key="analysis-cards"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ delay: 0.1 }}
+                          className="mt-4"
+                        >
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center p-4 min-h-[80px]">
+                              <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Content</div>
+                              <div className="text-lg font-black text-gray-600">
+                                {formatTime(contentSpeedMultiplier > 1 ? audioAnalysis.contentDuration / contentSpeedMultiplier : audioAnalysis.contentDuration)}
+                              </div>
+                            </div>
+                            <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center p-4 min-h-[80px]">
+                              <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Silence</div>
+                              <div className="text-lg font-black text-gray-600">
+                                {formatTime(audioAnalysis.totalSilence)}
+                              </div>
+                            </div>
+                            <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center p-4 min-h-[80px]">
+                              <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Pauses</div>
+                              <div className="text-lg font-black text-gray-600">
+                                {audioAnalysis.silenceRegions}
+                              </div>
+                            </div>
+                            <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center p-4 min-h-[80px]">
+                              <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Range</div>
+                              <div className="text-sm font-black text-gray-600">
+                                {(() => {
+                                  const s = durationLimits.trueMinSeconds
+                                  const mn = Math.floor(s / 60)
+                                  const sec = s % 60
+                                  return sec > 0 ? `${mn}m ${sec}s – 2h` : `${mn}m – 2h`
+                                })()}
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </motion.div>
 
                   {/* Process Audio Button */}
@@ -3457,6 +3558,7 @@ export default function Home() {
 
                   {isProcessingComplete && processedUrl && (
                     <motion.div
+                      ref={processedAudioSectionRef}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
@@ -3497,7 +3599,7 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="flex flex-col gap-3"
+                  className="flex flex-col gap-4"
                 >
                   <motion.div
                     className="text-gray-600"
@@ -3520,7 +3622,7 @@ export default function Home() {
                               />
                             </div>
                           </div>
-                          <div className="text-center px-6">
+                          <div className="w-full">
                             <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
                               Title
                             </Label>
@@ -3530,7 +3632,7 @@ export default function Home() {
                               value={meditationTitle}
                               onChange={handleMeditationTitleChange}
                               placeholder="Title:"
-                              className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-xs font-black text-gray-600 border-stone-300 border-0 shadow-2xl h-9 mt-2"
+                              className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-xs font-black text-gray-600 border-0 shadow-lg h-9 mt-2"
                             />
                           </div>
                         </div>
@@ -3541,7 +3643,7 @@ export default function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="grid grid-cols-1 lg:grid-cols-2 gap-3"
+                    className="grid grid-cols-1 lg:grid-cols-2 gap-4"
                   >
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -3729,41 +3831,23 @@ export default function Home() {
                       </Card>
                     </motion.div>
 
-                    <div>
-                      <RecorderSection
-                        className="hidden lg:block"
-                        inputId="recording-label-desktop"
-                        recordingLabel={recordingLabel}
-                        onRecordingLabelChange={handleRecordingLabelChange}
-                        isRecording={isRecording}
-                        startRecording={startRecording}
-                        stopRecording={stopRecording}
-                        readyToAddToTimelineRecording={readyToAddToTimelineRecording}
-                        timelineEvents={timelineEvents}
-                        addEventToTimeline={addEventToTimeline}
-                        setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
-                        setRecordedBlobs={setRecordedBlobs}
-                        setRecordingLabel={setRecordingLabel}
-                        recordingPreviewRef={recordingPreviewRef}
-                      />
-                    </div>
+                    <RecorderSection
+                      className=""
+                      inputId="recording-label"
+                      recordingLabel={recordingLabel}
+                      onRecordingLabelChange={handleRecordingLabelChange}
+                      isRecording={isRecording}
+                      startRecording={startRecording}
+                      stopRecording={stopRecording}
+                      readyToAddToTimelineRecording={readyToAddToTimelineRecording}
+                      timelineEvents={timelineEvents}
+                      addEventToTimeline={addEventToTimeline}
+                      setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
+                      setRecordedBlobs={setRecordedBlobs}
+                      setRecordingLabel={setRecordingLabel}
+                      recordingPreviewRef={recordingPreviewRef}
+                    />
                   </motion.div>
-                  <RecorderSection
-                    className="lg:hidden"
-                    inputId="recording-label-mobile"
-                    recordingLabel={recordingLabel}
-                    onRecordingLabelChange={handleRecordingLabelChange}
-                    isRecording={isRecording}
-                    startRecording={startRecording}
-                    stopRecording={stopRecording}
-                    readyToAddToTimelineRecording={readyToAddToTimelineRecording}
-                    timelineEvents={timelineEvents}
-                    addEventToTimeline={addEventToTimeline}
-                    setReadyToAddToTimelineRecording={setReadyToAddToTimelineRecording}
-                    setRecordedBlobs={setRecordedBlobs}
-                    setRecordingLabel={setRecordingLabel}
-                    recordingPreviewRef={recordingPreviewRef}
-                  />
                   {/* Timeline Editor for encoder */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -3858,6 +3942,7 @@ export default function Home() {
 
                   {generatedAudioUrl && (
                     <motion.div
+                      ref={encoderAudioSectionRef}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.7 }}
