@@ -2,7 +2,14 @@ import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
-export default function SignUpSuccessPage() {
+export default async function SignUpSuccessPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ returnTo?: string }>
+}) {
+  const { returnTo: rawReturnTo } = await searchParams
+  const returnTo = rawReturnTo && rawReturnTo.startsWith("/") ? rawReturnTo : "/library"
+
   return (
     <div className="flex min-h-screen w-full items-center justify-center p-6 bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="w-full max-w-sm">
@@ -29,7 +36,7 @@ export default function SignUpSuccessPage() {
                 before signing in.
               </p>
               <Button asChild className="w-full bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 text-white font-black shadow-md">
-                <Link href="/auth/login">Go to Login</Link>
+                <Link href={`/auth/login?returnTo=${encodeURIComponent(returnTo)}`}>Go to Login</Link>
               </Button>
             </CardContent>
           </Card>

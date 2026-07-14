@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from 'next/navigation'
+import { Suspense, useMemo, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -10,6 +10,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 export default function SignUpPage() {
+  return (
+    <Suspense>
+      <SignUpPageContent />
+    </Suspense>
+  )
+}
+
+function SignUpPageContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [repeatPassword, setRepeatPassword] = useState("")
@@ -17,6 +25,12 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const returnTo = useMemo(() => {
+    const candidate = searchParams.get("returnTo")
+    if (!candidate || !candidate.startsWith("/")) return "/library"
+    return candidate
+  }, [searchParams])
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,14 +50,14 @@ export default function SignUpPage() {
         password,
         options: {
           emailRedirectTo:
-            process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/library`,
+            process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}${returnTo}`,
           data: {
             display_name: displayName || email.split("@")[0],
           },
         },
       })
       if (error) throw error
-      router.push("/auth/sign-up-success")
+      router.push(`/auth/sign-up-success?returnTo=${encodeURIComponent(returnTo)}`)
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")
     } finally {
@@ -138,7 +152,10 @@ export default function SignUpPage() {
                 </div>
                 <div className="text-center font-serif text-gray-600 mt-5 text-xs">
                   Already have an account?{" "}
-                  <Link href="/auth/login" className="underline underline-offset-4 font-black text-sm text-gray-500">
+                  <Link
+                    href={`/auth/login?returnTo=${encodeURIComponent(returnTo)}`}
+                    className="underline underline-offset-4 font-black text-sm text-gray-500"
+                  >
                     Login
                   </Link>
                 </div>

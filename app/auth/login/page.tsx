@@ -135,7 +135,10 @@ function LoginPageContent() {
                 <div className="text-center font-serif text-gray-600 mt-5 text-xs space-y-2">
                   <div>
                     Don't have an account?{" "}
-                    <Link href="/auth/sign-up" className="underline underline-offset-4 font-black text-sm text-gray-500">
+                    <Link
+                      href={`/auth/sign-up?returnTo=${encodeURIComponent(returnTo)}`}
+                      className="underline underline-offset-4 font-black text-sm text-gray-500"
+                    >
                       Sign up
                     </Link>
                   </div>

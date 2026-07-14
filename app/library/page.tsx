@@ -16,6 +16,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
+import { savePendingConvertCopy } from "@/lib/storage/pending-convert"
+import { usePendingConvertAutoSave } from "@/hooks/use-pending-convert-autosave"
 import {
   getAudioContext,
   extensionForContainer,
@@ -440,6 +442,11 @@ export default function LibraryPage() {
   useEffect(() => {
     loadData()
   }, [isAuthenticated, loadData])
+
+  const handlePendingConvertSaved = useCallback((saved: SavedMeditation) => {
+    setMeditations((previous) => [saved, ...previous])
+  }, [])
+  usePendingConvertAutoSave(handlePendingConvertSaved)
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -2045,7 +2052,7 @@ export default function LibraryPage() {
   }, [selectedMeditation, toast])
 
   const handleConvertAudio = useCallback(
-    async (saveMode: "replace" | "copy") => {
+    async (saveMode: "replace" | "copy" | "account") => {
       if (!selectedMeditation || isConverting) return
 
       setIsConverting(true)
@@ -2090,7 +2097,12 @@ export default function LibraryPage() {
           setSelectedMeditation(updated)
           setBaseMeditation((previous) => (previous && previous.id === updated.id ? updated : previous))
           setMeditations((previous) => previous.map((item) => (item.id === updated.id ? updated : item)))
-        } else {
+          setIsConvertDialogOpen(false)
+          toast({
+            title: "Conversion complete",
+            description: `Converted to ${AUDIO_EXPORT_FORMAT_LABELS[convertFormat]}.`,
+          })
+        } else if (saveMode === "copy") {
           setConvertStep("Saving copy...")
           const saved = await MeditationLibrary.saveMeditation({
             title: `${selectedMeditation.title} (${AUDIO_EXPORT_FORMAT_LABELS[convertFormat]})`,
@@ -2105,13 +2117,30 @@ export default function LibraryPage() {
             },
           })
           setMeditations((previous) => [saved, ...previous])
+          setIsConvertDialogOpen(false)
+          toast({
+            title: "Conversion complete",
+            description: `Converted to ${AUDIO_EXPORT_FORMAT_LABELS[convertFormat]}.`,
+          })
+        } else {
+          // Guest chose to create an account rather than lose the original: stash the
+          // converted audio so it survives the signup + email-confirmation redirect, then
+          // resume as a "save copy" once they're back and authenticated (see the
+          // pending-convert-copy effect below).
+          setConvertStep("Preparing to save...")
+          await savePendingConvertCopy(
+            {
+              title: `${selectedMeditation.title} (${AUDIO_EXPORT_FORMAT_LABELS[convertFormat]})`,
+              originalFileName: selectedMeditation.originalFileName,
+              duration: audioBuffer.duration,
+              source: selectedMeditation.source,
+              audioFormat: result.format,
+            },
+            result.blob,
+          )
+          setIsConvertDialogOpen(false)
+          router.push(`/auth/sign-up?returnTo=${encodeURIComponent("/library")}`)
         }
-
-        setIsConvertDialogOpen(false)
-        toast({
-          title: "Conversion complete",
-          description: `Converted to ${AUDIO_EXPORT_FORMAT_LABELS[convertFormat]}.`,
-        })
       } catch (error) {
         console.error("[v0] Convert failed:", error)
         toast({
@@ -2125,7 +2154,7 @@ export default function LibraryPage() {
         setConvertProgress(0)
       }
     },
-    [selectedMeditation, isConverting, convertFormat, toast],
+    [selectedMeditation, isConverting, convertFormat, toast, router],
   )
 
   const handleSeek = useCallback(
@@ -3334,7 +3363,7 @@ export default function LibraryPage() {
                                             />
                                           </div>
                                         </div>
-                                      ) : (
+                                      ) : isAuthenticated ? (
                                         <div className="space-y-2">
                                           <Button
                                             className="w-full font-black text-xs"
@@ -3342,29 +3371,34 @@ export default function LibraryPage() {
                                           >
                                             Replace original
                                           </Button>
-                                          {isAuthenticated ? (
-                                            <Button
-                                              variant="outline"
-                                              className="w-full font-black text-xs"
-                                              onClick={() => handleConvertAudio("copy")}
-                                            >
-                                              Save as new copy
-                                            </Button>
-                                          ) : (
-                                            <p className="text-[11px] text-gray-500 text-center">
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  setIsConvertDialogOpen(false)
-                                                  login()
-                                                }}
-                                                className="underline font-black text-gray-700"
-                                              >
-                                                Create a free account
-                                              </button>{" "}
-                                              to save a copy instead of replacing the original.
-                                            </p>
-                                          )}
+                                          <Button
+                                            variant="outline"
+                                            className="w-full font-black text-xs"
+                                            onClick={() => handleConvertAudio("copy")}
+                                          >
+                                            Save as new copy
+                                          </Button>
+                                        </div>
+                                      ) : (
+                                        <div className="space-y-2">
+                                          <p className="text-[11px] text-gray-500">
+                                            As a guest, you can replace the original, or create a free account to
+                                            keep both — we'll hang onto this converted audio and save it to your new
+                                            account automatically.
+                                          </p>
+                                          <Button
+                                            className="w-full font-black text-xs"
+                                            onClick={() => handleConvertAudio("account")}
+                                          >
+                                            Create account &amp; keep both
+                                          </Button>
+                                          <Button
+                                            variant="outline"
+                                            className="w-full font-black text-xs"
+                                            onClick={() => handleConvertAudio("replace")}
+                                          >
+                                            Replace original
+                                          </Button>
                                         </div>
                                       )}
                                     </div>
