@@ -27,6 +27,9 @@ interface SaveMeditationDialogProps {
   existingMeditationId?: string | null
   existingMeditationTitle?: string | null
   existingMeditationDuration?: number | null
+  // Called right before a guest gets redirected to log in, so the caller can stash whatever
+  // in-progress page state it wants restored when the user comes back.
+  onBeforeAuthRedirect?: () => void
 }
 
 const formatDurationLabel = (seconds: number) => {
@@ -70,6 +73,7 @@ export function SaveMeditationDialog({
   existingMeditationId,
   existingMeditationTitle,
   existingMeditationDuration,
+  onBeforeAuthRedirect,
 }: SaveMeditationDialogProps) {
   const [open, setOpen] = useState(false)
   const metadataWithTitle = metadata as { meditationTitle?: unknown }
@@ -343,6 +347,7 @@ export function SaveMeditationDialog({
 
   const handleOpenChange = (next: boolean) => {
     if (next && !isAuthenticated) {
+      onBeforeAuthRedirect?.()
       login()
       return
     }
