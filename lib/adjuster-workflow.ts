@@ -1,4 +1,4 @@
-import { bufferToWav, encodeDistributionAudio, type AudioFormatMetadata, type BufferToWavMetadata } from "@/lib/audio-utils"
+import { encodeDistributionAudio, type AudioFormatMetadata } from "@/lib/audio-utils"
 import { forceGarbageCollection, formatTime, sleep } from "@/lib/utils"
 
 export type SilenceRegion = { start: number; end: number }
@@ -481,14 +481,10 @@ interface AdjusterWorkflowCallbacks {
   onProgress?: (progress: number) => void
   onStep?: (step: string) => void
   onMemoryWarning?: () => void
-  /** Fired as soon as the fast WAV preview is ready, before distribution encoding starts. */
-  onPreviewReady?: (previewBlob: Blob, previewMetadata: BufferToWavMetadata) => void
 }
 
 export interface AdjusterWorkflowResult {
   processedBuffer: AudioBuffer
-  previewBlob: Blob
-  previewMetadata: BufferToWavMetadata
   distributionBlob: Blob
   distributionMetadata: AudioFormatMetadata
   pausesAdjusted: number
@@ -519,7 +515,7 @@ export async function runAdjusterWorkflow({
     maxSilenceDuration,
     contentSpeedMultiplier,
   } = settings
-  const { onProgress = () => {}, onStep = () => {}, onMemoryWarning, onPreviewReady = () => {} } = callbacks
+  const { onProgress = () => {}, onStep = () => {}, onMemoryWarning } = callbacks
 
   onStep("Detecting silence regions (step 1/4)...")
   onProgress(10)
@@ -573,35 +569,15 @@ export async function runAdjusterWorkflow({
     onMemoryWarning,
   })
 
-  onStep("Preparing preview (step 4/5)...")
+  onStep("Compressing audio (step 4/4)...")
   onProgress(80)
-
-  const previewResult = await bufferToWav(processedAudioBuffer, {
-    preferCompatibility: false,
-    maxBytes: 48 * 1024 * 1024,
-    isMobile: isMobileDevice,
-    onProgress: (progress) => {
-      const normalized = Math.max(0, Math.min(100, progress))
-      onProgress(80 + Math.floor((normalized / 100) * 10))
-    },
-  })
-
-  if (previewResult.blob.size === 0) {
-    throw new Error("Generated preview audio is empty. WAV conversion failed or resulted in no data.")
-  }
-
-  const { blob: previewBlob, ...previewMetadata } = previewResult
-  onPreviewReady(previewBlob, previewMetadata)
-
-  onStep("Compressing audio (step 5/5)...")
-  onProgress(90)
 
   const { blob: distributionBlob, format: distributionMetadata } = await encodeDistributionAudio(processedAudioBuffer, {
     maxBytes: 48 * 1024 * 1024,
     bitrate: 96000,
     onProgress: (progress) => {
       const normalized = Math.max(0, Math.min(100, progress))
-      onProgress(90 + Math.floor((normalized / 100) * 10))
+      onProgress(80 + Math.floor((normalized / 100) * 20))
     },
   })
 
@@ -610,8 +586,6 @@ export async function runAdjusterWorkflow({
 
   return {
     processedBuffer: processedAudioBuffer,
-    previewBlob,
-    previewMetadata,
     distributionBlob,
     distributionMetadata,
     pausesAdjusted: cappedSilenceRegions.length,

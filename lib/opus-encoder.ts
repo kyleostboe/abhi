@@ -1,4 +1,3 @@
-import { sleep } from "./utils"
 import type { OpusEncodeRequest, OpusEncodeResponse } from "@/workers/opus-encoder.worker"
 
 export interface OpusEncodeOptions {
@@ -63,26 +62,21 @@ const mixdownToMono = async (
     return { samples: buffer.getChannelData(0).slice(), sampleRate: buffer.sampleRate }
   }
 
-  const totalChannels = buffer.numberOfChannels
-  const samples = new Float32Array(buffer.length)
-
-  for (let i = 0; i < buffer.length; i++) {
-    if (signal?.aborted) {
-      throw new Error("Encoding aborted")
-    }
-
-    if (i % (buffer.sampleRate * 2) === 0) {
-      await sleep(0)
-    }
-
-    let sum = 0
-    for (let channel = 0; channel < totalChannels; channel++) {
-      sum += buffer.getChannelData(channel)[i]
-    }
-    samples[i] = sum / totalChannels
+  if (signal?.aborted) {
+    throw new Error("Encoding aborted")
   }
 
-  return { samples, sampleRate: buffer.sampleRate }
+  // Native downmix via OfflineAudioContext instead of a manual per-sample JS loop —
+  // much faster for long multi-channel buffers, since it runs in the browser's audio
+  // engine rather than an interpreted loop.
+  const offlineContext = new OfflineAudioContext(1, buffer.length, buffer.sampleRate)
+  const source = offlineContext.createBufferSource()
+  source.buffer = buffer
+  source.connect(offlineContext.destination)
+  source.start(0)
+  const mono = await offlineContext.startRendering()
+
+  return { samples: mono.getChannelData(0).slice(), sampleRate: mono.sampleRate }
 }
 
 let cachedWorker: Worker | null = null

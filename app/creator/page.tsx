@@ -8,13 +8,7 @@ import { Button } from "@/components/ui/button"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
 import { BookmarkPlus } from "lucide-react"
 import * as Tone from "tone"
-import {
-  bufferToWav,
-  encodeDistributionAudio,
-  extensionForContainer,
-  type BufferToWavMetadata,
-  type AudioFormatMetadata,
-} from "@/lib/audio-utils"
+import { encodeDistributionAudio, extensionForContainer, type AudioFormatMetadata } from "@/lib/audio-utils"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 type SpeechRecognitionAlternative = {
@@ -128,10 +122,8 @@ export default function CreatorPage() {
   const [isEncoding, setIsEncoding] = useState<boolean>(false)
   const [encodingProgress, setEncodingProgress] = useState(0)
   const [encodedAudioUrl, setEncodedAudioUrl] = useState<string>("")
-  const [encodedAudioMetadata, setEncodedAudioMetadata] = useState<BufferToWavMetadata | null>(null)
   const [encodedDistributionBlob, setEncodedDistributionBlob] = useState<Blob | null>(null)
   const [encodedDistributionMetadata, setEncodedDistributionMetadata] = useState<AudioFormatMetadata | null>(null)
-  const [isCompressingEncodedAudio, setIsCompressingEncodedAudio] = useState<boolean>(false)
   const [status, setStatus] = useState<{ message: string; type: "info" | "success" | "error" } | null>(null)
   const [fullTranscript, setFullTranscript] = useState<string>("")
   const [isListening, setIsListening] = useState(false)
@@ -149,7 +141,7 @@ export default function CreatorPage() {
   const originalAudioBufferRef = useRef<AudioBuffer | null>(null)
 
   const encodedQualityWarning =
-    encodedAudioMetadata && (encodedAudioMetadata.bitDepth === 8 || encodedAudioMetadata.sampleRate <= 16000)
+    encodedDistributionMetadata?.bitrate !== undefined && encodedDistributionMetadata.bitrate < 96
 
   const ensureAudioContext = async (): Promise<AudioContext | null> => {
     if (typeof window === "undefined") return null
@@ -632,11 +624,8 @@ export default function CreatorPage() {
     updateInstruction(instructionId, { soundId })
   }
 
-  const simulateEncoding = async (): Promise<{ previewUrl: string; renderedBuffer: AudioBuffer }> => {
-    console.log("Encoding audio with instructions:", mappedInstructions)
-
-    // Simulate processing time
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+  const renderTimelineAudio = async (): Promise<AudioBuffer> => {
+    console.log("Rendering audio with instructions:", mappedInstructions)
 
     const audioCtx = await ensureAudioContext()
     const originalBuffer = originalAudioBufferRef.current
@@ -681,14 +670,7 @@ export default function CreatorPage() {
     // Reset Tone.js to use the main context
     Tone.setContext(audioCtx)
 
-    // Convert to a fast WAV preview
-    const wavResult = await bufferToWav(renderedBuffer, {
-      preferCompatibility: true,
-      maxBytes: 48 * 1024 * 1024,
-    })
-    const { blob, ...metadata } = wavResult
-    setEncodedAudioMetadata(metadata)
-    return { previewUrl: URL.createObjectURL(blob), renderedBuffer }
+    return renderedBuffer
   }
 
   const handleEncoding = async () => {
@@ -699,54 +681,36 @@ export default function CreatorPage() {
 
     setIsEncoding(true)
     setEncodingProgress(0)
-    setStatus({ message: "Encoding audio with sound cues...", type: "info" })
-    setEncodedAudioMetadata(null)
+    setStatus({ message: "Rendering audio...", type: "info" })
     setEncodedDistributionBlob(null)
     setEncodedDistributionMetadata(null)
 
     try {
-      const progressInterval = setInterval(() => {
-        setEncodingProgress((prev) => Math.min(prev + 10, 80))
-      }, 300)
+      const renderedBuffer = await renderTimelineAudio()
 
-      const { previewUrl, renderedBuffer } = await simulateEncoding()
+      setEncodingProgress(20)
+      setStatus({ message: "Compressing audio...", type: "info" })
 
-      clearInterval(progressInterval)
-      setEncodingProgress(90)
-      setEncodedAudioUrl(previewUrl)
-      setStatus({ message: "Preview ready, compressing for export...", type: "info" })
+      const { blob: distributionBlob, format: distributionMetadata } = await encodeDistributionAudio(
+        renderedBuffer,
+        {
+          maxBytes: 48 * 1024 * 1024,
+          bitrate: 96000,
+          onProgress: (p) => setEncodingProgress(20 + Math.floor((p / 100) * 80)),
+        },
+      )
 
-      setIsCompressingEncodedAudio(true)
-      try {
-        const { blob: distributionBlob, format: distributionMetadata } = await encodeDistributionAudio(
-          renderedBuffer,
-          {
-            maxBytes: 48 * 1024 * 1024,
-            bitrate: 96000,
-            onProgress: (p) => setEncodingProgress(90 + Math.floor((p / 100) * 10)),
-          },
-        )
+      setEncodedDistributionBlob(distributionBlob)
+      setEncodedDistributionMetadata(distributionMetadata)
 
-        setEncodedDistributionBlob(distributionBlob)
-        setEncodedDistributionMetadata(distributionMetadata)
+      const distributionUrl = URL.createObjectURL(distributionBlob)
+      setEncodedAudioUrl((previousUrl) => {
+        if (previousUrl) URL.revokeObjectURL(previousUrl)
+        return distributionUrl
+      })
 
-        const distributionUrl = URL.createObjectURL(distributionBlob)
-        setEncodedAudioUrl((previousUrl) => {
-          if (previousUrl) URL.revokeObjectURL(previousUrl)
-          return distributionUrl
-        })
-
-        setEncodingProgress(100)
-        setStatus({ message: "Audio encoding completed successfully!", type: "success" })
-      } catch (compressionError) {
-        console.error("Compression error:", compressionError)
-        setStatus({
-          message: `Compression failed: ${compressionError instanceof Error ? compressionError.message : "Unknown error"}`,
-          type: "error",
-        })
-      } finally {
-        setIsCompressingEncodedAudio(false)
-      }
+      setEncodingProgress(100)
+      setStatus({ message: "Audio encoding completed successfully!", type: "success" })
     } catch (error) {
       console.error("Encoding error:", error)
       setStatus({
@@ -806,7 +770,6 @@ export default function CreatorPage() {
       const audioBuffer = await context.decodeAudioData(arrayBuffer)
       originalAudioBufferRef.current = audioBuffer
       setAudioDuration(audioBuffer.duration)
-      setEncodedAudioMetadata(importData.metadata?.wav ?? null)
 
       if (importData.source === "creator" && !importData.crossToolOpening) {
         // Reconstruct original cues/recordings structure
@@ -1103,16 +1066,15 @@ export default function CreatorPage() {
                       originalVolume: instr.originalVolume,
                       soundVolume: instr.soundVolume,
                     })),
-                    wav: encodedAudioMetadata ? { ...encodedAudioMetadata } : undefined,
                     audioFormat: encodedDistributionMetadata ?? undefined,
                   }}
                 >
                   <Button
-                    disabled={isCompressingEncodedAudio || !encodedDistributionBlob}
+                    disabled={!encodedDistributionBlob}
                     className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500"
                   >
                     <BookmarkPlus className="w-4 h-4 mr-2" />
-                    {isCompressingEncodedAudio ? "Compressing…" : "Save to Library"}
+                    Save to Library
                   </Button>
                 </SaveMeditationDialog>
               </div>
@@ -1120,9 +1082,8 @@ export default function CreatorPage() {
                 <Alert className="bg-amber-50 border-amber-200 text-amber-700 text-sm mt-4">
                   <AlertTitle className="font-semibold text-sm">Reduced quality export</AlertTitle>
                   <AlertDescription className="text-xs">
-                    The encoded audio was compressed to {encodedAudioMetadata?.sampleRate.toLocaleString()} Hz and{" "}
-                    {encodedAudioMetadata?.bitDepth}-bit mono to stay under the 48 MiB limit. Shorter sessions will
-                    keep higher fidelity.
+                    This session's audio was compressed to {encodedDistributionMetadata?.bitrate}kbps (down from our
+                    standard 96kbps) to fit the 48MB size limit. Shorter sessions keep higher fidelity.
                   </AlertDescription>
                 </Alert>
               )}
