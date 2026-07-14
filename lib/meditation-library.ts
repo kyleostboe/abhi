@@ -210,7 +210,9 @@ const normalizeSupabaseMeditation = (
   sourceAudioUrl,
   duration: row.duration || 0,
   createdAt: new Date(row.created_at),
-  source: row.source as "adjuster" | "creator",
+  // 'encoder' is the pre-rename value, still written as a fallback when the DB's
+  // source check constraint predates migration 012.
+  source: (row.source === "encoder" ? "creator" : row.source) as "adjuster" | "creator",
   metadata: mapTimelineWithRecordings(row.metadata || {}, recordings) || {},
 })
 
@@ -278,19 +280,30 @@ export class MeditationLibrary {
     const metadataToPersist = sanitizeMetadataForStorage({ ...meditation.metadata }, timelineRecordings, "pending")
     const durationInSeconds = Math.round(meditation.duration)
 
-    const { data, error } = await supabase
-      .from("meditations")
-      .insert({
-        title: meditation.title,
-        description: `${meditation.source} meditation`,
-        duration: durationInSeconds,
-        source: meditation.source,
-        metadata: metadataToPersist,
-        original_filename: meditation.originalFileName,
-        profile_id: auth.userId!,
-      })
-      .select()
-      .single()
+    const insertMeditationRow = (source: string) =>
+      supabase
+        .from("meditations")
+        .insert({
+          title: meditation.title,
+          description: `${meditation.source} meditation`,
+          duration: durationInSeconds,
+          source,
+          metadata: metadataToPersist,
+          original_filename: meditation.originalFileName,
+          profile_id: auth.userId!,
+        })
+        .select()
+        .single()
+
+    let { data, error } = await insertMeditationRow(meditation.source)
+
+    // Databases that haven't run scripts/012_rename_encoder_source_to_creator.sql still
+    // enforce the pre-rename constraint, which allows 'encoder' but not 'creator'. Fall back
+    // to the legacy value so saves keep working; reads normalize 'encoder' back to 'creator'.
+    if (error && meditation.source === "creator" && error.message?.includes("meditations_source_check")) {
+      console.warn("[v0] DB rejected source='creator' (migration 012 not applied) - retrying with legacy 'encoder'")
+      ;({ data, error } = await insertMeditationRow("encoder"))
+    }
 
     if (error) {
       console.error("[v0] Database insert error:", error)

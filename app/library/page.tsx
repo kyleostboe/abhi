@@ -16,7 +16,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
-import { savePendingConvertCopy, getPendingConvertCopy, clearPendingConvertCopy } from "@/lib/storage/pending-convert"
+import { savePendingConvertCopy } from "@/lib/storage/pending-convert"
+import { usePendingConvertAutoSave } from "@/hooks/use-pending-convert-autosave"
 import {
   getAudioContext,
   extensionForContainer,
@@ -442,41 +443,10 @@ export default function LibraryPage() {
     loadData()
   }, [isAuthenticated, loadData])
 
-  useEffect(() => {
-    if (!isAuthenticated) return
-
-    let cancelled = false
-    void (async () => {
-      const pending = await getPendingConvertCopy()
-      if (!pending || cancelled) return
-
-      try {
-        const saved = await MeditationLibrary.saveMeditation({
-          title: pending.meta.title,
-          originalFileName: pending.meta.originalFileName,
-          processedAudioData: pending.audio,
-          duration: pending.meta.duration,
-          source: pending.meta.source,
-          metadata: {
-            audioFormat: pending.meta.audioFormat,
-          },
-        })
-        if (cancelled) return
-        await clearPendingConvertCopy()
-        setMeditations((previous) => [saved, ...previous])
-        toast({
-          title: "Converted copy saved",
-          description: `"${pending.meta.title}" is now in your library.`,
-        })
-      } catch (error) {
-        console.error("[v0] Failed to save pending converted copy:", error)
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [isAuthenticated, toast])
+  const handlePendingConvertSaved = useCallback((saved: SavedMeditation) => {
+    setMeditations((previous) => [saved, ...previous])
+  }, [])
+  usePendingConvertAutoSave(handlePendingConvertSaved)
 
   useEffect(() => {
     if (typeof window === "undefined") return

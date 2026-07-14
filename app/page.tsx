@@ -18,7 +18,10 @@ import {
   BookmarkPlus,
   Volume2,
   Upload,
+  RefreshCw,
 } from "lucide-react" // Import Copy icon
+import { useRouter } from "next/navigation"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DurationControlCard } from "@/components/duration-control-card"
 
@@ -47,7 +50,10 @@ import {
   calculateUniformScaledPauseDurations,
   type DetectSilenceOptions,
 } from "@/lib/adjuster-workflow"
-import type { SavedMeditation } from "@/lib/meditation-library"
+import { MeditationLibrary, type SavedMeditation } from "@/lib/meditation-library"
+import { saveToolSession, getToolSession, clearToolSession } from "@/lib/storage/tool-session"
+import { savePendingConvertCopy } from "@/lib/storage/pending-convert"
+import { usePendingConvertAutoSave } from "@/hooks/use-pending-convert-autosave"
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
@@ -526,8 +532,16 @@ const playPianoNote = async (noteString: string, duration = 0.45, velocity = 0.9
 export default function Home() {
   const { toast } = useToast()
   const { isAuthenticated, login } = useAuth()
+  const router = useRouter()
 
   const [activeMode, setActiveMode] = useState<"adjuster" | "creator">("adjuster")
+
+  // == States for post-processing format conversion (Adjuster + Creator outputs) ==
+  const [toolConvertContext, setToolConvertContext] = useState<"adjuster" | "creator" | null>(null)
+  const [toolConvertFormat, setToolConvertFormat] = useState<AudioExportFormat>("opus")
+  const [isToolConverting, setIsToolConverting] = useState(false)
+  const [toolConvertStep, setToolConvertStep] = useState("")
+  const [toolConvertProgress, setToolConvertProgress] = useState(0)
   const [shouldScrollToAdjuster, setShouldScrollToAdjuster] = useState(false)
   const [activeTab, setActiveTab] = useState<"adjuster" | "creator">("adjuster") // State for tab navigation
 
@@ -740,6 +754,170 @@ export default function Home() {
       generatedQualityWarningShownRef.current = false
     }
   }, [generatedQualityWarning, generatedDistributionMetadata, toast])
+
+  // After a guest signs up mid-conversion, save the stashed converted copy to their new library.
+  usePendingConvertAutoSave()
+
+  // Restore persisted tool outputs (processed/generated audio) after a reload or an
+  // auth redirect round-trip, so signing up doesn't lose the user's work.
+  const toolSessionRestoredRef = useRef(false)
+  useEffect(() => {
+    if (toolSessionRestoredRef.current) return
+    toolSessionRestoredRef.current = true
+
+    void (async () => {
+      try {
+        const adjusterSession = await getToolSession("adjuster")
+        if (adjusterSession) {
+          setProcessedDistributionBlob(adjusterSession.audio)
+          setProcessedDistributionMetadata(adjusterSession.meta.audioFormat)
+          setProcessedFileSize(adjusterSession.audio.size)
+          setActualDuration(adjusterSession.meta.duration)
+          setPausesAdjusted(adjusterSession.meta.pausesAdjusted)
+          setDisplayedFileName(adjusterSession.meta.fileName)
+          setProcessedUrl(URL.createObjectURL(adjusterSession.audio))
+          setIsProcessingComplete(true)
+        }
+
+        const creatorSession = await getToolSession("creator")
+        if (creatorSession) {
+          setGeneratedDistributionBlob(creatorSession.audio)
+          setGeneratedDistributionMetadata(creatorSession.meta.audioFormat)
+          setGeneratedAudioFileSize(creatorSession.audio.size)
+          setGeneratedAudioUrl(URL.createObjectURL(creatorSession.audio))
+        }
+      } catch (error) {
+        console.warn("[v0] Unable to restore tool session:", error)
+      }
+    })()
+  }, [])
+
+  // Converts the current Adjuster/Creator output into another format. "replace" swaps the
+  // tool output in place; "copy" saves the converted file to the library and leaves the
+  // output untouched; "account" stashes the converted file and sends a guest to sign-up so
+  // both can be kept (the stash auto-saves once they're authenticated).
+  const handleToolConvert = async (saveMode: "replace" | "copy" | "account") => {
+    const context = toolConvertContext
+    if (!context || isToolConverting) return
+    const sourceBlob = context === "adjuster" ? processedDistributionBlob : generatedDistributionBlob
+    if (!sourceBlob) return
+
+    const sourceFileName =
+      context === "adjuster" ? file?.name || displayedFileName || "meditation" : meditationTitle || "meditation"
+    const baseName = sourceFileName.replace(/\.[^/.]+$/, "")
+    const convertedLabel = AUDIO_EXPORT_FORMAT_LABELS[toolConvertFormat]
+
+    setIsToolConverting(true)
+    setToolConvertStep("Decoding audio...")
+    setToolConvertProgress(0)
+
+    try {
+      const audioContext = getAudioContext()
+      if (audioContext.state === "suspended") {
+        try {
+          await audioContext.resume()
+        } catch (resumeError) {
+          console.warn("[v0] Unable to resume audio context for convert:", resumeError)
+        }
+      }
+      const arrayBuffer = await sourceBlob.arrayBuffer()
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+
+      setToolConvertStep("Converting audio...")
+      const result = await encodeDistributionAudio(audioBuffer, {
+        format: toolConvertFormat,
+        maxBytes: 48 * 1024 * 1024,
+        bitrate: 96000,
+        onProgress: (progress) => setToolConvertProgress(Math.max(0, Math.min(100, Math.round(progress)))),
+      })
+
+      if (saveMode === "replace") {
+        const url = URL.createObjectURL(result.blob)
+        if (context === "adjuster") {
+          setProcessedDistributionBlob(result.blob)
+          setProcessedDistributionMetadata(result.format)
+          setProcessedFileSize(result.blob.size)
+          setProcessedUrl((previousUrl) => {
+            if (previousUrl) URL.revokeObjectURL(previousUrl)
+            return url
+          })
+          void saveToolSession(
+            "adjuster",
+            {
+              fileName: sourceFileName,
+              duration: audioBuffer.duration,
+              pausesAdjusted,
+              audioFormat: result.format,
+            },
+            result.blob,
+          ).catch(() => {})
+        } else {
+          setGeneratedDistributionBlob(result.blob)
+          setGeneratedDistributionMetadata(result.format)
+          setGeneratedAudioFileSize(result.blob.size)
+          setGeneratedAudioUrl((previousUrl) => {
+            if (previousUrl) URL.revokeObjectURL(previousUrl)
+            return url
+          })
+          void saveToolSession(
+            "creator",
+            {
+              fileName: sourceFileName,
+              duration: audioBuffer.duration,
+              pausesAdjusted: 0,
+              audioFormat: result.format,
+            },
+            result.blob,
+          ).catch(() => {})
+        }
+        setToolConvertContext(null)
+        toast({ title: "Conversion complete", description: `Your audio is now ${convertedLabel}.` })
+      } else if (saveMode === "copy") {
+        setToolConvertStep("Saving copy to library...")
+        const saved = await MeditationLibrary.saveMeditation({
+          title: `${baseName} (${convertedLabel})`,
+          originalFileName: sourceFileName,
+          processedAudioData: result.blob,
+          duration: audioBuffer.duration,
+          source: context,
+          metadata: { audioFormat: result.format },
+        })
+        setToolConvertContext(null)
+        toast({
+          title: "Converted copy saved",
+          description: `"${saved.title}" is in your library. The audio here is unchanged.`,
+        })
+      } else {
+        // Guest keeping both: stash the converted copy so it survives the signup redirect
+        // (usePendingConvertAutoSave saves it once they're back and authenticated). The
+        // current output itself survives via the persisted tool session.
+        setToolConvertStep("Preparing signup...")
+        await savePendingConvertCopy(
+          {
+            title: `${baseName} (${convertedLabel})`,
+            originalFileName: sourceFileName,
+            duration: audioBuffer.duration,
+            source: context,
+            audioFormat: result.format,
+          },
+          result.blob,
+        )
+        setToolConvertContext(null)
+        router.push(`/auth/sign-up?returnTo=${encodeURIComponent(window.location.pathname)}`)
+      }
+    } catch (error) {
+      console.error("[v0] Tool convert failed:", error)
+      toast({
+        title: "Convert failed",
+        description: error instanceof Error ? error.message : "We couldn't convert this audio.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsToolConverting(false)
+      setToolConvertStep("")
+      setToolConvertProgress(0)
+    }
+  }
 
   const addTimelineItem = useCallback((item: Instruction | SoundCue, type: "instruction" | "sound") => {
     const newItem: TimelineItem = {
@@ -1164,6 +1342,19 @@ export default function Home() {
       setGeneratedDistributionMetadata(distributionMetadata)
       setGeneratedAudioFileSize(distributionBlob.size)
 
+      // Persist the output so it survives reloads and auth redirects (e.g. signing up
+      // mid-save); restored by the tool-session effect on mount.
+      void saveToolSession(
+        "creator",
+        {
+          fileName: meditationTitle || "meditation",
+          duration: rendered.duration,
+          pausesAdjusted: 0,
+          audioFormat: distributionMetadata,
+        },
+        distributionBlob,
+      ).catch((error) => console.warn("[v0] Unable to persist creator session:", error))
+
       const distributionUrl = URL.createObjectURL(distributionBlob)
       setGeneratedAudioUrl((previousUrl) => {
         if (previousUrl) URL.revokeObjectURL(previousUrl)
@@ -1476,6 +1667,7 @@ export default function Home() {
 
     if (typeof window === "undefined") return
     window.sessionStorage.removeItem(ADJUSTER_SESSION_KEY)
+    void clearToolSession("adjuster")
 
     if (silenceAnalysisAbortRef.current) {
       silenceAnalysisAbortRef.current.abort()
@@ -2212,6 +2404,19 @@ export default function Home() {
       setActualDuration(result.processedBuffer.duration)
       setProcessedBufferState(result.processedBuffer)
       setPausesAdjusted(result.pausesAdjusted)
+
+      // Persist the output so it survives reloads and auth redirects (e.g. signing up
+      // mid-save); restored by the tool-session effect on mount.
+      void saveToolSession(
+        "adjuster",
+        {
+          fileName: file?.name || displayedFileName || "meditation",
+          duration: result.processedBuffer.duration,
+          pausesAdjusted: result.pausesAdjusted,
+          audioFormat: result.distributionMetadata,
+        },
+        result.distributionBlob,
+      ).catch((error) => console.warn("[v0] Unable to persist adjuster session:", error))
       // Minimum is content + 0.3s per pause (from weighted algorithm minimum)
       const minimumDurationSeconds = Math.max(
         1,
@@ -3471,22 +3676,17 @@ export default function Home() {
                     </AnimatePresence>
                   </motion.div>
 
-                  {/* Process Audio Button + Export Format */}
+                  {/* Process Audio Button with embedded export-format selector */}
                   <motion.div
-                    className="mt-4 flex items-center gap-2"
+                    className="mt-4"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <Button
-                      onClick={handleProcessAudio}
-                      disabled={isProcessing || !originalBuffer}
+                    <div
                       className={cn(
-                        "flex-1 py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
-                        "shadow-lg hover:shadow-xl active:shadow-none",
-                        "text-white ",
-                        "disabled:cursor-not-allowed hover:opacity-100 disabled:opacity-100",
-                        "relative overflow-hidden",
+                        "rounded-sm transition-all duration-500 relative overflow-hidden",
+                        "shadow-lg hover:shadow-xl",
                       )}
                       style={
                         {
@@ -3516,22 +3716,38 @@ export default function Home() {
                         } as React.CSSProperties
                       }
                     >
-                      <span className="font-black text-base tracking-tight text-white">
-                        {isProcessing ? "Processing..." : "Process Audio"}
-                      </span>
-                    </Button>
-                    <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as AudioExportFormat)}>
-                      <SelectTrigger id="adjuster-export-format" className="w-32" aria-label="Export format">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map((format) => (
-                          <SelectItem key={format} value={format}>
-                            {AUDIO_EXPORT_FORMAT_LABELS[format]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <div className="flex justify-center pt-2.5">
+                        <Select
+                          value={exportFormat}
+                          onValueChange={(value) => setExportFormat(value as AudioExportFormat)}
+                        >
+                          <SelectTrigger
+                            id="adjuster-export-format"
+                            aria-label="Export format"
+                            className="h-7 w-32 justify-center gap-1.5 rounded-[7px] border-0 bg-black/25 px-2.5 py-0 text-[11px] font-serif font-black text-white/90 shadow-[inset_0_2px_5px_rgba(0,0,0,0.45)] ring-offset-0 focus:ring-0 focus:ring-offset-0"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map((format) => (
+                              <SelectItem key={format} value={format}>
+                                {AUDIO_EXPORT_FORMAT_LABELS[format]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleProcessAudio}
+                        disabled={isProcessing || !originalBuffer}
+                        className="w-full bg-transparent pt-2 pb-5 text-white disabled:cursor-not-allowed focus-visible:outline-none"
+                      >
+                        <span className="font-black text-base tracking-tight text-white">
+                          {isProcessing ? "Processing..." : "Process Audio"}
+                        </span>
+                      </button>
+                    </div>
                   </motion.div>
 
                   {isProcessingComplete && processedUrl && (
@@ -3549,7 +3765,7 @@ export default function Home() {
                           audioUrl={processedUrl}
                           distributionBlob={processedDistributionBlob ?? undefined}
                           distributionFormat={processedDistributionMetadata ?? undefined}
-                          originalFileName={file?.name || "meditation"}
+                          originalFileName={file?.name || displayedFileName || "meditation"}
                           duration={actualDuration || targetDuration * 60}
                           source="adjuster"
                           metadata={{
@@ -3570,6 +3786,14 @@ export default function Home() {
                             Save to Library
                           </Button>
                         </SaveMeditationDialog>
+                        <Button
+                          disabled={!processedDistributionBlob || isToolConverting}
+                          onClick={() => setToolConvertContext("adjuster")}
+                          className="w-44 py-3 ml-0 mt-2 sm:mt-0 sm:ml-2 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500"
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Convert Format
+                        </Button>
                       </div>
                     </motion.div>
                   )}
@@ -3872,22 +4096,16 @@ export default function Home() {
                       </div>
                     </Card>
                   </motion.div>
-                  {/* Generate Audio Button + Export Format */}
+                  {/* Generate Audio Button with embedded export-format selector */}
                   <motion.div
-                    className="flex items-center gap-2"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
                   >
-                    <Button
-                      onClick={handleExportAudio}
-                      disabled={isGeneratingAudio || timelineEvents.length === 0}
+                    <div
                       className={cn(
-                        "flex-1 py-7 text-base font-semibold tracking-wider rounded-sm transition-all duration-500",
-                        "shadow-lg hover:shadow-xl active:shadow-none",
-                        "text-white ",
-                        "disabled:cursor-not-allowed hover:opacity-100 disabled:opacity-100",
-                        "relative overflow-hidden",
+                        "rounded-sm transition-all duration-500 relative overflow-hidden",
+                        "shadow-lg hover:shadow-xl",
                       )}
                       style={
                         {
@@ -3917,22 +4135,38 @@ export default function Home() {
                         } as React.CSSProperties
                       }
                     >
-                      <span className="font-black text-base tracking-tight text-white">
-                        {isGeneratingAudio ? "Generating..." : "Generate Audio"}
-                      </span>
-                    </Button>
-                    <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as AudioExportFormat)}>
-                      <SelectTrigger id="creator-export-format" className="w-32" aria-label="Export format">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map((format) => (
-                          <SelectItem key={format} value={format}>
-                            {AUDIO_EXPORT_FORMAT_LABELS[format]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <div className="flex justify-center pt-2.5">
+                        <Select
+                          value={exportFormat}
+                          onValueChange={(value) => setExportFormat(value as AudioExportFormat)}
+                        >
+                          <SelectTrigger
+                            id="creator-export-format"
+                            aria-label="Export format"
+                            className="h-7 w-32 justify-center gap-1.5 rounded-[7px] border-0 bg-black/25 px-2.5 py-0 text-[11px] font-serif font-black text-white/90 shadow-[inset_0_2px_5px_rgba(0,0,0,0.45)] ring-offset-0 focus:ring-0 focus:ring-offset-0"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map((format) => (
+                              <SelectItem key={format} value={format}>
+                                {AUDIO_EXPORT_FORMAT_LABELS[format]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleExportAudio}
+                        disabled={isGeneratingAudio || timelineEvents.length === 0}
+                        className="w-full bg-transparent pt-2 pb-5 text-white disabled:cursor-not-allowed focus-visible:outline-none"
+                      >
+                        <span className="font-black text-base tracking-tight text-white">
+                          {isGeneratingAudio ? "Generating..." : "Generate Audio"}
+                        </span>
+                      </button>
+                    </div>
                   </motion.div>
 
                   {generatedAudioUrl && (
@@ -3998,6 +4232,14 @@ export default function Home() {
                               Save to Library
                             </Button>
                           </SaveMeditationDialog>
+                          <Button
+                            disabled={!generatedDistributionBlob || isToolConverting}
+                            onClick={() => setToolConvertContext("creator")}
+                            className="w-44 py-3 ml-0 mt-2 sm:mt-3 sm:ml-2 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-xs text-gray-600 font-serif font-black"
+                          >
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Convert Format
+                          </Button>
                         </div>
                       </Card>
                     </motion.div>
@@ -4007,6 +4249,83 @@ export default function Home() {
             </div>
           </div>
         </motion.div>
+
+        <Dialog
+          open={toolConvertContext !== null}
+          onOpenChange={(open) => {
+            if (!open && !isToolConverting) setToolConvertContext(null)
+          }}
+        >
+          <DialogContent className="sm:max-w-md font-serif">
+            <DialogHeader>
+              <DialogTitle>Convert Format</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-black text-gray-500">Convert to</Label>
+                <Select
+                  value={toolConvertFormat}
+                  onValueChange={(value) => setToolConvertFormat(value as AudioExportFormat)}
+                  disabled={isToolConverting}
+                >
+                  <SelectTrigger id="tool-convert-export-format" className="text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map((format) => (
+                      <SelectItem key={format} value={format}>
+                        {AUDIO_EXPORT_FORMAT_LABELS[format]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {isToolConverting ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-500">{toolConvertStep || "Converting..."}</p>
+                  <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-logo-teal-400 to-logo-emerald-500 transition-all"
+                      style={{ width: `${toolConvertProgress}%` }}
+                    />
+                  </div>
+                </div>
+              ) : isAuthenticated ? (
+                <div className="space-y-2">
+                  <Button className="w-full font-black text-xs" onClick={() => handleToolConvert("replace")}>
+                    Replace this audio
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full font-black text-xs"
+                    onClick={() => handleToolConvert("copy")}
+                  >
+                    Save converted copy to library
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-[11px] text-gray-500">
+                    As a guest, you can replace this audio with the converted version, or create a free account to
+                    keep both — we&apos;ll hang onto the converted copy and save it to your new library
+                    automatically, and the audio you made here will still be waiting when you get back.
+                  </p>
+                  <Button className="w-full font-black text-xs" onClick={() => handleToolConvert("account")}>
+                    Create account &amp; keep both
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full font-black text-xs"
+                    onClick={() => handleToolConvert("replace")}
+                  >
+                    Replace this audio
+                  </Button>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
