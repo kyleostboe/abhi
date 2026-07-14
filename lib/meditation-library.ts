@@ -326,6 +326,82 @@ export class MeditationLibrary {
     )
   }
 
+  /**
+   * Re-encodes an existing meditation's audio into a different format, replacing it in
+   * place — same id, same playlists, just a different underlying file and format metadata.
+   */
+  static async replaceMeditationAudio(
+    id: string,
+    updates: { audioData: Blob; duration: number; audioFormat: AudioFormatMetadata },
+  ): Promise<SavedMeditation> {
+    const auth = getAuthState()
+    const processedUrl = buildObjectUrl(updates.audioData)
+    const durationInSeconds = Math.round(updates.duration)
+
+    if (auth.status !== "authenticated" || !auth.userId) {
+      const existing = getMemoryMeditation(id)
+      if (!existing) {
+        throw new Error("Meditation not found.")
+      }
+      const existingAudio = getMemoryAudio(id)
+      const updatedMetadata: SavedMeditation["metadata"] = {
+        ...existing.metadata,
+        audioFormat: updates.audioFormat,
+        wav: undefined,
+      }
+      const updated: SavedMeditation = {
+        ...existing,
+        duration: durationInSeconds,
+        processedAudioUrl: processedUrl,
+        sourceAudioUrl: processedUrl,
+        metadata: updatedMetadata,
+      }
+      saveMemoryMeditation(id, updated, {
+        processedAudio: updates.audioData,
+        sourceAudio: updates.audioData,
+        timelineRecordings: existingAudio?.timelineRecordings,
+      })
+      return updated
+    }
+
+    const supabase = createClient()
+    const existing = await this.getMeditation(id)
+    if (!existing) {
+      throw new Error("Meditation not found.")
+    }
+    const updatedMetadata: SavedMeditation["metadata"] = {
+      ...existing.metadata,
+      audioFormat: updates.audioFormat,
+      wav: undefined,
+    }
+
+    const { error } = await supabase
+      .from("meditations")
+      .update({ duration: durationInSeconds, metadata: updatedMetadata })
+      .eq("id", id)
+
+    if (error) {
+      console.error("[v0] Error updating meditation audio:", error)
+      throw new Error(`Database update failed: ${error.message}`)
+    }
+
+    const existingAudio = await getAudioRecord(id)
+    await saveAudioRecord({
+      id,
+      processedAudio: updates.audioData,
+      sourceAudio: updates.audioData,
+      timelineRecordings: existingAudio?.timelineRecordings,
+    })
+
+    return {
+      ...existing,
+      duration: durationInSeconds,
+      processedAudioUrl: processedUrl,
+      sourceAudioUrl: processedUrl,
+      metadata: updatedMetadata,
+    }
+  }
+
   static async getAllMeditations(): Promise<SavedMeditation[]> {
     const auth = getAuthState()
     console.log("[v0] getAllMeditations - Auth state:", { status: auth.status, userId: auth.userId })
