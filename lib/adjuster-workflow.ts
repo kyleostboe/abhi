@@ -1,4 +1,4 @@
-import { encodeDistributionAudio, type AudioFormatMetadata } from "@/lib/audio-utils"
+import { encodeDistributionAudio, type AudioExportFormat, type AudioFormatMetadata } from "@/lib/audio-utils"
 import { forceGarbageCollection, formatTime, sleep } from "@/lib/utils"
 
 export type SilenceRegion = { start: number; end: number }
@@ -500,12 +500,14 @@ export async function runAdjusterWorkflow({
   buffer,
   settings,
   isMobileDevice,
+  exportFormat = "opus",
   callbacks = {},
 }: {
   audioContext: AudioContext
   buffer: AudioBuffer
   settings: AdjusterWorkflowSettings
   isMobileDevice: boolean
+  exportFormat?: AudioExportFormat
   callbacks?: AdjusterWorkflowCallbacks
 }): Promise<AdjusterWorkflowResult> {
   const {
@@ -573,6 +575,7 @@ export async function runAdjusterWorkflow({
   onProgress(80)
 
   const { blob: distributionBlob, format: distributionMetadata } = await encodeDistributionAudio(processedAudioBuffer, {
+    format: exportFormat,
     maxBytes: 48 * 1024 * 1024,
     bitrate: 96000,
     onProgress: (progress) => {

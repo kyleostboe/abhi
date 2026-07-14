@@ -36,8 +36,11 @@ import {
   getAudioContext,
   encodeDistributionAudio,
   extensionForContainer,
+  AUDIO_EXPORT_FORMAT_LABELS,
+  type AudioExportFormat,
   type AudioFormatMetadata,
 } from "@/lib/audio-utils" // Import from audio-utils
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   runAdjusterWorkflow,
   detectSilenceRegions as computeSilenceRegions,
@@ -572,6 +575,7 @@ export default function Home() {
   const [processedDistributionMetadata, setProcessedDistributionMetadata] = useState<AudioFormatMetadata | null>(null)
   const [generatedDistributionBlob, setGeneratedDistributionBlob] = useState<Blob | null>(null)
   const [generatedDistributionMetadata, setGeneratedDistributionMetadata] = useState<AudioFormatMetadata | null>(null)
+  const [exportFormat, setExportFormat] = useState<AudioExportFormat>("opus")
   const [loadedLibraryContext, setLoadedLibraryContext] = useState<{
     id: string
     title: string
@@ -1150,6 +1154,7 @@ export default function Home() {
       setGeneratedDistributionMetadata(null)
 
       const { blob: distributionBlob, format: distributionMetadata } = await encodeDistributionAudio(rendered, {
+        format: exportFormat,
         maxBytes: 48 * 1024 * 1024,
         bitrate: 96000,
         onProgress: (p) => setGenerationProgress(80 + Math.floor((p / 100) * 20)),
@@ -2186,6 +2191,7 @@ export default function Home() {
           contentSpeedMultiplier,
         },
         isMobileDevice,
+        exportFormat,
         callbacks: {
           onProgress: (progress) => setProcessingProgress(Math.max(0, Math.min(100, Math.round(progress)))),
           onStep: (step) => setProcessingStep(step),
@@ -3465,6 +3471,25 @@ export default function Home() {
                     </AnimatePresence>
                   </motion.div>
 
+                  {/* Export Format */}
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    <Label htmlFor="adjuster-export-format" className="text-gray-600 text-xs font-black">
+                      Format
+                    </Label>
+                    <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as AudioExportFormat)}>
+                      <SelectTrigger id="adjuster-export-format" className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map((format) => (
+                          <SelectItem key={format} value={format}>
+                            {AUDIO_EXPORT_FORMAT_LABELS[format]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   {/* Process Audio Button */}
                   <motion.div
                     className="mt-0"
@@ -3854,6 +3879,25 @@ export default function Home() {
                       </div>
                     </Card>
                   </motion.div>
+                  {/* Export Format */}
+                  <div className="flex items-center justify-center gap-2">
+                    <Label htmlFor="creator-export-format" className="text-gray-600 text-xs font-black">
+                      Format
+                    </Label>
+                    <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as AudioExportFormat)}>
+                      <SelectTrigger id="creator-export-format" className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map((format) => (
+                          <SelectItem key={format} value={format}>
+                            {AUDIO_EXPORT_FORMAT_LABELS[format]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   {/* Generate Audio Button */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}

@@ -1,7 +1,7 @@
 import * as Tone from "tone"
 import { sleep, formatFileSize } from "./utils"
 import lamejs from "@breezystack/lamejs"
-import { bufferToOpus, isOpusEncodingSupported } from "./opus-encoder"
+import { encodeToFormat, isFormatEncodingSupported } from "./audio-encoder"
 
 // Initialize Tone.js
 export const initializeTone = async (): Promise<void> => {
@@ -49,7 +49,7 @@ export interface BufferToMp3Options {
 /**
  * Convert AudioBuffer to MP3 using lamejs encoder
  * Encodes directly on main thread. Used as the fallback distribution format
- * when Opus encoding (see bufferToOpus/encodeDistributionAudio) isn't supported.
+ * when Opus/AAC encoding (see encodeToFormat/encodeDistributionAudio) isn't supported.
  */
 export const bufferToMp3 = async (
   buffer: AudioBuffer,
@@ -155,18 +155,30 @@ export const bufferToMp3 = async (
 }
 
 export interface AudioFormatMetadata {
-  container: "ogg" | "mp3" | "wav"
-  codec: "opus" | "mp3" | "pcm"
+  container: "ogg" | "m4a" | "mp3" | "wav"
+  codec: "opus" | "aac" | "mp3" | "pcm"
   sampleRate: number
   channels: number
   bitrate?: number // kbps, compressed formats only
   bitDepth?: 8 | 16 // wav only
 }
 
+// The format a user can pick for processing/converting a meditation's audio.
+export type AudioExportFormat = "opus" | "aac" | "wav" | "mp3"
+
+export const AUDIO_EXPORT_FORMAT_LABELS: Record<AudioExportFormat, string> = {
+  opus: "Ogg Opus",
+  aac: "M4A (AAC)",
+  wav: "WAV",
+  mp3: "MP3",
+}
+
 export const extensionForContainer = (container: AudioFormatMetadata["container"] | undefined | null): string => {
   switch (container) {
     case "ogg":
       return "ogg"
+    case "m4a":
+      return "m4a"
     case "mp3":
       return "mp3"
     default:
@@ -187,6 +199,7 @@ const pickMp3Bitrate = (durationSeconds: number, maxBytes: number, preferred: nu
 }
 
 export interface EncodeDistributionAudioOptions {
+  format?: AudioExportFormat
   maxBytes?: number
   bitrate?: number
   onProgress?: (progress: number) => void
@@ -198,36 +211,12 @@ export interface EncodeDistributionAudioResult {
   format: AudioFormatMetadata
 }
 
-/**
- * The single entry point for producing the audio actually saved/downloaded by the Adjuster
- * and Creator tools: Opus (via WebCodecs) when the browser can both encode and play it back,
- * MP3 otherwise. Never silently falls back to WAV — MP3 is the floor.
- */
-export const encodeDistributionAudio = async (
+const encodeMp3Fallback = async (
   buffer: AudioBuffer,
-  { maxBytes = Number.POSITIVE_INFINITY, bitrate = 96000, onProgress = () => {}, signal }: EncodeDistributionAudioOptions = {},
+  maxBytes: number,
+  onProgress: (progress: number) => void,
+  signal?: AbortSignal,
 ): Promise<EncodeDistributionAudioResult> => {
-  if (await isOpusEncodingSupported(bitrate)) {
-    try {
-      const result = await bufferToOpus(buffer, { bitrate, maxBytes, onProgress, signal })
-      return {
-        blob: result.blob,
-        format: {
-          container: result.container,
-          codec: result.codec,
-          sampleRate: result.sampleRate,
-          channels: result.channels,
-          bitrate: result.bitrate,
-        },
-      }
-    } catch (error) {
-      if (error instanceof Error && error.message === "Encoding aborted") {
-        throw error
-      }
-      console.warn("[v0] Opus encoding failed, falling back to MP3:", error)
-    }
-  }
-
   const mp3Bitrate = pickMp3Bitrate(buffer.duration, maxBytes, 96)
   const mp3Result = await bufferToMp3(buffer, { bitrate: mp3Bitrate, onProgress, signal })
 
@@ -247,4 +236,64 @@ export const encodeDistributionAudio = async (
       bitrate: mp3Result.bitrate,
     },
   }
+}
+
+/**
+ * The single entry point for producing the audio actually saved/downloaded by the Adjuster
+ * and Creator tools. Defaults to Opus (via WebCodecs) when the browser can both encode and
+ * play it back; MP3 otherwise. A specific format can be requested instead — Opus and AAC
+ * both fall back to MP3 if the browser can't encode/play them; WAV and MP3 have no fallback
+ * since they're either always supported (WAV, uncompressed) or already the floor (MP3).
+ * Never silently falls back to WAV.
+ */
+export const encodeDistributionAudio = async (
+  buffer: AudioBuffer,
+  {
+    format = "opus",
+    maxBytes = Number.POSITIVE_INFINITY,
+    bitrate = 96000,
+    onProgress = () => {},
+    signal,
+  }: EncodeDistributionAudioOptions = {},
+): Promise<EncodeDistributionAudioResult> => {
+  if (format === "mp3") {
+    return encodeMp3Fallback(buffer, maxBytes, onProgress, signal)
+  }
+
+  if (format === "wav") {
+    const result = await encodeToFormat(buffer, "wav", { bitrate, maxBytes, onProgress, signal })
+    return {
+      blob: result.blob,
+      format: {
+        container: result.container,
+        codec: result.codec,
+        sampleRate: result.sampleRate,
+        channels: result.channels,
+      },
+    }
+  }
+
+  // opus or aac — both go through WebCodecs with an MP3 fallback
+  if (await isFormatEncodingSupported(format, bitrate)) {
+    try {
+      const result = await encodeToFormat(buffer, format, { bitrate, maxBytes, onProgress, signal })
+      return {
+        blob: result.blob,
+        format: {
+          container: result.container,
+          codec: result.codec,
+          sampleRate: result.sampleRate,
+          channels: result.channels,
+          bitrate: result.bitrate,
+        },
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message === "Encoding aborted") {
+        throw error
+      }
+      console.warn(`[v0] ${format} encoding failed, falling back to MP3:`, error)
+    }
+  }
+
+  return encodeMp3Fallback(buffer, maxBytes, onProgress, signal)
 }

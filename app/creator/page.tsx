@@ -8,8 +8,15 @@ import { Button } from "@/components/ui/button"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
 import { BookmarkPlus } from "lucide-react"
 import * as Tone from "tone"
-import { encodeDistributionAudio, extensionForContainer, type AudioFormatMetadata } from "@/lib/audio-utils"
+import {
+  encodeDistributionAudio,
+  extensionForContainer,
+  AUDIO_EXPORT_FORMAT_LABELS,
+  type AudioExportFormat,
+  type AudioFormatMetadata,
+} from "@/lib/audio-utils"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 type SpeechRecognitionAlternative = {
   transcript: string
@@ -124,6 +131,7 @@ export default function CreatorPage() {
   const [encodedAudioUrl, setEncodedAudioUrl] = useState<string>("")
   const [encodedDistributionBlob, setEncodedDistributionBlob] = useState<Blob | null>(null)
   const [encodedDistributionMetadata, setEncodedDistributionMetadata] = useState<AudioFormatMetadata | null>(null)
+  const [exportFormat, setExportFormat] = useState<AudioExportFormat>("opus")
   const [status, setStatus] = useState<{ message: string; type: "info" | "success" | "error" } | null>(null)
   const [fullTranscript, setFullTranscript] = useState<string>("")
   const [isListening, setIsListening] = useState(false)
@@ -694,6 +702,7 @@ export default function CreatorPage() {
       const { blob: distributionBlob, format: distributionMetadata } = await encodeDistributionAudio(
         renderedBuffer,
         {
+          format: exportFormat,
           maxBytes: 48 * 1024 * 1024,
           bitrate: 96000,
           onProgress: (p) => setEncodingProgress(20 + Math.floor((p / 100) * 80)),

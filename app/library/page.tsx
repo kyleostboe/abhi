@@ -14,8 +14,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
-import { getAudioContext, extensionForContainer } from "@/lib/audio-utils"
+import {
+  getAudioContext,
+  extensionForContainer,
+  encodeDistributionAudio,
+  AUDIO_EXPORT_FORMAT_LABELS,
+  type AudioExportFormat,
+} from "@/lib/audio-utils"
 import { runAdjusterWorkflow } from "@/lib/adjuster-workflow"
 import { cn } from "@/lib/utils"
 import { useJournal } from "@/hooks/use-journal"
@@ -42,6 +49,7 @@ import {
   Plus,
   NotebookPen,
   BookOpenCheck,
+  RefreshCw,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useMobile } from "@/hooks/use-mobile"
@@ -315,6 +323,12 @@ export default function LibraryPage() {
   const [quickAdjustProgress, setQuickAdjustProgress] = useState(0)
   const [quickAdjustStep, setQuickAdjustStep] = useState("")
   const [pendingAdjustmentId, setPendingAdjustmentId] = useState<string | null>(null)
+  const [quickAdjustExportFormat, setQuickAdjustExportFormat] = useState<AudioExportFormat>("opus")
+  const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false)
+  const [convertFormat, setConvertFormat] = useState<AudioExportFormat>("opus")
+  const [isConverting, setIsConverting] = useState(false)
+  const [convertStep, setConvertStep] = useState("")
+  const [convertProgress, setConvertProgress] = useState(0)
   const [savedDurationsMap, setSavedDurationsMap] = useState<Record<string, StoredMeditationDurations>>({})
   const [lastPlayedDurationMap, setLastPlayedDurationMap] = useState<
     Record<string, { label: string; seconds: number }>
@@ -1179,11 +1193,11 @@ export default function LibraryPage() {
           targetDurationSeconds: effectiveTargetSeconds,
           silenceThreshold: settings.silenceThreshold,
           minSilenceDuration: settings.minSilenceDuration,
-          minSpacingDuration: settings.minSpacingDuration,
-          preserveNaturalPacing: settings.preserveNaturalPacing,
-          compatibilityMode: settings.compatibilityMode,
+          maxSilenceDuration: 0, // no cap, matches the Adjuster tool's default
+          contentSpeedMultiplier: 1.0, // no speedup, matches the Adjuster tool's default
         },
         isMobileDevice,
+        exportFormat: quickAdjustExportFormat,
         callbacks: {
           onProgress: (progress) => setQuickAdjustProgress(Math.max(0, Math.min(100, Math.round(progress)))),
           onStep: (step) => setQuickAdjustStep(step),
@@ -2029,6 +2043,90 @@ export default function LibraryPage() {
       })
     }
   }, [selectedMeditation, toast])
+
+  const handleConvertAudio = useCallback(
+    async (saveMode: "replace" | "copy") => {
+      if (!selectedMeditation || isConverting) return
+
+      setIsConverting(true)
+      setConvertStep("Loading audio...")
+      setConvertProgress(0)
+
+      try {
+        const sourceUrl = selectedMeditation.sourceAudioUrl || selectedMeditation.processedAudioUrl
+        const response = await fetch(sourceUrl)
+        if (!response.ok) {
+          throw new Error("Unable to load this meditation's audio.")
+        }
+        const arrayBuffer = await response.arrayBuffer()
+
+        const audioContext = getAudioContext()
+        if (audioContext.state === "suspended") {
+          try {
+            await audioContext.resume()
+          } catch (resumeError) {
+            console.warn("[v0] Unable to resume audio context for convert:", resumeError)
+          }
+        }
+
+        setConvertStep("Decoding audio...")
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0))
+
+        setConvertStep("Converting audio...")
+        const result = await encodeDistributionAudio(audioBuffer, {
+          format: convertFormat,
+          maxBytes: 48 * 1024 * 1024,
+          bitrate: 96000,
+          onProgress: (progress) => setConvertProgress(Math.max(0, Math.min(100, Math.round(progress)))),
+        })
+
+        if (saveMode === "replace") {
+          setConvertStep("Saving...")
+          const updated = await MeditationLibrary.replaceMeditationAudio(selectedMeditation.id, {
+            audioData: result.blob,
+            duration: audioBuffer.duration,
+            audioFormat: result.format,
+          })
+          setSelectedMeditation(updated)
+          setBaseMeditation((previous) => (previous && previous.id === updated.id ? updated : previous))
+          setMeditations((previous) => previous.map((item) => (item.id === updated.id ? updated : item)))
+        } else {
+          setConvertStep("Saving copy...")
+          const saved = await MeditationLibrary.saveMeditation({
+            title: `${selectedMeditation.title} (${AUDIO_EXPORT_FORMAT_LABELS[convertFormat]})`,
+            originalFileName: selectedMeditation.originalFileName,
+            processedAudioData: result.blob,
+            duration: audioBuffer.duration,
+            source: selectedMeditation.source,
+            metadata: {
+              ...selectedMeditation.metadata,
+              audioFormat: result.format,
+              wav: undefined,
+            },
+          })
+          setMeditations((previous) => [saved, ...previous])
+        }
+
+        setIsConvertDialogOpen(false)
+        toast({
+          title: "Conversion complete",
+          description: `Converted to ${AUDIO_EXPORT_FORMAT_LABELS[convertFormat]}.`,
+        })
+      } catch (error) {
+        console.error("[v0] Convert failed:", error)
+        toast({
+          title: "Convert failed",
+          description: error instanceof Error ? error.message : "We couldn't convert this meditation.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsConverting(false)
+        setConvertStep("")
+        setConvertProgress(0)
+      }
+    },
+    [selectedMeditation, isConverting, convertFormat, toast],
+  )
 
   const handleSeek = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
@@ -3175,6 +3273,105 @@ export default function LibraryPage() {
                                 </Button>
 
                                 <Dialog
+                                  open={isConvertDialogOpen}
+                                  onOpenChange={(open) => {
+                                    if (!isConverting) setIsConvertDialogOpen(open)
+                                  }}
+                                >
+                                  <DialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-10 w-10 rounded-[10px] text-gray-600 shadow-md hover:shadow-none"
+                                      title={
+                                        activeDurationModeId === "original"
+                                          ? "Convert format"
+                                          : "Switch to Original to convert this meditation's format"
+                                      }
+                                      disabled={
+                                        isQuickAdjustProcessing || !selectedMeditation || activeDurationModeId !== "original"
+                                      }
+                                    >
+                                      <RefreshCw className="h-4 w-4" />
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="sm:max-w-md">
+                                    <DialogHeader>
+                                      <DialogTitle>Convert Format</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-4">
+                                      <div className="space-y-1.5">
+                                        <Label className="text-[11px] font-black text-gray-500">
+                                          Convert to
+                                        </Label>
+                                        <Select
+                                          value={convertFormat}
+                                          onValueChange={(value) => setConvertFormat(value as AudioExportFormat)}
+                                          disabled={isConverting}
+                                        >
+                                          <SelectTrigger id="convert-export-format" className="text-xs">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map(
+                                              (format) => (
+                                                <SelectItem key={format} value={format}>
+                                                  {AUDIO_EXPORT_FORMAT_LABELS[format]}
+                                                </SelectItem>
+                                              ),
+                                            )}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+
+                                      {isConverting ? (
+                                        <div className="space-y-2">
+                                          <p className="text-xs text-gray-500">{convertStep || "Converting..."}</p>
+                                          <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+                                            <div
+                                              className="h-full bg-gradient-to-r from-logo-teal-400 to-logo-emerald-500 transition-all"
+                                              style={{ width: `${convertProgress}%` }}
+                                            />
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="space-y-2">
+                                          <Button
+                                            className="w-full font-black text-xs"
+                                            onClick={() => handleConvertAudio("replace")}
+                                          >
+                                            Replace original
+                                          </Button>
+                                          {isAuthenticated ? (
+                                            <Button
+                                              variant="outline"
+                                              className="w-full font-black text-xs"
+                                              onClick={() => handleConvertAudio("copy")}
+                                            >
+                                              Save as new copy
+                                            </Button>
+                                          ) : (
+                                            <p className="text-[11px] text-gray-500 text-center">
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  setIsConvertDialogOpen(false)
+                                                  login()
+                                                }}
+                                                className="underline font-black text-gray-700"
+                                              >
+                                                Create a free account
+                                              </button>{" "}
+                                              to save a copy instead of replacing the original.
+                                            </p>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
+
+                                <Dialog
                                   open={isQuickAdjustDialogOpen}
                                   onOpenChange={(open) => {
                                     if (!open) {
@@ -3227,6 +3424,30 @@ export default function LibraryPage() {
                                                 </Button>
                                               )
                                             })}
+                                          </div>
+                                          <div className="space-y-1.5">
+                                            <Label className="text-[11px] font-black text-gray-500">
+                                              Output format
+                                            </Label>
+                                            <Select
+                                              value={quickAdjustExportFormat}
+                                              onValueChange={(value) =>
+                                                setQuickAdjustExportFormat(value as AudioExportFormat)
+                                              }
+                                            >
+                                              <SelectTrigger id="quick-adjust-export-format" className="text-xs">
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map(
+                                                  (format) => (
+                                                    <SelectItem key={format} value={format}>
+                                                      {AUDIO_EXPORT_FORMAT_LABELS[format]}
+                                                    </SelectItem>
+                                                  ),
+                                                )}
+                                              </SelectContent>
+                                            </Select>
                                           </div>
                                           <div className="flex items-center justify-between gap-3 pt-1 font-serif font-black">
                                             <Button
