@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
-import { savePendingConvertCopy } from "@/lib/storage/pending-convert"
+import { savePendingConvertIntent } from "@/lib/storage/pending-convert"
 import { usePendingConvertAutoSave } from "@/hooks/use-pending-convert-autosave"
 import {
   getAudioContext,
@@ -304,6 +304,13 @@ export default function LibraryPage() {
   const [activeJournalEntryId, setActiveJournalEntryId] = useState<string | null>(null)
   const [handledMeditationParam, setHandledMeditationParam] = useState<string | null>(null)
   const [pendingJournalEntryId, setPendingJournalEntryId] = useState<string | null>(null)
+  // Server always renders false (no window); setting this only after mount avoids a
+  // hydration mismatch on localhost, where the client would otherwise disagree immediately.
+  const [isLocalDebugHost, setIsLocalDebugHost] = useState(false)
+  useEffect(() => {
+    setIsLocalDebugHost(window.location.hostname === "localhost")
+  }, [])
+
   const [isPlayerOpen, setIsPlayerOpen] = useState(false)
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const [playerTime, setPlayerTime] = useState(0)
@@ -2055,6 +2062,18 @@ export default function LibraryPage() {
     async (saveMode: "replace" | "copy" | "account") => {
       if (!selectedMeditation || isConverting) return
 
+      if (saveMode === "account") {
+        // Guest chose to create an account rather than lose the original: don't do any
+        // conversion work yet (it might never be needed) — just remember the intent and send
+        // them to sign-up. The original meditation is untouched and stays in the library as-is,
+        // so no audio is at risk; the conversion runs after they're back and authenticated
+        // (see usePendingConvertAutoSave).
+        savePendingConvertIntent({ kind: "library", meditationId: selectedMeditation.id, targetFormat: convertFormat })
+        setIsConvertDialogOpen(false)
+        router.push(`/auth/sign-up?returnTo=${encodeURIComponent("/library")}`)
+        return
+      }
+
       setIsConverting(true)
       setConvertStep("Loading audio...")
       setConvertProgress(0)
@@ -2102,7 +2121,7 @@ export default function LibraryPage() {
             title: "Conversion complete",
             description: `Converted to ${AUDIO_EXPORT_FORMAT_LABELS[convertFormat]}.`,
           })
-        } else if (saveMode === "copy") {
+        } else {
           setConvertStep("Saving copy...")
           const saved = await MeditationLibrary.saveMeditation({
             title: `${selectedMeditation.title} (${AUDIO_EXPORT_FORMAT_LABELS[convertFormat]})`,
@@ -2122,24 +2141,6 @@ export default function LibraryPage() {
             title: "Conversion complete",
             description: `Converted to ${AUDIO_EXPORT_FORMAT_LABELS[convertFormat]}.`,
           })
-        } else {
-          // Guest chose to create an account rather than lose the original: stash the
-          // converted audio so it survives the signup + email-confirmation redirect, then
-          // resume as a "save copy" once they're back and authenticated (see the
-          // pending-convert-copy effect below).
-          setConvertStep("Preparing to save...")
-          await savePendingConvertCopy(
-            {
-              title: `${selectedMeditation.title} (${AUDIO_EXPORT_FORMAT_LABELS[convertFormat]})`,
-              originalFileName: selectedMeditation.originalFileName,
-              duration: audioBuffer.duration,
-              source: selectedMeditation.source,
-              audioFormat: result.format,
-            },
-            result.blob,
-          )
-          setIsConvertDialogOpen(false)
-          router.push(`/auth/sign-up?returnTo=${encodeURIComponent("/library")}`)
         }
       } catch (error) {
         console.error("[v0] Convert failed:", error)
@@ -2487,7 +2488,7 @@ export default function LibraryPage() {
             </p>
           </div>
         )}
-        {typeof window !== "undefined" && window.location.hostname === "localhost" && (
+        {isLocalDebugHost && (
           <div className="fixed top-4 right-4 z-50">
             <Button
               onClick={clearLibraryData}

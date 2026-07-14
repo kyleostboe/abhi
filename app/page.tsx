@@ -52,7 +52,19 @@ import {
 } from "@/lib/adjuster-workflow"
 import { MeditationLibrary, type SavedMeditation } from "@/lib/meditation-library"
 import { saveToolSession, getToolSession, clearToolSession } from "@/lib/storage/tool-session"
-import { savePendingConvertCopy } from "@/lib/storage/pending-convert"
+import {
+  saveAdjusterDraft,
+  getAdjusterDraft,
+  clearAdjusterDraft,
+  saveCreatorDraft,
+  getCreatorDraft,
+  clearCreatorDraft,
+} from "@/lib/storage/tool-draft"
+import {
+  savePendingConvertIntent,
+  getPendingConvertIntent,
+  clearPendingConvertIntent,
+} from "@/lib/storage/pending-convert"
 import { usePendingConvertAutoSave } from "@/hooks/use-pending-convert-autosave"
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
@@ -535,6 +547,12 @@ export default function Home() {
   const router = useRouter()
 
   const [activeMode, setActiveMode] = useState<"adjuster" | "creator">("adjuster")
+  // Server always renders false (no window); setting this only after mount avoids a
+  // hydration mismatch on localhost, where the client would otherwise disagree immediately.
+  const [isLocalDebugHost, setIsLocalDebugHost] = useState(false)
+  useEffect(() => {
+    setIsLocalDebugHost(window.location.hostname === "localhost")
+  }, [])
 
   // == States for post-processing format conversion (Adjuster + Creator outputs) ==
   const [toolConvertContext, setToolConvertContext] = useState<"adjuster" | "creator" | null>(null)
@@ -755,31 +773,142 @@ export default function Home() {
     }
   }, [generatedQualityWarning, generatedDistributionMetadata, toast])
 
-  // After a guest signs up mid-conversion, save the stashed converted copy to their new library.
+  // Library-page "keep both" intents resolve here too, in case a guest lands back on the
+  // home page instead of /library.
   usePendingConvertAutoSave()
 
-  // Restore persisted tool outputs (processed/generated audio) after a reload or an
-  // auth redirect round-trip, so signing up doesn't lose the user's work.
-  const toolSessionRestoredRef = useRef(false)
+  // Adjuster/Creator "keep both" intent: runs once authenticated, using whichever tool
+  // session is available (restored below if this is a fresh page load post-redirect).
+  // Saves the untouched original *and* the converted copy — the original was never saved
+  // before this, since Save to Library is itself gated behind login for guests.
   useEffect(() => {
-    if (toolSessionRestoredRef.current) return
-    toolSessionRestoredRef.current = true
+    if (!isAuthenticated) return
+    const intent = getPendingConvertIntent()
+    if (!intent || intent.kind !== "tool") return
 
+    let cancelled = false
     void (async () => {
       try {
-        const adjusterSession = await getToolSession("adjuster")
+        const session = await getToolSession(intent.context)
+        if (!session || cancelled) return
+
+        const audioContext = getAudioContext()
+        if (audioContext.state === "suspended") {
+          await audioContext.resume().catch(() => {})
+        }
+        const arrayBuffer = await session.audio.arrayBuffer()
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+        if (cancelled) return
+
+        const result = await encodeDistributionAudio(audioBuffer, {
+          format: intent.targetFormat,
+          maxBytes: 48 * 1024 * 1024,
+          bitrate: 96000,
+        })
+        if (cancelled) return
+
+        const baseName = session.meta.fileName.replace(/\.[^/.]+$/, "")
+        const convertedLabel = AUDIO_EXPORT_FORMAT_LABELS[intent.targetFormat]
+
+        await MeditationLibrary.saveMeditation({
+          title: baseName,
+          originalFileName: session.meta.fileName,
+          processedAudioData: session.audio,
+          duration: session.meta.duration,
+          source: intent.context,
+          metadata: {
+            audioFormat: session.meta.audioFormat ?? undefined,
+            pausesAdjusted: session.meta.pausesAdjusted,
+          },
+        })
+
+        await MeditationLibrary.saveMeditation({
+          title: `${baseName} (${convertedLabel})`,
+          originalFileName: session.meta.fileName,
+          processedAudioData: result.blob,
+          duration: audioBuffer.duration,
+          source: intent.context,
+          metadata: { audioFormat: result.format },
+        })
+
+        if (cancelled) return
+        clearPendingConvertIntent()
+        toast({
+          title: "Saved to your library",
+          description: `Saved both the original and the ${convertedLabel} copy.`,
+        })
+      } catch (error) {
+        console.error("[v0] Failed to complete pending tool conversion:", error)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isAuthenticated, toast])
+
+  // Restore both the tool draft (file/settings/timeline the user had configured) and the
+  // persisted output (processed/generated audio) after a reload or an auth redirect
+  // round-trip, so logging in via Save to Library or Convert doesn't lose the user's work.
+  // The draft is a one-shot restore — consumed and cleared here — so a stale draft from a much
+  // earlier session never silently overrides what the user is about to do next.
+  useEffect(() => {
+    // No module/ref guard here on purpose: this app's root layout mounts its client tree
+    // twice on a fresh navigation (observed even in production builds, so not a StrictMode
+    // dev-only artifact), and whichever mount doesn't "win" gets its state discarded. A
+    // claim-once guard would let the losing mount claim the restore and silently drop it, so
+    // instead every mount independently reads + applies (idempotent, cheap to repeat) and the
+    // destructive clear-from-storage step is delayed so a sibling mount reading concurrently
+    // still sees the draft before it's removed.
+    void (async () => {
+      try {
+        const [adjusterSession, creatorSession, adjusterDraft, creatorDraft] = await Promise.all([
+          getToolSession("adjuster"),
+          getToolSession("creator"),
+          getAdjusterDraft(),
+          getCreatorDraft(),
+        ])
+
+        if (adjusterDraft) {
+          // handleFile() resets most Adjuster state (including clearing the persisted
+          // processed-output session and library context) as part of loading a new file, so
+          // it must run before we layer the rest of the restored state back on top.
+          await handleFile(adjusterDraft.file)
+          setTargetDuration(adjusterDraft.meta.targetDuration)
+          setSilenceThreshold(adjusterDraft.meta.silenceThreshold)
+          setMinSilenceDuration(adjusterDraft.meta.minSilenceDuration)
+          setMaxSilenceDuration(adjusterDraft.meta.maxSilenceDuration)
+          setContentSpeedMultiplier(adjusterDraft.meta.contentSpeedMultiplier)
+          setExportFormat(adjusterDraft.meta.exportFormat)
+          setLoadedLibraryContext(adjusterDraft.meta.loadedLibraryContext)
+          setTimeout(() => void clearAdjusterDraft(), 3000)
+        }
+
         if (adjusterSession) {
           setProcessedDistributionBlob(adjusterSession.audio)
           setProcessedDistributionMetadata(adjusterSession.meta.audioFormat)
           setProcessedFileSize(adjusterSession.audio.size)
           setActualDuration(adjusterSession.meta.duration)
           setPausesAdjusted(adjusterSession.meta.pausesAdjusted)
-          setDisplayedFileName(adjusterSession.meta.fileName)
+          if (!adjusterDraft) setDisplayedFileName(adjusterSession.meta.fileName)
           setProcessedUrl(URL.createObjectURL(adjusterSession.audio))
           setIsProcessingComplete(true)
+          if (adjusterDraft) {
+            // handleFile() above wiped the persisted session as a side effect of loading the
+            // restored file; put it back so a later reload can still find it.
+            void saveToolSession("adjuster", adjusterSession.meta, adjusterSession.audio).catch(() => {})
+          }
         }
 
-        const creatorSession = await getToolSession("creator")
+        if (creatorDraft) {
+          setMeditationTitle(creatorDraft.meditationTitle)
+          setCreatorTotalDuration(creatorDraft.creatorTotalDuration)
+          setCreatorDurationDraft(creatorDraft.creatorDurationDraft)
+          setExportFormat(creatorDraft.exportFormat)
+          setTimelineEvents(creatorDraft.timelineEvents)
+          setTimeout(() => void clearCreatorDraft(), 3000)
+        }
+
         if (creatorSession) {
           setGeneratedDistributionBlob(creatorSession.audio)
           setGeneratedDistributionMetadata(creatorSession.meta.audioFormat)
@@ -801,6 +930,19 @@ export default function Home() {
     if (!context || isToolConverting) return
     const sourceBlob = context === "adjuster" ? processedDistributionBlob : generatedDistributionBlob
     if (!sourceBlob) return
+
+    if (saveMode === "account") {
+      // Guest keeping both: don't do any conversion work yet — it might never be needed if
+      // they abandon signup. Just remember the intent and send them straight to sign-up. The
+      // current output is already preserved via the persisted tool session, so nothing is at
+      // risk; both the untouched original and the converted copy get saved once they're back
+      // and authenticated (see the pending-convert-intent effect below).
+      savePendingConvertIntent({ kind: "tool", context, targetFormat: toolConvertFormat })
+      await saveCurrentToolDraft()
+      setToolConvertContext(null)
+      router.push(`/auth/sign-up?returnTo=${encodeURIComponent(window.location.pathname)}`)
+      return
+    }
 
     const sourceFileName =
       context === "adjuster" ? file?.name || displayedFileName || "meditation" : meditationTitle || "meditation"
@@ -872,7 +1014,7 @@ export default function Home() {
         }
         setToolConvertContext(null)
         toast({ title: "Conversion complete", description: `Your audio is now ${convertedLabel}.` })
-      } else if (saveMode === "copy") {
+      } else {
         setToolConvertStep("Saving copy to library...")
         const saved = await MeditationLibrary.saveMeditation({
           title: `${baseName} (${convertedLabel})`,
@@ -887,23 +1029,6 @@ export default function Home() {
           title: "Converted copy saved",
           description: `"${saved.title}" is in your library. The audio here is unchanged.`,
         })
-      } else {
-        // Guest keeping both: stash the converted copy so it survives the signup redirect
-        // (usePendingConvertAutoSave saves it once they're back and authenticated). The
-        // current output itself survives via the persisted tool session.
-        setToolConvertStep("Preparing signup...")
-        await savePendingConvertCopy(
-          {
-            title: `${baseName} (${convertedLabel})`,
-            originalFileName: sourceFileName,
-            duration: audioBuffer.duration,
-            source: context,
-            audioFormat: result.format,
-          },
-          result.blob,
-        )
-        setToolConvertContext(null)
-        router.push(`/auth/sign-up?returnTo=${encodeURIComponent(window.location.pathname)}`)
       }
     } catch (error) {
       console.error("[v0] Tool convert failed:", error)
@@ -918,6 +1043,55 @@ export default function Home() {
       setToolConvertProgress(0)
     }
   }
+
+  // Snapshots whichever tool the user is currently on so the whole page — not just the
+  // processed/generated output — comes back after an auth redirect (login/signup via Save to
+  // Library or Convert). Restored by the tool-draft effect below.
+  const saveCurrentToolDraft = useCallback(async () => {
+    try {
+      if (activeMode === "adjuster" && file) {
+        await saveAdjusterDraft(
+          {
+            displayedFileName: displayedFileName ?? file.name,
+            fileType: file.type,
+            targetDuration,
+            silenceThreshold,
+            minSilenceDuration,
+            maxSilenceDuration,
+            contentSpeedMultiplier,
+            exportFormat,
+            loadedLibraryContext,
+          },
+          file,
+        )
+      } else if (activeMode === "creator") {
+        await saveCreatorDraft({
+          meditationTitle,
+          creatorTotalDuration,
+          creatorDurationDraft,
+          exportFormat,
+          timelineEvents,
+        })
+      }
+    } catch (error) {
+      console.warn("[v0] Unable to save tool draft:", error)
+    }
+  }, [
+    activeMode,
+    file,
+    displayedFileName,
+    targetDuration,
+    silenceThreshold,
+    minSilenceDuration,
+    maxSilenceDuration,
+    contentSpeedMultiplier,
+    exportFormat,
+    loadedLibraryContext,
+    meditationTitle,
+    creatorTotalDuration,
+    creatorDurationDraft,
+    timelineEvents,
+  ])
 
   const addTimelineItem = useCallback((item: Instruction | SoundCue, type: "instruction" | "sound") => {
     const newItem: TimelineItem = {
@@ -1719,7 +1893,10 @@ export default function Home() {
       audioContextRef.current = context
 
       if (context.state === "suspended") {
-        await context.resume()
+        // Resuming can hang indefinitely without a preceding user gesture (e.g. when this
+        // runs from the tool-draft restore effect on page load, not a click) — decoding
+        // doesn't actually require a running context, so don't let that block it.
+        await Promise.race([context.resume(), new Promise((resolve) => setTimeout(resolve, 500))]).catch(() => {})
       }
 
       const arrayBuffer = await selectedFile.arrayBuffer()
@@ -3083,7 +3260,7 @@ export default function Home() {
       <Navigation showProfileButton />
 
       <div className="relative">
-        {typeof window !== "undefined" && window.location.hostname === "localhost" && (
+        {isLocalDebugHost && (
           <div className="fixed top-4 right-4 z-50">
             <Button
               onClick={clearLibraryData}
@@ -3412,6 +3589,7 @@ export default function Home() {
                             existingMeditationId={loadedLibraryContext?.id}
                             existingMeditationTitle={loadedLibraryContext?.title}
                             existingMeditationDuration={loadedLibraryContext?.duration}
+                            onBeforeAuthRedirect={saveCurrentToolDraft}
                           >
                             <Button className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500">
                               <BookmarkPlus className="w-4 h-4 mr-2" />
@@ -3777,6 +3955,7 @@ export default function Home() {
                           existingMeditationId={loadedLibraryContext?.id}
                           existingMeditationTitle={loadedLibraryContext?.title}
                           existingMeditationDuration={loadedLibraryContext?.duration}
+                          onBeforeAuthRedirect={saveCurrentToolDraft}
                         >
                           <Button
                             disabled={!processedDistributionBlob}
@@ -4223,6 +4402,7 @@ export default function Home() {
                               audioFormat: generatedDistributionMetadata ?? undefined,
                               timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
                             }}
+                            onBeforeAuthRedirect={saveCurrentToolDraft}
                           >
                             <Button
                               disabled={!generatedDistributionBlob}

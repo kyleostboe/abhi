@@ -1,38 +1,32 @@
-import type { AudioFormatMetadata } from "@/lib/audio-utils"
-import { saveAudioRecord, getAudioRecord, deleteAudioRecord } from "./indexed-db"
+import type { AudioExportFormat } from "@/lib/audio-utils"
 
-const PENDING_CONVERT_ID = "__pending_convert_copy__"
-const META_KEY = "abhi_pending_convert_copy_meta"
+// A guest who chose "create an account & keep both" during a format conversion gets sent
+// straight to sign-up — we only stash *what* they wanted converted, not the converted audio
+// itself, so no encoding work happens before we even know they'll finish signing up. The
+// actual conversion runs after they're back and authenticated, using whichever original audio
+// is available at that point (the existing library meditation, or the restored tool session).
 
-export type PendingConvertMeta = {
-  title: string
-  originalFileName: string
-  duration: number
-  source: "adjuster" | "creator"
-  audioFormat: AudioFormatMetadata
+const KEY = "abhi_pending_convert_intent"
+
+export type PendingConvertIntent =
+  | { kind: "library"; meditationId: string; targetFormat: AudioExportFormat }
+  | { kind: "tool"; context: "adjuster" | "creator"; targetFormat: AudioExportFormat }
+
+export function savePendingConvertIntent(intent: PendingConvertIntent): void {
+  window.localStorage.setItem(KEY, JSON.stringify(intent))
 }
 
-export async function savePendingConvertCopy(meta: PendingConvertMeta, audio: Blob): Promise<void> {
-  await saveAudioRecord({ id: PENDING_CONVERT_ID, processedAudio: audio })
-  window.localStorage.setItem(META_KEY, JSON.stringify(meta))
-}
-
-export async function getPendingConvertCopy(): Promise<{ meta: PendingConvertMeta; audio: Blob } | null> {
-  const rawMeta = window.localStorage.getItem(META_KEY)
-  if (!rawMeta) return null
-
+export function getPendingConvertIntent(): PendingConvertIntent | null {
+  const raw = window.localStorage.getItem(KEY)
+  if (!raw) return null
   try {
-    const meta = JSON.parse(rawMeta) as PendingConvertMeta
-    const record = await getAudioRecord(PENDING_CONVERT_ID)
-    if (!record?.processedAudio) return null
-    return { meta, audio: record.processedAudio }
+    return JSON.parse(raw) as PendingConvertIntent
   } catch (error) {
-    console.warn("[v0] Unable to read pending convert copy:", error)
+    console.warn("[v0] Unable to read pending convert intent:", error)
     return null
   }
 }
 
-export async function clearPendingConvertCopy(): Promise<void> {
-  window.localStorage.removeItem(META_KEY)
-  await deleteAudioRecord(PENDING_CONVERT_ID).catch(() => {})
+export function clearPendingConvertIntent(): void {
+  window.localStorage.removeItem(KEY)
 }
