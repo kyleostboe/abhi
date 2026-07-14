@@ -3471,28 +3471,9 @@ export default function Home() {
                     </AnimatePresence>
                   </motion.div>
 
-                  {/* Export Format */}
-                  <div className="mt-4 flex items-center justify-center gap-2">
-                    <Label htmlFor="adjuster-export-format" className="text-gray-600 text-xs font-black">
-                      Format
-                    </Label>
-                    <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as AudioExportFormat)}>
-                      <SelectTrigger id="adjuster-export-format" className="w-40">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map((format) => (
-                          <SelectItem key={format} value={format}>
-                            {AUDIO_EXPORT_FORMAT_LABELS[format]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Process Audio Button */}
+                  {/* Process Audio Button + Export Format */}
                   <motion.div
-                    className="mt-0"
+                    className="mt-4 flex items-center gap-2"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
@@ -3501,7 +3482,7 @@ export default function Home() {
                       onClick={handleProcessAudio}
                       disabled={isProcessing || !originalBuffer}
                       className={cn(
-                        "w-full py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
+                        "flex-1 py-7 text-lg font-semibold tracking-wider rounded-sm transition-all duration-500",
                         "shadow-lg hover:shadow-xl active:shadow-none",
                         "text-white ",
                         "disabled:cursor-not-allowed hover:opacity-100 disabled:opacity-100",
@@ -3539,6 +3520,18 @@ export default function Home() {
                         {isProcessing ? "Processing..." : "Process Audio"}
                       </span>
                     </Button>
+                    <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as AudioExportFormat)}>
+                      <SelectTrigger id="adjuster-export-format" className="w-32" aria-label="Export format">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map((format) => (
+                          <SelectItem key={format} value={format}>
+                            {AUDIO_EXPORT_FORMAT_LABELS[format]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </motion.div>
 
                   {isProcessingComplete && processedUrl && (
@@ -3879,27 +3872,9 @@ export default function Home() {
                       </div>
                     </Card>
                   </motion.div>
-                  {/* Export Format */}
-                  <div className="flex items-center justify-center gap-2">
-                    <Label htmlFor="creator-export-format" className="text-gray-600 text-xs font-black">
-                      Format
-                    </Label>
-                    <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as AudioExportFormat)}>
-                      <SelectTrigger id="creator-export-format" className="w-40">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map((format) => (
-                          <SelectItem key={format} value={format}>
-                            {AUDIO_EXPORT_FORMAT_LABELS[format]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Generate Audio Button */}
+                  {/* Generate Audio Button + Export Format */}
                   <motion.div
+                    className="flex items-center gap-2"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
@@ -3908,7 +3883,7 @@ export default function Home() {
                       onClick={handleExportAudio}
                       disabled={isGeneratingAudio || timelineEvents.length === 0}
                       className={cn(
-                        "w-full py-7 text-base font-semibold tracking-wider rounded-sm transition-all duration-500",
+                        "flex-1 py-7 text-base font-semibold tracking-wider rounded-sm transition-all duration-500",
                         "shadow-lg hover:shadow-xl active:shadow-none",
                         "text-white ",
                         "disabled:cursor-not-allowed hover:opacity-100 disabled:opacity-100",
@@ -3946,6 +3921,18 @@ export default function Home() {
                         {isGeneratingAudio ? "Generating..." : "Generate Audio"}
                       </span>
                     </Button>
+                    <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as AudioExportFormat)}>
+                      <SelectTrigger id="creator-export-format" className="w-32" aria-label="Export format">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map((format) => (
+                          <SelectItem key={format} value={format}>
+                            {AUDIO_EXPORT_FORMAT_LABELS[format]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </motion.div>
 
                   {generatedAudioUrl && (
