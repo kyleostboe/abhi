@@ -63,7 +63,10 @@ self.onmessage = async (event: MessageEvent<OpusEncodeRequest>) => {
 
     while (offset < totalFrames) {
       const end = Math.min(offset + chunkFrames, totalFrames)
-      const chunk = samples.subarray(offset, end)
+      // Must be an independent buffer (byteOffset 0), not a view into the shared `samples`
+      // buffer — passing a subarray() view here caused every chunk after the first to encode
+      // the same underlying bytes from offset 0, i.e. the whole file repeating chunk 1's audio.
+      const chunk = samples.slice(offset, end)
       const sample = new AudioSample({
         data: chunk,
         format: "f32",
