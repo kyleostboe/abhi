@@ -72,7 +72,6 @@ import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
 import * as Tone from "tone"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
-import { AudioInfoMenu } from "@/components/audio-info-menu"
 import { AuthButtons } from "@/components/auth-buttons"
 
 const ADJUSTER_SESSION_KEY = "abhi_last_adjuster_session"
@@ -3924,12 +3923,12 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <div className="flex items-center gap-2 rounded-[11px] bg-gradient-to-br from-gray-600 to-gray-500 pr-2 shadow-md transition-all duration-500 hover:shadow-none">
+                    <div className="flex items-center justify-between gap-2 mx-6 rounded-[11px] bg-gradient-to-br from-gray-600 to-gray-500 pr-2 shadow-md transition-all duration-500 hover:shadow-none">
                       <button
                         type="button"
                         onClick={handleProcessAudio}
                         disabled={isProcessing || !originalBuffer}
-                        className="h-10 flex-1 truncate px-4 text-left font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
+                        className="h-10 truncate px-4 text-left font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
                       >
                         {isProcessing ? "Processing..." : "Process Audio"}
                       </button>
@@ -4308,12 +4307,12 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
                   >
-                    <div className="flex items-center gap-2 rounded-[11px] bg-gradient-to-br from-gray-600 to-gray-500 pr-2 shadow-md transition-all duration-500 hover:shadow-none">
+                    <div className="flex items-center justify-between gap-2 mx-6 rounded-[11px] bg-gradient-to-br from-gray-600 to-gray-500 pr-2 shadow-md transition-all duration-500 hover:shadow-none">
                       <button
                         type="button"
                         onClick={handleExportAudio}
                         disabled={isGeneratingAudio || timelineEvents.length === 0}
-                        className="h-10 flex-1 truncate px-4 text-left font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
+                        className="h-10 truncate px-4 text-left font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
                       >
                         {isGeneratingAudio ? "Generating..." : "Generate Audio"}
                       </button>
@@ -4342,77 +4341,46 @@ export default function Home() {
                   {generatedAudioUrl && (
                     <motion.div
                       ref={creatorAudioSectionRef}
-                      initial={{ opacity: 0, y: 20 }}
+                      initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.7 }}
+                      transition={{ delay: 0.2 }}
                     >
-                      <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-gray-50 to-muted ">
-                        <div className="bg-gradient-to-br from-logo-teal-500 via-logo-blue-300 to-logo-amber-300 px-6 py-[9px] ">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-white font-black">Generated Audio</h3>
-                            <AudioInfoMenu
-                              items={[
-                                {
-                                  label: "Duration",
-                                  value: formatTime(creatorTotalDuration),
-                                },
-                                {
-                                  label: "Instructions",
-                                  value: timelineEvents.length,
-                                },
-                                {
-                                  label: "File Size",
-                                  value: formatFileSize((generatedDistributionBlob?.size ?? generatedAudioFileSize) || 0),
-                                },
-                                ...(generatedDistributionMetadata
-                                  ? [
-                                      {
-                                        label: "Output Format",
-                                        value: `${generatedDistributionMetadata.codec.toUpperCase()} • ${generatedDistributionMetadata.sampleRate.toLocaleString()} Hz${generatedDistributionMetadata.bitrate ? ` • ${generatedDistributionMetadata.bitrate}kbps` : ""}`,
-                                      },
-                                    ]
-                                  : []),
-                              ]}
-                            />
-                          </div>
-                        </div>
-                        <div className="p-6 px-3.5 py-4 space-y-4 text-center shadow-none pb-4">
-                          <div className="p-3 rounded-sm px-0 bg-transparent pb-0 mb-0 shadow-none pt-0">
-                            <audio ref={creatorAudioRef} controls className="w-full" src={generatedAudioUrl}></audio>
-                          </div>
-                          <SaveMeditationDialog
-                            audioUrl={generatedAudioUrl}
-                            distributionBlob={generatedDistributionBlob ?? undefined}
-                            distributionFormat={generatedDistributionMetadata ?? undefined}
-                            originalFileName={meditationTitle || "meditation"}
-                            duration={creatorTotalDuration}
-                            source="creator"
-                            metadata={{
-                              instructionCount: timelineEvents.length,
-                              meditationTitle,
-                              audioFormat: generatedDistributionMetadata ?? undefined,
-                              timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
-                            }}
-                            onBeforeAuthRedirect={saveCurrentToolDraft}
-                          >
-                            <Button
-                              disabled={!generatedDistributionBlob}
-                              className="w-44 py-3 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-xs text-gray-600 font-serif font-black mt-3"
-                            >
-                              <BookmarkPlus className="h-4 w-4 mr-2" />
-                              Save to Library
-                            </Button>
-                          </SaveMeditationDialog>
+                      <div className="rounded-sm p-3 px-0 shadow-none border-gray-500 bg-transparent border-0 mb-0">
+                        <audio ref={creatorAudioRef} controls className="w-full" src={generatedAudioUrl}></audio>
+                      </div>
+                      <div className="px-3.5 text-center tracking-tight">
+                        <SaveMeditationDialog
+                          audioUrl={generatedAudioUrl}
+                          distributionBlob={generatedDistributionBlob ?? undefined}
+                          distributionFormat={generatedDistributionMetadata ?? undefined}
+                          originalFileName={meditationTitle || "meditation"}
+                          duration={creatorTotalDuration}
+                          source="creator"
+                          metadata={{
+                            instructionCount: timelineEvents.length,
+                            meditationTitle,
+                            audioFormat: generatedDistributionMetadata ?? undefined,
+                            timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
+                          }}
+                          onBeforeAuthRedirect={saveCurrentToolDraft}
+                        >
                           <Button
-                            disabled={!generatedDistributionBlob || isToolConverting}
-                            onClick={() => setToolConvertContext("creator")}
-                            className="w-44 py-3 ml-0 mt-2 sm:mt-3 sm:ml-2 rounded-sm shadow-md bg-white hover:bg-white focus-visible:bg-white active:bg-white hover:shadow-none text-xs text-gray-600 font-serif font-black"
+                            disabled={!generatedDistributionBlob}
+                            className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500"
                           >
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                            Convert Format
+                            <BookmarkPlus className="h-4 w-4 mr-2" />
+                            Save to Library
                           </Button>
-                        </div>
-                      </Card>
+                        </SaveMeditationDialog>
+                        <Button
+                          disabled={!generatedDistributionBlob || isToolConverting}
+                          onClick={() => setToolConvertContext("creator")}
+                          className="w-44 py-3 ml-0 mt-2 sm:mt-0 sm:ml-2 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500"
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Convert Format
+                        </Button>
+                      </div>
                     </motion.div>
                   )}
                 </motion.div>
