@@ -214,6 +214,92 @@ export async function detectSilenceRegions(
   return bufferedRegions
 }
 
+export interface SuggestedSilenceThreshold {
+  threshold: number
+  /** Estimated average background-noise RMS level during pauses. */
+  noiseFloor: number
+  /** Estimated average RMS level of spoken audio. */
+  speechLevel: number
+}
+
+/**
+ * Estimates a good silenceThreshold by measuring the same per-window RMS values
+ * detectSilenceRegions uses, then splitting them into a quiet cluster (background noise
+ * during pauses) and a loud cluster (spoken audio) via Otsu's method — the standard
+ * algorithm for finding the threshold that best separates a bimodal distribution into two
+ * groups, applied here in log space since noise floor and speech level are usually
+ * separated by an order of magnitude or more rather than a linear amount.
+ */
+export function suggestSilenceThreshold(buffer: AudioBuffer): SuggestedSilenceThreshold | null {
+  const sampleRate = buffer.sampleRate
+  const channelData = buffer.getChannelData(0)
+  const windowSize = Math.floor(sampleRate * 0.01) // match detectSilenceRegions' 10ms window
+  if (channelData.length === 0 || windowSize <= 0) return null
+
+  const rmsValues: number[] = []
+  for (let i = 0; i < channelData.length; i += windowSize) {
+    const windowEnd = Math.min(i + windowSize, channelData.length)
+    let sumSquares = 0
+    for (let j = i; j < windowEnd; j++) {
+      sumSquares += channelData[j] * channelData[j]
+    }
+    rmsValues.push(Math.sqrt(sumSquares / (windowEnd - i)))
+  }
+  if (rmsValues.length < 4) return null
+
+  const EPSILON = 1e-6
+  const logValues = rmsValues.map((v) => Math.log10(Math.max(v, EPSILON)))
+  const minLog = Math.min(...logValues)
+  const maxLog = Math.max(...logValues)
+  if (maxLog - minLog < 1e-6) return null // uniform signal (dead silence / constant tone) — no split to find
+
+  const BIN_COUNT = 256
+  const histogram = new Array(BIN_COUNT).fill(0)
+  const binWidth = (maxLog - minLog) / BIN_COUNT
+  for (const v of logValues) {
+    const bin = Math.min(BIN_COUNT - 1, Math.floor((v - minLog) / binWidth))
+    histogram[bin]++
+  }
+
+  const total = logValues.length
+  let sum = 0
+  for (let i = 0; i < BIN_COUNT; i++) sum += i * histogram[i]
+
+  let sumBackground = 0
+  let weightBackground = 0
+  let maxBetweenVariance = 0
+  let bestBin = 0
+
+  for (let i = 0; i < BIN_COUNT; i++) {
+    weightBackground += histogram[i]
+    if (weightBackground === 0) continue
+    const weightForeground = total - weightBackground
+    if (weightForeground === 0) break
+
+    sumBackground += i * histogram[i]
+    const meanBackground = sumBackground / weightBackground
+    const meanForeground = (sum - sumBackground) / weightForeground
+
+    const betweenVariance = weightBackground * weightForeground * (meanBackground - meanForeground) ** 2
+    if (betweenVariance > maxBetweenVariance) {
+      maxBetweenVariance = betweenVariance
+      bestBin = i
+    }
+  }
+
+  const thresholdLog = minLog + (bestBin + 0.5) * binWidth
+  const belowLog = logValues.filter((v) => v <= thresholdLog)
+  const aboveLog = logValues.filter((v) => v > thresholdLog)
+  const average = (values: number[], fallback: number) =>
+    values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : fallback
+
+  return {
+    threshold: 10 ** thresholdLog,
+    noiseFloor: 10 ** average(belowLog, minLog),
+    speechLevel: 10 ** average(aboveLog, maxLog),
+  }
+}
+
 interface RebuildOptions {
   audioContext: AudioContext
   buffer: AudioBuffer

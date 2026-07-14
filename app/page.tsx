@@ -48,6 +48,7 @@ import {
   runAdjusterWorkflow,
   detectSilenceRegions as computeSilenceRegions,
   calculateUniformScaledPauseDurations,
+  suggestSilenceThreshold,
   type DetectSilenceOptions,
 } from "@/lib/adjuster-workflow"
 import { MeditationLibrary, type SavedMeditation } from "@/lib/meditation-library"
@@ -777,6 +778,45 @@ export default function Home() {
   // home page instead of /library.
   usePendingConvertAutoSave()
 
+  // Saves the untouched original alongside a newly converted copy as two separate library
+  // entries. Used both when an already-authenticated user converts a tool's output, and when
+  // resuming a guest's "keep both" intent after they've signed up.
+  const saveOriginalAndConvertedCopy = useCallback(
+    async (params: {
+      context: "adjuster" | "creator"
+      fileName: string
+      originalBlob: Blob
+      originalDuration: number
+      originalAudioFormat?: AudioFormatMetadata
+      pausesAdjusted?: number
+      convertedBlob: Blob
+      convertedDuration: number
+      convertedFormat: AudioFormatMetadata
+      convertedLabel: string
+    }) => {
+      const baseName = params.fileName.replace(/\.[^/.]+$/, "")
+
+      await MeditationLibrary.saveMeditation({
+        title: baseName,
+        originalFileName: params.fileName,
+        processedAudioData: params.originalBlob,
+        duration: params.originalDuration,
+        source: params.context,
+        metadata: { audioFormat: params.originalAudioFormat, pausesAdjusted: params.pausesAdjusted },
+      })
+
+      return MeditationLibrary.saveMeditation({
+        title: `${baseName} (${params.convertedLabel})`,
+        originalFileName: params.fileName,
+        processedAudioData: params.convertedBlob,
+        duration: params.convertedDuration,
+        source: params.context,
+        metadata: { audioFormat: params.convertedFormat },
+      })
+    },
+    [],
+  )
+
   // Adjuster/Creator "keep both" intent: runs once authenticated, using whichever tool
   // session is available (restored below if this is a fresh page load post-redirect).
   // Saves the untouched original *and* the converted copy — the original was never saved
@@ -807,28 +847,18 @@ export default function Home() {
         })
         if (cancelled) return
 
-        const baseName = session.meta.fileName.replace(/\.[^/.]+$/, "")
         const convertedLabel = AUDIO_EXPORT_FORMAT_LABELS[intent.targetFormat]
-
-        await MeditationLibrary.saveMeditation({
-          title: baseName,
-          originalFileName: session.meta.fileName,
-          processedAudioData: session.audio,
-          duration: session.meta.duration,
-          source: intent.context,
-          metadata: {
-            audioFormat: session.meta.audioFormat ?? undefined,
-            pausesAdjusted: session.meta.pausesAdjusted,
-          },
-        })
-
-        await MeditationLibrary.saveMeditation({
-          title: `${baseName} (${convertedLabel})`,
-          originalFileName: session.meta.fileName,
-          processedAudioData: result.blob,
-          duration: audioBuffer.duration,
-          source: intent.context,
-          metadata: { audioFormat: result.format },
+        await saveOriginalAndConvertedCopy({
+          context: intent.context,
+          fileName: session.meta.fileName,
+          originalBlob: session.audio,
+          originalDuration: session.meta.duration,
+          originalAudioFormat: session.meta.audioFormat ?? undefined,
+          pausesAdjusted: session.meta.pausesAdjusted,
+          convertedBlob: result.blob,
+          convertedDuration: audioBuffer.duration,
+          convertedFormat: result.format,
+          convertedLabel,
         })
 
         if (cancelled) return
@@ -845,7 +875,7 @@ export default function Home() {
     return () => {
       cancelled = true
     }
-  }, [isAuthenticated, toast])
+  }, [isAuthenticated, toast, saveOriginalAndConvertedCopy])
 
   // Restore both the tool draft (file/settings/timeline the user had configured) and the
   // persisted output (processed/generated audio) after a reload or an auth redirect
@@ -1015,19 +1045,24 @@ export default function Home() {
         setToolConvertContext(null)
         toast({ title: "Conversion complete", description: `Your audio is now ${convertedLabel}.` })
       } else {
-        setToolConvertStep("Saving copy to library...")
-        const saved = await MeditationLibrary.saveMeditation({
-          title: `${baseName} (${convertedLabel})`,
-          originalFileName: sourceFileName,
-          processedAudioData: result.blob,
-          duration: audioBuffer.duration,
-          source: context,
-          metadata: { audioFormat: result.format },
+        setToolConvertStep("Saving to library...")
+        await saveOriginalAndConvertedCopy({
+          context,
+          fileName: sourceFileName,
+          originalBlob: sourceBlob,
+          originalDuration: context === "adjuster" ? actualDuration ?? audioBuffer.duration : creatorTotalDuration,
+          originalAudioFormat:
+            (context === "adjuster" ? processedDistributionMetadata : generatedDistributionMetadata) ?? undefined,
+          pausesAdjusted: context === "adjuster" ? pausesAdjusted : undefined,
+          convertedBlob: result.blob,
+          convertedDuration: audioBuffer.duration,
+          convertedFormat: result.format,
+          convertedLabel,
         })
         setToolConvertContext(null)
         toast({
-          title: "Converted copy saved",
-          description: `"${saved.title}" is in your library. The audio here is unchanged.`,
+          title: "Saved to your library",
+          description: `Saved both the original and the ${convertedLabel} copy. The audio here is unchanged.`,
         })
       }
     } catch (error) {
@@ -3255,6 +3290,24 @@ export default function Home() {
   // Function to handle the Process Audio button click
   const handleProcessAudio = processAudioAdjusterAction
 
+  const handleSuggestSilenceThreshold = () => {
+    if (!originalBuffer) return
+    const suggestion = suggestSilenceThreshold(originalBuffer)
+    if (!suggestion) {
+      toast({
+        title: "Couldn't suggest a threshold",
+        description: "This audio doesn't have a clear enough gap between pauses and speech to estimate one.",
+      })
+      return
+    }
+    const clamped = Number(Math.min(0.05, Math.max(0.001, suggestion.threshold)).toFixed(3))
+    setSilenceThreshold(clamped)
+    toast({
+      title: "Silence threshold suggested",
+      description: `Background noise averages ~${suggestion.noiseFloor.toFixed(4)}, speech averages ~${suggestion.speechLevel.toFixed(4)}. Set to ${clamped}.`,
+    })
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-0 md:p-8 pt-20 md:pt-24">
       <Navigation showProfileButton />
@@ -3725,6 +3778,16 @@ export default function Home() {
                               <span className="ml-1 text-sm text-gray-600"></span>
                             </div>
                             <p className="text-center text-xs text-gray-500 tracking-tight">higher = detect more pauses</p>
+                            <div className="mt-2 flex justify-center">
+                              <button
+                                type="button"
+                                onClick={handleSuggestSilenceThreshold}
+                                disabled={!originalBuffer}
+                                className="text-xs font-serif font-black text-logo-emerald-500 underline underline-offset-2 disabled:cursor-not-allowed disabled:text-gray-400 disabled:no-underline"
+                              >
+                                Suggest from this audio
+                              </button>
+                            </div>
                           </DurationControlCard>
                         </div>
 
@@ -3854,77 +3917,41 @@ export default function Home() {
                     </AnimatePresence>
                   </motion.div>
 
-                  {/* Process Audio Button with embedded export-format selector */}
+                  {/* Process Audio Button with inline export-format selector */}
                   <motion.div
                     className="mt-4"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <div
-                      className={cn(
-                        "rounded-sm transition-all duration-500 relative overflow-hidden",
-                        "shadow-lg hover:shadow-xl",
-                      )}
-                      style={
-                        {
-                          backgroundImage: `
-                        radial-gradient(circle at 7% 12%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.5px),
-                        radial-gradient(circle at 23% 8%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
-                        radial-gradient(circle at 15% 67%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 89% 23%, rgba(255, 255, 255, 0.8) 1px, transparent 1.2px),
-                        radial-gradient(circle at 34% 91%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
-                        radial-gradient(circle at 67% 15%, rgba(255, 255, 255, 0.9) 1.3px, transparent 1.5px),
-                        radial-gradient(circle at 12% 88%, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
-                        radial-gradient(circle at 78% 72%, rgba(255, 255, 255, 0.85) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 45% 34%, rgba(255, 255, 255, 0.8) 0.4px, transparent 1px),
-                        radial-gradient(circle at 91% 56%, rgba(255, 255, 255, 0.9) 0.9px, transparent 1px),
-                        radial-gradient(circle at 29% 19%, rgba(255, 255, 255, 0.75) 1.2px, transparent 1.4px),
-                        radial-gradient(circle at 56% 83%, rgba(255, 255, 255, 0.7) 0.5px, transparent 1px),
-                        radial-gradient(circle at 3% 45%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 72% 9%, rgba(255, 255, 255, 0.8) 1px, transparent 1.2px),
-                        radial-gradient(circle at 38% 62%, rgba(255, 255, 255, 0.9) 0.6px, transparent 1px),
-                        radial-gradient(circle at 83% 41%, rgba(255, 255, 255, 0.75) 1.4px, transparent 1.6px),
-                        radial-gradient(circle at 19% 76%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
-                        radial-gradient(circle at 58% 32%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.4px),
-                        radial-gradient(circle at 91% 81%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
-                        radial-gradient(circle at 37% 9%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        linear-gradient(135deg, #4b5563 0%, #6b7280 100%)
-                      `,
-                        } as React.CSSProperties
-                      }
-                    >
-                      <div className="flex justify-center pt-2.5">
-                        <Select
-                          value={exportFormat}
-                          onValueChange={(value) => setExportFormat(value as AudioExportFormat)}
-                        >
-                          <SelectTrigger
-                            id="adjuster-export-format"
-                            aria-label="Export format"
-                            className="h-7 w-32 justify-center gap-1.5 rounded-[7px] border-0 bg-black/25 px-2.5 py-0 text-[11px] font-serif font-black text-white/90 shadow-[inset_0_2px_5px_rgba(0,0,0,0.45)] ring-offset-0 focus:ring-0 focus:ring-offset-0"
-                          >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map((format) => (
-                              <SelectItem key={format} value={format}>
-                                {AUDIO_EXPORT_FORMAT_LABELS[format]}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div className="flex items-center gap-2 rounded-[11px] bg-gradient-to-br from-gray-600 to-gray-500 pr-2 shadow-md transition-all duration-500 hover:shadow-none">
                       <button
                         type="button"
                         onClick={handleProcessAudio}
                         disabled={isProcessing || !originalBuffer}
-                        className="w-full bg-transparent pt-2 pb-5 text-white disabled:cursor-not-allowed focus-visible:outline-none"
+                        className="h-10 flex-1 truncate px-4 text-left font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
                       >
-                        <span className="font-black text-base tracking-tight text-white">
-                          {isProcessing ? "Processing..." : "Process Audio"}
-                        </span>
+                        {isProcessing ? "Processing..." : "Process Audio"}
                       </button>
+                      <Select
+                        value={exportFormat}
+                        onValueChange={(value) => setExportFormat(value as AudioExportFormat)}
+                      >
+                        <SelectTrigger
+                          id="adjuster-export-format"
+                          aria-label="Export format"
+                          className="h-7 w-32 shrink-0 justify-center gap-1.5 rounded-[7px] border-0 bg-transparent px-2.5 py-0 text-[11px] font-serif font-black text-white/90 shadow-[inset_0_2px_5px_rgba(0,0,0,0.45)] ring-offset-0 focus:ring-0 focus:ring-offset-0"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map((format) => (
+                            <SelectItem key={format} value={format}>
+                              {AUDIO_EXPORT_FORMAT_LABELS[format]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </motion.div>
 
@@ -4275,76 +4302,40 @@ export default function Home() {
                       </div>
                     </Card>
                   </motion.div>
-                  {/* Generate Audio Button with embedded export-format selector */}
+                  {/* Generate Audio Button with inline export-format selector */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
                   >
-                    <div
-                      className={cn(
-                        "rounded-sm transition-all duration-500 relative overflow-hidden",
-                        "shadow-lg hover:shadow-xl",
-                      )}
-                      style={
-                        {
-                          backgroundImage: `
-                        radial-gradient(circle at 11% 18%, rgba(255, 255, 255, 0.85) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 27% 6%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
-                        radial-gradient(circle at 8% 71%, rgba(255, 255, 255, 0.9) 0.7px, transparent 1px),
-                        radial-gradient(circle at 82% 29%, rgba(255, 255, 255, 0.8) 1.2px, transparent 1.4px),
-                        radial-gradient(circle at 39% 85%, rgba(255, 255, 255, 0.7) 0.4px, transparent 1px),
-                        radial-gradient(circle at 71% 11%, rgba(255, 255, 255, 0.85) 1.4px, transparent 1.6px),
-                        radial-gradient(circle at 16% 93%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
-                        radial-gradient(circle at 74% 68%, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px),
-                        radial-gradient(circle at 49% 38%, rgba(255, 255, 255, 0.75) 0.5px, transparent 1px),
-                        radial-gradient(circle at 87% 52%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        radial-gradient(circle at 33% 23%, rgba(255, 255, 255, 0.7) 1.3px, transparent 1.5px),
-                        radial-gradient(circle at 52% 79%, rgba(255, 255, 255, 0.8) 0.6px, transparent 1px),
-                        radial-gradient(circle at 6% 41%, rgba(255, 255, 255, 0.9) 0.9px, transparent 1px),
-                        radial-gradient(circle at 68% 14%, rgba(255, 255, 255, 0.75) 1.1px, transparent 1.3px),
-                        radial-gradient(circle at 42% 58%, rgba(255, 255, 255, 0.85) 0.4px, transparent 1px),
-                        radial-gradient(circle at 79% 46%, rgba(255, 255, 255, 0.8) 1.5px, transparent 1.7px),
-                        radial-gradient(circle at 24% 72%, rgba(255, 255, 255, 0.7) 0.5px, transparent 1px),
-                        radial-gradient(circle at 58% 32%, rgba(255, 255, 255, 0.9) 1.2px, transparent 1.4px),
-                        radial-gradient(circle at 91% 81%, rgba(255, 255, 255, 0.75) 0.6px, transparent 1px),
-                        radial-gradient(circle at 37% 9%, rgba(255, 255, 255, 0.85) 0.8px, transparent 1px),
-                        linear-gradient(135deg, #4b5563 0%, #6b7280 100%)
-                      `,
-                        } as React.CSSProperties
-                      }
-                    >
-                      <div className="flex justify-center pt-2.5">
-                        <Select
-                          value={exportFormat}
-                          onValueChange={(value) => setExportFormat(value as AudioExportFormat)}
-                        >
-                          <SelectTrigger
-                            id="creator-export-format"
-                            aria-label="Export format"
-                            className="h-7 w-32 justify-center gap-1.5 rounded-[7px] border-0 bg-black/25 px-2.5 py-0 text-[11px] font-serif font-black text-white/90 shadow-[inset_0_2px_5px_rgba(0,0,0,0.45)] ring-offset-0 focus:ring-0 focus:ring-offset-0"
-                          >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map((format) => (
-                              <SelectItem key={format} value={format}>
-                                {AUDIO_EXPORT_FORMAT_LABELS[format]}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div className="flex items-center gap-2 rounded-[11px] bg-gradient-to-br from-gray-600 to-gray-500 pr-2 shadow-md transition-all duration-500 hover:shadow-none">
                       <button
                         type="button"
                         onClick={handleExportAudio}
                         disabled={isGeneratingAudio || timelineEvents.length === 0}
-                        className="w-full bg-transparent pt-2 pb-5 text-white disabled:cursor-not-allowed focus-visible:outline-none"
+                        className="h-10 flex-1 truncate px-4 text-left font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
                       >
-                        <span className="font-black text-base tracking-tight text-white">
-                          {isGeneratingAudio ? "Generating..." : "Generate Audio"}
-                        </span>
+                        {isGeneratingAudio ? "Generating..." : "Generate Audio"}
                       </button>
+                      <Select
+                        value={exportFormat}
+                        onValueChange={(value) => setExportFormat(value as AudioExportFormat)}
+                      >
+                        <SelectTrigger
+                          id="creator-export-format"
+                          aria-label="Export format"
+                          className="h-7 w-32 shrink-0 justify-center gap-1.5 rounded-[7px] border-0 bg-transparent px-2.5 py-0 text-[11px] font-serif font-black text-white/90 shadow-[inset_0_2px_5px_rgba(0,0,0,0.45)] ring-offset-0 focus:ring-0 focus:ring-offset-0"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map((format) => (
+                            <SelectItem key={format} value={format}>
+                              {AUDIO_EXPORT_FORMAT_LABELS[format]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </motion.div>
 
@@ -4481,7 +4472,7 @@ export default function Home() {
                     className="w-full font-black text-xs"
                     onClick={() => handleToolConvert("copy")}
                   >
-                    Save converted copy to library
+                    Save original & converted copy
                   </Button>
                 </div>
               ) : (
