@@ -1,6 +1,6 @@
 import "server-only"
 
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3"
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 
 // Server-only Cloudflare R2 client (S3-compatible). Audio bytes never pass through this
@@ -69,4 +69,24 @@ export async function createDownloadUrl(key: string, filename?: string): Promise
 /** Deletes an object from R2. Safe to call for a key that no longer exists. */
 export async function deleteAudioObject(key: string): Promise<void> {
   await getR2Client().send(new DeleteObjectCommand({ Bucket: getBucket(), Key: key }))
+}
+
+/** Sums the byte size of every object under a key prefix (e.g. a user's `{user_id}/` folder). */
+export async function getUsageBytesForPrefix(prefix: string): Promise<number> {
+  const client = getR2Client()
+  const bucket = getBucket()
+  let usedBytes = 0
+  let continuationToken: string | undefined
+
+  do {
+    const response = await client.send(
+      new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, ContinuationToken: continuationToken }),
+    )
+    for (const object of response.Contents ?? []) {
+      usedBytes += object.Size ?? 0
+    }
+    continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined
+  } while (continuationToken)
+
+  return usedBytes
 }

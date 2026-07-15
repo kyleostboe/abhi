@@ -11,6 +11,17 @@ const CREATOR_DRAFT_META_KEY = "abhi_tool_draft:creator"
 const ADJUSTER_FILE_RECORD_ID = "__draft_adjuster_file__"
 const creatorRecordingRecordId = (eventId: string) => `__draft_creator_recording__${eventId}`
 
+// Drafts only need to survive a single working session (e.g. the login/sign-up redirect
+// round-trip) — not indefinitely. Anything older than this is treated as abandoned and
+// cleared out instead of silently accumulating in IndexedDB/localStorage forever.
+const DRAFT_TTL_MS = 4 * 60 * 60 * 1000 // 4 hours
+
+type DraftEnvelope<T> = { savedAt: number; data: T }
+
+function isExpired(savedAt: number): boolean {
+  return Date.now() - savedAt > DRAFT_TTL_MS
+}
+
 export type AdjusterDraft = {
   displayedFileName: string
   fileType: string
@@ -25,7 +36,8 @@ export type AdjusterDraft = {
 
 export async function saveAdjusterDraft(meta: AdjusterDraft, file: File): Promise<void> {
   await saveAudioRecord({ id: ADJUSTER_FILE_RECORD_ID, processedAudio: file })
-  window.localStorage.setItem(ADJUSTER_DRAFT_META_KEY, JSON.stringify(meta))
+  const envelope: DraftEnvelope<AdjusterDraft> = { savedAt: Date.now(), data: meta }
+  window.localStorage.setItem(ADJUSTER_DRAFT_META_KEY, JSON.stringify(envelope))
 }
 
 export async function getAdjusterDraft(): Promise<{ meta: AdjusterDraft; file: File } | null> {
@@ -33,7 +45,12 @@ export async function getAdjusterDraft(): Promise<{ meta: AdjusterDraft; file: F
   if (!rawMeta) return null
 
   try {
-    const meta = JSON.parse(rawMeta) as AdjusterDraft
+    const envelope = JSON.parse(rawMeta) as DraftEnvelope<AdjusterDraft>
+    if (isExpired(envelope.savedAt)) {
+      await clearAdjusterDraft()
+      return null
+    }
+    const meta = envelope.data
     const record = await getAudioRecord(ADJUSTER_FILE_RECORD_ID)
     if (!record?.processedAudio) return null
     const file = new File([record.processedAudio], meta.displayedFileName, { type: meta.fileType })
@@ -75,7 +92,8 @@ export async function saveCreatorDraft(meta: CreatorDraft): Promise<void> {
     }
   }
 
-  window.localStorage.setItem(CREATOR_DRAFT_META_KEY, JSON.stringify(meta))
+  const envelope: DraftEnvelope<CreatorDraft> = { savedAt: Date.now(), data: meta }
+  window.localStorage.setItem(CREATOR_DRAFT_META_KEY, JSON.stringify(envelope))
 }
 
 export async function getCreatorDraft(): Promise<CreatorDraft | null> {
@@ -83,7 +101,12 @@ export async function getCreatorDraft(): Promise<CreatorDraft | null> {
   if (!rawMeta) return null
 
   try {
-    const meta = JSON.parse(rawMeta) as CreatorDraft
+    const envelope = JSON.parse(rawMeta) as DraftEnvelope<CreatorDraft>
+    if (isExpired(envelope.savedAt)) {
+      await clearCreatorDraft()
+      return null
+    }
+    const meta = envelope.data
     const timelineEvents = await Promise.all(
       meta.timelineEvents.map(async (event) => {
         if (event.type !== "recorded_voice" || !event.recordedAudioUrl?.startsWith("blob:")) return event
@@ -105,9 +128,9 @@ export async function clearCreatorDraft(): Promise<void> {
 
   if (!rawMeta) return
   try {
-    const meta = JSON.parse(rawMeta) as CreatorDraft
+    const envelope = JSON.parse(rawMeta) as DraftEnvelope<CreatorDraft>
     await Promise.all(
-      meta.timelineEvents
+      envelope.data.timelineEvents
         .filter((event) => event.type === "recorded_voice")
         .map((event) => deleteAudioRecord(creatorRecordingRecordId(event.id)).catch(() => {})),
     )

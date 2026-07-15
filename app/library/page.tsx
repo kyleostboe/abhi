@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Slider } from "@/components/ui/slider"
 import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
 import { savePendingConvertIntent } from "@/lib/storage/pending-convert"
 import { usePendingConvertAutoSave } from "@/hooks/use-pending-convert-autosave"
@@ -333,6 +334,7 @@ export default function LibraryPage() {
   const [quickAdjustStep, setQuickAdjustStep] = useState("")
   const [pendingAdjustmentId, setPendingAdjustmentId] = useState<string | null>(null)
   const [quickAdjustExportFormat, setQuickAdjustExportFormat] = useState<AudioExportFormat>("opus")
+  const [quickAdjustSilenceThreshold, setQuickAdjustSilenceThreshold] = useState<number | null>(null)
   const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false)
   const [convertFormat, setConvertFormat] = useState<AudioExportFormat>("opus")
   const [isConverting, setIsConverting] = useState(false)
@@ -1179,7 +1181,7 @@ export default function LibraryPage() {
         buffer: audioBuffer,
         settings: {
           targetDurationSeconds: effectiveTargetSeconds,
-          silenceThreshold: settings.silenceThreshold,
+          silenceThreshold: quickAdjustSilenceThreshold ?? settings.silenceThreshold,
           minSilenceDuration: settings.minSilenceDuration,
           maxSilenceDuration: 0, // no cap, matches the Adjuster tool's default
           contentSpeedMultiplier: 1.0, // no speedup, matches the Adjuster tool's default
@@ -3399,6 +3401,8 @@ export default function LibraryPage() {
                                     if (!open) {
                                       setIsEditingPresets(false)
                                       setNewPresetValue("")
+                                    } else {
+                                      setQuickAdjustSilenceThreshold(deriveAdjusterSettings(baseMeditation).silenceThreshold)
                                     }
                                     setIsQuickAdjustDialogOpen(open)
                                   }}
@@ -3470,6 +3474,24 @@ export default function LibraryPage() {
                                                 )}
                                               </SelectContent>
                                             </Select>
+                                          </div>
+                                          <div className="space-y-1.5">
+                                            <div className="flex items-center justify-between">
+                                              <Label className="text-[11px] font-black text-gray-500">
+                                                Silence threshold
+                                              </Label>
+                                              <span className="text-[11px] font-black text-gray-500">
+                                                {(quickAdjustSilenceThreshold ?? 0.01).toFixed(3)}
+                                              </span>
+                                            </div>
+                                            <Slider
+                                              value={[quickAdjustSilenceThreshold ?? 0.01]}
+                                              min={0.001}
+                                              max={0.05}
+                                              step={0.001}
+                                              onValueChange={(value) => setQuickAdjustSilenceThreshold(value[0])}
+                                              rangeClassName="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500"
+                                            />
                                           </div>
                                           <div className="flex items-center justify-between gap-3 pt-1 font-serif font-black">
                                             <Button
