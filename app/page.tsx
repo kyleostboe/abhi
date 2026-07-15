@@ -795,9 +795,9 @@ export default function Home() {
       convertedBlob: Blob
       convertedDuration: number
       convertedFormat: AudioFormatMetadata
-      convertedLabel: string
     }) => {
       const baseName = params.fileName.replace(/\.[^/.]+$/, "")
+      const convertedFormatTag = `.${extensionForContainer(params.convertedFormat.container)}`
 
       await MeditationLibrary.saveMeditation({
         title: baseName,
@@ -809,7 +809,7 @@ export default function Home() {
       })
 
       return MeditationLibrary.saveMeditation({
-        title: `${baseName} (${params.convertedLabel})`,
+        title: `${baseName} (${convertedFormatTag})`,
         originalFileName: params.fileName,
         processedAudioData: params.convertedBlob,
         duration: params.convertedDuration,
@@ -861,7 +861,6 @@ export default function Home() {
           convertedBlob: result.blob,
           convertedDuration: audioBuffer.duration,
           convertedFormat: result.format,
-          convertedLabel,
         })
 
         if (cancelled) return
@@ -1064,7 +1063,6 @@ export default function Home() {
           convertedBlob: result.blob,
           convertedDuration: audioBuffer.duration,
           convertedFormat: result.format,
-          convertedLabel,
         })
         setToolConvertContext(null)
         toast({
@@ -3732,7 +3730,7 @@ export default function Home() {
                             existingMeditationDuration={loadedLibraryContext?.duration}
                             onBeforeAuthRedirect={saveCurrentToolDraft}
                           >
-                            <Button className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500">
+                            <Button className="w-44 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105">
                               <BookmarkPlus className="w-4 h-4 mr-2" />
                               Save to Library
                             </Button>
@@ -4074,7 +4072,7 @@ export default function Home() {
                         >
                           <Button
                             disabled={!processedDistributionBlob}
-                            className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500"
+                            className="w-44 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
                           >
                             <BookmarkPlus className="h-4 w-4 mr-2" />
                             Save to Library
@@ -4083,7 +4081,7 @@ export default function Home() {
                         <Button
                           disabled={!processedDistributionBlob || isToolConverting}
                           onClick={() => setToolConvertContext("adjuster")}
-                          className="w-44 py-3 ml-0 mt-2 sm:mt-0 sm:ml-2 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500"
+                          className="w-44 py-3 ml-0 mt-2 sm:mt-0 sm:ml-2 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
                         >
                           <RefreshCw className="h-4 w-4 mr-2" />
                           Convert Format
@@ -4466,7 +4464,7 @@ export default function Home() {
                         >
                           <Button
                             disabled={!generatedDistributionBlob}
-                            className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500"
+                            className="w-44 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
                           >
                             <BookmarkPlus className="h-4 w-4 mr-2" />
                             Save to Library
@@ -4475,7 +4473,7 @@ export default function Home() {
                         <Button
                           disabled={!generatedDistributionBlob || isToolConverting}
                           onClick={() => setToolConvertContext("creator")}
-                          className="w-44 py-3 ml-0 mt-2 sm:mt-0 sm:ml-2 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500"
+                          className="w-44 py-3 ml-0 mt-2 sm:mt-0 sm:ml-2 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
                         >
                           <RefreshCw className="h-4 w-4 mr-2" />
                           Convert Format
