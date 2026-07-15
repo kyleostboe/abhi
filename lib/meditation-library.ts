@@ -197,6 +197,64 @@ const sanitizeMetadataForStorage = (
   return { ...metadata, timeline: updatedTimeline }
 }
 
+// Uploads the processed audio to Cloudflare R2 via a server-minted presigned URL so it's
+// playable from any device the user logs into, not just the browser that saved it. Audio
+// bytes go straight from this browser to R2 — the server only hands back the URL. Best
+// effort: if R2 isn't configured or the upload fails, returns null and the save proceeds
+// with IndexedDB as the only copy, same as before this feature existed.
+const uploadAudioToR2 = async (blob: Blob, ext: string): Promise<string | null> => {
+  try {
+    const contentType = blob.type || "application/octet-stream"
+    const urlResponse = await fetch("/api/storage/upload-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ext, contentType }),
+    })
+    if (!urlResponse.ok) {
+      console.warn("[v0] Unable to get R2 upload URL:", urlResponse.status, urlResponse.statusText)
+      return null
+    }
+    const { uploadUrl, key } = (await urlResponse.json()) as { uploadUrl: string; key: string }
+
+    const putResponse = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": contentType },
+      body: blob,
+    })
+    if (!putResponse.ok) {
+      console.warn("[v0] R2 upload failed:", putResponse.status, putResponse.statusText)
+      return null
+    }
+    return key
+  } catch (error) {
+    console.warn("[v0] R2 upload error:", error)
+    return null
+  }
+}
+
+// Batch-resolves presigned playback URLs for meditations that have an audio_key, in a
+// single round trip. Rows without an audio_key (saved before R2 storage was added) are
+// simply absent from the result and fall back to the local IndexedDB copy.
+const fetchR2DownloadUrls = async (meditationIds: string[]): Promise<Record<string, string>> => {
+  if (meditationIds.length === 0) return {}
+  try {
+    const response = await fetch("/api/storage/download-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ meditationIds }),
+    })
+    if (!response.ok) {
+      console.warn("[v0] Unable to fetch R2 download URLs:", response.status, response.statusText)
+      return {}
+    }
+    const { urls } = (await response.json()) as { urls?: Record<string, string> }
+    return urls ?? {}
+  } catch (error) {
+    console.warn("[v0] R2 download URL fetch error:", error)
+    return {}
+  }
+}
+
 const normalizeSupabaseMeditation = (
   row: any,
   processedAudioUrl: string,
@@ -274,11 +332,13 @@ export class MeditationLibrary {
       return savedMeditation
     }
 
-    console.log("[v0] Saving to Supabase + IndexedDB (authenticated)")
+    console.log("[v0] Saving to Supabase + R2 + IndexedDB (authenticated)")
     const supabase = createClient()
 
     const metadataToPersist = sanitizeMetadataForStorage({ ...meditation.metadata }, timelineRecordings, "pending")
     const durationInSeconds = Math.round(meditation.duration)
+
+    const audioKey = await uploadAudioToR2(processedBlob, resolveAudioExtension(meditation.metadata, processedBlob))
 
     const insertMeditationRow = (source: string) =>
       supabase
@@ -291,6 +351,7 @@ export class MeditationLibrary {
           metadata: metadataToPersist,
           original_filename: meditation.originalFileName,
           profile_id: auth.userId!,
+          audio_key: audioKey,
         })
         .select()
         .single()
@@ -388,9 +449,18 @@ export class MeditationLibrary {
       wav: undefined,
     }
 
+    // If this row's audio previously lived in R2, the replacement must too — otherwise
+    // audio_key would keep pointing at the now-stale pre-replacement audio. The old object
+    // is left in place rather than deleted here to keep this a pure metadata+upload step;
+    // it's harmless orphaned storage, not a correctness issue like serving stale audio would be.
+    const { data: existingRow } = await supabase.from("meditations").select("audio_key").eq("id", id).single()
+    const audioKey = existingRow?.audio_key
+      ? await uploadAudioToR2(updates.audioData, extensionForContainer(updates.audioFormat.container))
+      : null
+
     const { error } = await supabase
       .from("meditations")
-      .update({ duration: durationInSeconds, metadata: updatedMetadata })
+      .update({ duration: durationInSeconds, metadata: updatedMetadata, audio_key: audioKey })
       .eq("id", id)
 
     if (error) {
@@ -442,26 +512,33 @@ export class MeditationLibrary {
       return []
     }
 
-    console.log("[v0] Found", data.length, "meditations in Supabase, loading audio from IndexedDB...")
+    console.log("[v0] Found", data.length, "meditations in Supabase, resolving audio...")
+    // Rows saved since R2 storage was added carry an audio_key and play back from R2 (works
+    // from any device); older rows have no audio_key and keep loading from this browser's
+    // IndexedDB cache, exactly as before.
+    const r2Ids = data.filter((row: any) => row.audio_key).map((row: any) => row.id as string)
+    const r2Urls = await fetchR2DownloadUrls(r2Ids)
+
     const meditations: SavedMeditation[] = []
     for (const row of data) {
       try {
-        console.log("[v0] Loading audio for meditation:", row.id)
         const audio = await getAudioRecord(row.id)
-        
-        if (!audio) {
-          console.warn("[v0] MISSING AUDIO: No audio record found in IndexedDB for meditation:", row.id)
-          // We still return the meditation so the user sees the metadata, 
-          // but the UI will need to handle the missing audio URL.
+
+        let processedUrl: string
+        if (row.audio_key) {
+          processedUrl = r2Urls[row.id] ?? ""
+          if (!processedUrl) console.warn("[v0] Missing R2 download URL for meditation:", row.id)
         } else {
-          console.log("[v0] Successfully loaded audio from IndexedDB for:", row.id, "Size:", audio.processedAudio?.size)
+          if (!audio) {
+            console.warn("[v0] MISSING AUDIO: No audio record found in IndexedDB for meditation:", row.id)
+          }
+          processedUrl = buildObjectUrl(audio?.processedAudio)
         }
-        
-        const processedUrl = buildObjectUrl(audio?.processedAudio)
+
         const sourceUrl = buildObjectUrl(audio?.sourceAudio ?? null)
         meditations.push(normalizeSupabaseMeditation(row, processedUrl, sourceUrl, audio?.timelineRecordings))
       } catch (error) {
-        console.warn("[v0] Unable to load audio from IndexedDB", row.id, error)
+        console.warn("[v0] Unable to resolve audio for meditation", row.id, error)
         meditations.push(normalizeSupabaseMeditation(row, ""))
       }
     }
@@ -486,12 +563,16 @@ export class MeditationLibrary {
 
     try {
       const audio = await getAudioRecord(id)
-      return normalizeSupabaseMeditation(
-        data,
-        buildObjectUrl(audio?.processedAudio),
-        buildObjectUrl(audio?.sourceAudio ?? null),
-        audio?.timelineRecordings,
-      )
+
+      let processedUrl: string
+      if (data.audio_key) {
+        const r2Urls = await fetchR2DownloadUrls([id])
+        processedUrl = r2Urls[id] ?? ""
+      } else {
+        processedUrl = buildObjectUrl(audio?.processedAudio)
+      }
+
+      return normalizeSupabaseMeditation(data, processedUrl, buildObjectUrl(audio?.sourceAudio ?? null), audio?.timelineRecordings)
     } catch (err) {
       console.warn("[v0] Unable to fetch audio for meditation", id, err)
       return normalizeSupabaseMeditation(data, "")
@@ -505,12 +586,19 @@ export class MeditationLibrary {
       return
     }
 
-    const supabase = createClient()
-    const { error } = await supabase.from("meditations").delete().eq("id", id)
-
-    if (error) {
-      console.error("[v0] Error deleting meditation:", error)
-      throw error
+    // Deletes the R2 object (if any) and the database row together, server-side — the R2
+    // delete credentials never reach the client, so this can't be done with a plain
+    // supabase.from("meditations").delete() call like before.
+    const response = await fetch("/api/storage/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ meditationId: id }),
+    })
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}) as { error?: string })
+      const message = body.error || `Delete failed with status ${response.status}`
+      console.error("[v0] Error deleting meditation:", message)
+      throw new Error(message)
     }
 
     await deleteAudioRecord(id)
