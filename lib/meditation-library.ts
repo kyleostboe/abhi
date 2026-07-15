@@ -7,7 +7,6 @@ import {
   getAudioRecord,
   deleteAudioRecord,
   getAllAudioRecords,
-  estimateAudioUsage,
   type AudioRecord,
 } from "./storage/indexed-db"
 import {
@@ -24,6 +23,10 @@ import {
   saveMemoryMeditation,
   upsertMemoryPlaylist,
 } from "./storage/memory-store"
+
+// Free-tier storage allowance shown to authenticated users, kept comfortably under R2's own
+// free tier so the app's other usage has headroom.
+const FREE_STORAGE_QUOTA_BYTES = 5 * 1024 * 1024 * 1024
 
 export interface SavedMeditation {
   id: string
@@ -1037,11 +1040,22 @@ export class MeditationLibrary {
     onProgress?.(100, "Backup restored successfully!")
   }
 
-  static async getStorageUsage() {
+  static async getStorageUsage(): Promise<{ usedBytes: number; quotaBytes?: number }> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
       return { usedBytes: getMemoryUsageBytes() }
     }
-    return estimateAudioUsage()
+
+    // Authenticated users' audio now lives in R2, not IndexedDB — report usage against that,
+    // since that's what actually counts toward their storage.
+    try {
+      const response = await fetch("/api/storage/usage")
+      if (!response.ok) throw new Error(`Usage request failed with status ${response.status}`)
+      const { usedBytes } = (await response.json()) as { usedBytes: number }
+      return { usedBytes, quotaBytes: FREE_STORAGE_QUOTA_BYTES }
+    } catch (error) {
+      console.warn("[v0] Unable to fetch R2 storage usage:", error)
+      return { usedBytes: 0, quotaBytes: FREE_STORAGE_QUOTA_BYTES }
+    }
   }
 }

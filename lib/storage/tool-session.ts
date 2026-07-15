@@ -22,6 +22,10 @@ const RECORD_ID: Record<ToolSessionKind, string> = {
 
 const metaKey = (kind: ToolSessionKind) => `abhi_tool_session:${kind}`
 
+// Only needs to survive a single working session (e.g. the login/sign-up redirect
+// round-trip) — not indefinitely, so it doesn't quietly accumulate in storage forever.
+const SESSION_TTL_MS = 4 * 60 * 60 * 1000 // 4 hours
+
 export async function saveToolSession(
   kind: ToolSessionKind,
   meta: Omit<ToolSessionMeta, "savedAt">,
@@ -39,6 +43,10 @@ export async function getToolSession(
 
   try {
     const meta = JSON.parse(rawMeta) as ToolSessionMeta
+    if (Date.now() - meta.savedAt > SESSION_TTL_MS) {
+      await clearToolSession(kind)
+      return null
+    }
     const record = await getAudioRecord(RECORD_ID[kind])
     if (!record?.processedAudio) return null
     return { meta, audio: record.processedAudio }

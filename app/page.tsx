@@ -26,6 +26,7 @@ import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DurationControlCard } from "@/components/duration-control-card"
+import { MarqueeText } from "@/components/marquee-text"
 
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
@@ -3669,20 +3670,20 @@ export default function Home() {
                             >
                               <Volume2 className="h-4 w-4 text-gray-600" />
                             </motion.div>
-                            <div className="flex-1">
+                            <div className="min-w-0 flex-1">
                               <motion.div
                                 initial={{ opacity: 0, x: -5 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: 0.2 }}
                                 className="mb-1 font-black text-gray-600 text-xs"
                               >
-                                {displayedFileName ?? file.name}
+                                <MarqueeText text={displayedFileName ?? file.name} />
                               </motion.div>
                               <motion.div
                                 initial={{ opacity: 0, x: -5 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: 0.3 }}
-                                className="mb-1 font-black text-gray-500 text-xs"
+                                className="mb-1 truncate font-black text-gray-500 text-xs"
                               >
                                 Size: {formatFileSize(file.size)}
                                 {" • Type: "}
@@ -4010,12 +4011,12 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <div className="flex items-center justify-between gap-2 mx-6 rounded-[11px] bg-gradient-to-br from-gray-600 to-gray-500 pr-2 shadow-md transition-all duration-500 hover:shadow-none">
+                    <div className="flex items-center gap-2 mx-6 lg:mx-auto lg:max-w-[calc(50%-56px)] rounded-[11px] bg-gradient-to-br from-gray-600 to-gray-500 pr-2 shadow-md transition-all duration-500 hover:shadow-none">
                       <button
                         type="button"
                         onClick={handleProcessAudio}
                         disabled={isProcessing || !originalBuffer}
-                        className="h-10 truncate px-4 text-left text-sm font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
+                        className="h-10 flex-1 truncate px-4 text-center text-sm font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
                       >
                         {isProcessing ? `Processing${".".repeat(loadingDots)}` : "Process Audio"}
                       </button>
@@ -4026,7 +4027,7 @@ export default function Home() {
                         <SelectTrigger
                           id="adjuster-export-format"
                           aria-label="Export format"
-                          className="h-7 w-20 shrink-0 justify-center gap-1.5 rounded-[7px] border-0 bg-transparent px-2.5 py-0 text-[11px] font-serif font-black text-white/90 shadow-[inset_0_2px_5px_rgba(0,0,0,0.45)] ring-offset-0 focus:ring-0 focus:ring-offset-0"
+                          className="h-7 w-14 shrink-0 justify-center rounded-[7px] border-0 bg-transparent px-2 py-0 text-[11px] font-serif font-black text-white/90 shadow-[inset_0_2px_5px_rgba(0,0,0,0.45)] ring-offset-0 focus:ring-0 focus:ring-offset-0 [&>svg]:hidden"
                         >
                           <SelectValue />
                         </SelectTrigger>
@@ -4405,12 +4406,12 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
                   >
-                    <div className="flex items-center justify-between gap-2 mx-6 rounded-[11px] bg-gradient-to-br from-gray-600 to-gray-500 pr-2 shadow-md transition-all duration-500 hover:shadow-none">
+                    <div className="flex items-center gap-2 mx-6 lg:mx-auto lg:max-w-[calc(50%-56px)] rounded-[11px] bg-gradient-to-br from-gray-600 to-gray-500 pr-2 shadow-md transition-all duration-500 hover:shadow-none">
                       <button
                         type="button"
                         onClick={handleExportAudio}
                         disabled={isGeneratingAudio || timelineEvents.length === 0}
-                        className="h-10 truncate px-4 text-left text-sm font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
+                        className="h-10 flex-1 truncate px-4 text-center text-sm font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
                       >
                         {isGeneratingAudio ? `Generating${".".repeat(loadingDots)}` : "Generate Audio"}
                       </button>
@@ -4421,7 +4422,7 @@ export default function Home() {
                         <SelectTrigger
                           id="creator-export-format"
                           aria-label="Export format"
-                          className="h-7 w-20 shrink-0 justify-center gap-1.5 rounded-[7px] border-0 bg-transparent px-2.5 py-0 text-[11px] font-serif font-black text-white/90 shadow-[inset_0_2px_5px_rgba(0,0,0,0.45)] ring-offset-0 focus:ring-0 focus:ring-offset-0"
+                          className="h-7 w-14 shrink-0 justify-center rounded-[7px] border-0 bg-transparent px-2 py-0 text-[11px] font-serif font-black text-white/90 shadow-[inset_0_2px_5px_rgba(0,0,0,0.45)] ring-offset-0 focus:ring-0 focus:ring-offset-0 [&>svg]:hidden"
                         >
                           <SelectValue />
                         </SelectTrigger>

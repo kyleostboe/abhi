@@ -28,7 +28,7 @@ export function StorageBar({
   isBackupLoading,
   backupProgress
 }: StorageBarProps) {
-  // Default quota if browser doesn't provide one (5GB typical for IndexedDB)
+  // Fallback for the guest path, which has no fixed quota of its own (5GB is just a sane default)
   const effectiveQuota = quotaBytes || 5 * 1024 * 1024 * 1024
   const percentage = Math.min((usedBytes / effectiveQuota) * 100, 100)
 
@@ -38,7 +38,7 @@ export function StorageBar({
         <HardDrive className="h-5 w-5 text-gray-600 shrink-0" />
         <div className="flex-1 space-y-2">
           <div className="flex items-center justify-between text-xs text-gray-600 font-serif">
-            <span className="font-semibold">Local Storage</span>
+            <span className="font-semibold">{isAuthenticated ? "Cloud Storage" : "Local Storage"}</span>
             <span>
               {formatFileSize(usedBytes)} {quotaBytes && `/ ${formatFileSize(quotaBytes)}`}
             </span>
@@ -50,8 +50,9 @@ export function StorageBar({
             />
           </div>
           <p className="text-xs text-gray-500 font-serif">
-            Audio stored locally on this device
-            {isAuthenticated ? ". Metadata syncs across your devices." : " and clears on browser refresh."}
+            {isAuthenticated
+              ? "Audio stored securely in the cloud — play it back from any device you log into."
+              : "Audio stored locally on this device and clears on browser refresh."}
           </p>
         </div>
       </div>

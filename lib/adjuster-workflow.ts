@@ -566,6 +566,33 @@ export async function rebuildAudioWithScaledPauses({
   return newBuffer
 }
 
+/**
+ * Appends silence to the end of a buffer. Used as a fallback when the target duration is
+ * longer than pure pause-scaling can reach — e.g. audio with few or no natural pauses to
+ * stretch (calculateUniformScaledPauseDurations has nothing to work with if there are no
+ * silence regions at all). Unlike shrinking, which has a real floor set by how much pause
+ * time exists to remove, extending has no such limit: there's always room to add more
+ * silence, so this guarantees the target is reachable regardless of the source audio's shape.
+ */
+function appendTrailingSilence(audioContext: AudioContext, buffer: AudioBuffer, extraSeconds: number): AudioBuffer {
+  if (extraSeconds <= 0) return buffer
+
+  const extraSamples = Math.round(extraSeconds * buffer.sampleRate)
+  let extended: AudioBuffer
+  try {
+    extended = audioContext.createBuffer(buffer.numberOfChannels, buffer.length + extraSamples, buffer.sampleRate)
+  } catch (error) {
+    throw new Error(
+      `Failed to extend audio to the target duration. Memory limit likely exceeded. Try a shorter target duration.`,
+    )
+  }
+  for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+    extended.getChannelData(channel).set(buffer.getChannelData(channel))
+    // Remaining samples are already zero-initialized (silence) by createBuffer.
+  }
+  return extended
+}
+
 interface AdjusterWorkflowSettings {
   targetDurationSeconds: number
   silenceThreshold: number
@@ -651,7 +678,7 @@ export async function runAdjusterWorkflow({
   onStep("Rebuilding audio (step 3/4)...")
   onProgress(50)
 
-  const processedAudioBuffer = await rebuildAudioWithScaledPauses({
+  let processedAudioBuffer = await rebuildAudioWithScaledPauses({
     audioContext,
     buffer,
     regions: cappedSilenceRegions,
@@ -667,6 +694,16 @@ export async function runAdjusterWorkflow({
     },
     onMemoryWarning,
   })
+
+  // If we're extending beyond the original length, pure pause-scaling may not fully reach
+  // the target (e.g. little or no natural silence to stretch). Top up with trailing silence
+  // so extending always works — this never applies when shrinking, which has a real floor.
+  if (targetDurationSeconds > buffer.duration) {
+    const shortfallSeconds = targetDurationSeconds - processedAudioBuffer.duration
+    if (shortfallSeconds > 1) {
+      processedAudioBuffer = appendTrailingSilence(audioContext, processedAudioBuffer, shortfallSeconds)
+    }
+  }
 
   onStep("Compressing audio (step 4/4)...")
   onProgress(80)
