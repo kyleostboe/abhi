@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
-import { getAudioContext, encodeDistributionAudio, AUDIO_EXPORT_FORMAT_LABELS } from "@/lib/audio-utils"
+import { getAudioContext, encodeDistributionAudio, extensionForContainer } from "@/lib/audio-utils"
 import { MeditationLibrary, type SavedMeditation } from "@/lib/meditation-library"
 import { getPendingConvertIntent, clearPendingConvertIntent } from "@/lib/storage/pending-convert"
 
@@ -55,7 +55,7 @@ export function usePendingConvertAutoSave(onSaved?: (meditation: SavedMeditation
         if (cancelled) return
 
         const saved = await MeditationLibrary.saveMeditation({
-          title: `${original.title} (${AUDIO_EXPORT_FORMAT_LABELS[intent.targetFormat]})`,
+          title: `${original.title} (.${extensionForContainer(result.format.container)})`,
           originalFileName: original.originalFileName,
           processedAudioData: result.blob,
           duration: audioBuffer.duration,

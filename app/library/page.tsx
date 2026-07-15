@@ -339,9 +339,6 @@ export default function LibraryPage() {
   const [convertStep, setConvertStep] = useState("")
   const [convertProgress, setConvertProgress] = useState(0)
   const [savedDurationsMap, setSavedDurationsMap] = useState<Record<string, StoredMeditationDurations>>({})
-  const [lastPlayedDurationMap, setLastPlayedDurationMap] = useState<
-    Record<string, { label: string; seconds: number }>
-  >({})
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false)
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploadTitle, setUploadTitle] = useState("")
@@ -477,16 +474,6 @@ export default function LibraryPage() {
         const parsed = JSON.parse(storedDurations) as Record<string, StoredMeditationDurations>
         if (parsed && typeof parsed === "object") {
           setSavedDurationsMap(parsed)
-          const lastPlayed: Record<string, { label: string; seconds: number }> = {}
-          Object.entries(parsed).forEach(([meditationId, data]) => {
-            if (!data) return
-            const label = data.lastPlayedLabel
-            const seconds = data.lastPlayedSeconds
-            if (label && typeof seconds === "number" && Number.isFinite(seconds)) {
-              lastPlayed[meditationId] = { label, seconds }
-            }
-          })
-          setLastPlayedDurationMap(lastPlayed)
         }
       }
     } catch (error) {
@@ -616,19 +603,6 @@ export default function LibraryPage() {
     } catch (error) {
       console.warn("[v0] Failed to persist saved durations:", error)
     }
-  }, [savedDurationsMap])
-
-  useEffect(() => {
-    const nextMap: Record<string, { label: string; seconds: number }> = {}
-    Object.entries(savedDurationsMap).forEach(([meditationId, data]) => {
-      if (!data) return
-      const label = data.lastPlayedLabel
-      const seconds = data.lastPlayedSeconds
-      if (label && typeof seconds === "number" && Number.isFinite(seconds)) {
-        nextMap[meditationId] = { label, seconds }
-      }
-    })
-    setLastPlayedDurationMap(nextMap)
   }, [savedDurationsMap])
 
   const allMeditationsMap = useMemo(() => {
@@ -2124,7 +2098,7 @@ export default function LibraryPage() {
         } else {
           setConvertStep("Saving copy...")
           const saved = await MeditationLibrary.saveMeditation({
-            title: `${selectedMeditation.title} (${AUDIO_EXPORT_FORMAT_LABELS[convertFormat]})`,
+            title: `${selectedMeditation.title} (.${extensionForContainer(result.format.container)})`,
             originalFileName: selectedMeditation.originalFileName,
             processedAudioData: result.blob,
             duration: audioBuffer.duration,
@@ -2200,9 +2174,18 @@ export default function LibraryPage() {
     const handlePauseEvent = () => setIsAudioPlaying(false)
     const handleLoadedMetadata = () => {
       const playbackRate = currentPlaybackRate > 0 ? currentPlaybackRate : 1
-      const baseDuration = Number.isFinite(audio.duration)
-        ? audio.duration
-        : (baseMeditation?.duration ?? selectedMeditation?.duration ?? 0)
+      // selectedMeditation.duration is always set to the currently active duration mode's
+      // intended length (applyDurationMode/openMeditationPlayer keep it in sync), so it's a
+      // more reliable source than the audio element's own decoded duration — which can be
+      // briefly wrong or stale right after switching to a different variant's source, before
+      // the browser has actually finished loading it.
+      const intendedDuration = selectedMeditation?.duration
+      const baseDuration =
+        typeof intendedDuration === "number" && intendedDuration > 0
+          ? intendedDuration
+          : Number.isFinite(audio.duration)
+            ? audio.duration
+            : (baseMeditation?.duration ?? 0)
       const displayDuration = playbackRate > 0 ? baseDuration / playbackRate : baseDuration
       const displayTime = playbackRate > 0 ? audio.currentTime / playbackRate : audio.currentTime
       setPlayerDuration(displayDuration)
@@ -2726,22 +2709,19 @@ export default function LibraryPage() {
                     <div className="space-y-5">
                       {displayedGroups.map((group) => {
                         const { base, variants } = group
-                        const lastPlayedInfo = lastPlayedDurationMap[base.id]
                         const sortedVariants = [...variants].sort((a, b) => a.duration - b.duration)
-                        const variantSummaries = sortedVariants.map((variant) => {
-                          const rawLabel =
-                            typeof variant.metadata?.linkedVariantLabel === "string"
-                              ? variant.metadata.linkedVariantLabel.trim()
-                              : ""
-                          const label =
-                            rawLabel.length > 0 ? rawLabel : formatDurationLabelFromSeconds(variant.duration)
-                          return `${label} (${formatDuration(variant.duration)})`
-                        })
-                        const defaultDurationDisplay = [
+                        const durationDisplay = [
                           `Original (${formatDuration(base.duration)})`,
-                          ...variantSummaries,
+                          ...sortedVariants.map((variant) => formatDuration(variant.duration)),
                         ].join(", ")
-                        const durationDisplay = lastPlayedInfo ? lastPlayedInfo.label : defaultDurationDisplay
+                        const formatTags = Array.from(
+                          new Set(
+                            [base, ...sortedVariants]
+                              .map((item) => item.metadata?.audioFormat?.container)
+                              .filter((container): container is NonNullable<typeof container> => Boolean(container))
+                              .map((container) => extensionForContainer(container)),
+                          ),
+                        )
                         return (
                           <motion.div
                             key={base.id}
@@ -2763,7 +2743,14 @@ export default function LibraryPage() {
 
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-3 mb-2">
-                                    <h3 className="font-black text-gray-800 truncate text-xs">{base.title}</h3>
+                                    <h3 className="font-black text-gray-800 truncate text-xs">
+                                      {base.title}
+                                      {formatTags.length > 1 && (
+                                        <span className="ml-1 font-black text-gray-500">
+                                          {formatTags.map((ext) => `(.${ext})`).join("")}
+                                        </span>
+                                      )}
+                                    </h3>
                                   </div>
                                   <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
                                     <span className="flex items-center gap-1">
