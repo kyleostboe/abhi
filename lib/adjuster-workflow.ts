@@ -287,16 +287,27 @@ export function suggestSilenceThreshold(buffer: AudioBuffer): SuggestedSilenceTh
     }
   }
 
-  const thresholdLog = minLog + (bestBin + 0.5) * binWidth
-  const belowLog = logValues.filter((v) => v <= thresholdLog)
-  const aboveLog = logValues.filter((v) => v > thresholdLog)
+  const otsuLog = minLog + (bestBin + 0.5) * binWidth
+  const belowLog = logValues.filter((v) => v <= otsuLog)
+  const aboveLog = logValues.filter((v) => v > otsuLog)
   const average = (values: number[], fallback: number) =>
     values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : fallback
 
+  const noiseLog = average(belowLog, minLog)
+  const speechLog = average(aboveLog, maxLog)
+
+  // Word endings decay gradually rather than dropping straight to the noise floor, so
+  // windows partway through that decay land between the two clusters. Otsu's raw split
+  // point can sit well up toward the speech cluster, which risks classifying those
+  // still-audible tails as silence and clipping words. Pull the suggestion back toward
+  // the noise floor so only genuinely quiet windows fall below the recommended threshold.
+  const NOISE_BIAS = 0.2
+  const thresholdLog = noiseLog + NOISE_BIAS * (otsuLog - noiseLog)
+
   return {
     threshold: 10 ** thresholdLog,
-    noiseFloor: 10 ** average(belowLog, minLog),
-    speechLevel: 10 ** average(aboveLog, maxLog),
+    noiseFloor: 10 ** noiseLog,
+    speechLevel: 10 ** speechLog,
   }
 }
 
