@@ -19,6 +19,8 @@ import {
   Volume2,
   Upload,
   RefreshCw,
+  X,
+  RotateCcw,
 } from "lucide-react" // Import Copy icon
 import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -40,6 +42,7 @@ import {
   encodeDistributionAudio,
   extensionForContainer,
   AUDIO_EXPORT_FORMAT_LABELS,
+  AUDIO_EXPORT_FORMAT_SHORT_LABELS,
   type AudioExportFormat,
   type AudioFormatMetadata,
 } from "@/lib/audio-utils" // Import from audio-utils
@@ -581,6 +584,7 @@ export default function Home() {
   const [processedUrl, setProcessedUrl] = useState<string>("")
   const [pausesAdjusted, setPausesAdjusted] = useState<number>(0)
   const [isProcessing, setIsProcessing] = useState<boolean>(false) // Corrected type to boolean
+  const [loadingDots, setLoadingDots] = useState<number>(1)
   const [processingProgress, setProcessingProgress] = useState<number>(0)
   const [processingStep, setProcessingStep] = useState<string>("")
   const [durationLimits, setDurationLimits] = useState<{ min: number; max: number; trueMinSeconds: number } | null>(null)
@@ -877,10 +881,10 @@ export default function Home() {
   }, [isAuthenticated, toast, saveOriginalAndConvertedCopy])
 
   // Restore both the tool draft (file/settings/timeline the user had configured) and the
-  // persisted output (processed/generated audio) after a reload or an auth redirect
-  // round-trip, so logging in via Save to Library or Convert doesn't lose the user's work.
-  // The draft is a one-shot restore — consumed and cleared here — so a stale draft from a much
-  // earlier session never silently overrides what the user is about to do next.
+  // persisted output (processed/generated audio) on mount, so navigating away (Library,
+  // auth redirects, a full reload) and back doesn't lose the user's work. The draft is kept
+  // continuously in sync by the debounced autosave effect below, so restoring it here never
+  // goes stale — it's cleared only when the user explicitly resets the tool.
   useEffect(() => {
     // No module/ref guard here on purpose: this app's root layout mounts its client tree
     // twice on a fresh navigation (observed even in production builds, so not a StrictMode
@@ -910,7 +914,10 @@ export default function Home() {
           setContentSpeedMultiplier(adjusterDraft.meta.contentSpeedMultiplier)
           setExportFormat(adjusterDraft.meta.exportFormat)
           setLoadedLibraryContext(adjusterDraft.meta.loadedLibraryContext)
-          setTimeout(() => void clearAdjusterDraft(), 3000)
+          // Not cleared here: the draft is now a continuously-refreshed autosave (see the
+          // debounced save effect below), not a one-shot value consumed only after an auth
+          // redirect, so restoring it shouldn't also delete it. It's cleared explicitly when
+          // the user resets the tool or loads a genuinely different file.
         }
 
         if (adjusterSession) {
@@ -935,7 +942,8 @@ export default function Home() {
           setCreatorDurationDraft(creatorDraft.creatorDurationDraft)
           setExportFormat(creatorDraft.exportFormat)
           setTimelineEvents(creatorDraft.timelineEvents)
-          setTimeout(() => void clearCreatorDraft(), 3000)
+          // See the adjusterDraft branch above: no longer cleared on restore, since it's now a
+          // continuously-refreshed autosave rather than a one-shot value.
         }
 
         if (creatorSession) {
@@ -1126,6 +1134,18 @@ export default function Home() {
     creatorDurationDraft,
     timelineEvents,
   ])
+
+  // Keep the draft continuously up to date as the user works — not just right before an auth
+  // redirect — so navigating away (e.g. to the Library) and back doesn't lose in-progress input
+  // state. Debounced so rapid changes (dragging a slider, typing) don't hammer IndexedDB.
+  useEffect(() => {
+    const hasContent = (activeMode === "adjuster" && !!file) || (activeMode === "creator" && timelineEvents.length > 0)
+    if (!hasContent) return
+    const timeout = setTimeout(() => {
+      void saveCurrentToolDraft()
+    }, 800)
+    return () => clearTimeout(timeout)
+  }, [saveCurrentToolDraft, activeMode, file, timelineEvents.length])
 
   const addTimelineItem = useCallback((item: Instruction | SoundCue, type: "instruction" | "sound") => {
     const newItem: TimelineItem = {
@@ -3307,6 +3327,67 @@ export default function Home() {
     })
   }
 
+  const handleResetAdjuster = () => {
+    if (originalUrl) URL.revokeObjectURL(originalUrl)
+    if (processedUrl) URL.revokeObjectURL(processedUrl)
+    setFile(null)
+    setDisplayedFileName(null)
+    setOriginalBuffer(null)
+    setProcessedBufferState(null)
+    setOriginalUrl("")
+    setProcessedUrl("")
+    setAudioAnalysis(null)
+    setActualDuration(null)
+    setAnalysisProgress(null)
+    setDurationLimits(null)
+    setIsProcessingComplete(false)
+    setStatus(null)
+    setMemoryWarning(false)
+    setPausesAdjusted(0)
+    setProcessingProgress(0)
+    setProcessingStep("")
+    setProcessedDistributionBlob(null)
+    setProcessedDistributionMetadata(null)
+    setProcessedFileSize(0)
+    setQuickAdjustRange(null)
+    setLoadedLibraryContext(null)
+    setTargetDuration(20)
+    setSilenceThreshold(0.025)
+    setMinSilenceDuration(1)
+    setMaxSilenceDuration(0)
+    setContentSpeedMultiplier(1.0)
+    void clearToolSession("adjuster")
+    void clearAdjusterDraft()
+    toast({ title: "Adjuster reset", description: "Ready for a new file." })
+  }
+
+  const handleResetCreator = () => {
+    if (generatedAudioUrl) URL.revokeObjectURL(generatedAudioUrl)
+    setMeditationTitle("My Custom Meditation")
+    setCreatorTotalDuration(DEFAULT_CREATOR_DURATION_SECONDS)
+    setCreatorDurationDraft(DEFAULT_CREATOR_DURATION_SECONDS)
+    setCreatorTimelineOriginalDuration(null)
+    setTimelineEvents([])
+    setGeneratedAudioUrl(null)
+    setGeneratedDistributionBlob(null)
+    setGeneratedDistributionMetadata(null)
+    setGeneratedAudioFileSize(0)
+    setCustomInstructionText("")
+    setSelectedSoundCue(null)
+    setSelectedNotes([])
+    void clearToolSession("creator")
+    void clearCreatorDraft()
+    toast({ title: "Creator reset", description: "Timeline cleared." })
+  }
+
+  useEffect(() => {
+    if (!isProcessing && !isGeneratingAudio) return
+    const interval = setInterval(() => {
+      setLoadingDots((d) => (d % 3) + 1)
+    }, 400)
+    return () => clearInterval(interval)
+  }, [isProcessing, isGeneratingAudio])
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-0 md:p-8 pt-20 md:pt-24">
       <Navigation showProfileButton />
@@ -3610,6 +3691,14 @@ export default function Home() {
                                 {file.type}
                               </motion.div>
                             </div>
+                            <button
+                              type="button"
+                              onClick={handleResetAdjuster}
+                              title="Clear file and start over"
+                              className="ml-2 shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
                           </div>
                         </div>
                       </motion.div>
@@ -3928,9 +4017,9 @@ export default function Home() {
                         type="button"
                         onClick={handleProcessAudio}
                         disabled={isProcessing || !originalBuffer}
-                        className="h-10 truncate px-4 text-left font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
+                        className="h-10 truncate px-4 text-left text-sm font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
                       >
-                        {isProcessing ? "Processing..." : "Process Audio"}
+                        {isProcessing ? `Processing${".".repeat(loadingDots)}` : "Process Audio"}
                       </button>
                       <Select
                         value={exportFormat}
@@ -3939,14 +4028,14 @@ export default function Home() {
                         <SelectTrigger
                           id="adjuster-export-format"
                           aria-label="Export format"
-                          className="h-7 w-32 shrink-0 justify-center gap-1.5 rounded-[7px] border-0 bg-transparent px-2.5 py-0 text-[11px] font-serif font-black text-white/90 shadow-[inset_0_2px_5px_rgba(0,0,0,0.45)] ring-offset-0 focus:ring-0 focus:ring-offset-0"
+                          className="h-7 w-20 shrink-0 justify-center gap-1.5 rounded-[7px] border-0 bg-transparent px-2.5 py-0 text-[11px] font-serif font-black text-white/90 shadow-[inset_0_2px_5px_rgba(0,0,0,0.45)] ring-offset-0 focus:ring-0 focus:ring-offset-0"
                         >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map((format) => (
+                          {(Object.keys(AUDIO_EXPORT_FORMAT_SHORT_LABELS) as AudioExportFormat[]).map((format) => (
                             <SelectItem key={format} value={format}>
-                              {AUDIO_EXPORT_FORMAT_LABELS[format]}
+                              {AUDIO_EXPORT_FORMAT_SHORT_LABELS[format]}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -4280,6 +4369,17 @@ export default function Home() {
                             type="button"
                             size="sm"
                             variant="secondary"
+                            onClick={handleResetCreator}
+                            disabled={timelineEvents.length === 0 && !generatedAudioUrl}
+                            title="Reset the Creator to blank"
+                            className="bg-white/10 rounded-[8px] text-white font-serif font-black text-xs hover:bg-white/20 disabled:opacity-40"
+                          >
+                            <RotateCcw className="h-4 w-4 mr-0" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
                             onClick={handleTimelineUploadClick}
                             className="bg-white/10 rounded-[8px] text-white font-serif font-black text-xs hover:bg-white/20 "
                           >
@@ -4312,9 +4412,9 @@ export default function Home() {
                         type="button"
                         onClick={handleExportAudio}
                         disabled={isGeneratingAudio || timelineEvents.length === 0}
-                        className="h-10 truncate px-4 text-left font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
+                        className="h-10 truncate px-4 text-left text-sm font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
                       >
-                        {isGeneratingAudio ? "Generating..." : "Generate Audio"}
+                        {isGeneratingAudio ? `Generating${".".repeat(loadingDots)}` : "Generate Audio"}
                       </button>
                       <Select
                         value={exportFormat}
@@ -4323,14 +4423,14 @@ export default function Home() {
                         <SelectTrigger
                           id="creator-export-format"
                           aria-label="Export format"
-                          className="h-7 w-32 shrink-0 justify-center gap-1.5 rounded-[7px] border-0 bg-transparent px-2.5 py-0 text-[11px] font-serif font-black text-white/90 shadow-[inset_0_2px_5px_rgba(0,0,0,0.45)] ring-offset-0 focus:ring-0 focus:ring-offset-0"
+                          className="h-7 w-20 shrink-0 justify-center gap-1.5 rounded-[7px] border-0 bg-transparent px-2.5 py-0 text-[11px] font-serif font-black text-white/90 shadow-[inset_0_2px_5px_rgba(0,0,0,0.45)] ring-offset-0 focus:ring-0 focus:ring-offset-0"
                         >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {(Object.keys(AUDIO_EXPORT_FORMAT_LABELS) as AudioExportFormat[]).map((format) => (
+                          {(Object.keys(AUDIO_EXPORT_FORMAT_SHORT_LABELS) as AudioExportFormat[]).map((format) => (
                             <SelectItem key={format} value={format}>
-                              {AUDIO_EXPORT_FORMAT_LABELS[format]}
+                              {AUDIO_EXPORT_FORMAT_SHORT_LABELS[format]}
                             </SelectItem>
                           ))}
                         </SelectContent>
