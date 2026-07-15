@@ -173,6 +173,15 @@ export const AUDIO_EXPORT_FORMAT_LABELS: Record<AudioExportFormat, string> = {
   mp3: "MP3",
 }
 
+// Compact extension-style labels for space-constrained selectors (e.g. inline with the
+// Process/Generate Audio buttons), where the full descriptive label doesn't fit.
+export const AUDIO_EXPORT_FORMAT_SHORT_LABELS: Record<AudioExportFormat, string> = {
+  opus: ".ogg",
+  aac: ".m4a",
+  wav: ".wav",
+  mp3: ".mp3",
+}
+
 export const extensionForContainer = (container: AudioFormatMetadata["container"] | undefined | null): string => {
   switch (container) {
     case "ogg":
