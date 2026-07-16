@@ -16,7 +16,7 @@ export function AuthButtons({ onLogin, className }: AuthButtonsProps) {
         data-id="login-button"
         href="/auth/login"
         onClick={onLogin}
-        className="inline-flex items-center justify-center gap-1.5 font-black font-serif tracking-tight rounded-[11px] py-[7px] px-4 bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 shadow-md text-white transition-shadow duration-200 ease-in-out hover:shadow-none active:shadow-none text-sm"
+        className="inline-flex items-center justify-center gap-1.5 font-black font-serif tracking-tight rounded-[11px] py-[7px] px-4 bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 shadow-md text-white transition-shadow duration-200 ease-in-out hover:shadow-none active:shadow-none text-xs"
       >
         <LogIn className="w-4 h-4" />
         Login / Sign Up
