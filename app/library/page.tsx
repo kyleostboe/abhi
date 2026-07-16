@@ -2572,7 +2572,7 @@ export default function LibraryPage() {
                           }}
                         >
                           <DialogTrigger asChild>
-                            <Button className="w-44 py-3 bg-gradient-to-br from-gray-600 to-gray-500 rounded-[9px] text-white shadow-md hover:shadow-none text-xs font-black">
+                            <Button className="w-44 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105">
                               Upload Meditation
                             </Button>
                           </DialogTrigger>

@@ -294,7 +294,7 @@ audio {
   border-radius: 30px;
   height: 40px;
   background-color: transparent !important;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   transition: all 0.3s ease;
 }
 
