@@ -4011,15 +4011,16 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <div className="flex items-center gap-2 mx-6 lg:mx-auto lg:max-w-[calc(50%-56px)] rounded-[11px] bg-gradient-to-br from-gray-600 to-gray-500 pr-2 shadow-md transition-all duration-500 hover:shadow-none">
+                    <div className="relative flex items-center gap-2 mx-6 lg:mx-auto lg:max-w-[calc(50%-56px)] rounded-[11px] bg-gradient-to-br from-gray-600 to-gray-500 pr-2 shadow-md transition-all duration-500 hover:shadow-none">
                       <button
                         type="button"
                         onClick={handleProcessAudio}
                         disabled={isProcessing || !originalBuffer}
-                        className="h-10 flex-1 truncate px-4 text-center text-sm font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
+                        className="absolute inset-0 z-0 flex items-center justify-center truncate px-4 text-sm font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
                       >
                         {isProcessing ? `Processing${".".repeat(loadingDots)}` : "Process Audio"}
                       </button>
+                      <div className="h-10 flex-1" aria-hidden="true" />
                       <Select
                         value={exportFormat}
                         onValueChange={(value) => setExportFormat(value as AudioExportFormat)}
@@ -4027,7 +4028,7 @@ export default function Home() {
                         <SelectTrigger
                           id="adjuster-export-format"
                           aria-label="Export format"
-                          className="h-7 w-14 shrink-0 justify-center rounded-[7px] border-0 bg-transparent px-2 py-0 text-[11px] font-serif font-black text-white/90 shadow-[inset_0_2px_5px_rgba(0,0,0,0.45)] ring-offset-0 focus:ring-0 focus:ring-offset-0 [&>svg]:hidden"
+                          className="relative z-10 h-7 w-14 shrink-0 justify-center rounded-[7px] border-0 bg-transparent px-2 py-0 text-[11px] font-serif font-black text-white/90 shadow-[inset_0_2px_5px_rgba(0,0,0,0.45)] ring-offset-0 focus:ring-0 focus:ring-offset-0 [&>svg]:hidden"
                         >
                           <SelectValue />
                         </SelectTrigger>
@@ -4406,15 +4407,16 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
                   >
-                    <div className="flex items-center gap-2 mx-6 lg:mx-auto lg:max-w-[calc(50%-56px)] rounded-[11px] bg-gradient-to-br from-gray-600 to-gray-500 pr-2 shadow-md transition-all duration-500 hover:shadow-none">
+                    <div className="relative flex items-center gap-2 mx-6 lg:mx-auto lg:max-w-[calc(50%-56px)] rounded-[11px] bg-gradient-to-br from-gray-600 to-gray-500 pr-2 shadow-md transition-all duration-500 hover:shadow-none">
                       <button
                         type="button"
                         onClick={handleExportAudio}
                         disabled={isGeneratingAudio || timelineEvents.length === 0}
-                        className="h-10 flex-1 truncate px-4 text-center text-sm font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
+                        className="absolute inset-0 z-0 flex items-center justify-center truncate px-4 text-sm font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
                       >
                         {isGeneratingAudio ? `Generating${".".repeat(loadingDots)}` : "Generate Audio"}
                       </button>
+                      <div className="h-10 flex-1" aria-hidden="true" />
                       <Select
                         value={exportFormat}
                         onValueChange={(value) => setExportFormat(value as AudioExportFormat)}
@@ -4422,7 +4424,7 @@ export default function Home() {
                         <SelectTrigger
                           id="creator-export-format"
                           aria-label="Export format"
-                          className="h-7 w-14 shrink-0 justify-center rounded-[7px] border-0 bg-transparent px-2 py-0 text-[11px] font-serif font-black text-white/90 shadow-[inset_0_2px_5px_rgba(0,0,0,0.45)] ring-offset-0 focus:ring-0 focus:ring-offset-0 [&>svg]:hidden"
+                          className="relative z-10 h-7 w-14 shrink-0 justify-center rounded-[7px] border-0 bg-transparent px-2 py-0 text-[11px] font-serif font-black text-white/90 shadow-[inset_0_2px_5px_rgba(0,0,0,0.45)] ring-offset-0 focus:ring-0 focus:ring-offset-0 [&>svg]:hidden"
                         >
                           <SelectValue />
                         </SelectTrigger>
