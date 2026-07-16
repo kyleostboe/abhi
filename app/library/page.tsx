@@ -3769,7 +3769,7 @@ export default function LibraryPage() {
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button
-                                      className="flex-1 shadow-md bg-gradient-to-b from-gray-600 via-gray-500 to-purple-300 rounded-[10px] hover:shadow-none text-white font-black text-xs"
+                                      className="flex-1 shadow-md bg-gradient-to-b from-gray-600 via-gray-500 to-[#9b8da3] rounded-[10px] hover:shadow-none text-white font-black text-xs"
                                       disabled={isQuickAdjustProcessing}
                                     >
                                       Open In

@@ -4087,7 +4087,7 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <div className="relative flex items-center gap-2 mx-6 lg:mx-auto lg:max-w-[calc(50%-56px)] rounded-[11px] bg-gradient-to-b from-gray-600 via-gray-500 to-purple-300 pr-2 shadow-md transition-all duration-500 hover:shadow-none">
+                    <div className="relative flex items-center gap-2 mx-6 lg:mx-auto lg:max-w-[calc(50%-56px)] rounded-[11px] bg-gradient-to-b from-gray-600 via-gray-500 to-[#9b8da3] pr-2 shadow-md transition-all duration-500 hover:shadow-none">
                       <button
                         type="button"
                         onClick={handleProcessAudio}
@@ -4129,7 +4129,7 @@ export default function Home() {
                       <div className="rounded-sm p-3 px-0 shadow-none border-gray-500 bg-transparent border-0 mb-0">
                         <audio controls className="w-full" src={processedUrl}></audio>
                       </div>
-                      <div className="px-3.5 text-center tracking-tight">
+                      <div className="px-3.5 text-center tracking-tight flex flex-row flex-nowrap items-center justify-center gap-2">
                         <SaveMeditationDialog
                           audioUrl={processedUrl}
                           distributionBlob={processedDistributionBlob ?? undefined}
@@ -4150,7 +4150,7 @@ export default function Home() {
                         >
                           <Button
                             disabled={!processedDistributionBlob}
-                            className="w-44 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
+                            className="w-auto px-3 sm:w-44 sm:px-4 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
                           >
                             <BookmarkPlus className="h-4 w-4 mr-2" />
                             Save to Library
@@ -4159,7 +4159,7 @@ export default function Home() {
                         <Button
                           disabled={!processedDistributionBlob || isToolConverting}
                           onClick={() => setToolConvertContext("adjuster")}
-                          className="w-44 py-3 ml-0 mt-2 sm:mt-0 sm:ml-2 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
+                          className="w-auto px-3 sm:w-44 sm:px-4 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
                         >
                           <RefreshCw className="h-4 w-4 mr-2" />
                           Convert Format
@@ -4208,7 +4208,7 @@ export default function Home() {
                               value={meditationTitle}
                               onChange={handleMeditationTitleChange}
                               placeholder="Title:"
-                              className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-xs font-black text-gray-600 border-0 shadow-lg h-9 mt-2"
+                              className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-xs font-black text-gray-600 border-0 shadow-2xl h-9 mt-2"
                             />
                           </div>
                         </div>
@@ -4483,7 +4483,7 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
                   >
-                    <div className="relative flex items-center gap-2 mx-6 lg:mx-auto lg:max-w-[calc(50%-56px)] rounded-[11px] bg-gradient-to-b from-gray-600 via-gray-500 to-purple-300 pr-2 shadow-md transition-all duration-500 hover:shadow-none">
+                    <div className="relative flex items-center gap-2 mx-6 lg:mx-auto lg:max-w-[calc(50%-56px)] rounded-[11px] bg-gradient-to-b from-gray-600 via-gray-500 to-[#9b8da3] pr-2 shadow-md transition-all duration-500 hover:shadow-none">
                       <button
                         type="button"
                         onClick={handleExportAudio}
@@ -4525,7 +4525,7 @@ export default function Home() {
                       <div className="rounded-sm p-3 px-0 shadow-none border-gray-500 bg-transparent border-0 mb-0">
                         <audio ref={creatorAudioRef} controls className="w-full" src={generatedAudioUrl}></audio>
                       </div>
-                      <div className="px-3.5 text-center tracking-tight">
+                      <div className="px-3.5 text-center tracking-tight flex flex-row flex-nowrap items-center justify-center gap-2">
                         <SaveMeditationDialog
                           audioUrl={generatedAudioUrl}
                           distributionBlob={generatedDistributionBlob ?? undefined}
@@ -4543,7 +4543,7 @@ export default function Home() {
                         >
                           <Button
                             disabled={!generatedDistributionBlob}
-                            className="w-44 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
+                            className="w-auto px-3 sm:w-44 sm:px-4 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
                           >
                             <BookmarkPlus className="h-4 w-4 mr-2" />
                             Save to Library
@@ -4552,7 +4552,7 @@ export default function Home() {
                         <Button
                           disabled={!generatedDistributionBlob || isToolConverting}
                           onClick={() => setToolConvertContext("creator")}
-                          className="w-44 py-3 ml-0 mt-2 sm:mt-0 sm:ml-2 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
+                          className="w-auto px-3 sm:w-44 sm:px-4 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
                         >
                           <RefreshCw className="h-4 w-4 mr-2" />
                           Convert Format
