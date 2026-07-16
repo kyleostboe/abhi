@@ -70,6 +70,11 @@ import {
   getPendingConvertIntent,
   clearPendingConvertIntent,
 } from "@/lib/storage/pending-convert"
+import {
+  savePendingReuploadFile,
+  getPendingReuploadFile,
+  clearPendingReuploadFile,
+} from "@/lib/storage/pending-reupload"
 import { usePendingConvertAutoSave } from "@/hooks/use-pending-convert-autosave"
 import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
@@ -567,6 +572,12 @@ export default function Home() {
   const [shouldScrollToAdjuster, setShouldScrollToAdjuster] = useState(false)
   const [activeTab, setActiveTab] = useState<"adjuster" | "creator">("adjuster") // State for tab navigation
 
+  // == States for reuploading over an already-loaded Adjuster file ==
+  // A new file selected/dropped while `file` is already set — held here until the user
+  // chooses to keep both (save the current one first) or replace it outright.
+  const [pendingReuploadFile, setPendingReuploadFile] = useState<File | null>(null)
+  const [isReuploadSaveDialogOpen, setIsReuploadSaveDialogOpen] = useState(false)
+
   // == States for Length Adjuster ==
   const [file, setFile] = useState<File | null>(null)
   const [displayedFileName, setDisplayedFileName] = useState<string | null>(null)
@@ -933,6 +944,19 @@ export default function Home() {
             // handleFile() above wiped the persisted session as a side effect of loading the
             // restored file; put it back so a later reload can still find it.
             void saveToolSession("adjuster", adjusterSession.meta, adjusterSession.audio).catch(() => {})
+          }
+        }
+
+        // A guest who reuploaded and chose "create account & keep both" gets sent to sign-up
+        // with the new file stashed and the old one preserved via the draft restore above.
+        // Now that they're back with the old file restored, reopen the Save dialog for it so
+        // they can finish keeping it before the stashed new file takes its place.
+        if (adjusterDraft) {
+          const pendingReupload = await getPendingReuploadFile()
+          if (pendingReupload) {
+            setPendingReuploadFile(pendingReupload)
+            setIsReuploadSaveDialogOpen(true)
+            void clearPendingReuploadFile()
           }
         }
 
@@ -2676,9 +2700,19 @@ export default function Home() {
     }
   }
 
+  // A file already being loaded means this is a reupload, not a first upload — ask what to do
+  // with the current one instead of silently discarding it.
+  const handleIncomingFile = (selectedFile: File) => {
+    if (file) {
+      setPendingReuploadFile(selectedFile)
+      return
+    }
+    void handleFile(selectedFile)
+  }
+
   const handleFileSelectAction = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
-    if (selectedFile) void handleFile(selectedFile)
+    if (selectedFile) handleIncomingFile(selectedFile)
     if (e.target) e.target.value = ""
   }
 
@@ -2696,7 +2730,31 @@ export default function Home() {
     e.preventDefault()
     if (uploadAreaRef.current) uploadAreaRef.current.classList.remove("border-primary")
     const files = e.dataTransfer.files
-    if (files.length > 0) void handleFile(files[0])
+    if (files.length > 0) handleIncomingFile(files[0])
+  }
+
+  // Discards the current file outright and loads the reuploaded one in its place.
+  const handleReuploadReplace = () => {
+    const next = pendingReuploadFile
+    setPendingReuploadFile(null)
+    if (next) void handleFile(next)
+  }
+
+  // Guest chose to keep both: nothing to save yet without an account, so just stash the new
+  // file's bytes and send them to sign-up. The currently-loaded file survives the redirect on
+  // its own via the continuous tool-draft autosave; on return, the mount-restore effect below
+  // notices the stashed file and reopens the Save dialog for the (now-restored) old one.
+  const handleReuploadKeepBothAsGuest = async () => {
+    const next = pendingReuploadFile
+    if (!next) return
+    try {
+      await savePendingReuploadFile(next)
+      await saveCurrentToolDraft()
+    } catch (error) {
+      console.warn("[v0] Unable to stash pending reupload file:", error)
+    }
+    setPendingReuploadFile(null)
+    router.push(`/auth/sign-up?returnTo=${encodeURIComponent(window.location.pathname)}`)
   }
 
   useEffect(() => {
@@ -3614,42 +3672,44 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Upload Area */}
-                  <motion.div
-                    whileHover={{ scale: 1.005 }}
-                    whileTap={{ scale: 0.995 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                    ref={uploadAreaRef}
-                    className="overflow-hidden border-none bg-white rounded-2xl mb-5 cursor-pointer transition-all duration-300 shadow-none hover:shadow-lg "
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={handleDragOverAction}
-                    onDragLeave={handleDragLeaveAction}
-                    onDrop={handleDropAction}
-                  >
-                    <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
-                      <div className="p-10 md:p-16 text-center bg-white rounded-sm shadow-none tracking-tight md:py-10 md:px-10 border-4 border-double border-stone-300">
-                        <motion.div
-                          initial={{ opacity: 0, y: 5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.2 }}
-                        >
-                          <div className="font-serif font-black text-gray-600 mb-[3px] tracking-tight text-sm">
-                            Drag &amp; drop your audio file here or click to browse
-                          </div>
-                          <div className="font-serif text-xs text-gray-500 tracking-tight">
-                            Supports MP3, WAV, OGG, and M4A files {"(Max: " + (isMobileDevice ? "50MB" : "500MB") + ")"}
-                          </div>
-                        </motion.div>
+                  {/* Upload Area: replaced by the uploaded-file card below once a file is loaded */}
+                  {!file && (
+                    <motion.div
+                      whileHover={{ scale: 1.005 }}
+                      whileTap={{ scale: 0.995 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                      ref={uploadAreaRef}
+                      className="overflow-hidden border-none bg-white rounded-2xl mb-5 cursor-pointer transition-all duration-300 shadow-none hover:shadow-lg "
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={handleDragOverAction}
+                      onDragLeave={handleDragLeaveAction}
+                      onDrop={handleDropAction}
+                    >
+                      <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
+                        <div className="p-10 md:p-16 text-center bg-white rounded-sm shadow-none tracking-tight md:py-10 md:px-10 border-4 border-double border-stone-300">
+                          <motion.div
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                          >
+                            <div className="font-serif font-black text-gray-600 mb-[3px] tracking-tight text-sm">
+                              Drag &amp; drop your audio file here or click to browse
+                            </div>
+                            <div className="font-serif text-xs text-gray-500 tracking-tight">
+                              Supports MP3, WAV, OGG, and M4A files {"(Max: " + (isMobileDevice ? "50MB" : "500MB") + ")"}
+                            </div>
+                          </motion.div>
+                        </div>
                       </div>
-                    </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      className="hidden"
-                      accept=".mp3,.wav,.ogg,.m4a,audio/*"
-                      onChange={handleFileSelectAction}
-                    />
-                  </motion.div>
+                    </motion.div>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept=".mp3,.wav,.ogg,.m4a,audio/*"
+                    onChange={handleFileSelectAction}
+                  />
 
                   <AnimatePresence>
                     {file && (
@@ -3659,6 +3719,8 @@ export default function Home() {
                         exit={{ opacity: 0, y: -10, height: 0 }}
                         transition={{ type: "spring", stiffness: 500, damping: 30 }}
                         className="p-0.5 overflow-hidden bg-gradient-to-tl from-gray-500 to-stone-300 py-1 rounded-sm px-[5px] mb-3.5 shadow-none"
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={handleDropAction}
                       >
                         <div className="bg-white p-5 py-4 rounded-[10px] shadow-nonee border-4 border-double border-stone-300">
                           <div className="flex items-center">
@@ -3692,9 +3754,17 @@ export default function Home() {
                             </div>
                             <button
                               type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              title="Reupload a different file"
+                              className="ml-2 shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                            >
+                              <Upload className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
                               onClick={handleResetAdjuster}
                               title="Clear file and start over"
-                              className="ml-2 shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                              className="ml-1 shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                             >
                               <X className="h-4 w-4" />
                             </button>
@@ -4566,6 +4636,92 @@ export default function Home() {
             </div>
           </DialogContent>
         </Dialog>
+
+        <Dialog
+          open={pendingReuploadFile !== null && !isReuploadSaveDialogOpen}
+          onOpenChange={(open) => {
+            if (!open) setPendingReuploadFile(null)
+          }}
+        >
+          <DialogContent className="sm:max-w-md font-serif">
+            <DialogHeader>
+              <DialogTitle>Replace the current meditation?</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {isAuthenticated ? (
+                <div className="space-y-2">
+                  <p className="text-[11px] text-gray-500">
+                    You already have a meditation loaded here. Save it to your library before switching, or replace
+                    it with the new file.
+                  </p>
+                  <Button className="w-full font-black text-xs" onClick={() => setIsReuploadSaveDialogOpen(true)}>
+                    Save current &amp; keep both
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full font-black text-xs"
+                    onClick={handleReuploadReplace}
+                  >
+                    Replace it
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-[11px] text-gray-500">
+                    As a guest, you can replace what&apos;s loaded with the new file, or create a free account to
+                    keep both — we&apos;ll hang onto the current meditation and have it ready to save the moment
+                    you&apos;re back.
+                  </p>
+                  <Button className="w-full font-black text-xs" onClick={() => void handleReuploadKeepBothAsGuest()}>
+                    Create account &amp; keep both
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full font-black text-xs"
+                    onClick={handleReuploadReplace}
+                  >
+                    Replace it
+                  </Button>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <SaveMeditationDialog
+          hideTrigger
+          open={isReuploadSaveDialogOpen}
+          onOpenChange={(open) => {
+            setIsReuploadSaveDialogOpen(open)
+          }}
+          audioUrl={processedUrl || originalUrl}
+          distributionBlob={processedDistributionBlob ?? file ?? undefined}
+          distributionFormat={processedUrl ? (processedDistributionMetadata ?? undefined) : undefined}
+          originalFileName={file?.name || displayedFileName || "meditation"}
+          duration={processedUrl ? actualDuration || targetDuration * 60 : originalBuffer?.duration || 0}
+          source="adjuster"
+          metadata={
+            processedUrl
+              ? {
+                  targetDuration,
+                  pausesAdjusted,
+                  audioFormat: processedDistributionMetadata ?? undefined,
+                  timeline: exportableTimelineMetadata.length > 0 ? exportableTimelineMetadata : undefined,
+                }
+              : analysisLowerBoundSeconds
+                ? { quickAdjust: { range: { minSeconds: analysisLowerBoundSeconds } } }
+                : {}
+          }
+          existingMeditationId={loadedLibraryContext?.id}
+          existingMeditationTitle={loadedLibraryContext?.title}
+          existingMeditationDuration={loadedLibraryContext?.duration}
+          onBeforeAuthRedirect={saveCurrentToolDraft}
+          onSaved={() => {
+            const next = pendingReuploadFile
+            setPendingReuploadFile(null)
+            if (next) void handleFile(next)
+          }}
+        />
       </div>
     </div>
   )

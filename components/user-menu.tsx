@@ -46,7 +46,7 @@ export function UserMenu({ showLoginButton = false, buttonVariant = "default" }:
 
   const triggerClasses =
     buttonVariant === "nav"
-      ? "relative h-9 w-9 rounded-full bg-white shadow-[0_10px_24px_-4px_rgba(0,0,0,0.25)] transition-shadow hover:shadow-lg hover:bg-white"
+      ? "relative h-9 w-9 rounded-full bg-white shadow-[0_8px_20px_-6px_rgba(0,0,0,0.14)] transition-shadow hover:shadow-lg hover:bg-white"
       : "relative h-9 w-9 rounded-full bg-white shadow-[0_18px_38px_rgba(0,0,0,0.2)] transition-shadow hover:shadow-none hover:bg-white/90"
 
   return (

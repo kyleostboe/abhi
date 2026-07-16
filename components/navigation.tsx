@@ -17,7 +17,7 @@ export function Navigation({ showProfileButton = false }: NavigationProps) {
   return (
     <nav className="fixed top-0 left-0 right-0 z-40 flex justify-center py-3.5 px-4 pb-3.5">
       <div className="relative flex w-full max-w-4xl items-center justify-center">
-        <ul className="flex rounded-sm bg-white px-2 space-x-0 shadow-[0_10px_24px_-4px_rgba(0,0,0,0.25)] py-[13px]">
+        <ul className="flex rounded-sm bg-white px-2 space-x-0 shadow-[0_8px_20px_-6px_rgba(0,0,0,0.14)] py-[13px]">
           <li>
             <Link
               href="/"
