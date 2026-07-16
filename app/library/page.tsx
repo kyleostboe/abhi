@@ -23,6 +23,7 @@ import {
   getAudioContext,
   extensionForContainer,
   encodeDistributionAudio,
+  decodeAudioBlob,
   AUDIO_EXPORT_FORMAT_LABELS,
   type AudioExportFormat,
 } from "@/lib/audio-utils"
@@ -1168,13 +1169,13 @@ export default function LibraryPage() {
       if (!response.ok) {
         throw new Error("Unable to load the source audio for this meditation.")
       }
-      const arrayBuffer = await response.arrayBuffer()
+      const blob = await response.blob()
 
       // Long recordings decode to huge PCM buffers (2 hours at 48kHz stereo is well over 1GB),
       // which can make decodeAudioData fail outright on memory-constrained devices/browsers.
       // Match the main Adjuster's file-load strategy: drop to 22050Hz for big files or mobile,
       // instead of always using the shared default-rate context.
-      const fileSizeMB = arrayBuffer.byteLength / (1024 * 1024)
+      const fileSizeMB = blob.size / (1024 * 1024)
       const targetSampleRate = isMobileDevice || fileSizeMB > 30 ? 22050 : 44100
       audioContext = new AudioContext({ sampleRate: targetSampleRate })
 
@@ -1187,7 +1188,7 @@ export default function LibraryPage() {
       }
 
       setQuickAdjustStep("Decoding audio...")
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0))
+      const audioBuffer = await decodeAudioBlob(blob, audioContext)
 
       const result = await runAdjusterWorkflow({
         audioContext,
@@ -1384,9 +1385,9 @@ export default function LibraryPage() {
       if (!response.ok) {
         throw new Error("Unable to load the source audio for this meditation.")
       }
-      const arrayBuffer = await response.arrayBuffer()
+      const blob = await response.blob()
 
-      const fileSizeMB = arrayBuffer.byteLength / (1024 * 1024)
+      const fileSizeMB = blob.size / (1024 * 1024)
       const targetSampleRate = isMobileDevice || fileSizeMB > 30 ? 22050 : 44100
       audioContext = new AudioContext({ sampleRate: targetSampleRate })
       if (audioContext.state === "suspended") {
@@ -1397,7 +1398,7 @@ export default function LibraryPage() {
         }
       }
 
-      const buffer = await audioContext.decodeAudioData(arrayBuffer.slice(0))
+      const buffer = await decodeAudioBlob(blob, audioContext)
       const suggestion = await suggestSilenceThreshold(buffer)
       if (!suggestion) {
         toast({
