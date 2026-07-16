@@ -4037,49 +4037,41 @@ export default function Home() {
                           className="mt-4"
                         >
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 rounded-sm shadow-md">
-                              <div className="bg-white rounded-sm border border-stone-300 flex flex-col items-center justify-center py-3 px-2 min-h-[72px]">
-                                <div className="text-[10px] font-serif font-black uppercase tracking-wide text-gray-500 mb-1">
-                                  Content
-                                </div>
-                                <div className="text-base font-black text-gray-600 tracking-tight">
-                                  {formatTime(contentSpeedMultiplier > 1 ? audioAnalysis.contentDuration / contentSpeedMultiplier : audioAnalysis.contentDuration)}
-                                </div>
+                            <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center py-3 px-2 min-h-[72px]">
+                              <div className="text-[10px] font-serif font-black uppercase tracking-wide text-gray-500 mb-1">
+                                Content
+                              </div>
+                              <div className="text-base font-black text-gray-600 tracking-tight">
+                                {formatTime(contentSpeedMultiplier > 1 ? audioAnalysis.contentDuration / contentSpeedMultiplier : audioAnalysis.contentDuration)}
                               </div>
                             </div>
-                            <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 rounded-sm shadow-md">
-                              <div className="bg-white rounded-sm border border-stone-300 flex flex-col items-center justify-center py-3 px-2 min-h-[72px]">
-                                <div className="text-[10px] font-serif font-black uppercase tracking-wide text-gray-500 mb-1">
-                                  Silence
-                                </div>
-                                <div className="text-base font-black text-gray-600 tracking-tight">
-                                  {formatTime(audioAnalysis.totalSilence)}
-                                </div>
+                            <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center py-3 px-2 min-h-[72px]">
+                              <div className="text-[10px] font-serif font-black uppercase tracking-wide text-gray-500 mb-1">
+                                Silence
+                              </div>
+                              <div className="text-base font-black text-gray-600 tracking-tight">
+                                {formatTime(audioAnalysis.totalSilence)}
                               </div>
                             </div>
-                            <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 rounded-sm shadow-md">
-                              <div className="bg-white rounded-sm border border-stone-300 flex flex-col items-center justify-center py-3 px-2 min-h-[72px]">
-                                <div className="text-[10px] font-serif font-black uppercase tracking-wide text-gray-500 mb-1">
-                                  Pauses
-                                </div>
-                                <div className="text-base font-black text-gray-600 tracking-tight">
-                                  {audioAnalysis.silenceRegions}
-                                </div>
+                            <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center py-3 px-2 min-h-[72px]">
+                              <div className="text-[10px] font-serif font-black uppercase tracking-wide text-gray-500 mb-1">
+                                Pauses
+                              </div>
+                              <div className="text-base font-black text-gray-600 tracking-tight">
+                                {audioAnalysis.silenceRegions}
                               </div>
                             </div>
-                            <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 rounded-sm shadow-md">
-                              <div className="bg-white rounded-sm border border-stone-300 flex flex-col items-center justify-center py-3 px-2 min-h-[72px]">
-                                <div className="text-[10px] font-serif font-black uppercase tracking-wide text-gray-500 mb-1">
-                                  Range
-                                </div>
-                                <div className="text-sm font-black text-gray-600 tracking-tight">
-                                  {(() => {
-                                    const s = durationLimits.trueMinSeconds
-                                    const mn = Math.floor(s / 60)
-                                    const sec = s % 60
-                                    return sec > 0 ? `${mn}m ${sec}s – 2h` : `${mn}m – 2h`
-                                  })()}
-                                </div>
+                            <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center py-3 px-2 min-h-[72px]">
+                              <div className="text-[10px] font-serif font-black uppercase tracking-wide text-gray-500 mb-1">
+                                Range
+                              </div>
+                              <div className="text-sm font-black text-gray-600 tracking-tight">
+                                {(() => {
+                                  const s = durationLimits.trueMinSeconds
+                                  const mn = Math.floor(s / 60)
+                                  const sec = s % 60
+                                  return sec > 0 ? `${mn}m ${sec}s – 2h` : `${mn}m – 2h`
+                                })()}
                               </div>
                             </div>
                           </div>
