@@ -229,14 +229,20 @@ export interface SuggestedSilenceThreshold {
  * algorithm for finding the threshold that best separates a bimodal distribution into two
  * groups, applied here in log space since noise floor and speech level are usually
  * separated by an order of magnitude or more rather than a linear amount.
+ *
+ * Runs the RMS scan in chunks with a `sleep(0)` between them (mirroring
+ * detectSilenceRegions' yielding) since a single pass over a 30-45+ minute file's samples is
+ * enough synchronous work to visibly freeze the tab — previously this ran in one blocking
+ * call, which is very likely why the button could feel like it "didn't work" on longer files.
  */
-export function suggestSilenceThreshold(buffer: AudioBuffer): SuggestedSilenceThreshold | null {
+export async function suggestSilenceThreshold(buffer: AudioBuffer): Promise<SuggestedSilenceThreshold | null> {
   const sampleRate = buffer.sampleRate
   const channelData = buffer.getChannelData(0)
   const windowSize = Math.floor(sampleRate * 0.01) // match detectSilenceRegions' 10ms window
   if (channelData.length === 0 || windowSize <= 0) return null
 
   const rmsValues: number[] = []
+  let windowIndex = 0
   for (let i = 0; i < channelData.length; i += windowSize) {
     const windowEnd = Math.min(i + windowSize, channelData.length)
     let sumSquares = 0
@@ -244,20 +250,28 @@ export function suggestSilenceThreshold(buffer: AudioBuffer): SuggestedSilenceTh
       sumSquares += channelData[j] * channelData[j]
     }
     rmsValues.push(Math.sqrt(sumSquares / (windowEnd - i)))
+    windowIndex++
+    if (windowIndex % 20000 === 0) await sleep(0)
   }
   if (rmsValues.length < 4) return null
 
   const EPSILON = 1e-6
-  const logValues = rmsValues.map((v) => Math.log10(Math.max(v, EPSILON)))
-  const minLog = Math.min(...logValues)
-  const maxLog = Math.max(...logValues)
+  const logValues = rmsValues.map((v) => Math.log10(Math.max(v, EPSILON))).sort((a, b) => a - b)
+
+  // Use the 1st/99th percentile as the histogram's range instead of the literal min/max — a
+  // single outlier window (a click/pop, or a moment of true digital silence far quieter than
+  // the rest) would otherwise stretch the range enough to blur out the real noise/speech
+  // split, which is a likely source of suggestions that vary unpredictably between files.
+  const percentile = (p: number) => logValues[Math.min(logValues.length - 1, Math.floor(p * logValues.length))]
+  const minLog = percentile(0.01)
+  const maxLog = percentile(0.99)
   if (maxLog - minLog < 1e-6) return null // uniform signal (dead silence / constant tone) — no split to find
 
   const BIN_COUNT = 256
   const histogram = new Array(BIN_COUNT).fill(0)
   const binWidth = (maxLog - minLog) / BIN_COUNT
   for (const v of logValues) {
-    const bin = Math.min(BIN_COUNT - 1, Math.floor((v - minLog) / binWidth))
+    const bin = Math.min(BIN_COUNT - 1, Math.max(0, Math.floor((v - minLog) / binWidth)))
     histogram[bin]++
   }
 
@@ -268,7 +282,15 @@ export function suggestSilenceThreshold(buffer: AudioBuffer): SuggestedSilenceTh
   let sumBackground = 0
   let weightBackground = 0
   let maxBetweenVariance = 0
-  let bestBin = 0
+  // Cleanly-separated clusters (the common case here — background noise and speech are
+  // usually an order of magnitude or more apart) leave a run of empty bins between them.
+  // Every bin in that empty run scores an identical between-class variance, since the
+  // histogram doesn't change while weightBackground/weightForeground hold steady — so
+  // tracking only the *first* bin to hit the max (as a plain running-max search would) lands
+  // the split right at the noise cluster's edge instead of the middle of the real gap. Track
+  // the whole tied plateau and use its midpoint instead.
+  let bestBinStart = 0
+  let bestBinEnd = 0
 
   for (let i = 0; i < BIN_COUNT; i++) {
     weightBackground += histogram[i]
@@ -281,12 +303,16 @@ export function suggestSilenceThreshold(buffer: AudioBuffer): SuggestedSilenceTh
     const meanForeground = (sum - sumBackground) / weightForeground
 
     const betweenVariance = weightBackground * weightForeground * (meanBackground - meanForeground) ** 2
-    if (betweenVariance > maxBetweenVariance) {
+    if (betweenVariance > maxBetweenVariance + 1e-9) {
       maxBetweenVariance = betweenVariance
-      bestBin = i
+      bestBinStart = i
+      bestBinEnd = i
+    } else if (Math.abs(betweenVariance - maxBetweenVariance) <= 1e-9 && betweenVariance > 0) {
+      bestBinEnd = i
     }
   }
 
+  const bestBin = Math.round((bestBinStart + bestBinEnd) / 2)
   const otsuLog = minLog + (bestBin + 0.5) * binWidth
   const belowLog = logValues.filter((v) => v <= otsuLog)
   const aboveLog = logValues.filter((v) => v > otsuLog)
@@ -299,9 +325,10 @@ export function suggestSilenceThreshold(buffer: AudioBuffer): SuggestedSilenceTh
   // Word endings decay gradually rather than dropping straight to the noise floor, so
   // windows partway through that decay land between the two clusters. Otsu's raw split
   // point can sit well up toward the speech cluster, which risks classifying those
-  // still-audible tails as silence and clipping words. Pull the suggestion back toward
-  // the noise floor so only genuinely quiet windows fall below the recommended threshold.
-  const NOISE_BIAS = 0.2
+  // still-audible tails as silence and clipping words. Pulling the suggestion most of the way
+  // back toward the noise floor avoided that, but landed too close to it — quiet enough that
+  // it barely flagged any pauses. Split the difference instead of favoring either extreme.
+  const NOISE_BIAS = 0.45
   const thresholdLog = noiseLog + NOISE_BIAS * (otsuLog - noiseLog)
 
   return {
