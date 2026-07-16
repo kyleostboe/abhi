@@ -190,6 +190,72 @@ export const DISTRIBUTION_MAX_BYTES = 48 * 1024 * 1024
 export const getDistributionMaxBytes = (format: AudioExportFormat): number =>
   format === "opus" ? Number.POSITIVE_INFINITY : DISTRIBUTION_MAX_BYTES
 
+// Decodes via mediabunny's own demuxer/WebCodecs pipeline instead of the browser's native
+// decodeAudioData. Used as a fallback below — mediabunny reading back a file its own encoder
+// produced is far more reliable than relying on the browser's independent container demuxer,
+// which can be stricter (or just buggy) about non-standard muxing for some encoders/lengths.
+const decodeAudioBlobWithMediabunny = async (blob: Blob, audioContext: AudioContext): Promise<AudioBuffer> => {
+  const { ALL_FORMATS, BlobSource, Input, AudioBufferSink } = await import("mediabunny")
+  const input = new Input({ source: new BlobSource(blob), formats: ALL_FORMATS })
+  try {
+    const track = await input.getPrimaryAudioTrack()
+    if (!track) {
+      throw new Error("No audio track found in file")
+    }
+
+    const sink = new AudioBufferSink(track)
+    const chunks: AudioBuffer[] = []
+    let numberOfChannels = 0
+    let sampleRate = 0
+    let totalFrames = 0
+
+    for await (const wrapped of sink.buffers()) {
+      chunks.push(wrapped.buffer)
+      numberOfChannels = wrapped.buffer.numberOfChannels
+      sampleRate = wrapped.buffer.sampleRate
+      totalFrames += wrapped.buffer.length
+    }
+
+    if (chunks.length === 0 || totalFrames === 0) {
+      throw new Error("No decodable audio data found in file")
+    }
+
+    const combined = audioContext.createBuffer(numberOfChannels, totalFrames, sampleRate)
+    let offset = 0
+    for (const chunk of chunks) {
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        combined.copyToChannel(chunk.getChannelData(channel), channel, offset)
+      }
+      offset += chunk.length
+    }
+    return combined
+  } finally {
+    input.dispose()
+  }
+}
+
+/**
+ * Decodes an audio Blob into an AudioBuffer, trying the browser's native decodeAudioData first
+ * and falling back to mediabunny's decoder if that fails. Long recordings produced by this
+ * app's own Opus/AAC/MP3 encoders have been seen to trip up native decodeAudioData in some
+ * browsers ("Unable to decode audio data") despite being perfectly valid, playable files — the
+ * mediabunny fallback reads them back with the same library that wrote them.
+ */
+export const decodeAudioBlob = async (blob: Blob, audioContext: AudioContext): Promise<AudioBuffer> => {
+  const arrayBuffer = await blob.arrayBuffer()
+  try {
+    return await audioContext.decodeAudioData(arrayBuffer.slice(0))
+  } catch (nativeError) {
+    console.warn("[v0] Native decodeAudioData failed, falling back to mediabunny decode:", nativeError)
+    try {
+      return await decodeAudioBlobWithMediabunny(blob, audioContext)
+    } catch (fallbackError) {
+      console.warn("[v0] mediabunny fallback decode also failed:", fallbackError)
+      throw nativeError instanceof Error ? nativeError : new Error("Unable to decode audio data")
+    }
+  }
+}
+
 export const extensionForContainer = (container: AudioFormatMetadata["container"] | undefined | null): string => {
   switch (container) {
     case "ogg":
