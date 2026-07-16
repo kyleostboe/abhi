@@ -10,6 +10,7 @@ import { BookmarkPlus } from "lucide-react"
 import * as Tone from "tone"
 import {
   encodeDistributionAudio,
+  getDistributionMaxBytes,
   extensionForContainer,
   AUDIO_EXPORT_FORMAT_LABELS,
   type AudioExportFormat,
@@ -703,7 +704,7 @@ export default function CreatorPage() {
         renderedBuffer,
         {
           format: exportFormat,
-          maxBytes: 48 * 1024 * 1024,
+          maxBytes: getDistributionMaxBytes(exportFormat),
           bitrate: 96000,
           onProgress: (p) => setEncodingProgress(20 + Math.floor((p / 100) * 80)),
         },

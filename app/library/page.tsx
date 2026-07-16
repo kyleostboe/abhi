@@ -53,6 +53,7 @@ import {
   NotebookPen,
   BookOpenCheck,
   RefreshCw,
+  Upload,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useMobile } from "@/hooks/use-mobile"
@@ -289,6 +290,7 @@ const sortDurationModes = (modes: DurationMode[]) =>
 
 export default function LibraryPage() {
   const [meditations, setMeditations] = useState<SavedMeditation[]>([])
+  const [isLoadingLibrary, setIsLoadingLibrary] = useState(true)
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [activeTab, setActiveTab] = useState<"meditations" | "playlists">("meditations")
   const [searchQuery, setSearchQuery] = useState("")
@@ -442,6 +444,8 @@ export default function LibraryPage() {
         description: "Please refresh the page.",
         variant: "destructive",
       })
+    } finally {
+      setIsLoadingLibrary(false)
     }
   }, [toast])
 
@@ -2573,6 +2577,7 @@ export default function LibraryPage() {
                         >
                           <DialogTrigger asChild>
                             <Button className="w-44 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105">
+                              <Upload className="w-4 h-4 mr-2" />
                               Upload Meditation
                             </Button>
                           </DialogTrigger>
@@ -2693,19 +2698,17 @@ export default function LibraryPage() {
                   </div>
 
                   {/* Meditations Grid */}
-                  {displayedGroups.length === 0 ? (
+                  {isLoadingLibrary ? (
+                    <Card className="p-12 text-center flex items-center justify-center">
+                      <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                    </Card>
+                  ) : displayedGroups.length === 0 ? (
                     <Card className="p-12 text-center">
-                      <p className="text-gray-500 mb-4 text-base">
+                      <p className="text-gray-500 text-base">
                         {selectedPlaylist
                           ? "This playlist is empty. Add a meditation to get started :)"
                           : "No meditations yet "}
                       </p>
-                      <Button
-                        onClick={() => router.push("/")}
-                        className="font-serif font-black bg-gradient-to-r from-purple-300 to-orange-300 shadow-md hover:shadow-none text-white"
-                      >
-                        Go to Tools
-                      </Button>
                     </Card>
                   ) : (
                     <div className="space-y-5">

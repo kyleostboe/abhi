@@ -182,6 +182,14 @@ export const AUDIO_EXPORT_FORMAT_SHORT_LABELS: Record<AudioExportFormat, string>
   mp3: ".mp3",
 }
 
+// Hard size cap for distribution exports. Ogg/Opus compresses efficiently enough that it
+// essentially never needs the bitrate ladder to kick in for realistic session lengths, so it's
+// exempted rather than being knocked down to a lower-quality bitrate like the other formats.
+export const DISTRIBUTION_MAX_BYTES = 48 * 1024 * 1024
+
+export const getDistributionMaxBytes = (format: AudioExportFormat): number =>
+  format === "opus" ? Number.POSITIVE_INFINITY : DISTRIBUTION_MAX_BYTES
+
 export const extensionForContainer = (container: AudioFormatMetadata["container"] | undefined | null): string => {
   switch (container) {
     case "ogg":
