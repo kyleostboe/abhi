@@ -235,6 +235,24 @@ const uploadAudioToR2 = async (blob: Blob, ext: string): Promise<string | null> 
   }
 }
 
+// Best-effort cleanup for an R2 object that's just been superseded (e.g. by
+// replaceMeditationAudio uploading a new object in its place). Never throws — a failure here
+// just leaves harmless orphaned storage, same as if this cleanup didn't run at all.
+const deleteAudioObjectFromR2 = async (audioKey: string): Promise<void> => {
+  try {
+    const response = await fetch("/api/storage/delete-object", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ audioKey }),
+    })
+    if (!response.ok) {
+      console.warn("[v0] Unable to delete superseded R2 object:", response.status, response.statusText)
+    }
+  } catch (error) {
+    console.warn("[v0] Error deleting superseded R2 object:", error)
+  }
+}
+
 // Batch-resolves presigned playback URLs for meditations that have an audio_key, in a
 // single round trip. Rows without an audio_key (saved before R2 storage was added) are
 // simply absent from the result and fall back to the local IndexedDB copy.
@@ -453,11 +471,10 @@ export class MeditationLibrary {
     }
 
     // If this row's audio previously lived in R2, the replacement must too — otherwise
-    // audio_key would keep pointing at the now-stale pre-replacement audio. The old object
-    // is left in place rather than deleted here to keep this a pure metadata+upload step;
-    // it's harmless orphaned storage, not a correctness issue like serving stale audio would be.
+    // audio_key would keep pointing at the now-stale pre-replacement audio.
     const { data: existingRow } = await supabase.from("meditations").select("audio_key").eq("id", id).single()
-    const audioKey = existingRow?.audio_key
+    const previousAudioKey = existingRow?.audio_key ?? null
+    const audioKey = previousAudioKey
       ? await uploadAudioToR2(updates.audioData, extensionForContainer(updates.audioFormat.container))
       : null
 
@@ -469,6 +486,15 @@ export class MeditationLibrary {
     if (error) {
       console.error("[v0] Error updating meditation audio:", error)
       throw new Error(`Database update failed: ${error.message}`)
+    }
+
+    // Now that the row points at the new object, the old one is no longer reachable through
+    // any DB row and would otherwise sit in R2 forever with nothing to clean it up — delete it
+    // after the swap succeeds, so a failed upload/update never leaves the row referencing
+    // nothing (best-effort: a failure here just leaves harmless orphaned storage, same as
+    // before, rather than breaking the replace itself).
+    if (previousAudioKey && previousAudioKey !== audioKey) {
+      void deleteAudioObjectFromR2(previousAudioKey)
     }
 
     const existingAudio = await getAudioRecord(id)

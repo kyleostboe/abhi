@@ -3686,7 +3686,7 @@ export default function Home() {
                       onDrop={handleDropAction}
                     >
                       <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 py-1 shadow-lg rounded-sm px-[5px]">
-                        <div className="p-10 md:p-16 text-center bg-white rounded-sm shadow-none tracking-tight md:py-10 md:px-10 border-4 border-double border-stone-300">
+                        <div className="p-10 md:p-16 text-center bg-white rounded-sm shadow-none tracking-tight md:py-10 md:px-10 border border-stone-300">
                           <motion.div
                             initial={{ opacity: 0, y: 5 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -3722,7 +3722,7 @@ export default function Home() {
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={handleDropAction}
                       >
-                        <div className="bg-white p-5 py-4 rounded-[10px] shadow-nonee border-4 border-double border-stone-300">
+                        <div className="bg-white p-5 py-4 rounded-[10px] shadow-nonee border border-stone-300">
                           <div className="flex items-center">
                             <motion.div
                               initial={{ scale: 0 }}
@@ -3752,22 +3752,24 @@ export default function Home() {
                                 {file.type}
                               </motion.div>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => fileInputRef.current?.click()}
-                              title="Reupload a different file"
-                              className="ml-2 shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                            >
-                              <Upload className="h-4 w-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleResetAdjuster}
-                              title="Clear file and start over"
-                              className="ml-1 shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
+                            <div className="ml-2 flex shrink-0 flex-col items-center gap-0.5">
+                              <button
+                                type="button"
+                                onClick={handleResetAdjuster}
+                                title="Clear file and start over"
+                                className="rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                title="Reupload a different file"
+                                className="rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                              >
+                                <Upload className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </motion.div>
