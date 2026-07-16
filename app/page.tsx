@@ -586,6 +586,7 @@ export default function Home() {
   const audioContextRef = useRef<AudioContext | null>(null) // Still needed for Adjuster's specific context management
   const [targetDuration, setTargetDuration] = useState<number>(20)
   const [silenceThreshold, setSilenceThreshold] = useState<number>(0.025)
+  const [isSuggestingSilenceThreshold, setIsSuggestingSilenceThreshold] = useState(false)
   const [minSilenceDuration, setMinSilenceDuration] = useState<number>(1)
   const [maxSilenceDuration, setMaxSilenceDuration] = useState<number>(0) // 0 = no limit
   const [contentSpeedMultiplier, setContentSpeedMultiplier] = useState<number>(1.0) // 1.0 = no speedup, up to 1.15x
@@ -3366,22 +3367,27 @@ export default function Home() {
   // Function to handle the Process Audio button click
   const handleProcessAudio = processAudioAdjusterAction
 
-  const handleSuggestSilenceThreshold = () => {
-    if (!originalBuffer) return
-    const suggestion = suggestSilenceThreshold(originalBuffer)
-    if (!suggestion) {
+  const handleSuggestSilenceThreshold = async () => {
+    if (!originalBuffer || isSuggestingSilenceThreshold) return
+    setIsSuggestingSilenceThreshold(true)
+    try {
+      const suggestion = await suggestSilenceThreshold(originalBuffer)
+      if (!suggestion) {
+        toast({
+          title: "Couldn't suggest a threshold",
+          description: "This audio doesn't have a clear enough gap between pauses and speech to estimate one.",
+        })
+        return
+      }
+      const clamped = Number(Math.min(0.05, Math.max(0.001, suggestion.threshold)).toFixed(3))
+      setSilenceThreshold(clamped)
       toast({
-        title: "Couldn't suggest a threshold",
-        description: "This audio doesn't have a clear enough gap between pauses and speech to estimate one.",
+        title: "Silence threshold suggested",
+        description: `Background noise averages ~${suggestion.noiseFloor.toFixed(4)}, speech averages ~${suggestion.speechLevel.toFixed(4)}. Set to ${clamped}.`,
       })
-      return
+    } finally {
+      setIsSuggestingSilenceThreshold(false)
     }
-    const clamped = Number(Math.min(0.05, Math.max(0.001, suggestion.threshold)).toFixed(3))
-    setSilenceThreshold(clamped)
-    toast({
-      title: "Silence threshold suggested",
-      description: `Background noise averages ~${suggestion.noiseFloor.toFixed(4)}, speech averages ~${suggestion.speechLevel.toFixed(4)}. Set to ${clamped}.`,
-    })
   }
 
   const handleResetAdjuster = () => {
@@ -3940,11 +3946,11 @@ export default function Home() {
                             <div className="mt-2 flex justify-center">
                               <button
                                 type="button"
-                                onClick={handleSuggestSilenceThreshold}
-                                disabled={!originalBuffer}
-                                className="text-xs font-serif font-black text-logo-emerald-500 underline underline-offset-2 disabled:cursor-not-allowed disabled:text-gray-400 disabled:no-underline"
+                                onClick={() => void handleSuggestSilenceThreshold()}
+                                disabled={!originalBuffer || isSuggestingSilenceThreshold}
+                                className="text-xs font-serif font-black text-gray-500 underline underline-offset-2 disabled:cursor-not-allowed disabled:text-gray-400 disabled:no-underline"
                               >
-                                Suggest from this audio
+                                {isSuggestingSilenceThreshold ? "Analyzing..." : "Suggest from this audio"}
                               </button>
                             </div>
                           </DurationControlCard>
