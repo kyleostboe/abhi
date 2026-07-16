@@ -30,6 +30,15 @@ interface SaveMeditationDialogProps {
   // Called right before a guest gets redirected to log in, so the caller can stash whatever
   // in-progress page state it wants restored when the user comes back.
   onBeforeAuthRedirect?: () => void
+  // Called right after a save completes successfully, with the saved meditation.
+  onSaved?: (meditation: SavedMeditation) => void
+  // Externally controlled open state, for callers that open this dialog programmatically
+  // instead of via a visible trigger (paired with `hideTrigger`). Uncontrolled (internal
+  // state) if omitted, matching the original trigger-driven usage.
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  // Skips rendering the DialogTrigger entirely — for controlled usage with no visible trigger.
+  hideTrigger?: boolean
 }
 
 const formatDurationLabel = (seconds: number) => {
@@ -74,8 +83,18 @@ export function SaveMeditationDialog({
   existingMeditationTitle,
   existingMeditationDuration,
   onBeforeAuthRedirect,
+  onSaved,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  hideTrigger,
 }: SaveMeditationDialogProps) {
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = (next: boolean) => {
+    if (!isControlled) setInternalOpen(next)
+    controlledOnOpenChange?.(next)
+  }
   const metadataWithTitle = metadata as { meditationTitle?: unknown }
   const metadataTitleRaw =
     typeof metadataWithTitle?.meditationTitle === "string" ? metadataWithTitle.meditationTitle : ""
@@ -322,6 +341,7 @@ export function SaveMeditationDialog({
         setNewPlaylistDescription("")
         setShowNewPlaylist(false)
         setOpen(false)
+        onSaved?.(savedMeditation)
       } finally {
         if (distributionBlobUrl) {
           URL.revokeObjectURL(distributionBlobUrl)
@@ -356,14 +376,16 @@ export function SaveMeditationDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        {children || (
-          <Button className="bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 hover:from-logo-teal-600 hover:to-logo-blue-500 text-white">
-            <BookmarkPlus className="w-4 h-4 mr-2" />
-            Save to Library
-          </Button>
-        )}
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          {children || (
+            <Button className="bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 hover:from-logo-teal-600 hover:to-logo-blue-500 text-white">
+              <BookmarkPlus className="w-4 h-4 mr-2" />
+              Save to Library
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-md" aria-describedby="save-meditation-description">
         <DialogHeader>
           <DialogTitle>Save Meditation to Library</DialogTitle>
