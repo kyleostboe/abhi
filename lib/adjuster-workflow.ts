@@ -1,4 +1,9 @@
-import { encodeDistributionAudio, type AudioExportFormat, type AudioFormatMetadata } from "@/lib/audio-utils"
+import {
+  encodeDistributionAudio,
+  getDistributionMaxBytes,
+  type AudioExportFormat,
+  type AudioFormatMetadata,
+} from "@/lib/audio-utils"
 import { forceGarbageCollection, formatTime, sleep } from "@/lib/utils"
 
 export type SilenceRegion = { start: number; end: number }
@@ -737,7 +742,7 @@ export async function runAdjusterWorkflow({
 
   const { blob: distributionBlob, format: distributionMetadata } = await encodeDistributionAudio(processedAudioBuffer, {
     format: exportFormat,
-    maxBytes: 48 * 1024 * 1024,
+    maxBytes: getDistributionMaxBytes(exportFormat),
     bitrate: 96000,
     onProgress: (progress) => {
       const normalized = Math.max(0, Math.min(100, progress))

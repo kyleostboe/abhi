@@ -41,6 +41,7 @@ import { cn, formatTime, monitorMemory, formatFileSize } from "@/lib/utils"
 import {
   getAudioContext,
   encodeDistributionAudio,
+  getDistributionMaxBytes,
   extensionForContainer,
   AUDIO_EXPORT_FORMAT_LABELS,
   AUDIO_EXPORT_FORMAT_SHORT_LABELS,
@@ -858,7 +859,7 @@ export default function Home() {
 
         const result = await encodeDistributionAudio(audioBuffer, {
           format: intent.targetFormat,
-          maxBytes: 48 * 1024 * 1024,
+          maxBytes: getDistributionMaxBytes(intent.targetFormat),
           bitrate: 96000,
         })
         if (cancelled) return
@@ -1030,7 +1031,7 @@ export default function Home() {
       setToolConvertStep("Converting audio...")
       const result = await encodeDistributionAudio(audioBuffer, {
         format: toolConvertFormat,
-        maxBytes: 48 * 1024 * 1024,
+        maxBytes: getDistributionMaxBytes(toolConvertFormat),
         bitrate: 96000,
         onProgress: (progress) => setToolConvertProgress(Math.max(0, Math.min(100, Math.round(progress)))),
       })
@@ -1585,7 +1586,7 @@ export default function Home() {
 
       const { blob: distributionBlob, format: distributionMetadata } = await encodeDistributionAudio(rendered, {
         format: exportFormat,
-        maxBytes: 48 * 1024 * 1024,
+        maxBytes: getDistributionMaxBytes(exportFormat),
         bitrate: 96000,
         onProgress: (p) => setGenerationProgress(80 + Math.floor((p / 100) * 20)),
       })
@@ -3608,19 +3609,8 @@ export default function Home() {
               {activeMode === "adjuster" ? (
                 // == Length Adjuster UI ==
                 <div ref={adjusterSectionRef} className="space-y-4">
-                  {/* Note and Resources sections - moved to proper position */}
+                  {/* Resources section */}
                   <div className="space-y-4 mb-[27px]">
-                    <div className="p-4 max-w-2xl text-center mx-auto rounded-md border-logo-rose-500 border-0 shadow-none pt-0 pb-1">
-                      <p className="leading-relaxed font-serif font-black text-xs text-gray-600 tracking-tight">
-                        <strong className="pr-1.5 font-black font-serif text-center text-sm text-logo-amber-400">
-                          Note:
-                        </strong>
-                        Depending on the audio, users may need to tweak the advanced settings for optimal results. Only
-                        pauses are adjusted, spoken instruction is preserved. Any guided meditation under{" "}
-                        {isMobileDevice ? "50MB" : "500MB"} should be compatible. Teachers, please feel free to reach
-                        out if you'd like to opt out. Enjoy:)
-                      </p>
-                    </div>
                     <div className="p-4 rounded-lg border-logo-rose-300 max-w-2xl mx-auto backdrop-blur-sm border-0 py-4 px-0 bg-transparent pt-0 pb-0">
                       <h3 className="mb-2 text-center font-black px-0 rounded text-base pb-0.5 text-gray-600 tracking-tight">
                         Resources
