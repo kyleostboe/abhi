@@ -26,7 +26,7 @@ import {
   AUDIO_EXPORT_FORMAT_LABELS,
   type AudioExportFormat,
 } from "@/lib/audio-utils"
-import { runAdjusterWorkflow } from "@/lib/adjuster-workflow"
+import { runAdjusterWorkflow, suggestSilenceThreshold } from "@/lib/adjuster-workflow"
 import { cn } from "@/lib/utils"
 import { useJournal } from "@/hooks/use-journal"
 import { useAuth } from "@/hooks/use-auth"
@@ -337,6 +337,7 @@ export default function LibraryPage() {
   const [pendingAdjustmentId, setPendingAdjustmentId] = useState<string | null>(null)
   const [quickAdjustExportFormat, setQuickAdjustExportFormat] = useState<AudioExportFormat>("opus")
   const [quickAdjustSilenceThreshold, setQuickAdjustSilenceThreshold] = useState<number | null>(null)
+  const [isSuggestingQuickAdjustThreshold, setIsSuggestingQuickAdjustThreshold] = useState(false)
   const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false)
   const [convertFormat, setConvertFormat] = useState<AudioExportFormat>("opus")
   const [isConverting, setIsConverting] = useState(false)
@@ -1159,6 +1160,7 @@ export default function LibraryPage() {
 
     let objectUrl: string | null = null
     let memoryWarningShown = false
+    let audioContext: AudioContext | null = null
 
     try {
       setQuickAdjustStep("Loading audio...")
@@ -1168,7 +1170,14 @@ export default function LibraryPage() {
       }
       const arrayBuffer = await response.arrayBuffer()
 
-      const audioContext = getAudioContext()
+      // Long recordings decode to huge PCM buffers (2 hours at 48kHz stereo is well over 1GB),
+      // which can make decodeAudioData fail outright on memory-constrained devices/browsers.
+      // Match the main Adjuster's file-load strategy: drop to 22050Hz for big files or mobile,
+      // instead of always using the shared default-rate context.
+      const fileSizeMB = arrayBuffer.byteLength / (1024 * 1024)
+      const targetSampleRate = isMobileDevice || fileSizeMB > 30 ? 22050 : 44100
+      audioContext = new AudioContext({ sampleRate: targetSampleRate })
+
       if (audioContext.state === "suspended") {
         try {
           await audioContext.resume()
@@ -1344,10 +1353,77 @@ export default function LibraryPage() {
       if (objectUrl) {
         URL.revokeObjectURL(objectUrl)
       }
+      if (audioContext) {
+        await audioContext.close().catch(() => {})
+      }
       setPendingAdjustmentId(null)
       setIsQuickAdjustProcessing(false)
       setQuickAdjustStep("")
       setQuickAdjustProgress(0)
+    }
+  }
+
+  const handleSuggestQuickAdjustThreshold = async () => {
+    if (!baseMeditation || isSuggestingQuickAdjustThreshold) return
+
+    const sourceUrl = baseMeditation.sourceAudioUrl || baseMeditation.processedAudioUrl
+    if (!sourceUrl) {
+      toast({
+        title: "Missing audio",
+        description: "We couldn't locate the source audio for this meditation.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSuggestingQuickAdjustThreshold(true)
+    let audioContext: AudioContext | null = null
+
+    try {
+      const response = await fetch(sourceUrl)
+      if (!response.ok) {
+        throw new Error("Unable to load the source audio for this meditation.")
+      }
+      const arrayBuffer = await response.arrayBuffer()
+
+      const fileSizeMB = arrayBuffer.byteLength / (1024 * 1024)
+      const targetSampleRate = isMobileDevice || fileSizeMB > 30 ? 22050 : 44100
+      audioContext = new AudioContext({ sampleRate: targetSampleRate })
+      if (audioContext.state === "suspended") {
+        try {
+          await audioContext.resume()
+        } catch (resumeError) {
+          console.warn("[v0] Unable to resume audio context for threshold suggestion:", resumeError)
+        }
+      }
+
+      const buffer = await audioContext.decodeAudioData(arrayBuffer.slice(0))
+      const suggestion = await suggestSilenceThreshold(buffer)
+      if (!suggestion) {
+        toast({
+          title: "Couldn't suggest a threshold",
+          description: "This audio doesn't have a clear enough gap between pauses and speech to estimate one.",
+        })
+        return
+      }
+      const clamped = Number(Math.min(0.05, Math.max(0.001, suggestion.threshold)).toFixed(3))
+      setQuickAdjustSilenceThreshold(clamped)
+      toast({
+        title: "Silence threshold suggested",
+        description: `Background noise averages ~${suggestion.noiseFloor.toFixed(4)}, speech averages ~${suggestion.speechLevel.toFixed(4)}. Set to ${clamped}.`,
+      })
+    } catch (error) {
+      console.error("[v0] Silence threshold suggestion failed:", error)
+      toast({
+        title: "Couldn't suggest a threshold",
+        description: error instanceof Error ? error.message : "We couldn't analyze this meditation's audio.",
+        variant: "destructive",
+      })
+    } finally {
+      if (audioContext) {
+        await audioContext.close().catch(() => {})
+      }
+      setIsSuggestingQuickAdjustThreshold(false)
     }
   }
 
@@ -2555,7 +2631,7 @@ export default function LibraryPage() {
                     }`}
                   >
                     <div className={`${shouldStackFilters ? "" : "md:[grid-row:span_2]"}`}>
-                      <div className="p-0.5 bg-gradient-to-br from-logo-rose-300 to-stone-300 rounded-sm shadow-lg py-1 px-[5px]">
+                      <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 rounded-sm shadow-lg py-1 px-[5px]">
                         <div className="bg-white rounded-sm">
                           <input
                             placeholder="Search meditations..."
@@ -3495,6 +3571,16 @@ export default function LibraryPage() {
                                               onValueChange={(value) => setQuickAdjustSilenceThreshold(value[0])}
                                               rangeClassName="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500"
                                             />
+                                            <div className="flex justify-center">
+                                              <button
+                                                type="button"
+                                                onClick={() => void handleSuggestQuickAdjustThreshold()}
+                                                disabled={!baseMeditation || isSuggestingQuickAdjustThreshold}
+                                                className="text-xs font-serif font-black text-gray-500 underline underline-offset-2 disabled:cursor-not-allowed disabled:text-gray-400 disabled:no-underline"
+                                              >
+                                                {isSuggestingQuickAdjustThreshold ? "Analyzing..." : "Suggest from this audio"}
+                                              </button>
+                                            </div>
                                           </div>
                                           <div className="flex items-center justify-between gap-3 pt-1 font-serif font-black">
                                             <Button
