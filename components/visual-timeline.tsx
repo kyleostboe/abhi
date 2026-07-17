@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -342,15 +342,71 @@ export function VisualTimeline({
     }
   }
 
-  const circleWidthPx = 36
-  const circleHalfTime = timelineWidth > 0 ? (circleWidthPx / 2 / timelineWidth) * totalDuration : 0
+  // Layout constants for the in-timeline chips. Kept small and lane-stacked (rather than
+  // pushed later in time to dodge collisions, as this used to do) so overlapping layers — e.g.
+  // sound cues or a voice clip placed over an uploaded background meditation — can all sit at
+  // their real startTime simultaneously instead of fighting for the same horizontal spot.
+  const CIRCLE_SIZE_PX = 22 // sound cue / instruction+sound chips
+  const SQUARE_HEIGHT_PX = 26 // recorded/uploaded audio chips
+  const SQUARE_MIN_WIDTH_PX = 22
+  const LANE_GAP_PX = 6
+  const LANE_ROW_PX = Math.max(CIRCLE_SIZE_PX, SQUARE_HEIGHT_PX) + LANE_GAP_PX
+  const TRACK_VERTICAL_PADDING_PX = 14
+
+  const circleHalfTime = timelineWidth > 0 ? (CIRCLE_SIZE_PX / 2 / timelineWidth) * totalDuration : 0
+
+  // Sound cues/notes have no real audio span of their own, so give them a nominal time window
+  // (their on-screen circle width) purely for lane-overlap detection below.
+  const getEventSpan = useCallback(
+    (event: TimelineEvent) => {
+      const duration = getEventDuration(event)
+      if (duration > 0) {
+        return { start: event.startTime, end: event.startTime + duration }
+      }
+      return { start: event.startTime - circleHalfTime, end: event.startTime + circleHalfTime }
+    },
+    [circleHalfTime],
+  )
+
+  // Greedy interval-graph lane packing: walk events in start-time order and drop each into the
+  // first lane whose last occupant has already ended. A long clip (e.g. an uploaded meditation)
+  // naturally claims a lane for its whole span, so anything overlapping it — rather than bumping
+  // its own time forward — simply stacks into the next lane up.
+  const { laneByEventId, laneCount } = useMemo(() => {
+    const sorted = [...events].sort((a, b) => {
+      const spanA = getEventSpan(a)
+      const spanB = getEventSpan(b)
+      if (spanA.start !== spanB.start) return spanA.start - spanB.start
+      return spanB.end - spanB.start - (spanA.end - spanA.start)
+    })
+
+    const laneEnds: number[] = []
+    const laneByEventId = new Map<string, number>()
+
+    for (const event of sorted) {
+      const span = getEventSpan(event)
+      let lane = laneEnds.findIndex((end) => end <= span.start)
+      if (lane === -1) {
+        lane = laneEnds.length
+        laneEnds.push(span.end)
+      } else {
+        laneEnds[lane] = span.end
+      }
+      laneByEventId.set(event.id, lane)
+    }
+
+    return { laneByEventId, laneCount: laneEnds.length }
+  }, [events, getEventSpan])
+
+  const trackHeight = Math.max(1, laneCount) * LANE_ROW_PX - LANE_GAP_PX + TRACK_VERTICAL_PADDING_PX * 2
 
   return (
     <div className="space-y-6 select-none">
       <div className="relative">
         <div
           ref={timelineRef}
-          className="relative bg-gradient-to-br from-muted to-gray-200/70 cursor-pointer overflow-visible shadow-inner border-gray-700 border-0 rounded-sm h-[69px]"
+          className="relative bg-gradient-to-br from-muted to-gray-200/70 cursor-pointer overflow-visible shadow-inner border-gray-700 border-0 rounded-sm transition-[height] duration-200"
+          style={{ height: trackHeight }}
         >
           {timeMarkers.slice(1, -1).map((time, index) => (
             <div
@@ -362,40 +418,15 @@ export function VisualTimeline({
 
           <AnimatePresence>
             {events.map((event) => {
-              let displayTime = event.startTime
               const duration = getEventDuration(event)
               const isRecording = event.type === "recorded_voice"
               const widthPercent = totalDuration > 0 ? (duration / totalDuration) * 100 : 0
-
-              if (isRecording) {
-                const prevEvents = events
-                  .filter((e) => e.startTime < event.startTime)
-                  .sort((a, b) => b.startTime - a.startTime)
-
-                for (const prevEvent of prevEvents) {
-                  if (prevEvent.type === "recorded_voice") {
-                    const prevEnd = prevEvent.startTime + (prevEvent.duration || 0)
-                    if (displayTime < prevEnd) {
-                      displayTime = prevEnd
-                    }
-                  } else {
-                    if (displayTime - circleHalfTime < prevEvent.startTime + circleHalfTime) {
-                      displayTime = prevEvent.startTime + circleHalfTime * 2
-                    }
-                  }
-                }
-              } else {
-                const prevRecording = events
-                  .filter((e) => e.type === "recorded_voice" && e.startTime < event.startTime)
-                  .sort((a, b) => b.startTime - a.startTime)[0]
-                if (prevRecording) {
-                  const prevEnd = prevRecording.startTime + (prevRecording.duration || 0)
-                  if (displayTime - circleHalfTime < prevEnd) {
-                    displayTime = prevEnd + circleHalfTime
-                  }
-                }
-              }
-              displayTime = Math.min(displayTime, totalDuration)
+              const lane = laneByEventId.get(event.id) ?? 0
+              const top = TRACK_VERTICAL_PADDING_PX + lane * LANE_ROW_PX
+              // Defensive clamp: keeps a chip on-screen if its startTime ever ends up past
+              // totalDuration (e.g. default placement right after a track whose upload just
+              // shrank the total duration to fit it) instead of rendering off the visible track.
+              const displayTime = Math.min(event.startTime, Math.max(0, totalDuration - 0.001))
 
               return (
                 <motion.div
@@ -404,8 +435,8 @@ export function VisualTimeline({
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   className={cn(
-                    "absolute shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-white",
-                    isRecording ? "h-9 rounded-[9px]" : "rounded-full w-9 h-9",
+                    "absolute shadow-md cursor-grab active:cursor-grabbing",
+                    isRecording ? "rounded-[6px]" : "rounded-full",
                     draggedEvent === event.id ? "z-30 shadow-lg ring-2 ring-white/50" : "z-10",
                     getEventColor(event),
                   )}
@@ -414,14 +445,15 @@ export function VisualTimeline({
                       ? {
                           left: getPositionFromTime(displayTime),
                           width: `${widthPercent}%`,
-                          minWidth: "2.25rem",
-                          top: "50%",
-                          transform: "translateY(-50%)",
+                          minWidth: `${SQUARE_MIN_WIDTH_PX}px`,
+                          height: SQUARE_HEIGHT_PX,
+                          top,
                         }
                       : {
-                          left: `calc(${getPositionFromTime(displayTime)} - 20px)`,
-                          top: "50%",
-                          transform: "translateY(-50%)",
+                          left: `calc(${getPositionFromTime(displayTime)} - ${CIRCLE_SIZE_PX / 2}px)`,
+                          width: CIRCLE_SIZE_PX,
+                          height: CIRCLE_SIZE_PX,
+                          top,
                         }
                   }
                   onMouseDown={(e) => handleMouseDown(event.id, e, event)}
@@ -431,13 +463,7 @@ export function VisualTimeline({
                       ? event.instructionText
                       : event.recordedInstructionLabel || "Recorded Voice"
                   }
-                >
-                  {event.type === "instruction_sound" ? (
-                    <Music2Icon className="h-4 w-4" />
-                  ) : (
-                    <MicIcon className="h-4 w-4" />
-                  )}
-                </motion.div>
+                />
               )
             })}
           </AnimatePresence>
