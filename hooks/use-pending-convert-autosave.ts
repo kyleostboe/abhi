@@ -35,7 +35,7 @@ export function usePendingConvertAutoSave(onSaved?: (meditation: SavedMeditation
         const original = await MeditationLibrary.getMeditation(intent.meditationId)
         if (!original || cancelled) return
 
-        const sourceUrl = original.sourceAudioUrl || original.processedAudioUrl
+        const sourceUrl = intent.variantAudioUrl || original.sourceAudioUrl || original.processedAudioUrl
         const response = await fetch(sourceUrl)
         if (!response.ok) throw new Error("Unable to load the original meditation's audio.")
         const arrayBuffer = await response.arrayBuffer()

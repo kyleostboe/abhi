@@ -9,7 +9,15 @@ import type { AudioExportFormat } from "@/lib/audio-utils"
 const KEY = "abhi_pending_convert_intent"
 
 export type PendingConvertIntent =
-  | { kind: "library"; meditationId: string; targetFormat: AudioExportFormat }
+  | {
+      kind: "library"
+      meditationId: string
+      targetFormat: AudioExportFormat
+      // Set when a saved variant (not the original) was selected at conversion time — the
+      // deferred conversion only looks the meditation up by id, which resolves to the original,
+      // so this carries the variant's own audio URL through the signup redirect.
+      variantAudioUrl?: string
+    }
   | { kind: "tool"; context: "adjuster" | "creator"; targetFormat: AudioExportFormat }
 
 export function savePendingConvertIntent(intent: PendingConvertIntent): void {
