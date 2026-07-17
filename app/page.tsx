@@ -4039,7 +4039,7 @@ export default function Home() {
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center py-3 px-2 min-h-[72px]">
                               <div className="text-[10px] font-serif font-black uppercase tracking-wide text-gray-500 mb-1">
-                                Content
+                                Content:
                               </div>
                               <div className="text-base font-black text-gray-600 tracking-tight">
                                 {formatTime(contentSpeedMultiplier > 1 ? audioAnalysis.contentDuration / contentSpeedMultiplier : audioAnalysis.contentDuration)}
@@ -4047,7 +4047,7 @@ export default function Home() {
                             </div>
                             <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center py-3 px-2 min-h-[72px]">
                               <div className="text-[10px] font-serif font-black uppercase tracking-wide text-gray-500 mb-1">
-                                Silence
+                                Silence:
                               </div>
                               <div className="text-base font-black text-gray-600 tracking-tight">
                                 {formatTime(audioAnalysis.totalSilence)}
@@ -4055,7 +4055,7 @@ export default function Home() {
                             </div>
                             <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center py-3 px-2 min-h-[72px]">
                               <div className="text-[10px] font-serif font-black uppercase tracking-wide text-gray-500 mb-1">
-                                Pauses
+                                Pauses:
                               </div>
                               <div className="text-base font-black text-gray-600 tracking-tight">
                                 {audioAnalysis.silenceRegions}
@@ -4063,7 +4063,7 @@ export default function Home() {
                             </div>
                             <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center py-3 px-2 min-h-[72px]">
                               <div className="text-[10px] font-serif font-black uppercase tracking-wide text-gray-500 mb-1">
-                                Range
+                                Range:
                               </div>
                               <div className="text-sm font-black text-gray-600 tracking-tight">
                                 {(() => {
