@@ -1277,6 +1277,11 @@ export default function LibraryPage() {
         metadata: metadataForSave,
       })
 
+      // This variant is its own separate library row (linked back to the base via
+      // linkedParentId/linkedDurationId) — without this, it's only discoverable after the next
+      // full reload, which broke things like Convert Format being able to find it by id.
+      setMeditations((previous) => [savedMeditation, ...previous])
+
       const newMode: DurationMode = {
         id: modeId,
         label: preset.label,
@@ -2115,6 +2120,35 @@ export default function LibraryPage() {
     }
   }, [selectedMeditation, toast])
 
+  // A selected variant's `SavedMeditation` object reuses the base meditation's id (only its
+  // audio URL/duration/metadata are swapped in — see applyDurationMode) so the player can treat
+  // it uniformly. That means "Replace original" can't just target `selectedMeditation.id` for a
+  // variant, or it would silently overwrite the base meditation's own audio. Persisted variants
+  // do have their own separate library row, linked back via linkedParentId/linkedDurationId, so
+  // resolve that row's real id here instead.
+  const findPersistedVariantMeditation = useCallback(
+    (parentId: string, durationModeId: string): SavedMeditation | undefined =>
+      meditations.find((item) => {
+        const linkedParentId =
+          typeof item.metadata?.linkedParentId === "string" ? item.metadata.linkedParentId.trim() : ""
+        const linkedDurationId =
+          typeof item.metadata?.linkedDurationId === "string" ? item.metadata.linkedDurationId.trim() : ""
+        return linkedParentId === parentId && linkedDurationId === durationModeId
+      }),
+    [meditations],
+  )
+
+  const activeVariantMeditation = useMemo(() => {
+    if (activeDurationModeId === "original" || !baseMeditation) return null
+    return findPersistedVariantMeditation(baseMeditation.id, activeDurationModeId) ?? null
+  }, [activeDurationModeId, baseMeditation, findPersistedVariantMeditation])
+
+  // The real row "Replace original" should act on: the base meditation itself when viewing
+  // Original, or the variant's own row when viewing a saved variant. Null when the active
+  // duration is an unsaved local preset with no row of its own to replace.
+  const convertReplaceTargetId =
+    activeDurationModeId === "original" ? (baseMeditation?.id ?? null) : (activeVariantMeditation?.id ?? null)
+
   const handleConvertAudio = useCallback(
     async (saveMode: "replace" | "copy" | "account") => {
       if (!selectedMeditation || isConverting) return
@@ -2124,10 +2158,31 @@ export default function LibraryPage() {
         // conversion work yet (it might never be needed) — just remember the intent and send
         // them to sign-up. The original meditation is untouched and stays in the library as-is,
         // so no audio is at risk; the conversion runs after they're back and authenticated
-        // (see usePendingConvertAutoSave).
-        savePendingConvertIntent({ kind: "library", meditationId: selectedMeditation.id, targetFormat: convertFormat })
+        // (see usePendingConvertAutoSave). When a variant is active, its audio URL travels with
+        // the intent too, since the deferred conversion otherwise has no way to know a variant
+        // (rather than the original) was selected — it only looks up the meditation by id.
+        savePendingConvertIntent({
+          kind: "library",
+          meditationId: selectedMeditation.id,
+          targetFormat: convertFormat,
+          // The variant's own processed audio, never its (borrowed-from-the-original)
+          // sourceAudioUrl — see the comment on the non-guest conversion path below.
+          variantAudioUrl:
+            activeDurationModeId !== "original"
+              ? selectedMeditation.processedAudioUrl || selectedMeditation.sourceAudioUrl
+              : undefined,
+        })
         setIsConvertDialogOpen(false)
         router.push(`/auth/sign-up?returnTo=${encodeURIComponent("/library")}`)
+        return
+      }
+
+      if (saveMode === "replace" && !convertReplaceTargetId) {
+        toast({
+          title: "Can't replace this variant yet",
+          description: "This duration hasn't been saved on its own. Try \"Save as new copy\" instead.",
+          variant: "destructive",
+        })
         return
       }
 
@@ -2136,7 +2191,14 @@ export default function LibraryPage() {
       setConvertProgress(0)
 
       try {
-        const sourceUrl = selectedMeditation.sourceAudioUrl || selectedMeditation.processedAudioUrl
+        // A variant's own sourceAudioUrl actually points back to the *original's* source (kept
+        // there so future quick-adjusts always re-derive from the pristine recording rather than
+        // an already-shortened copy — see applyDurationMode) — it is NOT this variant's own
+        // audio. Its processedAudioUrl is. Only prefer sourceAudioUrl for the true Original.
+        const sourceUrl =
+          activeDurationModeId === "original"
+            ? selectedMeditation.sourceAudioUrl || selectedMeditation.processedAudioUrl
+            : selectedMeditation.processedAudioUrl || selectedMeditation.sourceAudioUrl || ""
         const response = await fetch(sourceUrl)
         if (!response.ok) {
           throw new Error("Unable to load this meditation's audio.")
@@ -2165,7 +2227,10 @@ export default function LibraryPage() {
 
         if (saveMode === "replace") {
           setConvertStep("Saving...")
-          const updated = await MeditationLibrary.replaceMeditationAudio(selectedMeditation.id, {
+          // Resolved above: the base meditation's own row when viewing Original, or the
+          // variant's own linked row when viewing a saved variant — never the wrong one.
+          const targetId = convertReplaceTargetId as string
+          const updated = await MeditationLibrary.replaceMeditationAudio(targetId, {
             audioData: result.blob,
             duration: audioBuffer.duration,
             audioFormat: result.format,
@@ -2173,6 +2238,15 @@ export default function LibraryPage() {
           setSelectedMeditation(updated)
           setBaseMeditation((previous) => (previous && previous.id === updated.id ? updated : previous))
           setMeditations((previous) => previous.map((item) => (item.id === updated.id ? updated : item)))
+          if (activeDurationModeId !== "original") {
+            setCurrentDurationModes((previous) =>
+              previous.map((mode) =>
+                mode.id === activeDurationModeId
+                  ? { ...mode, audioUrl: updated.processedAudioUrl, sourceAudioUrl: updated.sourceAudioUrl ?? null }
+                  : mode,
+              ),
+            )
+          }
           setIsConvertDialogOpen(false)
           toast({
             title: "Conversion complete",
@@ -2212,7 +2286,16 @@ export default function LibraryPage() {
         setConvertProgress(0)
       }
     },
-    [selectedMeditation, isConverting, convertFormat, toast, router],
+    [
+      selectedMeditation,
+      isConverting,
+      convertFormat,
+      toast,
+      router,
+      activeDurationModeId,
+      convertReplaceTargetId,
+      setCurrentDurationModes,
+    ],
   )
 
   const handleSeek = useCallback(
@@ -3382,14 +3465,8 @@ export default function LibraryPage() {
                                       variant="ghost"
                                       size="icon"
                                       className="h-10 w-10 rounded-[10px] text-gray-600 shadow-md hover:shadow-none"
-                                      title={
-                                        activeDurationModeId === "original"
-                                          ? "Convert format"
-                                          : "Switch to Original to convert this meditation's format"
-                                      }
-                                      disabled={
-                                        isQuickAdjustProcessing || !selectedMeditation || activeDurationModeId !== "original"
-                                      }
+                                      title="Convert format"
+                                      disabled={isQuickAdjustProcessing || !selectedMeditation}
                                     >
                                       <RefreshCw className="h-4 w-4" />
                                     </Button>
@@ -3423,6 +3500,12 @@ export default function LibraryPage() {
                                         </Select>
                                       </div>
 
+                                      {activeDurationModeId !== "original" && (
+                                        <p className="text-[11px] text-gray-500">
+                                          Converting the "{currentDurationModes.find((mode) => mode.id === activeDurationModeId)?.label ?? "selected"}" variant.
+                                        </p>
+                                      )}
+
                                       {isConverting ? (
                                         <div className="space-y-2">
                                           <p className="text-xs text-gray-500">{convertStep || "Converting..."}</p>
@@ -3435,12 +3518,19 @@ export default function LibraryPage() {
                                         </div>
                                       ) : isAuthenticated ? (
                                         <div className="space-y-2">
-                                          <Button
-                                            className="w-full font-black text-xs"
-                                            onClick={() => handleConvertAudio("replace")}
-                                          >
-                                            Replace original
-                                          </Button>
+                                          {convertReplaceTargetId ? (
+                                            <Button
+                                              className="w-full font-black text-xs"
+                                              onClick={() => handleConvertAudio("replace")}
+                                            >
+                                              {activeDurationModeId === "original" ? "Replace original" : "Replace this variant"}
+                                            </Button>
+                                          ) : (
+                                            <p className="text-[11px] text-gray-500">
+                                              This duration hasn't been saved on its own, so it can only be saved as a
+                                              new copy.
+                                            </p>
+                                          )}
                                           <Button
                                             variant="outline"
                                             className="w-full font-black text-xs"
@@ -3452,23 +3542,34 @@ export default function LibraryPage() {
                                       ) : (
                                         <div className="space-y-2">
                                           <p className="text-[11px] text-gray-500">
-                                            As a guest, you can replace the original, or create a free account to
-                                            keep both — we'll hang onto this converted audio and save it to your new
-                                            account automatically.
+                                            As a guest, you can{" "}
+                                            {convertReplaceTargetId
+                                              ? `replace ${activeDurationModeId === "original" ? "the original" : "this variant"}, or `
+                                              : ""}
+                                            create a free account to keep both — we'll hang onto this converted audio
+                                            and save it to your new account automatically.
                                           </p>
+                                          {!convertReplaceTargetId && (
+                                            <p className="text-[11px] text-gray-500">
+                                              This duration hasn't been saved on its own, so it can't be replaced
+                                              directly yet.
+                                            </p>
+                                          )}
                                           <Button
                                             className="w-full font-black text-xs"
                                             onClick={() => handleConvertAudio("account")}
                                           >
                                             Create account &amp; keep both
                                           </Button>
-                                          <Button
-                                            variant="outline"
-                                            className="w-full font-black text-xs"
-                                            onClick={() => handleConvertAudio("replace")}
-                                          >
-                                            Replace original
-                                          </Button>
+                                          {convertReplaceTargetId && (
+                                            <Button
+                                              variant="outline"
+                                              className="w-full font-black text-xs"
+                                              onClick={() => handleConvertAudio("replace")}
+                                            >
+                                              {activeDurationModeId === "original" ? "Replace original" : "Replace this variant"}
+                                            </Button>
+                                          )}
                                         </div>
                                       )}
                                     </div>
