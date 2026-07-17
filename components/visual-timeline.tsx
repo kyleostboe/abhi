@@ -540,7 +540,7 @@ export function VisualTimeline({
 
                         <div className="flex flex-col flex-grow min-w-0 ml-3">
                           <div className="flex items-center space-x-2 mb-1 flex-wrap">
-                            <Badge variant="outline" className="text-xs text-gray-700 border-none">
+                            <Badge variant="outline" className="text-xs text-gray-700 border-none whitespace-nowrap">
                               {event.type === "instruction_sound" ? "Instruction + Sound" : "Voice Recording"}
                             </Badge>
                             {editingEventId === event.id ? (

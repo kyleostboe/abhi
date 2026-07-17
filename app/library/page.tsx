@@ -2928,7 +2928,7 @@ export default function LibraryPage() {
                                       <>
                                         <span className="flex items-center gap-1">
                                           <Calendar className="h-4 w-4 text-gray-500" />
-                                          <span className="font-black truncate text-xs text-gray-500 tracking-tight tracking-tightext-gray-500 tracking-tight">
+                                          <span className="font-black truncate text-xs text-gray-500 tracking-tight">
                                             {formatDate(base.createdAt)}
                                           </span>
                                         </span>

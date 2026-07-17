@@ -422,7 +422,7 @@ export default function JournalPage() {
                         <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px] shadow-md" />
                         <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[11px] w-[11px] shadow" />
                         <div className="w-5 bg-gradient-to-br from-logo-amber to-orange-300 rounded-[4px] transform h-[11px] shadow-sm" />
-                        <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-0 border-[3px] bg-muted h-11 w-3 border-stone-200 shadow-md rounded-md-md-full rounded-md" />
+                        <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-0 border-[3px] bg-muted h-11 w-3 border-stone-200 shadow-md rounded-md" />
                         <div className="w-5 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[4px] transform h-[11px] pl-0 shadow-sm" />
                         <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[11px] w-[11px] shadow" />
                         <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[16px] h-[16px] shadow-md" />
