@@ -55,6 +55,7 @@ import {
   calculateUniformScaledPauseDurations,
   suggestSilenceThreshold,
   type DetectSilenceOptions,
+  type SilenceRegion,
 } from "@/lib/adjuster-workflow"
 import { MeditationLibrary, type SavedMeditation } from "@/lib/meditation-library"
 import { saveToolSession, getToolSession, clearToolSession } from "@/lib/storage/tool-session"
@@ -621,6 +622,13 @@ export default function Home() {
   const timelineUploadInputRef = useRef<HTMLInputElement>(null)
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const silenceAnalysisAbortRef = useRef<AbortController | null>(null)
+  // Caches the detected pause map so that changing only the target length re-uses it instead
+  // of re-scanning the audio. Keyed by the exact buffer + detection inputs (threshold and
+  // minDuration); maxSilenceDuration/contentSpeed are applied downstream and don't invalidate
+  // detection, so they're deliberately excluded from the key.
+  const pauseMapCacheRef = useRef<
+    { buffer: AudioBuffer; threshold: number; minDuration: number; regions: SilenceRegion[] } | null
+  >(null)
   const [processedDistributionBlob, setProcessedDistributionBlob] = useState<Blob | null>(null)
   const [processedDistributionMetadata, setProcessedDistributionMetadata] = useState<AudioFormatMetadata | null>(null)
   const [generatedDistributionBlob, setGeneratedDistributionBlob] = useState<Blob | null>(null)
@@ -2628,6 +2636,18 @@ export default function Home() {
       setProcessedDistributionBlob(null)
       setProcessedDistributionMetadata(null)
 
+      // Reuse the pause map from the analysis pass when detection inputs are unchanged, so
+      // adjusting only the target length skips a full re-scan. Region times are in seconds,
+      // so they remain valid even if bufferToProcess was downsampled from originalBuffer.
+      const cachedPauseMap = pauseMapCacheRef.current
+      const reusableSilenceRegions =
+        cachedPauseMap &&
+        cachedPauseMap.buffer === originalBuffer &&
+        cachedPauseMap.threshold === silenceThreshold &&
+        cachedPauseMap.minDuration === minSilenceDuration
+          ? cachedPauseMap.regions
+          : undefined
+
       const result = await runAdjusterWorkflow({
         audioContext: currentAudioContext,
         buffer: bufferToProcess,
@@ -2640,6 +2660,7 @@ export default function Home() {
         },
         isMobileDevice,
         exportFormat,
+        precomputedSilenceRegions: reusableSilenceRegions,
         callbacks: {
           onProgress: (progress) => setProcessingProgress(Math.max(0, Math.min(100, Math.round(progress)))),
           onStep: (step) => setProcessingStep(step),
@@ -2798,6 +2819,15 @@ export default function Home() {
 
         if (controller.signal.aborted) {
           return
+        }
+
+        // Cache the freshly-detected (uncapped) pause map so a later Process at the same
+        // threshold/minDuration can skip re-detection.
+        pauseMapCacheRef.current = {
+          buffer: originalBuffer,
+          threshold: silenceThreshold,
+          minDuration: minSilenceDuration,
+          regions: silenceRegions,
         }
 
         // Cap silence regions the same way processing does (respecting maxSilenceDuration)

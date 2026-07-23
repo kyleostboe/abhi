@@ -27,7 +27,7 @@ import {
   AUDIO_EXPORT_FORMAT_LABELS,
   type AudioExportFormat,
 } from "@/lib/audio-utils"
-import { runAdjusterWorkflow, suggestSilenceThreshold } from "@/lib/adjuster-workflow"
+import { runAdjusterWorkflow, suggestSilenceThreshold, type SilenceRegion } from "@/lib/adjuster-workflow"
 import { cn } from "@/lib/utils"
 import { useJournal } from "@/hooks/use-journal"
 import { useAuth } from "@/hooks/use-auth"
@@ -361,6 +361,10 @@ export default function LibraryPage() {
   const { isAuthenticated, login, status } = useAuth()
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const timelineAudioRef = useRef<HTMLAudioElement | null>(null)
+  // Caches detected pause maps per (meditation id + detection settings) so generating a
+  // second quick-adjust length for the same source reuses the map instead of re-detecting.
+  // Region times are in seconds, so they stay valid across re-decodes at any sample rate.
+  const quickAdjustPauseMapRef = useRef<Map<string, SilenceRegion[]>>(new Map())
   const presetsPersistReadyRef = useRef(false)
   const durationsPersistReadyRef = useRef(false)
   const backupInputRef = useRef<HTMLInputElement>(null)
@@ -1190,18 +1194,27 @@ export default function LibraryPage() {
       setQuickAdjustStep("Decoding audio...")
       const audioBuffer = await decodeAudioBlob(blob, audioContext)
 
+      const effectiveThreshold = quickAdjustSilenceThreshold ?? settings.silenceThreshold
+      const effectiveMinSilence = settings.minSilenceDuration
+      // Reuse a previously-detected pause map for this source at these detection settings, so
+      // trying another target length skips re-detection. (maxSilenceDuration is 0 here, so the
+      // returned regions are uncapped and safe to feed straight back as the precomputed map.)
+      const pauseMapKey = `${baseMeditation.id}|${effectiveThreshold}|${effectiveMinSilence}`
+      const cachedPauseRegions = quickAdjustPauseMapRef.current.get(pauseMapKey)
+
       const result = await runAdjusterWorkflow({
         audioContext,
         buffer: audioBuffer,
         settings: {
           targetDurationSeconds: effectiveTargetSeconds,
-          silenceThreshold: quickAdjustSilenceThreshold ?? settings.silenceThreshold,
-          minSilenceDuration: settings.minSilenceDuration,
+          silenceThreshold: effectiveThreshold,
+          minSilenceDuration: effectiveMinSilence,
           maxSilenceDuration: 0, // no cap, matches the Adjuster tool's default
           contentSpeedMultiplier: 1.0, // no speedup, matches the Adjuster tool's default
         },
         isMobileDevice,
         exportFormat: quickAdjustExportFormat,
+        precomputedSilenceRegions: cachedPauseRegions,
         callbacks: {
           onProgress: (progress) => setQuickAdjustProgress(Math.max(0, Math.min(100, Math.round(progress)))),
           onStep: (step) => setQuickAdjustStep(step),
@@ -1216,6 +1229,9 @@ export default function LibraryPage() {
           },
         },
       })
+
+      // Cache this source's pause map (uncapped here) for subsequent quick-adjust lengths.
+      quickAdjustPauseMapRef.current.set(pauseMapKey, result.silenceRegions)
 
       const processedDurationSeconds = result.processedBuffer.duration
       const newLowerBoundSeconds = Math.max(

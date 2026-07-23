@@ -116,7 +116,11 @@ export async function detectSilenceRegions(
   minDuration: number,
   options: DetectSilenceOptions = {},
 ): Promise<SilenceRegion[]> {
-  const BUFFER_SECONDS = 0.3
+  // Pull each detected pause boundary inward by this much before returning it, so soft
+  // speech onsets and trailing breaths sitting right at the edges are never scaled as if
+  // they were silence. Kept modest — 0.3s (the previous value) audibly clipped breaths;
+  // ~120ms protects the edges without eating into the real pause.
+  const BUFFER_SECONDS = 0.12
   const sampleRate = buffer.sampleRate
   const channelData = buffer.getChannelData(0)
   const windowSize = Math.floor(sampleRate * 0.01)
@@ -145,9 +149,19 @@ export async function detectSilenceRegions(
     return []
   }
 
+  // Hysteresis: a pause STARTS when the level drops below `threshold`, and only ENDS when
+  // the level rises clearly back above it (threshold * EXIT_RATIO). A brief blip that stays
+  // under the exit level — a breath, a soft consonant tail, the quiet part of a word's decay
+  // — won't chop one pause into two, which is what produced audible choppiness before. The
+  // enter level is unchanged, so pause *starts* are detected exactly as before; only spurious
+  // mid-pause splits are suppressed. Kept conservative so real speech still ends a pause
+  // promptly (speech RMS is typically well above threshold * EXIT_RATIO).
+  const EXIT_RATIO = 1.5
+
   const regions: SilenceRegion[] = []
   let silenceStart = -1
   let consecutiveSilentSamples = 0
+  let inSilence = false
 
   reportProgress(0)
 
@@ -164,21 +178,25 @@ export async function detectSilenceRegions(
     }
     rms = Math.sqrt(rms / (windowEnd - i))
 
-    const isSilent = rms < threshold
     const timeSeconds = i / sampleRate
 
-    if (isSilent) {
-      if (silenceStart === -1) {
+    if (!inSilence) {
+      if (rms < threshold) {
+        inSilence = true
         silenceStart = timeSeconds
+        consecutiveSilentSamples = windowEnd - i
       }
-      consecutiveSilentSamples += windowEnd - i
-    } else if (silenceStart !== -1) {
+    } else if (rms > threshold * EXIT_RATIO) {
+      // Level has clearly returned to speech — close the current pause.
       if (consecutiveSilentSamples >= minSamples) {
-        const silenceEnd = windowEnd / sampleRate
-        regions.push({ start: silenceStart, end: silenceEnd })
+        regions.push({ start: silenceStart, end: timeSeconds })
       }
+      inSilence = false
       silenceStart = -1
       consecutiveSilentSamples = 0
+    } else {
+      // Still within the pause (including the quiet decay between the enter/exit levels).
+      consecutiveSilentSamples += windowEnd - i
     }
 
     processedSamples += windowEnd - i
@@ -194,7 +212,7 @@ export async function detectSilenceRegions(
     }
   }
 
-  if (silenceStart !== -1 && consecutiveSilentSamples >= minSamples) {
+  if (inSilence && consecutiveSilentSamples >= minSamples) {
     regions.push({ start: silenceStart, end: buffer.duration })
   }
 
@@ -451,6 +469,82 @@ export function calculateUniformScaledPauseDurations(
   return pauseData.map(p => ({ region: p.region, newDuration: p.finalDuration }))
 }
 
+/**
+ * Writes a single rebuilt pause of `targetLen` samples into `out` starting at `writeIndex`,
+ * drawing real room tone from the original pause audio `src[pStart..pEnd)` instead of digital
+ * silence. Returns the new write index.
+ *
+ *  - Shrinking (targetLen <= origLen): keep the phrase's decay tail from the front of the
+ *    pause and the pre-phrase inhale from the back, joined by an equal-power crossfade of the
+ *    quiet interior. The gap sounds like a real pause instead of a dropout.
+ *  - Extending (targetLen > origLen): put the real decay at the front and the real inhale at
+ *    the back with silence in the elongated middle (how a genuinely long pause actually
+ *    sounds), with short linear edge fades so the silence seams are click-free.
+ *
+ * Pure array math — no AudioContext/DOM — and always writes exactly `targetLen` samples
+ * (subject to the `out` bound), so downstream duration accounting is unchanged.
+ */
+function writePause(
+  src: Float32Array,
+  pStart: number,
+  pEnd: number,
+  targetLen: number,
+  out: Float32Array,
+  writeIndex: number,
+  sampleRate: number,
+): number {
+  if (targetLen <= 0) return writeIndex
+  const origLen = pEnd - pStart
+
+  // No usable source room tone (shouldn't happen for a real detected pause) — fall back to
+  // silence, matching the previous behaviour.
+  if (origLen <= 0) {
+    for (let j = 0; j < targetLen && writeIndex < out.length; j++) out[writeIndex++] = 0
+    return writeIndex
+  }
+
+  if (targetLen <= origLen) {
+    const cf = Math.min(Math.round(sampleRate * 0.12), Math.floor(targetLen / 2))
+    const half = Math.floor((targetLen - cf) / 2)
+    const cfLen = targetLen - 2 * half // exact remainder — total written == targetLen
+
+    // Front: decay tail from the very start of the pause.
+    for (let k = 0; k < half && writeIndex < out.length; k++) {
+      out[writeIndex++] = src[pStart + k]
+    }
+    // Middle: equal-power crossfade from interior-after-decay into interior-before-inhale.
+    for (let k = 0; k < cfLen && writeIndex < out.length; k++) {
+      const a = src[pStart + half + k]
+      const b = src[pEnd - half - cfLen + k]
+      const t = cfLen > 1 ? k / (cfLen - 1) : 0
+      out[writeIndex++] = a * Math.sqrt(1 - t) + b * Math.sqrt(t)
+    }
+    // Back: inhale from the very end of the pause.
+    for (let k = 0; k < half && writeIndex < out.length; k++) {
+      out[writeIndex++] = src[pEnd - half + k]
+    }
+  } else {
+    const frontLen = Math.floor(origLen / 2)
+    const backLen = origLen - frontLen
+    const gap = targetLen - frontLen - backLen // > 0 — total written == targetLen
+    const fade = Math.min(Math.round(sampleRate * 0.01), frontLen, backLen)
+
+    for (let k = 0; k < frontLen && writeIndex < out.length; k++) {
+      let s = src[pStart + k]
+      if (fade > 0 && k >= frontLen - fade) s *= (frontLen - k) / fade
+      out[writeIndex++] = s
+    }
+    for (let k = 0; k < gap && writeIndex < out.length; k++) out[writeIndex++] = 0
+    for (let k = 0; k < backLen && writeIndex < out.length; k++) {
+      let s = src[pEnd - backLen + k]
+      if (fade > 0 && k < fade) s *= k / fade
+      out[writeIndex++] = s
+    }
+  }
+
+  return writeIndex
+}
+
 export async function rebuildAudioWithScaledPauses({
   audioContext,
   buffer,
@@ -568,9 +662,18 @@ export async function rebuildAudioWithScaledPauses({
     readIndex = Math.floor(region.end * buffer.sampleRate)
 
     const newSilenceLength = Math.floor(newDuration * buffer.sampleRate)
-    for (let j = 0; j < newSilenceLength && writeIndex < newData.length; j++) {
-      newData[writeIndex++] = 0
-    }
+    // Rebuild the pause from its own room tone (decay tail + inhale) rather than writing
+    // digital silence, so shortened gaps sound like real pauses. Pauses are drawn from the
+    // unstretched mono source and are never time-stretched themselves.
+    writeIndex = writePause(
+      monoSource,
+      Math.max(0, Math.floor(region.start * buffer.sampleRate)),
+      Math.min(totalSamples, Math.floor(region.end * buffer.sampleRate)),
+      newSilenceLength,
+      newData,
+      writeIndex,
+      buffer.sampleRate,
+    )
 
     const nextRegionStart =
       i < processedRegions.length - 1 ? Math.floor(processedRegions[i + 1].region.start * buffer.sampleRate) : totalSamples
@@ -639,6 +742,49 @@ interface AdjusterWorkflowCallbacks {
   onMemoryWarning?: () => void
 }
 
+export interface AdjusterFeasibility {
+  /** Seconds of spoken content (everything that isn't a detected pause). */
+  speechTotal: number
+  /** Seconds of detected pause (uncapped). */
+  pauseTotal: number
+  /** Number of detected pauses. */
+  pauseCount: number
+  /** Shortest reachable output given the pause floor — targets below this can't be honored. */
+  minAchievable: number
+  /** Practical longest output (extending appends silence up to a soft memory ceiling). */
+  maxAchievable: number
+}
+
+/** Practical upper bound on output length — matches the long-duration memory-warning point. */
+const PRACTICAL_MAX_SECONDS = 90 * 60
+
+/**
+ * Pre-flight feasibility for a source + detection result, so a target duration can be
+ * validated (and a length slider's range set) BEFORE any audio is rebuilt. Pure data in,
+ * pure data out — no AudioContext/DOM — so it is safe to call from anywhere, including
+ * straight after detection to bound the UI.
+ */
+export function computeFeasibility(params: {
+  bufferDuration: number
+  silenceRegions: SilenceRegion[]
+  minSilenceDuration: number
+  contentSpeedMultiplier?: number
+}): AdjusterFeasibility {
+  const { bufferDuration, silenceRegions, minSilenceDuration, contentSpeedMultiplier = 1 } = params
+  const pauseTotal = silenceRegions.reduce((sum, r) => sum + (r.end - r.start), 0)
+  const speechTotal = Math.max(0, bufferDuration - pauseTotal)
+  const effectiveContent = speechTotal / (contentSpeedMultiplier || 1)
+  const pauseFloor = Math.max(0.3, minSilenceDuration)
+  const minAchievable = effectiveContent + silenceRegions.length * pauseFloor
+  return {
+    speechTotal,
+    pauseTotal,
+    pauseCount: silenceRegions.length,
+    minAchievable,
+    maxAchievable: Math.max(minAchievable, PRACTICAL_MAX_SECONDS),
+  }
+}
+
 export interface AdjusterWorkflowResult {
   processedBuffer: AudioBuffer
   distributionBlob: Blob
@@ -649,6 +795,8 @@ export interface AdjusterWorkflowResult {
   audioContentDuration: number
   availableSilenceDuration: number
   scaleFactor: number
+  /** Pre-flight feasibility for this source + detection settings (see computeFeasibility). */
+  feasibility: AdjusterFeasibility
 }
 
 export async function runAdjusterWorkflow({
@@ -658,6 +806,7 @@ export async function runAdjusterWorkflow({
   isMobileDevice,
   exportFormat = "opus",
   callbacks = {},
+  precomputedSilenceRegions,
 }: {
   audioContext: AudioContext
   buffer: AudioBuffer
@@ -665,6 +814,13 @@ export async function runAdjusterWorkflow({
   isMobileDevice: boolean
   exportFormat?: AudioExportFormat
   callbacks?: AdjusterWorkflowCallbacks
+  /**
+   * Pause map from a previous detection on the SAME buffer at the SAME threshold/minDuration.
+   * When supplied, detection is skipped and this map is reused — so changing only the target
+   * length re-solves and re-assembles without re-scanning the audio. The caller owns
+   * invalidation: pass this only when silenceThreshold and minSilenceDuration are unchanged.
+   */
+  precomputedSilenceRegions?: SilenceRegion[]
 }): Promise<AdjusterWorkflowResult> {
   const {
     targetDurationSeconds,
@@ -675,10 +831,13 @@ export async function runAdjusterWorkflow({
   } = settings
   const { onProgress = () => {}, onStep = () => {}, onMemoryWarning } = callbacks
 
-  onStep("Detecting silence regions (step 1/4)...")
+  const reusingPauseMap = precomputedSilenceRegions !== undefined
+  onStep(reusingPauseMap ? "Reusing pause map (step 1/4)..." : "Detecting silence regions (step 1/4)...")
   onProgress(10)
 
-  const silenceRegions = await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
+  const silenceRegions = reusingPauseMap
+    ? precomputedSilenceRegions!
+    : await detectSilenceRegions(buffer, silenceThreshold, minSilenceDuration)
 
   const cappedSilenceRegions = silenceRegions.map((region) => {
     if (maxSilenceDuration === 0) {
@@ -753,6 +912,13 @@ export async function runAdjusterWorkflow({
   onProgress(100)
   onStep("Complete!")
 
+  const feasibility = computeFeasibility({
+    bufferDuration: buffer.duration,
+    silenceRegions,
+    minSilenceDuration,
+    contentSpeedMultiplier,
+  })
+
   return {
     processedBuffer: processedAudioBuffer,
     distributionBlob,
@@ -763,5 +929,6 @@ export async function runAdjusterWorkflow({
     audioContentDuration,
     availableSilenceDuration,
     scaleFactor,
+    feasibility,
   }
 }
