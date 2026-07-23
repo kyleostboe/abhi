@@ -1428,7 +1428,7 @@ export default function LibraryPage() {
         })
         return
       }
-      const clamped = Number(Math.min(0.05, Math.max(0.001, suggestion.threshold)).toFixed(3))
+      const clamped = Number(Math.min(0.2, Math.max(0.001, suggestion.threshold)).toFixed(3))
       setQuickAdjustSilenceThreshold(clamped)
       const toDb = (v: number) => Math.round(20 * Math.log10(v))
       toast({
@@ -3685,11 +3685,11 @@ export default function LibraryPage() {
                                             <Slider
                                               value={[20 * Math.log10(quickAdjustSilenceThreshold ?? 0.01)]}
                                               min={-60}
-                                              max={-26}
+                                              max={-14}
                                               step={1}
                                               onValueChange={(value) =>
                                                 setQuickAdjustSilenceThreshold(
-                                                  Math.min(0.05, Math.max(0.001, Math.pow(10, value[0] / 20))),
+                                                  Math.min(0.2, Math.max(0.001, Math.pow(10, value[0] / 20))),
                                                 )
                                               }
                                               rangeClassName="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500"

@@ -3410,7 +3410,7 @@ export default function Home() {
         })
         return
       }
-      const clamped = Number(Math.min(0.05, Math.max(0.001, suggestion.threshold)).toFixed(3))
+      const clamped = Number(Math.min(0.2, Math.max(0.001, suggestion.threshold)).toFixed(3))
       setSilenceThreshold(clamped)
       const toDb = (v: number) => Math.round(20 * Math.log10(v))
       toast({
@@ -3951,10 +3951,10 @@ export default function Home() {
                               <Slider
                                 value={[20 * Math.log10(silenceThreshold)]}
                                 min={-60}
-                                max={-26}
+                                max={-14}
                                 step={1}
                                 onValueChange={(value) =>
-                                  setSilenceThreshold(Math.min(0.05, Math.max(0.001, Math.pow(10, value[0] / 20))))
+                                  setSilenceThreshold(Math.min(0.2, Math.max(0.001, Math.pow(10, value[0] / 20))))
                                 }
                                 disabled={!originalBuffer}
                                 className="py-4"
