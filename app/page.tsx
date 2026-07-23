@@ -3410,11 +3410,12 @@ export default function Home() {
         })
         return
       }
-      const clamped = Number(Math.min(0.05, Math.max(0.001, suggestion.threshold)).toFixed(3))
+      const clamped = Number(Math.min(0.2, Math.max(0.001, suggestion.threshold)).toFixed(3))
       setSilenceThreshold(clamped)
+      const toDb = (v: number) => Math.round(20 * Math.log10(v))
       toast({
         title: "Silence threshold suggested",
-        description: `Background noise averages ~${suggestion.noiseFloor.toFixed(4)}, speech averages ~${suggestion.speechLevel.toFixed(4)}. Set to ${clamped}.`,
+        description: `Background noise sits around ${toDb(suggestion.noiseFloor)} dB and speech around ${toDb(suggestion.speechLevel)} dB. Set the threshold to ${toDb(clamped)} dB.`,
       })
     } finally {
       setIsSuggestingSilenceThreshold(false)
@@ -3948,19 +3949,21 @@ export default function Home() {
                           >
                             <div>
                               <Slider
-                                value={[silenceThreshold]}
-                                min={0.001}
-                                max={0.05}
-                                step={0.001}
-                                onValueChange={(value) => setSilenceThreshold(value[0])}
+                                value={[20 * Math.log10(silenceThreshold)]}
+                                min={-60}
+                                max={-14}
+                                step={1}
+                                onValueChange={(value) =>
+                                  setSilenceThreshold(Math.min(0.2, Math.max(0.001, Math.pow(10, value[0] / 20))))
+                                }
                                 disabled={!originalBuffer}
                                 className="py-4"
                                 rangeClassName="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500"
                               />
                             </div>
                             <div className="text-center tracking-tight">
-                              <span className="text-lg text-gray-600 font-black">{silenceThreshold.toFixed(3)}</span>
-                              <span className="ml-1 text-sm text-gray-600"></span>
+                              <span className="text-lg text-gray-600 font-black">{Math.round(20 * Math.log10(silenceThreshold))}</span>
+                              <span className="ml-1 text-sm text-gray-600">dB</span>
                             </div>
                             <p className="text-center text-xs text-gray-500 tracking-tight">higher = detect more pauses</p>
                             <div className="mt-2 flex justify-center">
