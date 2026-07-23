@@ -278,8 +278,17 @@ export async function suggestSilenceThreshold(buffer: AudioBuffer): Promise<Sugg
   }
   if (rmsValues.length < 4) return null
 
+  // Exclude true digital-silence frames (dead zeros and near-zeros, below ~-80 dBFS) before
+  // analysis. Many produced meditation tracks contain long stretches of literal silence, which
+  // otherwise pile into a huge spike at the quiet end and drag the whole estimate down to the
+  // clamp floor — the reason "Suggest" could return a uselessly tiny value on such files. Fall
+  // back to the full set if almost everything is that quiet, so we never analyse too few frames.
+  const DIGITAL_SILENCE_FLOOR = 1e-4 // -80 dBFS
+  const audibleValues = rmsValues.filter((v) => v >= DIGITAL_SILENCE_FLOOR)
+  const valuesForAnalysis = audibleValues.length >= 4 ? audibleValues : rmsValues
+
   const EPSILON = 1e-6
-  const logValues = rmsValues.map((v) => Math.log10(Math.max(v, EPSILON))).sort((a, b) => a - b)
+  const logValues = valuesForAnalysis.map((v) => Math.log10(Math.max(v, EPSILON))).sort((a, b) => a - b)
 
   // Use the 1st/99th percentile as the histogram's range instead of the literal min/max — a
   // single outlier window (a click/pop, or a moment of true digital silence far quieter than
@@ -345,14 +354,11 @@ export async function suggestSilenceThreshold(buffer: AudioBuffer): Promise<Sugg
   const noiseLog = average(belowLog, minLog)
   const speechLog = average(aboveLog, maxLog)
 
-  // Word endings decay gradually rather than dropping straight to the noise floor, so
-  // windows partway through that decay land between the two clusters. Otsu's raw split
-  // point can sit well up toward the speech cluster, which risks classifying those
-  // still-audible tails as silence and clipping words. Pulling the suggestion most of the way
-  // back toward the noise floor avoided that, but landed too close to it — quiet enough that
-  // it barely flagged any pauses. Split the difference instead of favoring either extreme.
-  const NOISE_BIAS = 0.45
-  const thresholdLog = noiseLog + NOISE_BIAS * (otsuLog - noiseLog)
+  // Place the threshold at the midpoint between the noise and speech clusters (in log space),
+  // squarely in the quiet gap that separates them: low enough below speech that words aren't
+  // clipped (helped further by detection's edge padding), high enough above the noise floor to
+  // actually flag pauses — rather than hugging the noise floor as a harder bias toward it did.
+  const thresholdLog = (noiseLog + speechLog) / 2
 
   return {
     threshold: 10 ** thresholdLog,

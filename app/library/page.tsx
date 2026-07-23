@@ -1430,9 +1430,10 @@ export default function LibraryPage() {
       }
       const clamped = Number(Math.min(0.05, Math.max(0.001, suggestion.threshold)).toFixed(3))
       setQuickAdjustSilenceThreshold(clamped)
+      const toDb = (v: number) => Math.round(20 * Math.log10(v))
       toast({
         title: "Silence threshold suggested",
-        description: `Background noise averages ~${suggestion.noiseFloor.toFixed(4)}, speech averages ~${suggestion.speechLevel.toFixed(4)}. Set to ${clamped}.`,
+        description: `Background noise sits around ${toDb(suggestion.noiseFloor)} dB and speech around ${toDb(suggestion.speechLevel)} dB. Set the threshold to ${toDb(clamped)} dB.`,
       })
     } catch (error) {
       console.error("[v0] Silence threshold suggestion failed:", error)
@@ -3678,15 +3679,19 @@ export default function LibraryPage() {
                                                 Silence threshold
                                               </Label>
                                               <span className="text-[11px] font-black text-gray-500">
-                                                {(quickAdjustSilenceThreshold ?? 0.01).toFixed(3)}
+                                                {Math.round(20 * Math.log10(quickAdjustSilenceThreshold ?? 0.01))} dB
                                               </span>
                                             </div>
                                             <Slider
-                                              value={[quickAdjustSilenceThreshold ?? 0.01]}
-                                              min={0.001}
-                                              max={0.05}
-                                              step={0.001}
-                                              onValueChange={(value) => setQuickAdjustSilenceThreshold(value[0])}
+                                              value={[20 * Math.log10(quickAdjustSilenceThreshold ?? 0.01)]}
+                                              min={-60}
+                                              max={-26}
+                                              step={1}
+                                              onValueChange={(value) =>
+                                                setQuickAdjustSilenceThreshold(
+                                                  Math.min(0.05, Math.max(0.001, Math.pow(10, value[0] / 20))),
+                                                )
+                                              }
                                               rangeClassName="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500"
                                             />
                                             <div className="flex justify-center">
