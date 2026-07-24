@@ -1,9 +1,18 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { CalendarDays, Clock, NotebookPen, BookOpenCheck, Sparkles } from "lucide-react"
+import {
+  BookOpenCheck,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  NotebookPen,
+  Plus,
+  Sparkles,
+} from "lucide-react"
 
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
@@ -17,8 +26,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { useJournal, type JournalEntry } from "@/hooks/use-journal"
@@ -46,6 +55,32 @@ const formatMonth = (date: Date) =>
     year: "numeric",
   }).format(date)
 
+/** Compact form for the narrow entry cards, where the full weekday version gets truncated. */
+const formatShortDate = (date: Date) =>
+  new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date)
+
+const dayLabelFormatter = new Intl.DateTimeFormat("en-US", {
+  weekday: "short",
+  day: "numeric",
+})
+
+/**
+ * Reads weekday and day-number as separate fields. Formatting to one string and splitting on the
+ * space is locale-dependent and yields them in the wrong order — en-US produces "24 Fri", not
+ * "Fri 24" — so the parts API is the only order-safe way to pull these apart.
+ */
+const getDayParts = (date: Date) => {
+  const parts = dayLabelFormatter.formatToParts(date)
+  return {
+    weekday: parts.find((part) => part.type === "weekday")?.value ?? "",
+    day: parts.find((part) => part.type === "day")?.value ?? String(date.getDate()),
+  }
+}
+
 const getDateKey = (date: Date) => {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, "0")
@@ -53,63 +88,55 @@ const getDateKey = (date: Date) => {
   return `${year}-${month}-${day}`
 }
 
-const parseDateKey = (key: string | null) => {
+/**
+ * Date keys are plain calendar days and must be reconstructed in LOCAL time.
+ * `new Date("2026-07-24")` parses as UTC midnight, which — read back through the local getters
+ * getDateKey uses — lands on the previous day in any negative-offset timezone, shifting the whole
+ * day strip, its labels, and the ?date= round-trip by one day.
+ */
+const parseDateKey = (key: string | null): Date | null => {
   if (!key) return null
-  const parsed = new Date(key)
-  if (Number.isNaN(parsed.getTime())) return null
-  return parsed
-}
-
-const getDayLabel = (date: Date) =>
-  new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    day: "numeric",
-  }).format(date)
-
-const ensureMinimumDays = (keys: string[]): string[] => {
-  if (keys.length >= 5) return keys
-  const padded = [...keys]
-  const reference = keys[0] ?? getDateKey(new Date())
-  let cursor = new Date(reference)
-  while (padded.length < 5) {
-    cursor = new Date(cursor)
-    cursor.setDate(cursor.getDate() - 1)
-    padded.unshift(getDateKey(cursor))
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key.trim())
+  if (match) {
+    const parsed = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+    return Number.isNaN(parsed.getTime()) ? null : parsed
   }
-  return padded
+  const fallback = new Date(key)
+  return Number.isNaN(fallback.getTime()) ? null : fallback
 }
 
-const generateCenteredDates = (centerKey: string, count: number): string[] => {
-  const dates: string[] = []
-  const centerDate = new Date(centerKey)
-  const halfCount = Math.floor(count / 2)
-
-  for (let i = -halfCount; i <= halfCount; i++) {
-    const date = new Date(centerDate)
-    date.setDate(date.getDate() + i)
-    dates.push(getDateKey(date))
-  }
-
-  return dates
-}
+const dateFromKey = (key: string): Date => parseDateKey(key) ?? new Date()
 
 const generateMonthDates = (referenceDate: Date): string[] => {
-  const dates: string[] = []
   const year = referenceDate.getFullYear()
   const month = referenceDate.getMonth()
-
-  // Get first and last day of the month
-  const firstDay = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0)
 
-  // Generate all dates in the month
+  const dates: string[] = []
   for (let day = 1; day <= lastDay.getDate(); day++) {
-    const date = new Date(year, month, day)
-    dates.push(getDateKey(date))
+    dates.push(getDateKey(new Date(year, month, day)))
   }
-
   return dates
 }
+
+/** Same day-of-month in the neighbouring month, clamped to that month's length. */
+const shiftMonthKey = (key: string, delta: number) => {
+  const current = dateFromKey(key)
+  const target = new Date(current.getFullYear(), current.getMonth() + delta, 1)
+  const daysInTarget = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate()
+  const day = Math.min(current.getDate(), daysInTarget)
+  return getDateKey(new Date(target.getFullYear(), target.getMonth(), day))
+}
+
+const combineDateAndTime = (dateKey: string, time: string) => {
+  const base = dateFromKey(dateKey)
+  const [hours, minutes] = time.split(":").map(Number)
+  base.setHours(Number.isFinite(hours) ? hours : 0, Number.isFinite(minutes) ? minutes : 0, 0, 0)
+  return base
+}
+
+const getTimeValue = (date: Date) =>
+  `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
 
 const sameDay = (a: string, b: string) => a === b
 
@@ -136,8 +163,9 @@ const buildJournalHref = ({
   return query ? `/journal?${query}` : "/journal"
 }
 
+
 export default function JournalPage() {
-  const { entries, updateEntryNote, deleteEntry } = useJournal()
+  const { entries, isLoading: isLoadingEntries, recordPlayback, updateEntryNote, deleteEntry } = useJournal()
   const [meditations, setMeditations] = useState<SavedMeditation[]>([])
   const [activeTab, setActiveTab] = useState<"meditation" | "date">("date")
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null)
@@ -145,8 +173,15 @@ export default function JournalPage() {
   const [activeMeditationEntryId, setActiveMeditationEntryId] = useState<string | null>(null)
   const [shouldAutoSelectMeditation, setShouldAutoSelectMeditation] = useState(true)
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({})
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [savingEntryId, setSavingEntryId] = useState<string | null>(null)
+  const [entryPendingDelete, setEntryPendingDelete] = useState<JournalEntry | null>(null)
   const [isDeletingEntry, setIsDeletingEntry] = useState(false)
+  const [isNewEntryOpen, setIsNewEntryOpen] = useState(false)
+  const [isCreatingEntry, setIsCreatingEntry] = useState(false)
+  const [newEntryMeditationId, setNewEntryMeditationId] = useState("")
+  const [newEntryDate, setNewEntryDate] = useState(() => getDateKey(new Date()))
+  const [newEntryTime, setNewEntryTime] = useState(() => getTimeValue(new Date()))
+  const [newEntryNote, setNewEntryNote] = useState("")
   const dayRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -183,21 +218,9 @@ export default function JournalPage() {
     })
   }, [entries])
 
-  const availableDayKeys = useMemo(() => {
-    const unique = new Set<string>()
-    unique.add(getDateKey(new Date()))
-    for (const entry of entries) {
-      const key = getDateKey(new Date(entry.playedAt))
-      unique.add(key)
-    }
-    const sorted = Array.from(unique).sort((a, b) => a.localeCompare(b))
-    return ensureMinimumDays(sorted)
-  }, [entries])
-
   const displayDayKeys = useMemo(() => {
     if (!selectedDateKey) return []
-    const selectedDate = new Date(selectedDateKey)
-    return generateMonthDates(selectedDate)
+    return generateMonthDates(dateFromKey(selectedDateKey))
   }, [selectedDateKey])
 
   const selectedDate = useMemo(() => parseDateKey(selectedDateKey), [selectedDateKey])
@@ -225,11 +248,12 @@ export default function JournalPage() {
     }
   }, [searchParams])
 
+  // Open on the most recent day that actually has an entry, falling back to today.
   useEffect(() => {
-    if (!selectedDateKey && availableDayKeys.length > 0) {
-      setSelectedDateKey(availableDayKeys[availableDayKeys.length - 1])
-    }
-  }, [availableDayKeys, selectedDateKey])
+    if (selectedDateKey) return
+    const entryKeys = entries.map((entry) => getDateKey(new Date(entry.playedAt))).sort((a, b) => a.localeCompare(b))
+    setSelectedDateKey(entryKeys[entryKeys.length - 1] ?? getDateKey(new Date()))
+  }, [entries, selectedDateKey])
 
   useEffect(() => {
     const handle = setTimeout(() => {
@@ -241,7 +265,7 @@ export default function JournalPage() {
     }, 100)
 
     return () => clearTimeout(handle)
-  }, [selectedDateKey])
+  }, [selectedDateKey, displayDayKeys])
 
   useEffect(() => {
     if (!selectedMeditationId) {
@@ -270,7 +294,7 @@ export default function JournalPage() {
   }, [entries, meditations, selectedMeditationId, activeMeditationEntryId, shouldAutoSelectMeditation])
 
   const entriesByDate = useMemo(() => {
-    const map = new Map<string, typeof entries>()
+    const map = new Map<string, JournalEntry[]>()
     for (const entry of entries) {
       const key = getDateKey(new Date(entry.playedAt))
       const existing = map.get(key) ?? []
@@ -307,21 +331,33 @@ export default function JournalPage() {
     ? (selectedMeditationEntries.find((entry) => entry.id === activeMeditationEntryId) ?? null)
     : (selectedMeditationEntries[0] ?? null)
 
-  const handleSaveNote = (entryId: string) => {
+  const handleSaveNote = async (entryId: string) => {
     const draft = noteDrafts[entryId] ?? ""
-    void updateEntryNote(entryId, draft)
+    setSavingEntryId(entryId)
+    const result = await updateEntryNote(entryId, draft)
+    setSavingEntryId(null)
+
+    if (!result) {
+      toast({
+        title: "Unable to save reflection",
+        description: "Please try again in a moment.",
+        variant: "destructive",
+      })
+      return
+    }
+
     toast({
       title: "Journal updated",
       description: "Your reflection has been saved.",
     })
   }
 
-  const handleDeleteActiveEntry = async () => {
-    if (!activeMeditationEntry) return
+  const handleConfirmDelete = async () => {
+    if (!entryPendingDelete) return
 
-    const entryId = activeMeditationEntry.id
-    const meditationId = activeMeditationEntry.meditationId
-    const entryCountForMeditation = selectedMeditationEntries.length
+    const entryId = entryPendingDelete.id
+    const meditationId = entryPendingDelete.meditationId
+    const entryCountForMeditation = meditationEntries.get(meditationId)?.length ?? 0
 
     setIsDeletingEntry(true)
     const didDelete = await deleteEntry(entryId)
@@ -336,7 +372,7 @@ export default function JournalPage() {
       return
     }
 
-    setIsDeleteDialogOpen(false)
+    setEntryPendingDelete(null)
 
     setNoteDrafts((previous) => {
       const next = { ...previous }
@@ -351,11 +387,7 @@ export default function JournalPage() {
         setSelectedMeditationId(null)
         router.replace(buildJournalHref({}))
       } else {
-        router.replace(
-          buildJournalHref({
-            meditation: meditationId,
-          }),
-        )
+        router.replace(buildJournalHref({ meditation: meditationId }))
       }
     }
 
@@ -363,6 +395,14 @@ export default function JournalPage() {
       title: "Journal entry deleted",
       description: "The reflection has been removed.",
     })
+  }
+
+  const handleShiftMonth = (delta: number) => {
+    const base = selectedDateKey ?? getDateKey(new Date())
+    const nextKey = shiftMonthKey(base, delta)
+    setSelectedDateKey(nextKey)
+    setActiveTab("date")
+    router.replace(buildJournalHref({ date: nextKey }))
   }
 
   const handleSelectMeditation = (meditationId: string) => {
@@ -390,6 +430,76 @@ export default function JournalPage() {
     )
   }
 
+  const openNewEntryDialog = () => {
+    const now = new Date()
+    setNewEntryMeditationId(selectedMeditationId ?? meditations[0]?.id ?? "")
+    setNewEntryDate(selectedDateKey ?? getDateKey(now))
+    setNewEntryTime(getTimeValue(now))
+    setNewEntryNote("")
+    setIsNewEntryOpen(true)
+  }
+
+  const handleCreateEntry = async () => {
+    const meditation = meditations.find((item) => item.id === newEntryMeditationId)
+    if (!meditation) return
+
+    const playedAt = combineDateAndTime(newEntryDate, newEntryTime)
+    setIsCreatingEntry(true)
+    const created = await recordPlayback(
+      { id: meditation.id, title: meditation.title },
+      { playedAt, note: newEntryNote.trim() || undefined },
+    )
+    setIsCreatingEntry(false)
+
+    if (!created) {
+      toast({
+        title: "Unable to add entry",
+        description: "Please try again in a moment.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const dateKey = getDateKey(playedAt)
+    setIsNewEntryOpen(false)
+    setNewEntryNote("")
+    setActiveTab("date")
+    setSelectedDateKey(dateKey)
+    router.replace(buildJournalHref({ date: dateKey }))
+
+    toast({
+      title: "Journal entry added",
+      description: `Saved to ${formatLongDate(playedAt)}.`,
+    })
+  }
+
+  const renderEntryActions = (entry: JournalEntry, secondaryAction?: ReactNode) => {
+    const draft = noteDrafts[entry.id] ?? ""
+    const hasChanged = (entry.note ?? "") !== draft
+    return (
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {secondaryAction}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-gray-500 hover:text-gray-700"
+          onClick={() => setEntryPendingDelete(entry)}
+        >
+          Delete
+        </Button>
+        <Button
+          onClick={() => void handleSaveNote(entry.id)}
+          disabled={!hasChanged || savingEntryId === entry.id}
+          className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-400 text-white font-black shadow-md hover:shadow-none disabled:opacity-40 disabled:shadow-none"
+        >
+          {savingEntryId === entry.id ? "Saving..." : "Save Reflection"}
+        </Button>
+      </div>
+    )
+  }
+
+  const showEntriesLoading = isAuthenticated && isLoadingEntries
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 pt-20 md:pt-24">
       <Navigation showProfileButton />
@@ -414,7 +524,7 @@ export default function JournalPage() {
                 <div className="absolute top-1 left-1/3 w-12 h-16 bg-gradient-to-tr from-amber-300/20 to-orange-400/15 rounded-full transform rotate-45" />
                 <div className="absolute top-8 right-1/4 w-14 h-10 bg-gradient-to-tl from-blue-300/25 to-indigo-400/20 rounded-full transform -rotate-12" />
               </div>
-              <div className="relative px-6 sm:px-8 lg:px-12 pt-16 pb-10">
+              <div className="relative px-4 sm:px-8 lg:px-12 pt-16 pb-10">
                 <div className="text-center mb-8">
                   <div className="flex justify-center mb-[25px]">
                     <div className="relative">
@@ -431,7 +541,7 @@ export default function JournalPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-center mb-8">
+                <div className="flex flex-wrap justify-center items-center gap-3 mb-8">
                   <div className="flex p-1 bg-muted rounded-sm shadow-inner text-sm text-gray-600">
                     <button
                       onClick={() => {
@@ -458,6 +568,16 @@ export default function JournalPage() {
                       By Meditation
                     </button>
                   </div>
+                  <Button
+                    size="sm"
+                    onClick={openNewEntryDialog}
+                    disabled={meditations.length === 0}
+                    title={meditations.length === 0 ? "Save a meditation to your library first" : undefined}
+                    className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-400 text-white font-black shadow-md hover:shadow-none disabled:opacity-40 disabled:shadow-none"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    New entry
+                  </Button>
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -469,103 +589,135 @@ export default function JournalPage() {
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.15 }}
                     >
-                      <Card className="p-6 lg:p-8  shadow-none border-none">
+                      <Card className="p-0 sm:p-6 lg:p-8 shadow-none border-none">
                         <div className="flex flex-col gap-6">
-                          <div className="text-center">
-                            {selectedDate && (
-                              <div className="font-black text-2xl text-gray-600 tracking-tight">
-                                {formatMonth(selectedDate)}
-                              </div>
-                            )}
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Previous month"
+                              onClick={() => handleShiftMonth(-1)}
+                              className="text-gray-500 hover:text-gray-700 flex-shrink-0"
+                            >
+                              <ChevronLeft className="h-5 w-5" />
+                            </Button>
+                            <div className="font-black text-xl sm:text-2xl text-gray-600 tracking-tight text-center min-w-[9ch]">
+                              {selectedDate ? formatMonth(selectedDate) : ""}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Next month"
+                              onClick={() => handleShiftMonth(1)}
+                              className="text-gray-500 hover:text-gray-700 flex-shrink-0"
+                            >
+                              <ChevronRight className="h-5 w-5" />
+                            </Button>
                           </div>
 
-                          <div>
-                            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-                              <div className="flex px-4 min-w-max py-8 pt-4 pb-14 md:gap-0">
-                                {displayDayKeys.map((key) => {
-                                  const date = new Date(key)
-                                  const isSelected = selectedDateKey ? sameDay(selectedDateKey, key) : false
-                                  const [weekdayLabel, dayNumber] = getDayLabel(date).split(" ")
-                                  const hasEntries = entriesByDate.has(key)
+                          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                            <div className="flex min-w-max px-2 py-6">
+                              {displayDayKeys.map((key) => {
+                                const date = dateFromKey(key)
+                                const isSelected = selectedDateKey ? sameDay(selectedDateKey, key) : false
+                                const { weekday, day } = getDayParts(date)
+                                const hasEntries = entriesByDate.has(key)
 
-                                  return (
-                                    <button
-                                      key={key}
-                                      ref={(element) => {
-                                        dayRefs.current[key] = element
-                                      }}
-                                      onClick={() => {
-                                        setSelectedDateKey(key)
-                                        setActiveTab("date")
-                                        router.replace(
-                                          buildJournalHref({
-                                            date: key,
-                                          }),
-                                        )
-                                      }}
+                                return (
+                                  <button
+                                    key={key}
+                                    ref={(element) => {
+                                      dayRefs.current[key] = element
+                                    }}
+                                    onClick={() => {
+                                      setSelectedDateKey(key)
+                                      setActiveTab("date")
+                                      router.replace(buildJournalHref({ date: key }))
+                                    }}
+                                    className={cn(
+                                      "flex flex-col items-center justify-center rounded-xl transition-all duration-300 shadow-sm flex-shrink-0 gap-0 mx-1.5 tracking-tight border-[3px]",
+                                      isSelected
+                                        ? "border-stone-400 bg-white text-gray-800 scale-110 shadow-xl py-4 px-5 z-10"
+                                        : "border-gray-400/40 bg-muted/60 text-gray-500 hover:bg-white hover:scale-105 py-3 px-4",
+                                    )}
+                                  >
+                                    <span
                                       className={cn(
-                                        "flex flex-col items-center justify-center rounded-xl transition-all duration-300 shadow-sm flex-shrink-0 gap-0 mx-3 border-stone-400 tracking-tight border-[3px]",
-                                        isSelected
-                                          ? "border-stone-400 bg-white text-gray-800 scale-125 shadow-xl py-5 px-6 z-10"
-                                          : "border-gray-400/40 bg-muted/60 text-gray-500 hover:bg-white hover:scale-105 py-3 px-4",
+                                        "uppercase tracking-[0.2em] font-black text-gray-400",
+                                        isSelected ? "text-[11px]" : "text-[10px]",
                                       )}
                                     >
-                                      <span
-                                        className={cn(
-                                          "uppercase tracking-[0.3em] font-black text-gray-400 text-lg",
-                                          isSelected ? "text-xs" : "text-[10px]",
-                                        )}
-                                      >
-                                        {weekdayLabel}
-                                      </span>
-                                      <span
-                                        className={cn(
-                                          "font-black font-serif",
-                                          isSelected ? "text-2xl text-gray-600" : "text-lg text-gray-500",
-                                        )}
-                                      >
-                                        {dayNumber}
-                                      </span>
-                                      {hasEntries && !isSelected && (
-                                        <div className="w-1.5 h-1.5 rounded-full bg-logo-emerald-400 mt-1" />
+                                      {weekday}
+                                    </span>
+                                    <span
+                                      className={cn(
+                                        "font-black font-serif",
+                                        isSelected ? "text-2xl text-gray-600" : "text-lg text-gray-500",
                                       )}
-                                    </button>
-                                  )
-                                })}
-                              </div>
+                                    >
+                                      {day}
+                                    </span>
+                                    <span
+                                      className={cn(
+                                        "mt-1 h-1.5 w-1.5 rounded-full",
+                                        hasEntries && !isSelected ? "bg-logo-emerald-400" : "bg-transparent",
+                                      )}
+                                    />
+                                  </button>
+                                )
+                              })}
                             </div>
                           </div>
 
                           <div className="space-y-6">
-                            {entriesForSelectedDate.length === 0 ? (
+                            {showEntriesLoading ? (
+                              <div className="space-y-4" aria-busy="true">
+                                {[0, 1].map((index) => (
+                                  <div key={index} className="rounded-xl border-[3px] border-muted p-5 animate-pulse">
+                                    <div className="h-3 w-40 bg-muted rounded mb-3" />
+                                    <div className="h-3 w-24 bg-muted rounded mb-5" />
+                                    <div className="h-20 w-full bg-muted/70 rounded" />
+                                  </div>
+                                ))}
+                              </div>
+                            ) : entriesForSelectedDate.length === 0 ? (
                               <div className="text-center py-10 pt-0 tracking-tight">
                                 <Sparkles className="mx-auto h-10 w-10 text-logo-rose-300 mb-3" />
                                 <p className="text-sm text-gray-500 font-serif font-black">No entries yet</p>
+                                {meditations.length > 0 && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={openNewEntryDialog}
+                                    className="mt-2 text-gray-500 hover:text-gray-700"
+                                  >
+                                    Add one for this day
+                                  </Button>
+                                )}
                               </div>
                             ) : (
                               entriesForSelectedDate.map((entry) => {
                                 const entryDate = new Date(entry.playedAt)
                                 const draft = noteDrafts[entry.id] ?? ""
-                                const hasChanged = (entry.note ?? "") !== draft
                                 return (
                                   <Card
                                     key={entry.id}
                                     className="p-5 border-[3px] border-muted bg-gradient-to-br from-white to-stone-50 shadow-md"
                                   >
-                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                                      <div>
-                                        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-gray-400 font-black">
-                                          <CalendarDays className="h-4 w-4" />
-                                          <span className="font-serif tracking-normal">
+                                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                                      <div className="min-w-0">
+                                        <div className="flex items-center gap-2 text-xs text-gray-400 font-black">
+                                          <CalendarDays className="h-4 w-4 flex-shrink-0" />
+                                          <span className="font-serif tracking-normal truncate">
                                             {formatLongDate(entryDate)}
                                           </span>
                                         </div>
-                                        <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-600 font-black">
+                                        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-600 font-black">
                                           <span className="flex items-center gap-1">
                                             <Clock className="h-4 w-4" />
                                             {formatTimeLabel(entryDate)}
                                           </span>
-                                          <span className="px-3 py-1 rounded-full bg-muted/80 border border-gray-300 text-xs font-black text-gray-600">
+                                          <span className="px-3 py-1 rounded-full bg-muted/80 border border-gray-300 text-xs font-black text-gray-600 max-w-full truncate">
                                             {entry.meditationTitle}
                                           </span>
                                         </div>
@@ -573,7 +725,7 @@ export default function JournalPage() {
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="self-start text-gray-500 hover:text-gray-700"
+                                        className="self-start text-gray-500 hover:text-gray-700 flex-shrink-0"
                                         onClick={() => router.push(`/library?meditation=${entry.meditationId}`)}
                                       >
                                         Open in Library
@@ -590,9 +742,10 @@ export default function JournalPage() {
                                         }}
                                         rows={4}
                                         placeholder="What arose during this session?"
-                                        className="font-serif text-sm text-gray-600"
+                                        className="font-serif text-sm text-gray-600 bg-white/70"
                                       />
-                                      <div className="flex justify-end gap-2">
+                                      {renderEntryActions(
+                                        entry,
                                         <Button
                                           variant="ghost"
                                           size="sm"
@@ -610,20 +763,8 @@ export default function JournalPage() {
                                             )
                                           }}
                                         >
-                                          View Meditation History
-                                        </Button>
-                                        <Button
-                                          onClick={() => handleSaveNote(entry.id)}
-                                          disabled={!hasChanged}
-                                          className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-400 text-white font-black shadow-md hover:shadow-none"
-                                        >
-                                          Save Reflection
-                                        </Button>
-                                      </div>
-                                      {entry.note && !hasChanged && (
-                                        <div className="text-sm text-gray-600 font-serif bg-muted/60 border border-muted rounded-md p-3">
-                                          {entry.note}
-                                        </div>
+                                          View history
+                                        </Button>,
                                       )}
                                     </div>
                                   </Card>
@@ -644,48 +785,53 @@ export default function JournalPage() {
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.15 }}
                     >
-                      <Card className="p-6 lg:p-8 bg-transparent border-none">
-                        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-                          <div className="space-y-4">
+                      <Card className="p-0 sm:p-6 lg:p-8 bg-transparent border-none">
+                        <div className="grid gap-6 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
+                          <div className="min-w-0 space-y-4">
                             <div className="text-xs uppercase tracking-[0.2em] text-gray-400 font-black">
                               Meditations
                             </div>
-                            <div className="space-y-3 max-h-[440px] overflow-y-auto pr-2">
-                              {meditations.map((meditation) => {
-                                const entryCount = meditationEntries.get(meditation.id)?.length ?? 0
-                                const isSelected = meditation.id === selectedMeditationId
-                                return (
-                                  <button
-                                    key={meditation.id}
-                                    onClick={() => handleSelectMeditation(meditation.id)}
-                                    className={cn(
-                                      "w-full text-left rounded-xl border-[3px] px-4 py-3 transition-all font-serif",
-                                      isSelected
-                                        ? "border-stone-300 bg-white shadow-md text-gray-700"
-                                        : "border-gray-300/60 bg-muted/60 text-gray-500 hover:bg-white",
-                                    )}
-                                  >
-                                    <div className="flex flex-wrap items-center justify-between gap-3 md:flex-nowrap">
-                                      <div className="min-w-0 flex-1">
-                                        <div className="text-sm font-black text-gray-700 truncate">
-                                          {meditation.title}
+                            {meditations.length === 0 ? (
+                              <p className="text-sm text-gray-500 font-serif font-black">No meditations saved yet.</p>
+                            ) : (
+                              <div className="min-w-0 space-y-3 lg:max-h-[520px] lg:overflow-y-auto lg:pr-2">
+                                {meditations.map((meditation) => {
+                                  const entryCount = meditationEntries.get(meditation.id)?.length ?? 0
+                                  const isSelected = meditation.id === selectedMeditationId
+                                  return (
+                                    <button
+                                      key={meditation.id}
+                                      onClick={() => handleSelectMeditation(meditation.id)}
+                                      className={cn(
+                                        "w-full min-w-0 text-left rounded-xl border-[3px] px-4 py-3 transition-all font-serif",
+                                        isSelected
+                                          ? "border-stone-300 bg-white shadow-md text-gray-700"
+                                          : "border-gray-300/60 bg-muted/60 text-gray-500 hover:bg-white",
+                                      )}
+                                    >
+                                      <div className="flex items-center justify-between gap-3">
+                                        <div className="min-w-0 flex-1">
+                                          <div className="text-sm font-black text-gray-700 truncate">
+                                            {meditation.title}
+                                          </div>
+                                          <div className="text-[11px] uppercase tracking-[0.15em] text-gray-400 mt-1 font-black truncate">
+                                            {entryCount > 0
+                                              ? `${entryCount} entr${entryCount === 1 ? "y" : "ies"}`
+                                              : "No entries yet"}
+                                          </div>
                                         </div>
-                                        <div className="text-[11px] uppercase tracking-[0.3em] text-gray-400 mt-1 font-black truncate">
-                                          {entryCount > 0
-                                            ? `${entryCount} entr${entryCount === 1 ? "y" : "ies"}`
-                                            : "No entries yet"}
-                                        </div>
+                                        <NotebookPen className="h-4 w-4 text-logo-rose-400 flex-shrink-0" />
                                       </div>
-                                      <NotebookPen className="h-4 w-4 text-logo-rose-400 flex-shrink-0 md:ml-3 mt-2 md:mt-0" />
-                                    </div>
-                                  </button>
-                                )
-                              })}
-                            </div>
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            )}
                           </div>
-                          <div className="space-y-5">
-                            <div className="flex flex-wrap items-center justify-between gap-3 md:flex-nowrap">
-                              <div className="min-w-0 flex-1">
+
+                          <div className="min-w-0 space-y-5">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="min-w-0 w-full sm:w-auto sm:flex-1">
                                 <div className="text-xs uppercase tracking-[0.2em] text-gray-400 font-black mb-2">
                                   Journal Entries
                                 </div>
@@ -696,7 +842,7 @@ export default function JournalPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-gray-500 hover:text-gray-700 w-full md:w-auto md:ml-4 mt-2 md:mt-0"
+                                className="text-gray-500 hover:text-gray-700 flex-shrink-0"
                                 onClick={() => {
                                   const libraryPath = selectedMeditation
                                     ? `/library?meditation=${selectedMeditation.id}`
@@ -718,10 +864,18 @@ export default function JournalPage() {
                                 <p className="text-sm text-gray-500 font-serif font-black">
                                   No journal reflections for this meditation yet.
                                 </p>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={openNewEntryDialog}
+                                  className="mt-2 text-gray-500 hover:text-gray-700"
+                                >
+                                  Add an entry
+                                </Button>
                               </div>
                             ) : (
-                              <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="min-w-0 space-y-5">
+                                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                                   {selectedMeditationEntries.map((entry) => {
                                     const entryDate = new Date(entry.playedAt)
                                     const isActive = entry.id === activeMeditationEntry?.id
@@ -730,25 +884,26 @@ export default function JournalPage() {
                                         key={entry.id}
                                         onClick={() => setActiveMeditationEntryId(entry.id)}
                                         className={cn(
-                                          "rounded-xl border-[3px] px-4 py-3 text-left transition-all",
+                                          "min-w-0 rounded-xl border-[3px] px-4 py-3 text-left transition-all",
                                           isActive
                                             ? "border-stone-300 bg-white shadow-md text-gray-700"
                                             : "border-gray-300/60 bg-muted/60 text-gray-500 hover:bg-white",
                                         )}
                                       >
-                                        <div className="text-[11px] uppercase tracking-[0.3em] text-gray-400 font-black mb-1">
-                                          {formatLongDate(entryDate)}
+                                        <div className="text-[10px] uppercase tracking-[0.12em] text-gray-400 font-black mb-1 truncate">
+                                          {formatShortDate(entryDate)}
                                         </div>
                                         <div className="text-sm font-black text-gray-700 mb-1">
                                           {formatTimeLabel(entryDate)}
                                         </div>
-                                        <div className="text-xs text-gray-500 line-clamp-3 font-serif">
-                                          {entry.note ?? "Tap to add a reflection."}
+                                        <div className="text-xs text-gray-500 line-clamp-2 font-serif">
+                                          {entry.note?.trim() ? entry.note : "Tap to add a reflection."}
                                         </div>
                                       </button>
                                     )
                                   })}
                                 </div>
+
                                 <Card className="p-5 border-[3px] border-muted bg-gradient-to-br from-white to-stone-50 shadow-md">
                                   {activeMeditationEntry ? (
                                     <div className="space-y-4">
@@ -772,9 +927,10 @@ export default function JournalPage() {
                                         }}
                                         rows={6}
                                         placeholder="What stood out to you during this session?"
-                                        className="font-serif text-sm text-gray-600"
+                                        className="font-serif text-sm text-gray-600 bg-white/70"
                                       />
-                                      <div className="flex justify-end gap-2">
+                                      {renderEntryActions(
+                                        activeMeditationEntry,
                                         <Button
                                           variant="ghost"
                                           size="sm"
@@ -783,68 +939,12 @@ export default function JournalPage() {
                                             const entryDateKey = getDateKey(new Date(activeMeditationEntry.playedAt))
                                             setActiveTab("date")
                                             setSelectedDateKey(entryDateKey)
-                                            router.push(
-                                              buildJournalHref({
-                                                date: entryDateKey,
-                                              }),
-                                            )
+                                            router.push(buildJournalHref({ date: entryDateKey }))
                                           }}
                                         >
-                                          Jump to Date
-                                        </Button>
-                                        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                                          <DialogTrigger asChild>
-                                            <Button
-                                              variant="destructive"
-                                              size="sm"
-                                              className="text-white"
-                                              disabled={isDeletingEntry}
-                                            >
-                                              Delete entry
-                                            </Button>
-                                          </DialogTrigger>
-                                          <DialogContent>
-                                            <DialogHeader>
-                                              <DialogTitle>Delete this journal entry?</DialogTitle>
-                                              <DialogDescription>
-                                                This will permanently remove your reflection for{" "}
-                                                {formatLongDate(new Date(activeMeditationEntry.playedAt))}. This action
-                                                cannot be undone.
-                                              </DialogDescription>
-                                            </DialogHeader>
-                                            <DialogFooter className="sm:justify-end">
-                                              <DialogClose asChild>
-                                                <Button variant="ghost" disabled={isDeletingEntry}>
-                                                  Cancel
-                                                </Button>
-                                              </DialogClose>
-                                              <Button
-                                                variant="destructive"
-                                                onClick={handleDeleteActiveEntry}
-                                                disabled={isDeletingEntry}
-                                              >
-                                                {isDeletingEntry ? "Deleting..." : "Delete"}
-                                              </Button>
-                                            </DialogFooter>
-                                          </DialogContent>
-                                        </Dialog>
-                                        <Button
-                                          onClick={() => handleSaveNote(activeMeditationEntry.id)}
-                                          disabled={
-                                            (activeMeditationEntry.note ?? "") ===
-                                            (noteDrafts[activeMeditationEntry.id] ?? "")
-                                          }
-                                          className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-400 text-white font-black shadow-md hover:shadow-none"
-                                        >
-                                          Save Reflection
-                                        </Button>
-                                      </div>
-                                      {activeMeditationEntry.note &&
-                                        activeMeditationEntry.note === (noteDrafts[activeMeditationEntry.id] ?? "") && (
-                                          <div className="text-sm text-gray-600 font-serif bg-muted/60 border border-muted rounded-md p-3">
-                                            {activeMeditationEntry.note}
-                                          </div>
-                                        )}
+                                          Jump to date
+                                        </Button>,
+                                      )}
                                     </div>
                                   ) : (
                                     <div className="text-center py-12 text-sm text-gray-500 font-serif font-black">
@@ -865,6 +965,111 @@ export default function JournalPage() {
           </div>
         </div>
       </main>
+
+      <Dialog
+        open={entryPendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setEntryPendingDelete(null)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete this journal entry?</DialogTitle>
+            <DialogDescription>
+              {entryPendingDelete
+                ? `This will permanently remove your reflection for ${formatLongDate(
+                    new Date(entryPendingDelete.playedAt),
+                  )}. This action cannot be undone.`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-end">
+            <DialogClose asChild>
+              <Button variant="ghost" disabled={isDeletingEntry}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeletingEntry}>
+              {isDeletingEntry ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isNewEntryOpen} onOpenChange={setIsNewEntryOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New journal entry</DialogTitle>
+            <DialogDescription>
+              Record a reflection for a meditation you&apos;ve practiced, on any date.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="new-entry-meditation">Meditation</Label>
+              <select
+                id="new-entry-meditation"
+                value={newEntryMeditationId}
+                onChange={(event) => setNewEntryMeditationId(event.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-gray-600"
+              >
+                {meditations.map((meditation) => (
+                  <option key={meditation.id} value={meditation.id}>
+                    {meditation.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="new-entry-date">Date</Label>
+                <input
+                  id="new-entry-date"
+                  type="date"
+                  value={newEntryDate}
+                  onChange={(event) => setNewEntryDate(event.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-gray-600"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="new-entry-time">Time</Label>
+                <input
+                  id="new-entry-time"
+                  type="time"
+                  value={newEntryTime}
+                  onChange={(event) => setNewEntryTime(event.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-gray-600"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-entry-note">Reflection</Label>
+              <Textarea
+                id="new-entry-note"
+                value={newEntryNote}
+                onChange={(event) => setNewEntryNote(event.target.value)}
+                rows={4}
+                placeholder="What arose during this session?"
+                className="font-serif text-sm text-gray-600"
+              />
+            </div>
+          </div>
+          <DialogFooter className="sm:justify-end">
+            <DialogClose asChild>
+              <Button variant="ghost" disabled={isCreatingEntry}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button
+              onClick={handleCreateEntry}
+              disabled={isCreatingEntry || !newEntryMeditationId || !newEntryDate}
+              className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-400 text-white font-black shadow-md hover:shadow-none disabled:opacity-40"
+            >
+              {isCreatingEntry ? "Adding..." : "Add entry"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

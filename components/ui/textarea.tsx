@@ -23,10 +23,13 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
     return (
       <textarea
         className={cn(
-          "flex border border-input bg-background px-3 py-2 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 border-none disabled:cursor-not-allowed disabled:opacity-50 rounded-md resize-none pt-0 min-w-0 text-gray-600 pb-0 md:text-xs tracking-normal text-xs w-2.5 h-auto", // Removed overflow-hidden, added min-w-0
+          // w-full is essential: a fixed narrow width here collapses the field to a sliver and
+          // makes text wrap one character per line, which the auto-grow effect below then turns
+          // into an extremely tall column.
+          "flex w-full min-w-0 h-auto min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm tracking-normal text-gray-600 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none",
           className,
         )}
-        rows={1} // Start with 1 row
+        rows={1} // Start with 1 row; auto-grows to fit content (min-height keeps a sane floor)
         ref={textareaRef} // Use our internal ref
         {...props} // Ensure existing props (including placeholder from parent) are passed
       />
