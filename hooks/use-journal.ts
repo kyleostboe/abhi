@@ -68,6 +68,7 @@ const mapRowToEntry = (row: JournalEntryRow): JournalEntry => ({
 export function useJournal() {
   const supabase = useMemo(() => createClient(), [])
   const [entries, setEntries] = useState<JournalEntry[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const entriesRef = useRef(entries)
   const { isAuthenticated, userId } = useAuth()
 
@@ -78,10 +79,12 @@ export function useJournal() {
   useEffect(() => {
     if (!isAuthenticated) {
       setEntries([])
+      setIsLoading(false)
       return
     }
 
     let isActive = true
+    setIsLoading(true)
 
     const loadEntries = async () => {
       try {
@@ -105,6 +108,10 @@ export function useJournal() {
         if (isActive) {
           console.error("[v0] Unexpected error fetching journal entries:", error)
           setEntries([])
+        }
+      } finally {
+        if (isActive) {
+          setIsLoading(false)
         }
       }
     }
@@ -280,6 +287,7 @@ export function useJournal() {
 
   return {
     entries,
+    isLoading,
     recordPlayback,
     updateEntryNote,
     deleteEntry,
