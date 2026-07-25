@@ -3526,7 +3526,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="relative w-full md:max-w-4xl md:mx-auto bg-white/80 backdrop-blur-lg shadow-none md:shadow-xl overflow-hidden transition-colors rounded-none md:rounded-3xl duration-300 ease-in-out min-h-screen md:min-h-0"
+          className="relative w-full md:max-w-4xl md:mx-auto backdrop-blur-lg shadow-none md:shadow-xl overflow-hidden transition-colors rounded-none md:rounded-3xl duration-300 ease-in-out"
           role="application"
         >
           <div className="relative overflow-hidden">
