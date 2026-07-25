@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { buildAudioObjectKey, createUploadUrl } from "@/lib/storage"
+import { buildAudioObjectKey, buildJournalAttachmentKey, createUploadUrl } from "@/lib/storage"
 
 // Audio covers meditations and journal voice notes; images are journal attachments. Both go
 // to the same bucket under the same per-user key prefix.
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 })
   }
 
-  let body: { ext?: string; contentType?: string }
+  let body: { ext?: string; contentType?: string; scope?: string; filename?: string }
   try {
     body = await request.json()
   } catch {
@@ -51,7 +51,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const key = buildAudioObjectKey(user.id, ext)
+    // Journal attachments are addressed by the filename their note's markdown references, and
+    // live beside the notes/ prefix so the bucket reads as a vault. Meditation audio keeps its
+    // existing flat, UUID-named layout.
+    const key =
+      body.scope === "journal-attachment" && body.filename
+        ? buildJournalAttachmentKey(user.id, body.filename)
+        : buildAudioObjectKey(user.id, ext)
     const uploadUrl = await createUploadUrl(key, contentType)
     return NextResponse.json({ uploadUrl, key })
   } catch (error) {

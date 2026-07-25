@@ -69,6 +69,7 @@ export default function JournalPage() {
     notes,
     folders,
     isLoading,
+    loadNoteBody,
     createNote,
     updateNote,
     deleteNote,
@@ -138,6 +139,17 @@ export default function JournalPage() {
     if (activeNoteId && notes.some((note) => note.id === activeNoteId)) return
     setActiveNoteId(visibleNotes[0]?.id ?? null)
   }, [visibleNotes, activeNoteId, notes])
+
+  // Note bodies live as files in storage, so the one being opened is fetched on demand; the
+  // list itself runs entirely off the index.
+  useEffect(() => {
+    if (!activeNoteId) return
+    const note = notes.find((item) => item.id === activeNoteId)
+    if (!note || note.isBodyLoaded) return
+    void loadNoteBody(activeNoteId).then((body) => {
+      if (body !== null) setEditorInstanceKey((key) => key + 1)
+    })
+  }, [activeNoteId, notes, loadNoteBody])
 
   const handleSave = useCallback(
     async (markdown: string) => {
