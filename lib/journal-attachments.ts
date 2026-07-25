@@ -165,6 +165,41 @@ export const saveAttachment = async (params: {
   }
 }
 
+/**
+ * Removes a note's attachments from R2 and from the metadata table.
+ *
+ * The `journal_attachments` row would cascade away with the note on its own, but the stored
+ * object would not — deleting a note with photos and voice memos in it has to reclaim that
+ * space, or a user's quota fills up with files nothing references any more.
+ */
+export const deleteAttachmentsForNote = async (entryId: string): Promise<void> => {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("journal_attachments")
+    .select("id, storage_key")
+    .eq("entry_id", entryId)
+
+  if (error || !data?.length) return
+
+  await Promise.all(
+    (data as { id: string; storage_key: string }[]).map(async (row) => {
+      try {
+        await fetch("/api/storage/delete-object", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ audioKey: row.storage_key }),
+        })
+      } catch (deleteError) {
+        // An orphaned object is recoverable (and counted in usage); a failed note delete is
+        // not, so this never blocks the row removal.
+        console.warn("[journal] Could not delete stored attachment:", deleteError)
+      }
+    }),
+  )
+
+  await supabase.from("journal_attachments").delete().eq("entry_id", entryId)
+}
+
 /** Resolves attachment filenames to short-lived signed URLs for rendering. */
 export const fetchAttachmentUrls = async (filenames: string[]): Promise<Record<string, string>> => {
   const unique = Array.from(new Set(filenames.filter(Boolean)))

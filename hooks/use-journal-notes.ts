@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { createClient } from "@/lib/supabase/client"
 import { useAuth } from "@/hooks/use-auth"
+import { deleteAttachmentsForNote } from "@/lib/journal-attachments"
 import { deriveTitle, derivePreview, slugify } from "@/lib/journal-markdown"
 
 export type JournalNote = {
@@ -241,6 +242,10 @@ export function useJournalNotes() {
       setNotes((current) => current.filter((note) => note.id !== noteId))
 
       if (!isAuthenticated || !userId) return true
+
+      // Reclaim the note's stored files first. The metadata rows would cascade with the note,
+      // but the R2 objects would be left behind counting against the user's usage forever.
+      await deleteAttachmentsForNote(noteId)
 
       const { error } = await supabase.from("journal_entries").delete().eq("id", noteId)
       if (error) {
