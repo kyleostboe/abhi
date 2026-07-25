@@ -51,10 +51,13 @@ const mapNote = (row: NoteRow): JournalNote => {
   // `content_md` is the markdown body; `note` is the pre-notes plain-text column, which is
   // already valid markdown, so older rows need no conversion.
   const contentMd = row.content_md ?? row.note ?? ""
+  // Entries created by playing a meditation start with no body at all, so fall back to the
+  // meditation's name rather than labelling every one of them "New note".
+  const derivedTitle = contentMd.trim() ? deriveTitle(contentMd) : (row.meditation_title?.trim() || "New note")
   return {
     id: row.id,
     slug: row.slug ?? row.id,
-    title: row.title?.trim() || deriveTitle(contentMd),
+    title: row.title?.trim() || derivedTitle,
     preview: derivePreview(contentMd),
     contentMd,
     folderId: row.folder_id,
@@ -67,6 +70,7 @@ const mapNote = (row: NoteRow): JournalNote => {
     updatedAt: row.updated_at ?? row.played_at,
   }
 }
+
 
 
 export function useJournalNotes() {

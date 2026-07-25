@@ -33,6 +33,7 @@ import { MeditationLibrary, type SavedMeditation } from "@/lib/meditation-librar
 import { NoteEditor, fontClassFor, type NoteEditorHandle } from "@/components/journal/note-editor"
 import { NoteToolbar, useVoiceRecorder } from "@/components/journal/note-toolbar"
 import { MeditationPicker, QuotePicker } from "@/components/journal/note-pickers"
+import { SessionsView } from "@/components/journal/sessions-view"
 import { JournalRefProvider } from "@/components/journal/journal-refs"
 import { compressImage, encodeVoiceNote, saveAttachment } from "@/lib/journal-attachments"
 import { slugify } from "@/lib/journal-markdown"
@@ -81,6 +82,7 @@ export default function JournalPage() {
   const searchParams = useSearchParams()
 
   const [meditations, setMeditations] = useState<SavedMeditation[]>([])
+  const [activeTab, setActiveTab] = useState<"notes" | "sessions">("notes")
   const [activeFolderId, setActiveFolderId] = useState<string>(ALL_NOTES)
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
@@ -288,6 +290,41 @@ export default function JournalPage() {
               </div>
             )}
 
+            {/* Signature switch, matching the Library's Meditations/Playlists control. */}
+            <div className="flex justify-center border-b border-muted px-4 pb-5 pt-6">
+              <div className="flex rounded-sm bg-muted p-1 text-sm text-gray-600 shadow-inner">
+                {(
+                  [
+                    ["notes", "Notes"],
+                    ["sessions", "Sessions"],
+                  ] as const
+                ).map(([id, label]) => (
+                  <button
+                    key={id}
+                    onClick={() => setActiveTab(id)}
+                    className={cn(
+                      "rounded-sm px-4 py-3 font-serif text-sm font-black tracking-tight text-gray-600 transition-all",
+                      activeTab === id ? "bg-white text-gray-600 shadow-md" : "",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {activeTab === "sessions" ? (
+              <SessionsView
+                notes={notes}
+                isLoading={isLoading}
+                onOpenNote={(noteId) => {
+                  setActiveTab("notes")
+                  setActiveNoteId(noteId)
+                  setMobilePane("note")
+                  setEditorInstanceKey((key) => key + 1)
+                }}
+              />
+            ) : (
             <div className="grid min-h-[70vh] md:grid-cols-[200px_minmax(0,280px)_minmax(0,1fr)]">
               {/* Folders */}
               <aside
@@ -509,6 +546,7 @@ export default function JournalPage() {
                 )}
               </section>
             </div>
+            )}
           </div>
         </div>
       </main>
