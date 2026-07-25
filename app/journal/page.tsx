@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 
 import { Navigation } from "@/components/navigation"
+import { LogoMark, HeaderWash } from "@/components/logo-mark"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { AuthButtons } from "@/components/auth-buttons"
@@ -285,26 +286,29 @@ export default function JournalPage() {
 
   return (
     <JournalRefProvider meditations={meditationRefs} notes={noteRefs}>
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 pt-20 md:p-8 md:pt-24">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-0 md:p-8 pt-0 md:pt-24">
       <Navigation showProfileButton />
       <main className="px-0">
-        <div className="w-full space-y-0 md:mx-auto md:max-w-6xl">
+        <div className="w-full space-y-0 md:mx-auto md:max-w-5xl">
           {!isAuthenticated && (
-            <div className="z-10 flex justify-center pb-7 pt-0">
+            <div className="z-10 flex justify-center pb-7 pt-20 md:pt-0">
               <AuthButtons onLogin={login} />
             </div>
           )}
 
-          <div className="relative w-full overflow-hidden rounded-3xl bg-white/80 shadow-none backdrop-blur-lg md:shadow-xl">
+          <div className="relative w-full md:max-w-4xl md:mx-auto bg-white/80 backdrop-blur-lg shadow-none md:shadow-xl overflow-hidden transition-colors rounded-none md:rounded-3xl duration-300 ease-in-out min-h-screen md:min-h-0">
             {!isAuthenticated && (
               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center space-y-3 bg-white/80 p-6 text-center backdrop-blur-sm">
                 <p className="font-serif text-lg font-black text-gray-800">Create account to save</p>
               </div>
             )}
 
-            {/* Signature switch, matching the Library's Meditations/Playlists control. */}
-            <div className="flex justify-center border-b border-muted px-4 pb-5 pt-6">
-              <div className="flex rounded-sm bg-muted p-1 text-sm text-gray-600 shadow-inner">
+            {/* Header + signature switch, matching the Library's logo/control arrangement. */}
+            <div className="relative overflow-hidden border-b border-muted px-4 pb-6 pt-20 sm:px-8 md:pt-10 lg:px-12">
+              <HeaderWash />
+              <LogoMark className="relative mb-6" />
+              <div className="relative flex justify-center">
+                <div className="flex rounded-sm bg-muted p-1 text-sm text-gray-600 shadow-inner">
                 {(
                   [
                     ["notes", "Notes"],
@@ -322,6 +326,7 @@ export default function JournalPage() {
                     {label}
                   </button>
                 ))}
+                </div>
               </div>
             </div>
 
