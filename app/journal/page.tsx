@@ -296,7 +296,7 @@ export default function JournalPage() {
             </div>
           )}
 
-          <div className="relative w-full md:max-w-4xl md:mx-auto bg-white/80 backdrop-blur-lg shadow-none md:shadow-xl overflow-hidden transition-colors rounded-none md:rounded-3xl duration-300 ease-in-out min-h-screen md:min-h-0">
+          <div className="relative w-full md:max-w-4xl md:mx-auto backdrop-blur-lg shadow-none md:shadow-xl overflow-hidden transition-colors rounded-none md:rounded-3xl duration-300 ease-in-out">
             {!isAuthenticated && (
               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center space-y-3 bg-white/80 p-6 text-center backdrop-blur-sm">
                 <p className="font-serif text-lg font-black text-gray-800">Create account to save</p>
