@@ -45,6 +45,52 @@ export function buildAudioObjectKey(userId: string, ext: string): string {
   return `${userId}/${crypto.randomUUID()}.${safeExt}`
 }
 
+// Journal content is laid out as a vault rather than a flat blob store:
+//
+//   {userId}/notes/{slug}.md
+//   {userId}/attachments/{filename}
+//
+// `notes/` and `attachments/` being siblings is what makes `![[attachments/photo.jpg]]` inside
+// a note resolve correctly — the bucket prefix is already a working Obsidian vault, so exporting
+// is a copy rather than a transformation. It also means the database index is derivable: listing
+// this prefix and parsing each file's frontmatter reconstructs everything.
+
+/** Object key for a note's markdown file. */
+export function buildJournalNoteKey(userId: string, slug: string): string {
+  const safeSlug = slug.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 120) || "note"
+  return `${userId}/notes/${safeSlug}.md`
+}
+
+/** Object key for a note attachment, addressed by the filename the markdown references. */
+export function buildJournalAttachmentKey(userId: string, filename: string): string {
+  const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 160) || "file"
+  return `${userId}/attachments/${safeName}`
+}
+
+/** Writes a small text object (a note's markdown) directly. */
+export async function putTextObject(key: string, body: string, contentType = "text/markdown"): Promise<void> {
+  await getR2Client().send(
+    new PutObjectCommand({ Bucket: getBucket(), Key: key, Body: body, ContentType: contentType }),
+  )
+}
+
+/** Reads a text object back. Returns null when the object doesn't exist. */
+export async function getTextObject(key: string): Promise<string | null> {
+  try {
+    const response = await getR2Client().send(new GetObjectCommand({ Bucket: getBucket(), Key: key }))
+    const body = response.Body as { transformToString?: () => Promise<string> } | undefined
+    if (!body?.transformToString) return null
+    return await body.transformToString()
+  } catch (error) {
+    const name = (error as { name?: string })?.name
+    if (name === "NoSuchKey" || name === "NotFound") return null
+    throw error
+  }
+}
+
+/** Deletes any object by key (same operation as deleteAudioObject, named for general use). */
+export const deleteObject = deleteAudioObject
+
 /** Mints a short-lived presigned URL the browser can PUT the audio blob to directly. */
 export async function createUploadUrl(key: string, contentType: string): Promise<string> {
   const command = new PutObjectCommand({ Bucket: getBucket(), Key: key, ContentType: contentType })

@@ -89,11 +89,18 @@ export const encodeVoiceNote = async (
 }
 
 /** Requests a presigned URL and PUTs the blob directly to storage. Returns the object key. */
-const uploadToStorage = async (blob: Blob, ext: string, contentType: string): Promise<string> => {
+const uploadToStorage = async (
+  blob: Blob,
+  ext: string,
+  contentType: string,
+  filename: string,
+): Promise<string> => {
   const response = await fetch("/api/storage/upload-url", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ext, contentType }),
+    // The journal scope puts the object at {user}/attachments/{filename}, matching what the
+    // note's `![[attachments/…]]` link expects once the bucket is read as a vault.
+    body: JSON.stringify({ ext, contentType, scope: "journal-attachment", filename }),
   })
   if (!response.ok) {
     throw new Error("Could not prepare the upload.")
@@ -125,9 +132,11 @@ export const saveAttachment = async (params: {
 }): Promise<JournalAttachment> => {
   const { blob, kind, ext, mime, displayName, entryId, profileId } = params
 
-  const storageKey = await uploadToStorage(blob, ext, mime)
-  const unique = storageKey.split("/").pop()?.split(".")[0]?.slice(0, 8) ?? `${Date.now()}`
+  // The filename is decided first, because it is both the object's location in the vault and
+  // the identifier the note's markdown will reference.
+  const unique = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
   const filename = sanitizeFilename(`${slugify(displayName.replace(/\.[^.]+$/, ""))}-${unique}.${ext}`)
+  const storageKey = await uploadToStorage(blob, ext, mime, filename)
 
   const supabase = createClient()
   const { data, error } = await supabase
@@ -163,6 +172,41 @@ export const saveAttachment = async (params: {
     width: data.width,
     height: data.height,
   }
+}
+
+/**
+ * Removes a note's attachments from R2 and from the metadata table.
+ *
+ * The `journal_attachments` row would cascade away with the note on its own, but the stored
+ * object would not — deleting a note with photos and voice memos in it has to reclaim that
+ * space, or a user's quota fills up with files nothing references any more.
+ */
+export const deleteAttachmentsForNote = async (entryId: string): Promise<void> => {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("journal_attachments")
+    .select("id, storage_key")
+    .eq("entry_id", entryId)
+
+  if (error || !data?.length) return
+
+  await Promise.all(
+    (data as { id: string; storage_key: string }[]).map(async (row) => {
+      try {
+        await fetch("/api/storage/delete-object", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ audioKey: row.storage_key }),
+        })
+      } catch (deleteError) {
+        // An orphaned object is recoverable (and counted in usage); a failed note delete is
+        // not, so this never blocks the row removal.
+        console.warn("[journal] Could not delete stored attachment:", deleteError)
+      }
+    }),
+  )
+
+  await supabase.from("journal_attachments").delete().eq("entry_id", entryId)
 }
 
 /** Resolves attachment filenames to short-lived signed URLs for rendering. */
