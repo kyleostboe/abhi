@@ -323,3 +323,81 @@ mark {
   background: transparent;
   color: inherit;
 }
+
+/* ------------------------------------------------------------------------------------------
+   Journal note editor
+   The writing surface is a page, not a form field: no border, no background, text sits
+   directly on the card. Spacing/measure are tuned for reading prose rather than data entry.
+   ------------------------------------------------------------------------------------------ */
+.journal-prose .ProseMirror {
+  outline: none;
+  min-height: 40vh;
+}
+
+.journal-prose .ProseMirror > * + * {
+  margin-top: 0.9em;
+}
+
+.journal-prose .ProseMirror h1 {
+  font-size: 1.55em;
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.journal-prose .ProseMirror h2 {
+  font-size: 1.25em;
+  font-weight: 900;
+  line-height: 1.3;
+}
+
+.journal-prose .ProseMirror h3 {
+  font-size: 1.1em;
+  font-weight: 900;
+}
+
+.journal-prose .ProseMirror ul {
+  padding-left: 1.15em;
+  list-style: disc;
+}
+
+.journal-prose .ProseMirror ul li {
+  margin: 0.2em 0;
+}
+
+.journal-prose .ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.1em;
+}
+
+.journal-prose .ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55em;
+}
+
+.journal-prose .ProseMirror ul[data-type="taskList"] li > label {
+  margin-top: 0.28em;
+  flex-shrink: 0;
+}
+
+.journal-prose .ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.journal-prose .ProseMirror code {
+  background: var(--muted, rgba(0, 0, 0, 0.05));
+  border-radius: 4px;
+  padding: 0.1em 0.3em;
+  font-size: 0.9em;
+}
+
+/* Placeholder for an empty note, shown only on the first line. */
+.journal-prose .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: rgb(156 163 175);
+}
