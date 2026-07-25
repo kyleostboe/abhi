@@ -12,7 +12,10 @@ export type JournalNote = {
   slug: string
   title: string
   preview: string
+  /** Markdown body. Empty until loaded from storage when `isBodyLoaded` is false. */
   contentMd: string
+  noteKey: string | null
+  isBodyLoaded: boolean
   folderId: string | null
   meditationId: string | null
   meditationTitle: string | null
@@ -33,8 +36,10 @@ type NoteRow = {
   id: string
   slug: string | null
   title: string | null
+  preview: string | null
   content_md: string | null
   note: string | null
+  note_key: string | null
   folder_id: string | null
   meditation_id: string | null
   meditation_title: string | null
@@ -45,8 +50,10 @@ type NoteRow = {
   updated_at: string | null
 }
 
+// The list only needs the index. A note's markdown body lives in R2 and is fetched when the
+// note is actually opened, so loading the journal never pulls every note's full text.
 const NOTE_COLUMNS =
-  "id, slug, title, content_md, note, folder_id, meditation_id, meditation_title, practice_type, tags, font, played_at, updated_at"
+  "id, slug, title, preview, content_md, note, note_key, folder_id, meditation_id, meditation_title, practice_type, tags, font, played_at, updated_at"
 
 const mapNote = (row: NoteRow): JournalNote => {
   // `content_md` is the markdown body; `note` is the pre-notes plain-text column, which is
@@ -59,8 +66,11 @@ const mapNote = (row: NoteRow): JournalNote => {
     id: row.id,
     slug: row.slug ?? row.id,
     title: row.title?.trim() || derivedTitle,
-    preview: derivePreview(contentMd),
+    preview: row.preview?.trim() || derivePreview(contentMd),
     contentMd,
+    noteKey: row.note_key,
+    /** True once the body has been read from storage (or is known to live in the column). */
+    isBodyLoaded: !row.note_key,
     folderId: row.folder_id,
     meditationId: row.meditation_id,
     meditationTitle: row.meditation_title,
@@ -174,6 +184,34 @@ export function useJournalNotes() {
     [supabase, isAuthenticated, userId],
   )
 
+  /**
+   * Fetches a note's markdown from storage the first time it's opened. The list view works off
+   * the index alone, so bodies are only ever pulled for the note actually being read.
+   */
+  const loadNoteBody = useCallback(
+    async (noteId: string): Promise<string | null> => {
+      const existing = notesRef.current.find((note) => note.id === noteId)
+      if (!existing) return null
+      if (existing.isBodyLoaded) return existing.contentMd
+
+      try {
+        const response = await fetch(`/api/journal/note?id=${encodeURIComponent(noteId)}`)
+        if (!response.ok) return null
+        const { body } = (await response.json()) as { body: string }
+        setNotes((previous) =>
+          previous.map((note) =>
+            note.id === noteId ? { ...note, contentMd: body ?? "", isBodyLoaded: true } : note,
+          ),
+        )
+        return body ?? ""
+      } catch (error) {
+        console.error("[journal] Failed to load note body:", error)
+        return null
+      }
+    },
+    [],
+  )
+
   /** Persists a note. Called by the editor's debounced autosave, so it stays optimistic. */
   const updateNote = useCallback(
     async (
@@ -215,22 +253,47 @@ export function useJournalNotes() {
 
       if (!isAuthenticated || !userId) return true
 
+      // Metadata stays a direct table write; the body goes through the API route, which writes
+      // the markdown file to R2 and refreshes the index in one place so the two can't drift.
       const payload: Record<string, unknown> = { updated_at: updatedAt }
-      if (changes.contentMd !== undefined) {
-        payload.content_md = contentMd
-        payload.note = contentMd
-        payload.title = title
-      }
       if (changes.folderId !== undefined) payload.folder_id = changes.folderId
       if (changes.practiceType !== undefined) payload.practice_type = changes.practiceType
       if (changes.font !== undefined) payload.font = changes.font
       if (changes.tags !== undefined) payload.tags = changes.tags
 
-      const { error } = await supabase.from("journal_entries").update(payload).eq("id", noteId)
-      if (error) {
-        console.error("[journal] Failed to save note:", error)
-        return false
+      if (Object.keys(payload).length > 1 || changes.contentMd === undefined) {
+        const { error } = await supabase.from("journal_entries").update(payload).eq("id", noteId)
+        if (error) {
+          console.error("[journal] Failed to save note metadata:", error)
+          return false
+        }
       }
+
+      if (changes.contentMd !== undefined) {
+        try {
+          const response = await fetch("/api/journal/note", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: noteId, body: contentMd }),
+          })
+          if (!response.ok) {
+            console.error("[journal] Failed to save note body:", await response.text())
+            return false
+          }
+          const { noteKey } = (await response.json()) as { noteKey?: string }
+          if (noteKey) {
+            setNotes((previous) =>
+              previous.map((note) =>
+                note.id === noteId ? { ...note, noteKey, isBodyLoaded: true } : note,
+              ),
+            )
+          }
+        } catch (error) {
+          console.error("[journal] Failed to save note body:", error)
+          return false
+        }
+      }
+
       return true
     },
     [supabase, isAuthenticated, userId],
@@ -246,6 +309,11 @@ export function useJournalNotes() {
       // Reclaim the note's stored files first. The metadata rows would cascade with the note,
       // but the R2 objects would be left behind counting against the user's usage forever.
       await deleteAttachmentsForNote(noteId)
+      try {
+        await fetch(`/api/journal/note?id=${encodeURIComponent(noteId)}`, { method: "DELETE" })
+      } catch (error) {
+        console.warn("[journal] Could not delete note file:", error)
+      }
 
       const { error } = await supabase.from("journal_entries").delete().eq("id", noteId)
       if (error) {
@@ -319,6 +387,7 @@ export function useJournalNotes() {
     folders,
     isLoading,
     reload,
+    loadNoteBody,
     createNote,
     updateNote,
     deleteNote,

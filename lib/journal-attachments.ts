@@ -89,11 +89,18 @@ export const encodeVoiceNote = async (
 }
 
 /** Requests a presigned URL and PUTs the blob directly to storage. Returns the object key. */
-const uploadToStorage = async (blob: Blob, ext: string, contentType: string): Promise<string> => {
+const uploadToStorage = async (
+  blob: Blob,
+  ext: string,
+  contentType: string,
+  filename: string,
+): Promise<string> => {
   const response = await fetch("/api/storage/upload-url", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ext, contentType }),
+    // The journal scope puts the object at {user}/attachments/{filename}, matching what the
+    // note's `![[attachments/…]]` link expects once the bucket is read as a vault.
+    body: JSON.stringify({ ext, contentType, scope: "journal-attachment", filename }),
   })
   if (!response.ok) {
     throw new Error("Could not prepare the upload.")
@@ -125,9 +132,11 @@ export const saveAttachment = async (params: {
 }): Promise<JournalAttachment> => {
   const { blob, kind, ext, mime, displayName, entryId, profileId } = params
 
-  const storageKey = await uploadToStorage(blob, ext, mime)
-  const unique = storageKey.split("/").pop()?.split(".")[0]?.slice(0, 8) ?? `${Date.now()}`
+  // The filename is decided first, because it is both the object's location in the vault and
+  // the identifier the note's markdown will reference.
+  const unique = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
   const filename = sanitizeFilename(`${slugify(displayName.replace(/\.[^.]+$/, ""))}-${unique}.${ext}`)
+  const storageKey = await uploadToStorage(blob, ext, mime, filename)
 
   const supabase = createClient()
   const { data, error } = await supabase
