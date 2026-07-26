@@ -33,7 +33,7 @@ export function StorageBar({
   const percentage = Math.min((usedBytes / effectiveQuota) * 100, 100)
 
   return (
-    <div className="w-full border-muted bg-white/80 backdrop-blur-sm py-4 px-6 md:px-10 border-t-0">
+    <div className="w-full border-t-0 border-muted bg-transparent px-6 py-4 md:px-10">
       <div className="flex items-center gap-4">
         <HardDrive className="h-5 w-5 text-gray-600 shrink-0" />
         <div className="flex-1 space-y-2">
@@ -43,7 +43,7 @@ export function StorageBar({
               {formatFileSize(usedBytes)} {quotaBytes && `/ ${formatFileSize(quotaBytes)}`}
             </span>
           </div>
-          <div className="relative h-2 w-full rounded-full bg-muted overflow-hidden border border-muted">
+          <div className="relative h-2 w-full overflow-hidden rounded-full border border-muted bg-white">
             <div
               className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 transition-all duration-300"
               style={{ width: `${percentage}%` }}

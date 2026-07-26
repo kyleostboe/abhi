@@ -5,7 +5,9 @@ import { saveAudioRecord, getAudioRecord, deleteAudioRecord } from "./indexed-db
 // full page reloads — most importantly the redirect round-trip through
 // login/sign-up when a guest saves to the library or converts with "keep both".
 
-export type ToolSessionKind = "adjuster" | "creator"
+// "original" is the audio a user uploaded into the Adjuster but hasn't processed yet — it
+// needs its own slot so converting the original doesn't read back the processed output.
+export type ToolSessionKind = "adjuster" | "creator" | "original"
 
 export type ToolSessionMeta = {
   fileName: string
@@ -18,6 +20,7 @@ export type ToolSessionMeta = {
 const RECORD_ID: Record<ToolSessionKind, string> = {
   adjuster: "__tool_session_adjuster__",
   creator: "__tool_session_creator__",
+  original: "__tool_session_original__",
 }
 
 const metaKey = (kind: ToolSessionKind) => `abhi_tool_session:${kind}`

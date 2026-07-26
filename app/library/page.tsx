@@ -12,7 +12,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -744,6 +751,34 @@ export default function LibraryPage() {
       setPendingJournalEntryId(null)
     }
   }, [pendingJournalEntryId, selectedMeditation, journalEntriesForSelectedMeditation])
+
+  // (17) A meditation can be filed into a playlist either by dragging its card onto a playlist
+  // quick filter or from the card's own overflow menu. Both go through here.
+  const [dragOverPlaylistId, setDragOverPlaylistId] = useState<string | null>(null)
+
+  const handleAddToPlaylist = useCallback(
+    async (playlistId: string, meditationId: string, meditationTitle: string) => {
+      const playlist = playlists.find((entry) => entry.id === playlistId)
+      if (!playlist) return
+      if (playlist.meditationIds?.includes(meditationId)) {
+        toast({ title: "Already in playlist", description: `"${meditationTitle}" is already in ${playlist.name}.` })
+        return
+      }
+      try {
+        await MeditationLibrary.addToPlaylist(playlistId, meditationId)
+        await loadData()
+        toast({ title: "Added to playlist", description: `"${meditationTitle}" added to ${playlist.name}.` })
+      } catch (error) {
+        console.error("[v0] Failed to add to playlist:", error)
+        toast({
+          title: "Couldn't add to playlist",
+          description: "Please try again.",
+          variant: "destructive",
+        })
+      }
+    },
+    [playlists, loadData, toast],
+  )
 
   const handleSelectPlaylist = (playlistId: string | null) => {
     setSelectedPlaylist(playlistId)
@@ -2591,11 +2626,6 @@ export default function LibraryPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-0 md:p-8 pt-0 md:pt-24 font-serif font-black">
       <Navigation showProfileButton />
 
-      {!isAuthenticated && (
-        <div className="flex justify-center py-4 z-10 pt-20 md:pt-0 pb-7">
-          <AuthButtons onLogin={login} />
-        </div>
-      )}
 
       <Dialog open={showTitleDialog} onOpenChange={setShowTitleDialog}>
         <DialogContent>
@@ -2647,14 +2677,6 @@ export default function LibraryPage() {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {!isAuthenticated && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm text-center p-6 space-y-3">
-            <p className="text-lg text-gray-800 font-serif font-black">Create account to save</p>
-            <p className="text-sm text-gray-600 max-w-xl">
-              Library access is local-only. Audio exists on your device and browser.
-            </p>
-          </div>
-        )}
         {isLocalDebugHost && (
           <div className="fixed top-4 right-4 z-50">
             <Button
@@ -2667,9 +2689,21 @@ export default function LibraryPage() {
             </Button>
           </div>
         )}
+        {!isAuthenticated ? (
+          <div className="relative overflow-hidden">
+            <HeaderWash />
+            {/* Same placement as every other page: directly under the navigation bar. */}
+            <div className="absolute inset-x-0 top-[68px] z-20 flex justify-center md:top-6">
+              <AuthButtons onLogin={login} />
+            </div>
+            <div className="relative flex min-h-[70vh] flex-col items-center justify-center px-6 pb-10 pt-24 text-center md:pt-14">
+              <p className="font-serif text-lg font-black text-gray-700">Create account to use the Library</p>
+            </div>
+          </div>
+        ) : (
         <div className="relative overflow-hidden">
           <HeaderWash />
-          <div className="relative px-4 sm:px-8 lg:px-12 pt-20 md:pt-10 pb-10">
+          <div className="relative px-4 sm:px-8 lg:px-12 pt-24 md:pt-14 pb-10">
             <LogoMark className="mb-6" />
             <div className="flex justify-center mb-8">
               <div className="flex p-1 bg-muted rounded-sm shadow-inner text-sm text-gray-600">
@@ -2709,20 +2743,105 @@ export default function LibraryPage() {
                     className={`grid grid-cols-1 gap-4 mb-[27px] tracking-tight ${
                       shouldStackFilters
                         ? "md:grid-cols-1"
-                        : "md:[grid-template-columns:minmax(0,1.15fr)_minmax(0,1fr)] md:items-start"
+                        : "md:[grid-template-columns:minmax(0,0.8fr)_minmax(0,1.2fr)] md:items-start"
                     }`}
                   >
                     <div className={`${shouldStackFilters ? "" : "md:[grid-row:span_2]"}`}>
-                      {/* Same field treatment as the Home recorder's label input: white,
-                          borderless, lifted by a shadow. The old gradient-bordered wrapper was
-                          the only framed input left in the app. */}
-                      <input
-                        placeholder="Search meditations..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="flex h-11 w-full rounded-[10px] border-0 bg-white px-4 text-xs font-black tracking-tight text-gray-600 shadow-2xl ring-offset-background placeholder:font-normal placeholder:text-gray-500 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs"
-                      />
-                      <div className="mt-3 text-center">
+                      {/* Framed like the Adjuster's upload area — a thin gradient rule around a
+                          white field — using the Target Duration / Sound Cues gradient. */}
+                      <div className="rounded-sm bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 p-0.5 shadow-lg">
+                        <input
+                          placeholder="Search meditations..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="flex h-11 w-full rounded-sm border-0 bg-white px-4 text-xs font-black text-gray-600 shadow-none outline-none ring-offset-background placeholder:font-normal placeholder:text-gray-500 focus-visible:outline-none md:text-xs"
+                        />
+                      </div>
+                      {/* Under the search field on a phone, at the end of the quick filters from
+                          md up — one controlled dialog, two placements. */}
+                      <div className="mt-3 text-center md:hidden">
+                        <Button
+                          variant="ghost"
+                          onClick={() => setIsUploadDialogOpen(true)}
+                          className="w-44 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          Upload Meditation
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center font-serif font-black text-xs text-gray-600 md:justify-start md:items-center gap-[5px] justify-center">
+                      <button
+                        onClick={() => handleSourceFilterChange("all")}
+                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
+                          !selectedPlaylist && sourceFilter === "all"
+                            ? "bg-white border-stone-300"
+                            : "bg-white border-gray-500 hover:shadow-none"
+                        }`}
+                      >
+                        All Meditations
+                      </button>
+                      <button
+                        onClick={() => handleSourceFilterChange("adjuster")}
+                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
+                          !selectedPlaylist && sourceFilter === "adjuster"
+                            ? "bg-white border-stone-300"
+                            : "bg-white border-gray-500 hover:shadow-none"
+                        }`}
+                      >
+                        Adjuster
+                      </button>
+                      <button
+                        onClick={() => handleSourceFilterChange("creator")}
+                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
+                          !selectedPlaylist && sourceFilter === "creator"
+                            ? "bg-white border-stone-300"
+                            : "bg-white border-gray-500 hover:shadow-none"
+                        }`}
+                      >
+                        Creator
+                      </button>
+                      {playlists.map((playlist) => (
+                        <button
+                          key={playlist.id}
+                          onClick={() => handleSelectPlaylist(playlist.id)}
+                          onDragOver={(event) => {
+                            event.preventDefault()
+                            event.dataTransfer.dropEffect = "copy"
+                            setDragOverPlaylistId(playlist.id)
+                          }}
+                          onDragLeave={() => setDragOverPlaylistId((current) => (current === playlist.id ? null : current))}
+                          onDrop={(event) => {
+                            event.preventDefault()
+                            setDragOverPlaylistId(null)
+                            const id = event.dataTransfer.getData("application/x-abhi-meditation-id")
+                            const title = event.dataTransfer.getData("application/x-abhi-meditation-title")
+                            if (id) void handleAddToPlaylist(playlist.id, id, title || "Meditation")
+                          }}
+                          className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
+                            dragOverPlaylistId === playlist.id
+                              ? "bg-white border-logo-emerald-500 scale-105"
+                              : selectedPlaylist === playlist.id
+                                ? "bg-white border-stone-300"
+                                : "bg-white border-gray-500 hover:shadow-none"
+                          }`}
+                        >
+                          {playlist.name}
+                        </button>
+                      ))}
+                      <div className="hidden md:block">
+                        <Button
+                          variant="ghost"
+                          onClick={() => setIsUploadDialogOpen(true)}
+                          className="h-auto w-auto px-3 py-1 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          Upload Meditation
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
                         <Dialog
                           open={isUploadDialogOpen}
                           onOpenChange={(open) => {
@@ -2732,12 +2851,6 @@ export default function LibraryPage() {
                             }
                           }}
                         >
-                          <DialogTrigger asChild>
-                            <Button variant="ghost" className="w-44 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105">
-                              <Upload className="w-4 h-4 mr-2" />
-                              Upload Meditation
-                            </Button>
-                          </DialogTrigger>
                           <DialogContent className="sm:max-w-md">
                             <DialogHeader>
                               <DialogTitle>Upload Meditation</DialogTitle>
@@ -2805,68 +2918,21 @@ export default function LibraryPage() {
                             </div>
                           </DialogContent>
                         </Dialog>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap font-serif font-black text-xs text-gray-600 md:justify-start md:items-start gap-[5px] justify-center">
-                      <button
-                        onClick={() => handleSourceFilterChange("all")}
-                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
-                          !selectedPlaylist && sourceFilter === "all"
-                            ? " border-stone-300"
-                            : "bg-white border-gray-500 hover:shadow-none"
-                        }`}
-                      >
-                        All Meditations
-                      </button>
-                      <button
-                        onClick={() => handleSourceFilterChange("adjuster")}
-                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
-                          !selectedPlaylist && sourceFilter === "adjuster"
-                            ? " border-stone-300"
-                            : "bg-white border-gray-500 hover:shadow-none"
-                        }`}
-                      >
-                        Adjuster
-                      </button>
-                      <button
-                        onClick={() => handleSourceFilterChange("creator")}
-                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
-                          !selectedPlaylist && sourceFilter === "creator"
-                            ? " border-stone-300"
-                            : "bg-white border-gray-500 hover:shadow-none"
-                        }`}
-                      >
-                        Creator
-                      </button>
-                      {playlists.map((playlist) => (
-                        <button
-                          key={playlist.id}
-                          onClick={() => handleSelectPlaylist(playlist.id)}
-                          className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
-                            selectedPlaylist === playlist.id
-                              ? " border-stone-300"
-                              : "bg-white border-gray-500 hover:shadow-none"
-                          }`}
-                        >
-                          {playlist.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+
 
                   {/* Meditations Grid */}
                   {isLoadingLibrary ? (
-                    <Card className="flex items-center justify-center rounded-xl border-none bg-white p-12 text-center shadow-lg">
+                    <div className="flex items-center justify-center py-12 text-center">
                       <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-                    </Card>
+                    </div>
                   ) : displayedGroups.length === 0 ? (
-                    <Card className="rounded-xl border-none bg-white p-12 text-center shadow-lg">
+                    <div className="py-12 text-center">
                       <p className="text-gray-500 text-base">
                         {selectedPlaylist
                           ? "This playlist is empty. Add a meditation to get started :)"
-                          : "No meditations yet "}
+                          : "No meditations yet"}
                       </p>
-                    </Card>
+                    </div>
                   ) : (
                     <div className="space-y-5">
                       {displayedGroups.map((group) => {
@@ -2888,23 +2954,19 @@ export default function LibraryPage() {
                           <motion.div
                             key={base.id}
                             className="group w-full text-left cursor-pointer"
+                            draggable={playlists.length > 0}
+                            onDragStart={(event) => {
+                              const transfer = (event as unknown as React.DragEvent).dataTransfer
+                              if (!transfer) return
+                              transfer.effectAllowed = "copy"
+                              transfer.setData("application/x-abhi-meditation-id", base.id)
+                              transfer.setData("application/x-abhi-meditation-title", base.title)
+                            }}
                             onClick={() => openMeditationPlayer(base, variants)}
                           >
-                            {/* One surface, not two: the card is the frame. overflow stays visible so the
-                                source badge can overhang the top-right corner. */}
-                            <Card className="w-full rounded-xl border-none bg-white shadow-lg">
+                            <Card className="w-full rounded-xl border-[3px] border-muted bg-white shadow-md">
                               <div className="relative flex items-center justify-between overflow-visible p-4">
-                                <Badge
-                                  variant="outline"
-                                  className={`absolute -top-2 -right-2 translate-x-[7px] -translate-y-[5px] z-10 !border-0 !px-3 !py-1 shadow-inner text-gray-500 text-xs font-black rounded-[6px] bg-gradient-to-r ${
-                                    base.source === "adjuster"
-                                      ? "bg-gradient-to-r from-muted to-stone-200"
-                                      : "bg-gradient-to-r from-muted to-stone-200"
-                                  }`}
-                                >
-                                  {base.source === "adjuster" ? "Adjuster" : "Creator"}
-                                </Badge>
-
+                                
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-3 mb-2">
                                     <h3 className="font-black text-gray-800 truncate text-xs">
@@ -2950,45 +3012,71 @@ export default function LibraryPage() {
                                 </div>
 
                                 <div className="flex items-center gap-2 ml-3">
-                                  {!isWideLayout && (
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                                          onClick={(event) => event.stopPropagation()}
-                                          aria-label="View details"
-                                        >
-                                          <MoreVertical className="h-4 w-4" />
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent
-                                        align="end"
-                                        className="rounded-sm border-muted border-2 text-xs font-serif font-black w-40 text-gray-500"
+                                  {/* The overflow menu now renders at every width: the detail rows
+                                      are still narrow-only, but "Add to playlist" is the
+                                      keyboard/touch route to the same thing dragging a card onto a
+                                      playlist filter does. */}
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                                        onClick={(event) => event.stopPropagation()}
+                                        aria-label="Meditation options"
                                       >
-                                        <DropdownMenuItem className="flex items-center gap-2 cursor-default">
-                                          <Calendar className="h-4 w-4 text-gray-600" />
-                                          <span className="text-xs">{formatDate(base.createdAt)}</span>
-                                        </DropdownMenuItem>
-                                        {base.metadata.pausesAdjusted ? (
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                      align="end"
+                                      className="w-48 text-gray-500"
+                                      onClick={(event) => event.stopPropagation()}
+                                    >
+                                      {!isWideLayout && (
+                                        <>
                                           <DropdownMenuItem className="flex items-center gap-2 cursor-default">
-                                            <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
-                                            <span className="text-sm">
-                                              {base.metadata.pausesAdjusted} pauses adjusted
-                                            </span>
+                                            <Calendar className="h-4 w-4 text-gray-600" />
+                                            <span className="text-xs">{formatDate(base.createdAt)}</span>
                                           </DropdownMenuItem>
-                                        ) : base.metadata.instructionCount ? (
-                                          <DropdownMenuItem className="flex items-center gap-2 cursor-default">
-                                            <SlidersHorizontal className="h-4 w-4 text-gray-600" />
-                                            <span className="text-sm">
-                                              {base.metadata.instructionCount} instructions
-                                            </span>
-                                          </DropdownMenuItem>
-                                        ) : null}
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                  )}
+                                          {base.metadata.pausesAdjusted ? (
+                                            <DropdownMenuItem className="flex items-center gap-2 cursor-default">
+                                              <SlidersHorizontal className="h-4 w-4 text-logo-rose-500" />
+                                              <span className="text-xs">
+                                                {base.metadata.pausesAdjusted} pauses adjusted
+                                              </span>
+                                            </DropdownMenuItem>
+                                          ) : base.metadata.instructionCount ? (
+                                            <DropdownMenuItem className="flex items-center gap-2 cursor-default">
+                                              <SlidersHorizontal className="h-4 w-4 text-gray-600" />
+                                              <span className="text-xs">
+                                                {base.metadata.instructionCount} instructions
+                                              </span>
+                                            </DropdownMenuItem>
+                                          ) : null}
+                                          {playlists.length > 0 && <DropdownMenuSeparator />}
+                                        </>
+                                      )}
+                                      {playlists.length > 0 && (
+                                        <>
+                                          <DropdownMenuLabel>Add to playlist</DropdownMenuLabel>
+                                          {playlists.map((playlist) => (
+                                            <DropdownMenuItem
+                                              key={playlist.id}
+                                              onSelect={(event) => {
+                                                event.preventDefault()
+                                                void handleAddToPlaylist(playlist.id, base.id, base.title)
+                                              }}
+                                              className="flex items-center gap-2"
+                                            >
+                                              <FolderPlus className="h-4 w-4 text-gray-600" />
+                                              <span className="truncate text-xs">{playlist.name}</span>
+                                            </DropdownMenuItem>
+                                          ))}
+                                        </>
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -3024,7 +3112,7 @@ export default function LibraryPage() {
                   <div className="mb-6">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button className="bg-gradient-to-br from-logo-amber-300 to-logo-teal-500 rounded-[11px] shadow-md hover:shadow-none text-white text-sm font-black">
+                        <Button className="mx-auto flex w-[calc(100%-48px)] max-w-[352px] rounded-[11px] bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 font-serif text-sm font-black text-white shadow-md hover:shadow-none">
                           <FolderPlus className="w-4 h-4 mr-2" />
                           Create Playlist
                         </Button>
@@ -3064,11 +3152,9 @@ export default function LibraryPage() {
 
                   {/* Playlists Grid */}
                   {playlists.length === 0 ? (
-                    <Card className="rounded-xl border-none bg-white p-12 text-center shadow-lg">
-                      <FolderPlus className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                      <h3 className="text-xl font-black text-gray-600 mb-2">No playlists created yet</h3>
-                      <p className="text-gray-500 mb-4">Create your first playlist to organize your meditations.</p>
-                    </Card>
+                    <div className="py-12 text-center">
+                      <p className="text-gray-500 text-base">No playlists yet</p>
+                    </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {playlists.map((playlist) => {
@@ -3076,7 +3162,7 @@ export default function LibraryPage() {
                         const totalDuration = playlistMeditations.reduce((sum, med) => sum + med.duration, 0)
 
                         return (
-                          <Card key={playlist.id} className="rounded-xl border-none bg-white p-6 shadow-lg transition-shadow hover:shadow-none">
+                          <Card key={playlist.id} className="rounded-xl border-[3px] border-muted bg-white p-6 shadow-md transition-shadow hover:shadow-none">
                             <div className="flex items-start justify-between mb-4">
                               <div className="flex-1">
                                 <h3 className="font-black text-lg mb-1">{playlist.name}</h3>
@@ -3925,7 +4011,9 @@ export default function LibraryPage() {
               playerPortalElement,
             )}
         </div>
+        )}
 
+        {isAuthenticated && (
         <StorageBar
           usedBytes={storageUsage?.usedBytes ?? 0}
           quotaBytes={storageUsage?.quotaBytes}
@@ -3935,6 +4023,7 @@ export default function LibraryPage() {
           isBackupLoading={isBackupLoading}
           backupProgress={backupProgress}
         />
+        )}
 
         <input
           ref={backupInputRef}
