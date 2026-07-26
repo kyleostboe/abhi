@@ -6,8 +6,11 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
+// Form labels were the one piece of chrome still rendering in the default sans face at
+// text-base, which read as noticeably larger and lighter than every heading and control
+// around them. Match the app's serif, weight and scale.
 const labelVariants = cva(
-  "text-base font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+  "font-serif text-sm font-black leading-none text-gray-700 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
 )
 
 const Label = React.forwardRef<

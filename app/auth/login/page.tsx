@@ -6,6 +6,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { LogoMark } from "@/components/logo-mark"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
@@ -79,18 +80,8 @@ function LoginPageContent() {
         <div className="flex flex-col gap-6">
           <Card className="border-[3px] border-muted shadow-xl">
             <CardHeader className="text-center">
-              <div className="flex justify-center mb-4">
-                <div className="flex items-center space-x-[5px]">
-                  <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px] shadow-md" />
-                  <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[11px] w-[11px] shadow" />
-                  <div className="w-5 bg-gradient-to-br from-logo-amber to-orange-300 rounded-[4px] h-[11px] shadow-sm" />
-                  <div className="bg-gradient-to-br from-gray-600 to-gray-500 border-[3px] bg-muted h-11 w-3 border-stone-200 shadow-md rounded-md" />
-                  <div className="w-5 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[4px] h-[11px] shadow-sm" />
-                  <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[11px] w-[11px] shadow" />
-                  <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[16px] h-[16px] shadow-md" />
-                </div>
-              </div>
-              <CardTitle className="text-2xl font-black font-serif text-gray-700">Login</CardTitle>
+              <LogoMark className="mb-4" />
+<CardTitle className="text-2xl font-black font-serif text-gray-700">Login</CardTitle>
               <CardDescription className="font-serif">Enter your email to access your account</CardDescription>
             </CardHeader>
             <CardContent>
