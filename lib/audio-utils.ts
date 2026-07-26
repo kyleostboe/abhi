@@ -2,19 +2,20 @@ import * as Tone from "tone"
 import { sleep, formatFileSize } from "./utils"
 import lamejs from "@breezystack/lamejs"
 import { encodeToFormat, isFormatEncodingSupported } from "./audio-encoder"
+import { log } from "@/lib/log"
 
 // Initialize Tone.js
 export const initializeTone = async (): Promise<void> => {
   if (Tone.context.state !== "running") {
-    console.log("[v0] Initializing Tone.js...")
+    log.debug("Initializing Tone.js...")
     await Tone.start()
-    console.log("[v0] Tone.js initialized successfully")
+    log.debug("Tone.js initialized successfully")
   }
 }
 
 export const playNote = async (note: string, octave: number, duration = 0.8, volume = 0.7): Promise<void> => {
   try {
-    console.log(`[v0] Playing basic synth note: ${note}${octave}`)
+    log.debug(`Playing basic synth note: ${note}${octave}`)
 
     await Tone.start()
 
@@ -23,9 +24,9 @@ export const playNote = async (note: string, octave: number, duration = 0.8, vol
 
     setTimeout(() => synth.dispose(), (duration + 0.5) * 1000)
 
-    console.log(`[v0] Basic synth note ${note}${octave} played successfully`)
+    log.debug(`Basic synth note ${note}${octave} played successfully`)
   } catch (error) {
-    console.error("[v0] Error playing note:", error)
+    log.error("Error playing note:", error)
   }
 }
 
@@ -112,7 +113,7 @@ export const bufferToMp3 = async (
   onProgress(30)
 
   const mp3encoder = new lamejs.Mp3Encoder(1, monoBuffer.sampleRate, bitrate)
-  const mp3Data: Int8Array[] = []
+  const mp3Data: BlobPart[] = []
   const sampleBlockSize = 1152
 
   for (let i = 0; i < samples.length; i += sampleBlockSize) {
@@ -142,8 +143,8 @@ export const bufferToMp3 = async (
 
   const mp3Blob = new Blob(mp3Data, { type: "audio/mp3" })
 
-  console.log(
-    `[v0] MP3 encoding complete. Original size: ${Math.round((buffer.length * buffer.numberOfChannels * 4) / 1024 / 1024)}MB (uncompressed), MP3 size: ${Math.round(mp3Blob.size / 1024 / 1024)}MB (${bitrate}kbps)`,
+  log.debug(
+    `MP3 encoding complete. Original size: ${Math.round((buffer.length * buffer.numberOfChannels * 4) / 1024 / 1024)}MB (uncompressed), MP3 size: ${Math.round(mp3Blob.size / 1024 / 1024)}MB (${bitrate}kbps)`,
   )
 
   return {
@@ -246,11 +247,11 @@ export const decodeAudioBlob = async (blob: Blob, audioContext: AudioContext): P
   try {
     return await audioContext.decodeAudioData(arrayBuffer.slice(0))
   } catch (nativeError) {
-    console.warn("[v0] Native decodeAudioData failed, falling back to mediabunny decode:", nativeError)
+    log.warn("Native decodeAudioData failed, falling back to mediabunny decode:", nativeError)
     try {
       return await decodeAudioBlobWithMediabunny(blob, audioContext)
     } catch (fallbackError) {
-      console.warn("[v0] mediabunny fallback decode also failed:", fallbackError)
+      log.warn("mediabunny fallback decode also failed:", fallbackError)
       throw nativeError instanceof Error ? nativeError : new Error("Unable to decode audio data")
     }
   }
@@ -374,7 +375,7 @@ export const encodeDistributionAudio = async (
       if (error instanceof Error && error.message === "Encoding aborted") {
         throw error
       }
-      console.warn(`[v0] ${format} encoding failed, falling back to MP3:`, error)
+      log.warn(`${format} encoding failed, falling back to MP3:`, error)
     }
   }
 

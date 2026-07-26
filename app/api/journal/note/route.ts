@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { buildJournalNoteKey, deleteObject, getTextObject, putTextObject } from "@/lib/storage"
 import { composeNoteFile, parseNoteFile } from "@/lib/journal-frontmatter"
 import { deriveTitle, derivePreview } from "@/lib/journal-markdown"
+import { log } from "@/lib/log"
 
 /**
  * Note bodies live in R2 as markdown files; the database keeps only an index.
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
     }
     return NextResponse.json({ body: parseNoteFile(contents).body })
   } catch (storageError) {
-    console.error("[journal] Failed to read note from storage:", storageError)
+    log.error("[journal] Failed to read note from storage:", storageError)
     return NextResponse.json({ error: "Unable to read the note." }, { status: 500 })
   }
 }
@@ -136,7 +137,7 @@ export async function PUT(request: NextRequest) {
   try {
     await putTextObject(noteKey, file)
   } catch (storageError) {
-    console.error("[journal] Failed to write note to storage:", storageError)
+    log.error("[journal] Failed to write note to storage:", storageError)
     return NextResponse.json({ error: "Unable to save the note." }, { status: 500 })
   }
 
@@ -155,7 +156,7 @@ export async function PUT(request: NextRequest) {
     .eq("id", id)
 
   if (updateError) {
-    console.error("[journal] Failed to update note index:", updateError)
+    log.error("[journal] Failed to update note index:", updateError)
     return NextResponse.json({ error: "Saved the file but could not update the index." }, { status: 500 })
   }
 
@@ -190,7 +191,7 @@ export async function DELETE(request: NextRequest) {
     try {
       await deleteObject(data.note_key)
     } catch (storageError) {
-      console.warn("[journal] Could not delete note file:", storageError)
+      log.warn("[journal] Could not delete note file:", storageError)
     }
   }
 

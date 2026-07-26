@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { deleteAudioObject } from "@/lib/storage"
+import { log } from "@/lib/log"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
     .maybeSingle()
 
   if (lookupError) {
-    console.error("[storage] Failed to look up meditation for delete:", lookupError)
+    log.error("[storage] Failed to look up meditation for delete:", lookupError)
     return NextResponse.json({ error: "Unable to look up meditation." }, { status: 500 })
   }
   if (!row) {
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
     try {
       await deleteAudioObject(row.audio_key)
     } catch (error) {
-      console.error(`[storage] Failed to delete R2 object for meditation ${meditationId}:`, error)
+      log.error(`[storage] Failed to delete R2 object for meditation ${meditationId}:`, error)
       return NextResponse.json({ error: "Unable to delete stored audio." }, { status: 500 })
     }
   }
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
     .eq("profile_id", user.id)
 
   if (deleteError) {
-    console.error("[storage] Failed to delete meditation row:", deleteError)
+    log.error("[storage] Failed to delete meditation row:", deleteError)
     return NextResponse.json({ error: "Unable to delete meditation." }, { status: 500 })
   }
 

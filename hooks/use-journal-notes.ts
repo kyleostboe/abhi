@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useAuth } from "@/hooks/use-auth"
 import { deleteAttachmentsForNote } from "@/lib/journal-attachments"
 import { deriveTitle, derivePreview, slugify } from "@/lib/journal-markdown"
+import { log } from "@/lib/log"
 
 export type JournalNote = {
   id: string
@@ -112,13 +113,13 @@ export function useJournalNotes() {
       ])
 
       if (noteResult.error) {
-        console.error("[journal] Failed to load notes:", noteResult.error)
+        log.error("[journal] Failed to load notes:", noteResult.error)
       } else {
         setNotes(((noteResult.data ?? []) as NoteRow[]).map((row) => mapNote(row)))
       }
 
       if (folderResult.error) {
-        console.error("[journal] Failed to load folders:", folderResult.error)
+        log.error("[journal] Failed to load folders:", folderResult.error)
       } else {
         setFolders(
           ((folderResult.data ?? []) as { id: string; name: string; sort_order: number | null }[]).map((row) => ({
@@ -173,7 +174,7 @@ export function useJournalNotes() {
         .single()
 
       if (error || !data) {
-        console.error("[journal] Failed to create note:", error)
+        log.error("[journal] Failed to create note:", error)
         return null
       }
 
@@ -205,7 +206,7 @@ export function useJournalNotes() {
         )
         return body ?? ""
       } catch (error) {
-        console.error("[journal] Failed to load note body:", error)
+        log.error("[journal] Failed to load note body:", error)
         return null
       }
     },
@@ -264,7 +265,7 @@ export function useJournalNotes() {
       if (Object.keys(payload).length > 1 || changes.contentMd === undefined) {
         const { error } = await supabase.from("journal_entries").update(payload).eq("id", noteId)
         if (error) {
-          console.error("[journal] Failed to save note metadata:", error)
+          log.error("[journal] Failed to save note metadata:", error)
           return false
         }
       }
@@ -277,7 +278,7 @@ export function useJournalNotes() {
             body: JSON.stringify({ id: noteId, body: contentMd }),
           })
           if (!response.ok) {
-            console.error("[journal] Failed to save note body:", await response.text())
+            log.error("[journal] Failed to save note body:", await response.text())
             return false
           }
           const { noteKey } = (await response.json()) as { noteKey?: string }
@@ -289,7 +290,7 @@ export function useJournalNotes() {
             )
           }
         } catch (error) {
-          console.error("[journal] Failed to save note body:", error)
+          log.error("[journal] Failed to save note body:", error)
           return false
         }
       }
@@ -312,12 +313,12 @@ export function useJournalNotes() {
       try {
         await fetch(`/api/journal/note?id=${encodeURIComponent(noteId)}`, { method: "DELETE" })
       } catch (error) {
-        console.warn("[journal] Could not delete note file:", error)
+        log.warn("[journal] Could not delete note file:", error)
       }
 
       const { error } = await supabase.from("journal_entries").delete().eq("id", noteId)
       if (error) {
-        console.error("[journal] Failed to delete note:", error)
+        log.error("[journal] Failed to delete note:", error)
         setNotes(previous)
         return false
       }
@@ -339,7 +340,7 @@ export function useJournalNotes() {
         .single()
 
       if (error || !data) {
-        console.error("[journal] Failed to create folder:", error)
+        log.error("[journal] Failed to create folder:", error)
         return null
       }
 
@@ -358,7 +359,7 @@ export function useJournalNotes() {
       if (!isAuthenticated || !userId) return true
       const { error } = await supabase.from("journal_folders").update({ name: trimmed }).eq("id", folderId)
       if (error) {
-        console.error("[journal] Failed to rename folder:", error)
+        log.error("[journal] Failed to rename folder:", error)
         return false
       }
       return true
@@ -374,7 +375,7 @@ export function useJournalNotes() {
       if (!isAuthenticated || !userId) return true
       const { error } = await supabase.from("journal_folders").delete().eq("id", folderId)
       if (error) {
-        console.error("[journal] Failed to delete folder:", error)
+        log.error("[journal] Failed to delete folder:", error)
         return false
       }
       return true

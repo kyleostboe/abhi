@@ -17,7 +17,13 @@ import {
   type AudioFormatMetadata,
 } from "@/lib/audio-utils"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { log } from "@/lib/log"
+import {
+  availableSounds,
+  musicalNotes,
+  type Instruction,
+  type MappedInstruction,
+} from "@/lib/creator-sounds"
 
 type SpeechRecognitionAlternative = {
   transcript: string
@@ -65,60 +71,6 @@ type SpeechRecognitionWindow = Window & {
   webkitSpeechRecognition?: SpeechRecognitionConstructor
 }
 
-interface Instruction {
-  id: string
-  text: string
-  startTime: number
-  endTime: number
-}
-
-interface MappedInstruction extends Instruction {
-  soundId: string
-  keepOriginal: boolean
-  originalVolume: number
-  soundVolume: number
-}
-
-interface SoundDefinition {
-  id: string
-  name: string
-  description: string
-}
-
-interface MusicalNote {
-  id: string
-  name: string
-  note: string
-  octave: number
-}
-
-const musicalNotes: MusicalNote[] = [
-  { id: "C4", name: "C4", note: "C", octave: 4 },
-  { id: "D4", name: "D4", note: "D", octave: 4 },
-  { id: "E4", name: "E4", note: "E", octave: 4 },
-  { id: "F4", name: "F4", note: "F", octave: 4 },
-  { id: "G4", name: "G4", note: "G", octave: 4 },
-  { id: "A4", name: "A4", note: "A", octave: 4 },
-  { id: "B4", name: "B4", note: "B", octave: 4 },
-  { id: "C5", name: "C5", note: "C", octave: 5 },
-  { id: "D5", name: "D5", note: "D", octave: 5 },
-  { id: "E5", name: "E5", note: "E", octave: 5 },
-  { id: "F5", name: "F5", note: "F", octave: 5 },
-  { id: "G5", name: "G5", note: "G", octave: 5 },
-  { id: "A5", name: "A5", note: "A", octave: 5 },
-  { id: "B5", name: "B5", note: "B", octave: 5 },
-  { id: "C6", name: "C6", note: "C", octave: 6 },
-]
-
-const availableSounds: SoundDefinition[] = [
-  { id: "bell_high", name: "High Bell", description: "A clear, high-pitched bell." },
-  { id: "bell_mid", name: "Mid Bell", description: "A resonant, medium-pitched bell." },
-  { id: "chime_soft", name: "Soft Chime", description: "A gentle, soothing chime." },
-  { id: "tone_short_low", name: "Short Low Tone", description: "A brief, low frequency tone." },
-  { id: "tone_short_high", name: "Short High Tone", description: "A brief, high frequency tone." },
-  { id: "wood_block", name: "Wood Block", description: "A sharp, percussive wood block sound." },
-]
-
 export default function CreatorPage() {
   const [file, setFile] = useState<File | null>(null)
   const [originalAudioUrl, setOriginalAudioUrl] = useState<string>("")
@@ -161,7 +113,7 @@ export default function CreatorPage() {
       const AudioContextClass = window.AudioContext ?? (window as any).webkitAudioContext
 
       if (!AudioContextClass) {
-        console.error("[v0] AudioContext is not supported in this browser")
+        log.error("AudioContext is not supported in this browser")
         return null
       }
 
@@ -173,7 +125,7 @@ export default function CreatorPage() {
       try {
         await context.resume()
       } catch (error) {
-        console.error("[v0] Failed to resume AudioContext:", error)
+        log.error("Failed to resume AudioContext:", error)
         return null
       }
     }
@@ -219,7 +171,7 @@ export default function CreatorPage() {
       if (creatorImport) {
         try {
           const importData = JSON.parse(creatorImport)
-          console.log("[v0] Loading meditation from library into creator:", importData)
+          log.debug("Loading meditation from library into creator:", importData)
 
           handleImportedMeditation(importData)
 
@@ -231,7 +183,7 @@ export default function CreatorPage() {
             type: "success",
           })
         } catch (error) {
-          console.error("[v0] Error loading creator import:", error)
+          log.error("Error loading creator import:", error)
           localStorage.removeItem("abhi_creator_import")
         }
       }
@@ -251,7 +203,7 @@ export default function CreatorPage() {
       // Create and play sound using Tone.js
       await createToneSound(soundId, 0, 1.0) // immediate playback with full volume
     } catch (error) {
-      console.error("Error playing sound preview:", error)
+      log.error("Error playing sound preview:", error)
     }
   }
 
@@ -261,11 +213,12 @@ export default function CreatorPage() {
         await Tone.start()
       }
 
+      // Tone.Synth is an oscillator + amplitude envelope only; it has no filter stage, so the
+      // filter/filterEnvelope options this used to pass were silently discarded. Dropped rather
+      // than moved to MonoSynth so the voice keeps sounding exactly as it always has.
       const synth = new Tone.Synth({
         oscillator: { type: "fatsawtooth" },
         envelope: { attack: 0.02, decay: 0.3, sustain: 0.4, release: 1.2 },
-        filter: { frequency: 1200, rolloff: -12 },
-        filterEnvelope: { attack: 0.02, decay: 0.2, sustain: 0.5, release: 2 },
       }).toDestination()
 
       const reverb = new Tone.Reverb(1.5).toDestination()
@@ -278,55 +231,54 @@ export default function CreatorPage() {
         reverb.dispose()
       }, 3000)
     } catch (error) {
-      console.error("Error playing note preview:", error)
+      log.error("Error playing note preview:", error)
     }
   }
 
   const playChordPreview = async () => {
     if (selectedNotes.length === 0) return
 
-    console.log("[v0] Playing chord with notes:", selectedNotes)
+    log.debug("Playing chord with notes:", selectedNotes)
 
     try {
       if (Tone.context.state !== "running") {
         await Tone.start()
-        console.log("[v0] Tone.js context started for chord")
+        log.debug("Tone.js context started for chord")
       }
 
+      // Same as above: the voice is Tone.Synth, which has no filter stage.
       const polySynth = new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: "fatsawtooth" },
         envelope: { attack: 0.02, decay: 0.3, sustain: 0.4, release: 1.2 },
-        filter: { frequency: 1200, rolloff: -12 },
-        filterEnvelope: { attack: 0.02, decay: 0.2, sustain: 0.5, release: 2 },
       }).toDestination()
 
       const reverb = new Tone.Reverb(1.5).toDestination()
       polySynth.connect(reverb)
 
-      console.log("[v0] Triggering chord with notes:", selectedNotes)
+      log.debug("Triggering chord with notes:", selectedNotes)
       polySynth.triggerAttackRelease(selectedNotes, "2n")
-      console.log("[v0] Chord triggered successfully")
+      log.debug("Chord triggered successfully")
 
       setTimeout(() => {
         polySynth.dispose()
         reverb.dispose()
-        console.log("[v0] Chord synth disposed")
+        log.debug("Chord synth disposed")
       }, 3000)
     } catch (error) {
-      console.error("[v0] Error playing chord preview:", error)
+      log.error("Error playing chord preview:", error)
     }
   }
 
   const handleNoteSelection = (noteId: string) => {
     if (multiNoteMode) {
-      console.log("[v0] Multi-note mode: toggling note", noteId)
+      log.debug("Multi-note mode: toggling note", noteId)
       setSelectedNotes((prev) => {
         const newSelection = prev.includes(noteId) ? prev.filter((id) => id !== noteId) : [...prev, noteId]
-        console.log("[v0] New selected notes:", newSelection)
+        log.debug("New selected notes:", newSelection)
         return newSelection
       })
     } else {
-      console.log("[v0] Single note mode: playing", noteId)
+      log.debug("Single note mode: playing", noteId)
       playNotePreview(noteId)
     }
   }
@@ -378,8 +330,9 @@ export default function CreatorPage() {
         break
       }
       case "chime_soft": {
+        // No `frequency` here: MetalSynth takes no such option, and the pitch is set by the
+        // triggerAttackRelease("C6", ...) call below regardless.
         const chime = new Tone.MetalSynth({
-          frequency: 200,
           envelope: { attack: 0.001, decay: 1.4, release: 0.2 },
           harmonicity: 5.1,
           modulationIndex: 32,
@@ -474,7 +427,7 @@ export default function CreatorPage() {
         originalAudioBufferRef.current = audioBuffer
         setAudioDuration(audioBuffer.duration)
       } catch (error) {
-        console.error("Error loading audio buffer:", error)
+        log.error("Error loading audio buffer:", error)
       }
     }
   }
@@ -532,7 +485,7 @@ export default function CreatorPage() {
     }
 
     recognition.onerror = (event) => {
-      console.error("Speech recognition error:", event.error)
+      log.error("Speech recognition error:", event.error)
       setStatus({ message: "Speech recognition failed. Try the manual method instead.", type: "error" })
       setIsTranscribing(false)
     }
@@ -634,7 +587,7 @@ export default function CreatorPage() {
   }
 
   const renderTimelineAudio = async (): Promise<AudioBuffer> => {
-    console.log("Rendering audio with instructions:", mappedInstructions)
+    log.debug("Rendering audio with instructions:", mappedInstructions)
 
     const audioCtx = await ensureAudioContext()
     const originalBuffer = originalAudioBufferRef.current
@@ -673,13 +626,19 @@ export default function CreatorPage() {
       await createToneSound(instr.soundId, instr.startTime, instr.soundVolume / 100)
     }
 
-    // Render the audio
+    // Render the audio. OfflineContext hands back a ToneAudioBuffer wrapper; unwrap it to the
+    // plain AudioBuffer the rest of the encode path expects.
     const renderedBuffer = await offlineContext.render()
 
     // Reset Tone.js to use the main context
     Tone.setContext(audioCtx)
 
-    return renderedBuffer
+    const audioBuffer = renderedBuffer.get()
+    if (!audioBuffer) {
+      throw new Error("Offline render finished without producing an audio buffer.")
+    }
+
+    return audioBuffer
   }
 
   const handleEncoding = async () => {
@@ -722,7 +681,7 @@ export default function CreatorPage() {
       setEncodingProgress(100)
       setStatus({ message: "Audio encoding completed successfully!", type: "success" })
     } catch (error) {
-      console.error("Encoding error:", error)
+      log.error("Encoding error:", error)
       setStatus({
         message: `Encoding failed: ${error instanceof Error ? error.message : "Unknown error"}`,
         type: "error",
@@ -754,7 +713,7 @@ export default function CreatorPage() {
 
   const handleImportedMeditation = async (importData: any) => {
     try {
-      console.log("[v0] Handling imported meditation in creator:", importData)
+      log.debug("Handling imported meditation in creator:", importData)
 
       // Load the audio file
       const response = await fetch(importData.processedAudioUrl)
@@ -810,7 +769,7 @@ export default function CreatorPage() {
         })
       }
     } catch (error) {
-      console.error("[v0] Error handling imported meditation in creator:", error)
+      log.error("Error handling imported meditation in creator:", error)
       setStatus({
         message: "Failed to load meditation from library. Please try again.",
         type: "error",
@@ -819,7 +778,7 @@ export default function CreatorPage() {
   }
 
   const reconstructOriginalStructure = async (importData: any) => {
-    console.log("[v0] Reconstructing original creator structure:", importData)
+    log.debug("Reconstructing original creator structure:", importData)
 
     try {
       if (importData.metadata?.instructionCount && importData.metadata.instructionCount > 0) {
@@ -883,7 +842,7 @@ export default function CreatorPage() {
         })
       }
     } catch (error) {
-      console.error("[v0] Error reconstructing original structure:", error)
+      log.error("Error reconstructing original structure:", error)
       setStatus({
         message: "Failed to reconstruct original structure. Using basic import instead.",
         type: "error",
@@ -1092,7 +1051,7 @@ export default function CreatorPage() {
                 <Alert className="bg-amber-50 border-amber-200 text-amber-700 text-sm mt-4">
                   <AlertTitle className="font-serif text-sm font-black tracking-tight">Reduced quality export</AlertTitle>
                   <AlertDescription className="text-xs">
-                    This session's audio was compressed to {encodedDistributionMetadata?.bitrate}kbps (down from our
+                    This session&apos;s audio was compressed to {encodedDistributionMetadata?.bitrate}kbps (down from our
                     standard 96kbps) to fit the 48MB size limit. Shorter sessions keep higher fidelity.
                   </AlertDescription>
                 </Alert>

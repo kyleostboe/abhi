@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createDownloadUrl } from "@/lib/storage"
+import { log } from "@/lib/log"
 
 const MAX_PER_REQUEST = 100
 
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     .in("filename", filenames)
 
   if (error) {
-    console.error("[journal] Failed to look up attachments:", error)
+    log.error("[journal] Failed to look up attachments:", error)
     return NextResponse.json({ error: "Unable to look up attachments." }, { status: 500 })
   }
 
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     try {
       urls[row.filename] = await createDownloadUrl(row.storage_key)
     } catch (urlError) {
-      console.error(`[journal] Failed to mint URL for ${row.filename}:`, urlError)
+      log.error(`[journal] Failed to mint URL for ${row.filename}:`, urlError)
     }
   }
 

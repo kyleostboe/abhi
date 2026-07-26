@@ -6,7 +6,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card } from "@/components/ui/card"
-import { Alert } from "@/components/ui/alert" // Import Alert component
+import {} from "@/components/ui/alert" // Import Alert component
 import {
   AlertTriangle,
   Music2Icon,
@@ -33,12 +33,11 @@ import { Navigation } from "@/components/navigation"
 import { LogoMark } from "@/components/logo-mark"
 import { TimerWheel } from "@/components/timer-wheel"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
 import { VisualTimeline } from "@/components/visual-timeline"
-import { cn, formatTime, monitorMemory, formatFileSize } from "@/lib/utils"
+import { cn, formatTime, monitorMemory, formatFileSize, isAbortError } from "@/lib/utils"
 import {
   getAudioContext,
   encodeDistributionAudio,
@@ -79,165 +78,23 @@ import {
   clearPendingReuploadFile,
 } from "@/lib/storage/pending-reupload"
 import { usePendingConvertAutoSave } from "@/hooks/use-pending-convert-autosave"
-import type { Instruction, SoundCue, TimelineEvent } from "@/lib/types" // Import types
+import { asInstrument } from "@/lib/types"
+import type { Instruction, SoundCue, TimelineEvent, TimelineItem } from "@/lib/types"
 import { useMobile } from "@/hooks/use-mobile" // Import useMobile hook
 import { EVENT_COLORS } from "@/lib/constants" // Import EVENT_COLORS
 import * as Tone from "tone"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
 import { AuthButtons } from "@/components/auth-buttons"
+import { log } from "@/lib/log"
+import { MUSICAL_NOTES, SOUND_CUES_LIBRARY } from "@/lib/meditation-sounds"
+import { ensureTone, getLoadedPianoSampler, playPianoNote, startPianoAudio } from "@/lib/piano-engine"
+import { RecorderSection } from "@/components/recorder-section"
 
 const ADJUSTER_SESSION_KEY = "abhi_last_adjuster_session"
 const CREATOR_SESSION_KEY = "abhi_last_creator_session"
 const ACTIVE_MODE_SESSION_KEY = "abhi_last_active_mode"
 const DEFAULT_CREATOR_DURATION_SECONDS = 10 * 60
 
-interface RecorderSectionProps {
-  className?: string
-  inputId: string
-  recordingLabel: string
-  onRecordingLabelChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  isRecording: boolean
-  startRecording: () => void | Promise<void>
-  stopRecording: () => void
-  readyToAddToTimelineRecording: { url: string; label: string; duration: number } | null
-  timelineEvents: TimelineEvent[]
-  addEventToTimeline: (event: TimelineEvent) => void
-  setReadyToAddToTimelineRecording: React.Dispatch<
-    React.SetStateAction<{ url: string; label: string; duration: number } | null>
-  >
-  setRecordedBlobs: React.Dispatch<React.SetStateAction<Blob[]>>
-  setRecordingLabel: React.Dispatch<React.SetStateAction<string>>
-  recordingPreviewRef: React.RefObject<HTMLAudioElement>
-}
-
-const RecorderSection: React.FC<RecorderSectionProps> = ({
-  className,
-  inputId,
-  recordingLabel,
-  onRecordingLabelChange,
-  isRecording,
-  startRecording,
-  stopRecording,
-  readyToAddToTimelineRecording,
-  timelineEvents,
-  addEventToTimeline,
-  setReadyToAddToTimelineRecording,
-  setRecordedBlobs,
-  setRecordingLabel,
-  recordingPreviewRef,
-}) => {
-  const { toast } = useToast() // toast is now correctly initialized here
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4 }}
-      className={className}
-    >
-      <Card className="overflow-hidden border-none shadow-lg bg-white ">
-        <div className="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 px-6 py-[9px] text-center">
-          <h3 className="text-center font-serif font-black text-white">Recorder</h3>
-        </div>
-        <div className="p-6 space-y-4 pt-3.5">
-          <input
-            id={inputId}
-            value={recordingLabel}
-            onChange={onRecordingLabelChange}
-            placeholder="Describe this recording..."
-            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-logo-rose-300 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-xs focus-visible: text-logo-rose-400 font-black text-gray-500 border-stone-300 mt-2 border-0 shadow-2xl h-9"
-          />
-          <Button
-            onClick={isRecording ? stopRecording : startRecording}
-            variant={isRecording ? "destructive" : "default"}
-            disabled={!recordingLabel.trim() && !isRecording}
-            className={cn(
-              "w-full bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 shadow-md text-white rounded-[11px] hover:shadow-none font-serif font-black",
-              isRecording && "from-logo-rose-300 to-logo-rose-600",
-            )}
-          >
-            {isRecording ? (
-              <>
-                <StopCircle className="mr-2 h-4 w-4" />
-                <span className="font-black font-serif">Stop Recording</span>
-              </>
-            ) : (
-              <>
-                <Mic className="mr-2 h-4 w-4" />
-                <span className="font-black font-serif">Start Recording</span>
-              </>
-            )}
-          </Button>
-          <AnimatePresence>
-            {readyToAddToTimelineRecording && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="space-y-2 border-gray-100 border-t-0 pt-1"
-              >
-                <div className="space-y-2">
-                  <audio
-                    key={readyToAddToTimelineRecording.url}
-                    ref={recordingPreviewRef}
-                    controls
-                    src={readyToAddToTimelineRecording.url}
-                    className="w-full"
-                    preload="metadata"
-                  />
-                  <p className="text-xs text-gray-600 text-center pb-1.5">
-                    Duration: {formatTime(readyToAddToTimelineRecording.duration)}
-                  </p>
-                </div>
-                <Button
-                  onClick={() => {
-                    if (!readyToAddToTimelineRecording?.label.trim()) {
-                      toast({
-                        title: "Missing Label",
-                        description: "Please provide a label for the recording.",
-                        variant: "destructive",
-                      })
-                      return
-                    }
-
-                    const maxExistingTime =
-                      timelineEvents.length > 0 ? Math.max(...timelineEvents.map((e) => e.startTime)) : 0
-                    const newStartTime = timelineEvents.length > 0 ? maxExistingTime + 10 : 0
-
-                    const newEvent: TimelineEvent = {
-                      id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-                      type: "recorded_voice",
-                      startTime: newStartTime,
-                      recordedAudioUrl: readyToAddToTimelineRecording.url,
-                      recordedInstructionLabel: readyToAddToTimelineRecording.label.trim(),
-                      duration: readyToAddToTimelineRecording.duration,
-                      color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length],
-                    }
-
-                    addEventToTimeline(newEvent)
-
-                    setReadyToAddToTimelineRecording(null)
-                    setRecordedBlobs([])
-                    setRecordingLabel("")
-
-                    toast({
-                      title: "Recording Added",
-                      description: `"${readyToAddToTimelineRecording.label.trim()}" added to timeline.`,
-                    })
-                  }}
-                  className="mx-auto w-full max-w-[352px] rounded-[11px] bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 font-serif font-black text-white shadow-md hover:shadow-none"
-                >
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Add to Timeline
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </Card>
-    </motion.div>
-  )
-}
 
 type SavedTimelineEntry = NonNullable<SavedMeditation["metadata"]["timeline"]>[number]
 
@@ -275,280 +132,6 @@ const deriveMeditationFileName = (meditation: any): string => {
   return `${derivedTitle}.${extensionForContainer(container)}`
 }
 
-interface TimelineItem {
-  id: string
-  type: "instruction" | "sound" | "recorded_voice" | "instruction_sound" | "recording" | "recorded"
-  duration: number // in seconds
-  content?: Instruction | SoundCue | { url: string; label: string; duration: number }
-  instructionText?: string
-  soundCueId?: string
-  soundCueName?: string
-  soundCueSrc?: string
-  instrument?: string
-  recordedAudioUrl?: string
-  recordedInstructionLabel?: string
-  color?: string
-  startTime: number
-  recordingStoragePath?: string
-}
-
-const SOUND_CUES_LIBRARY: SoundCue[] = [
-  { id: "ambient-forest", name: "Forest Ambiance", src: "/sounds/forest.mp3", duration: 60 },
-  { id: "ocean-waves", name: "Ocean Waves", src: "/sounds/ocean.mp3", duration: 60 },
-  { id: "gentle-rain", name: "Gentle Rain", src: "/sounds/rain.mp3", duration: 60 },
-  { id: "singing-bowl", name: "Singing Bowl", src: "/sounds/singing_bowl.mp3", duration: 15 },
-  { id: "chimes", name: "Wind Chimes", src: "/sounds/chimes.mp3", duration: 30 },
-]
-
-const NOTE_FREQUENCIES = {
-  C3: 130.81,
-  D3: 146.83,
-  E3: 164.81,
-  F3: 174.61,
-  G3: 196.0,
-  A3: 220.0,
-  B3: 246.94,
-  C4: 261.63,
-  D4: 293.66,
-  E4: 329.63,
-  F4: 349.23,
-  G4: 392.0,
-  A4: 440.0,
-  B4: 493.88,
-  C5: 523.25,
-  D5: 587.33,
-  E5: 659.25,
-  F5: 698.46,
-  G5: 783.99,
-  A5: 880.0,
-  B5: 987.77,
-  C6: 1046.5,
-  D6: 1174.66,
-  E6: 1318.51,
-  F6: 1396.91,
-  G6: 1567.98,
-  A6: 1760.0,
-  C7: 1046.5 * 2,
-  C8: 1046.5 * 4,
-}
-
-const NOTES = [
-  "C4",
-  "D4",
-  "E4",
-  "F4",
-  "G4",
-  "A4",
-  "B4",
-  "C5",
-  "D5",
-  "E5",
-  "F5",
-  "G5",
-  "A5",
-  "B5",
-  "C6",
-  "D6",
-  "E6",
-  "F6",
-  "G6",
-  "A6",
-]
-
-const MUSICAL_NOTES = {
-  Beautiful: NOTES.map((note, index) => ({
-    id: `note-${note.toLowerCase().replace("#", "s")}`,
-    name: note,
-    note: note.charAt(0),
-    octave: Number.parseInt(note.charAt(1)),
-  })),
-}
-
-let sampler: Tone.Sampler | null = null
-let reverb: Tone.Reverb | null = null
-let isLoading = false
-let isLoaded = false
-let loadPianoPromise: Promise<void> | null = null
-
-const ensureTone = async () => {
-  if (typeof window !== "undefined" && (window as any).Tone) {
-    return (window as any).Tone
-  }
-  const mod = await import("tone")
-  return mod
-}
-
-const isAbortError = (error: unknown): boolean => {
-  if (typeof DOMException !== "undefined" && error instanceof DOMException) {
-    return error.name === "AbortError"
-  }
-  if (typeof error === "object" && error !== null && "name" in error) {
-    return (error as { name?: string }).name === "AbortError"
-  }
-  return false
-}
-
-const startPianoAudio = async () => {
-  const Tone = await ensureTone()
-
-  if (Tone.context.state === "closed") {
-    console.log("[v0] AudioContext is closed, creating new context...")
-    const newContext = new AudioContext()
-    await Tone.setContext(newContext)
-    console.log("[v0] New AudioContext created and set")
-  }
-
-  if (Tone.context.state !== "running") {
-    console.log("[v0] Starting Tone.js audio context...")
-    try {
-      await Tone.start()
-      console.log("[v0] AudioContext started successfully")
-    } catch (error) {
-      console.error("[v0] Error starting AudioContext:", error)
-      const newContext = new AudioContext()
-      await Tone.setContext(newContext)
-      await Tone.start()
-      console.log("[v0] New AudioContext created and started after error")
-    }
-  }
-}
-
-const loadPiano = async ({ wet = 0.18, decay = 2.8 } = {}) => {
-  if (isLoaded && sampler) return
-
-  if (loadPianoPromise) {
-    await loadPianoPromise
-    return
-  }
-
-  const ToneModule = await ensureTone()
-
-  const loadPromise = async () => {
-    isLoading = true
-
-    await startPianoAudio()
-
-    if (sampler) {
-      try {
-        sampler.dispose()
-      } catch (e) {
-        console.warn("[v0] Error disposing sampler:", e)
-      }
-      sampler = null
-    }
-    if (reverb) {
-      try {
-        reverb.dispose()
-      } catch (e) {
-        console.warn("[v0] Error disposing reverb:", e)
-      }
-      reverb = null
-    }
-
-    const createdReverb = new ToneModule.Reverb({ wet, decay, preDelay: 0.01 }).toDestination()
-    await createdReverb.generate()
-
-    const loadedSampler = new ToneModule.Sampler({
-      urls: {
-        A0: "A0.mp3",
-        C1: "C1.mp3",
-        "D#1": "Ds1.mp3",
-        "F#1": "Fs1.mp3",
-        A1: "A1.mp3",
-        C2: "C2.mp3",
-        "D#2": "Ds2.mp3",
-        "F#2": "Fs2.mp3",
-        A2: "A2.mp3",
-        C3: "C3.mp3",
-        "D#3": "Ds3.mp3",
-        "F#3": "Fs3.mp3",
-        A3: "A3.mp3",
-        C4: "C4.mp3",
-        "D#4": "Ds4.mp3",
-        "F#4": "Fs4.mp3",
-        A4: "A4.mp3",
-        C5: "C5.mp3",
-        "D#5": "Ds5.mp3",
-        "F#5": "Fs5.mp3",
-        A5: "A5.mp3",
-        C6: "C6.mp3",
-        "D#6": "Ds6.mp3",
-        "F#6": "Fs6.mp3",
-        A6: "A6.mp3",
-        C7: "C7.mp3",
-        "D#7": "Ds7.mp3",
-        "F#7": "Fs7.mp3",
-        A7: "A7.mp3",
-        C8: "C8.mp3",
-      },
-      release: 1.2,
-      baseUrl: "https://tonejs.github.io/audio/salamander/",
-    }).connect(createdReverb)
-
-    await ToneModule.loaded()
-
-    reverb = createdReverb
-    sampler = loadedSampler
-    isLoaded = true
-    console.log("[v0] Piano sampler fully loaded and ready")
-  }
-
-  loadPianoPromise = loadPromise()
-
-  try {
-    await loadPianoPromise
-  } catch (error) {
-    console.error("[v0] Error loading piano:", error)
-    isLoaded = false
-    if (sampler) {
-      try {
-        sampler.dispose()
-      } catch (e) {
-        console.warn("[v0] Error disposing sampler after failure:", e)
-      }
-      sampler = null
-    }
-    if (reverb) {
-      try {
-        reverb.dispose()
-      } catch (e) {
-        console.warn("[v0] Error disposing reverb after failure:", e)
-      }
-      reverb = null
-    }
-    throw error
-  } finally {
-    isLoading = false
-    loadPianoPromise = null
-  }
-}
-
-const playPianoNote = async (noteString: string, duration = 0.45, velocity = 0.9) => {
-  try {
-    await startPianoAudio()
-
-    if (!isLoaded || !sampler || !sampler.loaded) {
-      console.log("[v0] Piano not loaded, initializing...")
-      await loadPiano()
-    }
-
-    if (!sampler || !sampler.loaded) {
-      throw new Error("Piano sampler is not loaded")
-    }
-
-    const Tone = await ensureTone()
-    console.log(`[v0] Playing piano note: ${noteString}`)
-    const activeSampler = sampler
-    if (!activeSampler) {
-      throw new Error("Piano sampler reference unavailable")
-    }
-    activeSampler.triggerAttackRelease(noteString, duration, Tone.now(), velocity)
-  } catch (error) {
-    console.error("[v0] Error playing piano note:", error)
-    // Don't reset isLoaded here to avoid constant reloading
-    throw error
-  }
-}
 
 export default function Home() {
   const { toast } = useToast()
@@ -890,7 +473,7 @@ export default function Home() {
           description: `Saved both the original and the ${convertedLabel} copy.`,
         })
       } catch (error) {
-        console.error("[v0] Failed to complete pending tool conversion:", error)
+        log.error("Failed to complete pending tool conversion:", error)
       }
     })()
 
@@ -985,7 +568,7 @@ export default function Home() {
           setGeneratedAudioUrl(URL.createObjectURL(creatorSession.audio))
         }
       } catch (error) {
-        console.warn("[v0] Unable to restore tool session:", error)
+        log.warn("Unable to restore tool session:", error)
       }
     })()
   }, [])
@@ -1038,7 +621,7 @@ export default function Home() {
         try {
           await audioContext.resume()
         } catch (resumeError) {
-          console.warn("[v0] Unable to resume audio context for convert:", resumeError)
+          log.warn("Unable to resume audio context for convert:", resumeError)
         }
       }
       const arrayBuffer = await sourceBlob.arrayBuffer()
@@ -1130,7 +713,7 @@ export default function Home() {
         })
       }
     } catch (error) {
-      console.error("[v0] Tool convert failed:", error)
+      log.error("Tool convert failed:", error)
       toast({
         title: "Convert failed",
         description: error instanceof Error ? error.message : "We couldn't convert this audio.",
@@ -1173,7 +756,7 @@ export default function Home() {
         })
       }
     } catch (error) {
-      console.warn("[v0] Unable to save tool draft:", error)
+      log.warn("Unable to save tool draft:", error)
     }
   }, [
     activeMode,
@@ -1242,7 +825,7 @@ export default function Home() {
       const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.src === src)
 
       if (!soundCue || typeof soundCue.src !== "string") {
-        console.error("Invalid sound cue or src property for src:", src, "Found soundCue:", soundCue)
+        log.error("Invalid sound cue or src property for src:", src, "Found soundCue:", soundCue)
         toast({
           title: "Sound Playback Error",
           description: "The selected sound cue is malformed or not found.",
@@ -1255,10 +838,10 @@ export default function Home() {
         // Play the sound cue using the audio element
         if (creatorAudioRef.current) {
           creatorAudioRef.current.src = soundCue.src
-          creatorAudioRef.current.play().catch((e) => console.error("Error playing sound cue:", e))
+          creatorAudioRef.current.play().catch((e) => log.error("Error playing sound cue:", e))
         }
       } catch (error) {
-        console.error("Error playing creator sound:", error)
+        log.error("Error playing creator sound:", error)
         toast({
           title: "Sound Playback Error",
           description: "Failed to play the selected sound.",
@@ -1287,7 +870,7 @@ export default function Home() {
             if (activeItemIndex !== i) {
               setActiveItemIndex(i)
               // Play sound cue when it becomes active
-              if (item.type === "sound" && item.content && typeof item.content.src === "string") {
+              if (item.type === "sound" && item.content && "src" in item.content) {
                 playCreatorSound(item.content.src) // Pass src string to playLabsSound
               }
             }
@@ -1346,13 +929,13 @@ export default function Home() {
 
   const handleSaveTimeline = () => {
     // Placeholder for save functionality
-    console.log("Saving timeline:", timeline)
+    log.debug("Saving timeline:", timeline)
     alert("Save functionality not yet implemented.")
   }
 
   const handleLoadTimeline = () => {
     // Placeholder for load functionality
-    console.log("Loading timeline...")
+    log.debug("Loading timeline...")
     alert("Load functionality not yet implemented.")
   }
 
@@ -1364,7 +947,7 @@ export default function Home() {
     setGeneratedAudioFileSize(0)
 
     try {
-      console.log("Starting audio export with events:", timelineEvents)
+      log.debug("Starting audio export with events:", timelineEvents)
 
       // Calculate the maximum end time needed for the OfflineAudioContext
       const maxAudioDuration = creatorTotalDuration // Start with the user-defined total duration
@@ -1491,16 +1074,16 @@ export default function Home() {
 
       for (const event of timelineEvents) {
         const eventStartTime = event.startTime
-        console.log(`Processing event ${event.id} at time ${eventStartTime}:`, event)
+        log.debug(`Processing event ${event.id} at time ${eventStartTime}:`, event)
 
         if (event.type === "instruction_sound") {
           setGenerationStep(`Adding sound: ${event.soundCueName || "Sound Cue"}`)
-          console.log(`Processing sound cue from soundCueSrc: ${event.soundCueSrc}`)
+          log.debug(`Processing sound cue from soundCueSrc: ${event.soundCueSrc}`)
 
           if (event.soundCueSrc?.startsWith("synthetic:")) {
             const soundCue = SOUND_CUES_LIBRARY.find((cue) => cue.id === event.soundCueId)
             if (soundCue) {
-              console.log(`Skipping synthetic sound at ${eventStartTime} - functionality removed`)
+              log.debug(`Skipping synthetic sound at ${eventStartTime} - functionality removed`)
             }
           } else if (event.soundCueSrc?.startsWith("musical:")) {
             const notesPart = event.soundCueSrc.replace("musical:", "")
@@ -1513,7 +1096,7 @@ export default function Home() {
                 const note = match[1]
                 const octave = Number.parseInt(match[2])
                 const noteString = `${note}${octave}`
-                console.log(`Processing musical note with Tone.js: ${noteString}`)
+                log.debug(`Processing musical note with Tone.js: ${noteString}`)
 
                 try {
                   if (instrument === "piano") {
@@ -1531,15 +1114,15 @@ export default function Home() {
                     harp.triggerAttackRelease(noteString, duration, eventStartTime + startDelay)
                   }
 
-                  console.log(`Successfully added ${instrument} note ${noteString} at ${eventStartTime}`)
+                  log.debug(`Successfully added ${instrument} note ${noteString} at ${eventStartTime}`)
                 } catch (error) {
-                  console.error(`Error adding ${instrument} note ${noteString}:`, error)
+                  log.error(`Error adding ${instrument} note ${noteString}:`, error)
                 }
               }
             }
           } else if (event.soundCueSrc) {
             try {
-              console.log(`Loading pre-recorded audio: ${event.soundCueSrc}`)
+              log.debug(`Loading pre-recorded audio: ${event.soundCueSrc}`)
               const audioBuffer = await fetchAudioBuffer(event.soundCueSrc)
               const source = ctx.createBufferSource()
               const gainNode = ctx.createGain()
@@ -1550,14 +1133,14 @@ export default function Home() {
               gainNode.gain.setValueAtTime(0.4, eventStartTime) // Good volume for pre-recorded sounds
               source.start(eventStartTime)
 
-              console.log(`Successfully added pre-recorded audio at ${eventStartTime}`)
+              log.debug(`Successfully added pre-recorded audio at ${eventStartTime}`)
             } catch (error) {
-              console.warn(`Could not load recorded audio: ${event.soundCueSrc}`, error)
+              log.warn(`Could not load recorded audio: ${event.soundCueSrc}`, error)
             }
           }
         } else if (event.type === "recorded_voice" && event.recordedAudioUrl) {
           setGenerationStep(`Adding recorded voice: ${event.recordedInstructionLabel || "Untitled"}`)
-          console.log(`Processing recorded voice: ${event.recordedAudioUrl}`)
+          log.debug(`Processing recorded voice: ${event.recordedAudioUrl}`)
 
           try {
             const audioBuffer = await fetchAudioBuffer(event.recordedAudioUrl)
@@ -1570,28 +1153,9 @@ export default function Home() {
             gainNode.gain.setValueAtTime(0.8, eventStartTime) // Higher volume for voice
             source.start(eventStartTime)
 
-            console.log(`Successfully added recorded voice at ${eventStartTime}`)
+            log.debug(`Successfully added recorded voice at ${eventStartTime}`)
           } catch (error) {
-            console.warn(`Could not load recorded audio: ${event.recordedAudioUrl}`, error)
-          }
-        } else if (event.type === "recording" && event.content?.url) {
-          setGenerationStep(`Adding recorded block: ${event.content.label || "Untitled"}`)
-          console.log(`Processing recorded block: ${event.content.url}`)
-
-          try {
-            const audioBuffer = await fetchAudioBuffer(event.content.url)
-            const source = ctx.createBufferSource()
-            const gainNode = ctx.createGain()
-
-            source.buffer = audioBuffer
-            source.connect(gainNode)
-            gainNode.connect(ctx.destination)
-            gainNode.gain.setValueAtTime(0.8, eventStartTime) // Higher volume for voice
-            source.start(eventStartTime)
-
-            console.log(`Successfully added recorded block at ${eventStartTime}`)
-          } catch (error) {
-            console.warn(`Could not load recorded block audio: ${event.content.url}`, error)
+            log.warn(`Could not load recorded audio: ${event.recordedAudioUrl}`, error)
           }
         }
 
@@ -1601,10 +1165,10 @@ export default function Home() {
 
       setGenerationStep("Rendering audio...")
       setGenerationProgress(80) // Set to 80% before rendering
-      console.log("Starting audio rendering...")
+      log.debug("Starting audio rendering...")
 
       const rendered = await ctx.startRendering()
-      console.log("Audio rendering complete, compressing...")
+      log.debug("Audio rendering complete, compressing...")
 
       if (rendered.length === 0) {
         throw new Error("Rendered audio buffer is empty. No audio content was generated.")
@@ -1638,7 +1202,7 @@ export default function Home() {
           audioFormat: distributionMetadata,
         },
         distributionBlob,
-      ).catch((error) => console.warn("[v0] Unable to persist creator session:", error))
+      ).catch((error) => log.warn("Unable to persist creator session:", error))
 
       const distributionUrl = URL.createObjectURL(distributionBlob)
       setGeneratedAudioUrl((previousUrl) => {
@@ -1648,10 +1212,10 @@ export default function Home() {
 
       setGenerationProgress(100)
       setGenerationStep("Complete!")
-      console.log("Audio export completed successfully!")
+      log.debug("Audio export completed successfully!")
       toast({ title: "Export Complete", description: "Timeline audio exported with sound cues included!" })
     } catch (error) {
-      console.error("Audio export failed:", error)
+      log.error("Audio export failed:", error)
       toast({
         title: "Audio Export Failed",
         description: `Could not export audio. Error: ${error instanceof Error ? error.message : "Unknown"}`,
@@ -1670,7 +1234,7 @@ export default function Home() {
     }
   }
 
-  const handleCustomInstructionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleCustomInstructionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target?.value
     if (typeof value === "string") {
       setCustomInstructionText(value)
@@ -1724,7 +1288,7 @@ export default function Home() {
 
   const playSingleNote = async (note: string, octave: number, noteType: string) => {
     try {
-      console.log(`[v0] Playing ${noteType} note: ${note}${octave}`)
+      log.debug(`Playing ${noteType} note: ${note}${octave}`)
       await startPianoAudio()
 
       const noteString = `${note}${octave}`
@@ -1770,7 +1334,7 @@ export default function Home() {
         }, 3000)
       }
     } catch (error) {
-      console.error(`[v0] Error playing ${noteType} note:`, error)
+      log.error(`Error playing ${noteType} note:`, error)
     }
   }
 
@@ -1778,52 +1342,47 @@ export default function Home() {
     async (notes?: string[]) => {
       const chordNotes = notes ?? selectedNotes
 
-      console.log("[v0] playChordPreview called with notes:", notes)
-      console.log("[v0] selectedNotes from state:", selectedNotes)
-      console.log("[v0] chordNotes to use:", chordNotes)
-      console.log("[v0] chordNotes is array:", Array.isArray(chordNotes))
-      console.log("[v0] chordNotes length:", chordNotes?.length)
+      log.debug("playChordPreview called with notes:", notes)
+      log.debug("selectedNotes from state:", selectedNotes)
+      log.debug("chordNotes to use:", chordNotes)
+      log.debug("chordNotes is array:", Array.isArray(chordNotes))
+      log.debug("chordNotes length:", chordNotes?.length)
 
       if (!Array.isArray(chordNotes) || chordNotes.length === 0) {
-        console.log("[v0] No valid chord notes to play, returning early")
+        log.debug("No valid chord notes to play, returning early")
         return
       }
 
-      console.log("[v0] Playing chord with notes:", chordNotes, "using", noteType)
+      log.debug("Playing chord with notes:", chordNotes, "using", noteType)
 
       try {
         await Tone.start()
 
         if (noteType === "piano") {
-          // Initialize piano if not already loaded
-          if (!sampler) {
-            console.log("[v0] Piano not loaded, initializing for chord...")
-            await loadPiano()
-          }
-
-          const activeSampler = sampler
-          if (activeSampler && isLoaded) {
+          const activeSampler = await getLoadedPianoSampler()
+          if (activeSampler) {
             // Play all notes simultaneously using the Salamander piano sampler
             chordNotes.forEach((noteString) => {
-              console.log("[v0] Playing Salamander piano note in chord:", noteString)
+              log.debug("Playing Salamander piano note in chord:", noteString)
               activeSampler.triggerAttackRelease(noteString, 0.5)
             })
           } else {
-            console.error("[v0] Piano sampler not available for chord")
+            log.error("Piano sampler not available for chord")
           }
         } else if (noteType === "synth") {
           chordNotes.forEach(async (noteString, index) => {
+            // Tone.Synth has no filter stage, so the filter/filterEnvelope options previously
+            // passed here were discarded by Tone. Removed without switching to MonoSynth so the
+            // synth cue keeps sounding exactly as it does in already-saved meditations.
             const synth = new Tone.Synth({
               oscillator: { type: "fatsawtooth" },
               envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
-              filter: { frequency: 2000, type: "lowpass", rolloff: -12 },
-              filterEnvelope: { attack: 0.02, decay: 0.2, sustain: 0.5, release: 0.8, baseFrequency: 200, octaves: 4 },
             })
 
             const synthGain = new Tone.Gain(0.3).toDestination()
             synth.connect(synthGain)
 
-            console.log("[v0] Playing synth note in chord:", noteString)
+            log.debug("Playing synth note in chord:", noteString)
             const startDelay = index * 0.01
             synth.triggerAttackRelease(noteString, 0.5, `+${startDelay}`)
 
@@ -1844,7 +1403,7 @@ export default function Home() {
             const harpReverb = new Tone.Reverb({ decay: 4, wet: 0.6 }).connect(harpGain)
             harp.connect(harpReverb)
 
-            console.log("[v0] Playing harp note in chord:", noteString)
+            log.debug("Playing harp note in chord:", noteString)
             const startDelay = index * 0.01
             const duration = 0.5 + startDelay
             harp.triggerAttackRelease(noteString, duration, `+${startDelay}`)
@@ -1857,7 +1416,7 @@ export default function Home() {
           })
         }
       } catch (error) {
-        console.error("[v0] Error playing chord:", error)
+        log.error("Error playing chord:", error)
       }
     },
     [selectedNotes, noteType],
@@ -1887,12 +1446,12 @@ export default function Home() {
 
   const timelinePlaySingleNote = async (noteString: string) => {
     try {
-      console.log(`[v0] Timeline playing single note: ${noteString} using ${noteType}`)
+      log.debug(`Timeline playing single note: ${noteString} using ${noteType}`)
 
       // Parse note string (e.g., "C4" -> note="C", octave=4)
       const match = noteString.match(/([A-G])([0-9])/)
       if (!match) {
-        console.error("[v0] Invalid note string format:", noteString)
+        log.error("Invalid note string format:", noteString)
         return
       }
 
@@ -1902,17 +1461,17 @@ export default function Home() {
       // Use the same playSingleNote function as the sound cue section
       await playSingleNote(note, octave, noteType)
     } catch (error) {
-      console.error("[v0] Timeline single note error:", error)
+      log.error("Timeline single note error:", error)
     }
   }
 
   const timelinePlayChordPreview = async (noteStrings: string[]) => {
     try {
-      console.log(`[v0] Timeline playing chord: ${noteStrings} using ${noteType}`)
+      log.debug(`Timeline playing chord: ${noteStrings} using ${noteType}`)
       // Directly play the provided notes without modifying state
       await playChordPreview(noteStrings)
     } catch (error) {
-      console.error("[v0] Timeline chord preview error:", error)
+      log.error("Timeline chord preview error:", error)
     }
   }
 
@@ -1962,7 +1521,7 @@ export default function Home() {
       try {
         await audioContextRef.current.suspend()
       } catch (e) {
-        console.warn("Error suspending AudioContext before loading new file:", e)
+        log.warn("Error suspending AudioContext before loading new file:", e)
       }
     }
 
@@ -2021,7 +1580,7 @@ export default function Home() {
       setAnalysisProgress(0)
       setStatus({ message: "Analyzing audio...", type: "info" })
     } catch (error) {
-      console.error("Error accessing audio context:", error)
+      log.error("Error accessing audio context:", error)
       setStatus({ message: `Audio system error: ${error instanceof Error ? error.message : "Unknown"}`, type: "error" })
       setFile(null)
       setDisplayedFileName(null)
@@ -2115,7 +1674,7 @@ export default function Home() {
             (entry.soundCueId && cue.id === entry.soundCueId) ||
             (entry.soundId && cue.id === entry.soundId) ||
             (entry.soundName && cue.name === entry.soundName) ||
-            (entry.soundCueSrc && cue.src === entry.soundCueSrc),
+            (entry.soundSrc && cue.src === entry.soundSrc),
         )
 
         const soundCueName = entry.soundName?.trim() || matchingCue?.name || entry.soundId || `Sound Cue ${index + 1}`
@@ -2127,8 +1686,11 @@ export default function Home() {
           instructionText: text || `Instruction ${index + 1}`,
           soundCueId: entry.soundCueId ?? entry.soundId ?? matchingCue?.id ?? undefined,
           soundCueName,
-          soundCueSrc: entry.soundCueSrc ?? matchingCue?.src ?? undefined,
-          instrument: entry.instrument ?? undefined,
+          // Persisted entries spell this `soundSrc`; `soundCueSrc` is the in-memory name. Reading
+          // the in-memory name here meant a generated `musical:`/`synthetic:` src — which has no
+          // match in SOUND_CUES_LIBRARY — was dropped when a saved meditation was reopened.
+          soundCueSrc: entry.soundSrc ?? matchingCue?.src ?? undefined,
+          instrument: asInstrument(entry.instrument),
           color,
           keepOriginal: Boolean(entry.keepOriginal),
         }
@@ -2150,7 +1712,7 @@ export default function Home() {
 
   const reconstructCreatorMeditation = useCallback(
     async (importData: any) => {
-      console.log("[v0] Reconstructing creator meditation with original cues:", importData)
+      log.debug("Reconstructing creator meditation with original cues:", importData)
 
       try {
         // Load the audio for analysis
@@ -2212,7 +1774,7 @@ export default function Home() {
           type: "success",
         })
       } catch (error) {
-        console.error("[v0] Error reconstructing creator meditation:", error)
+        log.error("Error reconstructing creator meditation:", error)
         setStatus({
           message: "Failed to reconstruct meditation timeline. Loading as basic audio file.",
           type: "error",
@@ -2244,7 +1806,7 @@ export default function Home() {
 
   const importAsRecordedBlock = useCallback(
     async (importData: any) => {
-      console.log("[v0] Importing meditation as recorded block:", importData)
+      log.debug("Importing meditation as recorded block:", importData)
 
       try {
         // Load the audio
@@ -2280,7 +1842,7 @@ export default function Home() {
           URL.revokeObjectURL(metadataUrl)
         }
         tempAudio.onerror = () => {
-          console.error("Error loading audio metadata for duration.")
+          log.error("Error loading audio metadata for duration.")
           URL.revokeObjectURL(metadataUrl)
         }
 
@@ -2311,7 +1873,7 @@ export default function Home() {
         setCreatorTimelineOriginalDuration(safeDuration)
         lastCreatorDurationAdjustmentRef.current = safeDuration
       } catch (error) {
-        console.error("[v0] Error importing as recorded block:", error)
+        log.error("Error importing as recorded block:", error)
         setStatus({
           message: "Failed to import meditation. Please try again.",
           type: "error",
@@ -2336,7 +1898,7 @@ export default function Home() {
 
   const importFromLibrary = useCallback(
     async (importData: any, sourceTab: "adjuster" | "creator") => {
-      console.log("[v0] Importing from library:", importData, "to tab:", sourceTab)
+      log.debug("Importing from library:", importData, "to tab:", sourceTab)
 
       const persistSessionForMode = (mode: "adjuster" | "creator", data: any) => {
         if (typeof window === "undefined") return
@@ -2349,7 +1911,7 @@ export default function Home() {
             window.sessionStorage.removeItem(ADJUSTER_SESSION_KEY)
           }
         } catch (error) {
-          console.error(`[v0] Error persisting session for ${mode}:`, error)
+          log.error(`Error persisting session for ${mode}:`, error)
         }
       }
 
@@ -2360,7 +1922,7 @@ export default function Home() {
 
       // Define importIntoAdjuster here or ensure it's accessible in scope
       const importIntoAdjuster = async (data: any) => {
-        console.log("[v0] Importing into adjuster:", data)
+        log.debug("Importing into adjuster:", data)
         try {
           const response = await fetch(data.processedAudioUrl)
           const audioBlob = await response.blob()
@@ -2398,7 +1960,7 @@ export default function Home() {
             URL.revokeObjectURL(url)
           }
           tempAudio.onerror = () => {
-            console.error("Error loading audio metadata for duration.")
+            log.error("Error loading audio metadata for duration.")
             URL.revokeObjectURL(url)
           }
           setLoadedLibraryContext({
@@ -2407,7 +1969,7 @@ export default function Home() {
             duration: data.duration,
           })
         } catch (error) {
-          console.error("[v0] Error importing into adjuster:", error)
+          log.error("Error importing into adjuster:", error)
           setStatus({
             message: `Error importing: ${error instanceof Error ? error.message : "Unknown"}`,
             type: "error",
@@ -2489,7 +2051,7 @@ export default function Home() {
     try {
       window.sessionStorage.setItem(ACTIVE_MODE_SESSION_KEY, activeMode)
     } catch (error) {
-      console.error("[v0] Unable to persist active mode:", error)
+      log.error("Unable to persist active mode:", error)
     }
   }, [activeMode])
 
@@ -2513,12 +2075,12 @@ export default function Home() {
       if (adjusterImport) {
         try {
           const importData = JSON.parse(adjusterImport)
-          console.log("[v0] Loading meditation from library into adjuster:", importData)
+          log.debug("Loading meditation from library into adjuster:", importData)
           setActiveTab("adjuster")
           setActiveMode("adjuster")
           void importFromLibrary(importData, "adjuster")
         } catch (error) {
-          console.error("[v0] Error loading adjuster import:", error)
+          log.error("Error loading adjuster import:", error)
         } finally {
           window.localStorage.removeItem("abhi_adjuster_import")
         }
@@ -2529,12 +2091,12 @@ export default function Home() {
       if (creatorImport) {
         try {
           const importData = JSON.parse(creatorImport)
-          console.log("[v0] Loading meditation from library into creator:", importData)
+          log.debug("Loading meditation from library into creator:", importData)
           setActiveTab("creator")
           setActiveMode("creator")
           void importFromLibrary(importData, "creator")
         } catch (error) {
-          console.error("[v0] Error loading creator import:", error)
+          log.error("Error loading creator import:", error)
         } finally {
           window.localStorage.removeItem("abhi_creator_import")
         }
@@ -2559,11 +2121,11 @@ export default function Home() {
         const persisted = window.sessionStorage.getItem(persistedKey)
         if (persisted) {
           const importData = JSON.parse(persisted)
-          console.log(`[v0] Restoring persisted ${lastMode} meditation:`, importData)
+          log.debug(`Restoring persisted ${lastMode} meditation:`, importData)
           void importFromLibrary(importData, lastMode)
         }
       } catch (error) {
-        console.error("[v0] Error restoring persisted meditation:", error)
+        log.error("Error restoring persisted meditation:", error)
       }
     }
 
@@ -2593,7 +2155,11 @@ export default function Home() {
     if (currentAudioContext.state === "suspended") {
       try {
         await currentAudioContext.resume()
-        if (currentAudioContext.state !== "running") throw new Error("Failed to resume for processing.")
+        // resume() mutates state, but TypeScript still has it narrowed to "suspended" from the
+        // check above, so the comparison needs the declared type back.
+        if ((currentAudioContext.state as AudioContextState) !== "running") {
+          throw new Error("Failed to resume for processing.")
+        }
       } catch (err) {
         setStatus({ message: `Audio system error: ${err instanceof Error ? err.message : "Unknown"}`, type: "error" })
         setIsProcessing(false)
@@ -2609,7 +2175,7 @@ export default function Home() {
     const timeoutMs = isMobileDevice ? 300000 : 1800000 // 5 min mobile, 30 min desktop
     processingTimeoutRef.current = setTimeout(
       () => {
-        console.log("[v0] Processing timed out after", timeoutMs / 1000, "seconds")
+        log.debug("Processing timed out after", timeoutMs / 1000, "seconds")
         setIsProcessing(false)
         setStatus({ message: "Processing timed out. Try a shorter duration.", type: "error" })
       },
@@ -2646,7 +2212,7 @@ export default function Home() {
           
           bufferToProcess = await offlineCtx.startRendering()
         } catch (resampleError) {
-          console.error("[v0] Downsampling failed:", resampleError)
+          log.error("Downsampling failed:", resampleError)
           // Continue with original buffer if downsampling fails
           bufferToProcess = originalBuffer
         }
@@ -2712,7 +2278,7 @@ export default function Home() {
           audioFormat: result.distributionMetadata,
         },
         result.distributionBlob,
-      ).catch((error) => console.warn("[v0] Unable to persist adjuster session:", error))
+      ).catch((error) => log.warn("Unable to persist adjuster session:", error))
       // Minimum is content + 0.3s per pause (from weighted algorithm minimum)
       const minimumDurationSeconds = Math.max(
         1,
@@ -2723,7 +2289,7 @@ export default function Home() {
       setStatus({ message: "Audio processing completed successfully!", type: "success" })
       setIsProcessingComplete(true)
     } catch (error) {
-      console.error("Error during audio processing:", error)
+      log.error("Error during audio processing:", error)
       const errorMsg = error instanceof Error ? error.message : String(error)
       if (errorMsg.includes("QuotaExceededError") || errorMsg.includes("memory")) {
         setStatus({ 
@@ -2737,7 +2303,7 @@ export default function Home() {
       setIsProcessing(false)
       if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current)
       if (currentAudioContext && currentAudioContext.state === "running") {
-        currentAudioContext.suspend().catch((err) => console.warn("Error suspending AudioContext post-process:", err))
+        currentAudioContext.suspend().catch((err) => log.warn("Error suspending AudioContext post-process:", err))
       }
     }
   }
@@ -2793,7 +2359,7 @@ export default function Home() {
       await savePendingReuploadFile(next)
       await saveCurrentToolDraft()
     } catch (error) {
-      console.warn("[v0] Unable to stash pending reupload file:", error)
+      log.warn("Unable to stash pending reupload file:", error)
     }
     setPendingReuploadFile(null)
     router.push(`/auth/sign-up?returnTo=${encodeURIComponent(window.location.pathname)}`)
@@ -2936,7 +2502,7 @@ export default function Home() {
         if (isAbortError(error)) {
           return
         }
-        console.error("[v0] Error updating audio analysis:", error)
+        log.error("Error updating audio analysis:", error)
         setAnalysisProgress(null)
         setStatus({
           message: `Audio analysis failed: ${error instanceof Error ? error.message : "Unknown"}`,
@@ -3020,7 +2586,7 @@ export default function Home() {
     creatorAudioRef.current.preload = "none"
     creatorAudioRef.current.volume = 0.7
     if (creatorAudioRef.current) {
-      creatorAudioRef.current.onerror = (e) => console.warn("Creator Audio error:", e)
+      creatorAudioRef.current.onerror = (e) => log.warn("Creator Audio error:", e)
     }
     return () => {
       if (creatorAudioRef.current) {
@@ -3068,14 +2634,14 @@ export default function Home() {
             try {
               await audioContext.resume()
             } catch (resumeError) {
-              console.warn("[v0] Unable to resume audio context for upload:", resumeError)
+              log.warn("Unable to resume audio context for upload:", resumeError)
             }
           }
 
           const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0))
           duration = decodedBuffer.duration
         } catch (decodeError) {
-          console.warn("[v0] Failed to decode uploaded meditation for duration:", decodeError)
+          log.warn("Failed to decode uploaded meditation for duration:", decodeError)
 
           objectUrl = objectUrl ?? URL.createObjectURL(file)
           duration = await new Promise<number>((resolve, reject) => {
@@ -3156,7 +2722,7 @@ export default function Home() {
           description: `"${labelBase || file.name}" was added to the timeline.`,
         })
       } catch (error) {
-        console.error("[v0] Error uploading meditation to timeline:", error)
+        log.error("Error uploading meditation to timeline:", error)
         if (objectUrl && !eventAdded) {
           URL.revokeObjectURL(objectUrl)
           objectUrl = null
@@ -3298,7 +2864,7 @@ export default function Home() {
               const audioBuffer = await getAudioContext().decodeAudioData(arrayBuffer)
               return audioBuffer.duration
             } catch (error) {
-              console.error("Error decoding audio for duration:", error)
+              log.error("Error decoding audio for duration:", error)
               // Fallback: try Audio element
               return new Promise((resolve) => {
                 const tempAudio = new Audio()
@@ -3382,7 +2948,7 @@ export default function Home() {
       addEventToTimeline(newEvent)
       toast({
         title: "Event Duplicated",
-        description: `"${newEvent.instructionText || newEvent.recordedInstructionLabel || newEvent.content?.label}" duplicated.`,
+        description: `"${newEvent.instructionText || newEvent.recordedInstructionLabel || "Event"}" duplicated.`,
       })
     },
     [addEventToTimeline, toast],
@@ -3678,7 +3244,7 @@ export default function Home() {
                           rel="noopener noreferrer"
                           className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight bg-white"
                         >
-                          Rob Burbea's talks &amp; retreats
+                          Rob Burbea&apos;s talks &amp; retreats
                         </a>
                         <a
                           href="https://tasshin.com/guided-meditations/"
@@ -3686,7 +3252,7 @@ export default function Home() {
                           rel="noopener noreferrer"
                           className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight bg-white"
                         >
-                          Tasshin & Friend's meditations
+                          Tasshin & Friend&apos;s meditations
                         </a>
                         <a
                           href="https://www.tarabrach.com/guided-meditations/"
@@ -3694,7 +3260,7 @@ export default function Home() {
                           rel="noopener noreferrer"
                           className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight bg-white"
                         >
-                          Tara Brach's meditations
+                          Tara Brach&apos;s meditations
                         </a>
                         <a
                           href="https://drive.google.com/drive/folders/1k4plsQfxTF_1BXffShz7w3P6q4IDDo3?usp=drive_link"
@@ -3702,7 +3268,7 @@ export default function Home() {
                           rel="noopener noreferrer"
                           className="inline-block text-gray-600 no-underline py-1 transition-colors transition-shadow duration-200 ease-out px-5 font-serif font-black hover:shadow-none shadow-md rounded-xlder-2 border-gray-500 text-xs border-[3px] rounded-[8px] tracking-tight bg-white"
                         >
-                          Toby Sola's meditations
+                          Toby Sola&apos;s meditations
                         </a>
                         <a
                           href="https://meditofoundation.org/meditations"
@@ -4353,8 +3919,8 @@ export default function Home() {
                                           <Button
                                             size="sm"
                                             onClick={() => {
-                                              console.log("[v0] Chord button clicked, selectedNotes:", selectedNotes)
-                                              console.log("[v0] multiNoteMode:", multiNoteMode)
+                                              log.debug("Chord button clicked, selectedNotes:", selectedNotes)
+                                              log.debug("multiNoteMode:", multiNoteMode)
                                               playChordPreview()
                                             }}
                                             className="bg-gradient-to-br from-gray-600 to-gray-500 text-white font-serif font-black text-xs rounded-sm shadow-md"

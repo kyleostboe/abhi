@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { buildAudioObjectKey, buildJournalAttachmentKey, createUploadUrl } from "@/lib/storage"
+import { log } from "@/lib/log"
 
 // Audio covers meditations and journal voice notes; images are journal attachments. Both go
 // to the same bucket under the same per-user key prefix.
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
     const uploadUrl = await createUploadUrl(key, contentType)
     return NextResponse.json({ uploadUrl, key })
   } catch (error) {
-    console.error("[storage] Failed to mint upload URL:", error)
+    log.error("[storage] Failed to mint upload URL:", error)
     return NextResponse.json({ error: "Unable to prepare an upload URL." }, { status: 500 })
   }
 }

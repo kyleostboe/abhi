@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import { useEffect } from "react"
+import { log } from "@/lib/log"
 
 type FormSnapshot = Record<string, string>
 
@@ -77,7 +78,7 @@ export function PageStatePreserver() {
         }
         window.sessionStorage.setItem(snapshotKey(pathname), JSON.stringify(snapshot))
       } catch (error) {
-        console.warn("[v0] Unable to save page snapshot", error)
+        log.warn("Unable to save page snapshot", error)
       }
     }
 
@@ -90,7 +91,7 @@ export function PageStatePreserver() {
           window.scrollTo(snapshot.scrollX ?? 0, snapshot.scrollY ?? 0)
         })
       } catch (error) {
-        console.warn("[v0] Unable to restore page snapshot", error)
+        log.warn("Unable to restore page snapshot", error)
       }
     }
 

@@ -38,6 +38,7 @@ import { JournalRefProvider } from "@/components/journal/journal-refs"
 import { compressImage, encodeVoiceNote, saveAttachment } from "@/lib/journal-attachments"
 import { slugify } from "@/lib/journal-markdown"
 import { cn } from "@/lib/utils"
+import { log } from "@/lib/log"
 
 const ALL_NOTES = "__all__"
 const UNFILED = "__unfiled__"
@@ -104,7 +105,7 @@ export default function JournalPage() {
     let mounted = true
     MeditationLibrary.getAllMeditations()
       .then((all) => mounted && setMeditations(all))
-      .catch((error) => console.error("Unable to load meditations", error))
+      .catch((error) => log.error("Unable to load meditations", error))
     return () => {
       mounted = false
     }
@@ -201,7 +202,7 @@ export default function JournalPage() {
       })
       editorHandle.current?.insertAttachment(attachment.filename, "image")
     } catch (error) {
-      console.error("[journal] Image attach failed:", error)
+      log.error("[journal] Image attach failed:", error)
       toast({ title: "Couldn't add the image", description: "Please try again.", variant: "destructive" })
     } finally {
       setIsBusy(false)
@@ -229,7 +230,7 @@ export default function JournalPage() {
         })
         editorHandle.current?.insertAttachment(attachment.filename, "audio")
       } catch (error) {
-        console.error("[journal] Voice note failed:", error)
+        log.error("[journal] Voice note failed:", error)
         toast({ title: "Couldn't save the voice note", description: "Please try again.", variant: "destructive" })
       } finally {
         setIsBusy(false)

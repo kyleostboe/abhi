@@ -1,4 +1,5 @@
 import { saveAudioRecord, getAudioRecord, deleteAudioRecord } from "./indexed-db"
+import { log } from "@/lib/log"
 
 // When a guest reuploads a new file over an already-loaded Adjuster meditation and chooses
 // "create account & keep both", we can't save anything yet (no account) and don't want to
@@ -36,7 +37,7 @@ export async function getPendingReuploadFile(): Promise<File | null> {
     if (!record?.processedAudio) return null
     return new File([record.processedAudio], meta.fileName, { type: meta.fileType })
   } catch (error) {
-    console.warn("[v0] Unable to read pending reupload file:", error)
+    log.warn("Unable to read pending reupload file:", error)
     return null
   }
 }

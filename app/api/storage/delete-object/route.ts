@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { deleteAudioObject } from "@/lib/storage"
+import { log } from "@/lib/log"
 
 // Deletes a single R2 object by key, not tied to a meditation row. Used to clean up an
 // audio_key that's just been superseded (e.g. replaceMeditationAudio uploading a new object
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     await deleteAudioObject(audioKey)
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error(`[storage] Failed to delete R2 object ${audioKey}:`, error)
+    log.error(`[storage] Failed to delete R2 object ${audioKey}:`, error)
     return NextResponse.json({ error: "Unable to delete stored audio." }, { status: 500 })
   }
 }

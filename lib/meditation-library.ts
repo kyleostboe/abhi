@@ -23,6 +23,7 @@ import {
   saveMemoryMeditation,
   upsertMemoryPlaylist,
 } from "./storage/memory-store"
+import { log } from "@/lib/log"
 
 // Free-tier storage allowance shown to authenticated users, kept comfortably under R2's own
 // free tier so the app's other usage has headroom.
@@ -103,6 +104,13 @@ export interface Playlist {
 export interface SaveMeditationInput extends Omit<SavedMeditation, "id" | "createdAt" | "processedAudioUrl"> {
   processedAudioData?: Blob | null
   sourceAudioData?: Blob | null
+  /**
+   * Callers may hand over the audio either as a decoded blob (`processedAudioData`) or as the
+   * `blob:`/`data:` URL it is currently playing from, which saveMeditation fetches back. One of
+   * the two has to be present — `processedAudioUrl` is optional here rather than required only
+   * because either half of that pair satisfies it.
+   */
+  processedAudioUrl?: string | null
 }
 
 const createId = () => {
@@ -214,7 +222,7 @@ const uploadAudioToR2 = async (blob: Blob, ext: string): Promise<string | null> 
       body: JSON.stringify({ ext, contentType }),
     })
     if (!urlResponse.ok) {
-      console.warn("[v0] Unable to get R2 upload URL:", urlResponse.status, urlResponse.statusText)
+      log.warn("Unable to get R2 upload URL:", urlResponse.status, urlResponse.statusText)
       return null
     }
     const { uploadUrl, key } = (await urlResponse.json()) as { uploadUrl: string; key: string }
@@ -225,12 +233,12 @@ const uploadAudioToR2 = async (blob: Blob, ext: string): Promise<string | null> 
       body: blob,
     })
     if (!putResponse.ok) {
-      console.warn("[v0] R2 upload failed:", putResponse.status, putResponse.statusText)
+      log.warn("R2 upload failed:", putResponse.status, putResponse.statusText)
       return null
     }
     return key
   } catch (error) {
-    console.warn("[v0] R2 upload error:", error)
+    log.warn("R2 upload error:", error)
     return null
   }
 }
@@ -246,10 +254,10 @@ const deleteAudioObjectFromR2 = async (audioKey: string): Promise<void> => {
       body: JSON.stringify({ audioKey }),
     })
     if (!response.ok) {
-      console.warn("[v0] Unable to delete superseded R2 object:", response.status, response.statusText)
+      log.warn("Unable to delete superseded R2 object:", response.status, response.statusText)
     }
   } catch (error) {
-    console.warn("[v0] Error deleting superseded R2 object:", error)
+    log.warn("Error deleting superseded R2 object:", error)
   }
 }
 
@@ -265,13 +273,13 @@ const fetchR2DownloadUrls = async (meditationIds: string[]): Promise<Record<stri
       body: JSON.stringify({ meditationIds }),
     })
     if (!response.ok) {
-      console.warn("[v0] Unable to fetch R2 download URLs:", response.status, response.statusText)
+      log.warn("Unable to fetch R2 download URLs:", response.status, response.statusText)
       return {}
     }
     const { urls } = (await response.json()) as { urls?: Record<string, string> }
     return urls ?? {}
   } catch (error) {
-    console.warn("[v0] R2 download URL fetch error:", error)
+    log.warn("R2 download URL fetch error:", error)
     return {}
   }
 }
@@ -298,7 +306,7 @@ const normalizeSupabaseMeditation = (
 export class MeditationLibrary {
   static async saveMeditation(meditation: SaveMeditationInput): Promise<SavedMeditation> {
     const auth = getAuthState()
-    console.log("[v0] saveMeditation - Auth state:", { status: auth.status, userId: auth.userId })
+    log.debug("saveMeditation - Auth state:", { status: auth.status, userId: auth.userId })
     
     const processedBlob: Blob | null =
       meditation.processedAudioData ?? (await resolveBlobFromUrl(meditation.processedAudioUrl))
@@ -320,14 +328,14 @@ export class MeditationLibrary {
               timelineRecordings[event.id] = blob
             }
           } catch (error) {
-            console.warn("Unable to store timeline recording", error)
+            log.warn("Unable to store timeline recording", error)
           }
         }
       }
     }
 
     if (auth.status !== "authenticated" || !auth.userId) {
-      console.log("[v0] Saving to memory (unauthenticated)")
+      log.debug("Saving to memory (unauthenticated)")
       const id = createId()
       const processedUrl = buildObjectUrl(processedBlob)
       const sourceUrl = buildObjectUrl(providedSourceBlob)
@@ -353,7 +361,7 @@ export class MeditationLibrary {
       return savedMeditation
     }
 
-    console.log("[v0] Saving to Supabase + R2 + IndexedDB (authenticated)")
+    log.debug("Saving to Supabase + R2 + IndexedDB (authenticated)")
     const supabase = createClient()
 
     const metadataToPersist = sanitizeMetadataForStorage({ ...meditation.metadata }, timelineRecordings, "pending")
@@ -383,23 +391,23 @@ export class MeditationLibrary {
     // enforce the pre-rename constraint, which allows 'encoder' but not 'creator'. Fall back
     // to the legacy value so saves keep working; reads normalize 'encoder' back to 'creator'.
     if (error && meditation.source === "creator" && error.message?.includes("meditations_source_check")) {
-      console.warn("[v0] DB rejected source='creator' (migration 012 not applied) - retrying with legacy 'encoder'")
+      log.warn("DB rejected source='creator' (migration 012 not applied) - retrying with legacy 'encoder'")
       ;({ data, error } = await insertMeditationRow("encoder"))
     }
 
     if (error) {
-      console.error("[v0] Database insert error:", error)
+      log.error("Database insert error:", error)
       throw new Error(`Database save failed: ${error.message}`)
     }
 
     const meditationId = data.id as string
-    console.log("[v0] Saved to Supabase with ID:", meditationId)
+    log.debug("Saved to Supabase with ID:", meditationId)
     
     const finalizedMetadata = sanitizeMetadataForStorage({ ...meditation.metadata }, timelineRecordings, meditationId)
 
     await supabase.from("meditations").update({ metadata: finalizedMetadata }).eq("id", meditationId)
 
-    console.log("[v0] Saving audio to IndexedDB...")
+    log.debug("Saving audio to IndexedDB...")
     try {
       await saveAudioRecord({
         id: meditationId,
@@ -407,9 +415,9 @@ export class MeditationLibrary {
         sourceAudio: providedSourceBlob,
         timelineRecordings,
       })
-      console.log("[v0] Audio saved to IndexedDB successfully")
+      log.debug("Audio saved to IndexedDB successfully")
     } catch (error) {
-      console.error("[v0] Failed to save audio to IndexedDB:", error)
+      log.error("Failed to save audio to IndexedDB:", error)
       throw error
     }
 
@@ -484,7 +492,7 @@ export class MeditationLibrary {
       .eq("id", id)
 
     if (error) {
-      console.error("[v0] Error updating meditation audio:", error)
+      log.error("Error updating meditation audio:", error)
       throw new Error(`Database update failed: ${error.message}`)
     }
 
@@ -516,15 +524,15 @@ export class MeditationLibrary {
 
   static async getAllMeditations(): Promise<SavedMeditation[]> {
     const auth = getAuthState()
-    console.log("[v0] getAllMeditations - Auth state:", { status: auth.status, userId: auth.userId })
+    log.debug("getAllMeditations - Auth state:", { status: auth.status, userId: auth.userId })
     
     if (auth.status !== "authenticated" || !auth.userId) {
       const memoryMeds = getMemoryMeditations()
-      console.log("[v0] Loaded from memory:", memoryMeds.length, "meditations")
+      log.debug("Loaded from memory:", memoryMeds.length, "meditations")
       return memoryMeds
     }
 
-    console.log("[v0] Loading from Supabase...")
+    log.debug("Loading from Supabase...")
     const supabase = createClient()
     const { data, error } = await supabase
       .from("meditations")
@@ -532,16 +540,16 @@ export class MeditationLibrary {
       .order("created_at", { ascending: false })
 
     if (error) {
-      console.error("[v0] Supabase select error:", error)
+      log.error("Supabase select error:", error)
       return []
     }
 
     if (!data || data.length === 0) {
-      console.log("[v0] No meditations found in Supabase")
+      log.debug("No meditations found in Supabase")
       return []
     }
 
-    console.log("[v0] Found", data.length, "meditations in Supabase, resolving audio...")
+    log.debug("Found", data.length, "meditations in Supabase, resolving audio...")
     // Rows saved since R2 storage was added carry an audio_key and play back from R2 (works
     // from any device); older rows have no audio_key and keep loading from this browser's
     // IndexedDB cache, exactly as before.
@@ -556,10 +564,10 @@ export class MeditationLibrary {
         let processedUrl: string
         if (row.audio_key) {
           processedUrl = r2Urls[row.id] ?? ""
-          if (!processedUrl) console.warn("[v0] Missing R2 download URL for meditation:", row.id)
+          if (!processedUrl) log.warn("Missing R2 download URL for meditation:", row.id)
         } else {
           if (!audio) {
-            console.warn("[v0] MISSING AUDIO: No audio record found in IndexedDB for meditation:", row.id)
+            log.warn("MISSING AUDIO: No audio record found in IndexedDB for meditation:", row.id)
           }
           processedUrl = buildObjectUrl(audio?.processedAudio)
         }
@@ -567,12 +575,12 @@ export class MeditationLibrary {
         const sourceUrl = buildObjectUrl(audio?.sourceAudio ?? null)
         meditations.push(normalizeSupabaseMeditation(row, processedUrl, sourceUrl, audio?.timelineRecordings))
       } catch (error) {
-        console.warn("[v0] Unable to resolve audio for meditation", row.id, error)
+        log.warn("Unable to resolve audio for meditation", row.id, error)
         meditations.push(normalizeSupabaseMeditation(row, ""))
       }
     }
 
-    console.log("[v0] Loaded", meditations.length, "complete meditations")
+    log.debug("Loaded", meditations.length, "complete meditations")
     return meditations
   }
 
@@ -603,7 +611,7 @@ export class MeditationLibrary {
 
       return normalizeSupabaseMeditation(data, processedUrl, buildObjectUrl(audio?.sourceAudio ?? null), audio?.timelineRecordings)
     } catch (err) {
-      console.warn("[v0] Unable to fetch audio for meditation", id, err)
+      log.warn("Unable to fetch audio for meditation", id, err)
       return normalizeSupabaseMeditation(data, "")
     }
   }
@@ -626,7 +634,7 @@ export class MeditationLibrary {
     if (!response.ok) {
       const body = await response.json().catch(() => ({}) as { error?: string })
       const message = body.error || `Delete failed with status ${response.status}`
-      console.error("[v0] Error deleting meditation:", message)
+      log.error("Error deleting meditation:", message)
       throw new Error(message)
     }
 
@@ -655,7 +663,7 @@ export class MeditationLibrary {
         .order("created_at", { ascending: false })
 
       if (error) {
-        console.error("[v0] Error fetching playlists:", error)
+        log.error("Error fetching playlists:", error)
         throw error
       }
 
@@ -670,7 +678,7 @@ export class MeditationLibrary {
         updatedAt: new Date(playlist.updated_at),
       }))
     } catch (error) {
-      console.error("[v0] Error in getAllPlaylists:", error)
+      log.error("Error in getAllPlaylists:", error)
       return []
     }
   }
@@ -710,7 +718,7 @@ export class MeditationLibrary {
         updatedAt: new Date(data.updated_at),
       }
     } catch (error) {
-      console.error("[v0] Error in getPlaylist:", error)
+      log.error("Error in getPlaylist:", error)
       return null
     }
   }
@@ -743,7 +751,7 @@ export class MeditationLibrary {
       .single()
 
     if (error) {
-      console.error("[v0] Error creating playlist:", error)
+      log.error("Error creating playlist:", error)
       throw error
     }
 
@@ -782,11 +790,11 @@ export class MeditationLibrary {
         .eq("id", id)
 
       if (error) {
-        console.error("[v0] Error updating playlist:", error)
+        log.error("Error updating playlist:", error)
         throw error
       }
     } catch (error) {
-      console.error("[v0] Error in updatePlaylist:", error)
+      log.error("Error in updatePlaylist:", error)
       throw error
     }
   }
@@ -804,11 +812,11 @@ export class MeditationLibrary {
       const { error } = await supabase.from("playlists").delete().eq("id", id)
 
       if (error) {
-        console.error("[v0] Error deleting playlist:", error)
+        log.error("Error deleting playlist:", error)
         throw error
       }
     } catch (error) {
-      console.error("[v0] Error in deletePlaylist:", error)
+      log.error("Error in deletePlaylist:", error)
       throw error
     }
   }
@@ -830,14 +838,14 @@ export class MeditationLibrary {
 
       if (error) {
         if (error.code !== "23505") {
-          console.error("[v0] Error adding to playlist:", error)
+          log.error("Error adding to playlist:", error)
           throw error
         }
       }
 
       await supabase.from("playlists").update({ updated_at: new Date().toISOString() }).eq("id", playlistId)
     } catch (error) {
-      console.error("[v0] Error in addToPlaylist:", error)
+      log.error("Error in addToPlaylist:", error)
       throw error
     }
   }
@@ -859,13 +867,13 @@ export class MeditationLibrary {
         .eq("meditation_id", meditationId)
 
       if (error) {
-        console.error("[v0] Error removing from playlist:", error)
+        log.error("Error removing from playlist:", error)
         throw error
       }
 
       await supabase.from("playlists").update({ updated_at: new Date().toISOString() }).eq("id", playlistId)
     } catch (error) {
-      console.error("[v0] Error in removeFromPlaylist:", error)
+      log.error("Error in removeFromPlaylist:", error)
       throw error
     }
   }
@@ -889,15 +897,15 @@ export class MeditationLibrary {
         .order("added_at", { ascending: true })
 
       if (error) {
-        console.error("[v0] Error fetching playlist meditations:", error)
+        log.error("Error fetching playlist meditations:", error)
         return []
       }
 
-      const meditationIds = (data ?? []).map((item: any) => item.meditation_id)
+      const meditationIds: string[] = (data ?? []).map((item: { meditation_id: string }) => item.meditation_id)
       const meditations = await Promise.all(meditationIds.map((id) => this.getMeditation(id)))
       return meditations.filter((meditation): meditation is SavedMeditation => Boolean(meditation))
     } catch (error) {
-      console.error("[v0] Error in getPlaylistMeditations:", error)
+      log.error("Error in getPlaylistMeditations:", error)
       return []
     }
   }
@@ -1080,7 +1088,7 @@ export class MeditationLibrary {
       const { usedBytes } = (await response.json()) as { usedBytes: number }
       return { usedBytes, quotaBytes: FREE_STORAGE_QUOTA_BYTES }
     } catch (error) {
-      console.warn("[v0] Unable to fetch R2 storage usage:", error)
+      log.warn("Unable to fetch R2 storage usage:", error)
       return { usedBytes: 0, quotaBytes: FREE_STORAGE_QUOTA_BYTES }
     }
   }

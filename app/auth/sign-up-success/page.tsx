@@ -23,7 +23,7 @@ export default async function SignUpSuccessPage({
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-gray-600 font-serif">
-                We've sent you a confirmation email. Please check your inbox and click the link to verify your account
+                We&apos;ve sent you a confirmation email. Please check your inbox and click the link to verify your account
                 before signing in.
               </p>
               <Button asChild variant="accent"

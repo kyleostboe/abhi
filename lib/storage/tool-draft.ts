@@ -1,6 +1,7 @@
 import type { AudioExportFormat } from "@/lib/audio-utils"
 import type { TimelineEvent } from "@/lib/types"
 import { saveAudioRecord, getAudioRecord, deleteAudioRecord } from "./indexed-db"
+import { log } from "@/lib/log"
 
 // Preserves the *input-side* configuration of the Adjuster/Creator tools (as opposed to
 // tool-session.ts, which preserves the processed/generated output) across a full page
@@ -56,7 +57,7 @@ export async function getAdjusterDraft(): Promise<{ meta: AdjusterDraft; file: F
     const file = new File([record.processedAudio], meta.displayedFileName, { type: meta.fileType })
     return { meta, file }
   } catch (error) {
-    console.warn("[v0] Unable to read adjuster draft:", error)
+    log.warn("Unable to read adjuster draft:", error)
     return null
   }
 }
@@ -88,7 +89,7 @@ export async function saveCreatorDraft(meta: CreatorDraft): Promise<void> {
       const blob = await (await fetch(event.recordedAudioUrl)).blob()
       await saveAudioRecord({ id: creatorRecordingRecordId(eventId), processedAudio: blob })
     } catch (error) {
-      console.warn(`[v0] Unable to persist recording for timeline event ${eventId}:`, error)
+      log.warn(`Unable to persist recording for timeline event ${eventId}:`, error)
     }
   }
 
@@ -117,7 +118,7 @@ export async function getCreatorDraft(): Promise<CreatorDraft | null> {
     )
     return { ...meta, timelineEvents }
   } catch (error) {
-    console.warn("[v0] Unable to read creator draft:", error)
+    log.warn("Unable to read creator draft:", error)
     return null
   }
 }

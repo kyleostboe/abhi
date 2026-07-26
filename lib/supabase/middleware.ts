@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
+import { log } from "@/lib/log"
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -11,7 +12,7 @@ export async function updateSession(request: NextRequest) {
 
   if (!supabaseUrl || !supabaseAnonKey) {
     if (process.env.NODE_ENV === "development") {
-      console.warn("[v0] Supabase environment variables missing in middleware - skipping session update")
+      log.warn("Supabase environment variables missing in middleware - skipping session update")
     }
     return supabaseResponse
   }
