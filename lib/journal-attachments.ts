@@ -12,6 +12,7 @@
 import { createClient } from "@/lib/supabase/client"
 import { encodeDistributionAudio, extensionForContainer } from "@/lib/audio-utils"
 import { sanitizeFilename, slugify } from "@/lib/journal-markdown"
+import { log } from "@/lib/log"
 
 export type AttachmentKind = "image" | "audio"
 
@@ -79,7 +80,7 @@ export const encodeVoiceNote = async (
     } catch (error) {
       // Opus needs WebCodecs; on a browser without it keep the original recording rather than
       // losing the note entirely.
-      console.warn("[journal] Opus encode unavailable, storing original recording:", error)
+      log.warn("[journal] Opus encode unavailable, storing original recording:", error)
       const ext = recorded.type.includes("mp4") ? "m4a" : recorded.type.includes("ogg") ? "ogg" : "webm"
       return { blob: recorded, ext, mime: recorded.type || "audio/webm", durationMs }
     }
@@ -201,7 +202,7 @@ export const deleteAttachmentsForNote = async (entryId: string): Promise<void> =
       } catch (deleteError) {
         // An orphaned object is recoverable (and counted in usage); a failed note delete is
         // not, so this never blocks the row removal.
-        console.warn("[journal] Could not delete stored attachment:", deleteError)
+        log.warn("[journal] Could not delete stored attachment:", deleteError)
       }
     }),
   )

@@ -10,7 +10,6 @@ import { LogoMark, HeaderWash } from "@/components/logo-mark"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import {
   DropdownMenu,
@@ -70,6 +69,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useRouter, useSearchParams } from "next/navigation"
 import { StorageBar } from "@/components/storage-bar"
 import { AuthButtons } from "@/components/auth-buttons"
+import { log } from "@/lib/log"
 
 type LibraryTimelineEntry = NonNullable<SavedMeditation["metadata"]["timeline"]>[number]
 
@@ -316,13 +316,6 @@ export default function LibraryPage() {
   const [activeJournalEntryId, setActiveJournalEntryId] = useState<string | null>(null)
   const [handledMeditationParam, setHandledMeditationParam] = useState<string | null>(null)
   const [pendingJournalEntryId, setPendingJournalEntryId] = useState<string | null>(null)
-  // Server always renders false (no window); setting this only after mount avoids a
-  // hydration mismatch on localhost, where the client would otherwise disagree immediately.
-  const [isLocalDebugHost, setIsLocalDebugHost] = useState(false)
-  useEffect(() => {
-    setIsLocalDebugHost(window.location.hostname === "localhost")
-  }, [])
-
   const [isPlayerOpen, setIsPlayerOpen] = useState(false)
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const [playerTime, setPlayerTime] = useState(0)
@@ -383,27 +376,6 @@ export default function LibraryPage() {
 
   const [playlistMeditationsMap, setPlaylistMeditationsMap] = useState<Record<string, SavedMeditation[]>>({})
 
-  const clearLibraryData = async () => {
-    if (!window.confirm("Are you sure you want to clear all library data? This cannot be undone.")) {
-      return
-    }
-    try {
-      await MeditationLibrary.clearAllData()
-      await loadData()
-      toast({
-        title: "Library cleared",
-        description: "All meditations and data have been removed.",
-      })
-    } catch (error) {
-      console.error("Failed to clear library:", error)
-      toast({
-        title: "Error",
-        description: "Failed to clear library data.",
-        variant: "destructive",
-      })
-    }
-  }
-
   const convertModeToStored = useCallback(
     (mode: DurationMode): StoredDurationMode => ({
       id: mode.id,
@@ -452,7 +424,7 @@ export default function LibraryPage() {
       const usage = await MeditationLibrary.getStorageUsage()
       setStorageUsage(usage)
     } catch (error) {
-      console.error("[v0] Failed to load library data:", error)
+      log.error("Failed to load library data:", error)
       toast({
         title: "Error loading library",
         description: "Please refresh the page.",
@@ -485,7 +457,7 @@ export default function LibraryPage() {
         }
       }
     } catch (error) {
-      console.warn("[v0] Failed to restore quick adjust presets:", error)
+      log.warn("Failed to restore quick adjust presets:", error)
     }
 
     try {
@@ -497,7 +469,7 @@ export default function LibraryPage() {
         }
       }
     } catch (error) {
-      console.warn("[v0] Failed to restore saved durations:", error)
+      log.warn("Failed to restore saved durations:", error)
     }
   }, [])
 
@@ -526,7 +498,7 @@ export default function LibraryPage() {
         description: "Your meditations and audio were saved to a ZIP file.",
       })
     } catch (error) {
-      console.error("Unable to export backup", error)
+      log.error("Unable to export backup", error)
       toast({
         title: "Export failed",
         description: error instanceof Error ? error.message : "Could not create a backup. Please try again.",
@@ -554,7 +526,7 @@ export default function LibraryPage() {
           description: "All meditations and audio have been restored successfully.",
         })
       } catch (error) {
-        console.error("Unable to import backup", error)
+        log.error("Unable to import backup", error)
         toast({
           title: "Import failed",
           description: error instanceof Error ? error.message : "We couldn't read that backup file.",
@@ -608,7 +580,7 @@ export default function LibraryPage() {
     try {
       window.localStorage.setItem(QUICK_ADJUST_PRESETS_KEY, JSON.stringify(quickAdjustPresets))
     } catch (error) {
-      console.warn("[v0] Failed to persist quick adjust presets:", error)
+      log.warn("Failed to persist quick adjust presets:", error)
     }
   }, [quickAdjustPresets])
 
@@ -621,7 +593,7 @@ export default function LibraryPage() {
     try {
       window.localStorage.setItem(QUICK_ADJUST_DURATIONS_KEY, JSON.stringify(savedDurationsMap))
     } catch (error) {
-      console.warn("[v0] Failed to persist saved durations:", error)
+      log.warn("Failed to persist saved durations:", error)
     }
   }, [savedDurationsMap])
 
@@ -769,7 +741,7 @@ export default function LibraryPage() {
         await loadData()
         toast({ title: "Added to playlist", description: `"${meditationTitle}" added to ${playlist.name}.` })
       } catch (error) {
-        console.error("[v0] Failed to add to playlist:", error)
+        log.error("Failed to add to playlist:", error)
         toast({
           title: "Couldn't add to playlist",
           description: "Please try again.",
@@ -819,7 +791,7 @@ export default function LibraryPage() {
         description: `"${newPlaylistName}" has been added to your playlists.`,
       })
     } catch (error) {
-      console.error("[v0] Error creating playlist:", error)
+      log.error("Error creating playlist:", error)
       toast({
         title: "Error creating playlist",
         description: "There was a problem creating your playlist. Please try again.",
@@ -843,7 +815,7 @@ export default function LibraryPage() {
         description: "Your playlist has been updated successfully.",
       })
     } catch (error) {
-      console.error("[v0] Error updating playlist:", error)
+      log.error("Error updating playlist:", error)
       toast({
         title: "Error updating playlist",
         description: "There was a problem updating your playlist. Please try again.",
@@ -880,7 +852,7 @@ export default function LibraryPage() {
         description: "The playlist has been removed from your library.",
       })
     } catch (error) {
-      console.error("[v0] Error deleting playlist:", error)
+      log.error("Error deleting playlist:", error)
       toast({
         title: "Error deleting playlist",
         description: "There was a problem deleting your playlist. Please try again.",
@@ -1223,7 +1195,7 @@ export default function LibraryPage() {
         try {
           await audioContext.resume()
         } catch (resumeError) {
-          console.warn("[v0] Unable to resume audio context for quick adjust:", resumeError)
+          log.warn("Unable to resume audio context for quick adjust:", resumeError)
         }
       }
 
@@ -1401,7 +1373,7 @@ export default function LibraryPage() {
         description: completionDescription,
       })
     } catch (error) {
-      console.error("[v0] Quick adjust failed:", error)
+      log.error("Quick adjust failed:", error)
       toast({
         title: "Quick adjust failed",
         description: error instanceof Error ? error.message : "We couldn't adjust this meditation.",
@@ -1451,7 +1423,7 @@ export default function LibraryPage() {
         try {
           await audioContext.resume()
         } catch (resumeError) {
-          console.warn("[v0] Unable to resume audio context for threshold suggestion:", resumeError)
+          log.warn("Unable to resume audio context for threshold suggestion:", resumeError)
         }
       }
 
@@ -1472,7 +1444,7 @@ export default function LibraryPage() {
         description: `Background noise sits around ${toDb(suggestion.noiseFloor)} dB and speech around ${toDb(suggestion.speechLevel)} dB. Set the threshold to ${toDb(clamped)} dB.`,
       })
     } catch (error) {
-      console.error("[v0] Silence threshold suggestion failed:", error)
+      log.error("Silence threshold suggestion failed:", error)
       toast({
         title: "Couldn't suggest a threshold",
         description: error instanceof Error ? error.message : "We couldn't analyze this meditation's audio.",
@@ -1608,7 +1580,7 @@ export default function LibraryPage() {
       setIsUploadDialogOpen(false)
       await loadData()
     } catch (error) {
-      console.error("[v0] Failed to upload meditation:", error)
+      log.error("Failed to upload meditation:", error)
       setUploadError(error instanceof Error ? error.message : "We couldn't upload this meditation. Please try again.")
     } finally {
       if (objectUrl) {
@@ -1983,7 +1955,7 @@ export default function LibraryPage() {
               setPlayingTimelineEventId(timelineEvent.id)
             })
             .catch((error) => {
-              console.error("[v0] Failed to play timeline recording:", error)
+              log.error("Failed to play timeline recording:", error)
               stopCurrentTimelineAudio()
               toast({
                 title: "Unable to play recording",
@@ -1992,7 +1964,7 @@ export default function LibraryPage() {
               })
             })
         } catch (error) {
-          console.error("[v0] Error playing timeline recording:", error)
+          log.error("Error playing timeline recording:", error)
           stopCurrentTimelineAudio()
           toast({
             title: "Unable to play recording",
@@ -2024,7 +1996,7 @@ export default function LibraryPage() {
           setPlayerTime(targetTime)
         })
         .catch((error) => {
-          console.error("[v0] Failed to play main audio from timeline event:", error)
+          log.error("Failed to play main audio from timeline event:", error)
           toast({
             title: "Unable to play event",
             description: "Try reloading the page and playing the meditation again.",
@@ -2055,7 +2027,7 @@ export default function LibraryPage() {
 
       const audioUrlToUse = selectedMeditation.sourceAudioUrl || selectedMeditation.processedAudioUrl
 
-      console.log("[v0] Opening meditation in tool:", {
+      log.debug("Opening meditation in tool:", {
         tool: targetTool,
         hasSourceAudio: !!selectedMeditation.sourceAudioUrl,
         usingSourceAudio: audioUrlToUse === selectedMeditation.sourceAudioUrl,
@@ -2138,7 +2110,7 @@ export default function LibraryPage() {
             return extensionFromUrl
           }
         } catch (error) {
-          console.warn("[v0] Unable to parse processedAudioUrl for extension:", error)
+          log.warn("Unable to parse processedAudioUrl for extension:", error)
         }
 
         const extensionFromDirectPath = getExtensionFromPath(url)
@@ -2164,7 +2136,7 @@ export default function LibraryPage() {
       link.click()
       document.body.removeChild(link)
     } catch (error) {
-      console.error("[v0] Error downloading meditation:", error)
+      log.error("Error downloading meditation:", error)
       toast({
         title: "Unable to download",
         description: "We couldn't download this meditation. Please try again.",
@@ -2263,7 +2235,7 @@ export default function LibraryPage() {
           try {
             await audioContext.resume()
           } catch (resumeError) {
-            console.warn("[v0] Unable to resume audio context for convert:", resumeError)
+            log.warn("Unable to resume audio context for convert:", resumeError)
           }
         }
 
@@ -2327,7 +2299,7 @@ export default function LibraryPage() {
           })
         }
       } catch (error) {
-        console.error("[v0] Convert failed:", error)
+        log.error("Convert failed:", error)
         toast({
           title: "Convert failed",
           description: error instanceof Error ? error.message : "We couldn't convert this meditation.",
@@ -2610,7 +2582,7 @@ export default function LibraryPage() {
       setDraggedFile(null)
       setAudioFileTitle("")
     } catch (error) {
-      console.error("Upload failed:", error)
+      log.error("Upload failed:", error)
       setUploadError(error instanceof Error ? error.message : "Upload failed")
       toast({
         title: "Upload failed",
@@ -2677,18 +2649,6 @@ export default function LibraryPage() {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {isLocalDebugHost && (
-          <div className="fixed top-4 right-4 z-50">
-            <Button
-              onClick={clearLibraryData}
-              variant="outline"
-              size="sm"
-              className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
-            >
-              Clear Library (Debug)
-            </Button>
-          </div>
-        )}
         {!isAuthenticated ? (
           <div className="relative overflow-hidden">
             <HeaderWash />
@@ -3587,7 +3547,7 @@ export default function LibraryPage() {
 
                                       {activeDurationModeId !== "original" && (
                                         <p className="text-[11px] text-gray-500">
-                                          Converting the "{currentDurationModes.find((mode) => mode.id === activeDurationModeId)?.label ?? "selected"}" variant.
+                                          Converting the &quot;{currentDurationModes.find((mode) => mode.id === activeDurationModeId)?.label ?? "selected"}&quot; variant.
                                         </p>
                                       )}
 
@@ -3612,7 +3572,7 @@ export default function LibraryPage() {
                                             </Button>
                                           ) : (
                                             <p className="text-[11px] text-gray-500">
-                                              This duration hasn't been saved on its own, so it can only be saved as a
+                                              This duration hasn&apos;t been saved on its own, so it can only be saved as a
                                               new copy.
                                             </p>
                                           )}
@@ -3631,12 +3591,12 @@ export default function LibraryPage() {
                                             {convertReplaceTargetId
                                               ? `replace ${activeDurationModeId === "original" ? "the original" : "this variant"}, or `
                                               : ""}
-                                            create a free account to keep both — we'll hang onto this converted audio
+                                            create a free account to keep both — we&apos;ll hang onto this converted audio
                                             and save it to your new account automatically.
                                           </p>
                                           {!convertReplaceTargetId && (
                                             <p className="text-[11px] text-gray-500">
-                                              This duration hasn't been saved on its own, so it can't be replaced
+                                              This duration hasn&apos;t been saved on its own, so it can&apos;t be replaced
                                               directly yet.
                                             </p>
                                           )}

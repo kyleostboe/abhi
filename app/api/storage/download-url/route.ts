@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createDownloadUrl } from "@/lib/storage"
 import { extensionForContainer } from "@/lib/audio-utils"
+import { log } from "@/lib/log"
 
 const MAX_IDS_PER_REQUEST = 200
 
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
     .in("id", meditationIds)
 
   if (error) {
-    console.error("[storage] Failed to look up meditations for download URLs:", error)
+    log.error("[storage] Failed to look up meditations for download URLs:", error)
     return NextResponse.json({ error: "Unable to look up meditations." }, { status: 500 })
   }
 
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
     try {
       urls[row.id] = await createDownloadUrl(row.audio_key, buildFilename(row.title, row.metadata))
     } catch (error) {
-      console.error(`[storage] Failed to mint download URL for meditation ${row.id}:`, error)
+      log.error(`[storage] Failed to mint download URL for meditation ${row.id}:`, error)
     }
   }
 

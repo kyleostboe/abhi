@@ -14,6 +14,7 @@ import { encodeDistributionAudio, type AudioFormatMetadata } from "@/lib/audio-u
 import { BookmarkPlus, Plus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
+import { log } from "@/lib/log"
 
 interface SaveMeditationDialogProps {
   audioUrl: string
@@ -140,7 +141,7 @@ export function SaveMeditationDialog({
       const allPlaylists = await MeditationLibrary.getAllPlaylists()
       setPlaylists(allPlaylists)
     } catch (error) {
-      console.error("[v0] Failed to load playlists:", error)
+      log.error("Failed to load playlists:", error)
       setPlaylists([])
     }
   }, [])
@@ -203,11 +204,11 @@ export function SaveMeditationDialog({
       let distributionFormat: AudioFormatMetadata | undefined
 
       if (providedDistributionBlob) {
-        console.log("[v0] Using pre-generated distribution blob")
+        log.debug("Using pre-generated distribution blob")
         distributionBlob = providedDistributionBlob
         distributionFormat = providedDistributionFormat ?? undefined
       } else {
-        console.log("[v0] No pre-generated distribution blob, encoding now...")
+        log.debug("No pre-generated distribution blob, encoding now...")
         const response = await fetch(audioUrl)
         const audioBlob = await response.blob()
 
@@ -228,13 +229,13 @@ export function SaveMeditationDialog({
           distributionBlob = encodeResult.blob
           distributionFormat = encodeResult.format
 
-          console.log(`[v0] ${encodeResult.format.codec.toUpperCase()} encoding complete`)
+          log.debug(`${encodeResult.format.codec.toUpperCase()} encoding complete`)
         } finally {
           if (audioContext) {
             try {
               await audioContext.close()
             } catch (closeError) {
-              console.warn("[v0] Error closing audio context:", closeError)
+              log.warn("Error closing audio context:", closeError)
             }
           }
         }
@@ -247,7 +248,7 @@ export function SaveMeditationDialog({
         )
       }
 
-      console.log(`[v0] Saving meditation. File size: ${Math.round(distributionBlob.size / 1024 / 1024)}MB`)
+      log.debug(`Saving meditation. File size: ${Math.round(distributionBlob.size / 1024 / 1024)}MB`)
 
       const metadataForSave: SavedMeditation["metadata"] = { ...metadata }
       if (distributionFormat && !metadataForSave.audioFormat) {
@@ -349,11 +350,11 @@ export function SaveMeditationDialog({
       }
     } catch (error) {
       if (error instanceof Error && error.message === "Encoding aborted") {
-        console.log("[v0] Encoding was cancelled")
+        log.debug("Encoding was cancelled")
         return
       }
 
-      console.error("[v0] Save failed with error:", error)
+      log.error("Save failed with error:", error)
       toast({
         title: "Save failed",
         description: error instanceof Error ? error.message : "An unknown error occurred while saving your meditation.",
@@ -418,7 +419,7 @@ export function SaveMeditationDialog({
                   onClick={() => setSaveMode("preset")}
                   className="w-full"
                 >
-                  Attach to "{targetPresetTitle}"
+                  Attach to &quot;{targetPresetTitle}&quot;
                 </Button>
                 <Button
                   type="button"

@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast"
 import { createClient } from "@/lib/supabase/client"
 import { useAuth } from "@/hooks/use-auth"
 import { Navigation } from "@/components/navigation"
+import { log } from "@/lib/log"
 
 export default function SettingsPage() {
   const { user, isAuthenticated } = useAuth()
@@ -39,7 +40,7 @@ export default function SettingsPage() {
         }
         setEmail(user.email || "")
       } catch (error) {
-        console.error("[v0] Error loading profile:", error)
+        log.error("Error loading profile:", error)
       } finally {
         setIsLoading(false)
       }
@@ -75,7 +76,7 @@ export default function SettingsPage() {
         description: "Your profile has been updated successfully.",
       })
     } catch (error) {
-      console.error("[v0] Error saving settings:", error)
+      log.error("Error saving settings:", error)
       toast({
         title: "Error",
         description: "Failed to save settings. Please try again.",

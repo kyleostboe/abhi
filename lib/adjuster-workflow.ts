@@ -5,6 +5,7 @@ import {
   type AudioFormatMetadata,
 } from "@/lib/audio-utils"
 import { forceGarbageCollection, formatTime, sleep } from "@/lib/utils"
+import { log } from "@/lib/log"
 
 export type SilenceRegion = { start: number; end: number }
 
@@ -583,7 +584,7 @@ export async function rebuildAudioWithScaledPauses({
   // For very long durations, warn the user
   if (newTotalDuration > 90 * 60) {
     onMemoryWarning?.()
-    console.warn(`Long duration: Output duration ${formatTime(newTotalDuration)} - processing may take a while.`)
+    log.warn(`Long duration: Output duration ${formatTime(newTotalDuration)} - processing may take a while.`)
   }
 
   // Force garbage collection before allocating large buffer

@@ -1,11 +1,12 @@
 import { createBrowserClient } from "@supabase/ssr"
+import { log } from "@/lib/log"
 
 export function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!url || !key) {
-    console.warn("[v0] Supabase env vars missing. Client creation skipped.")
+    log.warn("Supabase env vars missing. Client creation skipped.")
     // Return a dummy client or throw a handled error? 
     // createBrowserClient throws if args are missing.
     // We'll return a proxy that logs warnings or just let it fail gracefully later.
@@ -14,7 +15,7 @@ export function createClient() {
     try {
       return createBrowserClient(url || "", key || "")
     } catch (e) {
-      console.error("[v0] Failed to create Supabase client:", e)
+      log.error("Failed to create Supabase client:", e)
       // Return a mock to prevent crash
       return {
         from: () => ({ select: () => ({ data: null, error: { message: "Supabase not configured" } }) }),

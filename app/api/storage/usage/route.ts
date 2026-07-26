@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getUsageBytesForPrefix } from "@/lib/storage"
+import { log } from "@/lib/log"
 
 export async function GET() {
   const supabase = await createClient()
@@ -17,7 +18,7 @@ export async function GET() {
     const usedBytes = await getUsageBytesForPrefix(`${user.id}/`)
     return NextResponse.json({ usedBytes })
   } catch (error) {
-    console.error("[storage] Failed to compute R2 usage:", error)
+    log.error("[storage] Failed to compute R2 usage:", error)
     return NextResponse.json({ error: "Unable to compute storage usage." }, { status: 500 })
   }
 }

@@ -17,7 +17,6 @@ import { Textarea } from "@/components/ui/textarea"
 import type { SavedMeditation } from "@/lib/meditation-library"
 import type { JournalNote } from "@/hooks/use-journal-notes"
 import { slugify } from "@/lib/journal-markdown"
-import { cn } from "@/lib/utils"
 
 export function MeditationPicker({
   open,

@@ -22,9 +22,9 @@ import {
   Type,
 } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
 import { NOTE_FONTS } from "@/components/journal/note-editor"
 import { cn } from "@/lib/utils"
+import { log } from "@/lib/log"
 
 export function NoteToolbar({
   editor,
@@ -167,7 +167,7 @@ export function useVoiceRecorder() {
       setIsRecording(true)
       return true
     } catch (error) {
-      console.error("[journal] Microphone unavailable:", error)
+      log.error("[journal] Microphone unavailable:", error)
       return false
     }
   }

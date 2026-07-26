@@ -1,4 +1,5 @@
 import type { AudioExportFormat } from "@/lib/audio-utils"
+import { log } from "@/lib/log"
 
 // A guest who chose "create an account & keep both" during a format conversion gets sent
 // straight to sign-up — we only stash *what* they wanted converted, not the converted audio
@@ -30,7 +31,7 @@ export function getPendingConvertIntent(): PendingConvertIntent | null {
   try {
     return JSON.parse(raw) as PendingConvertIntent
   } catch (error) {
-    console.warn("[v0] Unable to read pending convert intent:", error)
+    log.warn("Unable to read pending convert intent:", error)
     return null
   }
 }

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { createClient } from "@/lib/supabase/client"
 import { useAuth } from "@/hooks/use-auth"
+import { log } from "@/lib/log"
 
 export type JournalEntry = {
   id: string
@@ -98,7 +99,7 @@ export function useJournal() {
         }
 
         if (error) {
-          console.error("[v0] Failed to fetch journal entries:", error)
+          log.error("Failed to fetch journal entries:", error)
           setEntries([])
           return
         }
@@ -106,7 +107,7 @@ export function useJournal() {
         setEntries(Array.isArray(data) ? data.map(mapRowToEntry) : [])
       } catch (error) {
         if (isActive) {
-          console.error("[v0] Unexpected error fetching journal entries:", error)
+          log.error("Unexpected error fetching journal entries:", error)
           setEntries([])
         }
       } finally {
@@ -161,7 +162,7 @@ export function useJournal() {
             .single()
 
           if (error) {
-            console.error("[v0] Failed to update journal entry:", error)
+            log.error("Failed to update journal entry:", error)
             setEntries((previous) =>
               previous.map((entry) => (entry.id === latestForMeditation.id ? latestForMeditation : entry)),
             )
@@ -206,7 +207,7 @@ export function useJournal() {
         .single()
 
       if (error) {
-        console.error("[v0] Failed to record journal entry:", error)
+        log.error("Failed to record journal entry:", error)
         setEntries((previous) => previous.filter((entry) => entry.id !== newEntry.id))
         return null
       }
@@ -247,7 +248,7 @@ export function useJournal() {
         .single()
 
       if (error) {
-        console.error("[v0] Failed to update journal note:", error)
+        log.error("Failed to update journal note:", error)
         setEntries((previous) => previous.map((entry) => (entry.id === entryId ? previousEntry : entry)))
         return previousEntry
       }
@@ -275,7 +276,7 @@ export function useJournal() {
       const { error } = await supabase.from("journal_entries").delete().eq("id", entryId)
 
       if (error) {
-        console.error("[v0] Failed to delete journal entry:", error)
+        log.error("Failed to delete journal entry:", error)
         setEntries([...previousEntries])
         return false
       }

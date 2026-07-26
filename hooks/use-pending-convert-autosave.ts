@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast"
 import { getAudioContext, encodeDistributionAudio, extensionForContainer } from "@/lib/audio-utils"
 import { MeditationLibrary, type SavedMeditation } from "@/lib/meditation-library"
 import { getPendingConvertIntent, clearPendingConvertIntent } from "@/lib/storage/pending-convert"
+import { log } from "@/lib/log"
 
 /**
  * When a guest chose "create an account & keep both" while converting a *library*
@@ -71,7 +72,7 @@ export function usePendingConvertAutoSave(onSaved?: (meditation: SavedMeditation
           description: `"${saved.title}" is now in your library, alongside the original.`,
         })
       } catch (error) {
-        console.error("[v0] Failed to complete pending library conversion:", error)
+        log.error("Failed to complete pending library conversion:", error)
       }
     })()
 

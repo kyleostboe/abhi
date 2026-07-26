@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { log } from "@/lib/log"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -22,7 +23,7 @@ export const formatFileSize = (bytes: number): string => {
 
 export const forceGarbageCollection = () => {
   if (typeof window !== "undefined" && (window as any).gc) {
-    console.log("Attempting to force garbage collection.")
+    log.debug("Attempting to force garbage collection.")
     ;(window as any).gc()
   }
 }
@@ -32,9 +33,9 @@ export const monitorMemory = () => {
     const memory = (performance as any).memory
     const usedMB = memory.usedJSHeapSize / 1048576
     const limitMB = memory.jsHeapSizeLimit / 1048576
-    console.log(`Memory usage: ${usedMB.toFixed(2)}MB / ${limitMB.toFixed(2)}MB`)
+    log.debug(`Memory usage: ${usedMB.toFixed(2)}MB / ${limitMB.toFixed(2)}MB`)
     if (usedMB > limitMB * 0.75) {
-      console.warn("High memory usage detected, forcing GC.")
+      log.warn("High memory usage detected, forcing GC.")
       forceGarbageCollection()
       return true
     }

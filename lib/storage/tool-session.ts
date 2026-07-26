@@ -1,5 +1,6 @@
 import type { AudioFormatMetadata } from "@/lib/audio-utils"
 import { saveAudioRecord, getAudioRecord, deleteAudioRecord } from "./indexed-db"
+import { log } from "@/lib/log"
 
 // Persists the Adjuster's processed / Creator's generated output so it survives
 // full page reloads — most importantly the redirect round-trip through
@@ -54,7 +55,7 @@ export async function getToolSession(
     if (!record?.processedAudio) return null
     return { meta, audio: record.processedAudio }
   } catch (error) {
-    console.warn(`[v0] Unable to read ${kind} tool session:`, error)
+    log.warn(`Unable to read ${kind} tool session:`, error)
     return null
   }
 }

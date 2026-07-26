@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import type { TimelineEvent } from "@/lib/types"
 import { useMobile } from "@/hooks/use-mobile"
 import { EVENT_COLORS } from "@/lib/constants"
+import { log } from "@/lib/log"
 
 interface VisualTimelineProps {
   events: TimelineEvent[]
@@ -266,12 +267,12 @@ export function VisualTimeline({
     try {
       if (event.type === "instruction_sound" && event.soundCueSrc) {
         if (event.soundCueSrc.startsWith("synthetic:")) {
-          console.log("[v0] Timeline: Synthetic sound playback not available")
+          log.debug("Timeline: Synthetic sound playback not available")
         } else if (event.soundCueSrc.startsWith("musical:")) {
           const notesPart = event.soundCueSrc.replace("musical:", "")
           const noteStrings = notesPart.split("|")
 
-          console.log("[v0] Timeline: Playing musical notes:", noteStrings)
+          log.debug("Timeline: Playing musical notes:", noteStrings)
 
           if (noteStrings.length === 1 && playSingleNote) {
             await playSingleNote(noteStrings[0])
@@ -313,7 +314,7 @@ export function VisualTimeline({
         setPlayingEventId(event.id)
       }
     } catch (error) {
-      console.error("[v0] Timeline audio playback failed:", error)
+      log.error("Timeline audio playback failed:", error)
     }
   }
 

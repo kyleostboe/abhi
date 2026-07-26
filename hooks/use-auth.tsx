@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { setAuthState } from "@/lib/auth-state"
+import { log } from "@/lib/log"
 
 type AuthContextValue = {
   status: "loading" | "authenticated" | "unauthenticated"
@@ -35,18 +36,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!isMounted) return
 
         if (session?.user) {
-          console.log("[v0] Auth: User authenticated -", session.user.email)
+          log.debug("Auth: User authenticated -", session.user.email)
           setStatus("authenticated")
           setUser(session.user)
           setAuthState({ status: "authenticated", userId: session.user.id })
         } else {
-          console.log("[v0] Auth: No session found")
+          log.debug("Auth: No session found")
           setStatus("unauthenticated")
           setUser(null)
           setAuthState({ status: "unauthenticated", userId: null })
         }
       } catch (error) {
-        console.error("[v0] Auth session check failed:", error)
+        log.error("Auth session check failed:", error)
         if (isMounted) {
           setStatus("unauthenticated")
           setUser(null)
@@ -60,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event: unknown, session: any) => {
-      console.log("[v0] Auth state changed:", _event, session?.user?.email)
+      log.debug("Auth state changed:", _event, session?.user?.email)
       if (!isMounted) return
 
       if (session?.user) {
@@ -93,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const logout = async () => {
-    console.log("[v0] Logging out user")
+    log.debug("Logging out user")
     const supabase = createClient()
     await supabase.auth.signOut()
     setStatus("unauthenticated")
