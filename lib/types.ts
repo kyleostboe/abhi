@@ -40,6 +40,29 @@ export const asInstrument = (value: unknown): Instrument | undefined =>
     ? (value as Instrument)
     : undefined
 
+/**
+ * The editor-side timeline row.
+ *
+ * Richer than the persisted TimelineEvent below: it carries the draft `content` payload the
+ * builder UI works with and a wider `type`. Only TimelineEvent is ever written to storage.
+ */
+export interface TimelineItem {
+  id: string
+  type: "instruction" | "sound" | "recorded_voice" | "instruction_sound" | "recording" | "recorded"
+  duration: number // in seconds
+  content?: Instruction | SoundCue | { url: string; label: string; duration: number }
+  instructionText?: string
+  soundCueId?: string
+  soundCueName?: string
+  soundCueSrc?: string
+  instrument?: string
+  recordedAudioUrl?: string
+  recordedInstructionLabel?: string
+  color?: string
+  startTime: number
+  recordingStoragePath?: string
+}
+
 export interface TimelineEvent {
   id: string
   type: "instruction_sound" | "recorded_voice"

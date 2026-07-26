@@ -14,6 +14,20 @@ export function formatTime(seconds: number): string {
 
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
+/**
+ * True for the abort a cancelled fetch/decode throws. Superseded audio analysis aborts its own
+ * in-flight work, and that is an expected outcome rather than a failure worth reporting.
+ */
+export const isAbortError = (error: unknown): boolean => {
+  if (typeof DOMException !== "undefined" && error instanceof DOMException) {
+    return error.name === "AbortError"
+  }
+  if (typeof error === "object" && error !== null && "name" in error) {
+    return (error as { name?: string }).name === "AbortError"
+  }
+  return false
+}
+
 export const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return "0 Bytes"
   const k = 1024
