@@ -23,10 +23,13 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
     return (
       <textarea
         className={cn(
-          // w-full is essential: a fixed narrow width here collapses the field to a sliver and
-          // makes text wrap one character per line, which the auto-grow effect below then turns
-          // into an extremely tall column.
-          "flex w-full min-w-0 h-auto min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm tracking-normal text-gray-600 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none",
+          // Matches the Input primitive's look — white, borderless, lifted by a shadow rather
+          // than a rule — so a Textarea sitting next to an Input in the same dialog doesn't
+          // read as a different kind of control.
+          // w-full is essential: a fixed narrow width collapses the field to a sliver and makes
+          // text wrap one character per line, which the auto-grow effect below then turns into
+          // an extremely tall column.
+          "flex w-full min-w-0 h-auto min-h-[80px] rounded-sm border-0 bg-white px-4 py-3 text-xs tracking-normal text-gray-700 shadow-2xl placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none",
           className,
         )}
         rows={1} // Start with 1 row; auto-grows to fit content (min-height keeps a sane floor)

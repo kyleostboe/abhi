@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { LogoMark } from "@/components/logo-mark"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -87,7 +88,7 @@ export default function SettingsPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 pt-20 md:p-8 md:pt-24">
         <Navigation />
         <div className="container max-w-4xl mx-auto py-8 px-4">
           <Card className="p-12 text-center border-[3px] border-muted shadow-xl">
@@ -111,7 +112,7 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 pt-20 md:p-8 md:pt-24">
         <Navigation />
         <div className="container max-w-4xl mx-auto py-8 px-4 text-center">
           <p className="text-gray-600 font-serif">Loading settings...</p>
@@ -121,22 +122,12 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 pt-20 md:p-8 md:pt-24">
       <Navigation />
       <div className="container max-w-4xl mx-auto py-8 px-4">
         <Card className="mx-auto w-full max-w-2xl border-[3px] border-muted shadow-xl">
           <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="flex items-center space-x-[5px]">
-                <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[16px] h-[16px] shadow-md" />
-                <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[11px] w-[11px] shadow" />
-                <div className="w-5 bg-gradient-to-br from-logo-amber to-orange-300 rounded-[4px] h-[11px] shadow-sm" />
-                <div className="bg-gradient-to-br from-gray-600 to-gray-500 border-[3px] bg-muted h-11 w-3 border-stone-200 shadow-md rounded-md" />
-                <div className="w-5 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[4px] h-[11px] shadow-sm" />
-                <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[11px] w-[11px] shadow" />
-                <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[16px] h-[16px] shadow-md" />
-              </div>
-            </div>
+            <LogoMark className="mb-4" />
             <CardTitle className="text-2xl font-black font-serif text-gray-700">Account Settings</CardTitle>
             <CardDescription className="font-serif">Manage your profile and preferences</CardDescription>
           </CardHeader>
@@ -164,7 +155,7 @@ export default function SettingsPage() {
                 type="email"
                 value={email}
                 disabled
-                className="bg-gray-100 rounded-sm border-0 text-gray-500 focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="bg-gray-200/70 rounded-sm border-0 text-gray-600 shadow-inner focus-visible:ring-0 focus-visible:ring-offset-0"
               />
               <p className="text-xs text-gray-500 font-serif">Email cannot be changed from settings</p>
             </div>
