@@ -264,7 +264,7 @@ export default function JournalPage() {
         setMobilePane("list")
       }}
       className={cn(
-        "flex w-full min-w-0 items-center justify-between gap-2 rounded-lg px-3 py-2 text-left transition-colors",
+        "flex w-full min-w-0 items-center justify-between gap-2 rounded-[10px] px-3 py-2 text-left transition-colors",
         activeFolderId === id ? "bg-white shadow-sm" : "hover:bg-white/60",
       )}
     >
@@ -367,7 +367,7 @@ export default function JournalPage() {
                     setFolderName("")
                     setShowFolderDialog(true)
                   }}
-                  className="mt-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-black text-gray-500 transition-colors hover:bg-white/60 hover:text-gray-700"
+                  className="mt-2 flex w-full items-center gap-2 rounded-[10px] px-3 py-2 text-left font-serif text-xs font-black tracking-tight text-gray-500 transition-colors hover:bg-white/60 hover:text-gray-700"
                 >
                   <FolderPlus className="h-4 w-4" />
                   New folder
@@ -388,7 +388,8 @@ export default function JournalPage() {
                   <Button
                     size="sm"
                     onClick={handleNewNote}
-                    className="flex-shrink-0 bg-gradient-to-r from-logo-rose-300 to-logo-emerald-400 font-black text-white shadow-md hover:shadow-none"
+                    variant="accent"
+                    className="flex-shrink-0"
                   >
                     <Plus className="mr-1 h-4 w-4" />
                     New
@@ -401,14 +402,14 @@ export default function JournalPage() {
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Search notes"
-                    className="w-full rounded-lg border border-input bg-white/70 py-1.5 pl-8 pr-2 text-xs text-gray-600 outline-none placeholder:text-gray-400"
+                    className="w-full rounded-[10px] border-0 bg-white py-2 pl-8 pr-2 font-serif text-xs font-black tracking-tight text-gray-600 shadow-2xl outline-none placeholder:font-normal placeholder:text-gray-500"
                   />
                 </div>
 
                 <div className="space-y-1.5 md:max-h-[62vh] md:overflow-y-auto md:pr-1">
                   {isLoading ? (
                     [0, 1, 2].map((index) => (
-                      <div key={index} className="animate-pulse rounded-lg p-3">
+                      <div key={index} className="animate-pulse rounded-[10px] p-3">
                         <div className="mb-2 h-3 w-32 rounded bg-muted" />
                         <div className="h-3 w-20 rounded bg-muted/70" />
                       </div>
@@ -431,7 +432,7 @@ export default function JournalPage() {
                           setEditorInstanceKey((key) => key + 1)
                         }}
                         className={cn(
-                          "w-full min-w-0 rounded-lg px-3 py-2.5 text-left transition-colors",
+                          "w-full min-w-0 rounded-[10px] px-3 py-2.5 text-left transition-colors",
                           note.id === activeNoteId ? "bg-white shadow-sm" : "hover:bg-white/60",
                         )}
                       >
@@ -477,12 +478,12 @@ export default function JournalPage() {
                           type="button"
                           aria-label="Note actions"
                           onClick={() => setShowNoteMenu((open) => !open)}
-                          className="rounded-md p-2 text-gray-500 transition-colors hover:bg-muted hover:text-gray-700"
+                          className="rounded-[8px] p-2 text-gray-500 transition-colors hover:bg-muted hover:text-gray-700"
                         >
                           <MoreHorizontal className="h-4 w-4" />
                         </button>
                         {showNoteMenu && (
-                          <div className="absolute right-0 top-full z-30 mt-1 w-52 rounded-lg border-[3px] border-muted bg-white p-1 shadow-lg">
+                          <div className="absolute right-0 top-full z-30 mt-1 w-52 rounded-[10px] border-none bg-white p-1 shadow-2xl">
                             <div className="px-2 pb-1 pt-1.5 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">
                               Move to folder
                             </div>
@@ -598,7 +599,7 @@ export default function JournalPage() {
               value={folderName}
               onChange={(event) => setFolderName(event.target.value)}
               placeholder="Metta"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-gray-600"
+              className="h-[38px] w-full rounded-sm border-0 bg-white px-4 text-xs text-gray-700 shadow-2xl outline-none placeholder:text-gray-500"
             />
           </div>
           <DialogFooter className="sm:justify-end">
@@ -612,7 +613,7 @@ export default function JournalPage() {
                 if (folder) setActiveFolderId(folder.id)
                 setShowFolderDialog(false)
               }}
-              className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-400 font-black text-white shadow-md hover:shadow-none disabled:opacity-40"
+              variant="accent"
             >
               Create
             </Button>

@@ -3830,7 +3830,7 @@ export default function Home() {
                             existingMeditationDuration={loadedLibraryContext?.duration}
                             onBeforeAuthRedirect={saveCurrentToolDraft}
                           >
-                            <Button className="w-44 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105">
+                            <Button variant="ghost" className="w-44 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105">
                               <BookmarkPlus className="w-4 h-4 mr-2" />
                               Save to Library
                             </Button>
@@ -4181,7 +4181,7 @@ export default function Home() {
                           existingMeditationDuration={loadedLibraryContext?.duration}
                           onBeforeAuthRedirect={saveCurrentToolDraft}
                         >
-                          <Button
+                          <Button variant="ghost"
                             disabled={!processedDistributionBlob}
                             className="w-auto px-3 sm:w-44 sm:px-4 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
                           >
@@ -4189,7 +4189,7 @@ export default function Home() {
                             Save to Library
                           </Button>
                         </SaveMeditationDialog>
-                        <Button
+                        <Button variant="ghost"
                           disabled={!processedDistributionBlob || isToolConverting}
                           onClick={() => setToolConvertContext("adjuster")}
                           className="w-auto px-3 sm:w-44 sm:px-4 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
@@ -4292,7 +4292,7 @@ export default function Home() {
                                       <select
                                         value={noteType}
                                         onChange={(e) => setNoteType(e.target.value as "piano" | "synth" | "harp")}
-                                        className="text-xs bg-white border border-gray-300 rounded px-2 py-1"
+                                        className="rounded-[8px] border-[3px] border-gray-500 bg-white px-2 py-1 font-serif text-xs font-black tracking-tight text-gray-600 shadow-md transition-all hover:shadow-none focus-visible:outline-none"
                                       >
                                         <option value="piano">Piano</option>
                                         <option value="synth">Synth</option>
@@ -4574,7 +4574,7 @@ export default function Home() {
                           }}
                           onBeforeAuthRedirect={saveCurrentToolDraft}
                         >
-                          <Button
+                          <Button variant="ghost"
                             disabled={!generatedDistributionBlob}
                             className="w-auto px-3 sm:w-44 sm:px-4 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
                           >
@@ -4582,7 +4582,7 @@ export default function Home() {
                             Save to Library
                           </Button>
                         </SaveMeditationDialog>
-                        <Button
+                        <Button variant="ghost"
                           disabled={!generatedDistributionBlob || isToolConverting}
                           onClick={() => setToolConvertContext("creator")}
                           className="w-auto px-3 sm:w-44 sm:px-4 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"

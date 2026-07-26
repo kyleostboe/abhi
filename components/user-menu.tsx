@@ -25,7 +25,7 @@ export function UserMenu({ showLoginButton = false, buttonVariant = "default" }:
     if (!showLoginButton) return null
 
     return (
-      <Button
+      <Button variant="ghost"
         onClick={() => login()}
         size="sm"
         className="bg-white text-gray-600 shadow-lg hover:shadow-sm hover:text-gray-900 hover:bg-white font-bold text-xs h-8 px-4 rounded-[8px] transition-all duration-200"
@@ -64,7 +64,7 @@ export function UserMenu({ showLoginButton = false, buttonVariant = "default" }:
         <div className="flex items-center justify-start gap-2 p-2">
           <div className="flex flex-col space-y-1 leading-none">
             <p className="font-medium text-sm">{displayName}</p>
-            <p className="text-xs text-muted-foreground">{email}</p>
+            <p className="text-xs tracking-tight text-gray-500">{email}</p>
           </div>
         </div>
         <DropdownMenuSeparator />

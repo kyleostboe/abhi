@@ -135,7 +135,8 @@ function SignUpPageContent() {
                   {error && <p className="text-sm text-red-500 font-serif">{error}</p>}
                   <Button
                     type="submit"
-                    className="w-full bg-gradient-to-br from-logo-blue-400 to-logo-amber-300  text-white font-black shadow-md"
+                    variant="accent"
+                    className="w-full"
                     disabled={isLoading}
                   >
                     {isLoading ? "Creating account..." : "Sign up"}

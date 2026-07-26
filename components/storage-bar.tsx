@@ -38,7 +38,7 @@ export function StorageBar({
         <HardDrive className="h-5 w-5 text-gray-600 shrink-0" />
         <div className="flex-1 space-y-2">
           <div className="flex items-center justify-between text-xs text-gray-600 font-serif">
-            <span className="font-semibold">{isAuthenticated ? "Cloud Storage" : "Local Storage"}</span>
+            <span className="font-black tracking-tight">{isAuthenticated ? "Cloud Storage" : "Local Storage"}</span>
             <span>
               {formatFileSize(usedBytes)} {quotaBytes && `/ ${formatFileSize(quotaBytes)}`}
             </span>
@@ -81,7 +81,7 @@ export function StorageBar({
               </Button>
             </div>
             {backupProgress && (
-              <div className="text-xs text-muted-foreground text-center sm:text-left">
+              <div className="text-center text-xs tracking-tight text-gray-500 sm:text-left">
                 {backupProgress.message} ({Math.round(backupProgress.progress)}%)
               </div>
             )}
