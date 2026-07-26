@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { LogIn } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { buttonVariants } from "@/components/ui/button"
 
 interface AuthButtonsProps {
   onLogin?: () => void
@@ -13,13 +12,15 @@ interface AuthButtonsProps {
 export function AuthButtons({ onLogin, className }: AuthButtonsProps) {
   return (
     <div data-id="auth-buttons-container" className={cn("flex items-center relative z-20", className)}>
+      {/* Styled like the tools' "Save to Library" / "Convert Format" affordances: plain serif
+          text on the page that lifts slightly on hover, rather than a filled button. */}
       <Link
         data-id="login-button"
         href="/auth/login"
         onClick={onLogin}
-        className={cn(buttonVariants({ variant: "accent" }), "h-auto gap-1.5 px-4 py-[7px] text-xs active:shadow-none")}
+        className="inline-flex w-44 items-center justify-center gap-2 border-0 bg-transparent py-3 font-serif text-xs font-black text-gray-600 shadow-none transition-transform duration-150 hover:scale-105 active:scale-105"
       >
-        <LogIn className="w-4 h-4" />
+        <LogIn className="h-4 w-4" />
         Login / Sign Up
       </Link>
     </div>

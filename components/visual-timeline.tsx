@@ -4,7 +4,6 @@ import type React from "react"
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Trash2, Music2Icon, MicIcon, Check, X, Play, Copy, Pause } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -348,7 +347,7 @@ export function VisualTimeline({
   // their real startTime simultaneously instead of fighting for the same horizontal spot.
   const CIRCLE_SIZE_PX = 22 // sound cue / instruction+sound chips
   const SQUARE_HEIGHT_PX = 26 // recorded/uploaded audio chips
-  const SQUARE_MIN_WIDTH_PX = 22
+  const SQUARE_MIN_WIDTH_PX = SQUARE_HEIGHT_PX // a chip at its minimum is a true square
   const LANE_GAP_PX = 6
   const LANE_ROW_PX = Math.max(CIRCLE_SIZE_PX, SQUARE_HEIGHT_PX) + LANE_GAP_PX
   const TRACK_VERTICAL_PADDING_PX = 14
@@ -426,7 +425,7 @@ export function VisualTimeline({
               // Defensive clamp: keeps a chip on-screen if its startTime ever ends up past
               // totalDuration (e.g. default placement right after a track whose upload just
               // shrank the total duration to fit it) instead of rendering off the visible track.
-              const displayTime = Math.min(event.startTime, Math.max(0, totalDuration - 0.001))
+              const displayTime = Math.min(Math.max(0, event.startTime), Math.max(0, totalDuration - 0.001))
 
               return (
                 <motion.div
@@ -522,20 +521,30 @@ export function VisualTimeline({
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ delay: index * 0.05 }}
                   >
-                    <Card className={cn("p-4 bg-white shadow-md ", "border-[3px] border-muted")}>
+                    {/* No card or border here on purpose: a plain row reads cleaner, and that
+                        card treatment now belongs to the library/journal content cards. */}
+                    <div className="px-1 py-2">
                       <div className="flex items-center w-full mx-[-8px] px-1 pl-0">
                         <div className="flex items-center justify-center w-6 h-6 flex-shrink-0 mr-1.5">
                           <span className="text-gray-500 font-serif font-black text-sm">{index + 1}</span>
                         </div>
 
                         <div
-                          className={cn(
-                            "flex items-center justify-center text-white shadow-sm h-9 w-9 flex-shrink-0",
-                            event.type === "recorded_voice" ? "rounded-[9px]" : "rounded-full",
-                            getEventColor(event),
-                          )}
+                          className="flex flex-shrink-0 items-center justify-center"
+                          style={{ width: SQUARE_HEIGHT_PX, height: SQUARE_HEIGHT_PX }}
                         >
-                          {displayInfo.icon}
+                          <div
+                            className={cn(
+                              "flex items-center justify-center text-white shadow-sm",
+                              event.type === "recorded_voice" ? "rounded-[6px]" : "rounded-full",
+                              getEventColor(event),
+                            )}
+                            style={
+                              event.type === "recorded_voice"
+                                ? { width: SQUARE_HEIGHT_PX, height: SQUARE_HEIGHT_PX }
+                                : { width: CIRCLE_SIZE_PX, height: CIRCLE_SIZE_PX }
+                            }
+                          />
                         </div>
 
                         <div className="flex flex-col flex-grow min-w-0 ml-3">
@@ -595,12 +604,15 @@ export function VisualTimeline({
                             <p className="text-xs font-black text-gray-500">{displayInfo.subtitle}</p>
                           )}
                         </div>
-                        <div className="flex items-center gap-x-0.5 sm:gap-x-1.5 ml-auto">
+                        {/* Two columns rather than three: stacking delete over duplicate and
+                            sitting play to their left halves the width the controls take from
+                            the event's own information. */}
+                        <div className="ml-auto flex flex-shrink-0 items-center gap-x-0.5 sm:gap-x-1.5">
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => playEventAudio(event)}
-                            className="hover:text-gray-600 px-1.5 py-1.5 h-7 w-7"
+                            className="h-7 w-7 px-1.5 py-1.5 hover:text-gray-600"
                             title={playingEventId === event.id ? "Pause audio" : "Preview audio"}
                           >
                             {playingEventId === event.id ? (
@@ -609,27 +621,29 @@ export function VisualTimeline({
                               <Play className="h-3.5 w-3.5" />
                             )}
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => onDuplicateEvent(event)}
-                            className="hover:text-gray-600 px-1.5 py-1.5 h-7 w-7"
-                            title="Duplicate event"
-                          >
-                            <Copy className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => onRemoveEvent(event.id)}
-                            className="text-red-500 hover:text-red-700 px-1.5 py-1.5 h-7 w-7"
-                            title="Remove event"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          <div className="flex flex-col gap-y-0.5 sm:gap-y-1.5">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => onRemoveEvent(event.id)}
+                              className="h-7 w-7 px-1.5 py-1.5 text-red-500 hover:text-red-700"
+                              title="Remove event"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => onDuplicateEvent(event)}
+                              className="h-7 w-7 px-1.5 py-1.5 hover:text-gray-600"
+                              title="Duplicate event"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   </motion.div>
                 )
               })

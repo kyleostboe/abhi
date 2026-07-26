@@ -18,7 +18,7 @@ export type PendingConvertIntent =
       // so this carries the variant's own audio URL through the signup redirect.
       variantAudioUrl?: string
     }
-  | { kind: "tool"; context: "adjuster" | "creator"; targetFormat: AudioExportFormat }
+  | { kind: "tool"; context: "adjuster" | "creator" | "original"; targetFormat: AudioExportFormat }
 
 export function savePendingConvertIntent(intent: PendingConvertIntent): void {
   window.localStorage.setItem(KEY, JSON.stringify(intent))

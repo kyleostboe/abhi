@@ -10,7 +10,7 @@
  * notes have no session to belong to, so they live only under Notes.
  */
 
-import { CalendarDays, Clock, NotebookPen } from "lucide-react"
+import { Clock, NotebookPen } from "lucide-react"
 
 import type { JournalNote } from "@/hooks/use-journal-notes"
 import { cn } from "@/lib/utils"
@@ -72,7 +72,6 @@ export function SessionsView({
   if (sessions.length === 0) {
     return (
       <div className="flex min-h-[40vh] flex-col items-center justify-center p-8 text-center">
-        <CalendarDays className="mb-3 h-10 w-10 text-logo-emerald-400" />
         <p className="font-serif text-sm font-black text-gray-500">No practice sessions yet</p>
         <p className="mt-1 max-w-xs font-serif text-xs text-gray-400">
           Sessions appear here when you play a meditation, or when a note is linked to one.

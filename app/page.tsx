@@ -30,6 +30,7 @@ import { MarqueeText } from "@/components/marquee-text"
 
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
+import { LogoMark } from "@/components/logo-mark"
 import { TimerWheel } from "@/components/timer-wheel"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -136,10 +137,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
     >
       <Card className="overflow-hidden border-none shadow-lg bg-white ">
         <div className="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 px-6 py-[9px] text-center">
-          <h3 className="text-white flex items-center font-serif font-black text-center">
-            <Mic className="h-4 w-4 mr-2" />
-            Recorder
-          </h3>
+          <h3 className="text-center font-serif font-black text-white">Recorder</h3>
         </div>
         <div className="p-6 space-y-4 pt-3.5">
           <input
@@ -227,7 +225,7 @@ const RecorderSection: React.FC<RecorderSectionProps> = ({
                       description: `"${readyToAddToTimelineRecording.label.trim()}" added to timeline.`,
                     })
                   }}
-                  className="w-full bg-gradient-to-br from-logo-blue-400 to-logo-emerald-500 shadow-md text-white rounded-sm hover:shadow-none font-black"
+                  className="mx-auto w-full max-w-[352px] rounded-[11px] bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 font-serif font-black text-white shadow-md hover:shadow-none"
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Add to Timeline
@@ -566,7 +564,7 @@ export default function Home() {
   }, [])
 
   // == States for post-processing format conversion (Adjuster + Creator outputs) ==
-  const [toolConvertContext, setToolConvertContext] = useState<"adjuster" | "creator" | null>(null)
+  const [toolConvertContext, setToolConvertContext] = useState<"adjuster" | "creator" | "original" | null>(null)
   const [toolConvertFormat, setToolConvertFormat] = useState<AudioExportFormat>("opus")
   const [isToolConverting, setIsToolConverting] = useState(false)
   const [toolConvertStep, setToolConvertStep] = useState("")
@@ -874,7 +872,7 @@ export default function Home() {
 
         const convertedLabel = AUDIO_EXPORT_FORMAT_LABELS[intent.targetFormat]
         await saveOriginalAndConvertedCopy({
-          context: intent.context,
+          context: intent.context === "creator" ? "creator" : "adjuster",
           fileName: session.meta.fileName,
           originalBlob: session.audio,
           originalDuration: session.meta.duration,
@@ -999,7 +997,8 @@ export default function Home() {
   const handleToolConvert = async (saveMode: "replace" | "copy" | "account") => {
     const context = toolConvertContext
     if (!context || isToolConverting) return
-    const sourceBlob = context === "adjuster" ? processedDistributionBlob : generatedDistributionBlob
+    const sourceBlob =
+      context === "adjuster" ? processedDistributionBlob : context === "original" ? file : generatedDistributionBlob
     if (!sourceBlob) return
 
     if (saveMode === "account") {
@@ -1009,6 +1008,13 @@ export default function Home() {
       // risk; both the untouched original and the converted copy get saved once they're back
       // and authenticated (see the pending-convert-intent effect below).
       savePendingConvertIntent({ kind: "tool", context, targetFormat: toolConvertFormat })
+      if (context === "original" && file) {
+        await saveToolSession(
+          "original",
+          { fileName: file.name, duration: originalBuffer?.duration ?? 0, pausesAdjusted: 0, audioFormat: null },
+          file,
+        ).catch(() => {})
+      }
       await saveCurrentToolDraft()
       setToolConvertContext(null)
       router.push(`/auth/sign-up?returnTo=${encodeURIComponent(window.location.pathname)}`)
@@ -1016,7 +1022,9 @@ export default function Home() {
     }
 
     const sourceFileName =
-      context === "adjuster" ? file?.name || displayedFileName || "meditation" : meditationTitle || "meditation"
+      context === "adjuster" || context === "original"
+        ? file?.name || displayedFileName || "meditation"
+        : meditationTitle || "meditation"
     const baseName = sourceFileName.replace(/\.[^/.]+$/, "")
     const convertedLabel = AUDIO_EXPORT_FORMAT_LABELS[toolConvertFormat]
 
@@ -1046,7 +1054,14 @@ export default function Home() {
 
       if (saveMode === "replace") {
         const url = URL.createObjectURL(result.blob)
-        if (context === "adjuster") {
+        if (context === "original") {
+          const convertedName = `${baseName}.${extensionForContainer(result.format.container)}`
+          setFile(new File([result.blob], convertedName, { type: result.blob.type }))
+          setOriginalUrl((previousUrl) => {
+            if (previousUrl) URL.revokeObjectURL(previousUrl)
+            return url
+          })
+        } else if (context === "adjuster") {
           setProcessedDistributionBlob(result.blob)
           setProcessedDistributionMetadata(result.format)
           setProcessedFileSize(result.blob.size)
@@ -1088,12 +1103,21 @@ export default function Home() {
       } else {
         setToolConvertStep("Saving to library...")
         await saveOriginalAndConvertedCopy({
-          context,
+          context: context === "creator" ? "creator" : "adjuster",
           fileName: sourceFileName,
           originalBlob: sourceBlob,
-          originalDuration: context === "adjuster" ? actualDuration ?? audioBuffer.duration : creatorTotalDuration,
+          originalDuration:
+            context === "adjuster"
+              ? actualDuration ?? audioBuffer.duration
+              : context === "original"
+                ? audioBuffer.duration
+                : creatorTotalDuration,
           originalAudioFormat:
-            (context === "adjuster" ? processedDistributionMetadata : generatedDistributionMetadata) ?? undefined,
+            (context === "adjuster"
+              ? processedDistributionMetadata
+              : context === "original"
+                ? undefined
+                : generatedDistributionMetadata) ?? undefined,
           pausesAdjusted: context === "adjuster" ? pausesAdjusted : undefined,
           convertedBlob: result.blob,
           convertedDuration: audioBuffer.duration,
@@ -2523,25 +2547,20 @@ export default function Home() {
 
       try {
         const lastMode = window.sessionStorage.getItem(ACTIVE_MODE_SESSION_KEY) as "adjuster" | "creator" | null
+        if (lastMode !== "adjuster" && lastMode !== "creator") return
 
-        if (lastMode === "adjuster") {
-          const persistedAdjuster = window.sessionStorage.getItem(ADJUSTER_SESSION_KEY)
-          if (persistedAdjuster) {
-            const importData = JSON.parse(persistedAdjuster)
-            console.log("[v0] Restoring persisted adjuster meditation:", importData)
-            setActiveTab("adjuster")
-            setActiveMode("adjuster")
-            void importFromLibrary(importData, "adjuster")
-          }
-        } else if (lastMode === "creator") {
-          const persistedCreator = window.sessionStorage.getItem(CREATOR_SESSION_KEY)
-          if (persistedCreator) {
-            const importData = JSON.parse(persistedCreator)
-            console.log("[v0] Restoring persisted creator meditation:", importData)
-            setActiveTab("creator")
-            setActiveMode("creator")
-            void importFromLibrary(importData, "creator")
-          }
+        // Return to whichever tool was last open, whether or not a meditation was loaded into
+        // it. This used to be conditional on a persisted meditation existing, so leaving the
+        // Creator empty and coming back from the Library always landed on the Adjuster.
+        setActiveTab(lastMode)
+        setActiveMode(lastMode)
+
+        const persistedKey = lastMode === "adjuster" ? ADJUSTER_SESSION_KEY : CREATOR_SESSION_KEY
+        const persisted = window.sessionStorage.getItem(persistedKey)
+        if (persisted) {
+          const importData = JSON.parse(persisted)
+          console.log(`[v0] Restoring persisted ${lastMode} meditation:`, importData)
+          void importFromLibrary(importData, lastMode)
         }
       } catch (error) {
         console.error("[v0] Error restoring persisted meditation:", error)
@@ -3484,7 +3503,7 @@ export default function Home() {
   }, [isProcessing, isGeneratingAudio])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-0 md:p-8 pt-0 md:pt-24">
+    <div className="relative min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-0 md:p-8 pt-0 md:pt-24">
       <Navigation showProfileButton />
 
       <div className="relative">
@@ -3502,7 +3521,7 @@ export default function Home() {
         )}
 
         {!isAuthenticated && (
-          <div className="flex justify-center py-4 z-10 pt-20 md:pt-0 pb-7">
+          <div className="absolute inset-x-0 top-[68px] z-20 flex justify-center md:static md:z-10 md:pb-7 md:pt-0">
             <AuthButtons onLogin={login} />
           </div>
         )}
@@ -3549,7 +3568,12 @@ export default function Home() {
                 transition={{ delay: 0.2, duration: 0.5 }}
               >
                 <h1
-                  className="text-5xl text-transparent bg-clip-text bg-gradient-to-bl from-logo-rose-300 to-logo-rose-500 transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 text-center tracking-tighter mt-[55px]"
+                  className={cn(
+                    "text-5xl text-transparent bg-clip-text bg-gradient-to-bl from-logo-rose-300 to-logo-rose-500 transform hover:scale-105 transition-transform duration-700 ease-out font-black md:text-6xl mb-0 text-center tracking-tighter md:mt-[55px]",
+                    // On a phone the floating Login / Sign Up button sits over the top of the
+                    // card, so the wordmark needs to start below it.
+                    isAuthenticated ? "mt-[84px]" : "mt-[124px]",
+                  )}
                   style={{
                     fontFamily: 'Georgia, "Times New Roman", serif',
                     textShadow: "0 0 25px rgba(139, 69, 69, 0.25)",
@@ -3560,18 +3584,11 @@ export default function Home() {
                 <div className="font-black font-serif mb-[7px] text-xs text-logo-rose-600 tracking-tight">
                   Meditation Tool
                 </div>
-                <div className="flex justify-center items-center mb-4 space-x-[3px]">
-                  <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[13px] h-[13px] shadow-md"></div>
-                  <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px] shadow"></div>
-                  <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-[3px] transform h-[9px] shadow-sm"></div>
-                  <div className="w-4 bg-gradient-to-r from-gray-600 to-gray-500 border-2 border-stone-200 h-[34px] shadow-md rounded w-[9px]"></div>
-                  <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[3px] transform h-[9px] pl-0 shadow-sm"></div>
-                  <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[9px] w-[9px] shadow"></div>
-                  <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[13px] h-[13px] shadow-md"></div>
-                </div>
+                <LogoMark className="mb-6" />
 
-                {/* Mode Switch */}
-                <div className="flex justify-center items-center mb-4 space-y-4 flex-row my-[33px]">
+                {/* Mode Switch — mb-6 above matches the Library and Journal, where the mark sits
+                    exactly 24px above their switches. */}
+                <div className="flex justify-center items-center flex-row mb-[33px]">
                   <div className="flex mx-auto items-center p-1 font-serif text-gray-600 shadow-inner rounded-sm gap-1 w-fit bg-muted">
                     <button
                       onClick={() => {
@@ -3813,7 +3830,7 @@ export default function Home() {
                         <div className="rounded-sm p-3 px-0 shadow-none border-gray-500 bg-transparent border-0 mb-0">
                           <audio controls className="w-full" src={originalUrl}></audio>
                         </div>
-                        <div className="px-3.5 text-center tracking-tight">
+                        <div className="px-3.5 text-center tracking-tight flex flex-row flex-nowrap items-center justify-center gap-2">
                           <SaveMeditationDialog
                             audioUrl={originalUrl}
                             distributionBlob={file ?? undefined}
@@ -3830,11 +3847,23 @@ export default function Home() {
                             existingMeditationDuration={loadedLibraryContext?.duration}
                             onBeforeAuthRedirect={saveCurrentToolDraft}
                           >
-                            <Button variant="ghost" className="w-44 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105">
+                            <Button
+                              variant="ghost"
+                              className="w-auto px-3 sm:w-44 sm:px-4 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
+                            >
                               <BookmarkPlus className="w-4 h-4 mr-2" />
                               Save to Library
                             </Button>
                           </SaveMeditationDialog>
+                          <Button
+                            variant="ghost"
+                            disabled={!file || isToolConverting}
+                            onClick={() => setToolConvertContext("original")}
+                            className="w-auto px-3 sm:w-44 sm:px-4 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
+                          >
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Convert Format
+                          </Button>
                         </div>
                       </motion.div>
                     )}
@@ -4070,7 +4099,7 @@ export default function Home() {
                           className="mt-4"
                         >
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center py-3 px-2 min-h-[72px]">
+                            <div className="flex min-h-[72px] flex-col items-center justify-center rounded-sm border-[3px] border-muted bg-white px-2 py-3 shadow-md">
                               <div className="text-[10px] font-serif font-black uppercase tracking-wide text-gray-500 mb-1">
                                 Content:
                               </div>
@@ -4078,7 +4107,7 @@ export default function Home() {
                                 {formatTime(contentSpeedMultiplier > 1 ? audioAnalysis.contentDuration / contentSpeedMultiplier : audioAnalysis.contentDuration)}
                               </div>
                             </div>
-                            <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center py-3 px-2 min-h-[72px]">
+                            <div className="flex min-h-[72px] flex-col items-center justify-center rounded-sm border-[3px] border-muted bg-white px-2 py-3 shadow-md">
                               <div className="text-[10px] font-serif font-black uppercase tracking-wide text-gray-500 mb-1">
                                 Silence:
                               </div>
@@ -4086,7 +4115,7 @@ export default function Home() {
                                 {formatTime(audioAnalysis.totalSilence)}
                               </div>
                             </div>
-                            <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center py-3 px-2 min-h-[72px]">
+                            <div className="flex min-h-[72px] flex-col items-center justify-center rounded-sm border-[3px] border-muted bg-white px-2 py-3 shadow-md">
                               <div className="text-[10px] font-serif font-black uppercase tracking-wide text-gray-500 mb-1">
                                 Pauses:
                               </div>
@@ -4094,7 +4123,7 @@ export default function Home() {
                                 {audioAnalysis.silenceRegions}
                               </div>
                             </div>
-                            <div className="bg-white rounded-sm shadow-md flex flex-col items-center justify-center py-3 px-2 min-h-[72px]">
+                            <div className="flex min-h-[72px] flex-col items-center justify-center rounded-sm border-[3px] border-muted bg-white px-2 py-3 shadow-md">
                               <div className="text-[10px] font-serif font-black uppercase tracking-wide text-gray-500 mb-1">
                                 Range:
                               </div>
@@ -4120,7 +4149,7 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <div className="relative flex items-center gap-2 mx-6 lg:mx-auto lg:max-w-[calc(50%-56px)] rounded-[11px] bg-gradient-to-b from-gray-600 via-gray-500 to-[#9b8da3] pr-2 shadow-md transition-all duration-500 hover:shadow-none">
+                    <div className="relative mx-auto flex w-[calc(100%-48px)] max-w-[352px] items-center gap-2 rounded-[11px] bg-gradient-to-b from-gray-600 via-gray-500 to-[#9b8da3] pr-2 shadow-md transition-all duration-500 hover:shadow-none">
                       <button
                         type="button"
                         onClick={handleProcessAudio}
@@ -4219,11 +4248,10 @@ export default function Home() {
                     <Card className="overflow-visible bg-transparent max-w-2xl mx-auto rounded-2xl shadow-none">
                       <div className="p-6 text-sm font-black py-0 bg-transparent shadow-none text-center px-6 flex justify-center">
                         <div className="grid grid-cols-1 text-gray-600 justify-items-center gap-3 pb-0 w-full max-w-md">
+                          {/* The wheel and the field are self-explanatory; the "Duration" and
+                              "Title" labels above them were pure repetition. */}
                           <div className="text-center tracking-tight">
-                            <Label htmlFor="creator-duration" className="text-gray-600 text-sm font-black">
-                              Duration
-                            </Label>
-                            <div id="creator-duration" className="mt-2 flex flex-col items-center gap-6">
+                            <div id="creator-duration" className="flex flex-col items-center gap-6">
                               <TimerWheel
                                 value={creatorDurationDraft}
                                 onChange={handleDurationWheelChange}
@@ -4232,16 +4260,14 @@ export default function Home() {
                             </div>
                           </div>
                           <div className="w-full">
-                            <Label htmlFor="meditation-title" className="text-gray-600 text-sm font-black">
-                              Title
-                            </Label>
                             <input
                               id="meditation-title"
                               type="text"
+                              aria-label="Meditation title"
                               value={meditationTitle}
                               onChange={handleMeditationTitleChange}
-                              placeholder="Title:"
-                              className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-xs font-black text-gray-600 border-0 shadow-2xl h-9 mt-2"
+                              placeholder="Title your meditation"
+                              className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-xs font-black text-gray-600 border-0 shadow-2xl h-9"
                             />
                           </div>
                         </div>
@@ -4261,10 +4287,7 @@ export default function Home() {
                     >
                       <Card className="overflow-hidden border-none shadow-lg bg-white ">
                       <div className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 px-6 py-[9px] text-center pt-[9px]">
-                        <h3 className="text-white flex items-center font-serif font-black text-center">
-                          <Music2Icon className="h-4 w-4 mr-2" />
-                          Sound Cues
-                          </h3>
+                        <h3 className="text-center font-serif font-black text-white">Sound Cues</h3>
                         </div>
                         <div className="px-6 pb-0 pt-[21px]">
                           <input
@@ -4292,7 +4315,7 @@ export default function Home() {
                                       <select
                                         value={noteType}
                                         onChange={(e) => setNoteType(e.target.value as "piano" | "synth" | "harp")}
-                                        className="rounded-[8px] border-[3px] border-gray-500 bg-white px-2 py-1 font-serif text-xs font-black tracking-tight text-gray-600 shadow-md transition-all hover:shadow-none focus-visible:outline-none"
+                                        className="text-xs bg-white border border-gray-300 rounded px-2 py-1"
                                       >
                                         <option value="piano">Piano</option>
                                         <option value="synth">Synth</option>
@@ -4427,7 +4450,7 @@ export default function Home() {
                             </Accordion>
                           </div>
                           <Button
-                            className="bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 shadow-md text-white rounded-[11px] hover:shadow-none font-serif font-black mt-4"
+                            className="mx-auto mt-4 w-full max-w-[352px] rounded-[11px] bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 font-serif font-black text-white shadow-md hover:shadow-none"
                             onClick={handleAddInstructionSoundEvent}
                             disabled={
                               !customInstructionText.trim() || (!selectedSoundCue && selectedNotes.length === 0)
@@ -4516,7 +4539,7 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
                   >
-                    <div className="relative flex items-center gap-2 mx-6 lg:mx-auto lg:max-w-[calc(50%-56px)] rounded-[11px] bg-gradient-to-b from-gray-600 via-gray-500 to-[#9b8da3] pr-2 shadow-md transition-all duration-500 hover:shadow-none">
+                    <div className="relative mx-auto flex w-[calc(100%-48px)] max-w-[352px] items-center gap-2 rounded-[11px] bg-gradient-to-b from-gray-600 via-gray-500 to-[#9b8da3] pr-2 shadow-md transition-all duration-500 hover:shadow-none">
                       <button
                         type="button"
                         onClick={handleExportAudio}

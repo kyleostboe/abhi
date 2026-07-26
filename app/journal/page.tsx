@@ -8,7 +8,6 @@ import {
   ChevronRight,
   FolderPlus,
   MoreHorizontal,
-  NotebookPen,
   Plus,
   Search,
 } from "lucide-react"
@@ -290,21 +289,24 @@ export default function JournalPage() {
       <Navigation showProfileButton />
       <main className="px-0">
         <div className="w-full space-y-0 md:mx-auto md:max-w-5xl">
-          {!isAuthenticated && (
-            <div className="z-10 flex justify-center pb-7 pt-20 md:pt-0">
-              <AuthButtons onLogin={login} />
-            </div>
-          )}
-
           <div className="relative w-full md:max-w-4xl md:mx-auto backdrop-blur-lg shadow-none md:shadow-xl overflow-hidden transition-colors rounded-none md:rounded-3xl duration-300 ease-in-out">
-            {!isAuthenticated && (
-              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center space-y-3 bg-white/80 p-6 text-center backdrop-blur-sm">
-                <p className="font-serif text-lg font-black text-gray-800">Create account to save</p>
+            {/* Signed out: a blank version of the same card rather than a blurred overlay, so
+                the page still runs edge-to-edge and top-to-top on a phone. */}
+            {!isAuthenticated ? (
+              <div className="relative overflow-hidden">
+                <HeaderWash />
+                {/* Same placement as every other page: directly under the navigation bar. */}
+                <div className="absolute inset-x-0 top-[68px] z-20 flex justify-center md:top-6">
+                  <AuthButtons onLogin={login} />
+                </div>
+                <div className="relative flex min-h-[70vh] flex-col items-center justify-center px-6 pb-10 pt-24 text-center md:pt-14">
+                  <p className="font-serif text-lg font-black text-gray-700">Create account to use Journal</p>
+                </div>
               </div>
-            )}
-
+            ) : (
+            <>
             {/* Header + signature switch, matching the Library's logo/control arrangement. */}
-            <div className="relative overflow-hidden border-b border-muted px-4 pb-6 pt-20 sm:px-8 md:pt-10 lg:px-12">
+            <div className="relative overflow-hidden border-b border-muted px-4 pb-6 pt-24 sm:px-8 md:pt-14 lg:px-12">
               <HeaderWash />
               <LogoMark className="relative mb-6" />
               <div className="relative flex justify-center">
@@ -342,11 +344,11 @@ export default function JournalPage() {
                 }}
               />
             ) : (
-            <div className="grid min-h-[70vh] md:grid-cols-[200px_minmax(0,280px)_minmax(0,1fr)]">
+            <div className="grid min-h-[70vh] w-full min-w-0 grid-cols-1 md:grid-cols-[200px_minmax(0,280px)_minmax(0,1fr)]">
               {/* Folders */}
               <aside
                 className={cn(
-                  "border-muted bg-muted/30 p-3 md:block md:border-r",
+                  "min-w-0 border-muted bg-muted/30 p-3 md:block md:border-r",
                   mobilePane === "list" ? "block" : "hidden",
                   "md:pt-6",
                 )}
@@ -377,7 +379,7 @@ export default function JournalPage() {
               {/* Note list */}
               <section
                 className={cn(
-                  "border-muted p-3 md:block md:border-r md:pt-6",
+                  "min-w-0 border-muted p-3 md:block md:border-r md:pt-6",
                   mobilePane === "list" ? "block" : "hidden",
                 )}
               >
@@ -385,15 +387,14 @@ export default function JournalPage() {
                   <div className="min-w-0 truncate font-serif text-sm font-black text-gray-700">
                     {activeFolderName}
                   </div>
-                  <Button
-                    size="sm"
+                  <button
+                    type="button"
                     onClick={handleNewNote}
-                    variant="accent"
-                    className="flex-shrink-0"
+                    className="flex flex-shrink-0 items-center gap-1 rounded-[10px] px-2 py-1 font-serif text-xs font-black tracking-tight text-gray-500 transition-colors hover:bg-white/60 hover:text-gray-700"
                   >
-                    <Plus className="mr-1 h-4 w-4" />
+                    <Plus className="h-4 w-4" />
                     New
-                  </Button>
+                  </button>
                 </div>
 
                 <div className="relative mb-3">
@@ -416,7 +417,6 @@ export default function JournalPage() {
                     ))
                   ) : visibleNotes.length === 0 ? (
                     <div className="px-2 py-10 text-center">
-                      <NotebookPen className="mx-auto mb-3 h-8 w-8 text-logo-rose-300" />
                       <p className="font-serif text-sm font-black text-gray-500">
                         {search ? "No matching notes" : "No notes yet"}
                       </p>
@@ -556,7 +556,6 @@ export default function JournalPage() {
                   </div>
                 ) : (
                   <div className="flex h-full min-h-[40vh] flex-col items-center justify-center text-center">
-                    <NotebookPen className="mb-3 h-10 w-10 text-logo-rose-300" />
                     <p className="font-serif text-sm font-black text-gray-500">
                       Select a note, or start a new one.
                     </p>
@@ -564,6 +563,8 @@ export default function JournalPage() {
                 )}
               </section>
             </div>
+            )}
+            </>
             )}
           </div>
         </div>
