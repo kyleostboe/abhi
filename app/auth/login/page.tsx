@@ -115,11 +115,7 @@ function LoginPageContent() {
                     />
                   </div>
                   {error && <p className="text-sm text-red-500 font-serif">{error}</p>}
-                  <Button
-                    type="submit"
-                    className="w-full bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500  text-white font-black shadow-md"
-                    disabled={isLoading}
-                  >
+                  <Button type="submit" variant="accent" className="w-full" disabled={isLoading}>
                     {isLoading ? "Logging in..." : "Login"}
                   </Button>
                 </div>

@@ -26,7 +26,8 @@ export default async function SignUpSuccessPage({
                 We've sent you a confirmation email. Please check your inbox and click the link to verify your account
                 before signing in.
               </p>
-              <Button asChild className="w-full bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 text-white font-black shadow-md">
+              <Button asChild variant="accent"
+                className="w-full">
                 <Link href={`/auth/login?returnTo=${encodeURIComponent(returnTo)}`}>Go to Login</Link>
               </Button>
             </CardContent>

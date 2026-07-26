@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
 import { LogoMark } from "@/components/logo-mark"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -91,17 +91,12 @@ export default function SettingsPage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 pt-20 md:p-8 md:pt-24">
         <Navigation />
         <div className="container max-w-4xl mx-auto py-8 px-4">
-          <Card className="p-12 text-center border-[3px] border-muted shadow-xl">
-            <h2 className="text-2xl font-black font-serif text-gray-700 mb-4">
-              Sign in to access settings
-            </h2>
-            <p className="text-gray-600 font-serif mb-6">
+          <Card className="rounded-xl border-none bg-white p-12 text-center shadow-lg">
+            <h2 className="mb-4 font-serif text-2xl font-black tracking-tight text-gray-700">Sign in to access settings</h2>
+            <p className="mb-6 font-serif text-xs tracking-tight text-gray-500">
               Create an account or sign in to manage your profile and preferences.
             </p>
-            <Button
-              onClick={() => (window.location.href = "/auth/login")}
-              className="bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 text-white font-black shadow-md"
-            >
+            <Button onClick={() => (window.location.href = "/auth/login")} variant="accent">
               Sign in
             </Button>
           </Card>
@@ -115,7 +110,7 @@ export default function SettingsPage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 pt-20 md:p-8 md:pt-24">
         <Navigation />
         <div className="container max-w-4xl mx-auto py-8 px-4 text-center">
-          <p className="text-gray-600 font-serif">Loading settings...</p>
+          <p className="font-serif text-xs tracking-tight text-gray-500">Loading settings...</p>
         </div>
       </div>
     )
@@ -125,57 +120,50 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 pt-20 md:p-8 md:pt-24">
       <Navigation />
       <div className="container max-w-4xl mx-auto py-8 px-4">
-        <Card className="mx-auto w-full max-w-2xl border-[3px] border-muted shadow-xl">
-          <CardHeader className="text-center">
-            <LogoMark className="mb-4" />
-            <CardTitle className="text-2xl font-black font-serif text-gray-700">Account Settings</CardTitle>
-            <CardDescription className="font-serif">Manage your profile and preferences</CardDescription>
+        {/* Same shell as the Home tools: white, borderless, xl radius, gradient title strip. */}
+        <Card className="mx-auto w-full max-w-2xl overflow-hidden rounded-xl border-none bg-white shadow-lg">
+          <div className="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 px-6 py-[9px] text-center">
+            <h3 className="font-serif text-base font-black tracking-tight text-white">Account Settings</h3>
+          </div>
+          <CardHeader className="pb-4 text-center">
+            <LogoMark className="mb-3" />
+            <CardDescription>Manage your profile and preferences</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid gap-2">
-              <Label htmlFor="displayName" className="font-black text-gray-700">
-                Display Name
-              </Label>
+              <Label htmlFor="displayName">Display Name</Label>
               <Input
                 id="displayName"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Enter your display name"
-                className="bg-white shadow-2xl rounded-sm border-0 text-gray-700 placeholder:text-gray-500 focus-visible:ring-0 focus-visible:ring-offset-0"
               />
-              <p className="text-xs text-gray-500 font-serif">This is how your name will appear in the app</p>
+              <p className="font-serif text-xs tracking-tight text-gray-500">This is how your name will appear in the app</p>
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="email" className="font-black text-gray-700">
-                Email Address
-              </Label>
+              <Label htmlFor="email">Email Address</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 disabled
-                className="bg-gray-200/70 rounded-sm border-0 text-gray-600 shadow-inner focus-visible:ring-0 focus-visible:ring-offset-0"
               />
-              <p className="text-xs text-gray-500 font-serif">Email cannot be changed from settings</p>
+              <p className="font-serif text-xs tracking-tight text-gray-500">Email cannot be changed from settings</p>
             </div>
 
             <div className="flex justify-end gap-3 rounded-sm font-serif">
               <Button variant="ghost" className="text-gray-600" onClick={() => window.history.back()}>
                 Cancel
               </Button>
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 text-white font-black shadow-md"
-              >
+              <Button onClick={handleSave} disabled={isSaving} variant="accent">
                 {isSaving ? "Saving..." : "Save Changes"}
               </Button>
             </div>
 
-            <div className="rounded-md border-[3px] border-muted bg-muted/30 p-4">
-              <h3 className="font-black font-serif text-gray-700 text-sm mb-2">Account Information</h3>
-              <div className="text-sm text-gray-600 space-y-1 font-serif">
+            <div className="rounded-[10px] bg-muted/60 p-4 shadow-inner">
+              <h3 className="mb-2 font-serif text-sm font-black tracking-tight text-gray-700">Account Information</h3>
+              <div className="space-y-1 font-serif text-xs tracking-tight text-gray-600">
                 <p>Account ID: {user?.id}</p>
                 <p>Email: {email}</p>
                 <p className="text-logo-teal-600 mt-3 font-black text-xs">

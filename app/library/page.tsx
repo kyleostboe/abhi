@@ -2713,16 +2713,15 @@ export default function LibraryPage() {
                     }`}
                   >
                     <div className={`${shouldStackFilters ? "" : "md:[grid-row:span_2]"}`}>
-                      <div className="p-0.5 bg-gradient-to-br from-gray-500 to-stone-300 rounded-sm shadow-lg py-1 px-[5px]">
-                        <div className="bg-white rounded-sm">
-                          <input
-                            placeholder="Search meditations..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none focus-visible:border-[3px] focus-visible:border-gray-600 disabled:cursor-not-allowed disabled:border-gray-500 md:text-xs rounded-[10px] bg-white py-4 px-4 h-11 border-stone-200 bg-transparent text-gray-600 placeholder-gray-400 text-xs border-0 shadow-none"
-                          />
-                        </div>
-                      </div>
+                      {/* Same field treatment as the Home recorder's label input: white,
+                          borderless, lifted by a shadow. The old gradient-bordered wrapper was
+                          the only framed input left in the app. */}
+                      <input
+                        placeholder="Search meditations..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="flex h-11 w-full rounded-[10px] border-0 bg-white px-4 text-xs font-black tracking-tight text-gray-600 shadow-2xl ring-offset-background placeholder:font-normal placeholder:text-gray-500 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs"
+                      />
                       <div className="mt-3 text-center">
                         <Dialog
                           open={isUploadDialogOpen}
@@ -2734,7 +2733,7 @@ export default function LibraryPage() {
                           }}
                         >
                           <DialogTrigger asChild>
-                            <Button className="w-44 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105">
+                            <Button variant="ghost" className="w-44 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105">
                               <Upload className="w-4 h-4 mr-2" />
                               Upload Meditation
                             </Button>
@@ -2857,11 +2856,11 @@ export default function LibraryPage() {
 
                   {/* Meditations Grid */}
                   {isLoadingLibrary ? (
-                    <Card className="p-12 text-center flex items-center justify-center">
+                    <Card className="flex items-center justify-center rounded-xl border-none bg-white p-12 text-center shadow-lg">
                       <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
                     </Card>
                   ) : displayedGroups.length === 0 ? (
-                    <Card className="p-12 text-center">
+                    <Card className="rounded-xl border-none bg-white p-12 text-center shadow-lg">
                       <p className="text-gray-500 text-base">
                         {selectedPlaylist
                           ? "This playlist is empty. Add a meditation to get started :)"
@@ -2891,8 +2890,10 @@ export default function LibraryPage() {
                             className="group w-full text-left cursor-pointer"
                             onClick={() => openMeditationPlayer(base, variants)}
                           >
-                            <Card className="w-full border border-muted bg-white backdrop-blur-sm shadow-md">
-                              <div className="relative flex items-center justify-between p-4 border-muted border-[3px] rounded-sm overflow-visible">
+                            {/* One surface, not two: the card is the frame. overflow stays visible so the
+                                source badge can overhang the top-right corner. */}
+                            <Card className="w-full rounded-xl border-none bg-white shadow-lg">
+                              <div className="relative flex items-center justify-between overflow-visible p-4">
                                 <Badge
                                   variant="outline"
                                   className={`absolute -top-2 -right-2 translate-x-[7px] -translate-y-[5px] z-10 !border-0 !px-3 !py-1 shadow-inner text-gray-500 text-xs font-black rounded-[6px] bg-gradient-to-r ${
@@ -3023,7 +3024,7 @@ export default function LibraryPage() {
                   <div className="mb-6">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button className="bg-gradient-to-br from-logo-amber-300 to-logo-teal-500 rounded-[10px] shadow-md hover:shadow-none text-white text-sm font-black">
+                        <Button className="bg-gradient-to-br from-logo-amber-300 to-logo-teal-500 rounded-[11px] shadow-md hover:shadow-none text-white text-sm font-black">
                           <FolderPlus className="w-4 h-4 mr-2" />
                           Create Playlist
                         </Button>
@@ -3063,7 +3064,7 @@ export default function LibraryPage() {
 
                   {/* Playlists Grid */}
                   {playlists.length === 0 ? (
-                    <Card className="p-12 text-center">
+                    <Card className="rounded-xl border-none bg-white p-12 text-center shadow-lg">
                       <FolderPlus className="w-16 h-16 mx-auto text-gray-400 mb-4" />
                       <h3 className="text-xl font-black text-gray-600 mb-2">No playlists created yet</h3>
                       <p className="text-gray-500 mb-4">Create your first playlist to organize your meditations.</p>
@@ -3075,7 +3076,7 @@ export default function LibraryPage() {
                         const totalDuration = playlistMeditations.reduce((sum, med) => sum + med.duration, 0)
 
                         return (
-                          <Card key={playlist.id} className="p-6 hover:shadow-lg transition-shadow">
+                          <Card key={playlist.id} className="rounded-xl border-none bg-white p-6 shadow-lg transition-shadow hover:shadow-none">
                             <div className="flex items-start justify-between mb-4">
                               <div className="flex-1">
                                 <h3 className="font-black text-lg mb-1">{playlist.name}</h3>
@@ -3295,14 +3296,14 @@ export default function LibraryPage() {
                                               {isRecording && (
                                                 <span className="flex items-center gap-1">
                                                   <Volume2 className="h-3 w-3 text-logo-rose-500" />
-                                                  <span className="text-logo-rose-500 font-semibold">
+                                                  <span className="text-logo-rose-500 font-black">
                                                     {timelineEvent.recordingLabel?.trim() || "Recording"}
                                                   </span>
                                                 </span>
                                               )}
                                               <span className="flex items-center gap-1">
                                                 <Music className="h-3 w-3 text-logo-teal-500" />
-                                                <span className="text-logo-teal-500 font-semibold">Cue</span>
+                                                <span className="text-logo-teal-500 font-black">Cue</span>
                                               </span>
                                             </div>
                                           </div>
@@ -3588,7 +3589,7 @@ export default function LibraryPage() {
                                 >
                                   <DialogTrigger asChild>
                                     <Button
-                                      className="flex-1 shadow-md bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 rounded-[10px] hover:shadow-none text-white font-black text-xs flex items-center justify-center gap-2"
+                                      className="flex-1 shadow-md bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 rounded-[11px] hover:shadow-none text-white font-black text-xs flex items-center justify-center gap-2"
                                       disabled={isQuickAdjustProcessing}
                                     >
                                       <Wand2 className="h-4 w-4" />
@@ -3771,7 +3772,7 @@ export default function LibraryPage() {
                                 <Dialog open={isJournalHistoryOpen} onOpenChange={setIsJournalHistoryOpen}>
                                   <DialogTrigger asChild>
                                     <Button
-                                      className="flex-1 shadow-md bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 rounded-[10px] hover:shadow-none text-white font-black text-xs flex items-center justify-center gap-2"
+                                      className="flex-1 shadow-md bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 rounded-[11px] hover:shadow-none text-white font-black text-xs flex items-center justify-center gap-2"
                                       disabled={!selectedMeditation}
                                     >
                                       <BookOpenCheck className="h-4 w-4" />
@@ -3846,7 +3847,7 @@ export default function LibraryPage() {
                                                   View by Date
                                                 </Button>
                                                 <Button
-                                                  className="bg-gradient-to-r from-logo-rose-300 to-logo-emerald-400 text-white font-black shadow-md hover:shadow-none"
+                                                  variant="accent"
                                                   onClick={() => {
                                                     const basePath = selectedMeditation
                                                       ? `/journal?meditation=${selectedMeditation.id}&entry=${activeJournalEntry.id}`
@@ -3872,7 +3873,7 @@ export default function LibraryPage() {
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button
-                                      className="flex-1 shadow-md bg-gradient-to-b from-gray-600 via-gray-500 to-[#9b8da3] rounded-[10px] hover:shadow-none text-white font-black text-xs"
+                                      className="flex-1 shadow-md bg-gradient-to-b from-gray-600 via-gray-500 to-[#9b8da3] rounded-[11px] hover:shadow-none text-white font-black text-xs"
                                       disabled={isQuickAdjustProcessing}
                                     >
                                       Open In

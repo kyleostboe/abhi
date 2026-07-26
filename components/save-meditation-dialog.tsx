@@ -379,7 +379,7 @@ export function SaveMeditationDialog({
       {!hideTrigger && (
         <DialogTrigger asChild>
           {children || (
-            <Button className="bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 hover:from-logo-teal-600 hover:to-logo-blue-500 text-white">
+            <Button variant="accent">
               <BookmarkPlus className="w-4 h-4 mr-2" />
               Save to Library
             </Button>
@@ -410,7 +410,7 @@ export function SaveMeditationDialog({
           </div>
           {isPresetOptionAvailable && (
             <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase text-gray-500">Save option</Label>
+              <Label className="text-xs uppercase text-gray-500">Save option</Label>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <Button
                   type="button"

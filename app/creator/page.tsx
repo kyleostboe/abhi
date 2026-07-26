@@ -929,7 +929,7 @@ export default function CreatorPage() {
             >
               Creator
             </h1>
-            <p className="text-lg text-gray-600 mt-4">
+            <p className="mt-4 font-serif text-xs font-black tracking-tight text-stone-500">
               Create custom meditations by associating instructions with sound cues.
             </p>
           </div>
@@ -937,11 +937,11 @@ export default function CreatorPage() {
 
         <div className="px-6 md:px-10 pb-10 font-serif font-black">
           {/* File Upload Section */}
-          <Card className="p-6 mb-6 bg-white shadow-lg border border-gray-200 ">
-            <h3 className="text-xl font-bold mb-4 text-gray-800 ">Upload Audio File</h3>
+          <Card className="mb-6 rounded-xl border-none bg-white p-6 shadow-lg">
+            <h3 className="mb-4 font-serif text-base font-black tracking-tight text-gray-700">Upload Audio File</h3>
             <div
               ref={uploadAreaRef}
-              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-logo-teal-500 transition-colors"
+              className="cursor-pointer rounded-xl border-[3px] border-gray-500 bg-white p-8 text-center shadow-md transition-all hover:shadow-none"
               onClick={() => fileInputRef.current?.click()}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -950,18 +950,18 @@ export default function CreatorPage() {
               <input ref={fileInputRef} type="file" accept="audio/*" onChange={handleFileChange} className="hidden" />
               <div className="space-y-2">
                 <div className="text-4xl">🎵</div>
-                <p className="text-lg font-semibold text-gray-700 ">
+                <p className="font-serif text-sm font-black tracking-tight text-gray-700">
                   {file ? file.name : "Drop your audio file here or click to browse"}
                 </p>
-                <p className="text-sm text-gray-500 ">Supports MP3, WAV, M4A, and other audio formats</p>
+                <p className="text-xs tracking-tight text-gray-500">Supports MP3, WAV, M4A, and other audio formats</p>
               </div>
             </div>
           </Card>
 
           {/* Audio Player */}
           {originalAudioUrl && (
-            <Card className="p-6 mb-6 bg-white shadow-lg border border-gray-200 ">
-              <h3 className="text-xl font-bold mb-4 text-gray-800 ">Original Audio</h3>
+            <Card className="mb-6 rounded-xl border-none bg-white p-6 shadow-lg">
+              <h3 className="mb-4 font-serif text-base font-black tracking-tight text-gray-700">Original Audio</h3>
               <audio
                 ref={audioRef}
                 controls
@@ -974,9 +974,9 @@ export default function CreatorPage() {
           )}
 
           {/* Sound Preview Section */}
-          <Card className="p-6 mb-6 bg-white shadow-lg border border-gray-200 ">
-            <h3 className="text-xl font-bold mb-4 text-gray-800 ">Sound Cues Preview</h3>
-            <p className="text-sm text-gray-600 mb-4">
+          <Card className="mb-6 rounded-xl border-none bg-white p-6 shadow-lg">
+            <h3 className="mb-4 font-serif text-base font-black tracking-tight text-gray-700">Sound Cues Preview</h3>
+            <p className="mb-4 text-xs tracking-tight text-gray-500">
               Click on any sound to preview it with the new Tone.js implementation:
             </p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -984,9 +984,9 @@ export default function CreatorPage() {
                 <button
                   key={sound.id}
                   onClick={() => playSoundPreview(sound.id)}
-                  className="p-4 bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 text-white rounded-lg hover:from-logo-teal-600 hover:to-logo-blue-500 transition-all duration-200 transform hover:scale-105"
+                  className="rounded-[11px] bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 p-4 font-serif text-white shadow-md transition-all duration-200 ease-out hover:shadow-none"
                 >
-                  <div className="font-semibold">{sound.name}</div>
+                  <div className="font-black tracking-tight">{sound.name}</div>
                   <div className="text-xs opacity-90 mt-1">{sound.description}</div>
                 </button>
               ))}
@@ -994,9 +994,9 @@ export default function CreatorPage() {
           </Card>
 
           {/* Musical Notes Section */}
-          <Card className="p-6 mb-6 bg-white shadow-lg border border-gray-200 ">
+          <Card className="mb-6 rounded-xl border-none bg-white p-6 shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-800 ">Musical Notes</h3>
+              <h3 className="font-serif text-base font-black tracking-tight text-gray-700">Musical Notes</h3>
               <div className="flex items-center space-x-3">
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
@@ -1006,21 +1006,21 @@ export default function CreatorPage() {
                       setMultiNoteMode(e.target.checked)
                       setSelectedNotes([])
                     }}
-                    className="w-4 h-4 text-logo-teal-600 bg-gray-100 border-gray-300 rounded focus:ring-logo-teal-500 focus:ring-2 "
+                    className="h-4 w-4 rounded-[4px] border-[2px] border-gray-500 accent-logo-emerald-500 focus:ring-0"
                   />
-                  <span className="text-sm font-medium text-gray-700 ">Multi-Note</span>
+                  <span className="font-serif text-xs font-black tracking-tight text-gray-600">Multi-Note</span>
                 </label>
                 {multiNoteMode && selectedNotes.length > 0 && (
                   <button
                     onClick={playChordPreview}
-                    className="px-4 py-2 bg-gradient-to-r from-logo-purple-500 to-logo-rose-400 text-white rounded-lg hover:from-logo-purple-600 hover:to-logo-rose-500 transition-all duration-200 text-sm font-semibold"
+                    className="rounded-[11px] bg-gradient-to-b from-gray-600 to-[#9b8da3] px-4 py-2 font-serif text-sm font-black tracking-tight text-white shadow-md transition-all duration-200 ease-out hover:shadow-none"
                   >
                     Play Chord ({selectedNotes.length})
                   </button>
                 )}
               </div>
             </div>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="mb-4 text-xs tracking-tight text-gray-500">
               {multiNoteMode
                 ? "Select multiple notes to create chords. Click 'Play Chord' to preview them together."
                 : "Click on any note to preview it individually."}
@@ -1030,10 +1030,10 @@ export default function CreatorPage() {
                 <button
                   key={note.id}
                   onClick={() => handleNoteSelection(note.id)}
-                  className={`p-3 rounded-lg transition-all duration-200 transform hover:scale-105 font-semibold ${
+                  className={`rounded-[8px] p-3 font-serif text-xs font-black tracking-tight shadow-md transition-all duration-200 ease-out hover:shadow-none ${
                     multiNoteMode && selectedNotes.includes(note.id)
-                      ? "bg-gradient-to-r from-logo-amber-500 to-logo-rose-400 text-white shadow-lg"
-                      : "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 hover:from-gray-200 hover:to-gray-300 "
+                      ? "bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 text-white"
+                      : "border-[3px] border-gray-500 bg-white text-gray-600"
                   }`}
                 >
                   {note.name}
@@ -1041,9 +1041,9 @@ export default function CreatorPage() {
               ))}
             </div>
             {multiNoteMode && selectedNotes.length > 0 && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 ">
-                  Selected notes: <span className="font-semibold text-gray-800 ">{selectedNotes.join(", ")}</span>
+              <div className="mt-4 rounded-[10px] bg-muted/60 p-3 shadow-inner">
+                <p className="text-xs tracking-tight text-gray-500">
+                  Selected notes: <span className="font-black text-gray-700">{selectedNotes.join(", ")}</span>
                 </p>
               </div>
             )}
@@ -1079,7 +1079,7 @@ export default function CreatorPage() {
                     audioFormat: encodedDistributionMetadata ?? undefined,
                   }}
                 >
-                  <Button
+                  <Button variant="ghost"
                     disabled={!encodedDistributionBlob}
                     className="w-44 py-3 rounded-[9px] shadow-md bg-white hover:shadow-sm hover:bg-white text-gray-600 text-xs font-serif font-black border-[3px] border-gray-500"
                   >
@@ -1090,7 +1090,7 @@ export default function CreatorPage() {
               </div>
               {encodedQualityWarning && (
                 <Alert className="bg-amber-50 border-amber-200 text-amber-700 text-sm mt-4">
-                  <AlertTitle className="font-semibold text-sm">Reduced quality export</AlertTitle>
+                  <AlertTitle className="font-serif text-sm font-black tracking-tight">Reduced quality export</AlertTitle>
                   <AlertDescription className="text-xs">
                     This session's audio was compressed to {encodedDistributionMetadata?.bitrate}kbps (down from our
                     standard 96kbps) to fit the 48MB size limit. Shorter sessions keep higher fidelity.

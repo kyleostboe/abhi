@@ -14,7 +14,9 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center rounded-sm bg-transparent p-1 text-gray-600 shadow-inner font-serif font-black",
+      // bg-muted, not transparent: shadow-inner needs a surface to cut the groove into, and this
+      // is what makes the tab track read like the app's signature Adjuster/Creator switch.
+      "inline-flex items-center justify-center rounded-sm bg-muted p-1 text-gray-600 shadow-inner font-serif font-black",
       className,
     )}
     {...props}
@@ -29,7 +31,7 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-[7px] px-3 py-1.5 font-black text-gray-600 transition-all ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-logo-teal-700 data-[state=active]:shadow-md tracking-tight text-xs",
+      "inline-flex items-center justify-center whitespace-nowrap rounded-[7px] px-3 py-1.5 font-black text-gray-600 transition-all ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-600 data-[state=active]:shadow-md tracking-tight text-xs",
       className,
     )}
     {...props}

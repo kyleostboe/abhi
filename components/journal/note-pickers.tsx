@@ -161,10 +161,8 @@ export function QuotePicker({
               reset()
               onOpenChange(false)
             }}
-            className={cn(
-              "bg-gradient-to-r from-logo-rose-300 to-logo-emerald-400 font-black text-white shadow-md hover:shadow-none",
-              "disabled:opacity-40 disabled:shadow-none",
-            )}
+            variant="accent"
+            className="disabled:shadow-none"
           >
             Insert quote
           </Button>
