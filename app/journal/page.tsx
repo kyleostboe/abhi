@@ -34,6 +34,7 @@ import { NoteEditor, fontClassFor, type NoteEditorHandle } from "@/components/jo
 import { NoteToolbar, useVoiceRecorder } from "@/components/journal/note-toolbar"
 import { MeditationPicker, QuotePicker } from "@/components/journal/note-pickers"
 import { SessionsView } from "@/components/journal/sessions-view"
+import { useSessions } from "@/hooks/use-sessions"
 import { JournalRefProvider } from "@/components/journal/journal-refs"
 import { compressImage, encodeVoiceNote, saveAttachment } from "@/lib/journal-attachments"
 import { slugify } from "@/lib/journal-markdown"
@@ -82,6 +83,8 @@ export default function JournalPage() {
   const { toast } = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()
+
+  const { sessions, isLoading: isLoadingSessions } = useSessions()
 
   const [meditations, setMeditations] = useState<SavedMeditation[]>([])
   const [activeTab, setActiveTab] = useState<"notes" | "sessions">("notes")
@@ -335,8 +338,9 @@ export default function JournalPage() {
 
             {activeTab === "sessions" ? (
               <SessionsView
+                sessions={sessions}
                 notes={notes}
-                isLoading={isLoading}
+                isLoading={isLoading || isLoadingSessions}
                 onOpenNote={(noteId) => {
                   setActiveTab("notes")
                   setActiveNoteId(noteId)

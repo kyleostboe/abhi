@@ -37,6 +37,7 @@ import {
 import { runAdjusterWorkflow, suggestSilenceThreshold, type SilenceRegion } from "@/lib/adjuster-workflow"
 import { cn } from "@/lib/utils"
 import { useJournal } from "@/hooks/use-journal"
+import { useSessionTracker } from "@/hooks/use-session-tracker"
 import { useAuth } from "@/hooks/use-auth"
 import {
   Trash2,
@@ -106,8 +107,7 @@ export default function LibraryPage() {
   const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null)
   const [selectedMeditation, setSelectedMeditation] = useState<SavedMeditation | null>(null)
   const [baseMeditation, setBaseMeditation] = useState<SavedMeditation | null>(null)
-  const { entries: journalEntries, recordPlayback: recordJournalPlayback } = useJournal()
-  const [hasRecordedJournalEntry, setHasRecordedJournalEntry] = useState(false)
+  const { entries: journalEntries } = useJournal()
   const [isJournalHistoryOpen, setIsJournalHistoryOpen] = useState(false)
   const [activeJournalEntryId, setActiveJournalEntryId] = useState<string | null>(null)
   const [handledMeditationParam, setHandledMeditationParam] = useState<string | null>(null)
@@ -164,6 +164,9 @@ export default function LibraryPage() {
   const quickAdjustPauseMapRef = useRef<Map<string, SilenceRegion[]>>(new Map())
   const presetsPersistReadyRef = useRef(false)
   const durationsPersistReadyRef = useRef(false)
+  // Mirrors playerTime so the session tracker can read the current position without re-subscribing
+  // on every tick.
+  const playerTimeRef = useRef(0)
   const backupInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
   const router = useRouter()
@@ -479,15 +482,22 @@ export default function LibraryPage() {
     : (journalEntriesForSelectedMeditation[0] ?? null)
 
   useEffect(() => {
-    setHasRecordedJournalEntry(false)
-  }, [selectedMeditation?.id])
+    playerTimeRef.current = playerTime
+  }, [playerTime])
 
-  useEffect(() => {
-    if (isAudioPlaying && selectedMeditation && !hasRecordedJournalEntry) {
-      void recordJournalPlayback({ id: selectedMeditation.id, title: selectedMeditation.title })
-      setHasRecordedJournalEntry(true)
-    }
-  }, [isAudioPlaying, selectedMeditation, hasRecordedJournalEntry, recordJournalPlayback])
+  const readPlayerTime = useCallback(() => playerTimeRef.current, [])
+
+  // The sit itself is recorded in `sessions`; playback no longer writes a journal entry. Those
+  // two used to be the same row, which meant a sit only existed if it was written about and a
+  // mis-tap looked identical to a real sit. Notes are now created when something is actually
+  // written.
+  const { finish: finishSession, resumeFor } = useSessionTracker({
+    meditationId: selectedMeditation?.id ?? null,
+    meditationTitle: selectedMeditation?.title ?? null,
+    durationPlanned: selectedMeditation?.duration ?? null,
+    isPlaying: isAudioPlaying,
+    getPosition: readPlayerTime,
+  })
 
   useEffect(() => {
     if (!isJournalHistoryOpen) return
@@ -2180,6 +2190,9 @@ export default function LibraryPage() {
     }
     const handleEndedEvent = () => {
       setIsAudioPlaying(false)
+      // Close the sit before the position resets — finish() reads the current position, and a
+      // reset one would record the sit as having got nowhere.
+      finishSession()
       setPlayerTime(0)
     }
 
@@ -2204,7 +2217,7 @@ export default function LibraryPage() {
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata)
       audio.removeEventListener("ended", handleEndedEvent)
     }
-  }, [selectedMeditation, currentPlaybackRate, baseMeditation, setPlayerTime, setPlayerDuration])
+  }, [selectedMeditation, currentPlaybackRate, baseMeditation, setPlayerTime, setPlayerDuration, finishSession])
 
   useEffect(() => {
     if (!selectedMeditation && timelineAudioRef.current) {

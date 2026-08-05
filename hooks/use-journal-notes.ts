@@ -20,6 +20,8 @@ export type JournalNote = {
   folderId: string | null
   meditationId: string | null
   meditationTitle: string | null
+  /** The sit this note was written about, when it was written about one. */
+  sessionId: string | null
   practiceType: string | null
   tags: string[]
   font: string | null
@@ -44,6 +46,7 @@ type NoteRow = {
   folder_id: string | null
   meditation_id: string | null
   meditation_title: string | null
+  session_id: string | null
   practice_type: string | null
   tags: string[] | null
   font: string | null
@@ -54,7 +57,7 @@ type NoteRow = {
 // The list only needs the index. A note's markdown body lives in R2 and is fetched when the
 // note is actually opened, so loading the journal never pulls every note's full text.
 const NOTE_COLUMNS =
-  "id, slug, title, preview, content_md, note, note_key, folder_id, meditation_id, meditation_title, practice_type, tags, font, played_at, updated_at"
+  "id, slug, title, preview, content_md, note, note_key, folder_id, meditation_id, meditation_title, session_id, practice_type, tags, font, played_at, updated_at"
 
 const mapNote = (row: NoteRow): JournalNote => {
   // `content_md` is the markdown body; `note` is the pre-notes plain-text column, which is
@@ -75,6 +78,7 @@ const mapNote = (row: NoteRow): JournalNote => {
     folderId: row.folder_id,
     meditationId: row.meditation_id,
     meditationTitle: row.meditation_title,
+    sessionId: row.session_id,
     practiceType: row.practice_type,
     tags: row.tags ?? [],
     font: row.font,
@@ -144,6 +148,7 @@ export function useJournalNotes() {
       folderId?: string | null
       meditationId?: string | null
       meditationTitle?: string | null
+      sessionId?: string | null
       practiceType?: string | null
       playedAt?: Date
     }): Promise<JournalNote | null> => {
@@ -166,6 +171,7 @@ export function useJournalNotes() {
           folder_id: params.folderId ?? null,
           meditation_id: params.meditationId ?? null,
           meditation_title: params.meditationTitle ?? null,
+          session_id: params.sessionId ?? null,
           practice_type: params.practiceType ?? null,
           played_at: playedAt.toISOString(),
           updated_at: new Date().toISOString(),

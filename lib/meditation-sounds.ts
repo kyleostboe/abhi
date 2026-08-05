@@ -88,7 +88,7 @@ export const NOTES = [
 ]
 
 export const MUSICAL_NOTES = {
-  Beautiful: NOTES.map((note, index) => ({
+  Beautiful: NOTES.map((note) => ({
     id: `note-${note.toLowerCase().replace("#", "s")}`,
     name: note,
     note: note.charAt(0),

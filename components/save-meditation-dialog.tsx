@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
+import { AccountRequiredError, MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
 import { encodeDistributionAudio, type AudioFormatMetadata } from "@/lib/audio-utils"
 import { BookmarkPlus, Plus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
@@ -351,6 +351,19 @@ export function SaveMeditationDialog({
     } catch (error) {
       if (error instanceof Error && error.message === "Encoding aborted") {
         log.debug("Encoding was cancelled")
+        return
+      }
+
+      // The dialog refuses to open without an account, so this is the race where a session
+      // expired mid-save. Send them to sign in rather than reporting a failure they can't act on.
+      if (error instanceof AccountRequiredError) {
+        log.debug("Save requires an account; redirecting to sign in")
+        toast({
+          title: "Sign in to save",
+          description: "Your session ended. Sign in and your meditation will be ready to save again.",
+        })
+        onBeforeAuthRedirect?.()
+        login()
         return
       }
 

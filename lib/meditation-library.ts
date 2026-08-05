@@ -9,25 +9,26 @@ import {
   getAllAudioRecords,
   type AudioRecord,
 } from "./storage/indexed-db"
-import {
-  addMeditationToMemoryPlaylist,
-  deleteMemoryMeditation,
-  deleteMemoryPlaylist,
-  getMemoryAudio,
-  getMemoryMeditation,
-  getMemoryMeditations,
-  getMemoryPlaylists,
-  getMemoryPlaylistMeditations,
-  getMemoryUsageBytes,
-  removeMeditationFromMemoryPlaylist,
-  saveMemoryMeditation,
-  upsertMemoryPlaylist,
-} from "./storage/memory-store"
 import { log } from "@/lib/log"
 
 // Free-tier storage allowance shown to authenticated users, kept comfortably under R2's own
 // free tier so the app's other usage has headroom.
 const FREE_STORAGE_QUOTA_BYTES = 5 * 1024 * 1024 * 1024
+
+/**
+ * Thrown when an operation needs an account and there isn't one.
+ *
+ * There used to be a shadow library in memory for signed-out users, which meant work could be
+ * done, appear saved, and then vanish on refresh with nothing to recover it from. Signed-out
+ * users can still upload, adjust and download — what they cannot do is save, because saving
+ * implies somewhere for it to go.
+ */
+export class AccountRequiredError extends Error {
+  constructor(action = "do that") {
+    super(`Sign in to ${action}.`)
+    this.name = "AccountRequiredError"
+  }
+}
 
 export interface SavedMeditation {
   id: string
@@ -335,30 +336,7 @@ export class MeditationLibrary {
     }
 
     if (auth.status !== "authenticated" || !auth.userId) {
-      log.debug("Saving to memory (unauthenticated)")
-      const id = createId()
-      const processedUrl = buildObjectUrl(processedBlob)
-      const sourceUrl = buildObjectUrl(providedSourceBlob)
-      const metadataToSave = sanitizeMetadataForStorage({ ...meditation.metadata }, timelineRecordings, id)
-      const savedMeditation: SavedMeditation = {
-        id,
-        title: meditation.title,
-        originalFileName: meditation.originalFileName,
-        processedAudioUrl: processedUrl,
-        sourceAudioUrl: sourceUrl || undefined,
-        duration: Math.round(meditation.duration),
-        createdAt: new Date(),
-        source: meditation.source,
-        metadata: mapTimelineWithRecordings(metadataToSave, timelineRecordings) || metadataToSave,
-      }
-
-      saveMemoryMeditation(id, savedMeditation, {
-        processedAudio: processedBlob,
-        sourceAudio: providedSourceBlob,
-        timelineRecordings,
-      })
-
-      return savedMeditation
+      throw new AccountRequiredError("save a meditation")
     }
 
     log.debug("Saving to Supabase + R2 + IndexedDB (authenticated)")
@@ -442,29 +420,7 @@ export class MeditationLibrary {
     const durationInSeconds = Math.round(updates.duration)
 
     if (auth.status !== "authenticated" || !auth.userId) {
-      const existing = getMemoryMeditation(id)
-      if (!existing) {
-        throw new Error("Meditation not found.")
-      }
-      const existingAudio = getMemoryAudio(id)
-      const updatedMetadata: SavedMeditation["metadata"] = {
-        ...existing.metadata,
-        audioFormat: updates.audioFormat,
-        wav: undefined,
-      }
-      const updated: SavedMeditation = {
-        ...existing,
-        duration: durationInSeconds,
-        processedAudioUrl: processedUrl,
-        sourceAudioUrl: processedUrl,
-        metadata: updatedMetadata,
-      }
-      saveMemoryMeditation(id, updated, {
-        processedAudio: updates.audioData,
-        sourceAudio: updates.audioData,
-        timelineRecordings: existingAudio?.timelineRecordings,
-      })
-      return updated
+      throw new AccountRequiredError("replace a meditation's audio")
     }
 
     const supabase = createClient()
@@ -527,9 +483,7 @@ export class MeditationLibrary {
     log.debug("getAllMeditations - Auth state:", { status: auth.status, userId: auth.userId })
     
     if (auth.status !== "authenticated" || !auth.userId) {
-      const memoryMeds = getMemoryMeditations()
-      log.debug("Loaded from memory:", memoryMeds.length, "meditations")
-      return memoryMeds
+      return []
     }
 
     log.debug("Loading from Supabase...")
@@ -587,7 +541,7 @@ export class MeditationLibrary {
   static async getMeditation(id: string): Promise<SavedMeditation | null> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      return getMemoryMeditation(id)
+      return null
     }
 
     const supabase = createClient()
@@ -619,8 +573,7 @@ export class MeditationLibrary {
   static async deleteMeditation(id: string): Promise<void> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      deleteMemoryMeditation(id)
-      return
+      throw new AccountRequiredError("delete a meditation")
     }
 
     // Deletes the R2 object (if any) and the database row together, server-side — the R2
@@ -644,7 +597,7 @@ export class MeditationLibrary {
   static async getAllPlaylists(): Promise<Playlist[]> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      return getMemoryPlaylists()
+      return []
     }
 
     try {
@@ -686,7 +639,7 @@ export class MeditationLibrary {
   static async getPlaylist(id: string): Promise<Playlist | null> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      return getMemoryPlaylists().find((playlist) => playlist.id === id) ?? null
+      return null
     }
 
     try {
@@ -726,16 +679,7 @@ export class MeditationLibrary {
   static async createPlaylist(name: string, description: string): Promise<Playlist> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      const playlist: Playlist = {
-        id: createId(),
-        name,
-        description,
-        meditationIds: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-      upsertMemoryPlaylist(playlist)
-      return playlist
+      throw new AccountRequiredError("create a playlist")
     }
 
     const supabase = createClient()
@@ -771,11 +715,7 @@ export class MeditationLibrary {
   ): Promise<void> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      const existing = getMemoryPlaylists().find((playlist) => playlist.id === id)
-      if (existing) {
-        upsertMemoryPlaylist({ ...existing, ...updates, updatedAt: new Date() })
-      }
-      return
+      throw new AccountRequiredError("update a playlist")
     }
 
     try {
@@ -802,8 +742,7 @@ export class MeditationLibrary {
   static async deletePlaylist(id: string): Promise<void> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      deleteMemoryPlaylist(id)
-      return
+      throw new AccountRequiredError("delete a playlist")
     }
 
     try {
@@ -824,8 +763,7 @@ export class MeditationLibrary {
   static async addToPlaylist(playlistId: string, meditationId: string): Promise<void> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      addMeditationToMemoryPlaylist(playlistId, meditationId)
-      return
+      throw new AccountRequiredError("add to a playlist")
     }
 
     try {
@@ -853,8 +791,7 @@ export class MeditationLibrary {
   static async removeFromPlaylist(playlistId: string, meditationId: string): Promise<void> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      removeMeditationFromMemoryPlaylist(playlistId, meditationId)
-      return
+      throw new AccountRequiredError("remove from a playlist")
     }
 
     try {
@@ -881,10 +818,7 @@ export class MeditationLibrary {
   static async getPlaylistMeditations(playlistId: string): Promise<SavedMeditation[]> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      const ids = getMemoryPlaylistMeditations(playlistId)
-      return ids
-        .map((id) => getMemoryMeditation(id))
-        .filter((meditation): meditation is SavedMeditation => Boolean(meditation))
+      return []
     }
 
     try {
@@ -1077,7 +1011,7 @@ export class MeditationLibrary {
   static async getStorageUsage(): Promise<{ usedBytes: number; quotaBytes?: number }> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      return { usedBytes: getMemoryUsageBytes() }
+      return { usedBytes: 0 }
     }
 
     // Authenticated users' audio now lives in R2, not IndexedDB — report usage against that,
