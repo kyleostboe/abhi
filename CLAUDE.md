@@ -37,6 +37,18 @@ markdown file in R2 with complete YAML frontmatter; the Postgres row exists to m
 searching fast. `lib/journal-frontmatter.ts` and `lib/journal-markdown.ts` define that contract
 — if a block cannot round-trip through them, it must not ship.
 
+**A sit is a `sessions` row, not a journal entry.** `lib/sessions.ts` owns the model — day
+boundaries, streaks, what counts as practice, how an interrupted sit is reconciled — and is pure
+so all of that is testable. Rows are written when a sit *starts* and updated as it runs, which is
+what makes a crash or a closed tab survivable; nothing writes only on completion. Practice time
+is wall-clock-while-playing, not distance through the audio, so seeking earns nothing.
+
+**The timer schedules bells on the AudioContext clock, in advance.** `setTimeout` does not
+survive a locked screen — background tabs get clamped to ~1 tick/sec — so `lib/timer-schedule.ts`
+computes every bell up front and `lib/timer-audio.ts` hands them all to the audio clock at start.
+The countdown interval is display only. If you add anything audible to the timer, schedule it the
+same way.
+
 **Two timeline models, deliberately.** `TimelineItem` (in `lib/types.ts`) is the richer
 editor-side row; `TimelineEvent` is what is persisted. They also use different field names for
 the same thing — in-memory `soundCueSrc` is stored as `soundSrc`. Mixing them up has caused a
@@ -68,12 +80,8 @@ component or integration testing set up. When adding a pure helper, add cases fo
 - `app/page.tsx` (~4.3k lines) and `app/library/page.tsx` (~3.8k) are still very large, with 70
   and 60 `useState` calls respectively. Self-contained pieces have been extracted; the remaining
   reduction needs the state model reworked, which is a behavioral change.
-- `app/creator/page.tsx` carries a substantial amount of dead code — an entire speech-recognition
-  transcription flow whose state and handlers are never rendered. ESLint reports it as unused
-  vars. It has not been removed because it may be an unfinished feature rather than an abandoned
-  one.
-- ~114 ESLint warnings remain, mostly unused vars of the kind above and `any` in the audio and
-  Supabase paths. Zero errors — the count should only go down.
+- ~105 ESLint warnings remain, mostly unused caught errors and `any` in the audio and Supabase
+  paths. Zero errors — the count should only go down.
 - `buildDurationModeFromStored` in `lib/library-durations.ts` assigns a fallback audio URL before
   `normalizeDurationMode` runs, so a persisted duration mode always looks like it has its own
   rendered audio and its stored `playbackRate` is reset to 1. If that rate was the only thing

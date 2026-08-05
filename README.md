@@ -1,7 +1,8 @@
 # abhī
 
 A meditation tool that adjusts the length of guided meditations by intelligently re-spacing
-silence, and lets you build custom meditations from instructions, sound cues and your own voice.
+silence, lets you build custom meditations from instructions, sound cues and your own voice, and
+sits with you on a plain bell timer when you want no recording at all.
 
 ## Features
 
@@ -23,6 +24,14 @@ silence, and lets you build custom meditations from instructions, sound cues and
 - Mix background ambience with adjustable volumes.
 - Export as Opus, AAC, WAV or MP3.
 
+### Timer
+
+- A sit with no recording behind it: fixed length or open-ended.
+- Opening, closing and interval bells, with a settling period before the sit begins.
+- Bells are synthesised and scheduled on the audio clock in advance, so a sit keeps its bells
+  when the screen goes off.
+- Every sit is recorded to the practice log.
+
 ### Library
 
 - Everything saved, grouped by meditation with its length variants.
@@ -32,6 +41,7 @@ silence, and lets you build custom meditations from instructions, sound cues and
 ### Journal
 
 - Markdown notes, optionally attached to a meditation you have just sat.
+- A Sessions tab showing the practice log — every sit, guided or timer, grouped by day.
 - Folders, tags, images and voice notes.
 - Notes are stored as self-describing markdown files (see [Storage](#storage)).
 
