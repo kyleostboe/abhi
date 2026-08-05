@@ -86,7 +86,7 @@ import * as Tone from "tone"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
 import { AuthButtons } from "@/components/auth-buttons"
 import { log } from "@/lib/log"
-import { MUSICAL_NOTES, SOUND_CUES_LIBRARY } from "@/lib/meditation-sounds"
+import { FALLBACK_SOUND_CUE, MUSICAL_NOTES, SOUND_CUES_LIBRARY } from "@/lib/meditation-sounds"
 import { ensureTone, getLoadedPianoSampler, playPianoNote, startPianoAudio } from "@/lib/piano-engine"
 import { RecorderSection } from "@/components/recorder-section"
 
@@ -1748,9 +1748,9 @@ export default function Home() {
                 startTime: i * eventDuration,
                 duration: Math.min(eventDuration * 0.8, 60),
                 instructionText: `Reconstructed instruction ${i + 1}`,
-                soundCueId: SOUND_CUES_LIBRARY[0]?.id || "default_sound",
-                soundCueName: SOUND_CUES_LIBRARY[0]?.name || "Default Sound",
-                soundCueSrc: SOUND_CUES_LIBRARY[0]?.src || "",
+                soundCueId: FALLBACK_SOUND_CUE.id,
+                soundCueName: FALLBACK_SOUND_CUE.name,
+                soundCueSrc: FALLBACK_SOUND_CUE.src,
                 color: EVENT_COLORS[i % EVENT_COLORS.length],
               })
             }

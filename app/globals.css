@@ -401,3 +401,22 @@ mark {
   pointer-events: none;
   color: rgb(156 163 175);
 }
+
+/*
+ * CSS-driven motion, cut down when the OS asks for it. Framer Motion animations are handled by
+ * MotionConfig in components/motion-preferences.tsx — it drives them from JS and never sees this
+ * rule — so what is left here is the Tailwind/Radix transition and keyframe layer.
+ *
+ * Durations collapse to near-zero rather than to `none` so that transition-end events still fire
+ * and Radix's data-state animations continue to complete.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
