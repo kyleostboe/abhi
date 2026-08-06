@@ -11,6 +11,9 @@ import { createClient } from "@/lib/supabase/client"
 import { useAuth } from "@/hooks/use-auth"
 import { Navigation } from "@/components/navigation"
 import { log } from "@/lib/log"
+import { useUserSettings } from "@/hooks/use-user-settings"
+import { formatDayBoundary } from "@/lib/user-settings"
+import { cn } from "@/lib/utils"
 
 export default function SettingsPage() {
   const { user, isAuthenticated } = useAuth()
@@ -20,6 +23,7 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
   const supabase = createClient()
+  const { settings, updateSettings } = useUserSettings()
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -160,6 +164,31 @@ export default function SettingsPage() {
               <Button onClick={handleSave} disabled={isSaving} variant="accent">
                 {isSaving ? "Saving..." : "Save Changes"}
               </Button>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Practice day starts at</Label>
+              <div className="flex flex-wrap gap-2">
+                {[0, 3, 4, 5, 6].map((hour) => (
+                  <button
+                    key={hour}
+                    type="button"
+                    onClick={() => void updateSettings({ dayBoundaryHour: hour })}
+                    className={cn(
+                      "rounded-[10px] px-3 py-2 font-serif text-xs font-black tracking-tight transition-colors",
+                      settings.dayBoundaryHour === hour
+                        ? "bg-gradient-to-r from-gray-600 to-gray-500 text-white shadow-md"
+                        : "bg-muted/60 text-gray-600 hover:bg-muted",
+                    )}
+                  >
+                    {formatDayBoundary(hour)}
+                  </button>
+                ))}
+              </div>
+              <p className="font-serif text-xs tracking-tight text-gray-500">
+                A sit before this hour counts toward the previous day, so sitting late doesn&apos;t cost you a
+                streak.
+              </p>
             </div>
 
             <div className="rounded-[10px] bg-muted/60 p-4 shadow-inner">

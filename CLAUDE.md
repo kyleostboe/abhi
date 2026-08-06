@@ -54,6 +54,11 @@ computes every bell up front and `lib/timer-audio.ts` hands them all to the audi
 The countdown interval is display only. If you add anything audible to the timer, schedule it the
 same way.
 
+**Preferences live in `user_settings`, not `localStorage`.** `lib/user-settings.ts` owns the
+shape — the column is schemaless jsonb, so `normalizeSettings` is the only thing enforcing it and
+is deliberately total: any stored value yields a complete settings object, so nothing downstream
+null-checks a preference. Signed-out users get the defaults and cannot change them.
+
 **Two timeline models, deliberately.** `TimelineItem` (in `lib/types.ts`) is the richer
 editor-side row; `TimelineEvent` is what is persisted. They also use different field names for
 the same thing — in-memory `soundCueSrc` is stored as `soundSrc`. Mixing them up has caused a

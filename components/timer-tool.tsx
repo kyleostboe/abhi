@@ -21,8 +21,9 @@ import { Label } from "@/components/ui/label"
 import { TimerWheel } from "@/components/timer-wheel"
 import { useAuth } from "@/hooks/use-auth"
 import { useSessions } from "@/hooks/use-sessions"
+import { useUserSettings } from "@/hooks/use-user-settings"
 import { useToast } from "@/hooks/use-toast"
-import { BELL_VOICES, DEFAULT_BELL_ID, TimerAudio, bellVoiceById } from "@/lib/timer-audio"
+import { BELL_VOICES, TimerAudio, bellVoiceById } from "@/lib/timer-audio"
 import { type TimerBell, buildTimerSchedule, formatTimerClock, remainingSeconds } from "@/lib/timer-schedule"
 import { cn } from "@/lib/utils"
 
@@ -42,22 +43,35 @@ const WARMUP_OPTIONS = [
   { label: "1 min", seconds: 60 },
 ]
 
-const DEFAULT_DURATION_SECONDS = 20 * 60
-
 type TimerState = "idle" | "running" | "finished"
 
 export function TimerTool() {
   const { isAuthenticated } = useAuth()
   const { startSession, reportProgress, endSession } = useSessions()
+  const { settings, isLoading: isLoadingSettings, updateSettings, canEdit } = useUserSettings()
   const { toast } = useToast()
 
-  const [durationSeconds, setDurationSeconds] = useState(DEFAULT_DURATION_SECONDS)
+  const [durationSeconds, setDurationSeconds] = useState(settings.timer.defaultDurationSeconds)
   const [openEnded, setOpenEnded] = useState(false)
-  const [warmupSeconds, setWarmupSeconds] = useState(30)
-  const [intervalSeconds, setIntervalSeconds] = useState(0)
-  const [openingBell, setOpeningBell] = useState(true)
-  const [closingBell, setClosingBell] = useState(true)
-  const [bellId, setBellId] = useState(DEFAULT_BELL_ID)
+  const [warmupSeconds, setWarmupSeconds] = useState(settings.timer.warmupSeconds)
+  const [intervalSeconds, setIntervalSeconds] = useState(settings.timer.intervalSeconds)
+  const [openingBell, setOpeningBell] = useState(settings.timer.openingBell)
+  const [closingBell, setClosingBell] = useState(settings.timer.closingBell)
+  const [bellId, setBellId] = useState(settings.timer.bellId)
+
+  // Stored preferences arrive after the first render, so they are adopted once — and only while
+  // idle, so a sit in progress is never reconfigured underneath the person sitting it.
+  const hasAdoptedSettingsRef = useRef(false)
+  useEffect(() => {
+    if (isLoadingSettings || hasAdoptedSettingsRef.current) return
+    hasAdoptedSettingsRef.current = true
+    setDurationSeconds(settings.timer.defaultDurationSeconds)
+    setWarmupSeconds(settings.timer.warmupSeconds)
+    setIntervalSeconds(settings.timer.intervalSeconds)
+    setOpeningBell(settings.timer.openingBell)
+    setClosingBell(settings.timer.closingBell)
+    setBellId(settings.timer.bellId)
+  }, [isLoadingSettings, settings])
 
   const [state, setState] = useState<TimerState>("idle")
   const [elapsed, setElapsed] = useState(0)
@@ -127,6 +141,8 @@ export function TimerTool() {
       return
     }
 
+    audio.setVolume(settings.timer.bellVolume)
+
     audio.startKeepAlive()
 
     // Every bell for the whole sit goes onto the audio clock now, while the page is definitely
@@ -142,6 +158,21 @@ export function TimerTool() {
     setElapsed(0)
     setState("running")
 
+    // Beginning a sit is the clearest statement of how you like to sit, so it is what gets saved
+    // rather than a separate settings screen nobody visits.
+    if (canEdit) {
+      void updateSettings({
+        timer: {
+          defaultDurationSeconds: durationSeconds,
+          warmupSeconds,
+          intervalSeconds,
+          openingBell,
+          closingBell,
+          bellId,
+        },
+      })
+    }
+
     const session = await startSession({
       source: "timer",
       meditationId: null,
@@ -149,7 +180,22 @@ export function TimerTool() {
       durationPlanned: openEnded ? null : durationSeconds,
     })
     sessionIdRef.current = session?.id ?? null
-  }, [getAudio, toast, bellId, schedule, startSession, openEnded, durationSeconds])
+  }, [
+    getAudio,
+    toast,
+    bellId,
+    schedule,
+    startSession,
+    openEnded,
+    durationSeconds,
+    warmupSeconds,
+    intervalSeconds,
+    openingBell,
+    closingBell,
+    canEdit,
+    updateSettings,
+    settings.timer.bellVolume,
+  ])
 
   // Drives the display only. The bells do not depend on this interval running on time — which is
   // the point, since it will not while the screen is off.

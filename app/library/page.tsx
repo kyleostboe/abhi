@@ -38,6 +38,14 @@ import { runAdjusterWorkflow, suggestSilenceThreshold, type SilenceRegion } from
 import { cn } from "@/lib/utils"
 import { useJournal } from "@/hooks/use-journal"
 import { useSessionTracker } from "@/hooks/use-session-tracker"
+import {
+  DEFAULT_LIBRARY_SORT,
+  LIBRARY_SORTS,
+  LIBRARY_SORT_LABELS,
+  buildPlayStats,
+  sortLibraryRows,
+  type LibrarySort,
+} from "@/lib/library-sort"
 import { useAuth } from "@/hooks/use-auth"
 import {
   Trash2,
@@ -102,6 +110,7 @@ export default function LibraryPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null)
   const [sourceFilter, setSourceFilter] = useState<"all" | "adjuster" | "creator">("all")
+  const [librarySort, setLibrarySort] = useState<LibrarySort>(DEFAULT_LIBRARY_SORT)
   const [newPlaylistName, setNewPlaylistName] = useState("")
   const [newPlaylistDescription, setNewPlaylistDescription] = useState("")
   const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null)
@@ -462,13 +471,48 @@ export default function LibraryPage() {
     [allMeditationsMap],
   )
 
+  useEffect(() => {
+    playerTimeRef.current = playerTime
+  }, [playerTime])
+
+  const readPlayerTime = useCallback(() => playerTimeRef.current, [])
+
+  // The sit itself is recorded in `sessions`; playback no longer writes a journal entry. Those
+  // two used to be the same row, which meant a sit only existed if it was written about and a
+  // mis-tap looked identical to a real sit. Notes are now created when something is actually
+  // written.
+  const { finish: finishSession, resumeFor, sessions } = useSessionTracker({
+    meditationId: selectedMeditation?.id ?? null,
+    meditationTitle: selectedMeditation?.title ?? null,
+    durationPlanned: selectedMeditation?.duration ?? null,
+    isPlaying: isAudioPlaying,
+    getPosition: readPlayerTime,
+  })
+
+  // Play counts and last-played come from the sessions log, so "recently played" means actually
+  // sat with rather than merely opened.
+  const playStats = useMemo(() => buildPlayStats(sessions), [sessions])
+
   const displayedGroups = useMemo<MeditationGroup[]>(() => {
-    if (selectedPlaylist) {
-      const playlistItems = playlistMeditationsMap[selectedPlaylist] || []
-      return groupMeditations(playlistItems, false)
-    }
-    return groupMeditations(filteredMeditations, true)
-  }, [selectedPlaylist, playlistMeditationsMap, filteredMeditations, groupMeditations])
+    const groups = selectedPlaylist
+      ? groupMeditations(playlistMeditationsMap[selectedPlaylist] || [], false)
+      : groupMeditations(filteredMeditations, true)
+
+    // A group is ordered by its base, since that is the row the card shows.
+    const ordered = sortLibraryRows(
+      groups.map((group) => ({ ...group, ...group.base })),
+      librarySort,
+      playStats,
+    )
+    return ordered.map(({ base, variants }) => ({ base, variants }))
+  }, [
+    selectedPlaylist,
+    playlistMeditationsMap,
+    filteredMeditations,
+    groupMeditations,
+    librarySort,
+    playStats,
+  ])
 
   const journalEntriesForSelectedMeditation = useMemo(() => {
     if (!selectedMeditation) return []
@@ -480,24 +524,6 @@ export default function LibraryPage() {
   const activeJournalEntry = activeJournalEntryId
     ? (journalEntriesForSelectedMeditation.find((entry) => entry.id === activeJournalEntryId) ?? null)
     : (journalEntriesForSelectedMeditation[0] ?? null)
-
-  useEffect(() => {
-    playerTimeRef.current = playerTime
-  }, [playerTime])
-
-  const readPlayerTime = useCallback(() => playerTimeRef.current, [])
-
-  // The sit itself is recorded in `sessions`; playback no longer writes a journal entry. Those
-  // two used to be the same row, which meant a sit only existed if it was written about and a
-  // mis-tap looked identical to a real sit. Notes are now created when something is actually
-  // written.
-  const { finish: finishSession, resumeFor } = useSessionTracker({
-    meditationId: selectedMeditation?.id ?? null,
-    meditationTitle: selectedMeditation?.title ?? null,
-    durationPlanned: selectedMeditation?.duration ?? null,
-    isPlaying: isAudioPlaying,
-    getPosition: readPlayerTime,
-  })
 
   useEffect(() => {
     if (!isJournalHistoryOpen) return
@@ -2570,6 +2596,18 @@ export default function LibraryPage() {
                       >
                         Creator
                       </button>
+                      <select
+                        value={librarySort}
+                        onChange={(event) => setLibrarySort(event.target.value as LibrarySort)}
+                        aria-label="Sort meditations"
+                        className="flex items-center justify-center rounded-[8px] border-[3px] border-gray-500 bg-white px-3 py-1 font-serif text-xs font-black text-gray-600 shadow-md transition-all duration-200 ease-out hover:shadow-none"
+                      >
+                        {LIBRARY_SORTS.map((option) => (
+                          <option key={option} value={option}>
+                            {LIBRARY_SORT_LABELS[option]}
+                          </option>
+                        ))}
+                      </select>
                       {playlists.map((playlist) => (
                         <button
                           key={playlist.id}

@@ -38,17 +38,21 @@ sits with you on a plain bell timer when you want no recording at all.
 - Everything saved, grouped by meditation with its length variants.
 - Quick-adjust presets (10m / 30m / 1h, editable) to re-cut a meditation to a new length.
 - Playlists, backup import/export, and per-account storage usage.
+- Sort by recently added, recently played, most played, longest unplayed, length or title — the
+  play-based orders read from the practice log.
 
 ### Journal
 
 - Markdown notes, optionally attached to a meditation you have just sat.
-- A Sessions tab showing the practice log — every sit, guided or timer, grouped by day.
+- A Sessions tab showing the practice log — every sit, guided or timer, grouped by day, with
+  streaks and a practice calendar.
 - Folders, tags, images and voice notes.
 - Notes are stored as self-describing markdown files (see [Storage](#storage)).
 
 ### Settings
 
 - Account details, storage usage and sign-out.
+- When the practice day starts, so a late-night sit counts toward the day that is ending.
 
 ## Getting started
 

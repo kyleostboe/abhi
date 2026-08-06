@@ -35,6 +35,8 @@ import { NoteToolbar, useVoiceRecorder } from "@/components/journal/note-toolbar
 import { MeditationPicker, QuotePicker } from "@/components/journal/note-pickers"
 import { SessionsView } from "@/components/journal/sessions-view"
 import { useSessions } from "@/hooks/use-sessions"
+import { useUserSettings } from "@/hooks/use-user-settings"
+import { PracticeSummary } from "@/components/journal/practice-summary"
 import { JournalRefProvider } from "@/components/journal/journal-refs"
 import { compressImage, encodeVoiceNote, saveAttachment } from "@/lib/journal-attachments"
 import { slugify } from "@/lib/journal-markdown"
@@ -85,6 +87,7 @@ export default function JournalPage() {
   const searchParams = useSearchParams()
 
   const { sessions, isLoading: isLoadingSessions } = useSessions()
+  const { settings } = useUserSettings()
 
   const [meditations, setMeditations] = useState<SavedMeditation[]>([])
   const [activeTab, setActiveTab] = useState<"notes" | "sessions">("notes")
@@ -337,17 +340,23 @@ export default function JournalPage() {
             </div>
 
             {activeTab === "sessions" ? (
-              <SessionsView
-                sessions={sessions}
-                notes={notes}
-                isLoading={isLoading || isLoadingSessions}
-                onOpenNote={(noteId) => {
-                  setActiveTab("notes")
-                  setActiveNoteId(noteId)
-                  setMobilePane("note")
-                  setEditorInstanceKey((key) => key + 1)
-                }}
-              />
+              <>
+                {sessions.length > 0 ? (
+                  <PracticeSummary sessions={sessions} dayBoundaryHour={settings.dayBoundaryHour} />
+                ) : null}
+                <SessionsView
+                  sessions={sessions}
+                  notes={notes}
+                  dayBoundaryHour={settings.dayBoundaryHour}
+                  isLoading={isLoading || isLoadingSessions}
+                  onOpenNote={(noteId) => {
+                    setActiveTab("notes")
+                    setActiveNoteId(noteId)
+                    setMobilePane("note")
+                    setEditorInstanceKey((key) => key + 1)
+                  }}
+                />
+              </>
             ) : (
             <div className="grid min-h-[70vh] w-full min-w-0 grid-cols-1 md:grid-cols-[200px_minmax(0,280px)_minmax(0,1fr)]">
               {/* Folders */}
