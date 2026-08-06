@@ -2553,12 +2553,12 @@ export default function LibraryPage() {
                     <div className={`${shouldStackFilters ? "" : "md:[grid-row:span_2]"}`}>
                       {/* Framed like the Adjuster's upload area — a thin gradient rule around a
                           white field — using the Target Duration / Sound Cues gradient. */}
-                      <div className="rounded-sm bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 p-0.5 shadow-lg">
+                      <div className="rounded-sm bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 py-1 px-[5px] shadow-lg">
                         <input
                           placeholder="Search meditations..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="flex h-11 w-full rounded-sm border-0 bg-white px-4 text-xs font-black text-gray-600 shadow-none outline-none ring-offset-background placeholder:font-normal placeholder:text-gray-500 focus-visible:outline-none md:text-xs"
+                          className="flex h-11 w-full rounded-sm border border-stone-300 bg-white px-4 text-xs font-black text-gray-600 shadow-none outline-none ring-offset-background placeholder:font-normal placeholder:text-gray-500 focus-visible:outline-none md:text-xs"
                         />
                       </div>
                       {/* Under the search field on a phone, at the end of the quick filters from
