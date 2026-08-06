@@ -30,6 +30,22 @@ export class AccountRequiredError extends Error {
   }
 }
 
+/**
+ * Where a library row came from.
+ *
+ * `recording` is a reusable voice clip rather than a meditation. It lives in the same table so it
+ * inherits the whole audio pipeline — R2 upload, presigned playback, backup, deletion — instead
+ * of needing a parallel one, but it is excluded from meditation listings. Sharing storage is not
+ * a claim that they are the same kind of thing.
+ */
+export type MeditationSource = "adjuster" | "creator" | "recording"
+
+/** The sources that are actually meditations, for the listings that should only show those. */
+export const MEDITATION_SOURCES: MeditationSource[] = ["adjuster", "creator"]
+
+export const isRecording = (meditation: Pick<SavedMeditation, "source">): boolean =>
+  meditation.source === "recording"
+
 export interface SavedMeditation {
   id: string
   title: string
@@ -38,7 +54,7 @@ export interface SavedMeditation {
   sourceAudioUrl?: string
   duration: number
   createdAt: Date
-  source: "adjuster" | "creator"
+  source: MeditationSource
   metadata: {
     // Shared metadata
     meditationTitle?: string
@@ -300,7 +316,7 @@ const normalizeSupabaseMeditation = (
   createdAt: new Date(row.created_at),
   // 'encoder' is the pre-rename value, still written as a fallback when the DB's
   // source check constraint predates migration 012.
-  source: (row.source === "encoder" ? "creator" : row.source) as "adjuster" | "creator",
+  source: (row.source === "encoder" ? "creator" : row.source) as MeditationSource,
   metadata: mapTimelineWithRecordings(row.metadata || {}, recordings) || {},
 })
 
@@ -641,19 +657,36 @@ export class MeditationLibrary {
     }
   }
 
+  /**
+   * Every meditation. Reusable voice recordings share this table but are not meditations, so
+   * they are excluded here and fetched by getRecordings instead.
+   */
   static async getAllMeditations(): Promise<SavedMeditation[]> {
+    return MeditationLibrary.listBySource(MEDITATION_SOURCES)
+  }
+
+  /** The reusable voice clips, newest first. */
+  static async getRecordings(): Promise<SavedMeditation[]> {
+    return MeditationLibrary.listBySource(["recording"])
+  }
+
+  private static async listBySource(sources: MeditationSource[]): Promise<SavedMeditation[]> {
     const auth = getAuthState()
-    log.debug("getAllMeditations - Auth state:", { status: auth.status, userId: auth.userId })
-    
+    log.debug("listBySource - Auth state:", { status: auth.status, userId: auth.userId })
+
     if (auth.status !== "authenticated" || !auth.userId) {
       return []
     }
 
     log.debug("Loading from Supabase...")
     const supabase = createClient()
+    // 'encoder' is the pre-rename value for 'creator'; rows saved before migration 012 still
+    // carry it, so asking for creator has to ask for both.
+    const wanted = sources.includes("creator") ? [...sources, "encoder"] : sources
     const { data, error } = await supabase
       .from("meditations")
       .select("*")
+      .in("source", wanted)
       .order("created_at", { ascending: false })
 
     if (error) {
@@ -1040,7 +1073,7 @@ export class MeditationLibrary {
         originalFileName: row.original_filename || row.description || "Unknown",
         duration: row.duration || 0,
         createdAt: new Date(row.created_at).toISOString(),
-        source: row.source as "adjuster" | "creator",
+        source: row.source as MeditationSource,
         metadata: rowMetadata,
         audioExt: resolveAudioExtension(rowMetadata, audioRecord?.processedAudio),
         sourceExt: resolveAudioExtension(rowMetadata, audioRecord?.sourceAudio),
@@ -1113,7 +1146,7 @@ export class MeditationLibrary {
       originalFileName: string
       duration: number
       createdAt: string
-      source: "adjuster" | "creator"
+      source: MeditationSource
       metadata: any
       audioExt?: string
       sourceExt?: string

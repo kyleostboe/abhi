@@ -97,6 +97,12 @@ import {
   type StoredMeditationDurations,
 } from "@/lib/library-durations"
 
+/**
+ * What the library is showing. "all" means all *meditations* — recordings are a different kind of
+ * thing that happens to share the table, so they are only ever shown when asked for by name.
+ */
+type LibraryFilter = "all" | "adjuster" | "creator" | "recording"
+
 type MeditationGroup = {
   base: SavedMeditation
   variants: SavedMeditation[]
@@ -104,12 +110,13 @@ type MeditationGroup = {
 
 export default function LibraryPage() {
   const [meditations, setMeditations] = useState<SavedMeditation[]>([])
+  const [recordings, setRecordings] = useState<SavedMeditation[]>([])
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(true)
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [activeTab, setActiveTab] = useState<"meditations" | "playlists">("meditations")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null)
-  const [sourceFilter, setSourceFilter] = useState<"all" | "adjuster" | "creator">("all")
+  const [sourceFilter, setSourceFilter] = useState<LibraryFilter>("all")
   const [librarySort, setLibrarySort] = useState<LibrarySort>(DEFAULT_LIBRARY_SORT)
   const [newPlaylistName, setNewPlaylistName] = useState("")
   const [newPlaylistDescription, setNewPlaylistDescription] = useState("")
@@ -221,6 +228,7 @@ export default function LibraryPage() {
     try {
       const meditationsData = await MeditationLibrary.getAllMeditations()
       setMeditations(meditationsData)
+      setRecordings(await MeditationLibrary.getRecordings())
       const playlistsData = await MeditationLibrary.getAllPlaylists()
       setPlaylists(playlistsData)
       const playlistMeditationsPromises = playlistsData.map(async (playlist) => {
@@ -413,18 +421,19 @@ export default function LibraryPage() {
     return map
   }, [meditations])
 
-  const filteredMeditations = useMemo(
-    () =>
-      meditations.filter((med) => {
-        const lowerSearch = searchQuery.toLowerCase()
-        const matchesSearch =
-          med.title.toLowerCase().includes(lowerSearch) || med.originalFileName.toLowerCase().includes(lowerSearch)
-        const matchesSource = sourceFilter === "all" || med.source === sourceFilter
+  const filteredMeditations = useMemo(() => {
+    const pool = sourceFilter === "recording" ? recordings : meditations
+    const lowerSearch = searchQuery.toLowerCase()
 
-        return matchesSearch && matchesSource
-      }),
-    [meditations, searchQuery, sourceFilter],
-  )
+    return pool.filter((med) => {
+      const matchesSearch =
+        med.title.toLowerCase().includes(lowerSearch) || med.originalFileName.toLowerCase().includes(lowerSearch)
+      const matchesSource =
+        sourceFilter === "all" || sourceFilter === "recording" || med.source === sourceFilter
+
+      return matchesSearch && matchesSource
+    })
+  }, [meditations, recordings, searchQuery, sourceFilter])
 
   const groupMeditations = useCallback(
     (items: SavedMeditation[], includeExternalParent: boolean): MeditationGroup[] => {
@@ -592,7 +601,7 @@ export default function LibraryPage() {
     }
   }
 
-  const handleSourceFilterChange = (filter: "all" | "adjuster" | "creator") => {
+  const handleSourceFilterChange = (filter: LibraryFilter) => {
     setSourceFilter(filter)
     setSelectedPlaylist(null)
   }
@@ -2595,6 +2604,16 @@ export default function LibraryPage() {
                         }`}
                       >
                         Creator
+                      </button>
+                      <button
+                        onClick={() => handleSourceFilterChange("recording")}
+                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
+                          !selectedPlaylist && sourceFilter === "recording"
+                            ? "bg-white border-stone-300"
+                            : "bg-white border-gray-500 hover:shadow-none"
+                        }`}
+                      >
+                        Recordings
                       </button>
                       <select
                         value={librarySort}

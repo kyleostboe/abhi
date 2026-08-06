@@ -22,6 +22,8 @@ sits with you on a plain bell timer when you want no recording at all.
 - Place musical notes and sound cues (sampled piano, synth, chimes, bells).
 - Record voice instructions in the browser.
 - Mix background ambience with adjustable volumes.
+- Repeat a stretch of the timeline, or stretch the whole thing to a different length.
+- Keep a recording in the library and reuse it in anything you build later.
 - Export as Opus, AAC, WAV or MP3.
 
 ### Timer
@@ -42,6 +44,7 @@ sits with you on a plain bell timer when you want no recording at all.
   log, folders, playlists and settings.
 - Sort by recently added, recently played, most played, longest unplayed, length or title — the
   play-based orders read from the practice log.
+- Reusable voice recordings live here too, under their own filter.
 
 ### Journal
 

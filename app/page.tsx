@@ -58,7 +58,7 @@ import {
   type DetectSilenceOptions,
   type SilenceRegion,
 } from "@/lib/adjuster-workflow"
-import { MeditationLibrary, type SavedMeditation } from "@/lib/meditation-library"
+import { AccountRequiredError, MeditationLibrary, type SavedMeditation } from "@/lib/meditation-library"
 import { saveToolSession, getToolSession, clearToolSession } from "@/lib/storage/tool-session"
 import {
   saveAdjusterDraft,
@@ -90,6 +90,8 @@ import { log } from "@/lib/log"
 import { FALLBACK_SOUND_CUE, MUSICAL_NOTES, SOUND_CUES_LIBRARY } from "@/lib/meditation-sounds"
 import { ensureTone, getLoadedPianoSampler, playPianoNote, startPianoAudio } from "@/lib/piano-engine"
 import { RecorderSection } from "@/components/recorder-section"
+import { RecordingPicker, TimelineShape } from "@/components/creator-tools"
+import { repeatTimelineRange, scaleTimelineToDuration, timelineEnd } from "@/lib/timeline-ops"
 
 const ADJUSTER_SESSION_KEY = "abhi_last_adjuster_session"
 const CREATOR_SESSION_KEY = "abhi_last_creator_session"
@@ -2656,6 +2658,76 @@ export default function Home() {
     })
   }, [])
 
+  const [isRecordingPickerOpen, setIsRecordingPickerOpen] = useState(false)
+  const [isKeepingRecording, setIsKeepingRecording] = useState(false)
+
+  /** Keeps a fresh take in the library so it can be reused in other meditations. */
+  const keepRecordingInLibrary = useCallback(
+    async (recording: { url: string; label: string; duration: number }) => {
+      setIsKeepingRecording(true)
+      try {
+        const blob = await (await fetch(recording.url)).blob()
+        await MeditationLibrary.saveMeditation({
+          title: recording.label.trim() || "Recording",
+          originalFileName: `${recording.label.trim() || "recording"}.webm`,
+          duration: recording.duration,
+          source: "recording",
+          processedAudioData: blob,
+          metadata: {},
+        })
+        toast({ title: "Kept in library", description: "It's available to any meditation you build." })
+      } catch (error) {
+        if (error instanceof AccountRequiredError) {
+          toast({ title: "Sign in to keep recordings", description: error.message, variant: "destructive" })
+        } else {
+          log.error("[creator] Failed to keep recording:", error)
+          toast({ title: "Couldn't keep the recording", description: "Please try again.", variant: "destructive" })
+        }
+      } finally {
+        setIsKeepingRecording(false)
+      }
+    },
+    [toast],
+  )
+
+  /** Drops a saved recording onto the end of the timeline. */
+  const addSavedRecordingToTimeline = useCallback(
+    (recording: SavedMeditation) => {
+      const startTime = timelineEvents.length > 0 ? timelineEnd(timelineEvents) + 10 : 0
+      addEventToTimeline({
+        id: `event_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+        type: "recorded_voice",
+        startTime,
+        recordedAudioUrl: recording.processedAudioUrl,
+        recordedInstructionLabel: recording.title,
+        duration: recording.duration,
+        color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length],
+      })
+      toast({ title: "Added to timeline", description: `"${recording.title}" placed at the end.` })
+    },
+    [timelineEvents, addEventToTimeline, toast],
+  )
+
+  const handleRepeatRange = useCallback(
+    (range: { from: number; to: number; times: number }) => {
+      const next = repeatTimelineRange(timelineEvents, range)
+      setTimelineEvents(next)
+      const end = timelineEnd(next)
+      if (end > creatorTotalDuration) setCreatorTotalDuration(end)
+      toast({ title: "Repeated", description: `Timeline is now ${Math.round(end)}s long.` })
+    },
+    [timelineEvents, creatorTotalDuration, toast],
+  )
+
+  const handleScaleTimeline = useCallback(
+    (targetSeconds: number) => {
+      setTimelineEvents(scaleTimelineToDuration(timelineEvents, creatorTotalDuration, targetSeconds))
+      setCreatorTotalDuration(targetSeconds)
+      toast({ title: "Scaled", description: `Timeline stretched to ${Math.round(targetSeconds / 60)} min.` })
+    },
+    [timelineEvents, creatorTotalDuration, toast],
+  )
+
   const handleTimelineRecordingUpload = useCallback(
     async (file: File) => {
       let objectUrl: string | null = null
@@ -4103,6 +4175,14 @@ export default function Home() {
                       setRecordedBlobs={setRecordedBlobs}
                       setRecordingLabel={setRecordingLabel}
                       recordingPreviewRef={recordingPreviewRef}
+                      onKeepInLibrary={keepRecordingInLibrary}
+                      isKeeping={isKeepingRecording}
+                      onBrowseLibrary={() => setIsRecordingPickerOpen(true)}
+                    />
+                    <RecordingPicker
+                      open={isRecordingPickerOpen}
+                      onOpenChange={setIsRecordingPickerOpen}
+                      onSelect={addSavedRecordingToTimeline}
                     />
                   </motion.div>
                   {/* Timeline Editor for creator */}
@@ -4155,6 +4235,14 @@ export default function Home() {
                           playSingleNote={timelinePlaySingleNote}
                           playChordPreview={timelinePlayChordPreview}
                         />
+                        <div className="mt-5">
+                          <TimelineShape
+                            events={timelineEvents}
+                            totalDuration={creatorTotalDuration}
+                            onRepeat={handleRepeatRange}
+                            onScale={handleScaleTimeline}
+                          />
+                        </div>
                       </div>
                     </Card>
                   </motion.div>

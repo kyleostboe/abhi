@@ -59,6 +59,12 @@ shape — the column is schemaless jsonb, so `normalizeSettings` is the only thi
 is deliberately total: any stored value yields a complete settings object, so nothing downstream
 null-checks a preference. Signed-out users get the defaults and cannot change them.
 
+**Recordings share the `meditations` table but are not meditations.** `source: "recording"` is a
+reusable voice clip; it lives there to inherit the whole audio pipeline (R2 upload, presigned
+playback, backup, deletion) rather than needing a parallel one, and every meditation listing
+filters it out. `MeditationLibrary.getAllMeditations()` excludes them; `getRecordings()` is the
+other half.
+
 **Two timeline models, deliberately.** `TimelineItem` (in `lib/types.ts`) is the richer
 editor-side row; `TimelineEvent` is what is persisted. They also use different field names for
 the same thing — in-memory `soundCueSrc` is stored as `soundSrc`. Mixing them up has caused a
