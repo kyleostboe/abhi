@@ -37,6 +37,15 @@ import {
 import { runAdjusterWorkflow, suggestSilenceThreshold, type SilenceRegion } from "@/lib/adjuster-workflow"
 import { cn } from "@/lib/utils"
 import { useJournal } from "@/hooks/use-journal"
+import { useSessionTracker } from "@/hooks/use-session-tracker"
+import {
+  DEFAULT_LIBRARY_SORT,
+  LIBRARY_SORTS,
+  LIBRARY_SORT_LABELS,
+  buildPlayStats,
+  sortLibraryRows,
+  type LibrarySort,
+} from "@/lib/library-sort"
 import { useAuth } from "@/hooks/use-auth"
 import {
   Trash2,
@@ -88,6 +97,12 @@ import {
   type StoredMeditationDurations,
 } from "@/lib/library-durations"
 
+/**
+ * What the library is showing. "all" means all *meditations* — recordings are a different kind of
+ * thing that happens to share the table, so they are only ever shown when asked for by name.
+ */
+type LibraryFilter = "all" | "adjuster" | "creator" | "recording"
+
 type MeditationGroup = {
   base: SavedMeditation
   variants: SavedMeditation[]
@@ -95,19 +110,20 @@ type MeditationGroup = {
 
 export default function LibraryPage() {
   const [meditations, setMeditations] = useState<SavedMeditation[]>([])
+  const [recordings, setRecordings] = useState<SavedMeditation[]>([])
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(true)
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [activeTab, setActiveTab] = useState<"meditations" | "playlists">("meditations")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null)
-  const [sourceFilter, setSourceFilter] = useState<"all" | "adjuster" | "creator">("all")
+  const [sourceFilter, setSourceFilter] = useState<LibraryFilter>("all")
+  const [librarySort, setLibrarySort] = useState<LibrarySort>(DEFAULT_LIBRARY_SORT)
   const [newPlaylistName, setNewPlaylistName] = useState("")
   const [newPlaylistDescription, setNewPlaylistDescription] = useState("")
   const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null)
   const [selectedMeditation, setSelectedMeditation] = useState<SavedMeditation | null>(null)
   const [baseMeditation, setBaseMeditation] = useState<SavedMeditation | null>(null)
-  const { entries: journalEntries, recordPlayback: recordJournalPlayback } = useJournal()
-  const [hasRecordedJournalEntry, setHasRecordedJournalEntry] = useState(false)
+  const { entries: journalEntries } = useJournal()
   const [isJournalHistoryOpen, setIsJournalHistoryOpen] = useState(false)
   const [activeJournalEntryId, setActiveJournalEntryId] = useState<string | null>(null)
   const [handledMeditationParam, setHandledMeditationParam] = useState<string | null>(null)
@@ -164,6 +180,9 @@ export default function LibraryPage() {
   const quickAdjustPauseMapRef = useRef<Map<string, SilenceRegion[]>>(new Map())
   const presetsPersistReadyRef = useRef(false)
   const durationsPersistReadyRef = useRef(false)
+  // Mirrors playerTime so the session tracker can read the current position without re-subscribing
+  // on every tick.
+  const playerTimeRef = useRef(0)
   const backupInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
   const router = useRouter()
@@ -209,6 +228,7 @@ export default function LibraryPage() {
     try {
       const meditationsData = await MeditationLibrary.getAllMeditations()
       setMeditations(meditationsData)
+      setRecordings(await MeditationLibrary.getRecordings())
       const playlistsData = await MeditationLibrary.getAllPlaylists()
       setPlaylists(playlistsData)
       const playlistMeditationsPromises = playlistsData.map(async (playlist) => {
@@ -401,18 +421,19 @@ export default function LibraryPage() {
     return map
   }, [meditations])
 
-  const filteredMeditations = useMemo(
-    () =>
-      meditations.filter((med) => {
-        const lowerSearch = searchQuery.toLowerCase()
-        const matchesSearch =
-          med.title.toLowerCase().includes(lowerSearch) || med.originalFileName.toLowerCase().includes(lowerSearch)
-        const matchesSource = sourceFilter === "all" || med.source === sourceFilter
+  const filteredMeditations = useMemo(() => {
+    const pool = sourceFilter === "recording" ? recordings : meditations
+    const lowerSearch = searchQuery.toLowerCase()
 
-        return matchesSearch && matchesSource
-      }),
-    [meditations, searchQuery, sourceFilter],
-  )
+    return pool.filter((med) => {
+      const matchesSearch =
+        med.title.toLowerCase().includes(lowerSearch) || med.originalFileName.toLowerCase().includes(lowerSearch)
+      const matchesSource =
+        sourceFilter === "all" || sourceFilter === "recording" || med.source === sourceFilter
+
+      return matchesSearch && matchesSource
+    })
+  }, [meditations, recordings, searchQuery, sourceFilter])
 
   const groupMeditations = useCallback(
     (items: SavedMeditation[], includeExternalParent: boolean): MeditationGroup[] => {
@@ -459,13 +480,48 @@ export default function LibraryPage() {
     [allMeditationsMap],
   )
 
+  useEffect(() => {
+    playerTimeRef.current = playerTime
+  }, [playerTime])
+
+  const readPlayerTime = useCallback(() => playerTimeRef.current, [])
+
+  // The sit itself is recorded in `sessions`; playback no longer writes a journal entry. Those
+  // two used to be the same row, which meant a sit only existed if it was written about and a
+  // mis-tap looked identical to a real sit. Notes are now created when something is actually
+  // written.
+  const { finish: finishSession, resumeFor, sessions } = useSessionTracker({
+    meditationId: selectedMeditation?.id ?? null,
+    meditationTitle: selectedMeditation?.title ?? null,
+    durationPlanned: selectedMeditation?.duration ?? null,
+    isPlaying: isAudioPlaying,
+    getPosition: readPlayerTime,
+  })
+
+  // Play counts and last-played come from the sessions log, so "recently played" means actually
+  // sat with rather than merely opened.
+  const playStats = useMemo(() => buildPlayStats(sessions), [sessions])
+
   const displayedGroups = useMemo<MeditationGroup[]>(() => {
-    if (selectedPlaylist) {
-      const playlistItems = playlistMeditationsMap[selectedPlaylist] || []
-      return groupMeditations(playlistItems, false)
-    }
-    return groupMeditations(filteredMeditations, true)
-  }, [selectedPlaylist, playlistMeditationsMap, filteredMeditations, groupMeditations])
+    const groups = selectedPlaylist
+      ? groupMeditations(playlistMeditationsMap[selectedPlaylist] || [], false)
+      : groupMeditations(filteredMeditations, true)
+
+    // A group is ordered by its base, since that is the row the card shows.
+    const ordered = sortLibraryRows(
+      groups.map((group) => ({ ...group, ...group.base })),
+      librarySort,
+      playStats,
+    )
+    return ordered.map(({ base, variants }) => ({ base, variants }))
+  }, [
+    selectedPlaylist,
+    playlistMeditationsMap,
+    filteredMeditations,
+    groupMeditations,
+    librarySort,
+    playStats,
+  ])
 
   const journalEntriesForSelectedMeditation = useMemo(() => {
     if (!selectedMeditation) return []
@@ -477,17 +533,6 @@ export default function LibraryPage() {
   const activeJournalEntry = activeJournalEntryId
     ? (journalEntriesForSelectedMeditation.find((entry) => entry.id === activeJournalEntryId) ?? null)
     : (journalEntriesForSelectedMeditation[0] ?? null)
-
-  useEffect(() => {
-    setHasRecordedJournalEntry(false)
-  }, [selectedMeditation?.id])
-
-  useEffect(() => {
-    if (isAudioPlaying && selectedMeditation && !hasRecordedJournalEntry) {
-      void recordJournalPlayback({ id: selectedMeditation.id, title: selectedMeditation.title })
-      setHasRecordedJournalEntry(true)
-    }
-  }, [isAudioPlaying, selectedMeditation, hasRecordedJournalEntry, recordJournalPlayback])
 
   useEffect(() => {
     if (!isJournalHistoryOpen) return
@@ -556,7 +601,7 @@ export default function LibraryPage() {
     }
   }
 
-  const handleSourceFilterChange = (filter: "all" | "adjuster" | "creator") => {
+  const handleSourceFilterChange = (filter: LibraryFilter) => {
     setSourceFilter(filter)
     setSelectedPlaylist(null)
   }
@@ -2180,6 +2225,9 @@ export default function LibraryPage() {
     }
     const handleEndedEvent = () => {
       setIsAudioPlaying(false)
+      // Close the sit before the position resets — finish() reads the current position, and a
+      // reset one would record the sit as having got nowhere.
+      finishSession()
       setPlayerTime(0)
     }
 
@@ -2204,7 +2252,7 @@ export default function LibraryPage() {
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata)
       audio.removeEventListener("ended", handleEndedEvent)
     }
-  }, [selectedMeditation, currentPlaybackRate, baseMeditation, setPlayerTime, setPlayerDuration])
+  }, [selectedMeditation, currentPlaybackRate, baseMeditation, setPlayerTime, setPlayerDuration, finishSession])
 
   useEffect(() => {
     if (!selectedMeditation && timelineAudioRef.current) {
@@ -2505,12 +2553,12 @@ export default function LibraryPage() {
                     <div className={`${shouldStackFilters ? "" : "md:[grid-row:span_2]"}`}>
                       {/* Framed like the Adjuster's upload area — a thin gradient rule around a
                           white field — using the Target Duration / Sound Cues gradient. */}
-                      <div className="rounded-sm bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 p-0.5 shadow-lg">
+                      <div className="rounded-sm bg-gradient-to-br from-logo-blue-400 to-logo-amber-300 py-1 px-[5px] shadow-lg">
                         <input
                           placeholder="Search meditations..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="flex h-11 w-full rounded-sm border-0 bg-white px-4 text-xs font-black text-gray-600 shadow-none outline-none ring-offset-background placeholder:font-normal placeholder:text-gray-500 focus-visible:outline-none md:text-xs"
+                          className="flex h-11 w-full rounded-[10px] border border-stone-300 bg-white px-4 font-serif text-xs font-black text-gray-600 shadow-none outline-none ring-offset-background placeholder:font-black placeholder:text-gray-600 focus-visible:outline-none md:text-xs"
                         />
                       </div>
                       {/* Under the search field on a phone, at the end of the quick filters from
@@ -2557,6 +2605,28 @@ export default function LibraryPage() {
                       >
                         Creator
                       </button>
+                      <button
+                        onClick={() => handleSourceFilterChange("recording")}
+                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
+                          !selectedPlaylist && sourceFilter === "recording"
+                            ? "bg-white border-stone-300"
+                            : "bg-white border-gray-500 hover:shadow-none"
+                        }`}
+                      >
+                        Recordings
+                      </button>
+                      <select
+                        value={librarySort}
+                        onChange={(event) => setLibrarySort(event.target.value as LibrarySort)}
+                        aria-label="Sort meditations"
+                        className="flex items-center justify-center rounded-[8px] border-[3px] border-gray-500 bg-white px-3 py-1 font-serif text-xs font-black text-gray-600 shadow-md transition-all duration-200 ease-out hover:shadow-none"
+                      >
+                        {LIBRARY_SORTS.map((option) => (
+                          <option key={option} value={option}>
+                            {LIBRARY_SORT_LABELS[option]}
+                          </option>
+                        ))}
+                      </select>
                       {playlists.map((playlist) => (
                         <button
                           key={playlist.id}

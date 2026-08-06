@@ -32,6 +32,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
 import { LogoMark } from "@/components/logo-mark"
 import { TimerWheel } from "@/components/timer-wheel"
+import { TimerTool } from "@/components/timer-tool"
 import { Label } from "@/components/ui/label"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useToast } from "@/hooks/use-toast"
@@ -57,7 +58,7 @@ import {
   type DetectSilenceOptions,
   type SilenceRegion,
 } from "@/lib/adjuster-workflow"
-import { MeditationLibrary, type SavedMeditation } from "@/lib/meditation-library"
+import { AccountRequiredError, MeditationLibrary, type SavedMeditation } from "@/lib/meditation-library"
 import { saveToolSession, getToolSession, clearToolSession } from "@/lib/storage/tool-session"
 import {
   saveAdjusterDraft,
@@ -86,13 +87,23 @@ import * as Tone from "tone"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
 import { AuthButtons } from "@/components/auth-buttons"
 import { log } from "@/lib/log"
-import { MUSICAL_NOTES, SOUND_CUES_LIBRARY } from "@/lib/meditation-sounds"
+import { FALLBACK_SOUND_CUE, MUSICAL_NOTES, SOUND_CUES_LIBRARY } from "@/lib/meditation-sounds"
 import { ensureTone, getLoadedPianoSampler, playPianoNote, startPianoAudio } from "@/lib/piano-engine"
 import { RecorderSection } from "@/components/recorder-section"
+import { RecordingPicker, TimelineShape } from "@/components/creator-tools"
+import { repeatTimelineRange, scaleTimelineToDuration, timelineEnd } from "@/lib/timeline-ops"
 
 const ADJUSTER_SESSION_KEY = "abhi_last_adjuster_session"
 const CREATOR_SESSION_KEY = "abhi_last_creator_session"
 const ACTIVE_MODE_SESSION_KEY = "abhi_last_active_mode"
+
+/** The three tools on the home page. Timer is one of them, not a separate destination. */
+type ToolMode = "adjuster" | "creator" | "timer"
+
+const TOOL_MODES: ToolMode[] = ["adjuster", "creator", "timer"]
+
+const isToolMode = (value: unknown): value is ToolMode =>
+  typeof value === "string" && (TOOL_MODES as string[]).includes(value)
 const DEFAULT_CREATOR_DURATION_SECONDS = 10 * 60
 
 
@@ -138,7 +149,7 @@ export default function Home() {
   const { isAuthenticated, login } = useAuth()
   const router = useRouter()
 
-  const [activeMode, setActiveMode] = useState<"adjuster" | "creator">("adjuster")
+  const [activeMode, setActiveMode] = useState<ToolMode>("adjuster")
   // Server always renders false (no window); setting this only after mount avoids a
   // hydration mismatch on localhost, where the client would otherwise disagree immediately.
   const [isLocalDebugHost, setIsLocalDebugHost] = useState(false)
@@ -153,7 +164,7 @@ export default function Home() {
   const [toolConvertStep, setToolConvertStep] = useState("")
   const [toolConvertProgress, setToolConvertProgress] = useState(0)
   const [shouldScrollToAdjuster, setShouldScrollToAdjuster] = useState(false)
-  const [activeTab, setActiveTab] = useState<"adjuster" | "creator">("adjuster") // State for tab navigation
+  const [activeTab, setActiveTab] = useState<ToolMode>("adjuster") // State for tab navigation
 
   // == States for reuploading over an already-loaded Adjuster file ==
   // A new file selected/dropped while `file` is already set — held here until the user
@@ -1748,9 +1759,9 @@ export default function Home() {
                 startTime: i * eventDuration,
                 duration: Math.min(eventDuration * 0.8, 60),
                 instructionText: `Reconstructed instruction ${i + 1}`,
-                soundCueId: SOUND_CUES_LIBRARY[0]?.id || "default_sound",
-                soundCueName: SOUND_CUES_LIBRARY[0]?.name || "Default Sound",
-                soundCueSrc: SOUND_CUES_LIBRARY[0]?.src || "",
+                soundCueId: FALLBACK_SOUND_CUE.id,
+                soundCueName: FALLBACK_SOUND_CUE.name,
+                soundCueSrc: FALLBACK_SOUND_CUE.src,
                 color: EVENT_COLORS[i % EVENT_COLORS.length],
               })
             }
@@ -2062,9 +2073,9 @@ export default function Home() {
 
     const handleHashChange = () => {
       const hash = window.location.hash.substring(1)
-      if (hash === "adjuster" || hash === "creator") {
-        setActiveTab(hash as "adjuster" | "creator")
-        setActiveMode(hash as "adjuster" | "creator")
+      if (isToolMode(hash)) {
+        setActiveTab(hash)
+        setActiveMode(hash)
       }
     }
 
@@ -2107,15 +2118,22 @@ export default function Home() {
         return
       }
 
+      // An explicit #tool in the URL is a request, not a preference — it must not be overridden
+      // by whichever tool happened to be open last.
+      if (isToolMode(window.location.hash.substring(1))) return
+
       try {
-        const lastMode = window.sessionStorage.getItem(ACTIVE_MODE_SESSION_KEY) as "adjuster" | "creator" | null
-        if (lastMode !== "adjuster" && lastMode !== "creator") return
+        const lastMode = window.sessionStorage.getItem(ACTIVE_MODE_SESSION_KEY)
+        if (!isToolMode(lastMode)) return
 
         // Return to whichever tool was last open, whether or not a meditation was loaded into
         // it. This used to be conditional on a persisted meditation existing, so leaving the
         // Creator empty and coming back from the Library always landed on the Adjuster.
         setActiveTab(lastMode)
         setActiveMode(lastMode)
+
+        // The Timer holds no meditation, so there is nothing to restore into it.
+        if (lastMode === "timer") return
 
         const persistedKey = lastMode === "adjuster" ? ADJUSTER_SESSION_KEY : CREATOR_SESSION_KEY
         const persisted = window.sessionStorage.getItem(persistedKey)
@@ -2137,6 +2155,28 @@ export default function Home() {
       window.removeEventListener("hashchange", handleHashChange)
     }
   }, [importFromLibrary])
+
+  // The Timer is a detour rather than a destination, so pressing its button again puts you back
+  // where you were instead of dropping you on the Adjuster.
+  const toolBeforeTimerRef = useRef<Exclude<ToolMode, "timer">>("adjuster")
+
+  const toggleTimer = useCallback(() => {
+    setActiveMode((current) => {
+      if (current === "timer") {
+        const back = toolBeforeTimerRef.current
+        setActiveTab(back)
+        // Leave no #timer behind, or a refresh would reopen what was just closed.
+        if (typeof window !== "undefined" && window.location.hash === "#timer") {
+          window.history.replaceState(null, "", window.location.pathname + window.location.search)
+        }
+        return back
+      }
+
+      toolBeforeTimerRef.current = current
+      setActiveTab("timer")
+      return "timer"
+    })
+  }, [])
 
   const processAudioAdjusterAction = async () => {
     setIsProcessingComplete(false)
@@ -2618,6 +2658,76 @@ export default function Home() {
     })
   }, [])
 
+  const [isRecordingPickerOpen, setIsRecordingPickerOpen] = useState(false)
+  const [isKeepingRecording, setIsKeepingRecording] = useState(false)
+
+  /** Keeps a fresh take in the library so it can be reused in other meditations. */
+  const keepRecordingInLibrary = useCallback(
+    async (recording: { url: string; label: string; duration: number }) => {
+      setIsKeepingRecording(true)
+      try {
+        const blob = await (await fetch(recording.url)).blob()
+        await MeditationLibrary.saveMeditation({
+          title: recording.label.trim() || "Recording",
+          originalFileName: `${recording.label.trim() || "recording"}.webm`,
+          duration: recording.duration,
+          source: "recording",
+          processedAudioData: blob,
+          metadata: {},
+        })
+        toast({ title: "Kept in library", description: "It's available to any meditation you build." })
+      } catch (error) {
+        if (error instanceof AccountRequiredError) {
+          toast({ title: "Sign in to keep recordings", description: error.message, variant: "destructive" })
+        } else {
+          log.error("[creator] Failed to keep recording:", error)
+          toast({ title: "Couldn't keep the recording", description: "Please try again.", variant: "destructive" })
+        }
+      } finally {
+        setIsKeepingRecording(false)
+      }
+    },
+    [toast],
+  )
+
+  /** Drops a saved recording onto the end of the timeline. */
+  const addSavedRecordingToTimeline = useCallback(
+    (recording: SavedMeditation) => {
+      const startTime = timelineEvents.length > 0 ? timelineEnd(timelineEvents) + 10 : 0
+      addEventToTimeline({
+        id: `event_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+        type: "recorded_voice",
+        startTime,
+        recordedAudioUrl: recording.processedAudioUrl,
+        recordedInstructionLabel: recording.title,
+        duration: recording.duration,
+        color: EVENT_COLORS[timelineEvents.length % EVENT_COLORS.length],
+      })
+      toast({ title: "Added to timeline", description: `"${recording.title}" placed at the end.` })
+    },
+    [timelineEvents, addEventToTimeline, toast],
+  )
+
+  const handleRepeatRange = useCallback(
+    (range: { from: number; to: number; times: number }) => {
+      const next = repeatTimelineRange(timelineEvents, range)
+      setTimelineEvents(next)
+      const end = timelineEnd(next)
+      if (end > creatorTotalDuration) setCreatorTotalDuration(end)
+      toast({ title: "Repeated", description: `Timeline is now ${Math.round(end)}s long.` })
+    },
+    [timelineEvents, creatorTotalDuration, toast],
+  )
+
+  const handleScaleTimeline = useCallback(
+    (targetSeconds: number) => {
+      setTimelineEvents(scaleTimelineToDuration(timelineEvents, creatorTotalDuration, targetSeconds))
+      setCreatorTotalDuration(targetSeconds)
+      toast({ title: "Scaled", description: `Timeline stretched to ${Math.round(targetSeconds / 60)} min.` })
+    },
+    [timelineEvents, creatorTotalDuration, toast],
+  )
+
   const handleTimelineRecordingUpload = useCallback(
     async (file: File) => {
       let objectUrl: string | null = null
@@ -3070,7 +3180,11 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-0 md:p-8 pt-0 md:pt-24">
-      <Navigation showProfileButton />
+      <Navigation
+        showProfileButton
+        timerActive={activeMode === "timer"}
+        onTimerClick={toggleTimer}
+      />
 
       <div className="relative">
         {isLocalDebugHost && (
@@ -3218,9 +3332,26 @@ export default function Home() {
                     </p>
                   </motion.div>
                 )}
+                {activeMode === "timer" && (
+                  <motion.div
+                    key="timer-note"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
+                  >
+                    <p className="text-center px-4 pt-1.5 text-xs pb-0 text-stone-500">
+                      Sit with nothing but bells. Set a length or leave it open, choose where the bells fall, and
+                      begin — nothing is recorded or exported.
+                    </p>
+                  </motion.div>
+                )}
               </AnimatePresence>
               {/* Conditional Rendering based on activeMode */}
-              {activeMode === "adjuster" ? (
+              {activeMode === "timer" ? (
+                <TimerTool />
+              ) : activeMode === "adjuster" ? (
                 // == Length Adjuster UI ==
                 <div ref={adjusterSectionRef} className="space-y-4">
                   {/* Resources section */}
@@ -4044,6 +4175,14 @@ export default function Home() {
                       setRecordedBlobs={setRecordedBlobs}
                       setRecordingLabel={setRecordingLabel}
                       recordingPreviewRef={recordingPreviewRef}
+                      onKeepInLibrary={keepRecordingInLibrary}
+                      isKeeping={isKeepingRecording}
+                      onBrowseLibrary={() => setIsRecordingPickerOpen(true)}
+                    />
+                    <RecordingPicker
+                      open={isRecordingPickerOpen}
+                      onOpenChange={setIsRecordingPickerOpen}
+                      onSelect={addSavedRecordingToTimeline}
                     />
                   </motion.div>
                   {/* Timeline Editor for creator */}
@@ -4096,6 +4235,14 @@ export default function Home() {
                           playSingleNote={timelinePlaySingleNote}
                           playChordPreview={timelinePlayChordPreview}
                         />
+                        <div className="mt-5">
+                          <TimelineShape
+                            events={timelineEvents}
+                            totalDuration={creatorTotalDuration}
+                            onRepeat={handleRepeatRange}
+                            onScale={handleScaleTimeline}
+                          />
+                        </div>
                       </div>
                     </Card>
                   </motion.div>

@@ -8,13 +8,29 @@
 
 import type { SoundCue } from "@/lib/types"
 
-export const SOUND_CUES_LIBRARY: SoundCue[] = [
-  { id: "ambient-forest", name: "Forest Ambiance", src: "/sounds/forest.mp3", duration: 60 },
-  { id: "ocean-waves", name: "Ocean Waves", src: "/sounds/ocean.mp3", duration: 60 },
-  { id: "gentle-rain", name: "Gentle Rain", src: "/sounds/rain.mp3", duration: 60 },
-  { id: "singing-bowl", name: "Singing Bowl", src: "/sounds/singing_bowl.mp3", duration: 15 },
-  { id: "chimes", name: "Wind Chimes", src: "/sounds/chimes.mp3", duration: 30 },
-]
+/**
+ * File-backed sound cues.
+ *
+ * Empty on purpose. This table used to name five `/sounds/*.mp3` files that were never committed,
+ * so every entry resolved to a 404 — including the one the import fallback reached for as its
+ * default. Nothing in the UI offers these for selection (the picker renders MUSICAL_NOTES), so
+ * the entries only ever surfaced as silent failures.
+ *
+ * The lookups against this table all tolerate a miss, which is what makes leaving it empty safe:
+ * add entries back when the audio files exist alongside them.
+ */
+export const SOUND_CUES_LIBRARY: SoundCue[] = []
+
+/**
+ * The cue used when a save carries no timeline metadata and one has to be invented. A `musical:`
+ * src is synthesised by the piano engine at render time, so unlike a file reference it cannot be
+ * missing.
+ */
+export const FALLBACK_SOUND_CUE = {
+  id: "fallback-c5",
+  name: "C5",
+  src: "musical:C5",
+} as const
 
 export const NOTE_FREQUENCIES = {
   C3: 130.81,
@@ -72,7 +88,7 @@ export const NOTES = [
 ]
 
 export const MUSICAL_NOTES = {
-  Beautiful: NOTES.map((note, index) => ({
+  Beautiful: NOTES.map((note) => ({
     id: `note-${note.toLowerCase().replace("#", "s")}`,
     name: note,
     note: note.charAt(0),

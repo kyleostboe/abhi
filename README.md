@@ -1,7 +1,8 @@
 # abhī
 
 A meditation tool that adjusts the length of guided meditations by intelligently re-spacing
-silence, and lets you build custom meditations from instructions, sound cues and your own voice.
+silence, lets you build custom meditations from instructions, sound cues and your own voice, and
+sits with you on a plain bell timer when you want no recording at all.
 
 ## Features
 
@@ -21,23 +22,43 @@ silence, and lets you build custom meditations from instructions, sound cues and
 - Place musical notes and sound cues (sampled piano, synth, chimes, bells).
 - Record voice instructions in the browser.
 - Mix background ambience with adjustable volumes.
+- Repeat a stretch of the timeline, or stretch the whole thing to a different length.
+- Keep a recording in the library and reuse it in anything you build later.
 - Export as Opus, AAC, WAV or MP3.
+
+### Timer
+
+- A third tool alongside the Adjuster and Creator, and like them it works without an account.
+- A sit with no recording behind it: fixed length or open-ended.
+- Opening, closing and interval bells, with a settling period before the sit begins.
+- Bells are synthesised and scheduled on the audio clock in advance, so a sit keeps its bells
+  when the screen goes off.
+- Signed in, every sit is recorded to the practice log.
 
 ### Library
 
 - Everything saved, grouped by meditation with its length variants.
 - Quick-adjust presets (10m / 30m / 1h, editable) to re-cut a meditation to a new length.
-- Playlists, backup import/export, and per-account storage usage.
+- Playlists and per-account storage usage.
+- Backup export/import covering the whole account — audio, notes (as markdown), the practice
+  log, folders, playlists and settings.
+- Sort by recently added, recently played, most played, longest unplayed, length or title — the
+  play-based orders read from the practice log.
+- Reusable voice recordings live here too, under their own filter.
 
 ### Journal
 
 - Markdown notes, optionally attached to a meditation you have just sat.
+- A Sessions tab showing the practice log — every sit, guided or timer, grouped by day, with
+  streaks and a practice calendar.
 - Folders, tags, images and voice notes.
 - Notes are stored as self-describing markdown files (see [Storage](#storage)).
+- After a sit, a note is offered but not created — nothing is written until you write something.
 
 ### Settings
 
 - Account details, storage usage and sign-out.
+- When the practice day starts, so a late-night sit counts toward the day that is ending.
 
 ## Getting started
 

@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from "@/hooks/use-auth"
 import { PageStatePreserver } from "@/components/page-state-preserver"
+import { MotionPreferences } from "@/components/motion-preferences"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -19,11 +20,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html className="my-0" lang="en" suppressHydrationWarning>
       <body className={`bg-gradient-to-r from-gray-50 to-muted ${inter.className}`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-          <AuthProvider>
-            <PageStatePreserver />
-            {children}
-            <Toaster />
-          </AuthProvider>
+          <MotionPreferences>
+            <AuthProvider>
+              <PageStatePreserver />
+              {children}
+              <Toaster />
+            </AuthProvider>
+          </MotionPreferences>
         </ThemeProvider>
       </body>
     </html>

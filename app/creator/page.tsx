@@ -25,58 +25,9 @@ import {
   type MappedInstruction,
 } from "@/lib/creator-sounds"
 
-type SpeechRecognitionAlternative = {
-  transcript: string
-  confidence: number
-}
-
-type SpeechRecognitionResult = {
-  readonly isFinal: boolean
-  readonly length: number
-  item(index: number): SpeechRecognitionAlternative
-  [index: number]: SpeechRecognitionAlternative
-}
-
-type SpeechRecognitionResultList = {
-  readonly length: number
-  item(index: number): SpeechRecognitionResult
-  [index: number]: SpeechRecognitionResult
-}
-
-type SpeechRecognitionEvent = Event & {
-  resultIndex: number
-  results: SpeechRecognitionResultList
-}
-
-type SpeechRecognitionErrorEvent = Event & {
-  error: string
-}
-
-type BrowserSpeechRecognition = {
-  continuous: boolean
-  interimResults: boolean
-  lang: string
-  start: () => void
-  stop: () => void
-  abort: () => void
-  onresult: ((event: SpeechRecognitionEvent) => void) | null
-  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null
-  onend: (() => void) | null
-}
-
-type SpeechRecognitionConstructor = new () => BrowserSpeechRecognition
-
-type SpeechRecognitionWindow = Window & {
-  SpeechRecognition?: SpeechRecognitionConstructor
-  webkitSpeechRecognition?: SpeechRecognitionConstructor
-}
-
 export default function CreatorPage() {
   const [file, setFile] = useState<File | null>(null)
   const [originalAudioUrl, setOriginalAudioUrl] = useState<string>("")
-  const [transcriptionMethod, setTranscriptionMethod] = useState<"browser" | "manual">("browser")
-  const [isTranscribing, setIsTranscribing] = useState<boolean>(false)
-  const [transcriptionProgress, setTranscriptionProgress] = useState(0)
   const [instructions, setInstructions] = useState<Instruction[]>([])
   const [mappedInstructions, setMappedInstructions] = useState<MappedInstruction[]>([])
   const [isEncoding, setIsEncoding] = useState<boolean>(false)
@@ -86,8 +37,6 @@ export default function CreatorPage() {
   const [encodedDistributionMetadata, setEncodedDistributionMetadata] = useState<AudioFormatMetadata | null>(null)
   const [exportFormat, setExportFormat] = useState<AudioExportFormat>("opus")
   const [status, setStatus] = useState<{ message: string; type: "info" | "success" | "error" } | null>(null)
-  const [fullTranscript, setFullTranscript] = useState<string>("")
-  const [isListening, setIsListening] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [audioDuration, setAudioDuration] = useState(0)
 
@@ -98,7 +47,6 @@ export default function CreatorPage() {
   const audioContextRef = useRef<AudioContext | null>(null)
   const uploadAreaRef = useRef<HTMLDivElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
-  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null)
   const originalAudioBufferRef = useRef<AudioBuffer | null>(null)
 
   const encodedQualityWarning =
@@ -141,20 +89,6 @@ export default function CreatorPage() {
     const setupAudio = async () => {
       const context = await ensureAudioContext()
       if (!context || !isMounted) return
-
-      // Initialize Speech Recognition if available
-      if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
-        const speechWindow = window as SpeechRecognitionWindow
-        const SpeechRecognitionClass =
-          speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition
-
-        if (SpeechRecognitionClass) {
-          recognitionRef.current = new SpeechRecognitionClass()
-          recognitionRef.current.continuous = true
-          recognitionRef.current.interimResults = true
-          recognitionRef.current.lang = "en-US"
-        }
-      }
     }
 
     void setupAudio()
@@ -411,7 +345,6 @@ export default function CreatorPage() {
       setInstructions([])
       setMappedInstructions([])
       setEncodedAudioUrl("")
-      setFullTranscript("")
       setStatus(null)
 
       // Load audio buffer for encoding
@@ -453,99 +386,6 @@ export default function CreatorPage() {
         },
       } as React.ChangeEvent<HTMLInputElement>
       handleFileChange(mockChangeEvent)
-    }
-  }
-
-  const handleBrowserTranscription = async () => {
-    if (!file || !recognitionRef.current) {
-      setStatus({ message: "Speech recognition not supported in this browser.", type: "error" })
-      return
-    }
-
-    setIsTranscribing(true)
-    setTranscriptionProgress(0)
-    setStatus({ message: "Transcribing audio using browser speech recognition...", type: "info" })
-
-    const recognition = recognitionRef.current
-    let transcript = ""
-    const segments: Array<{ text: string; timestamp: number }> = []
-
-    recognition.onresult = (event) => {
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i]
-        if (result.isFinal) {
-          const text = result[0].transcript
-          transcript += text + " "
-          segments.push({
-            text: text.trim(),
-            timestamp: Date.now() / 1000, // Simple timestamp
-          })
-        }
-      }
-    }
-
-    recognition.onerror = (event) => {
-      log.error("Speech recognition error:", event.error)
-      setStatus({ message: "Speech recognition failed. Try the manual method instead.", type: "error" })
-      setIsTranscribing(false)
-    }
-
-    recognition.onend = () => {
-      setIsTranscribing(false)
-      setTranscriptionProgress(100)
-
-      if (segments.length > 0) {
-        const instructions = segments.map((segment, index) => ({
-          id: `instr_${index + 1}`,
-          text: segment.text,
-          startTime: index * 5, // Estimate 5 seconds per segment
-          endTime: (index + 1) * 5,
-        }))
-
-        setInstructions(instructions)
-        setMappedInstructions(
-          instructions.map((instr) => ({
-            ...instr,
-            soundId: availableSounds[0].id,
-            keepOriginal: false,
-            originalVolume: 50,
-            soundVolume: 70,
-          })),
-        )
-        setFullTranscript(transcript)
-        setStatus({ message: `Found ${instructions.length} segments. Please review and adjust.`, type: "success" })
-      } else {
-        setStatus({ message: "No speech detected. Try the manual method instead.", type: "error" })
-      }
-    }
-
-    // Play audio and start recognition
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0
-      audioRef.current.play()
-      recognition.start()
-
-      // Stop recognition when audio ends
-      audioRef.current.onended = () => {
-        recognition.stop()
-      }
-    }
-  }
-
-  const handleTranscription = () => {
-    switch (transcriptionMethod) {
-      case "browser":
-        handleBrowserTranscription()
-        break
-      case "manual":
-        // Initialize manual mode
-        setInstructions([])
-        setMappedInstructions([])
-        setStatus({
-          message: "Manual mode: Use the controls below to mark instruction points while listening.",
-          type: "info",
-        })
-        break
     }
   }
 

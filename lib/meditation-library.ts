@@ -9,25 +9,42 @@ import {
   getAllAudioRecords,
   type AudioRecord,
 } from "./storage/indexed-db"
-import {
-  addMeditationToMemoryPlaylist,
-  deleteMemoryMeditation,
-  deleteMemoryPlaylist,
-  getMemoryAudio,
-  getMemoryMeditation,
-  getMemoryMeditations,
-  getMemoryPlaylists,
-  getMemoryPlaylistMeditations,
-  getMemoryUsageBytes,
-  removeMeditationFromMemoryPlaylist,
-  saveMemoryMeditation,
-  upsertMemoryPlaylist,
-} from "./storage/memory-store"
 import { log } from "@/lib/log"
 
 // Free-tier storage allowance shown to authenticated users, kept comfortably under R2's own
 // free tier so the app's other usage has headroom.
 const FREE_STORAGE_QUOTA_BYTES = 5 * 1024 * 1024 * 1024
+
+/**
+ * Thrown when an operation needs an account and there isn't one.
+ *
+ * There used to be a shadow library in memory for signed-out users, which meant work could be
+ * done, appear saved, and then vanish on refresh with nothing to recover it from. Signed-out
+ * users can still upload, adjust and download — what they cannot do is save, because saving
+ * implies somewhere for it to go.
+ */
+export class AccountRequiredError extends Error {
+  constructor(action = "do that") {
+    super(`Sign in to ${action}.`)
+    this.name = "AccountRequiredError"
+  }
+}
+
+/**
+ * Where a library row came from.
+ *
+ * `recording` is a reusable voice clip rather than a meditation. It lives in the same table so it
+ * inherits the whole audio pipeline — R2 upload, presigned playback, backup, deletion — instead
+ * of needing a parallel one, but it is excluded from meditation listings. Sharing storage is not
+ * a claim that they are the same kind of thing.
+ */
+export type MeditationSource = "adjuster" | "creator" | "recording"
+
+/** The sources that are actually meditations, for the listings that should only show those. */
+export const MEDITATION_SOURCES: MeditationSource[] = ["adjuster", "creator"]
+
+export const isRecording = (meditation: Pick<SavedMeditation, "source">): boolean =>
+  meditation.source === "recording"
 
 export interface SavedMeditation {
   id: string
@@ -37,7 +54,7 @@ export interface SavedMeditation {
   sourceAudioUrl?: string
   duration: number
   createdAt: Date
-  source: "adjuster" | "creator"
+  source: MeditationSource
   metadata: {
     // Shared metadata
     meditationTitle?: string
@@ -299,9 +316,172 @@ const normalizeSupabaseMeditation = (
   createdAt: new Date(row.created_at),
   // 'encoder' is the pre-rename value, still written as a fallback when the DB's
   // source check constraint predates migration 012.
-  source: (row.source === "encoder" ? "creator" : row.source) as "adjuster" | "creator",
+  source: (row.source === "encoder" ? "creator" : row.source) as MeditationSource,
   metadata: mapTimelineWithRecordings(row.metadata || {}, recordings) || {},
 })
+
+/**
+ * Adds one profile-scoped table to the backup as JSON.
+ *
+ * Never throws: an export that fails wholesale because one table was unreadable is worse than an
+ * export missing one file, and the missing file is visible in the archive.
+ */
+async function addTableToZip(
+  zip: JSZip,
+  supabase: ReturnType<typeof createClient>,
+  table: string,
+  filename: string,
+  profileId: string,
+): Promise<void> {
+  try {
+    const { data, error } = await supabase.from(table).select("*").eq("profile_id", profileId)
+    if (error) {
+      log.warn(`[backup] Skipping ${table} in export:`, error)
+      return
+    }
+    zip.file(filename, JSON.stringify(data ?? [], null, 2))
+  } catch (error) {
+    log.warn(`[backup] Skipping ${table} in export:`, error)
+  }
+}
+
+/**
+ * Adds each note's markdown body under `notes/<slug>.md`.
+ *
+ * The layout matches the R2 vault exactly, so an unzipped backup is already the thing the
+ * storage design has been aiming at — a folder of readable markdown files that need no import
+ * step to be useful.
+ */
+async function addNoteBodiesToZip(zip: JSZip): Promise<void> {
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase.from("journal_entries").select("id, slug, content_md, note_key")
+    if (error || !Array.isArray(data)) {
+      log.warn("[backup] Skipping note bodies in export:", error)
+      return
+    }
+
+    const folder = zip.folder("notes")
+    if (!folder) return
+
+    for (const row of data as Array<{ id: string; slug: string | null; content_md: string | null; note_key: string | null }>) {
+      const name = `${row.slug || row.id}.md`
+
+      // A note with no note_key never moved to storage, so its body is still in the row.
+      if (!row.note_key) {
+        folder.file(name, row.content_md ?? "")
+        continue
+      }
+
+      try {
+        const response = await fetch(`/api/journal/note?id=${encodeURIComponent(row.id)}`)
+        if (!response.ok) {
+          folder.file(name, row.content_md ?? "")
+          continue
+        }
+        const { body } = (await response.json()) as { body?: string }
+        folder.file(name, body ?? row.content_md ?? "")
+      } catch (error) {
+        log.warn("[backup] Falling back to the indexed copy of a note body:", error)
+        folder.file(name, row.content_md ?? "")
+      }
+    }
+  } catch (error) {
+    log.warn("[backup] Skipping note bodies in export:", error)
+  }
+}
+
+/**
+ * Restores one profile-scoped table from the backup.
+ *
+ * profile_id is rewritten to the importing account rather than trusted from the file, so a
+ * backup can be restored into a different account — which is the case that matters, since
+ * restoring into the account that still has the data is the case that never happens.
+ *
+ * Best-effort per table, for the same reason the export is: a backup that restores most of your
+ * practice beats one that refuses to restore any of it.
+ */
+async function restoreTableFromZip(
+  zip: JSZip,
+  supabase: ReturnType<typeof createClient>,
+  filename: string,
+  table: string,
+  profileId: string,
+): Promise<void> {
+  const entry = zip.file(filename)
+  if (!entry) return
+
+  try {
+    const rows = JSON.parse(await entry.async("text"))
+    if (!Array.isArray(rows) || rows.length === 0) return
+
+    const scoped = rows.map((row: Record<string, unknown>) => ({ ...row, profile_id: profileId }))
+    const { error } = await supabase.from(table).upsert(scoped, { onConflict: "id" })
+    if (error) log.warn(`[backup] Could not restore ${table}:`, error)
+  } catch (error) {
+    log.warn(`[backup] Could not restore ${table}:`, error)
+  }
+}
+
+/**
+ * Restores note rows and pushes their bodies back into storage.
+ *
+ * The row carries the index; the body is a file. Writing the row alone would restore a journal
+ * whose notes all open empty, so each body goes back through the same route the editor writes
+ * through, which is what mints the note_key.
+ */
+async function restoreNotesFromZip(
+  zip: JSZip,
+  supabase: ReturnType<typeof createClient>,
+  profileId: string,
+): Promise<void> {
+  const entry = zip.file("notes.json")
+  if (!entry) return
+
+  try {
+    const rows = JSON.parse(await entry.async("text")) as Array<Record<string, unknown>>
+    if (!Array.isArray(rows) || rows.length === 0) return
+
+    // note_key points at the exporting account's storage prefix, so it is dropped and re-minted
+    // by the write below. Keeping it would leave notes pointing into somebody else's vault.
+    const scoped: Array<Record<string, unknown>> = rows.map((row) => ({
+      ...row,
+      profile_id: profileId,
+      note_key: null,
+    }))
+    const { error } = await supabase.from("journal_entries").upsert(scoped, { onConflict: "id" })
+    if (error) {
+      log.warn("[backup] Could not restore notes:", error)
+      return
+    }
+
+    const bodies = zip.folder("notes")
+    if (!bodies) return
+
+    for (const row of scoped) {
+      const id = typeof row.id === "string" ? row.id : null
+      if (!id) continue
+      const slug = typeof row.slug === "string" && row.slug.length > 0 ? row.slug : id
+      const fallback = typeof row.content_md === "string" ? row.content_md : ""
+
+      const file = zip.file(`notes/${slug}.md`)
+      const body = file ? await file.async("text") : fallback
+      if (!body) continue
+
+      try {
+        await fetch("/api/journal/note", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, body }),
+        })
+      } catch (error) {
+        log.warn("[backup] Could not restore a note body:", error)
+      }
+    }
+  } catch (error) {
+    log.warn("[backup] Could not restore notes:", error)
+  }
+}
 
 export class MeditationLibrary {
   static async saveMeditation(meditation: SaveMeditationInput): Promise<SavedMeditation> {
@@ -335,30 +515,7 @@ export class MeditationLibrary {
     }
 
     if (auth.status !== "authenticated" || !auth.userId) {
-      log.debug("Saving to memory (unauthenticated)")
-      const id = createId()
-      const processedUrl = buildObjectUrl(processedBlob)
-      const sourceUrl = buildObjectUrl(providedSourceBlob)
-      const metadataToSave = sanitizeMetadataForStorage({ ...meditation.metadata }, timelineRecordings, id)
-      const savedMeditation: SavedMeditation = {
-        id,
-        title: meditation.title,
-        originalFileName: meditation.originalFileName,
-        processedAudioUrl: processedUrl,
-        sourceAudioUrl: sourceUrl || undefined,
-        duration: Math.round(meditation.duration),
-        createdAt: new Date(),
-        source: meditation.source,
-        metadata: mapTimelineWithRecordings(metadataToSave, timelineRecordings) || metadataToSave,
-      }
-
-      saveMemoryMeditation(id, savedMeditation, {
-        processedAudio: processedBlob,
-        sourceAudio: providedSourceBlob,
-        timelineRecordings,
-      })
-
-      return savedMeditation
+      throw new AccountRequiredError("save a meditation")
     }
 
     log.debug("Saving to Supabase + R2 + IndexedDB (authenticated)")
@@ -442,29 +599,7 @@ export class MeditationLibrary {
     const durationInSeconds = Math.round(updates.duration)
 
     if (auth.status !== "authenticated" || !auth.userId) {
-      const existing = getMemoryMeditation(id)
-      if (!existing) {
-        throw new Error("Meditation not found.")
-      }
-      const existingAudio = getMemoryAudio(id)
-      const updatedMetadata: SavedMeditation["metadata"] = {
-        ...existing.metadata,
-        audioFormat: updates.audioFormat,
-        wav: undefined,
-      }
-      const updated: SavedMeditation = {
-        ...existing,
-        duration: durationInSeconds,
-        processedAudioUrl: processedUrl,
-        sourceAudioUrl: processedUrl,
-        metadata: updatedMetadata,
-      }
-      saveMemoryMeditation(id, updated, {
-        processedAudio: updates.audioData,
-        sourceAudio: updates.audioData,
-        timelineRecordings: existingAudio?.timelineRecordings,
-      })
-      return updated
+      throw new AccountRequiredError("replace a meditation's audio")
     }
 
     const supabase = createClient()
@@ -522,21 +657,36 @@ export class MeditationLibrary {
     }
   }
 
+  /**
+   * Every meditation. Reusable voice recordings share this table but are not meditations, so
+   * they are excluded here and fetched by getRecordings instead.
+   */
   static async getAllMeditations(): Promise<SavedMeditation[]> {
+    return MeditationLibrary.listBySource(MEDITATION_SOURCES)
+  }
+
+  /** The reusable voice clips, newest first. */
+  static async getRecordings(): Promise<SavedMeditation[]> {
+    return MeditationLibrary.listBySource(["recording"])
+  }
+
+  private static async listBySource(sources: MeditationSource[]): Promise<SavedMeditation[]> {
     const auth = getAuthState()
-    log.debug("getAllMeditations - Auth state:", { status: auth.status, userId: auth.userId })
-    
+    log.debug("listBySource - Auth state:", { status: auth.status, userId: auth.userId })
+
     if (auth.status !== "authenticated" || !auth.userId) {
-      const memoryMeds = getMemoryMeditations()
-      log.debug("Loaded from memory:", memoryMeds.length, "meditations")
-      return memoryMeds
+      return []
     }
 
     log.debug("Loading from Supabase...")
     const supabase = createClient()
+    // 'encoder' is the pre-rename value for 'creator'; rows saved before migration 012 still
+    // carry it, so asking for creator has to ask for both.
+    const wanted = sources.includes("creator") ? [...sources, "encoder"] : sources
     const { data, error } = await supabase
       .from("meditations")
       .select("*")
+      .in("source", wanted)
       .order("created_at", { ascending: false })
 
     if (error) {
@@ -587,7 +737,7 @@ export class MeditationLibrary {
   static async getMeditation(id: string): Promise<SavedMeditation | null> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      return getMemoryMeditation(id)
+      return null
     }
 
     const supabase = createClient()
@@ -619,8 +769,7 @@ export class MeditationLibrary {
   static async deleteMeditation(id: string): Promise<void> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      deleteMemoryMeditation(id)
-      return
+      throw new AccountRequiredError("delete a meditation")
     }
 
     // Deletes the R2 object (if any) and the database row together, server-side — the R2
@@ -644,7 +793,7 @@ export class MeditationLibrary {
   static async getAllPlaylists(): Promise<Playlist[]> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      return getMemoryPlaylists()
+      return []
     }
 
     try {
@@ -686,7 +835,7 @@ export class MeditationLibrary {
   static async getPlaylist(id: string): Promise<Playlist | null> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      return getMemoryPlaylists().find((playlist) => playlist.id === id) ?? null
+      return null
     }
 
     try {
@@ -726,16 +875,7 @@ export class MeditationLibrary {
   static async createPlaylist(name: string, description: string): Promise<Playlist> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      const playlist: Playlist = {
-        id: createId(),
-        name,
-        description,
-        meditationIds: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-      upsertMemoryPlaylist(playlist)
-      return playlist
+      throw new AccountRequiredError("create a playlist")
     }
 
     const supabase = createClient()
@@ -771,11 +911,7 @@ export class MeditationLibrary {
   ): Promise<void> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      const existing = getMemoryPlaylists().find((playlist) => playlist.id === id)
-      if (existing) {
-        upsertMemoryPlaylist({ ...existing, ...updates, updatedAt: new Date() })
-      }
-      return
+      throw new AccountRequiredError("update a playlist")
     }
 
     try {
@@ -802,8 +938,7 @@ export class MeditationLibrary {
   static async deletePlaylist(id: string): Promise<void> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      deleteMemoryPlaylist(id)
-      return
+      throw new AccountRequiredError("delete a playlist")
     }
 
     try {
@@ -824,8 +959,7 @@ export class MeditationLibrary {
   static async addToPlaylist(playlistId: string, meditationId: string): Promise<void> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      addMeditationToMemoryPlaylist(playlistId, meditationId)
-      return
+      throw new AccountRequiredError("add to a playlist")
     }
 
     try {
@@ -853,8 +987,7 @@ export class MeditationLibrary {
   static async removeFromPlaylist(playlistId: string, meditationId: string): Promise<void> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      removeMeditationFromMemoryPlaylist(playlistId, meditationId)
-      return
+      throw new AccountRequiredError("remove from a playlist")
     }
 
     try {
@@ -881,10 +1014,7 @@ export class MeditationLibrary {
   static async getPlaylistMeditations(playlistId: string): Promise<SavedMeditation[]> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      const ids = getMemoryPlaylistMeditations(playlistId)
-      return ids
-        .map((id) => getMemoryMeditation(id))
-        .filter((meditation): meditation is SavedMeditation => Boolean(meditation))
+      return []
     }
 
     try {
@@ -943,7 +1073,7 @@ export class MeditationLibrary {
         originalFileName: row.original_filename || row.description || "Unknown",
         duration: row.duration || 0,
         createdAt: new Date(row.created_at).toISOString(),
-        source: row.source as "adjuster" | "creator",
+        source: row.source as MeditationSource,
         metadata: rowMetadata,
         audioExt: resolveAudioExtension(rowMetadata, audioRecord?.processedAudio),
         sourceExt: resolveAudioExtension(rowMetadata, audioRecord?.sourceAudio),
@@ -951,6 +1081,23 @@ export class MeditationLibrary {
     })
 
     zip.file("meditations.json", JSON.stringify(metadata, null, 2))
+
+    // Everything else the account is made of. A backup that restores your audio but loses what
+    // you wrote and how long you have been sitting is not a backup of your practice.
+    //
+    // Each of these is best-effort: a failure to read one table should not cost you the export
+    // of the others, so it is logged and the file is written without it rather than throwing.
+    await Promise.all([
+      addTableToZip(zip, supabase, "sessions", "sessions.json", auth.userId!),
+      addTableToZip(zip, supabase, "journal_entries", "notes.json", auth.userId!),
+      addTableToZip(zip, supabase, "journal_folders", "folders.json", auth.userId!),
+      addTableToZip(zip, supabase, "playlists", "playlists.json", auth.userId!),
+      addTableToZip(zip, supabase, "user_settings", "settings.json", auth.userId!),
+    ])
+
+    // Note bodies live in R2 as markdown files, not in the row, so the index alone would export
+    // a journal with no writing in it. They are fetched through the same route the editor uses.
+    await addNoteBodiesToZip(zip)
 
     for (const entry of metadata) {
       const audioRecord = audioMap.get(entry.id)
@@ -999,7 +1146,7 @@ export class MeditationLibrary {
       originalFileName: string
       duration: number
       createdAt: string
-      source: "adjuster" | "creator"
+      source: MeditationSource
       metadata: any
       audioExt?: string
       sourceExt?: string
@@ -1071,13 +1218,23 @@ export class MeditationLibrary {
       }
     }
 
+    onProgress?.(92, "Restoring your journal and practice log...")
+
+    // Restore everything that is not audio. Order matters: folders and sessions are referenced
+    // by notes, so they have to exist first or those references land as null.
+    await restoreTableFromZip(zip, supabase, "folders.json", "journal_folders", auth.userId!)
+    await restoreTableFromZip(zip, supabase, "sessions.json", "sessions", auth.userId!)
+    await restoreTableFromZip(zip, supabase, "playlists.json", "playlists", auth.userId!)
+    await restoreTableFromZip(zip, supabase, "settings.json", "user_settings", auth.userId!)
+    await restoreNotesFromZip(zip, supabase, auth.userId!)
+
     onProgress?.(100, "Backup restored successfully!")
   }
 
   static async getStorageUsage(): Promise<{ usedBytes: number; quotaBytes?: number }> {
     const auth = getAuthState()
     if (auth.status !== "authenticated" || !auth.userId) {
-      return { usedBytes: getMemoryUsageBytes() }
+      return { usedBytes: 0 }
     }
 
     // Authenticated users' audio now lives in R2, not IndexedDB — report usage against that,

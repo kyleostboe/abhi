@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { Clock } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/hooks/use-auth"
@@ -8,11 +9,30 @@ import { UserMenu } from "./user-menu"
 
 interface NavigationProps {
   showProfileButton?: boolean
+  /**
+   * Toggles the Timer. Provided by the home page, which owns the tool state and can switch
+   * without navigating — pressing it again returns to the tool that was open before. Everywhere
+   * else the button is a link that goes home and opens it there, with nothing to toggle back to.
+   */
+  onTimerClick?: () => void
+  timerActive?: boolean
 }
 
-export function Navigation({ showProfileButton = false }: NavigationProps) {
+/**
+ * Bare icon — no plate, no shadow. The h-9/w-9 box is only there to keep a tappable target
+ * around an 20px glyph; nothing about it is painted.
+ */
+const TIMER_BUTTON_BASE =
+  "flex h-9 w-9 items-center justify-center rounded-full bg-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+
+export function Navigation({ showProfileButton = false, onTimerClick, timerActive = false }: NavigationProps) {
   const pathname = usePathname()
   const { isAuthenticated } = useAuth()
+
+  const timerClasses = cn(
+    TIMER_BUTTON_BASE,
+    timerActive ? "text-gray-800" : "text-gray-400 hover:text-gray-600",
+  )
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-40 flex justify-center py-3.5 px-4 pb-3.5">
@@ -61,6 +81,24 @@ export function Navigation({ showProfileButton = false }: NavigationProps) {
             </Link>
           </li>
         </ul>
+        <div className="absolute left-0">
+          {onTimerClick ? (
+            <button
+              type="button"
+              onClick={onTimerClick}
+              aria-label="Timer"
+              aria-pressed={timerActive}
+              title="Timer"
+              className={timerClasses}
+            >
+              <Clock className={cn("h-5 w-5", timerActive ? "stroke-[2.75]" : "stroke-2")} />
+            </button>
+          ) : (
+            <Link href="/#timer" aria-label="Timer" title="Timer" className={timerClasses}>
+              <Clock className="h-5 w-5 stroke-2" />
+            </Link>
+          )}
+        </div>
         {showProfileButton && isAuthenticated && (
           <div className="absolute right-0 rounded-full">
             <UserMenu buttonVariant="nav" />

@@ -34,6 +34,11 @@ import { NoteEditor, fontClassFor, type NoteEditorHandle } from "@/components/jo
 import { NoteToolbar, useVoiceRecorder } from "@/components/journal/note-toolbar"
 import { MeditationPicker, QuotePicker } from "@/components/journal/note-pickers"
 import { SessionsView } from "@/components/journal/sessions-view"
+import { useSessions } from "@/hooks/use-sessions"
+import { useUserSettings } from "@/hooks/use-user-settings"
+import { PracticeSummary } from "@/components/journal/practice-summary"
+import { type SessionNoteDraft, draftHasContent, draftSubtitle, draftTitle } from "@/lib/journal-draft"
+import { clearSessionNoteDraft, getSessionNoteDraft } from "@/lib/storage/session-note-draft"
 import { JournalRefProvider } from "@/components/journal/journal-refs"
 import { compressImage, encodeVoiceNote, saveAttachment } from "@/lib/journal-attachments"
 import { slugify } from "@/lib/journal-markdown"
@@ -83,6 +88,9 @@ export default function JournalPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
+  const { sessions, isLoading: isLoadingSessions } = useSessions()
+  const { settings } = useUserSettings()
+
   const [meditations, setMeditations] = useState<SavedMeditation[]>([])
   const [activeTab, setActiveTab] = useState<"notes" | "sessions">("notes")
   const [activeFolderId, setActiveFolderId] = useState<string>(ALL_NOTES)
@@ -97,6 +105,10 @@ export default function JournalPage() {
   const [notePendingDelete, setNotePendingDelete] = useState<JournalNote | null>(null)
   const [showNoteMenu, setShowNoteMenu] = useState(false)
 
+  // The sit that just finished, offered as a note but not yet written as one. It becomes a real
+  // note on the first save — see handleSave — so declining it costs nothing and leaves nothing.
+  const [pendingDraft, setPendingDraft] = useState<SessionNoteDraft | null>(null)
+
   const editorHandle = useRef<NoteEditorHandle | null>(null)
   const [editorInstanceKey, setEditorInstanceKey] = useState(0)
   const recorder = useVoiceRecorder()
@@ -110,6 +122,20 @@ export default function JournalPage() {
       mounted = false
     }
   }, [isAuthenticated])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    const draft = getSessionNoteDraft()
+    if (!draft) return
+
+    // Already written about — the offer is spent.
+    if (notes.some((note) => note.sessionId === draft.sessionId)) {
+      clearSessionNoteDraft()
+      return
+    }
+
+    setPendingDraft(draft)
+  }, [isAuthenticated, notes])
 
   // Deep link: /journal?note=<id>
   useEffect(() => {
@@ -135,11 +161,13 @@ export default function JournalPage() {
     [notes, activeNoteId],
   )
 
-  // Keep a note selected on desktop so the document pane is never empty for no reason.
+  // Keep a note selected on desktop so the document pane is never empty for no reason — except
+  // while a draft is being offered, which owns the pane until it is written or dismissed.
   useEffect(() => {
+    if (pendingDraft) return
     if (activeNoteId && notes.some((note) => note.id === activeNoteId)) return
     setActiveNoteId(visibleNotes[0]?.id ?? null)
-  }, [visibleNotes, activeNoteId, notes])
+  }, [visibleNotes, activeNoteId, notes, pendingDraft])
 
   // Note bodies live as files in storage, so the one being opened is fetched on demand; the
   // list itself runs entirely off the index.
@@ -154,11 +182,44 @@ export default function JournalPage() {
 
   const handleSave = useCallback(
     async (markdown: string) => {
+      // An offered draft becomes a note the moment something is actually written into it, and
+      // not before. An untouched draft leaves no row behind, which is the whole point of it
+      // being a draft rather than a note created when the sit ended.
+      if (pendingDraft) {
+        if (!draftHasContent(markdown)) return true
+
+        // contentMd is passed here so the note's title and slug derive from what was actually
+        // written; the updateNote below is what pushes the body to storage.
+        const note = await createNote({
+          folderId: null,
+          contentMd: markdown,
+          sessionId: pendingDraft.sessionId,
+          meditationId: pendingDraft.meditationId,
+          meditationTitle: pendingDraft.meditationTitle,
+          playedAt: new Date(pendingDraft.startedAt),
+        })
+
+        if (!note) {
+          toast({ title: "Couldn't save this note", description: "Please try again.", variant: "destructive" })
+          return false
+        }
+
+        clearSessionNoteDraft()
+        setPendingDraft(null)
+        setActiveNoteId(note.id)
+        return updateNote(note.id, { contentMd: markdown })
+      }
+
       if (!activeNoteId) return false
       return updateNote(activeNoteId, { contentMd: markdown })
     },
-    [activeNoteId, updateNote],
+    [activeNoteId, updateNote, pendingDraft, createNote, toast],
   )
+
+  const dismissDraft = useCallback(() => {
+    clearSessionNoteDraft()
+    setPendingDraft(null)
+  }, [])
 
   const handleNewNote = async () => {
     const folderId = activeFolderId === ALL_NOTES || activeFolderId === UNFILED ? null : activeFolderId
@@ -334,16 +395,23 @@ export default function JournalPage() {
             </div>
 
             {activeTab === "sessions" ? (
-              <SessionsView
-                notes={notes}
-                isLoading={isLoading}
-                onOpenNote={(noteId) => {
-                  setActiveTab("notes")
-                  setActiveNoteId(noteId)
-                  setMobilePane("note")
-                  setEditorInstanceKey((key) => key + 1)
-                }}
-              />
+              <>
+                {sessions.length > 0 ? (
+                  <PracticeSummary sessions={sessions} dayBoundaryHour={settings.dayBoundaryHour} />
+                ) : null}
+                <SessionsView
+                  sessions={sessions}
+                  notes={notes}
+                  dayBoundaryHour={settings.dayBoundaryHour}
+                  isLoading={isLoading || isLoadingSessions}
+                  onOpenNote={(noteId) => {
+                    setActiveTab("notes")
+                    setActiveNoteId(noteId)
+                    setMobilePane("note")
+                    setEditorInstanceKey((key) => key + 1)
+                  }}
+                />
+              </>
             ) : (
             <div className="grid min-h-[70vh] w-full min-w-0 grid-cols-1 md:grid-cols-[200px_minmax(0,280px)_minmax(0,1fr)]">
               {/* Folders */}
@@ -459,7 +527,39 @@ export default function JournalPage() {
 
               {/* Document */}
               <section className={cn("min-w-0 p-4 md:block md:p-8", mobilePane === "note" ? "block" : "hidden")}>
-                {activeNote ? (
+                {pendingDraft ? (
+                  <div className="min-w-0">
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-serif text-sm font-black tracking-tight text-gray-700">
+                          {draftTitle(pendingDraft)}
+                        </p>
+                        <p className="mt-0.5 font-serif text-[11px] tracking-tight text-gray-400">
+                          {draftSubtitle(pendingDraft)}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={dismissDraft}
+                        className="flex-shrink-0 font-serif text-[11px] font-black tracking-tight text-gray-400 hover:text-gray-600"
+                      >
+                        Not now
+                      </button>
+                    </div>
+
+                    {/* Nothing is written until something is typed — see handleSave. */}
+                    <NoteEditor
+                      key={`draft-${pendingDraft.sessionId}`}
+                      noteId={`draft-${pendingDraft.sessionId}`}
+                      initialMarkdown=""
+                      font={null}
+                      onSave={handleSave}
+                      onReady={(handle) => {
+                        editorHandle.current = handle
+                      }}
+                    />
+                  </div>
+                ) : activeNote ? (
                   <div className="min-w-0">
                     <div className="mb-3 flex items-center justify-between gap-2">
                       <button

@@ -10,7 +10,7 @@
 
 import type React from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Mic, StopCircle, PlusCircle } from "lucide-react"
+import { Mic, StopCircle, PlusCircle, Library } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
@@ -35,6 +35,14 @@ export interface RecorderSectionProps {
   setRecordedBlobs: React.Dispatch<React.SetStateAction<Blob[]>>
   setRecordingLabel: React.Dispatch<React.SetStateAction<string>>
   recordingPreviewRef: React.RefObject<HTMLAudioElement | null>
+  /**
+   * Keeps the recording in the library so it can be reused in other meditations. Absent when
+   * there is no account to keep it in.
+   */
+  onKeepInLibrary?: (recording: { url: string; label: string; duration: number }) => Promise<void>
+  isKeeping?: boolean
+  /** Opens the picker of previously kept recordings. */
+  onBrowseLibrary?: () => void
 }
 
 export const RecorderSection: React.FC<RecorderSectionProps> = ({
@@ -52,6 +60,9 @@ export const RecorderSection: React.FC<RecorderSectionProps> = ({
   setRecordedBlobs,
   setRecordingLabel,
   recordingPreviewRef,
+  onKeepInLibrary,
+  isKeeping = false,
+  onBrowseLibrary,
 }) => {
   const { toast } = useToast() // toast is now correctly initialized here
 
@@ -157,9 +168,34 @@ export const RecorderSection: React.FC<RecorderSectionProps> = ({
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Add to Timeline
                 </Button>
+
+                {/* A recording kept here becomes a library item, so the same phrase in your own
+                    voice can be dropped into anything you build later. */}
+                {onKeepInLibrary ? (
+                  <Button
+                    variant="ghost"
+                    disabled={isKeeping}
+                    onClick={() => void onKeepInLibrary(readyToAddToTimelineRecording)}
+                    className="mx-auto w-full max-w-[352px] font-serif text-xs font-black tracking-tight text-gray-500 hover:text-gray-700"
+                  >
+                    <Library className="mr-2 h-3.5 w-3.5" />
+                    {isKeeping ? "Keeping..." : "Keep in library"}
+                  </Button>
+                ) : null}
               </motion.div>
             )}
           </AnimatePresence>
+
+          {onBrowseLibrary ? (
+            <Button
+              variant="ghost"
+              onClick={onBrowseLibrary}
+              className="w-full font-serif text-xs font-black tracking-tight text-gray-500 hover:text-gray-700"
+            >
+              <Library className="mr-2 h-3.5 w-3.5" />
+              Use a saved recording
+            </Button>
+          ) : null}
         </div>
       </Card>
     </motion.div>
