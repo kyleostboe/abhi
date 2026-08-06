@@ -2558,7 +2558,7 @@ export default function LibraryPage() {
                           placeholder="Search meditations..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="flex h-11 w-full rounded-[7px] border border-stone-300 bg-white px-4 font-serif text-xs font-black text-gray-600 shadow-none outline-none ring-offset-background placeholder:font-normal placeholder:text-gray-500 focus-visible:outline-none md:text-xs"
+                          className="flex h-11 w-full rounded-[10px] border border-stone-300 bg-white px-4 font-serif text-xs font-black text-gray-600 shadow-none outline-none ring-offset-background placeholder:font-black placeholder:text-gray-600 focus-visible:outline-none md:text-xs"
                         />
                       </div>
                       {/* Under the search field on a phone, at the end of the quick filters from
