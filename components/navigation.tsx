@@ -10,16 +10,20 @@ import { UserMenu } from "./user-menu"
 interface NavigationProps {
   showProfileButton?: boolean
   /**
-   * Opens the Timer. Provided by the home page, which owns the tool state and can switch to it
-   * without navigating; everywhere else the button is a link that goes home and opens it there.
+   * Toggles the Timer. Provided by the home page, which owns the tool state and can switch
+   * without navigating — pressing it again returns to the tool that was open before. Everywhere
+   * else the button is a link that goes home and opens it there, with nothing to toggle back to.
    */
   onTimerClick?: () => void
   timerActive?: boolean
 }
 
-/** Mirrors the profile button opposite it: same size, same shape, same shadow. */
+/**
+ * Bare icon — no plate, no shadow. The h-9/w-9 box is only there to keep a tappable target
+ * around an 20px glyph; nothing about it is painted.
+ */
 const TIMER_BUTTON_BASE =
-  "flex h-9 w-9 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+  "flex h-9 w-9 items-center justify-center rounded-full bg-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 
 export function Navigation({ showProfileButton = false, onTimerClick, timerActive = false }: NavigationProps) {
   const pathname = usePathname()
@@ -27,9 +31,7 @@ export function Navigation({ showProfileButton = false, onTimerClick, timerActiv
 
   const timerClasses = cn(
     TIMER_BUTTON_BASE,
-    timerActive
-      ? "bg-gradient-to-br from-gray-600 to-gray-500 text-white shadow-md"
-      : "bg-white text-gray-600 shadow-[0_8px_20px_-6px_rgba(0,0,0,0.14)] hover:shadow-lg",
+    timerActive ? "text-gray-800" : "text-gray-400 hover:text-gray-600",
   )
 
   return (
@@ -89,11 +91,11 @@ export function Navigation({ showProfileButton = false, onTimerClick, timerActiv
               title="Timer"
               className={timerClasses}
             >
-              <Clock className={cn("h-[18px] w-[18px]", timerActive && "stroke-[2.75]")} />
+              <Clock className={cn("h-5 w-5", timerActive ? "stroke-[2.75]" : "stroke-2")} />
             </button>
           ) : (
             <Link href="/#timer" aria-label="Timer" title="Timer" className={timerClasses}>
-              <Clock className="h-[18px] w-[18px]" />
+              <Clock className="h-5 w-5 stroke-2" />
             </Link>
           )}
         </div>

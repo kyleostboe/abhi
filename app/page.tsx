@@ -2154,6 +2154,28 @@ export default function Home() {
     }
   }, [importFromLibrary])
 
+  // The Timer is a detour rather than a destination, so pressing its button again puts you back
+  // where you were instead of dropping you on the Adjuster.
+  const toolBeforeTimerRef = useRef<Exclude<ToolMode, "timer">>("adjuster")
+
+  const toggleTimer = useCallback(() => {
+    setActiveMode((current) => {
+      if (current === "timer") {
+        const back = toolBeforeTimerRef.current
+        setActiveTab(back)
+        // Leave no #timer behind, or a refresh would reopen what was just closed.
+        if (typeof window !== "undefined" && window.location.hash === "#timer") {
+          window.history.replaceState(null, "", window.location.pathname + window.location.search)
+        }
+        return back
+      }
+
+      toolBeforeTimerRef.current = current
+      setActiveTab("timer")
+      return "timer"
+    })
+  }, [])
+
   const processAudioAdjusterAction = async () => {
     setIsProcessingComplete(false)
     const currentAudioContext = audioContextRef.current
@@ -3089,10 +3111,7 @@ export default function Home() {
       <Navigation
         showProfileButton
         timerActive={activeMode === "timer"}
-        onTimerClick={() => {
-          setActiveMode("timer")
-          setActiveTab("timer")
-        }}
+        onTimerClick={toggleTimer}
       />
 
       <div className="relative">
