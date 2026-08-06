@@ -21,6 +21,7 @@ import {
   RefreshCw,
   X,
   RotateCcw,
+  Clock,
 } from "lucide-react" // Import Copy icon
 import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -3167,42 +3168,52 @@ export default function Home() {
                 {/* Mode Switch — mb-6 above matches the Library and Journal, where the mark sits
                     exactly 24px above their switches. */}
                 <div className="flex justify-center items-center flex-row mb-[33px]">
-                  <div className="flex mx-auto items-center p-1 font-serif text-gray-600 shadow-inner rounded-sm gap-1 w-fit bg-muted">
+                  {/* The switch stays centred on the page; the Timer hangs off its right edge
+                      absolutely so adding it does not shift the two named tools off-centre. */}
+                  <div className="relative flex items-center">
+                    <div className="flex items-center p-1 font-serif text-gray-600 shadow-inner rounded-sm gap-1 w-fit bg-muted">
+                      <button
+                        onClick={() => {
+                          setActiveMode("adjuster")
+                          setActiveTab("adjuster")
+                        }}
+                        className={cn(
+                          "inline-flex items-center justify-center whitespace-nowrap px-4 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black py-3 tracking-tight rounded-sm text-sm",
+                          activeMode === "adjuster" ? "bg-white text-gray-600 shadow-md " : "text-gray-600 ",
+                        )}
+                      >
+                        Adjuster
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveMode("creator")
+                          setActiveTab("creator")
+                        }}
+                        className={cn(
+                          "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm",
+                          activeMode === "creator" ? "bg-white text-gray-600 shadow-md " : "text-gray-600 ",
+                        )}
+                      >
+                        Creator
+                      </button>
+                    </div>
                     <button
-                      onClick={() => {
-                        setActiveMode("adjuster")
-                        setActiveTab("adjuster")
-                      }}
-                      className={cn(
-                        "inline-flex items-center justify-center whitespace-nowrap px-4 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black py-3 tracking-tight rounded-sm text-sm",
-                        activeMode === "adjuster" ? "bg-white text-gray-600 shadow-md " : "text-gray-600 ",
-                      )}
-                    >
-                      Adjuster
-                    </button>
-                    <button
-                      onClick={() => {
-                        setActiveMode("creator")
-                        setActiveTab("creator")
-                      }}
-                      className={cn(
-                        "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm",
-                        activeMode === "creator" ? "bg-white text-gray-600 shadow-md " : "text-gray-600 ",
-                      )}
-                    >
-                      Creator
-                    </button>
-                    <button
+                      type="button"
                       onClick={() => {
                         setActiveMode("timer")
                         setActiveTab("timer")
                       }}
+                      aria-label="Timer"
+                      aria-pressed={activeMode === "timer"}
+                      title="Timer"
                       className={cn(
-                        "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm",
-                        activeMode === "timer" ? "bg-white text-gray-600 shadow-md " : "text-gray-600 ",
+                        "absolute left-full ml-2 inline-flex h-[52px] w-[52px] items-center justify-center rounded-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                        activeMode === "timer"
+                          ? "bg-white text-gray-600 shadow-md"
+                          : "bg-muted text-gray-500 shadow-inner hover:text-gray-600",
                       )}
                     >
-                      Timer
+                      <Clock className="h-[18px] w-[18px]" />
                     </button>
                   </div>
                 </div>
