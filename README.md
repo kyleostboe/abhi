@@ -37,7 +37,9 @@ sits with you on a plain bell timer when you want no recording at all.
 
 - Everything saved, grouped by meditation with its length variants.
 - Quick-adjust presets (10m / 30m / 1h, editable) to re-cut a meditation to a new length.
-- Playlists, backup import/export, and per-account storage usage.
+- Playlists and per-account storage usage.
+- Backup export/import covering the whole account — audio, notes (as markdown), the practice
+  log, folders, playlists and settings.
 - Sort by recently added, recently played, most played, longest unplayed, length or title — the
   play-based orders read from the practice log.
 
@@ -48,6 +50,7 @@ sits with you on a plain bell timer when you want no recording at all.
   streaks and a practice calendar.
 - Folders, tags, images and voice notes.
 - Notes are stored as self-describing markdown files (see [Storage](#storage)).
+- After a sit, a note is offered but not created — nothing is written until you write something.
 
 ### Settings
 

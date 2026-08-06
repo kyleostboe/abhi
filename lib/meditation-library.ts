@@ -304,6 +304,169 @@ const normalizeSupabaseMeditation = (
   metadata: mapTimelineWithRecordings(row.metadata || {}, recordings) || {},
 })
 
+/**
+ * Adds one profile-scoped table to the backup as JSON.
+ *
+ * Never throws: an export that fails wholesale because one table was unreadable is worse than an
+ * export missing one file, and the missing file is visible in the archive.
+ */
+async function addTableToZip(
+  zip: JSZip,
+  supabase: ReturnType<typeof createClient>,
+  table: string,
+  filename: string,
+  profileId: string,
+): Promise<void> {
+  try {
+    const { data, error } = await supabase.from(table).select("*").eq("profile_id", profileId)
+    if (error) {
+      log.warn(`[backup] Skipping ${table} in export:`, error)
+      return
+    }
+    zip.file(filename, JSON.stringify(data ?? [], null, 2))
+  } catch (error) {
+    log.warn(`[backup] Skipping ${table} in export:`, error)
+  }
+}
+
+/**
+ * Adds each note's markdown body under `notes/<slug>.md`.
+ *
+ * The layout matches the R2 vault exactly, so an unzipped backup is already the thing the
+ * storage design has been aiming at — a folder of readable markdown files that need no import
+ * step to be useful.
+ */
+async function addNoteBodiesToZip(zip: JSZip): Promise<void> {
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase.from("journal_entries").select("id, slug, content_md, note_key")
+    if (error || !Array.isArray(data)) {
+      log.warn("[backup] Skipping note bodies in export:", error)
+      return
+    }
+
+    const folder = zip.folder("notes")
+    if (!folder) return
+
+    for (const row of data as Array<{ id: string; slug: string | null; content_md: string | null; note_key: string | null }>) {
+      const name = `${row.slug || row.id}.md`
+
+      // A note with no note_key never moved to storage, so its body is still in the row.
+      if (!row.note_key) {
+        folder.file(name, row.content_md ?? "")
+        continue
+      }
+
+      try {
+        const response = await fetch(`/api/journal/note?id=${encodeURIComponent(row.id)}`)
+        if (!response.ok) {
+          folder.file(name, row.content_md ?? "")
+          continue
+        }
+        const { body } = (await response.json()) as { body?: string }
+        folder.file(name, body ?? row.content_md ?? "")
+      } catch (error) {
+        log.warn("[backup] Falling back to the indexed copy of a note body:", error)
+        folder.file(name, row.content_md ?? "")
+      }
+    }
+  } catch (error) {
+    log.warn("[backup] Skipping note bodies in export:", error)
+  }
+}
+
+/**
+ * Restores one profile-scoped table from the backup.
+ *
+ * profile_id is rewritten to the importing account rather than trusted from the file, so a
+ * backup can be restored into a different account — which is the case that matters, since
+ * restoring into the account that still has the data is the case that never happens.
+ *
+ * Best-effort per table, for the same reason the export is: a backup that restores most of your
+ * practice beats one that refuses to restore any of it.
+ */
+async function restoreTableFromZip(
+  zip: JSZip,
+  supabase: ReturnType<typeof createClient>,
+  filename: string,
+  table: string,
+  profileId: string,
+): Promise<void> {
+  const entry = zip.file(filename)
+  if (!entry) return
+
+  try {
+    const rows = JSON.parse(await entry.async("text"))
+    if (!Array.isArray(rows) || rows.length === 0) return
+
+    const scoped = rows.map((row: Record<string, unknown>) => ({ ...row, profile_id: profileId }))
+    const { error } = await supabase.from(table).upsert(scoped, { onConflict: "id" })
+    if (error) log.warn(`[backup] Could not restore ${table}:`, error)
+  } catch (error) {
+    log.warn(`[backup] Could not restore ${table}:`, error)
+  }
+}
+
+/**
+ * Restores note rows and pushes their bodies back into storage.
+ *
+ * The row carries the index; the body is a file. Writing the row alone would restore a journal
+ * whose notes all open empty, so each body goes back through the same route the editor writes
+ * through, which is what mints the note_key.
+ */
+async function restoreNotesFromZip(
+  zip: JSZip,
+  supabase: ReturnType<typeof createClient>,
+  profileId: string,
+): Promise<void> {
+  const entry = zip.file("notes.json")
+  if (!entry) return
+
+  try {
+    const rows = JSON.parse(await entry.async("text")) as Array<Record<string, unknown>>
+    if (!Array.isArray(rows) || rows.length === 0) return
+
+    // note_key points at the exporting account's storage prefix, so it is dropped and re-minted
+    // by the write below. Keeping it would leave notes pointing into somebody else's vault.
+    const scoped: Array<Record<string, unknown>> = rows.map((row) => ({
+      ...row,
+      profile_id: profileId,
+      note_key: null,
+    }))
+    const { error } = await supabase.from("journal_entries").upsert(scoped, { onConflict: "id" })
+    if (error) {
+      log.warn("[backup] Could not restore notes:", error)
+      return
+    }
+
+    const bodies = zip.folder("notes")
+    if (!bodies) return
+
+    for (const row of scoped) {
+      const id = typeof row.id === "string" ? row.id : null
+      if (!id) continue
+      const slug = typeof row.slug === "string" && row.slug.length > 0 ? row.slug : id
+      const fallback = typeof row.content_md === "string" ? row.content_md : ""
+
+      const file = zip.file(`notes/${slug}.md`)
+      const body = file ? await file.async("text") : fallback
+      if (!body) continue
+
+      try {
+        await fetch("/api/journal/note", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, body }),
+        })
+      } catch (error) {
+        log.warn("[backup] Could not restore a note body:", error)
+      }
+    }
+  } catch (error) {
+    log.warn("[backup] Could not restore notes:", error)
+  }
+}
+
 export class MeditationLibrary {
   static async saveMeditation(meditation: SaveMeditationInput): Promise<SavedMeditation> {
     const auth = getAuthState()
@@ -886,6 +1049,23 @@ export class MeditationLibrary {
 
     zip.file("meditations.json", JSON.stringify(metadata, null, 2))
 
+    // Everything else the account is made of. A backup that restores your audio but loses what
+    // you wrote and how long you have been sitting is not a backup of your practice.
+    //
+    // Each of these is best-effort: a failure to read one table should not cost you the export
+    // of the others, so it is logged and the file is written without it rather than throwing.
+    await Promise.all([
+      addTableToZip(zip, supabase, "sessions", "sessions.json", auth.userId!),
+      addTableToZip(zip, supabase, "journal_entries", "notes.json", auth.userId!),
+      addTableToZip(zip, supabase, "journal_folders", "folders.json", auth.userId!),
+      addTableToZip(zip, supabase, "playlists", "playlists.json", auth.userId!),
+      addTableToZip(zip, supabase, "user_settings", "settings.json", auth.userId!),
+    ])
+
+    // Note bodies live in R2 as markdown files, not in the row, so the index alone would export
+    // a journal with no writing in it. They are fetched through the same route the editor uses.
+    await addNoteBodiesToZip(zip)
+
     for (const entry of metadata) {
       const audioRecord = audioMap.get(entry.id)
       if (!audioRecord) continue
@@ -1004,6 +1184,16 @@ export class MeditationLibrary {
         })
       }
     }
+
+    onProgress?.(92, "Restoring your journal and practice log...")
+
+    // Restore everything that is not audio. Order matters: folders and sessions are referenced
+    // by notes, so they have to exist first or those references land as null.
+    await restoreTableFromZip(zip, supabase, "folders.json", "journal_folders", auth.userId!)
+    await restoreTableFromZip(zip, supabase, "sessions.json", "sessions", auth.userId!)
+    await restoreTableFromZip(zip, supabase, "playlists.json", "playlists", auth.userId!)
+    await restoreTableFromZip(zip, supabase, "settings.json", "user_settings", auth.userId!)
+    await restoreNotesFromZip(zip, supabase, auth.userId!)
 
     onProgress?.(100, "Backup restored successfully!")
   }
