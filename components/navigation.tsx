@@ -34,20 +34,6 @@ export function Navigation({ showProfileButton = false }: NavigationProps) {
           </li>
           <li>
             <Link
-              href="/timer"
-              scroll={false}
-              className={cn(
-                "transition-colors font-black font-serif text-xs shadow-none rounded-sm tracking-tight px-3 py-2",
-                pathname === "/timer"
-                  ? "bg-gradient-to-r from-gray-600 to-gray-500 border-stone-200 border-[3px] text-white shadow-md"
-                  : "text-gray-600 rounded-[9px] border-[3px] border-transparent",
-              )}
-            >
-              Timer
-            </Link>
-          </li>
-          <li>
-            <Link
               href="/library"
               scroll={false}
               className={cn(

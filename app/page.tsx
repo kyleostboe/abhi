@@ -32,6 +32,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
 import { LogoMark } from "@/components/logo-mark"
 import { TimerWheel } from "@/components/timer-wheel"
+import { TimerTool } from "@/components/timer-tool"
 import { Label } from "@/components/ui/label"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useToast } from "@/hooks/use-toast"
@@ -93,6 +94,14 @@ import { RecorderSection } from "@/components/recorder-section"
 const ADJUSTER_SESSION_KEY = "abhi_last_adjuster_session"
 const CREATOR_SESSION_KEY = "abhi_last_creator_session"
 const ACTIVE_MODE_SESSION_KEY = "abhi_last_active_mode"
+
+/** The three tools on the home page. Timer is one of them, not a separate destination. */
+type ToolMode = "adjuster" | "creator" | "timer"
+
+const TOOL_MODES: ToolMode[] = ["adjuster", "creator", "timer"]
+
+const isToolMode = (value: unknown): value is ToolMode =>
+  typeof value === "string" && (TOOL_MODES as string[]).includes(value)
 const DEFAULT_CREATOR_DURATION_SECONDS = 10 * 60
 
 
@@ -138,7 +147,7 @@ export default function Home() {
   const { isAuthenticated, login } = useAuth()
   const router = useRouter()
 
-  const [activeMode, setActiveMode] = useState<"adjuster" | "creator">("adjuster")
+  const [activeMode, setActiveMode] = useState<ToolMode>("adjuster")
   // Server always renders false (no window); setting this only after mount avoids a
   // hydration mismatch on localhost, where the client would otherwise disagree immediately.
   const [isLocalDebugHost, setIsLocalDebugHost] = useState(false)
@@ -153,7 +162,7 @@ export default function Home() {
   const [toolConvertStep, setToolConvertStep] = useState("")
   const [toolConvertProgress, setToolConvertProgress] = useState(0)
   const [shouldScrollToAdjuster, setShouldScrollToAdjuster] = useState(false)
-  const [activeTab, setActiveTab] = useState<"adjuster" | "creator">("adjuster") // State for tab navigation
+  const [activeTab, setActiveTab] = useState<ToolMode>("adjuster") // State for tab navigation
 
   // == States for reuploading over an already-loaded Adjuster file ==
   // A new file selected/dropped while `file` is already set — held here until the user
@@ -2108,14 +2117,17 @@ export default function Home() {
       }
 
       try {
-        const lastMode = window.sessionStorage.getItem(ACTIVE_MODE_SESSION_KEY) as "adjuster" | "creator" | null
-        if (lastMode !== "adjuster" && lastMode !== "creator") return
+        const lastMode = window.sessionStorage.getItem(ACTIVE_MODE_SESSION_KEY)
+        if (!isToolMode(lastMode)) return
 
         // Return to whichever tool was last open, whether or not a meditation was loaded into
         // it. This used to be conditional on a persisted meditation existing, so leaving the
         // Creator empty and coming back from the Library always landed on the Adjuster.
         setActiveTab(lastMode)
         setActiveMode(lastMode)
+
+        // The Timer holds no meditation, so there is nothing to restore into it.
+        if (lastMode === "timer") return
 
         const persistedKey = lastMode === "adjuster" ? ADJUSTER_SESSION_KEY : CREATOR_SESSION_KEY
         const persisted = window.sessionStorage.getItem(persistedKey)
@@ -3180,6 +3192,18 @@ export default function Home() {
                     >
                       Creator
                     </button>
+                    <button
+                      onClick={() => {
+                        setActiveMode("timer")
+                        setActiveTab("timer")
+                      }}
+                      className={cn(
+                        "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-3 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-black text-gray-600 tracking-tight text-sm",
+                        activeMode === "timer" ? "bg-white text-gray-600 shadow-md " : "text-gray-600 ",
+                      )}
+                    >
+                      Timer
+                    </button>
                   </div>
                 </div>
               </motion.div>
@@ -3218,9 +3242,26 @@ export default function Home() {
                     </p>
                   </motion.div>
                 )}
+                {activeMode === "timer" && (
+                  <motion.div
+                    key="timer-note"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="p-4 rounded-md font-serif font-black max-w-2xl mx-auto border-logo-rose-500 border-0 shadow-none mb-4 py-0 px-0"
+                  >
+                    <p className="text-center px-4 pt-1.5 text-xs pb-0 text-stone-500">
+                      Sit with nothing but bells. Set a length or leave it open, choose where the bells fall, and
+                      begin — nothing is recorded or exported.
+                    </p>
+                  </motion.div>
+                )}
               </AnimatePresence>
               {/* Conditional Rendering based on activeMode */}
-              {activeMode === "adjuster" ? (
+              {activeMode === "timer" ? (
+                <TimerTool />
+              ) : activeMode === "adjuster" ? (
                 // == Length Adjuster UI ==
                 <div ref={adjusterSectionRef} className="space-y-4">
                   {/* Resources section */}

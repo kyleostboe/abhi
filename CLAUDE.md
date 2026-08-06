@@ -4,7 +4,7 @@ Guidance for working in this repository.
 
 ## What this is
 
-`abhī` — a Next.js (App Router) meditation app with two audio tools, a library, and a journal.
+`abhī` — a Next.js (App Router) meditation app with three tools, a library, and a journal.
 See README.md for the feature-level description and environment variables.
 
 ## Commands
@@ -42,6 +42,11 @@ boundaries, streaks, what counts as practice, how an interrupted sit is reconcil
 so all of that is testable. Rows are written when a sit *starts* and updated as it runs, which is
 what makes a crash or a closed tab survivable; nothing writes only on completion. Practice time
 is wall-clock-while-playing, not distance through the audio, so seeking earns nothing.
+
+**The timer is a tool, not a destination.** It lives in the home page's mode switch next to the
+Adjuster and Creator (`ToolMode` in `app/page.tsx`), and like them it runs without an account —
+signing in only buys somewhere for the sit to be recorded. `components/timer-tool.tsx` holds it,
+rather than the page, because `app/page.tsx` is already too large.
 
 **The timer schedules bells on the AudioContext clock, in advance.** `setTimeout` does not
 survive a locked screen — background tabs get clamped to ~1 tick/sec — so `lib/timer-schedule.ts`

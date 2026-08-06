@@ -3,6 +3,11 @@
 /**
  * The silent timer: a sit with no recording behind it.
  *
+ * A tool, so it lives in the home page's mode switch alongside the Adjuster and the Creator
+ * rather than in the top navigation, and it works without an account for the same reason they do
+ * — what an account buys is somewhere for the result to persist, and a sit that is not recorded
+ * is still a sit. When signed in, the sit is logged to the practice log; when not, it simply runs.
+ *
  * Deliberately not built on the Creator. A timer produces no audio file, has nothing to export
  * and nothing to store but the practice record — routing it through a timeline that renders and
  * encodes would make the simplest thing in the app the most expensive. The whole surface is a
@@ -11,25 +16,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import { Navigation } from "@/components/navigation"
-import { TimerWheel } from "@/components/timer-wheel"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { LogoMark } from "@/components/logo-mark"
-import { AuthButtons } from "@/components/auth-buttons"
+import { TimerWheel } from "@/components/timer-wheel"
 import { useAuth } from "@/hooks/use-auth"
 import { useSessions } from "@/hooks/use-sessions"
 import { useToast } from "@/hooks/use-toast"
 import { BELL_VOICES, DEFAULT_BELL_ID, TimerAudio, bellVoiceById } from "@/lib/timer-audio"
-import {
-  type TimerBell,
-  buildTimerSchedule,
-  formatTimerClock,
-  remainingSeconds,
-} from "@/lib/timer-schedule"
+import { type TimerBell, buildTimerSchedule, formatTimerClock, remainingSeconds } from "@/lib/timer-schedule"
 import { cn } from "@/lib/utils"
-import { log } from "@/lib/log"
 
 const INTERVAL_OPTIONS = [
   { label: "None", seconds: 0 },
@@ -51,7 +46,7 @@ const DEFAULT_DURATION_SECONDS = 20 * 60
 
 type TimerState = "idle" | "running" | "finished"
 
-export default function TimerPage() {
+export function TimerTool() {
   const { isAuthenticated } = useAuth()
   const { startSession, reportProgress, endSession } = useSessions()
   const { toast } = useToast()
@@ -107,6 +102,7 @@ export default function TimerPage() {
 
       const satSeconds = startedAt === null ? 0 : Math.max(0, (Date.now() - startedAt) / 1000 - warmupSeconds)
 
+      // No session when signed out — the sit still ran, there is just nowhere to record it.
       const sessionId = sessionIdRef.current
       sessionIdRef.current = null
       if (sessionId) {
@@ -153,10 +149,7 @@ export default function TimerPage() {
       durationPlanned: openEnded ? null : durationSeconds,
     })
     sessionIdRef.current = session?.id ?? null
-    if (!session && isAuthenticated) {
-      log.warn("[timer] Sit started but no session row was created")
-    }
-  }, [getAudio, toast, bellId, schedule, startSession, openEnded, durationSeconds, isAuthenticated])
+  }, [getAudio, toast, bellId, schedule, startSession, openEnded, durationSeconds])
 
   // Drives the display only. The bells do not depend on this interval running on time — which is
   // the point, since it will not while the screen is off.
@@ -199,25 +192,6 @@ export default function TimerPage() {
   const inWarmup = elapsed < schedule.sitStartsAt
   const satSeconds = Math.max(0, elapsed - schedule.sitStartsAt)
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 pt-20 md:p-8 md:pt-24">
-        <Navigation />
-        <div className="container mx-auto max-w-2xl px-4 py-8">
-          <Card className="rounded-xl border-none bg-white p-12 text-center shadow-lg">
-            <h2 className="mb-4 font-serif text-2xl font-black tracking-tight text-gray-700">
-              Sign in to use the timer
-            </h2>
-            <p className="mb-6 font-serif text-xs tracking-tight text-gray-500">
-              Sits are recorded to your practice log, so the timer needs an account.
-            </p>
-            <AuthButtons />
-          </Card>
-        </div>
-      </div>
-    )
-  }
-
   if (state === "running") {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-stone-900 to-gray-900 p-8">
@@ -243,100 +217,80 @@ export default function TimerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 pt-20 md:p-8 md:pt-24">
-      <Navigation />
-      <div className="container mx-auto max-w-2xl px-4 py-8">
-        <Card className="mx-auto w-full overflow-hidden rounded-xl border-none bg-white shadow-lg">
-          <div className="bg-gradient-to-br from-logo-teal-400 to-logo-blue-400 px-6 py-[9px] text-center">
-            <h3 className="font-serif text-base font-black tracking-tight text-white">Timer</h3>
+    <div className="mx-auto max-w-2xl">
+      {state === "finished" ? (
+        <p className="mb-5 text-center font-serif text-xs tracking-tight text-logo-teal-600">
+          {isAuthenticated ? "Sit recorded. It is in your practice log." : "Sit complete."}
+        </p>
+      ) : null}
+
+      <div className={cn("mb-6", openEnded && "pointer-events-none opacity-40")}>
+        <TimerWheel value={durationSeconds} onChange={setDurationSeconds} maxHours={3} />
+      </div>
+
+      <div className="space-y-5">
+        <ToggleRow
+          label="Open-ended"
+          description="No fixed length. Ends when you end it."
+          checked={openEnded}
+          onChange={setOpenEnded}
+        />
+        <ToggleRow label="Opening bell" checked={openingBell} onChange={setOpeningBell} />
+        <ToggleRow
+          label="Closing bell"
+          checked={closingBell}
+          onChange={setClosingBell}
+          disabled={openEnded}
+          description={openEnded ? "An open-ended sit has no end to ring." : undefined}
+        />
+
+        <OptionRow label="Settling time" options={WARMUP_OPTIONS} value={warmupSeconds} onChange={setWarmupSeconds} />
+        <OptionRow
+          label="Interval bells"
+          options={INTERVAL_OPTIONS}
+          value={intervalSeconds}
+          onChange={setIntervalSeconds}
+        />
+
+        <div>
+          <Label className="mb-2 block text-[11px] font-black uppercase tracking-[0.15em] text-gray-500">Bell</Label>
+          <div className="flex flex-wrap gap-2">
+            {BELL_VOICES.map((voice) => (
+              <button
+                key={voice.id}
+                type="button"
+                onClick={() => void previewBell(voice.id)}
+                className={cn(
+                  "rounded-[10px] px-3 py-2 font-serif text-xs font-black tracking-tight transition-colors",
+                  voice.id === bellId
+                    ? "bg-gradient-to-r from-gray-600 to-gray-500 text-white shadow-md"
+                    : "bg-muted/60 text-gray-600 hover:bg-muted",
+                )}
+              >
+                {voice.name}
+              </button>
+            ))}
           </div>
+          <p className="mt-2 font-serif text-[11px] tracking-tight text-gray-400">Tap to hear it.</p>
+        </div>
+      </div>
 
-          <div className="px-6 pb-6 pt-5">
-            <div className="mb-5 text-center">
-              <LogoMark className="mb-3" />
-              {state === "finished" ? (
-                <p className="font-serif text-xs tracking-tight text-logo-teal-600">
-                  Sit recorded. It is in your practice log.
-                </p>
-              ) : (
-                <p className="font-serif text-xs tracking-tight text-gray-500">A sit with nothing but bells.</p>
-              )}
-            </div>
-
-            <div className={cn("mb-6", openEnded && "pointer-events-none opacity-40")}>
-              <TimerWheel value={durationSeconds} onChange={setDurationSeconds} maxHours={3} />
-            </div>
-
-            <div className="space-y-5">
-              <ToggleRow
-                label="Open-ended"
-                description="No fixed length. Ends when you end it."
-                checked={openEnded}
-                onChange={setOpenEnded}
-              />
-              <ToggleRow label="Opening bell" checked={openingBell} onChange={setOpeningBell} />
-              <ToggleRow
-                label="Closing bell"
-                checked={closingBell}
-                onChange={setClosingBell}
-                disabled={openEnded}
-                description={openEnded ? "An open-ended sit has no end to ring." : undefined}
-              />
-
-              <OptionRow
-                label="Settling time"
-                options={WARMUP_OPTIONS}
-                value={warmupSeconds}
-                onChange={setWarmupSeconds}
-              />
-              <OptionRow
-                label="Interval bells"
-                options={INTERVAL_OPTIONS}
-                value={intervalSeconds}
-                onChange={setIntervalSeconds}
-              />
-
-              <div>
-                <Label className="mb-2 block text-[11px] font-black uppercase tracking-[0.15em] text-gray-500">
-                  Bell
-                </Label>
-                <div className="flex flex-wrap gap-2">
-                  {BELL_VOICES.map((voice) => (
-                    <button
-                      key={voice.id}
-                      type="button"
-                      onClick={() => void previewBell(voice.id)}
-                      className={cn(
-                        "rounded-[10px] px-3 py-2 font-serif text-xs font-black tracking-tight transition-colors",
-                        voice.id === bellId
-                          ? "bg-gradient-to-r from-gray-600 to-gray-500 text-white shadow-md"
-                          : "bg-muted/60 text-gray-600 hover:bg-muted",
-                      )}
-                    >
-                      {voice.name}
-                    </button>
-                  ))}
-                </div>
-                <p className="mt-2 font-serif text-[11px] tracking-tight text-gray-400">
-                  Tap to hear it.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-7">
-              <Button onClick={() => void startSit()} variant="accent" className="w-full">
-                Begin
-              </Button>
-              <p className="mt-3 text-center font-serif text-[11px] tracking-tight text-gray-400">
-                {schedule.bells.length === 0
-                  ? "No bells — a silent sit."
-                  : `${schedule.bells.length} ${schedule.bells.length === 1 ? "bell" : "bells"}${
-                      schedule.totalSeconds !== null ? ` over ${formatTimerClock(schedule.totalSeconds)}` : ""
-                    }`}
-              </p>
-            </div>
-          </div>
-        </Card>
+      <div className="mt-7">
+        <Button onClick={() => void startSit()} variant="accent" className="w-full">
+          Begin
+        </Button>
+        <p className="mt-3 text-center font-serif text-[11px] tracking-tight text-gray-400">
+          {schedule.bells.length === 0
+            ? "No bells — a silent sit."
+            : `${schedule.bells.length} ${schedule.bells.length === 1 ? "bell" : "bells"}${
+                schedule.totalSeconds !== null ? ` over ${formatTimerClock(schedule.totalSeconds)}` : ""
+              }`}
+        </p>
+        {!isAuthenticated ? (
+          <p className="mt-2 text-center font-serif text-[11px] tracking-tight text-gray-400">
+            Sign in to keep a record of your sits.
+          </p>
+        ) : null}
       </div>
     </div>
   )

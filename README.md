@@ -26,11 +26,12 @@ sits with you on a plain bell timer when you want no recording at all.
 
 ### Timer
 
+- A third tool alongside the Adjuster and Creator, and like them it works without an account.
 - A sit with no recording behind it: fixed length or open-ended.
 - Opening, closing and interval bells, with a settling period before the sit begins.
 - Bells are synthesised and scheduled on the audio clock in advance, so a sit keeps its bells
   when the screen goes off.
-- Every sit is recorded to the practice log.
+- Signed in, every sit is recorded to the practice log.
 
 ### Library
 
