@@ -5,7 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useAuth } from "@/hooks/use-auth"
 import { log } from "@/lib/log"
+import { saveSessionNoteDraft } from "@/lib/storage/session-note-draft"
 import {
+  MIN_COUNTED_SECONDS,
   type PracticeSession,
   type PracticeSessionSource,
   isEffectivelyComplete,
@@ -243,6 +245,19 @@ export function useSessions() {
 
       const closed: PracticeSession = { ...existing, endedAt, durationActual, lastPosition, completed }
       setSessions((previous) => previous.map((session) => (session.id === sessionId ? closed : session)))
+
+      // Offer a note for a sit that actually happened. Nothing is written yet — the draft only
+      // becomes a note if something is typed into it.
+      if (durationActual >= MIN_COUNTED_SECONDS) {
+        saveSessionNoteDraft({
+          sessionId: closed.id,
+          meditationId: closed.meditationId,
+          meditationTitle: closed.meditationTitle,
+          startedAt: closed.startedAt,
+          durationActual,
+          source: closed.source,
+        })
+      }
 
       const { error } = await supabase
         .from("sessions")

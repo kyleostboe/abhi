@@ -265,9 +265,19 @@ export function TimerTool() {
   return (
     <div className="mx-auto max-w-2xl">
       {state === "finished" ? (
-        <p className="mb-5 text-center font-serif text-xs tracking-tight text-logo-teal-600">
-          {isAuthenticated ? "Sit recorded. It is in your practice log." : "Sit complete."}
-        </p>
+        <div className="mb-5 text-center">
+          <p className="font-serif text-xs tracking-tight text-logo-teal-600">
+            {isAuthenticated ? "Sit recorded. It is in your practice log." : "Sit complete."}
+          </p>
+          {isAuthenticated ? (
+            <a
+              href="/journal"
+              className="mt-2 inline-block font-serif text-[11px] font-black tracking-tight text-gray-500 underline underline-offset-2 hover:text-gray-700"
+            >
+              Write about it
+            </a>
+          ) : null}
+        </div>
       ) : null}
 
       <div className={cn("mb-6", openEnded && "pointer-events-none opacity-40")}>
