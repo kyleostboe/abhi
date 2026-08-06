@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { Clock } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/hooks/use-auth"
@@ -8,11 +9,28 @@ import { UserMenu } from "./user-menu"
 
 interface NavigationProps {
   showProfileButton?: boolean
+  /**
+   * Opens the Timer. Provided by the home page, which owns the tool state and can switch to it
+   * without navigating; everywhere else the button is a link that goes home and opens it there.
+   */
+  onTimerClick?: () => void
+  timerActive?: boolean
 }
 
-export function Navigation({ showProfileButton = false }: NavigationProps) {
+/** Mirrors the profile button opposite it: same size, same shape, same shadow. */
+const TIMER_BUTTON_BASE =
+  "flex h-9 w-9 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+
+export function Navigation({ showProfileButton = false, onTimerClick, timerActive = false }: NavigationProps) {
   const pathname = usePathname()
   const { isAuthenticated } = useAuth()
+
+  const timerClasses = cn(
+    TIMER_BUTTON_BASE,
+    timerActive
+      ? "bg-gradient-to-br from-gray-600 to-gray-500 text-white shadow-md"
+      : "bg-white text-gray-600 shadow-[0_8px_20px_-6px_rgba(0,0,0,0.14)] hover:shadow-lg",
+  )
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-40 flex justify-center py-3.5 px-4 pb-3.5">
@@ -61,6 +79,24 @@ export function Navigation({ showProfileButton = false }: NavigationProps) {
             </Link>
           </li>
         </ul>
+        <div className="absolute left-0">
+          {onTimerClick ? (
+            <button
+              type="button"
+              onClick={onTimerClick}
+              aria-label="Timer"
+              aria-pressed={timerActive}
+              title="Timer"
+              className={timerClasses}
+            >
+              <Clock className={cn("h-[18px] w-[18px]", timerActive && "stroke-[2.75]")} />
+            </button>
+          ) : (
+            <Link href="/#timer" aria-label="Timer" title="Timer" className={timerClasses}>
+              <Clock className="h-[18px] w-[18px]" />
+            </Link>
+          )}
+        </div>
         {showProfileButton && isAuthenticated && (
           <div className="absolute right-0 rounded-full">
             <UserMenu buttonVariant="nav" />
