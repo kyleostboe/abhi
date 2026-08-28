@@ -1,3 +1,14 @@
+-- Superseded by 019_backfill_encoder_source.sql — do not run this file standalone.
+--
+-- This ran clean against a fresh schema, but fails with a check constraint violation (23514) on
+-- any database still carrying rows from before PRs #180/#190 renamed the Creator's `source` value
+-- from 'encoder' to 'creator' in code without migrating existing data. 019 does what this file
+-- does, but drops the old constraint, rewrites those rows, and only then adds the new one — the
+-- old constraint has to be gone before the UPDATE, or the UPDATE itself is rejected by the
+-- constraint it's trying to become compliant with.
+--
+-- Left in place, unmodified below, as the record of what 019 supersedes.
+
 -- Lets a voice recording be a library item in its own right.
 --
 -- Recordings made in the Creator are currently trapped in the meditation they were made for:
