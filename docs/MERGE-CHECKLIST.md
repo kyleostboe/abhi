@@ -7,22 +7,36 @@ reach.
 
 Ordered by how expensive the failure is if it's real.
 
-## 1. Migrations — run these first, and read the output
+## 1. Migrations — applied to production, 2026
 
-Apply `scripts/016_create_sessions.sql` and `scripts/017_user_settings.sql` in order, against a
-copy of production if you have one.
+`016_create_sessions.sql`, `017_user_settings.sql`, and `019_backfill_encoder_source.sql` have
+all been run against production and verified. **`018_recordings_as_library_items.sql` should not
+be run — it is superseded by 019** (018 fails standalone with a check-constraint violation on any
+database carrying pre-rename `source = 'encoder'` rows; 019 does what 018 does plus the backfill
+018 was missing). If you are applying these to a *different* database than the one already
+migrated, run 016, 017, 019 in that order — skip 018 entirely.
 
-- [ ] **017 applies without error.** It exists because `010` declared its policies with
-      `create policy if not exists`, which Postgres does not support. If 010 failed at that
-      point, `user_settings` may exist with RLS enabled and *no policy*, which denies everything
-      silently. 017 is written to repair that or to create the table outright, and is
-      idempotent — **run it twice** and confirm the second run is also clean.
-- [ ] **017's `ALTER COLUMN profile_id SET NOT NULL` succeeds.** It deletes null-profile rows
-      first, but if that table has real data with nulls you care about, look before running.
-- [ ] **016's backfill inserted one session per journal entry** that has a `meditation_id`, and
-      did not duplicate on a second run. Check:
-      `select count(*) from sessions where duration_actual = 0;`
-      That count should equal your pre-existing journal entries with meditations.
+Confirmed on the production run:
+
+- [x] 017 applied cleanly (repairs the `010` policies that used the unsupported
+      `create policy if not exists` syntax).
+- [x] 016's backfill produced 2 session rows, matching the pre-existing journal entries with
+      meditations, with `duration_actual = 0` as designed.
+- [x] 019 found and fixed 2 `meditations` rows still carrying the pre-`012` `source = 'encoder'`
+      value (PRs #180/#190 renamed it to `'creator'` in code but never migrated existing rows —
+      `lib/meditation-library.ts` had been silently covering for this at read time ever since).
+      Distinct `source` values after 019: `adjuster`, `creator` — zero `encoder` remaining.
+- [x] `journal_entries.session_id` exists; `sessions` table exists with 4 RLS policies;
+      `user_settings` exists with 4 RLS policies.
+- [x] App verified: `/journal` loads, note creation works, Sessions tab renders correctly with
+      the 2 backfilled sits at zero duration and a streak of 0 — correct per 016's intent, since
+      those rows never recorded how long the sit actually ran.
+
+Remaining first-run items, if you have not done these yet:
+
+- [ ] **016's backfill did not duplicate on a second run**, if you ever ran it more than once.
+      Check: `select count(*) from sessions where duration_actual = 0;` — should equal your
+      pre-existing journal entries with meditations, not a multiple of it.
 - [ ] **Backfilled sessions show in the log but do not feed streaks.** They have
       `duration_actual = 0` deliberately — those rows never knew how long the sit ran. If your
       streak reads 0 right after migrating, that is correct, not a bug.
@@ -108,3 +122,18 @@ This rewrites rows on import. Do not test it on data you care about.
 - [ ] `buildDurationModeFromStored` in `lib/library-durations.ts` still resets a persisted
       `playbackRate` to 1, so a variant whose length came only from that rate plays wrong. There
       is a test pinning the current behaviour. Untouched by this branch.
+
+## 9. Flagged during migration, not yet done
+
+Raised while diagnosing the `encoder`/`creator` drift in #1 — real gaps, not part of this branch.
+
+- [ ] **Audit other enum-ish columns for the same code-renamed-but-data-not pattern.** Checked so
+      far: `meditations.source` had the drift (fixed by 019); `journal_attachments.kind`
+      (`'image'`/`'audio'`) and `sessions.source` (`'guided'`/`'timer'`, new, no history) do not.
+      That's every `CHECK (... IN (...))` constraint in `scripts/*.sql` as of 019 — re-run this
+      audit after adding any new one.
+- [ ] **No migration-tracking table exists**, which is how three migrations (016/017/018→019)
+      sat unapplied until a runtime error surfaced them. Either add a `schema_migrations` table
+      migrations insert themselves into, or move to the Supabase CLI's migration system
+      (`supabase migration`), which tracks this automatically. Worth doing before the next batch
+      of `scripts/*.sql` ships.
