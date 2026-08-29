@@ -25,3 +25,8 @@ yarn-error.log*
 .env*.local
 .vercel/
 *.tgz
+
+# Locally installed Claude Code skills (npx skills add), not part of the app
+.agents/
+.claude/
+skills-lock.json
