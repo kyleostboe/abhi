@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
+import { Card, CardDescription, CardHeader } from "@/components/ui/card"
+import { DurationControlCard } from "@/components/duration-control-card"
 import { LogoMark } from "@/components/logo-mark"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -134,74 +135,79 @@ export default function SettingsPage() {
             <LogoMark className="mb-3" />
             <CardDescription>Manage your profile and preferences</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-2">
-              <Label htmlFor="displayName">Display Name</Label>
-              <Input
-                id="displayName"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Enter your display name"
-              />
-              <p className="font-serif text-xs tracking-tight text-gray-500">This is how your name will appear in the app</p>
-            </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                disabled
-              />
-              <p className="font-serif text-xs tracking-tight text-gray-500">Email cannot be changed from settings</p>
-            </div>
+          {/* The same module the Adjuster uses for Target Duration / Silence Threshold — two
+              gradient-headed cards side by side, each answering one question — in place of one
+              long plain form. */}
+          <div className="grid gap-4 px-6 pb-6 md:grid-cols-2">
+            <DurationControlCard title="Profile" gradientClassName="from-logo-blue-400 to-logo-amber-300">
+              <div className="space-y-4 font-serif">
+                <div className="grid gap-2">
+                  <Label htmlFor="displayName">Display Name</Label>
+                  <Input
+                    id="displayName"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Enter your display name"
+                  />
+                  <p className="text-xs tracking-tight text-gray-500">This is how your name will appear in the app</p>
+                </div>
 
-            <div className="flex justify-end gap-3 rounded-sm font-serif">
-              <Button variant="ghost" className="text-gray-600" onClick={() => window.history.back()}>
-                Cancel
-              </Button>
-              <Button onClick={handleSave} disabled={isSaving} variant="accent">
-                {isSaving ? "Saving..." : "Save Changes"}
-              </Button>
-            </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input id="email" type="email" value={email} disabled />
+                  <p className="text-xs tracking-tight text-gray-500">Email cannot be changed from settings</p>
+                </div>
 
-            <div className="grid gap-2">
-              <Label>Practice day starts at</Label>
-              <div className="flex flex-wrap gap-2">
-                {[0, 3, 4, 5, 6].map((hour) => (
-                  <button
-                    key={hour}
-                    type="button"
-                    onClick={() => void updateSettings({ dayBoundaryHour: hour })}
-                    className={cn(
-                      "rounded-[10px] px-3 py-2 font-serif text-xs font-black tracking-tight transition-colors",
-                      settings.dayBoundaryHour === hour
-                        ? "bg-gradient-to-r from-gray-600 to-gray-500 text-white shadow-md"
-                        : "bg-muted/60 text-gray-600 hover:bg-muted",
-                    )}
-                  >
-                    {formatDayBoundary(hour)}
-                  </button>
-                ))}
+                <div className="flex justify-end gap-3">
+                  <Button variant="ghost" className="text-gray-600" onClick={() => window.history.back()}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSave} disabled={isSaving} variant="accent">
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
               </div>
-              <p className="font-serif text-xs tracking-tight text-gray-500">
-                A sit before this hour counts toward the previous day, so sitting late doesn&apos;t cost you a
-                streak.
-              </p>
-            </div>
+            </DurationControlCard>
 
-            <div className="rounded-[10px] bg-muted/60 p-4 shadow-inner">
-              <h3 className="mb-2 font-serif text-sm font-black tracking-tight text-gray-700">Account Information</h3>
-              <div className="space-y-1 font-serif text-xs tracking-tight text-gray-600">
-                <p>Account ID: {user?.id}</p>
-                <p>Email: {email}</p>
-                <p className="text-logo-teal-600 mt-3 font-black text-xs">
-                  Audio files are stored locally on this device. Metadata syncs across your devices.
+            <DurationControlCard title="Practice" gradientClassName="from-logo-rose-300 to-logo-emerald-500">
+              <div className="grid gap-2 font-serif">
+                <Label>Practice day starts at</Label>
+                <div className="flex flex-wrap gap-2">
+                  {[0, 3, 4, 5, 6].map((hour) => (
+                    <button
+                      key={hour}
+                      type="button"
+                      onClick={() => void updateSettings({ dayBoundaryHour: hour })}
+                      className={cn(
+                        "rounded-[10px] px-3 py-2 text-xs font-black tracking-tight transition-colors",
+                        settings.dayBoundaryHour === hour
+                          ? "bg-gradient-to-r from-gray-600 to-gray-500 text-white shadow-md"
+                          : "bg-muted/60 text-gray-600 hover:bg-muted",
+                      )}
+                    >
+                      {formatDayBoundary(hour)}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs tracking-tight text-gray-500">
+                  A sit before this hour counts toward the previous day, so sitting late doesn&apos;t cost you a
+                  streak.
                 </p>
+
+                <div className="mt-4 rounded-[10px] bg-muted/60 p-4 shadow-inner">
+                  <h3 className="mb-2 text-sm font-black tracking-tight text-gray-700">Account Information</h3>
+                  <div className="space-y-1 text-xs tracking-tight text-gray-600">
+                    <p>Account ID: {user?.id}</p>
+                    <p>Email: {email}</p>
+                    <p className="mt-3 text-xs font-black text-logo-teal-600">
+                      Audio files are stored locally on this device. Metadata syncs across your devices.
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </CardContent>
+            </DurationControlCard>
+          </div>
         </Card>
       </div>
     </div>

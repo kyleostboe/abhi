@@ -13,6 +13,7 @@
 
 import { useMemo } from "react"
 
+import { DurationControlCard } from "@/components/duration-control-card"
 import {
   DEFAULT_DAY_BOUNDARY_HOUR,
   type PracticeSession,
@@ -95,25 +96,38 @@ export function PracticeSummary({
   }
 
   return (
-    <section className="mx-auto max-w-3xl px-4 pt-4 md:px-8 md:pt-8">
-      <div className="rounded-xl border-[3px] border-muted bg-gradient-to-br from-white to-stone-50 p-4 md:p-5">
-        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat
-            label="Current streak"
-            value={streak.current}
-            unit={streak.current === 1 ? "day" : "days"}
-            gradient="cool"
-          />
-          <Stat label="Longest" value={streak.longest} unit={streak.longest === 1 ? "day" : "days"} gradient="warm" />
-          <Stat label="Last 30 days" value={last30} unit={last30 === 1 ? "day" : "days"} gradient="warm" />
-          <Stat
-            label="Total"
-            value={formatTotal(totals.totalSeconds)}
-            unit={`${totals.sits} sits`}
-            gradient="cool"
-          />
-        </div>
+    <section className="mx-auto max-w-3xl space-y-4 px-4 pt-4 md:px-8 md:pt-8">
+      {/* The same module the Adjuster uses for Target Duration / Silence Threshold — a
+          gradient header naming the question, a bare white body holding the answer — applied
+          to four small questions instead of one big one. */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Stat
+          label="Current streak"
+          value={streak.current}
+          unit={streak.current === 1 ? "day" : "days"}
+          gradient="from-logo-blue-400 to-logo-amber-300"
+        />
+        <Stat
+          label="Longest"
+          value={streak.longest}
+          unit={streak.longest === 1 ? "day" : "days"}
+          gradient="from-logo-rose-300 to-logo-emerald-500"
+        />
+        <Stat
+          label="Last 30 days"
+          value={last30}
+          unit={last30 === 1 ? "day" : "days"}
+          gradient="from-logo-rose-300 to-logo-emerald-500"
+        />
+        <Stat
+          label="Total"
+          value={formatTotal(totals.totalSeconds)}
+          unit={`${totals.sits} sits`}
+          gradient="from-logo-blue-400 to-logo-amber-300"
+        />
+      </div>
 
+      <div className="rounded-xl border-[3px] border-muted bg-gradient-to-br from-white to-stone-50 p-4 md:p-5">
         <div className="overflow-x-auto">
           <div className="flex gap-[3px]" role="img" aria-label={`Practice over the last ${WEEKS_SHOWN} weeks`}>
             {weeks.map((week) => (
@@ -140,11 +154,6 @@ export function PracticeSummary({
   )
 }
 
-/**
- * Same gradient-header-over-white-body language as the Adjuster's Target Duration / Silence
- * Threshold cards, scaled down to a compact tile — a thin coloured strip rather than a full
- * gradient fill, so the number underneath stays the thing your eye lands on.
- */
 function Stat({
   label,
   value,
@@ -154,23 +163,12 @@ function Stat({
   label: string
   value: number | string
   unit: string
-  gradient: "cool" | "warm"
+  gradient: string
 }) {
   return (
-    <div className="overflow-hidden rounded-[10px] bg-white shadow-sm">
-      <div
-        className={cn(
-          "h-[5px]",
-          gradient === "cool"
-            ? "bg-gradient-to-r from-logo-blue-400 to-logo-amber-300"
-            : "bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500",
-        )}
-      />
-      <div className="px-3 py-2">
-        <p className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">{label}</p>
-        <p className="mt-0.5 font-serif text-lg font-black leading-none tracking-tight text-gray-700">{value}</p>
-        <p className="mt-1 font-serif text-[11px] tracking-tight text-gray-400">{unit}</p>
-      </div>
-    </div>
+    <DurationControlCard title={label} gradientClassName={gradient} bodyClassName="px-3 py-3 text-center">
+      <p className="font-serif text-lg font-black leading-none tracking-tight text-gray-700">{value}</p>
+      <p className="mt-1 font-serif text-[11px] tracking-tight text-gray-400">{unit}</p>
+    </DurationControlCard>
   )
 }

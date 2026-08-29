@@ -2794,20 +2794,7 @@ export default function LibraryPage() {
                             }}
                             onClick={() => openMeditationPlayer(base, variants)}
                           >
-                            {/* A thin gradient edge, keyed to source, so the list carries a
-                                little of the colour every other tool in the app leads with —
-                                without turning a scrolling list of rows into five hero cards. */}
-                            <Card
-                              className={cn(
-                                "w-full overflow-hidden rounded-xl border-[3px] border-muted bg-white shadow-md",
-                                "border-l-[6px]",
-                                base.source === "recording"
-                                  ? "border-l-logo-teal-400"
-                                  : base.source === "creator"
-                                    ? "border-l-logo-rose-400"
-                                    : "border-l-logo-blue-400",
-                              )}
-                            >
+                            <Card className="w-full rounded-xl border-[3px] border-muted bg-white shadow-md">
                               <div className="relative flex items-center justify-between overflow-visible p-4">
                                 
                                 <div className="flex-1 min-w-0">
