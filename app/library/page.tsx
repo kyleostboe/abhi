@@ -2543,6 +2543,10 @@ export default function LibraryPage() {
                   transition={{ duration: 0.2 }}
                 >
                   {/* Search and Filters */}
+                  {/* Matches the selected-pill treatment used everywhere else a choice is made
+                      from a row of options — the nav's active tab, the Timer's bell/interval
+                      pills, Settings' day-boundary picker — instead of the border-colour-only
+                      swap this row used to use, which read as unselected either way. */}
                   <div
                     className={`grid grid-cols-1 gap-4 mb-[27px] tracking-tight ${
                       shouldStackFilters
@@ -2577,40 +2581,40 @@ export default function LibraryPage() {
                     <div className="flex flex-wrap items-center font-serif font-black text-xs text-gray-600 md:justify-start md:items-center gap-[5px] justify-center">
                       <button
                         onClick={() => handleSourceFilterChange("all")}
-                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
+                        className={`flex items-center justify-center font-black px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
                           !selectedPlaylist && sourceFilter === "all"
-                            ? "bg-white border-stone-300"
-                            : "bg-white border-gray-500 hover:shadow-none"
+                            ? "bg-gradient-to-r from-gray-600 to-gray-500 border-transparent text-white"
+                            : "bg-white border-gray-500 text-gray-600 hover:shadow-none"
                         }`}
                       >
                         All Meditations
                       </button>
                       <button
                         onClick={() => handleSourceFilterChange("adjuster")}
-                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
+                        className={`flex items-center justify-center font-black px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
                           !selectedPlaylist && sourceFilter === "adjuster"
-                            ? "bg-white border-stone-300"
-                            : "bg-white border-gray-500 hover:shadow-none"
+                            ? "bg-gradient-to-r from-gray-600 to-gray-500 border-transparent text-white"
+                            : "bg-white border-gray-500 text-gray-600 hover:shadow-none"
                         }`}
                       >
                         Adjuster
                       </button>
                       <button
                         onClick={() => handleSourceFilterChange("creator")}
-                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
+                        className={`flex items-center justify-center font-black px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
                           !selectedPlaylist && sourceFilter === "creator"
-                            ? "bg-white border-stone-300"
-                            : "bg-white border-gray-500 hover:shadow-none"
+                            ? "bg-gradient-to-r from-gray-600 to-gray-500 border-transparent text-white"
+                            : "bg-white border-gray-500 text-gray-600 hover:shadow-none"
                         }`}
                       >
                         Creator
                       </button>
                       <button
                         onClick={() => handleSourceFilterChange("recording")}
-                        className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
+                        className={`flex items-center justify-center font-black px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
                           !selectedPlaylist && sourceFilter === "recording"
-                            ? "bg-white border-stone-300"
-                            : "bg-white border-gray-500 hover:shadow-none"
+                            ? "bg-gradient-to-r from-gray-600 to-gray-500 border-transparent text-white"
+                            : "bg-white border-gray-500 text-gray-600 hover:shadow-none"
                         }`}
                       >
                         Recordings
@@ -2644,12 +2648,12 @@ export default function LibraryPage() {
                             const title = event.dataTransfer.getData("application/x-abhi-meditation-title")
                             if (id) void handleAddToPlaylist(playlist.id, id, title || "Meditation")
                           }}
-                          className={`flex items-center justify-center font-black text-gray-600 px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
+                          className={`flex items-center justify-center font-black px-5 transition-all duration-200 ease-out shadow-md text-xs border-[3px] rounded-[8px] py-1 ${
                             dragOverPlaylistId === playlist.id
-                              ? "bg-white border-logo-emerald-500 scale-105"
+                              ? "bg-white border-logo-emerald-500 text-gray-600 scale-105"
                               : selectedPlaylist === playlist.id
-                                ? "bg-white border-stone-300"
-                                : "bg-white border-gray-500 hover:shadow-none"
+                                ? "bg-gradient-to-r from-gray-600 to-gray-500 border-transparent text-white"
+                                : "bg-white border-gray-500 text-gray-600 hover:shadow-none"
                           }`}
                         >
                           {playlist.name}
@@ -2790,7 +2794,20 @@ export default function LibraryPage() {
                             }}
                             onClick={() => openMeditationPlayer(base, variants)}
                           >
-                            <Card className="w-full rounded-xl border-[3px] border-muted bg-white shadow-md">
+                            {/* A thin gradient edge, keyed to source, so the list carries a
+                                little of the colour every other tool in the app leads with —
+                                without turning a scrolling list of rows into five hero cards. */}
+                            <Card
+                              className={cn(
+                                "w-full overflow-hidden rounded-xl border-[3px] border-muted bg-white shadow-md",
+                                "border-l-[6px]",
+                                base.source === "recording"
+                                  ? "border-l-logo-teal-400"
+                                  : base.source === "creator"
+                                    ? "border-l-logo-rose-400"
+                                    : "border-l-logo-blue-400",
+                              )}
+                            >
                               <div className="relative flex items-center justify-between overflow-visible p-4">
                                 
                                 <div className="flex-1 min-w-0">

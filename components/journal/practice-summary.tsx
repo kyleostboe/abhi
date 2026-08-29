@@ -98,10 +98,20 @@ export function PracticeSummary({
     <section className="mx-auto max-w-3xl px-4 pt-4 md:px-8 md:pt-8">
       <div className="rounded-xl border-[3px] border-muted bg-gradient-to-br from-white to-stone-50 p-4 md:p-5">
         <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="Current streak" value={streak.current} unit={streak.current === 1 ? "day" : "days"} />
-          <Stat label="Longest" value={streak.longest} unit={streak.longest === 1 ? "day" : "days"} />
-          <Stat label="Last 30 days" value={last30} unit={last30 === 1 ? "day" : "days"} />
-          <Stat label="Total" value={formatTotal(totals.totalSeconds)} unit={`${totals.sits} sits`} />
+          <Stat
+            label="Current streak"
+            value={streak.current}
+            unit={streak.current === 1 ? "day" : "days"}
+            gradient="cool"
+          />
+          <Stat label="Longest" value={streak.longest} unit={streak.longest === 1 ? "day" : "days"} gradient="warm" />
+          <Stat label="Last 30 days" value={last30} unit={last30 === 1 ? "day" : "days"} gradient="warm" />
+          <Stat
+            label="Total"
+            value={formatTotal(totals.totalSeconds)}
+            unit={`${totals.sits} sits`}
+            gradient="cool"
+          />
         </div>
 
         <div className="overflow-x-auto">
@@ -130,12 +140,37 @@ export function PracticeSummary({
   )
 }
 
-function Stat({ label, value, unit }: { label: string; value: number | string; unit: string }) {
+/**
+ * Same gradient-header-over-white-body language as the Adjuster's Target Duration / Silence
+ * Threshold cards, scaled down to a compact tile — a thin coloured strip rather than a full
+ * gradient fill, so the number underneath stays the thing your eye lands on.
+ */
+function Stat({
+  label,
+  value,
+  unit,
+  gradient,
+}: {
+  label: string
+  value: number | string
+  unit: string
+  gradient: "cool" | "warm"
+}) {
   return (
-    <div className="rounded-[10px] bg-muted/50 px-3 py-2">
-      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">{label}</p>
-      <p className="mt-0.5 font-serif text-lg font-black leading-none tracking-tight text-gray-700">{value}</p>
-      <p className="mt-1 font-serif text-[11px] tracking-tight text-gray-400">{unit}</p>
+    <div className="overflow-hidden rounded-[10px] bg-white shadow-sm">
+      <div
+        className={cn(
+          "h-[5px]",
+          gradient === "cool"
+            ? "bg-gradient-to-r from-logo-blue-400 to-logo-amber-300"
+            : "bg-gradient-to-r from-logo-rose-300 to-logo-emerald-500",
+        )}
+      />
+      <div className="px-3 py-2">
+        <p className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">{label}</p>
+        <p className="mt-0.5 font-serif text-lg font-black leading-none tracking-tight text-gray-700">{value}</p>
+        <p className="mt-1 font-serif text-[11px] tracking-tight text-gray-400">{unit}</p>
+      </div>
     </div>
   )
 }

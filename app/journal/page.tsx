@@ -326,11 +326,29 @@ export default function JournalPage() {
       }}
       className={cn(
         "flex w-full min-w-0 items-center justify-between gap-2 rounded-[10px] px-3 py-2 text-left transition-colors",
-        activeFolderId === id ? "bg-white shadow-sm" : "hover:bg-white/60",
+        // Same selected-pill treatment as the nav's active tab and the Timer's pill selectors,
+        // rather than a plain white highlight that reads as "hovered" more than "chosen."
+        activeFolderId === id
+          ? "bg-gradient-to-r from-gray-600 to-gray-500 shadow-sm"
+          : "hover:bg-white/60",
       )}
     >
-      <span className="truncate font-serif text-sm font-black text-gray-700">{name}</span>
-      <span className="flex-shrink-0 text-[11px] font-black text-gray-400">{count}</span>
+      <span
+        className={cn(
+          "truncate font-serif text-sm font-black",
+          activeFolderId === id ? "text-white" : "text-gray-700",
+        )}
+      >
+        {name}
+      </span>
+      <span
+        className={cn(
+          "flex-shrink-0 text-[11px] font-black",
+          activeFolderId === id ? "text-white/70" : "text-gray-400",
+        )}
+      >
+        {count}
+      </span>
     </button>
   )
 
