@@ -133,9 +133,12 @@ export function TimelineShape({
   if (events.length === 0) return null
 
   return (
-    <div className="space-y-5 rounded-[10px] bg-muted/40 p-4">
-      <div>
-        <Label className="mb-2 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.15em] text-gray-500">
+    // Two bordered white tiles, the same ones the Adjuster reports Content / Silence / Pauses /
+    // Range in. No gradient: these sit inside the Timeline Editor's own grey-headed card, and a
+    // tool gradient here would read as a third tool rather than as part of this one.
+    <div className="grid gap-2 md:grid-cols-2">
+      <div className="rounded-sm border-[3px] border-muted bg-white px-4 py-3 shadow-md">
+        <Label className="mb-2 flex items-center gap-1.5 font-serif text-[10px] font-black uppercase tracking-wide text-gray-500">
           <Repeat className="h-3.5 w-3.5" />
           Repeat a stretch
         </Label>
@@ -144,10 +147,9 @@ export function TimelineShape({
           <NumberField label="To" value={to} onChange={setTo} suffix="s" />
           <NumberField label="Times" value={times} onChange={setTimes} min={1} />
           <Button
-            variant="accent"
+            size="sm"
             disabled={!rangeIsValid || eventsInRange === 0}
             onClick={() => onRepeat({ from, to, times })}
-            className="h-9"
           >
             Repeat
           </Button>
@@ -161,14 +163,14 @@ export function TimelineShape({
         </p>
       </div>
 
-      <div>
-        <Label className="mb-2 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.15em] text-gray-500">
+      <div className="rounded-sm border-[3px] border-muted bg-white px-4 py-3 shadow-md">
+        <Label className="mb-2 flex items-center gap-1.5 font-serif text-[10px] font-black uppercase tracking-wide text-gray-500">
           <Scaling className="h-3.5 w-3.5" />
           Stretch the whole thing
         </Label>
         <div className="flex flex-wrap items-end gap-2">
           <NumberField label="Length" value={targetMinutes} onChange={setTargetMinutes} min={1} suffix="min" />
-          <Button variant="accent" disabled={tooShort} onClick={() => onScale(target)} className="h-9">
+          <Button size="sm" disabled={tooShort} onClick={() => onScale(target)}>
             Scale
           </Button>
         </div>
@@ -207,7 +209,7 @@ function NumberField({
             const next = Number(event.target.value)
             onChange(Number.isFinite(next) ? Math.max(min, next) : min)
           }}
-          className="h-9 w-20 rounded-[10px] border-0 bg-white px-3 font-serif text-xs font-black text-gray-600 shadow-inner focus-visible:outline-none"
+          className="h-9 w-[68px] rounded-[10px] border-0 bg-muted/60 px-3 font-serif text-xs font-black text-gray-600 shadow-inner focus-visible:outline-none"
         />
         {suffix ? <span className="font-serif text-[11px] text-gray-400">{suffix}</span> : null}
       </span>

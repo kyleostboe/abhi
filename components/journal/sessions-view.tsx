@@ -15,6 +15,7 @@
 
 import { Clock, NotebookPen, Timer } from "lucide-react"
 
+import { Card } from "@/components/ui/card"
 import type { JournalNote } from "@/hooks/use-journal-notes"
 import {
   DEFAULT_DAY_BOUNDARY_HOUR,
@@ -77,7 +78,7 @@ export function SessionsView({
     return (
       <div className="space-y-4 p-4 md:p-8" aria-busy="true">
         {[0, 1, 2].map((index) => (
-          <div key={index} className="animate-pulse rounded-xl border-[3px] border-muted p-4">
+          <div key={index} className="animate-pulse rounded-[10px] border-[3px] border-muted p-3">
             <div className="mb-2 h-3 w-40 rounded bg-muted" />
             <div className="h-3 w-24 rounded bg-muted/70" />
           </div>
@@ -115,23 +116,26 @@ export function SessionsView({
     notes.find((note) => note.sessionId === session.id) ?? null
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8 p-4 md:p-8">
+    <div className="mx-auto max-w-3xl space-y-4 p-4 md:p-8">
       {days.map((day) => {
         const dayTotal = day.entries.reduce((total, session) => total + session.durationActual, 0)
 
         return (
-          <section key={day.key}>
-            <div className="mb-3 flex items-baseline justify-between gap-3 border-b border-muted pb-2">
-              <h2 className="min-w-0 truncate font-serif text-lg font-black text-gray-700">
+          // A day is a card headed the way the Creator's Timeline Editor is headed: the same
+          // neutral strip, title left, its own summary right. Grey rather than one of the tool
+          // gradients because a day is a container, not a tool.
+          <Card key={day.key} className="overflow-hidden rounded-xl border-none bg-white shadow-lg">
+            <div className="flex items-baseline justify-between gap-3 bg-gradient-to-br from-gray-600 to-gray-500 px-6 py-1.5">
+              <h2 className="min-w-0 truncate font-serif text-base font-black text-white">
                 {formatDayHeading(day.key)}
               </h2>
-              <span className="flex-shrink-0 text-[11px] font-black uppercase tracking-[0.15em] text-gray-400">
+              <span className="flex-shrink-0 text-[10px] font-black uppercase tracking-[0.15em] text-white/70">
                 {day.entries.length} {day.entries.length === 1 ? "sit" : "sits"}
                 {dayTotal >= 60 ? ` · ${formatSatLength(dayTotal)}` : ""}
               </span>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 p-4">
               {day.entries.map((session) => {
                 const note = noteFor(session)
                 const ratio = completionRatio(session)
@@ -157,8 +161,10 @@ export function SessionsView({
                   </>
                 )
 
+                // The same row the Creator's recording picker uses for a list of things you
+                // can open.
                 const className = cn(
-                  "flex w-full min-w-0 items-start gap-3 rounded-xl border-[3px] border-muted bg-gradient-to-br from-white to-stone-50 p-4 text-left",
+                  "flex w-full min-w-0 items-start gap-3 rounded-[10px] border-[3px] border-muted bg-white p-3 text-left",
                   note && "transition-colors hover:border-stone-300",
                 )
 
@@ -174,7 +180,7 @@ export function SessionsView({
                 )
               })}
             </div>
-          </section>
+          </Card>
         )
       })}
     </div>

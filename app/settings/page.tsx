@@ -128,7 +128,7 @@ export default function SettingsPage() {
       <div className="container max-w-4xl mx-auto py-8 px-4">
         {/* Same shell as the Home tools: white, borderless, xl radius, gradient title strip. */}
         <Card className="mx-auto w-full max-w-2xl overflow-hidden rounded-xl border-none bg-white shadow-lg">
-          <div className="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 px-6 py-[9px] text-center">
+          <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-6 py-[9px] text-center">
             <h3 className="font-serif text-base font-black tracking-tight text-white">Account Settings</h3>
           </div>
           <CardHeader className="pb-4 text-center">

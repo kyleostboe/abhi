@@ -533,7 +533,7 @@ export default function JournalPage() {
                           </span>
                         </div>
                         {note.meditationTitle && (
-                          <div className="mt-1 truncate text-[10px] font-black uppercase tracking-[0.12em] text-logo-emerald-400">
+                          <div className="mt-1 truncate text-[10px] font-black uppercase tracking-[0.12em] text-gray-400">
                             {note.meditationTitle}
                           </div>
                         )}
