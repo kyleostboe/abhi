@@ -95,15 +95,18 @@ export function PracticeSummary({
   }
 
   return (
-    <section className="mx-auto max-w-3xl px-4 pt-4 md:px-8 md:pt-8">
-      <div className="rounded-xl border-[3px] border-muted bg-gradient-to-br from-white to-stone-50 p-4 md:p-5">
-        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="Current streak" value={streak.current} unit={streak.current === 1 ? "day" : "days"} />
-          <Stat label="Longest" value={streak.longest} unit={streak.longest === 1 ? "day" : "days"} />
-          <Stat label="Last 30 days" value={last30} unit={last30 === 1 ? "day" : "days"} />
-          <Stat label="Total" value={formatTotal(totals.totalSeconds)} unit={`${totals.sits} sits`} />
-        </div>
+    <section className="mx-auto max-w-3xl space-y-4 px-4 pt-4 md:px-8 md:pt-8">
+      {/* Four numbers in the Adjuster's audio-stat tiles — the same row of bordered white
+          squares that reports Content / Silence / Pauses / Range there. It is the app's way of
+          saying "here are the measurements", and this is the same kind of claim. */}
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        <Stat label="Streak" value={streak.current} unit={streak.current === 1 ? "day" : "days"} />
+        <Stat label="Longest" value={streak.longest} unit={streak.longest === 1 ? "day" : "days"} />
+        <Stat label="Last 30" value={last30} unit={last30 === 1 ? "day" : "days"} />
+        <Stat label="Total" value={formatTotal(totals.totalSeconds)} unit={`${totals.sits} sits`} />
+      </div>
 
+      <div className="rounded-sm border-[3px] border-muted bg-white p-4 shadow-md md:p-5">
         <div className="overflow-x-auto">
           <div className="flex gap-[3px]" role="img" aria-label={`Practice over the last ${WEEKS_SHOWN} weeks`}>
             {weeks.map((week) => (
@@ -132,10 +135,10 @@ export function PracticeSummary({
 
 function Stat({ label, value, unit }: { label: string; value: number | string; unit: string }) {
   return (
-    <div className="rounded-[10px] bg-muted/50 px-3 py-2">
-      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">{label}</p>
-      <p className="mt-0.5 font-serif text-lg font-black leading-none tracking-tight text-gray-700">{value}</p>
-      <p className="mt-1 font-serif text-[11px] tracking-tight text-gray-400">{unit}</p>
+    <div className="flex min-h-[72px] flex-col items-center justify-center rounded-sm border-[3px] border-muted bg-white px-2 py-3 shadow-md">
+      <div className="mb-1 font-serif text-[10px] font-black uppercase tracking-wide text-gray-500">{label}:</div>
+      <div className="text-base font-black tracking-tight text-gray-600">{value}</div>
+      <div className="mt-0.5 font-serif text-[10px] tracking-tight text-gray-400">{unit}</div>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
+import { Card, CardDescription, CardHeader } from "@/components/ui/card"
 import { LogoMark } from "@/components/logo-mark"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -127,81 +127,91 @@ export default function SettingsPage() {
       <div className="container max-w-4xl mx-auto py-8 px-4">
         {/* Same shell as the Home tools: white, borderless, xl radius, gradient title strip. */}
         <Card className="mx-auto w-full max-w-2xl overflow-hidden rounded-xl border-none bg-white shadow-lg">
-          <div className="bg-gradient-to-br from-logo-rose-300 to-logo-emerald-500 px-6 py-[9px] text-center">
+          <div className="bg-gradient-to-br from-gray-600 to-gray-500 px-6 py-[9px] text-center">
             <h3 className="font-serif text-base font-black tracking-tight text-white">Account Settings</h3>
           </div>
           <CardHeader className="pb-4 text-center">
             <LogoMark className="mb-3" />
             <CardDescription>Manage your profile and preferences</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-2">
-              <Label htmlFor="displayName">Display Name</Label>
-              <Input
-                id="displayName"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Enter your display name"
-              />
-              <p className="font-serif text-xs tracking-tight text-gray-500">This is how your name will appear in the app</p>
-            </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                disabled
-              />
-              <p className="font-serif text-xs tracking-tight text-gray-500">Email cannot be changed from settings</p>
-            </div>
+          {/* Sections, not tools. The Creator heads Timeline Events / Notes / Miscellaneous with
+              a bare serif heading on white, and that is the right weight here — a second and
+              third gradient inside a card that already has one is what made this shout. */}
+          <div className="space-y-8 px-6 pb-8 md:px-8">
+            <section className="space-y-3">
+              <h4 className="text-base font-black text-gray-600">Profile</h4>
 
-            <div className="flex justify-end gap-3 rounded-sm font-serif">
-              <Button variant="ghost" className="text-gray-600" onClick={() => window.history.back()}>
-                Cancel
-              </Button>
-              <Button onClick={handleSave} disabled={isSaving} variant="accent">
-                {isSaving ? "Saving..." : "Save Changes"}
-              </Button>
-            </div>
-
-            <div className="grid gap-2">
-              <Label>Practice day starts at</Label>
-              <div className="flex flex-wrap gap-2">
-                {[0, 3, 4, 5, 6].map((hour) => (
-                  <button
-                    key={hour}
-                    type="button"
-                    onClick={() => void updateSettings({ dayBoundaryHour: hour })}
-                    className={cn(
-                      "rounded-[10px] px-3 py-2 font-serif text-xs font-black tracking-tight transition-colors",
-                      settings.dayBoundaryHour === hour
-                        ? "bg-gradient-to-r from-gray-600 to-gray-500 text-white shadow-md"
-                        : "bg-muted/60 text-gray-600 hover:bg-muted",
-                    )}
-                  >
-                    {formatDayBoundary(hour)}
-                  </button>
-                ))}
+              <div className="grid gap-2 font-serif">
+                <Label htmlFor="displayName">Display Name</Label>
+                <Input
+                  id="displayName"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Enter your display name"
+                />
+                <p className="text-xs tracking-tight text-gray-400">This is how your name will appear in the app</p>
               </div>
-              <p className="font-serif text-xs tracking-tight text-gray-500">
-                A sit before this hour counts toward the previous day, so sitting late doesn&apos;t cost you a
-                streak.
-              </p>
-            </div>
 
-            <div className="rounded-[10px] bg-muted/60 p-4 shadow-inner">
-              <h3 className="mb-2 font-serif text-sm font-black tracking-tight text-gray-700">Account Information</h3>
-              <div className="space-y-1 font-serif text-xs tracking-tight text-gray-600">
+              <div className="grid gap-2 font-serif">
+                <Label htmlFor="email">Email Address</Label>
+                <Input id="email" type="email" value={email} disabled />
+                <p className="text-xs tracking-tight text-gray-400">Email cannot be changed from settings</p>
+              </div>
+
+              <div className="flex items-center justify-center gap-3 pt-1">
+                <Button variant="ghost" className="text-gray-600" onClick={() => window.history.back()}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSave} disabled={isSaving} className="w-full max-w-[240px]">
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </section>
+
+            <section className="space-y-3">
+              <h4 className="text-base font-black text-gray-600">Practice</h4>
+
+              <div className="grid gap-2 font-serif">
+                <Label>Practice day starts at</Label>
+                <div className="flex flex-wrap gap-2">
+                  {[0, 3, 4, 5, 6].map((hour) => (
+                    <button
+                      key={hour}
+                      type="button"
+                      onClick={() => void updateSettings({ dayBoundaryHour: hour })}
+                      // The Library's filter chip, unchanged — the app already has one
+                      // "pick one of these" control and this is it.
+                      className={cn(
+                        "flex items-center justify-center rounded-[8px] border-[3px] px-5 py-1 text-xs font-black shadow-md transition-all duration-200 ease-out",
+                        settings.dayBoundaryHour === hour
+                          ? "border-transparent bg-gradient-to-r from-gray-600 to-gray-500 text-white"
+                          : "border-gray-500 bg-white text-gray-600 hover:shadow-none",
+                      )}
+                    >
+                      {formatDayBoundary(hour)}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs tracking-tight text-gray-400">
+                  A sit before this hour counts toward the previous day, so sitting late doesn&apos;t cost you a
+                  streak.
+                </p>
+              </div>
+            </section>
+
+            <section className="space-y-3">
+              <h4 className="text-base font-black text-gray-600">Account</h4>
+
+              <div className="space-y-1 font-serif text-xs tracking-tight text-gray-500">
                 <p>Account ID: {user?.id}</p>
                 <p>Email: {email}</p>
-                <p className="text-logo-teal-600 mt-3 font-black text-xs">
+                <p className="pt-2 text-gray-400">
                   Audio files are stored locally on this device. Metadata syncs across your devices.
                 </p>
               </div>
-            </div>
-          </CardContent>
+            </section>
+          </div>
         </Card>
       </div>
     </div>
