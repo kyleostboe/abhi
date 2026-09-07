@@ -19,7 +19,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
 import { MeditationLibrary, type SavedMeditation } from "@/lib/meditation-library"
 import { minimumTimelineDuration } from "@/lib/timeline-ops"
 import type { TimelineEvent } from "@/lib/types"
@@ -133,50 +132,59 @@ export function TimelineShape({
   if (events.length === 0) return null
 
   return (
-    <div className="space-y-5 rounded-[10px] bg-muted/40 p-4">
-      <div>
-        <Label className="mb-2 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.15em] text-gray-500">
-          <Repeat className="h-3.5 w-3.5" />
+    // These are sections of the Timeline Editor, not tools of their own, so they take the
+    // Creator's in-card rhythm: a plain heading the size of "Timeline Events", its controls
+    // under it, and one full-width button the shape of "Add to Timeline". Boxing them made
+    // them read as foreign, and a small dark button beside small fields read as a chip.
+    <div className="space-y-8 text-left">
+      <div className="space-y-3">
+        <h4 className="flex items-center gap-2 text-base font-black text-gray-600">
+          <Repeat className="h-4 w-4" />
           Repeat a stretch
-        </Label>
-        <div className="flex flex-wrap items-end gap-2">
+        </h4>
+        <div className="flex flex-wrap items-end gap-3">
           <NumberField label="From" value={from} onChange={setFrom} suffix="s" />
           <NumberField label="To" value={to} onChange={setTo} suffix="s" />
           <NumberField label="Times" value={times} onChange={setTimes} min={1} />
-          <Button
-            variant="accent"
-            disabled={!rangeIsValid || eventsInRange === 0}
-            onClick={() => onRepeat({ from, to, times })}
-            className="h-9"
-          >
-            Repeat
-          </Button>
         </div>
-        <p className="mt-2 font-serif text-[11px] tracking-tight text-gray-400">
+        <p className="font-serif text-xs tracking-tight text-gray-400">
           {!rangeIsValid
             ? "Set an end later than the start."
             : eventsInRange === 0
               ? "Nothing starts in that stretch."
               : `${eventsInRange} ${eventsInRange === 1 ? "event" : "events"}, repeated ${times}× — adds ${formatTime((to - from) * times)}.`}
         </p>
-      </div>
-
-      <div>
-        <Label className="mb-2 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.15em] text-gray-500">
-          <Scaling className="h-3.5 w-3.5" />
-          Stretch the whole thing
-        </Label>
-        <div className="flex flex-wrap items-end gap-2">
-          <NumberField label="Length" value={targetMinutes} onChange={setTargetMinutes} min={1} suffix="min" />
-          <Button variant="accent" disabled={tooShort} onClick={() => onScale(target)} className="h-9">
-            Scale
+        <div className="flex justify-center pt-1">
+          <Button
+            className="w-full max-w-[352px]"
+            disabled={!rangeIsValid || eventsInRange === 0}
+            onClick={() => onRepeat({ from, to, times })}
+          >
+            <Repeat className="mr-2 h-4 w-4" />
+            Repeat
           </Button>
         </div>
-        <p className={cn("mt-2 font-serif text-[11px] tracking-tight", tooShort ? "text-destructive" : "text-gray-400")}>
+      </div>
+
+      <div className="space-y-3">
+        <h4 className="flex items-center gap-2 text-base font-black text-gray-600">
+          <Scaling className="h-4 w-4" />
+          Stretch the whole thing
+        </h4>
+        <div className="flex flex-wrap items-end gap-3">
+          <NumberField label="Length" value={targetMinutes} onChange={setTargetMinutes} min={1} suffix="min" />
+        </div>
+        <p className={cn("font-serif text-xs tracking-tight", tooShort ? "text-destructive" : "text-gray-400")}>
           {tooShort
             ? `Too short — events would overlap below about ${floorMinutes} min.`
             : "Spacing scales; the recordings and bells keep their own length."}
         </p>
+        <div className="flex justify-center pt-1">
+          <Button className="w-full max-w-[352px]" disabled={tooShort} onClick={() => onScale(target)}>
+            <Scaling className="mr-2 h-4 w-4" />
+            Scale
+          </Button>
+        </div>
       </div>
     </div>
   )
@@ -196,9 +204,9 @@ function NumberField({
   suffix?: string
 }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">{label}</span>
-      <span className="flex items-center gap-1">
+    <label className="flex flex-col gap-1.5">
+      <span className="text-xs font-black tracking-tight text-gray-500">{label}</span>
+      <span className="flex items-center gap-1.5">
         <input
           type="number"
           min={min}
@@ -207,9 +215,9 @@ function NumberField({
             const next = Number(event.target.value)
             onChange(Number.isFinite(next) ? Math.max(min, next) : min)
           }}
-          className="h-9 w-20 rounded-[10px] border-0 bg-white px-3 font-serif text-xs font-black text-gray-600 shadow-inner focus-visible:outline-none"
+          className="h-10 w-[76px] rounded-[10px] border-0 bg-muted/50 px-3 font-serif text-sm font-black text-gray-600 shadow-inner focus-visible:outline-none"
         />
-        {suffix ? <span className="font-serif text-[11px] text-gray-400">{suffix}</span> : null}
+        {suffix ? <span className="font-serif text-xs text-gray-400">{suffix}</span> : null}
       </span>
     </label>
   )

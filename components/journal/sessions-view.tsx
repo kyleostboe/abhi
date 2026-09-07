@@ -13,7 +13,7 @@
  * that is ending rather than opening a new one with a single entry in it.
  */
 
-import { Clock, NotebookPen, Timer } from "lucide-react"
+import { Clock, Hourglass, NotebookPen, Timer } from "lucide-react"
 
 import type { JournalNote } from "@/hooks/use-journal-notes"
 import {
@@ -77,7 +77,7 @@ export function SessionsView({
     return (
       <div className="space-y-4 p-4 md:p-8" aria-busy="true">
         {[0, 1, 2].map((index) => (
-          <div key={index} className="animate-pulse rounded-xl border-[3px] border-muted p-4">
+          <div key={index} className="animate-pulse rounded-xl border-[3px] border-muted p-4 shadow-md">
             <div className="mb-2 h-3 w-40 rounded bg-muted" />
             <div className="h-3 w-24 rounded bg-muted/70" />
           </div>
@@ -120,12 +120,12 @@ export function SessionsView({
         const dayTotal = day.entries.reduce((total, session) => total + session.durationActual, 0)
 
         return (
-          <section key={day.key}>
-            <div className="mb-3 flex items-baseline justify-between gap-3 border-b border-muted pb-2">
-              <h2 className="min-w-0 truncate font-serif text-lg font-black text-gray-700">
-                {formatDayHeading(day.key)}
-              </h2>
-              <span className="flex-shrink-0 text-[11px] font-black uppercase tracking-[0.15em] text-gray-400">
+          // A day is a heading with cards under it, not a container — the same bare
+          // section head the Creator puts above Timeline Events.
+          <section key={day.key} className="space-y-3">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="min-w-0 truncate text-base font-black text-gray-600">{formatDayHeading(day.key)}</h2>
+              <span className="flex-shrink-0 text-xs font-black tracking-tight text-gray-400">
                 {day.entries.length} {day.entries.length === 1 ? "sit" : "sits"}
                 {dayTotal >= 60 ? ` · ${formatSatLength(dayTotal)}` : ""}
               </span>
@@ -137,28 +137,44 @@ export function SessionsView({
                 const ratio = completionRatio(session)
                 const isTimer = session.source === "timer"
 
+                // The Library's meditation card, item for item: small bold title, then a
+                // wrapping row of icon-and-label facts in the same grey. A sit and a saved
+                // meditation are the same kind of object in this app, so they read the same.
                 const body = (
-                  <>
-                    <span className="mt-0.5 flex flex-shrink-0 items-center gap-1 text-xs font-black text-gray-500">
-                      {isTimer ? <Timer className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
-                      {formatTime(session.startedAt)}
-                    </span>
+                  <span className="flex items-center justify-between gap-3 p-4 text-left">
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-serif text-sm font-black text-gray-700">
+                      <span className="mb-2 block truncate text-xs font-black text-gray-800">
                         {session.meditationTitle ?? (isTimer ? "Timer sit" : "Meditation")}
                       </span>
-                      <span className="mt-0.5 block truncate font-serif text-xs text-gray-500">
-                        {formatSatLength(session.durationActual)}
-                        {ratio !== null && !session.completed ? ` of ${Math.round(ratio * 100)}%` : ""}
-                        {note ? ` · ${note.preview || note.title || "Note"}` : ""}
+                      <span className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          {isTimer ? <Timer className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                          <span className="truncate text-xs font-black tracking-tight">
+                            {formatTime(session.startedAt)}
+                          </span>
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Hourglass className="h-4 w-4" />
+                          <span className="truncate text-xs font-black tracking-tight">
+                            {formatSatLength(session.durationActual)}
+                            {ratio !== null && !session.completed ? ` of ${Math.round(ratio * 100)}%` : ""}
+                          </span>
+                        </span>
+                        {note ? (
+                          <span className="flex min-w-0 items-center gap-1">
+                            <NotebookPen className="h-4 w-4 flex-shrink-0" />
+                            <span className="truncate text-xs font-black tracking-tight">
+                              {note.preview || note.title || "Note"}
+                            </span>
+                          </span>
+                        ) : null}
                       </span>
                     </span>
-                    {note ? <NotebookPen className="mt-0.5 h-4 w-4 flex-shrink-0 text-logo-rose-400" /> : null}
-                  </>
+                  </span>
                 )
 
                 const className = cn(
-                  "flex w-full min-w-0 items-start gap-3 rounded-xl border-[3px] border-muted bg-gradient-to-br from-white to-stone-50 p-4 text-left",
+                  "block w-full min-w-0 rounded-xl border-[3px] border-muted bg-white shadow-md",
                   note && "transition-colors hover:border-stone-300",
                 )
 
