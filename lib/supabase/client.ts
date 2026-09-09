@@ -1,32 +1,53 @@
 import { createBrowserClient } from "@supabase/ssr"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { log } from "@/lib/log"
+import { createMockClient } from "@/lib/supabase/mock"
 
-export function createClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+let cachedBrowserClient: SupabaseClient | null = null
+
+export function createClient(): SupabaseClient {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
 
   if (!url || !key) {
-    log.warn("Supabase env vars missing. Client creation skipped.")
-    // Return a dummy client or throw a handled error? 
-    // createBrowserClient throws if args are missing.
-    // We'll return a proxy that logs warnings or just let it fail gracefully later.
-    // For now, let's try to return a minimal object that won't crash immediately,
-    // but requests will fail.
-    try {
-      return createBrowserClient(url || "", key || "")
-    } catch (e) {
-      log.error("Failed to create Supabase client:", e)
-      // Return a mock to prevent crash
-      return {
-        from: () => ({ select: () => ({ data: null, error: { message: "Supabase not configured" } }) }),
-        auth: {
-          getSession: async () => ({ data: { session: null } }),
-          onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-          signOut: async () => {},
-        },
-      } as any
+    if (process.env.NODE_ENV === "development") {
+      log.debug("Supabase env vars missing. Using fallback mock client.")
     }
+    return createMockClient()
+  }
+
+  if (typeof window !== "undefined") {
+    if (!cachedBrowserClient) {
+      cachedBrowserClient = createBrowserClient(url, key, {
+        cookieOptions: {
+          sameSite: "none",
+          secure: true,
+        },
+      })
+    }
+    return cachedBrowserClient
   }
 
   return createBrowserClient(url, key)
 }
+
+/**
+ * Returns Authorization header with the user's active session token, if available.
+ * Useful for authenticated fetch calls to /api/* routes that may run inside an iframe.
+ */
+export async function getAuthHeader(): Promise<Record<string, string>> {
+  if (typeof window === "undefined") return {}
+  try {
+    const supabase = createClient()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+    if (session?.access_token) {
+      return { Authorization: `Bearer ${session.access_token}` }
+    }
+  } catch (error) {
+    log.debug("Failed to retrieve auth token for request header:", error)
+  }
+  return {}
+}
+

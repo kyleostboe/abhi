@@ -1,0 +1,6 @@
+{
+  "name": "Abhī",
+  "description": "Adjust meditation length or create custom meditation timelines with audio processing, practice timers, and journal notes.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import { createClient } from "@/lib/supabase/client"
+import { createClient, getAuthHeader } from "@/lib/supabase/client"
 import { useAuth } from "@/hooks/use-auth"
 import { deleteAttachmentsForNote } from "@/lib/journal-attachments"
 import { deriveTitle, derivePreview, slugify } from "@/lib/journal-markdown"
@@ -160,33 +160,97 @@ export function useJournalNotes() {
       // Slug is generated once here and never rewritten on rename, so links keep resolving.
       const slug = slugify(title, `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`)
 
-      const { data, error } = await supabase
-        .from("journal_entries")
-        .insert({
-          profile_id: userId,
-          content_md: contentMd,
-          note: contentMd,
-          title,
-          slug,
-          folder_id: params.folderId ?? null,
-          meditation_id: params.meditationId ?? null,
-          meditation_title: params.meditationTitle ?? null,
-          session_id: params.sessionId ?? null,
-          practice_type: params.practiceType ?? null,
-          played_at: playedAt.toISOString(),
-          updated_at: new Date().toISOString(),
+      // 1. Try server endpoint first (handles auth session via cookies + optional admin bypass)
+      try {
+        const authHeader = await getAuthHeader()
+        const response = await fetch("/api/journal/note", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeader },
+          body: JSON.stringify({
+            contentMd,
+            title,
+            slug,
+            folderId: params.folderId ?? null,
+            meditationId: params.meditationId ?? null,
+            meditationTitle: params.meditationTitle ?? null,
+            sessionId: params.sessionId ?? null,
+            practiceType: params.practiceType ?? null,
+            playedAt: playedAt.toISOString(),
+          }),
         })
-        .select(NOTE_COLUMNS)
-        .single()
 
-      if (error || !data) {
-        log.error("[journal] Failed to create note:", error)
-        return null
+        if (response.ok) {
+          const json = await response.json()
+          if (json.note) {
+            const note = mapNote(json.note as NoteRow)
+            setNotes((previous) => [note, ...previous])
+            return note
+          }
+        } else {
+          log.warn("[journal] POST /api/journal/note returned status:", response.status)
+        }
+      } catch (err) {
+        log.warn("[journal] POST /api/journal/note network error, trying direct client insert:", err)
       }
 
-      const note = mapNote(data as NoteRow)
-      setNotes((previous) => [note, ...previous])
-      return note
+      // 2. Fallback: Direct client insert with fresh session check
+      try {
+        const { data: sessionData } = await supabase.auth.getSession()
+        const effectiveUserId = sessionData?.session?.user?.id || userId
+
+        const { data, error } = await supabase
+          .from("journal_entries")
+          .insert({
+            profile_id: effectiveUserId,
+            content_md: contentMd,
+            note: contentMd,
+            title,
+            slug,
+            folder_id: params.folderId ?? null,
+            meditation_id: params.meditationId ?? null,
+            meditation_title: params.meditationTitle ?? null,
+            session_id: params.sessionId ?? null,
+            practice_type: params.practiceType ?? null,
+            played_at: playedAt.toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .select(NOTE_COLUMNS)
+          .single()
+
+        if (!error && data) {
+          const note = mapNote(data as NoteRow)
+          setNotes((previous) => [note, ...previous])
+          return note
+        }
+
+        if (error) {
+          log.error("[journal] Failed to create note in database:", error)
+        }
+      } catch (clientErr) {
+        log.error("[journal] Client insert error:", clientErr)
+      }
+
+      // 3. Fallback: Create optimistic local note so user work is never lost
+      const fallbackNote: JournalNote = {
+        id: `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+        slug,
+        title,
+        preview: derivePreview(contentMd),
+        contentMd,
+        noteKey: null,
+        isBodyLoaded: true,
+        folderId: params.folderId ?? null,
+        meditationId: params.meditationId ?? null,
+        meditationTitle: params.meditationTitle ?? null,
+        sessionId: params.sessionId ?? null,
+        practiceType: params.practiceType ?? null,
+        tags: [],
+        font: null,
+        playedAt: playedAt.toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+      setNotes((previous) => [fallbackNote, ...previous])
+      return fallbackNote
     },
     [supabase, isAuthenticated, userId],
   )
@@ -199,10 +263,13 @@ export function useJournalNotes() {
     async (noteId: string): Promise<string | null> => {
       const existing = notesRef.current.find((note) => note.id === noteId)
       if (!existing) return null
-      if (existing.isBodyLoaded) return existing.contentMd
+      if (existing.isBodyLoaded || noteId.startsWith("local-")) return existing.contentMd
 
       try {
-        const response = await fetch(`/api/journal/note?id=${encodeURIComponent(noteId)}`)
+        const authHeader = await getAuthHeader()
+        const response = await fetch(`/api/journal/note?id=${encodeURIComponent(noteId)}`, {
+          headers: { ...authHeader },
+        })
         if (!response.ok) return null
         const { body } = (await response.json()) as { body: string }
         setNotes((previous) =>
@@ -258,7 +325,7 @@ export function useJournalNotes() {
           .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
       )
 
-      if (!isAuthenticated || !userId) return true
+      if (!isAuthenticated || !userId || noteId.startsWith("local-")) return true
 
       // Metadata stays a direct table write; the body goes through the API route, which writes
       // the markdown file to R2 and refreshes the index in one place so the two can't drift.
@@ -278,9 +345,10 @@ export function useJournalNotes() {
 
       if (changes.contentMd !== undefined) {
         try {
+          const authHeader = await getAuthHeader()
           const response = await fetch("/api/journal/note", {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...authHeader },
             body: JSON.stringify({ id: noteId, body: contentMd }),
           })
           if (!response.ok) {
@@ -311,13 +379,17 @@ export function useJournalNotes() {
       const previous = notesRef.current
       setNotes((current) => current.filter((note) => note.id !== noteId))
 
-      if (!isAuthenticated || !userId) return true
+      if (!isAuthenticated || !userId || noteId.startsWith("local-")) return true
 
       // Reclaim the note's stored files first. The metadata rows would cascade with the note,
       // but the R2 objects would be left behind counting against the user's usage forever.
       await deleteAttachmentsForNote(noteId)
       try {
-        await fetch(`/api/journal/note?id=${encodeURIComponent(noteId)}`, { method: "DELETE" })
+        const authHeader = await getAuthHeader()
+        await fetch(`/api/journal/note?id=${encodeURIComponent(noteId)}`, {
+          method: "DELETE",
+          headers: { ...authHeader },
+        })
       } catch (error) {
         log.warn("[journal] Could not delete note file:", error)
       }

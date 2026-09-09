@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { getAuthenticatedUser } from "@/lib/supabase/server"
 import { buildAudioObjectKey, buildJournalAttachmentKey, createUploadUrl } from "@/lib/storage"
 import { log } from "@/lib/log"
 
@@ -24,11 +24,7 @@ const ALLOWED_CONTENT_TYPES = new Set([
 ])
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
+  const { user, error: authError } = await getAuthenticatedUser(request)
 
   if (authError || !user) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 })

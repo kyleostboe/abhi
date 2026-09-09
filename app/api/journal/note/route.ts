@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient, getAuthenticatedUser } from "@/lib/supabase/server"
 import { buildJournalNoteKey, deleteObject, getTextObject, putTextObject } from "@/lib/storage"
 import { composeNoteFile, parseNoteFile } from "@/lib/journal-frontmatter"
-import { deriveTitle, derivePreview } from "@/lib/journal-markdown"
+import { deriveTitle, derivePreview, slugify } from "@/lib/journal-markdown"
 import { log } from "@/lib/log"
 
 /**
@@ -17,15 +17,78 @@ import { log } from "@/lib/log"
  */
 
 const INDEX_COLUMNS =
-  "id, slug, title, content_md, note, note_key, folder_id, meditation_id, meditation_title, practice_type, tags, font, played_at, updated_at, visibility"
+  "id, slug, title, preview, content_md, note, note_key, folder_id, meditation_id, meditation_title, session_id, practice_type, tags, font, played_at, updated_at, visibility"
+
+/** POST /api/journal/note — creates a new journal note row */
+export async function POST(request: NextRequest) {
+  const { user, supabase, error: authError } = await getAuthenticatedUser(request)
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Not authenticated." }, { status: 401 })
+  }
+
+  let payload: {
+    contentMd?: string
+    title?: string
+    slug?: string
+    folderId?: string | null
+    meditationId?: string | null
+    meditationTitle?: string | null
+    sessionId?: string | null
+    practiceType?: string | null
+    playedAt?: string
+  }
+  try {
+    payload = await request.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 })
+  }
+
+  const contentMd = payload.contentMd ?? ""
+  const title = payload.title?.trim() || deriveTitle(contentMd)
+  const slug =
+    payload.slug || slugify(title, `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`)
+  const playedAt = payload.playedAt ?? new Date().toISOString()
+  const updatedAt = new Date().toISOString()
+  const preview = derivePreview(contentMd)
+
+  const insertData = {
+    profile_id: user.id,
+    content_md: contentMd,
+    note: contentMd,
+    title,
+    slug,
+    preview,
+    folder_id: payload.folderId ?? null,
+    meditation_id: payload.meditationId ?? null,
+    meditation_title: payload.meditationTitle ?? null,
+    session_id: payload.sessionId ?? null,
+    practice_type: payload.practiceType ?? null,
+    played_at: playedAt,
+    updated_at: updatedAt,
+  }
+
+  const adminClient = createAdminClient()
+  const clientToUse = adminClient || supabase
+
+  const { data, error } = await clientToUse
+    .from("journal_entries")
+    .insert(insertData)
+    .select(INDEX_COLUMNS)
+    .single()
+
+  if (error || !data) {
+    log.error("[journal] Failed to create note in DB:", error)
+    return NextResponse.json({ error: error?.message || "Failed to create note." }, { status: 500 })
+  }
+
+  return NextResponse.json({ ok: true, note: data })
+}
+
 
 /** GET /api/journal/note?id=<uuid> — returns the note's markdown body. */
 export async function GET(request: NextRequest) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
+  const { user, supabase, error: authError } = await getAuthenticatedUser(request)
 
   if (authError || !user) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 })
@@ -67,11 +130,7 @@ export async function GET(request: NextRequest) {
 
 /** PUT /api/journal/note — writes the markdown file and refreshes the index row. */
 export async function PUT(request: NextRequest) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
+  const { user, supabase, error: authError } = await getAuthenticatedUser(request)
 
   if (authError || !user) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 })
@@ -165,11 +224,7 @@ export async function PUT(request: NextRequest) {
 
 /** DELETE /api/journal/note?id=<uuid> — removes the markdown file (the row is deleted client-side). */
 export async function DELETE(request: NextRequest) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
+  const { user, supabase, error: authError } = await getAuthenticatedUser(request)
 
   if (authError || !user) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 })

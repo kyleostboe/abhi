@@ -21,9 +21,11 @@ import {
   RefreshCw,
   X,
   RotateCcw,
+  Wand2,
+  Scaling,
 } from "lucide-react" // Import Copy icon
 import { useRouter } from "next/navigation"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DurationControlCard } from "@/components/duration-control-card"
 import { MarqueeText } from "@/components/marquee-text"
@@ -950,7 +952,7 @@ export default function Home() {
     alert("Load functionality not yet implemented.")
   }
 
-  const handleExportAudio = async () => {
+  const handleExportAudio = async (overrideEvents?: TimelineEvent[], overrideDuration?: number) => {
     setIsGeneratingAudio(true)
     setGenerationProgress(0)
     setGenerationStep("Initializing...")
@@ -958,11 +960,11 @@ export default function Home() {
     setGeneratedAudioFileSize(0)
 
     try {
-      log.debug("Starting audio export with events:", timelineEvents)
+      const eventsToExport = overrideEvents ?? timelineEvents
+      const maxAudioDuration = overrideDuration ?? creatorTotalDuration
+      log.debug("Starting audio export with events:", eventsToExport)
 
       // Calculate the maximum end time needed for the OfflineAudioContext
-      const maxAudioDuration = creatorTotalDuration // Start with the user-defined total duration
-
       const ctx = new OfflineAudioContext({
         numberOfChannels: 1,
         sampleRate: 44100,
@@ -1081,9 +1083,9 @@ export default function Home() {
       }
 
       let processedEventsCount = 0
-      const totalEvents = timelineEvents.length
+      const totalEvents = eventsToExport.length
 
-      for (const event of timelineEvents) {
+      for (const event of eventsToExport) {
         const eventStartTime = event.startTime
         log.debug(`Processing event ${event.id} at time ${eventStartTime}:`, event)
 
@@ -2864,6 +2866,118 @@ export default function Home() {
     timelineUploadInputRef.current?.click()
   }, [])
 
+  const handleUseInCreator = useCallback(
+    async (source: "uploaded" | "processed") => {
+      try {
+        let fileToUpload: File | null = null
+
+        if (source === "uploaded") {
+          if (file) {
+            fileToUpload = file
+          } else if (originalUrl) {
+            const res = await fetch(originalUrl)
+            const blob = await res.blob()
+            const name = (displayedFileName || "Uploaded Audio").replace(/\.[^/.]+$/, "")
+            fileToUpload = new File([blob], `${name}.wav`, { type: blob.type || "audio/wav" })
+          }
+        } else {
+          let blobToUse = processedDistributionBlob
+          if (!blobToUse && processedUrl) {
+            const res = await fetch(processedUrl)
+            blobToUse = await res.blob()
+          }
+
+          if (blobToUse) {
+            const baseName = file?.name ? file.name.replace(/\.[^/.]+$/, "") : displayedFileName || "Adjusted Audio"
+            fileToUpload = new File([blobToUse], `${baseName} (Adjusted).wav`, {
+              type: blobToUse.type || "audio/wav",
+            })
+          }
+        }
+
+        if (!fileToUpload) {
+          toast({
+            title: "No audio to use",
+            description: "Please upload or process audio first.",
+            variant: "destructive",
+          })
+          return
+        }
+
+        await handleTimelineRecordingUpload(fileToUpload)
+
+        setActiveMode("creator")
+        setTimeout(() => {
+          timelineEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+        }, 100)
+
+        toast({
+          title: "Added to Creator",
+          description: `"${fileToUpload.name.replace(/\.[^/.]+$/, "")}" uploaded to the timeline.`,
+        })
+      } catch (err) {
+        log.error("Failed to use audio in creator:", err)
+        toast({
+          title: "Error adding to Creator",
+          description: "Could not upload audio to the Creator timeline.",
+          variant: "destructive",
+        })
+      }
+    },
+    [
+      file,
+      originalUrl,
+      processedDistributionBlob,
+      processedUrl,
+      displayedFileName,
+      handleTimelineRecordingUpload,
+      toast,
+    ],
+  )
+
+  const handleAdjustLengthInAdjuster = useCallback(async () => {
+    try {
+      let blobToUse = generatedDistributionBlob
+      if (!blobToUse && generatedAudioUrl) {
+        const response = await fetch(generatedAudioUrl)
+        blobToUse = await response.blob()
+      }
+
+      if (!blobToUse) {
+        toast({
+          title: "No audio to adjust",
+          description: "Please generate the meditation audio first.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const fileName = `${meditationTitle || "Meditation"}.wav`
+      const generatedFile = new File([blobToUse], fileName, {
+        type: blobToUse.type || "audio/wav",
+      })
+
+      await handleFile(generatedFile)
+
+      setActiveMode("adjuster")
+      setTimeout(() => {
+        adjusterSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+      }, 100)
+
+      toast({
+        title: "Opened in Adjuster",
+        description: `"${meditationTitle || "Meditation"}" loaded into the Adjuster. Adjust pause lengths and target duration here.`,
+      })
+    } catch (err) {
+      log.error("Failed to send generated audio to adjuster:", err)
+      toast({
+        title: "Error loading audio into Adjuster",
+        description: "Could not transfer the generated file to the Adjuster.",
+        variant: "destructive",
+      })
+    }
+  }, [generatedDistributionBlob, generatedAudioUrl, meditationTitle, handleFile, toast])
+
   const handleAddInstructionSoundEvent = useCallback(() => {
     const instructionTextToAdd = customInstructionText.trim()
 
@@ -3527,7 +3641,7 @@ export default function Home() {
                         <div className="rounded-sm p-3 px-0 shadow-none border-gray-500 bg-transparent border-0 mb-0">
                           <audio controls className="w-full" src={originalUrl}></audio>
                         </div>
-                        <div className="px-3.5 text-center tracking-tight flex flex-row flex-nowrap items-center justify-center gap-2">
+                        <div className="px-3.5 text-center tracking-tight flex flex-row flex-wrap sm:flex-nowrap items-center justify-center gap-2">
                           <SaveMeditationDialog
                             audioUrl={originalUrl}
                             distributionBlob={file ?? undefined}
@@ -3552,6 +3666,15 @@ export default function Home() {
                               Save to Library
                             </Button>
                           </SaveMeditationDialog>
+                          <Button
+                            variant="ghost"
+                            disabled={!file && !originalUrl}
+                            onClick={() => void handleUseInCreator("uploaded")}
+                            className="w-auto px-3 sm:w-44 sm:px-4 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
+                          >
+                            <Wand2 className="h-4 w-4 mr-2" />
+                            Use in Creator
+                          </Button>
                           <Button
                             variant="ghost"
                             disabled={!file || isToolConverting}
@@ -3888,7 +4011,7 @@ export default function Home() {
                       <div className="rounded-sm p-3 px-0 shadow-none border-gray-500 bg-transparent border-0 mb-0">
                         <audio controls className="w-full" src={processedUrl}></audio>
                       </div>
-                      <div className="px-3.5 text-center tracking-tight flex flex-row flex-nowrap items-center justify-center gap-2">
+                      <div className="px-3.5 text-center tracking-tight flex flex-row flex-wrap sm:flex-nowrap items-center justify-center gap-2">
                         <SaveMeditationDialog
                           audioUrl={processedUrl}
                           distributionBlob={processedDistributionBlob ?? undefined}
@@ -3915,6 +4038,15 @@ export default function Home() {
                             Save to Library
                           </Button>
                         </SaveMeditationDialog>
+                        <Button
+                          variant="ghost"
+                          disabled={!processedDistributionBlob && !processedUrl}
+                          onClick={() => void handleUseInCreator("processed")}
+                          className="w-auto px-3 sm:w-44 sm:px-4 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
+                        >
+                          <Wand2 className="h-4 w-4 mr-2" />
+                          Use in Creator
+                        </Button>
                         <Button variant="ghost"
                           disabled={!processedDistributionBlob || isToolConverting}
                           onClick={() => setToolConvertContext("adjuster")}
@@ -4255,7 +4387,7 @@ export default function Home() {
                     <div className="relative mx-auto flex w-[calc(100%-48px)] max-w-[352px] items-center gap-2 rounded-[11px] bg-gradient-to-b from-gray-600 via-gray-500 to-[#9b8da3] pr-2 shadow-md transition-all duration-500 hover:shadow-none">
                       <button
                         type="button"
-                        onClick={handleExportAudio}
+                        onClick={() => void handleExportAudio()}
                         disabled={isGeneratingAudio || timelineEvents.length === 0}
                         className="absolute inset-0 z-0 flex items-center justify-center truncate px-4 text-sm font-serif font-black text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none"
                       >
@@ -4294,7 +4426,7 @@ export default function Home() {
                       <div className="rounded-sm p-3 px-0 shadow-none border-gray-500 bg-transparent border-0 mb-0">
                         <audio ref={creatorAudioRef} controls className="w-full" src={generatedAudioUrl}></audio>
                       </div>
-                      <div className="px-3.5 text-center tracking-tight flex flex-row flex-nowrap items-center justify-center gap-2">
+                      <div className="px-3.5 text-center tracking-tight flex flex-row flex-wrap sm:flex-nowrap items-center justify-center gap-2">
                         <SaveMeditationDialog
                           audioUrl={generatedAudioUrl}
                           distributionBlob={generatedDistributionBlob ?? undefined}
@@ -4318,6 +4450,15 @@ export default function Home() {
                             Save to Library
                           </Button>
                         </SaveMeditationDialog>
+                        <Button
+                          variant="ghost"
+                          disabled={!generatedAudioUrl}
+                          onClick={() => void handleAdjustLengthInAdjuster()}
+                          className="w-auto px-3 sm:w-44 sm:px-4 py-3 bg-transparent hover:bg-transparent border-0 shadow-none text-gray-600 text-xs font-serif font-black transition-transform duration-150 hover:scale-105 active:scale-105"
+                        >
+                          <Scaling className="h-4 w-4 mr-2" />
+                          Adjust Length
+                        </Button>
                         <Button variant="ghost"
                           disabled={!generatedDistributionBlob || isToolConverting}
                           onClick={() => setToolConvertContext("creator")}

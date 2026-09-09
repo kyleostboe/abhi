@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/client"
+import { createClient, getAuthHeader } from "@/lib/supabase/client"
 import { extensionForContainer, type AudioFormatMetadata, type BufferToWavMetadata } from "./audio-utils"
 import { getAuthState } from "./auth-state"
 import JSZip from "jszip"
@@ -233,9 +233,10 @@ const sanitizeMetadataForStorage = (
 const uploadAudioToR2 = async (blob: Blob, ext: string): Promise<string | null> => {
   try {
     const contentType = blob.type || "application/octet-stream"
+    const authHeader = await getAuthHeader()
     const urlResponse = await fetch("/api/storage/upload-url", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeader },
       body: JSON.stringify({ ext, contentType }),
     })
     if (!urlResponse.ok) {
@@ -265,9 +266,10 @@ const uploadAudioToR2 = async (blob: Blob, ext: string): Promise<string | null> 
 // just leaves harmless orphaned storage, same as if this cleanup didn't run at all.
 const deleteAudioObjectFromR2 = async (audioKey: string): Promise<void> => {
   try {
+    const authHeader = await getAuthHeader()
     const response = await fetch("/api/storage/delete-object", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeader },
       body: JSON.stringify({ audioKey }),
     })
     if (!response.ok) {
@@ -284,9 +286,10 @@ const deleteAudioObjectFromR2 = async (audioKey: string): Promise<void> => {
 const fetchR2DownloadUrls = async (meditationIds: string[]): Promise<Record<string, string>> => {
   if (meditationIds.length === 0) return {}
   try {
+    const authHeader = await getAuthHeader()
     const response = await fetch("/api/storage/download-url", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeader },
       body: JSON.stringify({ meditationIds }),
     })
     if (!response.ok) {
@@ -1240,7 +1243,10 @@ export class MeditationLibrary {
     // Authenticated users' audio now lives in R2, not IndexedDB — report usage against that,
     // since that's what actually counts toward their storage.
     try {
-      const response = await fetch("/api/storage/usage")
+      const authHeader = await getAuthHeader()
+      const response = await fetch("/api/storage/usage", {
+        headers: { ...authHeader },
+      })
       if (!response.ok) throw new Error(`Usage request failed with status ${response.status}`)
       const { usedBytes } = (await response.json()) as { usedBytes: number }
       return { usedBytes, quotaBytes: FREE_STORAGE_QUOTA_BYTES }
