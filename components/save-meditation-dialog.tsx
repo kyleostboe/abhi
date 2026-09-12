@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AccountRequiredError, MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
+import { playlistsResource } from "@/lib/app-data"
 import { encodeDistributionAudio, type AudioFormatMetadata } from "@/lib/audio-utils"
 import { BookmarkPlus, Plus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
@@ -108,7 +109,7 @@ export function SaveMeditationDialog({
   const [newPlaylistName, setNewPlaylistName] = useState("")
   const [newPlaylistDescription, setNewPlaylistDescription] = useState("")
   const [showNewPlaylist, setShowNewPlaylist] = useState(false)
-  const [playlists, setPlaylists] = useState<Playlist[]>([])
+  const [playlists, setPlaylists] = useState<Playlist[]>(() => playlistsResource.peek() ?? [])
   const [isSaving, setIsSaving] = useState(false)
   const [saveMode, setSaveMode] = useState<"preset" | "new">(
     existingMeditationId ? "preset" : "new",
@@ -138,7 +139,9 @@ export function SaveMeditationDialog({
 
   const loadPlaylists = useCallback(async () => {
     try {
-      const allPlaylists = await MeditationLibrary.getAllPlaylists()
+      // Warmed at sign-in (components/data-warmer.tsx), so the picker is populated the moment the
+      // dialog opens rather than a round trip later.
+      const allPlaylists = await playlistsResource.load()
       setPlaylists(allPlaylists)
     } catch (error) {
       log.error("Failed to load playlists:", error)

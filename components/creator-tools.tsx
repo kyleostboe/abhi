@@ -19,7 +19,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { MeditationLibrary, type SavedMeditation } from "@/lib/meditation-library"
+import type { SavedMeditation } from "@/lib/meditation-library"
+import { recordingsResource } from "@/lib/app-data"
 import { minimumTimelineDuration } from "@/lib/timeline-ops"
 import type { TimelineEvent } from "@/lib/types"
 import { cn, formatTime } from "@/lib/utils"
@@ -34,15 +35,17 @@ export function RecordingPicker({
   onOpenChange: (open: boolean) => void
   onSelect: (recording: SavedMeditation) => void
 }) {
-  const [recordings, setRecordings] = useState<SavedMeditation[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  // Warmed at sign-in (components/data-warmer.tsx), so the picker opens with its list already in
+  // place instead of spinning through a fetch every time.
+  const [recordings, setRecordings] = useState<SavedMeditation[]>(() => recordingsResource.peek() ?? [])
+  const [isLoading, setIsLoading] = useState(() => recordingsResource.peek() === undefined)
 
   useEffect(() => {
     if (!open) return
     let active = true
-    setIsLoading(true)
+    if (recordingsResource.peek() === undefined) setIsLoading(true)
 
-    MeditationLibrary.getRecordings()
+    recordingsResource.load()
       .then((all) => {
         if (active) setRecordings(all)
       })
@@ -80,7 +83,7 @@ export function RecordingPicker({
                   onSelect(recording)
                   onOpenChange(false)
                 }}
-                className="flex w-full items-center justify-between gap-3 rounded-[10px] border-[3px] border-muted bg-white p-3 text-left transition-colors hover:border-stone-300"
+                className="flex w-full items-center justify-between gap-3 rounded-[10px] border-[3px] border-recess bg-white p-3 text-left transition-colors hover:border-stone-300"
               >
                 <span className="min-w-0 flex-1 truncate font-serif text-xs font-black tracking-tight text-gray-700">
                   {recording.title}
@@ -133,15 +136,12 @@ export function TimelineShape({
 
   return (
     // These are sections of the Timeline Editor, not tools of their own, so they take the
-    // Creator's in-card rhythm: a plain heading the size of "Timeline Events", its controls
-    // under it, and one full-width button the shape of "Add to Timeline". Boxing them made
-    // them read as foreign, and a small dark button beside small fields read as a chip.
+    // Creator's in-card rhythm: a plain heading sized between "Timeline Events" and the field
+    // labels under it, and one full-width button the shape of "Add to Timeline". Boxing them
+    // made them read as foreign, and a small dark button beside small fields read as a chip.
     <div className="space-y-8 text-left">
       <div className="space-y-3">
-        <h4 className="flex items-center gap-2 text-base font-black text-gray-600">
-          <Repeat className="h-4 w-4" />
-          Repeat a stretch
-        </h4>
+        <h4 className="text-sm font-black text-gray-600">Repeat</h4>
         <div className="flex flex-wrap items-end gap-3">
           <NumberField label="From" value={from} onChange={setFrom} suffix="s" />
           <NumberField label="To" value={to} onChange={setTo} suffix="s" />
@@ -167,10 +167,7 @@ export function TimelineShape({
       </div>
 
       <div className="space-y-3">
-        <h4 className="flex items-center gap-2 text-base font-black text-gray-600">
-          <Scaling className="h-4 w-4" />
-          Stretch the whole thing
-        </h4>
+        <h4 className="text-sm font-black text-gray-600">Stretch</h4>
         <div className="flex flex-wrap items-end gap-3">
           <NumberField label="Length" value={targetMinutes} onChange={setTargetMinutes} min={1} suffix="min" />
         </div>

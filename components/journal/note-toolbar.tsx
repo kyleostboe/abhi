@@ -103,7 +103,7 @@ export function NoteToolbar({
       <div className="relative">
         {iconButton("font", "Typeface", <Type className="h-4 w-4" />, () => setShowFonts((open) => !open))}
         {showFonts && (
-          <div className="absolute left-0 top-full z-30 mt-1 w-32 rounded-lg border-[3px] border-muted bg-white p-1 shadow-lg">
+          <div className="absolute left-0 top-full z-30 mt-1 w-32 rounded-lg border-[3px] border-recess bg-white p-1 shadow-lg">
             {[{ id: null, label: "App default", className: "font-serif" }, ...NOTE_FONTS].map((option) => (
               <button
                 key={option.id ?? "default"}

@@ -14,9 +14,10 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      // bg-muted, not transparent: shadow-inner needs a surface to cut the groove into, and this
+      // A surface, not transparent: shadow-inner needs something to cut the groove into, and this
       // is what makes the tab track read like the app's signature Adjuster/Creator switch.
-      "inline-flex items-center justify-center rounded-sm bg-muted p-1 text-gray-600 shadow-inner font-serif font-black",
+      // `--recess`, the shared switch-trough tone, keeps it identical to those.
+      "inline-flex items-center justify-center rounded-sm bg-recess p-1 text-gray-600 shadow-inner font-serif font-black",
       className,
     )}
     {...props}

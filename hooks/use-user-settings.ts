@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { createClient } from "@/lib/supabase/client"
 import { useAuth } from "@/hooks/use-auth"
+import { userSettingsResource } from "@/lib/app-data"
 import { log } from "@/lib/log"
 import {
   DEFAULT_USER_SETTINGS,
@@ -26,13 +27,22 @@ import {
 export function useUserSettings() {
   const supabase = useMemo(() => createClient(), [])
   const { isAuthenticated, userId } = useAuth()
-  const [settings, setSettings] = useState<UserSettings>(DEFAULT_USER_SETTINGS)
-  const [isLoading, setIsLoading] = useState(true)
+  // Seeded from the warmed snapshot (components/data-warmer.tsx), so the Timer opens already
+  // configured the way this account sits rather than adopting its preferences a beat later.
+  const warmed = userSettingsResource.peek()
+  const [settings, setSettings] = useState<UserSettings>(warmed ?? DEFAULT_USER_SETTINGS)
+  const [isLoading, setIsLoading] = useState(warmed === undefined)
   const settingsRef = useRef(settings)
 
   useEffect(() => {
     settingsRef.current = settings
   }, [settings])
+
+  // The hook owns the state; the cache mirrors it — including the optimistic update below, so a
+  // preference changed on one page is the one the next page seeds from.
+  useEffect(() => {
+    if (!isLoading) userSettingsResource.set(settings)
+  }, [settings, isLoading])
 
   useEffect(() => {
     if (!isAuthenticated || !userId) {
@@ -42,7 +52,8 @@ export function useUserSettings() {
     }
 
     let isActive = true
-    setIsLoading(true)
+    // Only a cold hook shows a loading state; a revalidation happens under what is already there.
+    if (userSettingsResource.peek() === undefined) setIsLoading(true)
 
     const load = async () => {
       try {

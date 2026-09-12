@@ -53,8 +53,12 @@ export function UserMenu({ showLoginButton = false, buttonVariant = "default" }:
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className={triggerClasses}>
-          <Avatar className="h-9 w-9 border-2 border-gray-300">
-            <AvatarFallback className="bg-gradient-to-br from-gray-600 to-gray-500 text-white font-bold">
+          {/* The border is the navigation bar's own selector border — `border-[3px]
+              border-stone-200`, the same ring the pill wears at components/navigation.tsx — so the
+              two ends of the bar are edged alike. The fallback's own two-pixel default is
+              cancelled, otherwise the two rings sit inside each other. */}
+          <Avatar className="h-9 w-9 rounded-full border-[3px] border-stone-200">
+            <AvatarFallback className="border-0 bg-gradient-to-br from-gray-600 to-gray-500 text-white font-bold">
               {initials}
             </AvatarFallback>
           </Avatar>

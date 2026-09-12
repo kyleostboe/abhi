@@ -16,6 +16,14 @@
   --secondary-foreground: hsl(0 0% 9%);
   --muted: hsl(0 0% 96.1%);
   --muted-foreground: hsl(0 0% 45.1%);
+  /* Switch troughs and card borders only — the two places that have to read as an *edge* against
+     the page. `--muted` at 96.1% is rgb(245) while the pages' own gradient runs rgb(243)–rgb(250),
+     so anything muted-coloured sitting on a page was equal to or lighter than the surface behind
+     it and had no edge of its own. 95% is just under the gradient's darkest end, which is enough
+     to register; 93.5% was too dark. Deliberately *not* folded back into `--muted` — that has ~70
+     other consumers (secondary buttons, tab tracks, the Journal toolbar) which looked right as
+     they were. Dark values match `--muted` in each dark theme, so this changes nothing there. */
+  --recess: hsl(0 0% 95%);
   --accent: hsl(0 0% 96.1%);
   --accent-foreground: hsl(0 0% 9%);
   --destructive: hsl(0 84.2% 60.2%);
@@ -55,6 +63,7 @@
   --secondary-foreground: hsl(0 0% 98%);
   --muted: hsl(0 0% 14.9%);
   --muted-foreground: hsl(0 0% 63.9%);
+  --recess: hsl(0 0% 14.9%);
   --accent: hsl(0 0% 14.9%);
   --accent-foreground: hsl(0 0% 98%);
   --destructive: hsl(0 62.8% 30.6%);
@@ -93,6 +102,7 @@
   --secondary-foreground: hsl(0 0% 98%);
   --muted: hsl(0 0% 15%);
   --muted-foreground: hsl(0 0% 64%);
+  --recess: hsl(0 0% 15%);
   --accent: hsl(0 0% 15%);
   --accent-foreground: hsl(0 0% 98%);
   --destructive: hsl(0 63% 31%);
@@ -120,6 +130,7 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-recess: var(--recess);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
@@ -140,6 +151,11 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* One named inner shadow, so a recessed field is a thing the design system has rather than an
+     arbitrary value copied around. Tailwind v4's own inset scale stops at `inset-shadow-sm` — a
+     5%-black 4px blur, which is invisible against this page's gradient. */
+  --inset-shadow-recess: inset 0 2px 5px rgb(0 0 0 / 0.12);
 
   --color-logo-amber-50: hsl(35 90% 95%);
   --color-logo-amber-100: hsl(35 90% 90%);
@@ -250,6 +266,27 @@
   }
 }
 
+/* Horizontal swipe is ours, all the way to the edge of the window. Without this Chromium reads a
+   swipe that starts near either edge as its own back/forward gesture: it draws the arrow overlay
+   and runs a history navigation, which fights the one components/swipe-navigator.tsx is doing in
+   the same gesture. That contention is what made swipes land somewhere other than the page they
+   were pointed at. Safari has no such switch, which is why the navigator also ignores edge
+   swipes outright. */
+html,
+body {
+  overscroll-behavior-x: none;
+}
+
+/* The swipe moves `[data-strip-track]` in components/screen-strip.tsx, which is ordinary painted
+   DOM — all three screens are mounted at once now. The transform and its clock are set inline
+   there and by components/swipe-navigator.tsx, so there is nothing left to scope here.
+
+   What used to live in this block, and why it is gone: a full set of View Transitions rules —
+   `::view-transition-old/new(root|page-content|page-card|nav-pill|nav-label-*)`, four keyframes,
+   and a `--swipe-dx` handshake that kept the two snapshots exactly one card apart. All of it
+   existed to show two pages when only one was ever mounted. It cost a measured 60-110ms of
+   frozen screen per swipe, because the destination had to render before the browser would
+   snapshot it. Mounting all three made the entire mechanism unnecessary rather than faster. */
 @utility text-balance {
   text-wrap: balance;
 }

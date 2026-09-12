@@ -52,6 +52,9 @@
     "vaul": "^1.1.2"
   },
   "devDependencies": {
+    "@babel/parser": "^8.0.4",
+    "@babel/traverse": "^8.0.4",
+    "@babel/types": "^8.0.4",
     "@eslint/eslintrc": "^3.3.6",
     "@types/node": "^22",
     "@types/react": "^19",

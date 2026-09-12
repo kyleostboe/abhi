@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client"
 import { useAuth } from "@/hooks/use-auth"
 import { log } from "@/lib/log"
 import { saveSessionNoteDraft } from "@/lib/storage/session-note-draft"
+import { sessionsResource } from "@/lib/app-data"
+import { SESSION_COLUMNS, loadSessionRows, mapRow } from "@/lib/sessions-query"
 import {
   MIN_COUNTED_SECONDS,
   type PracticeSession,
@@ -14,37 +16,6 @@ import {
   reconcileAbandonedSession,
   resumePosition,
 } from "@/lib/sessions"
-
-const SESSION_COLUMNS =
-  "id, meditation_id, meditation_title, source, started_at, ended_at, duration_planned, duration_actual, last_position, completed"
-
-type SessionRow = {
-  id: string
-  meditation_id: string | null
-  meditation_title: string | null
-  source: string | null
-  started_at: string
-  ended_at: string | null
-  duration_planned: number | null
-  duration_actual: number | null
-  last_position: number | null
-  completed: boolean | null
-}
-
-const asSource = (value: string | null): PracticeSessionSource => (value === "timer" ? "timer" : "guided")
-
-const mapRow = (row: SessionRow): PracticeSession => ({
-  id: row.id,
-  meditationId: row.meditation_id,
-  meditationTitle: row.meditation_title,
-  source: asSource(row.source),
-  startedAt: row.started_at,
-  endedAt: row.ended_at,
-  durationPlanned: row.duration_planned,
-  durationActual: row.duration_actual ?? 0,
-  lastPosition: row.last_position ?? 0,
-  completed: row.completed ?? false,
-})
 
 const wholeSeconds = (value: number | null | undefined): number => {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return 0
@@ -76,13 +47,23 @@ export type SessionProgress = {
 export function useSessions() {
   const supabase = useMemo(() => createClient(), [])
   const { isAuthenticated, userId } = useAuth()
-  const [sessions, setSessions] = useState<PracticeSession[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  // Seeded from the warmed snapshot, so the practice log and the Timer's first frame are already
+  // complete. See components/data-warmer.tsx.
+  const warmed = sessionsResource.peek()
+  const [sessions, setSessions] = useState<PracticeSession[]>(warmed ?? [])
+  const [isLoading, setIsLoading] = useState(warmed === undefined)
   const sessionsRef = useRef(sessions)
 
   useEffect(() => {
     sessionsRef.current = sessions
   }, [sessions])
+
+  // The hook owns the state; the cache mirrors it. Every start/report/end below keeps setting
+  // state exactly as it did, and this is what keeps a finished sit from being lost to a stale
+  // snapshot on the way back to the page.
+  useEffect(() => {
+    if (!isLoading) sessionsResource.set(sessions)
+  }, [sessions, isLoading])
 
   useEffect(() => {
     if (!isAuthenticated || !userId) {
@@ -92,25 +73,14 @@ export function useSessions() {
     }
 
     let isActive = true
-    setIsLoading(true)
+    // Only a cold hook shows a loading state; a revalidation happens under what is already there.
+    if (sessionsResource.peek() === undefined) setIsLoading(true)
 
     const loadSessions = async () => {
       try {
-        const { data, error } = await supabase
-          .from("sessions")
-          .select(SESSION_COLUMNS)
-          .eq("profile_id", userId)
-          .order("started_at", { ascending: false })
+        const loaded = await loadSessionRows(supabase, userId)
 
         if (!isActive) return
-
-        if (error) {
-          log.error("[sessions] Failed to load sessions:", error)
-          setSessions([])
-          return
-        }
-
-        const loaded = Array.isArray(data) ? data.map(mapRow) : []
 
         // Close out anything that was left open by a crash or a closed tab, and persist the
         // reconciliation so the next load does not have to redo it.

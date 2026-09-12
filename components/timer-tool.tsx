@@ -46,6 +46,17 @@ const WARMUP_OPTIONS = [
 type TimerState = "idle" | "running" | "finished"
 
 export function TimerTool() {
+  // A sit shouldn't move under you. While the Timer is the open tool — on any page, since every
+  // page's switch can open it now — the page itself doesn't scroll, so nothing about the timer
+  // shifts; only the header above it and the navigation keep their own behaviour.
+  useEffect(() => {
+    const previous = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = previous
+    }
+  }, [])
+
   const { isAuthenticated } = useAuth()
   const { startSession, reportProgress, endSession } = useSessions()
   const { settings, isLoading: isLoadingSettings, updateSettings, canEdit } = useUserSettings()
@@ -382,12 +393,19 @@ function ToggleRow({
         onClick={() => onChange(!checked)}
         className={cn(
           "relative inline-flex h-5 w-10 flex-shrink-0 items-center rounded-full transition-colors",
-          checked ? "bg-gray-500" : "bg-gray-200",
+          // Off uses `--recess`, the same trough as the app's main switches, rather than the
+          // slightly blue-tinted gray-200 this used to have. `shadow-inner` comes with it and
+          // isn't optional — even at --recess the track is only a few steps off the surface
+          // behind it, so the inset edge is doing most of the work of showing a boundary.
+          "shadow-inner",
+          checked ? "bg-gray-500" : "bg-recess",
         )}
       >
         <span
           className={cn(
-            "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+            // The muted trough is only ~10/255 off white, so the knob needs its own shadow to
+            // stay readable when the toggle is off — on gray-200 the fill alone was enough.
+            "inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform",
             checked ? "translate-x-[1.375rem]" : "translate-x-0.5",
           )}
         />

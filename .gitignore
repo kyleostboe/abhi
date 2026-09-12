@@ -30,3 +30,6 @@ yarn-error.log*
 .agents/
 .claude/
 skills-lock.json
+
+# Design inspector note threads (dev-only, local)
+.dev-design-notes.json
