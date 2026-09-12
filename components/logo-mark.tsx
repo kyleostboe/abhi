@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
  */
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <div className={cn("flex justify-center items-center space-x-[3px]", className)}>
+    <div className={cn("flex justify-center items-center space-x-[3px] mt-[7px]", className)}>
       <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[13px] h-[13px] shadow-md border-[0px]" />
       <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px] shadow" />
       <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-[3px] transform h-[9px] shadow-sm" />

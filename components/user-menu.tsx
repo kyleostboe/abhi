@@ -44,9 +44,15 @@ export function UserMenu({ showLoginButton = false, buttonVariant = "default" }:
     .toUpperCase()
     .slice(0, 2)
 
+  // In the nav, the trigger wears the navigation bar's own shadow — but scaled to a 36px circle
+  // rather than copied. The bar's exact numbers cannot be carried across: its `-8px` spread shrinks
+  // a 36px circle's shadow box to 20px, and the 38px blur then smears that over an area far larger
+  // than the element, which collapses the peak opacity until nothing is visible at all. Holding the
+  // direction and the colour while tightening the blur and the spread is what makes the same idea
+  // read at this size.
   const triggerClasses =
     buttonVariant === "nav"
-      ? "relative h-9 w-9 rounded-full bg-white shadow-[0_8px_20px_-6px_rgba(0,0,0,0.14)] transition-shadow hover:shadow-lg hover:bg-white"
+      ? "relative h-9 w-9 rounded-full bg-white shadow-[0_8px_16px_-4px_rgba(0,0,0,0.20)] transition-shadow hover:bg-white"
       : "relative h-9 w-9 rounded-full bg-white shadow-[0_18px_38px_rgba(0,0,0,0.2)] transition-shadow hover:shadow-none hover:bg-white/90"
 
   return (

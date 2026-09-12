@@ -3351,7 +3351,7 @@ export function HomeScreen() {
                 header, and on a phone the floating Login / Sign Up button sits over the top of
                 the card, so that state needs to start below the button instead. All of that now
                 lives with the header in components/page-chrome.tsx. */}
-            <div className="px-6 md:px-10 font-serif font-black pb-10 pt-[8px] pr-[16px] pl-[16px]">
+            <div className="px-6 md:px-10 font-serif font-black pr-[16px] pl-[16px] pt-[0px] pb-[40px]">
               {/* Conditional Rendering based on activeMode */}
               {activeMode === "timer" ? (
                 <TimerTool />
@@ -4016,7 +4016,7 @@ export function HomeScreen() {
                               value={meditationTitle}
                               onChange={handleMeditationTitleChange}
                               placeholder="Title your meditation"
-                              className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-center text-xs font-black text-gray-600 h-9 border-[#f2f2f2] border-[0px] pt-[16px] mt-[12px] inset-shadow-recess"
+                              className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-center text-xs font-black text-gray-600 h-9 border-[#f2f2f2] border-[0px] pt-[16px] mt-[12px] mb-[3px] shadow-sm"
                             />
                           </div>
                         </div>

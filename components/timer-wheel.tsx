@@ -228,7 +228,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
                     // Emphasis is a scale rather than a font size: the row is a fixed 32px, and
                     // swapping sizes would re-flow the row and make the column jump as the
                     // selection moves. Scaling changes what is painted and nothing else.
-                    "inline-block origin-center font-serif text-base font-black leading-none tracking-tight tabular-nums",
+                    "inline-block origin-center font-serif font-black leading-none tracking-tight tabular-nums text-[14px]",
                     "transition-[transform,color] duration-200 ease-out",
                     isActive ? "scale-150 text-gray-600" : "scale-75 text-stone-400",
                   )}
@@ -245,7 +245,7 @@ const TimerWheelColumn: React.FC<TimerWheelColumnProps> = ({ label, suffix, valu
           rows it rode along with them. `leading-none` is what lines it up with the selected digit:
           both then sit on their own cap height, and no nudge is needed to centre them. */}
       <span
-        className="flex items-center font-serif text-xs font-black lowercase leading-none tracking-wide text-stone-400"
+        className="flex items-center font-serif font-black lowercase leading-none tracking-wide text-stone-400 text-[10px] pl-[2px]"
         style={{ width: UNIT_WIDTH }}
       >
         {suffix}
@@ -287,7 +287,7 @@ export const TimerWheel: React.FC<TimerWheelProps> = ({ value, onChange, classNa
   )
 
   return (
-    <div className={cn("flex items-center justify-center", COLUMN_GAP, DIGITS_CENTER_PAD, className)}>
+    <div className={cn("flex items-center justify-center pb-[6px]", COLUMN_GAP, DIGITS_CENTER_PAD, className)}>
       <TimerWheelColumn
         label="Hours"
         suffix="hr"

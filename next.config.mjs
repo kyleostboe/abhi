@@ -15,7 +15,12 @@ const nextConfig = {
       config.module.rules.push({
         test: /\.tsx$/,
         include: [path.resolve(__dirname, "app"), path.resolve(__dirname, "components")],
-        exclude: [/node_modules/, /[\\/]components[\\/]dev[\\/]/, /[\\/]components[\\/]ui[\\/]/],
+        // `components/dev` is the inspector itself and must not annotate its own chrome.
+        // `components/ui` used to be excluded too, which made every one of shadcn's primitives
+        // unselectable: a click on a Button or an Avatar found no anchor on the element or on
+        // anything between it and the nearest app component, so the selection jumped to a distant
+        // ancestor instead of the thing under the cursor.
+        exclude: [/node_modules/, /[\\/]components[\\/]dev[\\/]/],
         enforce: "pre",
         use: [path.resolve(__dirname, "devtools/dev-loc-loader.cjs")],
       })
