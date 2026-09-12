@@ -43,7 +43,7 @@ export function StorageBar({
               {formatFileSize(usedBytes)} {quotaBytes && `/ ${formatFileSize(quotaBytes)}`}
             </span>
           </div>
-          <div className="relative h-2 w-full overflow-hidden rounded-full border border-muted bg-white">
+          <div className="relative w-full overflow-hidden rounded-full border-muted bg-white border-[0px] inset-shadow-sm h-[10px]">
             <div
               className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-logo-teal-500 to-logo-blue-400 transition-all duration-300"
               style={{ width: `${percentage}%` }}

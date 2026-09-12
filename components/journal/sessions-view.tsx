@@ -75,9 +75,9 @@ export function SessionsView({
 }) {
   if (isLoading) {
     return (
-      <div className="space-y-4 p-4 md:p-8" aria-busy="true">
+      <div className="space-y-4 p-4 font-serif md:p-8" aria-busy="true">
         {[0, 1, 2].map((index) => (
-          <div key={index} className="animate-pulse rounded-xl border-[3px] border-muted p-4 shadow-md">
+          <div key={index} className="animate-pulse rounded-xl border-[3px] border-recess p-4 shadow-md">
             <div className="mb-2 h-3 w-40 rounded bg-muted" />
             <div className="h-3 w-24 rounded bg-muted/70" />
           </div>
@@ -88,9 +88,9 @@ export function SessionsView({
 
   if (sessions.length === 0) {
     return (
-      <div className="flex min-h-[40vh] flex-col items-center justify-center p-8 text-center">
-        <p className="font-serif text-sm font-black text-gray-500">No practice sessions yet</p>
-        <p className="mt-1 max-w-xs font-serif text-xs text-gray-400">
+      <div className="flex min-h-[40vh] flex-col items-center justify-center p-8 text-center font-serif">
+        <p className="text-sm font-black text-gray-500">No practice sessions yet</p>
+        <p className="mt-1 max-w-xs text-xs text-gray-400">
           Sessions appear here when you play a meditation or sit with the timer.
         </p>
       </div>
@@ -115,7 +115,11 @@ export function SessionsView({
     notes.find((note) => note.sessionId === session.id) ?? null
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8 p-4 md:p-8">
+    <div className="mx-auto max-w-3xl space-y-8 p-4 font-serif md:p-8">
+      {/* Serif, because the rest of the app is — including the Library's meditation cards this
+          log is modelled on, which inherit it from `Card`. The practice log never set a family
+          at all and so fell through to the body font on <body>, which is what made this page
+          read as a different app from the one around it. */}
       {days.map((day) => {
         const dayTotal = day.entries.reduce((total, session) => total + session.durationActual, 0)
 
@@ -174,7 +178,7 @@ export function SessionsView({
                 )
 
                 const className = cn(
-                  "block w-full min-w-0 rounded-xl border-[3px] border-muted bg-white shadow-md",
+                  "block w-full min-w-0 rounded-xl border-[3px] border-recess bg-white shadow-md",
                   note && "transition-colors hover:border-stone-300",
                 )
 

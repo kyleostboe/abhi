@@ -93,6 +93,35 @@ component or integration testing set up. When adding a pure helper, add cases fo
 
 ## Known rough edges
 
+- **Signed out, the Library and Journal show a switch that does nothing.** The header is
+  unconditional chrome now — deliberately, because hiding it on those two routes made a signed-out
+  swipe lose the logo and the switch entirely. The cost is that those pages are a sign-in prompt
+  either way, so Meditations/Playlists change a persisted preference and nothing on screen.
+- **All three screens are mounted at once** (`components/screen-strip.tsx`), rendered by the
+  layout's chrome and never unmounted. `app/page.tsx`, `app/library/page.tsx` and
+  `app/journal/page.tsx` are stubs that return `null`; they exist for the URL, deep links and the
+  back button. A swipe is therefore a transform on DOM that is already painted: both screens are
+  genuinely on screen during the drag, and the frozen window between lifting your finger and the
+  slide starting is **33ms** in production, down from 68–111ms. `components/swipe-navigator.tsx`
+  keeps the gesture rules and nothing else — no View Transitions API, no `flushSync`, no snapshot
+  handshake. All of that existed to fake a second page when only one was mounted.
+  `docs/page-transition-refactor.md` records what it looked like and the five defects it took to
+  get it working at all; read it before touching this, because the traps it names (`backdrop-filter`
+  blanking a snapshot, a `position: fixed` ancestor becoming a containing block under a transform)
+  are still real for anything that reintroduces a transform above the page.
+- **An off-screen screen must not paint.** A mounted screen renders everything it would render
+  alone, including what escapes its own column: the Library's full-screen player and the Timer's
+  running-sit overlay are both `position: fixed; inset: 0`, and `PageBefore` portals content above
+  the card. Off-screen columns get `content-visibility: hidden` and `inert`, and `PageBefore`
+  consults `components/screen-active.tsx`. Without the latter, Home's debug button appeared on the
+  other two screens.
+- **The switch and the Adjuster's tabs both move on a measured pill**, and everything a navigation
+  does to the switch — the labels changing, the trough resizing, the pill travelling — runs on one
+  clock: 260ms, `cubic-bezier(0.22, 0.61, 0.36, 1)`, the same as the page slide. The labels fade in
+  sequence and do not travel; the width animation is the only thing in the switch that moves.
+  `PAGE_SLIDE_MS` in `lib/swipe-motion.ts`, `LABEL_SLIDE` in `components/mode-switch.tsx` and the
+  `page-content` rules in `app/globals.css` are three copies of that one number and nothing links
+  them.
 - `app/page.tsx` (~4.3k lines) and `app/library/page.tsx` (~3.8k) are still very large, with 70
   and 60 `useState` calls respectively. Self-contained pieces have been extracted; the remaining
   reduction needs the state model reworked, which is a behavioral change.

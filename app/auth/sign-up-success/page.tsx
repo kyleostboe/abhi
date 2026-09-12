@@ -15,7 +15,7 @@ export default async function SignUpSuccessPage({
     <div className="flex min-h-screen w-full items-center justify-center p-6 bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="w-full max-w-sm">
         <div className="flex flex-col gap-6">
-          <Card className="border-[3px] border-muted shadow-xl">
+          <Card className="border-[3px] border-recess shadow-xl">
             <CardHeader className="text-center">
               <LogoMark className="mb-4" />
 <CardTitle className="text-2xl font-black font-serif text-gray-700">Check your email!</CardTitle>

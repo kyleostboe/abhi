@@ -10,13 +10,13 @@ import { cn } from "@/lib/utils"
 export function LogoMark({ className }: { className?: string }) {
   return (
     <div className={cn("flex justify-center items-center space-x-[3px]", className)}>
-      <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[13px] h-[13px] shadow-md" />
+      <div className="bg-gradient-to-br from-logo-teal to-logo-emerald rounded-sm transform rotate-12 w-[13px] h-[13px] shadow-md border-[0px]" />
       <div className="bg-gradient-to-br from-logo-rose to-pink-300 rounded-full h-[9px] w-[9px] shadow" />
       <div className="w-4 bg-gradient-to-br from-logo-amber to-orange-300 rounded-[3px] transform h-[9px] shadow-sm" />
-      <div className="w-4 bg-gradient-to-r from-gray-600 to-gray-500 border-2 border-stone-200 h-[34px] shadow-md rounded w-[9px]" />
+      <div className="w-4 bg-gradient-to-r from-gray-600 to-gray-500 border-2 border-stone-200 h-[34px] shadow-md w-[9px] rounded-[3.5px]" />
       <div className="w-4 bg-gradient-to-br from-logo-purple to-indigo-300 rounded-[3px] transform h-[9px] pl-0 shadow-sm" />
       <div className="bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full h-[9px] w-[9px] shadow" />
-      <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[13px] h-[13px] shadow-md" />
+      <div className="bg-gradient-to-br from-logo-emerald to-logo-teal rounded-sm transform -rotate-12 w-[13px] h-[13px] shadow-md border-[0px]" />
     </div>
   )
 }

@@ -66,7 +66,7 @@ export function AttachmentNodeView({ node, selected }: NodeViewProps) {
     <NodeViewWrapper
       className={cn(
         "my-4 overflow-hidden rounded-xl border-[3px] transition-colors",
-        selected ? "border-stone-400" : "border-muted",
+        selected ? "border-stone-400" : "border-recess",
       )}
     >
       {isImage ? (
@@ -110,7 +110,7 @@ export function MeditationRefNodeView({ node, selected }: NodeViewProps) {
     <NodeViewWrapper
       className={cn(
         "my-4 rounded-xl border-[3px] bg-gradient-to-br from-white to-stone-50 p-4 transition-colors",
-        selected ? "border-stone-400" : "border-muted",
+        selected ? "border-stone-400" : "border-recess",
       )}
     >
       <div className="flex items-center gap-3">
@@ -142,7 +142,7 @@ export function NoteQuoteNodeView({ node, selected }: NodeViewProps) {
     <NodeViewWrapper
       className={cn(
         "my-4 rounded-xl border-l-[5px] border-[3px] border-l-logo-rose-300 bg-muted/40 p-4 transition-colors",
-        selected ? "border-stone-400 border-l-logo-rose-300" : "border-muted border-l-logo-rose-300",
+        selected ? "border-stone-400 border-l-logo-rose-300" : "border-recess border-l-logo-rose-300",
       )}
     >
       <div className="mb-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">

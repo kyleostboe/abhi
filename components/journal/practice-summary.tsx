@@ -95,7 +95,7 @@ export function PracticeSummary({
   }
 
   return (
-    <section className="mx-auto max-w-3xl space-y-4 px-4 pt-4 md:px-8 md:pt-8">
+    <section className="mx-auto max-w-3xl space-y-4 px-4 pt-4 font-serif md:px-8 md:pt-8">
       {/* Four numbers in the Adjuster's audio-stat tiles — the same row of bordered white
           squares that reports Content / Silence / Pauses / Range there. It is the app's way of
           saying "here are the measurements", and this is the same kind of claim. */}
@@ -106,7 +106,7 @@ export function PracticeSummary({
         <Stat label="Total" value={formatTotal(totals.totalSeconds)} unit={`${totals.sits} sits`} />
       </div>
 
-      <div className="rounded-sm border-[3px] border-muted bg-white p-4 shadow-md md:p-5">
+      <div className="rounded-sm border-[3px] border-recess bg-white p-4 shadow-md md:p-5">
         <div className="overflow-x-auto">
           <div className="flex gap-[3px]" role="img" aria-label={`Practice over the last ${WEEKS_SHOWN} weeks`}>
             {weeks.map((week) => (
@@ -123,7 +123,7 @@ export function PracticeSummary({
           </div>
         </div>
 
-        <p className="mt-3 font-serif text-[11px] tracking-tight text-gray-400">
+        <p className="mt-3 text-[11px] font-black tracking-tight text-gray-400">
           {totals.sits === 0
             ? "Sits appear here once you have practised."
             : `${WEEKS_SHOWN} weeks. Darker is longer.`}
@@ -135,10 +135,10 @@ export function PracticeSummary({
 
 function Stat({ label, value, unit }: { label: string; value: number | string; unit: string }) {
   return (
-    <div className="flex min-h-[72px] flex-col items-center justify-center rounded-sm border-[3px] border-muted bg-white px-2 py-3 shadow-md">
-      <div className="mb-1 font-serif text-[10px] font-black uppercase tracking-wide text-gray-500">{label}:</div>
+    <div className="flex min-h-[72px] flex-col items-center justify-center rounded-sm border-[3px] border-recess bg-white px-2 py-3 shadow-md">
+      <div className="mb-1 text-[10px] font-black uppercase tracking-wide text-gray-500">{label}:</div>
       <div className="text-base font-black tracking-tight text-gray-600">{value}</div>
-      <div className="mt-0.5 font-serif text-[10px] tracking-tight text-gray-400">{unit}</div>
+      <div className="mt-0.5 text-[10px] font-black tracking-tight text-gray-400">{unit}</div>
     </div>
   )
 }

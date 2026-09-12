@@ -19,6 +19,7 @@ import { TaskItem } from "@tiptap/extension-task-item"
 import { AttachmentNode, MeditationRefNode, NoteQuoteNode } from "@/components/journal/note-blocks"
 import { docToMarkdown, markdownToDoc, type DocNode } from "@/lib/journal-doc"
 import { cn } from "@/lib/utils"
+import { useDebouncedSave } from "@/hooks/use-debounced-save"
 
 export const NOTE_FONTS = [
   { id: "serif", label: "Serif", className: "font-serif" },
@@ -58,7 +59,6 @@ export function NoteEditor({
   className?: string
 }) {
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle")
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const latestMarkdown = useRef(initialMarkdown)
   const onSaveRef = useRef(onSave)
 
@@ -66,22 +66,29 @@ export function NoteEditor({
     onSaveRef.current = onSave
   }, [onSave])
 
-  const flush = useCallback(async () => {
-    if (saveTimer.current) {
-      clearTimeout(saveTimer.current)
-      saveTimer.current = null
-    }
+  // Flushes when the editor goes away instead of dropping what was pending — see
+  // hooks/use-debounced-save.ts. The old version cleared its timer on unmount, which meant the
+  // last 900ms of typing was lost to anything that left the page. A swipe leaves the page, and it
+  // does not reliably blur the editor first (the `onBlur` flush below is what used to cover this,
+  // and it only covers a swipe that starts somewhere else), so this was the one place in the app
+  // where a gesture could lose words someone had written.
+  const runSave = useCallback(async () => {
     setStatus("saving")
     const ok = await onSaveRef.current(latestMarkdown.current)
     setStatus(ok ? "saved" : "error")
   }, [])
 
+  const saver = useDebouncedSave(runSave, AUTOSAVE_DELAY_MS)
+
+  /** Save now, whether or not the clock is running — what `onBlur` and the toolbar want. */
+  const flush = useCallback(async () => {
+    saver.cancel()
+    await runSave()
+  }, [saver, runSave])
+
   const scheduleSave = useCallback(() => {
-    if (saveTimer.current) clearTimeout(saveTimer.current)
-    saveTimer.current = setTimeout(() => {
-      void flush()
-    }, AUTOSAVE_DELAY_MS)
-  }, [flush])
+    saver.schedule()
+  }, [saver])
 
   const extensions = useMemo(
     () => [
@@ -133,10 +140,10 @@ export function NoteEditor({
     latestMarkdown.current = initialMarkdown
     setStatus("idle")
     return () => {
-      if (saveTimer.current) {
-        clearTimeout(saveTimer.current)
-        saveTimer.current = null
-      }
+      // Switching notes saves the one being left rather than dropping its pending edit. This runs
+      // before the ref-updating effect below, so `onSaveRef` and `latestMarkdown` still belong to
+      // the note that is going — which is the note the save is for.
+      void saver.flush()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [noteId])

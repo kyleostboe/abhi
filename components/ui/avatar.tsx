@@ -9,7 +9,10 @@ function Avatar({ className, ...props }: React.ComponentProps<typeof AvatarPrimi
   return (
     <AvatarPrimitive.Root
       data-slot="avatar"
-      className={cn("relative flex size-8 shrink-0 rounded-full w-8", className)}
+      // `size-*` and `h-*`/`w-*` are separate utility groups, so `size-8` here survives a caller's
+      // `h-9 w-9` and width and height can end up resolving from different declarations. Keeping
+      // the default as `h-8 w-8` puts both axes in the same group as the caller's and merges clean.
+      className={cn("relative flex h-8 w-8 shrink-0 overflow-hidden rounded-full", className)}
       {...props}
     />
   )

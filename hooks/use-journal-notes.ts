@@ -6,100 +6,41 @@ import { createClient, getAuthHeader } from "@/lib/supabase/client"
 import { useAuth } from "@/hooks/use-auth"
 import { deleteAttachmentsForNote } from "@/lib/journal-attachments"
 import { deriveTitle, derivePreview, slugify } from "@/lib/journal-markdown"
+import { journalResource } from "@/lib/app-data"
+import {
+  NOTE_COLUMNS,
+  type JournalFolder,
+  type JournalNote,
+  type NoteRow,
+  loadJournalData,
+  mapNote,
+} from "@/lib/journal-notes-query"
 import { log } from "@/lib/log"
 
-export type JournalNote = {
-  id: string
-  slug: string
-  title: string
-  preview: string
-  /** Markdown body. Empty until loaded from storage when `isBodyLoaded` is false. */
-  contentMd: string
-  noteKey: string | null
-  isBodyLoaded: boolean
-  folderId: string | null
-  meditationId: string | null
-  meditationTitle: string | null
-  /** The sit this note was written about, when it was written about one. */
-  sessionId: string | null
-  practiceType: string | null
-  tags: string[]
-  font: string | null
-  playedAt: string
-  updatedAt: string
-}
-
-export type JournalFolder = {
-  id: string
-  name: string
-  sortOrder: number
-}
-
-type NoteRow = {
-  id: string
-  slug: string | null
-  title: string | null
-  preview: string | null
-  content_md: string | null
-  note: string | null
-  note_key: string | null
-  folder_id: string | null
-  meditation_id: string | null
-  meditation_title: string | null
-  session_id: string | null
-  practice_type: string | null
-  tags: string[] | null
-  font: string | null
-  played_at: string
-  updated_at: string | null
-}
-
-// The list only needs the index. A note's markdown body lives in R2 and is fetched when the
-// note is actually opened, so loading the journal never pulls every note's full text.
-const NOTE_COLUMNS =
-  "id, slug, title, preview, content_md, note, note_key, folder_id, meditation_id, meditation_title, session_id, practice_type, tags, font, played_at, updated_at"
-
-const mapNote = (row: NoteRow): JournalNote => {
-  // `content_md` is the markdown body; `note` is the pre-notes plain-text column, which is
-  // already valid markdown, so older rows need no conversion.
-  const contentMd = row.content_md ?? row.note ?? ""
-  // Entries created by playing a meditation start with no body at all, so fall back to the
-  // meditation's name rather than labelling every one of them "New note".
-  const derivedTitle = contentMd.trim() ? deriveTitle(contentMd) : (row.meditation_title?.trim() || "New note")
-  return {
-    id: row.id,
-    slug: row.slug ?? row.id,
-    title: row.title?.trim() || derivedTitle,
-    preview: row.preview?.trim() || derivePreview(contentMd),
-    contentMd,
-    noteKey: row.note_key,
-    /** True once the body has been read from storage (or is known to live in the column). */
-    isBodyLoaded: !row.note_key,
-    folderId: row.folder_id,
-    meditationId: row.meditation_id,
-    meditationTitle: row.meditation_title,
-    sessionId: row.session_id,
-    practiceType: row.practice_type,
-    tags: row.tags ?? [],
-    font: row.font,
-    playedAt: row.played_at,
-    updatedAt: row.updated_at ?? row.played_at,
-  }
-}
-
-
+export type { JournalNote, JournalFolder }
 
 export function useJournalNotes() {
   const supabase = useMemo(() => createClient(), [])
   const { isAuthenticated, userId } = useAuth()
-  const [notes, setNotes] = useState<JournalNote[]>([])
-  const [folders, setFolders] = useState<JournalFolder[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  // Seeded from the warmed snapshot (components/data-warmer.tsx) rather than from empty. A
+  // returning visit therefore renders its notes in its *first* frame, which is what makes a swipe
+  // land on the Journal rather than on the Journal's loading state.
+  const warmed = journalResource.peek()
+  const [notes, setNotes] = useState<JournalNote[]>(warmed?.notes ?? [])
+  const [folders, setFolders] = useState<JournalFolder[]>(warmed?.folders ?? [])
+  const [isLoading, setIsLoading] = useState(warmed === undefined)
   const notesRef = useRef(notes)
 
   useEffect(() => {
     notesRef.current = notes
   }, [notes])
+
+  // The hook owns the state and the cache is a mirror of it, never the other way round. Every
+  // existing mutation site — create, rename, move, delete — keeps setting state exactly as it
+  // did, and this is what stops any of them being lost to a stale snapshot on the way back.
+  useEffect(() => {
+    if (!isLoading) journalResource.set({ notes, folders })
+  }, [notes, folders, isLoading])
 
   const reload = useCallback(async () => {
     if (!isAuthenticated) {
@@ -109,30 +50,13 @@ export function useJournalNotes() {
       return
     }
 
-    setIsLoading(true)
+    // Only a cold hook shows a loading state. A revalidation happens underneath whatever is
+    // already on screen — stale-while-revalidate, the point of which is that nothing blinks.
+    if (journalResource.peek() === undefined) setIsLoading(true)
     try {
-      const [noteResult, folderResult] = await Promise.all([
-        supabase.from("journal_entries").select(NOTE_COLUMNS).order("updated_at", { ascending: false }),
-        supabase.from("journal_folders").select("id, name, sort_order").order("sort_order", { ascending: true }),
-      ])
-
-      if (noteResult.error) {
-        log.error("[journal] Failed to load notes:", noteResult.error)
-      } else {
-        setNotes(((noteResult.data ?? []) as NoteRow[]).map((row) => mapNote(row)))
-      }
-
-      if (folderResult.error) {
-        log.error("[journal] Failed to load folders:", folderResult.error)
-      } else {
-        setFolders(
-          ((folderResult.data ?? []) as { id: string; name: string; sort_order: number | null }[]).map((row) => ({
-            id: row.id,
-            name: row.name,
-            sortOrder: row.sort_order ?? 0,
-          })),
-        )
-      }
+      const { notes: loadedNotes, folders: loadedFolders } = await loadJournalData(supabase)
+      setNotes(loadedNotes)
+      setFolders(loadedFolders)
     } finally {
       setIsLoading(false)
     }

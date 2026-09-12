@@ -83,7 +83,7 @@ export const RecorderSection: React.FC<RecorderSectionProps> = ({
             value={recordingLabel}
             onChange={onRecordingLabelChange}
             placeholder="Describe this recording..."
-            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-logo-rose-300 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-xs focus-visible: text-logo-rose-400 font-black text-gray-500 border-stone-300 mt-2 border-0 shadow-2xl h-9"
+            className="flex w-full ring-offset-background file:border-0 file:bg-white file:text-xs file:font-medium file:text-foreground placeholder:text-gray-500 focus-visible:outline-none disabled:cursor-not-allowed md:text-xs rounded-[10px] bg-white py-4 px-4 text-xs font-black text-gray-600 inset-shadow-recess h-9 border-[#f2f2f2] border-[0px] mt-2"
           />
           <Button
             onClick={isRecording ? stopRecording : startRecording}

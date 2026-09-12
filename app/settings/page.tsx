@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { createClient } from "@/lib/supabase/client"
 import { useAuth } from "@/hooks/use-auth"
-import { Navigation } from "@/components/navigation"
 import { log } from "@/lib/log"
 import { useUserSettings } from "@/hooks/use-user-settings"
 import { formatDayBoundary } from "@/lib/user-settings"
@@ -94,7 +93,6 @@ export default function SettingsPage() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 pt-20 md:p-8 md:pt-24">
-        <Navigation />
         <div className="container max-w-4xl mx-auto py-8 px-4">
           <Card className="rounded-xl border-none bg-white p-12 text-center shadow-lg">
             <h2 className="mb-4 font-serif text-2xl font-black tracking-tight text-gray-700">Sign in to access settings</h2>
@@ -113,7 +111,6 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 pt-20 md:p-8 md:pt-24">
-        <Navigation />
         <div className="container max-w-4xl mx-auto py-8 px-4 text-center">
           <p className="font-serif text-xs tracking-tight text-gray-500">Loading settings...</p>
         </div>
@@ -123,7 +120,6 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 pt-20 md:p-8 md:pt-24">
-      <Navigation />
       <div className="container max-w-4xl mx-auto py-8 px-4">
         {/* Same shell as the Home tools: white, borderless, xl radius, gradient title strip. */}
         <Card className="mx-auto w-full max-w-2xl overflow-hidden rounded-xl border-none bg-white shadow-lg">

@@ -25,6 +25,11 @@ interface VisualTimelineProps {
   playChordPreview?: (noteStrings: string[]) => Promise<void>
 }
 
+// The mobile ruler labels in whole minutes, which collapses to a bare "0" for any timeline
+// shorter than a minute — show seconds at that length instead.
+const compactDuration = (seconds: number): string =>
+  seconds < 60 ? `${Math.round(seconds)}s` : `${Math.floor(seconds / 60)}m`
+
 const getFromBorderColorClass = (gradientClass: string): string => {
   const match = gradientClass.match(/from-([a-zA-Z0-9-]+)/)
   if (match && match[1]) {
@@ -456,6 +461,9 @@ export function VisualTimeline({
                           top,
                         }
                   }
+                  // Dragging an event along the timeline is a horizontal touch gesture of its
+                  // own, so it must not read as a page swipe (see components/swipe-navigator).
+                  data-no-swipe
                   onMouseDown={(e) => handleMouseDown(event.id, e, event)}
                   onTouchStart={(e) => handleTouchStart(event.id, e, event)}
                   title={
@@ -483,11 +491,17 @@ export function VisualTimeline({
                     isMobile && index > 0 && index < timeMarkers.length - 1 ? "hidden sm:block" : "",
                   )}
                 >
-                  {isMobile ? Math.floor(displayTime / 60) : formatTime(displayTime)}
+                  {isMobile ? compactDuration(displayTime) : formatTime(displayTime)}
                 </span>
                 {isMobile && (
                   <span className="text-xs opacity-60">
-                    {index === 0 ? "0m" : isLastMarker ? `${Math.floor(totalDuration / 60)}m` : ""}
+                    {index === 0
+                      ? totalDuration < 60
+                        ? "0s"
+                        : "0m"
+                      : isLastMarker
+                        ? compactDuration(totalDuration)
+                        : ""}
                   </span>
                 )}
               </div>

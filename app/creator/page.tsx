@@ -2,7 +2,6 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { SaveMeditationDialog } from "@/components/save-meditation-dialog"
@@ -711,7 +710,6 @@ export default function CreatorPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 md:pt-0">
-      <Navigation />
 
       <div className="relative max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden transition-colors duration-300 ease-in-out">
         <div className="relative overflow-hidden">

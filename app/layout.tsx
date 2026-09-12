@@ -5,7 +5,12 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from "@/hooks/use-auth"
 import { PageStatePreserver } from "@/components/page-state-preserver"
+import { SwipeNavigator } from "@/components/swipe-navigator"
+import { AppShell } from "@/components/app-shell"
+import { DataWarmer } from "@/components/data-warmer"
+import { PageChrome } from "@/components/page-chrome"
 import { MotionPreferences } from "@/components/motion-preferences"
+import StyleInspector from "@/components/dev/style-inspector"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -22,9 +27,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           <MotionPreferences>
             <AuthProvider>
+              <DataWarmer />
               <PageStatePreserver />
-              {children}
+              <SwipeNavigator />
+              <AppShell />
+              <PageChrome>{children}</PageChrome>
               <Toaster />
+              {process.env.NODE_ENV === "development" && <StyleInspector />}
             </AuthProvider>
           </MotionPreferences>
         </ThemeProvider>
