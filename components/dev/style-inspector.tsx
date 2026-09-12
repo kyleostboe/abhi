@@ -650,6 +650,20 @@ function Panel({
             <textarea
               value={sel.note}
               onChange={(e) => onPatch(sel.id, { note: e.target.value })}
+              // Enter sends and Shift+Enter breaks the line — the reverse of a bare textarea,
+              // because most notes are a line or two and reaching for the button to submit one is
+              // the slow part. `isComposing` keeps an IME's own Enter from sending a half-typed
+              // note out from under someone typing Japanese or Chinese.
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return
+                if (e.nativeEvent.isComposing) return
+                e.preventDefault()
+                // Enter held down repeats, and a note is only cleared once the request comes back —
+                // so without this one press would post the same note to Claude many times over.
+                if (e.repeat) return
+                if (!sel.note.trim()) return
+                onSend(sel.id)
+              }}
               placeholder="e.g. this should sit centered under the header, and match the card radius"
               style={textareaStyle}
             />
@@ -1097,11 +1111,27 @@ export default function StyleInspector() {
       addSelection(host)
     }
 
+    // Suppressing the click is not enough for anything that acts on `pointerdown`. Radix's
+    // DropdownMenuTrigger is the one that bit: clicking the profile in design mode still opened its
+    // menu, and a Radix menu is modal — its overlay covers the viewport from then on, so the panel
+    // underneath could not be clicked at all. Swallowing the pointerdown is what makes a menu
+    // trigger inert while design mode is capturing input. Selection itself does not depend on it:
+    // `click` still fires after a prevented pointerdown, and that is what `onClick` runs on.
+    const onPointerDown = (e: Event) => {
+      if (passthroughRef.current || browseRef.current) return
+      const target = e.target as Element | null
+      if (!target || isInsideUi(target)) return
+      e.preventDefault()
+      e.stopPropagation()
+    }
+
     document.addEventListener("mousemove", onMove, true)
     document.addEventListener("click", onClick, true)
+    document.addEventListener("pointerdown", onPointerDown, true)
     return () => {
       document.removeEventListener("mousemove", onMove, true)
       document.removeEventListener("click", onClick, true)
+      document.removeEventListener("pointerdown", onPointerDown, true)
     }
   }, [active, addSelection])
 

@@ -245,7 +245,7 @@ export function Navigation({ showProfileButton = false }: NavigationProps) {
       <div className="relative flex w-full max-w-4xl items-center justify-center">
         <ul
           ref={listRef}
-          className="relative flex rounded-sm bg-white px-2 space-x-0 py-[13px] pt-[8px] pb-[8px] border-[#f2f2f2] border-[0px]"
+          className="relative flex rounded-sm bg-white px-2 space-x-0 py-[13px] pt-[8px] pb-[8px] border-[#f2f2f2] border-[0px] shadow-[0_22px_38px_-8px_rgba(0,0,0,0.18)]"
         >
           {/* A route outside the three — /settings — has no place on the strip, so nothing is
               painted rather than the pill parking on an arbitrary tab. */}

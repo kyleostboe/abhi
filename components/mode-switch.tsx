@@ -349,7 +349,7 @@ export function ModeSwitch({
   const width = barW ?? dims?.barW ?? undefined
 
   return (
-    <div className={cn("flex justify-center", className)}>
+    <div className={cn("flex justify-center mb-[21px]", className)}>
       <div ref={innerRef} className="relative inline-flex flex-col items-center">
         {dims && (
           <svg
@@ -460,7 +460,7 @@ export function ModeSwitch({
           // The trough behind the button follows it either way: the SVG is drawn from the
           // button's measured `offsetTop` rather than from a number, so the shape and the layout
           // cannot disagree.
-          className="relative mt-[5px] rounded-sm p-[5px]"
+          className="relative rounded-sm p-[5px] mt-[7px]"
         >
           <span
             ref={stemButtonRef}
