@@ -46,17 +46,6 @@ const WARMUP_OPTIONS = [
 type TimerState = "idle" | "running" | "finished"
 
 export function TimerTool() {
-  // A sit shouldn't move under you. While the Timer is the open tool — on any page, since every
-  // page's switch can open it now — the page itself doesn't scroll, so nothing about the timer
-  // shifts; only the header above it and the navigation keep their own behaviour.
-  useEffect(() => {
-    const previous = document.body.style.overflow
-    document.body.style.overflow = "hidden"
-    return () => {
-      document.body.style.overflow = previous
-    }
-  }, [])
-
   const { isAuthenticated } = useAuth()
   const { startSession, reportProgress, endSession } = useSessions()
   const { settings, isLoading: isLoadingSettings, updateSettings, canEdit } = useUserSettings()
@@ -86,6 +75,20 @@ export function TimerTool() {
 
   const [state, setState] = useState<TimerState>("idle")
   const [elapsed, setElapsed] = useState(0)
+
+  // A sit shouldn't move under you — but only a running sit, which is the fixed, full-screen
+  // view. Locking the body for the whole component froze every screen instead: this tool stays
+  // mounted while you swipe to the Library or the Journal, so the lock followed you there, and
+  // its own settings list is taller than a phone and could not be scrolled to reach the start
+  // button. Scoped to "running", the lock does what it says and the settings scroll normally.
+  useEffect(() => {
+    if (state !== "running") return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = previous
+    }
+  }, [state])
 
   const audioRef = useRef<TimerAudio | null>(null)
   const startedAtRef = useRef<number | null>(null)
