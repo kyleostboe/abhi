@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
-import type { SupabaseClient } from "@supabase/supabase-js"
 import { createAdminClient, getAuthenticatedUser } from "@/lib/supabase/server"
-import { buildJournalNoteKey, deleteObject, getTextObject, putTextObject } from "@/lib/storage"
-import { composeNoteFile, parseNoteFile, type NoteFrontmatter } from "@/lib/journal-frontmatter"
+import { buildJournalNoteKey, deleteObject, getTextObject } from "@/lib/storage"
+import { parseNoteFile } from "@/lib/journal-frontmatter"
+import { writeNoteFile } from "@/lib/journal-note-file"
 import { deriveTitle, derivePreview, slugify } from "@/lib/journal-markdown"
 import { log } from "@/lib/log"
 
@@ -18,44 +18,15 @@ import { log } from "@/lib/log"
  * too, not only editing one — otherwise a note written and never touched again would exist in
  * the index and nowhere else.
  *
- * One case still escapes that: when this route is unreachable the client inserts the row
- * directly, and it has no R2 credentials of its own. Such a note has no `note_key`, GET serves
- * it from the index column, and the next save writes the file.
+ * `note_key` is set only once the file is actually there, which makes a null one mean exactly
+ * "this note has no file yet" rather than "this note is old". Some will always land that way —
+ * the client inserts the row directly when this route is unreachable, and it holds no R2
+ * credentials of its own — so the sweep in ../notes/sync repairs them, and GET reads from the
+ * index column until it does.
  */
 
 const INDEX_COLUMNS =
   "id, slug, title, preview, content_md, note, note_key, folder_id, meditation_id, meditation_title, session_id, practice_type, tags, font, played_at, updated_at, visibility"
-
-/**
- * Composes a note's markdown file and writes it to R2.
- *
- * Shared by create and update so a note's file is written the same way whichever end it comes
- * from. The folder is written as its name rather than its id — the file has to make sense on its
- * own once it leaves the database behind — and the lookup is filtered by profile so a folder id
- * taken from the request body cannot name somebody else's folder.
- */
-async function writeNoteFile(
-  client: SupabaseClient,
-  profileId: string,
-  noteKey: string,
-  frontmatter: Omit<NoteFrontmatter, "folder"> & { folderId: string | null },
-  body: string,
-): Promise<void> {
-  const { folderId, ...rest } = frontmatter
-
-  let folderName: string | null = null
-  if (folderId) {
-    const { data: folder } = await client
-      .from("journal_folders")
-      .select("name")
-      .eq("profile_id", profileId)
-      .eq("id", folderId)
-      .maybeSingle()
-    folderName = folder?.name ?? null
-  }
-
-  await putTextObject(noteKey, composeNoteFile({ ...rest, folder: folderName }, body))
-}
 
 /** POST /api/journal/note — creates a new journal note row and its markdown file */
 export async function POST(request: NextRequest) {
@@ -94,8 +65,10 @@ export async function POST(request: NextRequest) {
   const insertData = {
     profile_id: user.id,
     content_md: contentMd,
+    // Also written to `note`, which the Library's own journal (hooks/use-journal.ts) reads from
+    // this same table. Dropping one without unifying the two would leave a note created in one
+    // place looking empty in the other.
     note: contentMd,
-    note_key: noteKey,
     title,
     slug,
     preview,
@@ -127,28 +100,28 @@ export async function POST(request: NextRequest) {
   // a note that already owns it. An empty body is a real case — a note offered after a sit and
   // saved before anything is typed — and still produces a file with complete frontmatter.
   //
-  // A failure here is not fatal to the note: the body is in the index row too, GET falls back to
-  // it when the object is missing, and the next save writes the file. It is still logged, because
-  // until that save happens this note is absent from the bucket.
+  // note_key is claimed only after the write succeeds, so a null one always means the file is
+  // genuinely missing. A failure here costs nothing the user can see: the body is in the index
+  // row, GET reads it from there, and ../notes/sync writes the file on the next journal load.
   try {
-    await writeNoteFile(
-      clientToUse,
-      user.id,
+    await writeNoteFile({
+      client: clientToUse,
+      profileId: user.id,
       noteKey,
-      {
-        title: data.title ?? title,
-        slug: data.slug ?? slug,
-        date: data.played_at ?? playedAt,
-        updated: updatedAt,
-        folderId: data.folder_id ?? null,
-        meditation: data.meditation_title,
-        practiceType: data.practice_type,
-        tags: data.tags ?? [],
-        font: data.font,
-        visibility: data.visibility ?? "private",
-      },
-      contentMd,
-    )
+      title: data.title ?? title,
+      body: contentMd,
+      updatedAt,
+      row: data,
+    })
+
+    const { error: keyError } = await clientToUse
+      .from("journal_entries")
+      .update({ note_key: noteKey })
+      .eq("id", data.id)
+      .eq("profile_id", user.id)
+
+    if (keyError) throw keyError
+    data.note_key = noteKey
   } catch (storageError) {
     log.error("[journal] Created the note but could not write its file:", storageError)
   }
@@ -237,24 +210,15 @@ export async function PUT(request: NextRequest) {
   const noteKey = existing.note_key ?? buildJournalNoteKey(user.id, slug)
 
   try {
-    await writeNoteFile(
-      supabase,
-      user.id,
+    await writeNoteFile({
+      client: supabase,
+      profileId: user.id,
       noteKey,
-      {
-        title,
-        slug,
-        date: existing.played_at,
-        updated: updatedAt,
-        folderId: existing.folder_id ?? null,
-        meditation: existing.meditation_title,
-        practiceType: existing.practice_type,
-        tags: existing.tags ?? [],
-        font: existing.font,
-        visibility: existing.visibility ?? "private",
-      },
+      title,
       body,
-    )
+      updatedAt,
+      row: { ...existing, slug },
+    })
   } catch (storageError) {
     log.error("[journal] Failed to write note to storage:", storageError)
     return NextResponse.json({ error: "Unable to save the note." }, { status: 500 })
@@ -267,8 +231,9 @@ export async function PUT(request: NextRequest) {
       title,
       preview: derivePreview(body),
       updated_at: updatedAt,
-      // content_md is kept in sync as a safety net while R2 becomes the source of truth. It can
-      // be dropped once every note has a note_key.
+      // content_md stays in step with the file: it is what GET serves when the object is missing
+      // and what ../notes/sync rebuilds a missing file from. `note` is the same text again, for
+      // the Library's own journal (hooks/use-journal.ts), which still reads that column.
       content_md: body,
       note: body,
     })

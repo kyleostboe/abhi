@@ -63,8 +63,9 @@ export const NOTE_COLUMNS =
   "id, slug, title, preview, content_md, note, note_key, folder_id, meditation_id, meditation_title, session_id, practice_type, tags, font, played_at, updated_at"
 
 export const mapNote = (row: NoteRow): JournalNote => {
-  // `content_md` is the markdown body; `note` is the pre-notes plain-text column, which is
-  // already valid markdown, so older rows need no conversion.
+  // `content_md` is the Journal's markdown body. `note` is the column the Library's own journal
+  // (hooks/use-journal.ts) still writes for the same table, so a row created there is readable
+  // here rather than appearing empty.
   const contentMd = row.content_md ?? row.note ?? ""
   // Entries created by playing a meditation start with no body at all, so fall back to the
   // meditation's name rather than labelling every one of them "New note".

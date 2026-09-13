@@ -3,14 +3,21 @@
  *
  * Notes are stored as markdown, not editor JSON, so that a future export is a file copy rather
  * than a serializer we would have to keep in sync forever. Every block the editor can produce
- * has a representation here, and each one is deliberately *already valid Obsidian syntax* — an
- * exported vault needs no conversion step at all:
+ * has a representation here, and each one is the most portable syntax that actually carries the
+ * block's meaning:
  *
- *   image             ![[attachments/<filename>]]
+ *   image             ![](attachments/<filename>)
  *   voice note        ![[attachments/<filename>.opus]]
  *   meditation ref    [[Meditations/<meditation-slug>]]
  *   quote from note   > <quoted text>
  *                     > — [[<note-slug>]]
+ *
+ * Images are written as ordinary CommonMark, which renders in Obsidian *and* in everything else —
+ * GitHub, a static site generator, a plain markdown viewer. The wikilink forms are kept only
+ * where standard markdown has no equivalent: `![[…]]` is what makes Obsidian embed an audio
+ * player (`![](…)` on an .opus file is an image tag that plays nothing), and `[[…]]` addresses an
+ * entity that is not necessarily a file on disk. The parser still reads the old `![[attachments/…]]`
+ * spelling for images, so notes written before this keep rendering.
  *
  * The app parses those same patterns back into rich inline cards. Nothing else in the codebase
  * should invent additional syntax: if a block cannot round-trip through here, it must not ship.
@@ -67,6 +74,7 @@ export const sanitizeFilename = (filename: string): string =>
 export const serializeBlock = (block: InlineBlock): string => {
   switch (block.type) {
     case "image":
+      return `![](${ATTACHMENT_DIR}/${block.filename})`
     case "audio":
       return `![[${ATTACHMENT_DIR}/${block.filename}]]`
     case "meditation":
@@ -86,6 +94,7 @@ export const serializeBlock = (block: InlineBlock): string => {
 // ------------------------------------------------------------------------------------------
 
 const EMBED_RE = new RegExp(`^!\\[\\[${ATTACHMENT_DIR}/([^\\]]+)\\]\\]$`)
+const MARKDOWN_EMBED_RE = new RegExp(`^!\\[[^\\]]*\\]\\(${ATTACHMENT_DIR}/([^)]+)\\)$`)
 const MEDITATION_RE = new RegExp(`^\\[\\[${MEDITATION_DIR}/([^\\]]+)\\]\\]$`)
 const QUOTE_ATTRIBUTION_RE = /^>\s*—\s*\[\[([^\]]+)\]\]\s*$/
 
@@ -93,7 +102,9 @@ const QUOTE_ATTRIBUTION_RE = /^>\s*—\s*\[\[([^\]]+)\]\]\s*$/
 export const parseBlockLine = (line: string): InlineBlock | null => {
   const trimmed = line.trim()
 
-  const embed = EMBED_RE.exec(trimmed)
+  // Both spellings are accepted: `![](…)` is what images are written as now, `![[…]]` is what
+  // voice notes are still written as and what images written before the switch look like.
+  const embed = MARKDOWN_EMBED_RE.exec(trimmed) ?? EMBED_RE.exec(trimmed)
   if (embed) {
     const filename = embed[1].trim()
     return { type: isImageFilename(filename) ? "image" : "audio", filename }
@@ -141,6 +152,7 @@ export const parseQuoteAt = (lines: string[], index: number): { block: InlineBlo
 export const stripMarkdown = (markdown: string): string =>
   markdown
     .replace(new RegExp(`!\\[\\[${ATTACHMENT_DIR}/[^\\]]+\\]\\]`, "g"), " ")
+    .replace(new RegExp(`!\\[[^\\]]*\\]\\(${ATTACHMENT_DIR}/[^)]+\\)`, "g"), " ")
     .replace(new RegExp(`\\[\\[${MEDITATION_DIR}/([^\\]]+)\\]\\]`, "g"), "$1")
     .replace(/\[\[([^\]]+)\]\]/g, "$1")
     .replace(/^#{1,6}\s+/gm, "")

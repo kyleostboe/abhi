@@ -42,6 +42,30 @@ export function useJournalNotes() {
     if (!isLoading) journalResource.set({ notes, folders })
   }, [notes, folders, isLoading])
 
+  /**
+   * Asks the server to rewrite note files that are missing or stale.
+   *
+   * Best-effort and silent by design: it repairs what the user cannot see and must never turn a
+   * working journal into an error message. Passing a folder rewrites that folder's notes after a
+   * rename; passing nothing repairs every note that has no file yet.
+   */
+  const syncNoteFiles = useCallback(
+    async (folderId?: string): Promise<void> => {
+      if (!isAuthenticated || !userId) return
+      try {
+        const authHeader = await getAuthHeader()
+        await fetch("/api/journal/notes/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeader },
+          body: JSON.stringify(folderId ? { folderId } : {}),
+        })
+      } catch (error) {
+        log.warn("[journal] Could not sync note files:", error)
+      }
+    },
+    [isAuthenticated, userId],
+  )
+
   const reload = useCallback(async () => {
     if (!isAuthenticated) {
       setNotes([])
@@ -57,10 +81,16 @@ export function useJournalNotes() {
       const { notes: loadedNotes, folders: loadedFolders } = await loadJournalData(supabase)
       setNotes(loadedNotes)
       setFolders(loadedFolders)
+
+      // A note with no key has no file in R2 — the direct insert below writes rows but cannot
+      // reach storage. Repairing here rather than on a schedule keeps it to the moment the
+      // journal is on screen anyway, and it is deliberately not awaited: nothing the user is
+      // looking at depends on it.
+      if (loadedNotes.some((note) => !note.noteKey)) void syncNoteFiles()
     } finally {
       setIsLoading(false)
     }
-  }, [supabase, isAuthenticated])
+  }, [supabase, isAuthenticated, syncNoteFiles])
 
   useEffect(() => {
     void reload()
@@ -364,9 +394,14 @@ export function useJournalNotes() {
         log.error("[journal] Failed to rename folder:", error)
         return false
       }
+
+      // Each note file carries its folder's name, not its id, so that the file means something
+      // outside the database. The price is that a rename leaves those files describing the old
+      // name until they are written again.
+      void syncNoteFiles(folderId)
       return true
     },
-    [supabase, isAuthenticated, userId],
+    [supabase, isAuthenticated, userId, syncNoteFiles],
   )
 
   /** Deleting a folder keeps its notes — they fall back to unfiled (folder_id is SET NULL). */
