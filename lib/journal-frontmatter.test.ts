@@ -41,6 +41,18 @@ describe("composeNoteFile", () => {
     const file = composeNoteFile({ ...base, title: 'a "quoted" \\ thing' }, "x")
     expect(parseNoteFile(file).frontmatter.title).toBe('a "quoted" \\ thing')
   })
+
+  // A note saved before anything is typed into it is a real case, and it still has to become a
+  // file the bucket can be rebuilt from rather than being skipped.
+  it("still writes complete frontmatter for an empty body", () => {
+    const file = composeNoteFile(base, "")
+    const parsed = parseNoteFile(file)
+    expect(parsed.body).toBe("")
+    expect(parsed.frontmatter.title).toBe("Morning sit")
+    expect(parsed.frontmatter.slug).toBe("morning-sit")
+    expect(parsed.frontmatter.visibility).toBe("private")
+    expect(parsed.frontmatter.tags).toEqual([])
+  })
 })
 
 describe("parseNoteFile", () => {
