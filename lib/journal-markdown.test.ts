@@ -62,10 +62,28 @@ describe("sanitizeFilename", () => {
 })
 
 describe("serializeBlock / parseBlockLine round-trip", () => {
-  it("round-trips an image embed", () => {
+  it("round-trips an image embed as ordinary markdown", () => {
     const block: InlineBlock = { type: "image", filename: "sunrise.png" }
-    expect(serializeBlock(block)).toBe("![[attachments/sunrise.png]]")
+    // CommonMark rather than a wikilink: this renders in Obsidian and in everything else too.
+    expect(serializeBlock(block)).toBe("![](attachments/sunrise.png)")
     expect(parseBlockLine(serializeBlock(block))).toEqual(block)
+  })
+
+  it("still reads an image written in the older wikilink spelling", () => {
+    expect(parseBlockLine("![[attachments/sunrise.png]]")).toEqual({ type: "image", filename: "sunrise.png" })
+  })
+
+  it("keeps the wikilink spelling for audio, which markdown cannot embed", () => {
+    const block: InlineBlock = { type: "audio", filename: "voice.opus" }
+    expect(serializeBlock(block)).toBe("![[attachments/voice.opus]]")
+    expect(parseBlockLine(serializeBlock(block))).toEqual(block)
+  })
+
+  it("reads an image embed carrying alt text", () => {
+    expect(parseBlockLine("![a sunrise](attachments/sunrise.png)")).toEqual({
+      type: "image",
+      filename: "sunrise.png",
+    })
   })
 
   it("classifies a non-image embed as audio on the way back", () => {
