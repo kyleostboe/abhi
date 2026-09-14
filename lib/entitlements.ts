@@ -26,9 +26,12 @@ export type AccountTier = "free" | "supporter"
 export type Entitlements = {
   tier: AccountTier
   /**
-   * Meditations synced to the account, excluding reusable recordings. `Infinity` for supporters —
-   * a real number here would eventually be a surprise wall for the person who is already paying,
-   * which is the worst place to put one.
+   * Meditations whose audio the server stores, excluding reusable recordings. It caps what is
+   * *synced*, never what exists: past this, a save still writes its row and keeps its title,
+   * duration and timeline, and only the audio stays in the browser that made it.
+   *
+   * `Infinity` for supporters — a real number here would eventually be a surprise wall for the
+   * person who is already paying, which is the worst place to put one.
    */
   syncedMeditationLimit: number
   /** Reusable voice clips (`source: "recording"`), which get their own allowance so they cannot eat meditation slots. */
@@ -139,6 +142,42 @@ export const entitlementsFor = (
         : base.journalAttachments,
   }
 }
+
+
+/**
+ * The shape `account_entitlements` comes back as, from either side of the wire.
+ *
+ * Both the API routes and the client read this row and both have to reach the same verdict about
+ * it — a client that thinks it has room where the database disagrees produces an upload that is
+ * refused after the bytes have been read. So the mapping lives here, once, and neither side gets
+ * to hold its own opinion about what a column means.
+ */
+export type EntitlementRow = {
+  tier?: unknown
+  synced_meditation_limit?: number | null
+  recording_limit?: number | null
+  storage_quota_bytes?: number | null
+  max_upload_bytes?: number | null
+  journal_attachments?: boolean | null
+} | null | undefined
+
+export const entitlementsFromRow = (row: EntitlementRow): Entitlements =>
+  entitlementsFor(
+    row?.tier,
+    row
+      ? {
+          syncedMeditationLimit: row.synced_meditation_limit,
+          recordingLimit: row.recording_limit,
+          storageQuotaBytes: row.storage_quota_bytes,
+          maxUploadBytes: row.max_upload_bytes,
+          journalAttachments: row.journal_attachments,
+        }
+      : null,
+  )
+
+/** The columns `entitlementsFromRow` reads, for a `select()`. */
+export const ENTITLEMENT_COLUMNS =
+  "tier, synced_meditation_limit, recording_limit, storage_quota_bytes, max_upload_bytes, journal_attachments"
 
 /** Bytes left before the backstop. Never negative, so a UI can render it without clamping. */
 export const remainingBytes = (entitlements: Entitlements, usedBytes: number): number => {

@@ -9,6 +9,8 @@ import { usePersistedChoice, usePersistedFlag } from "@/hooks/use-persisted-choi
 import { useBackupJob } from "@/hooks/use-backup-job"
 import { runExport, runImport } from "@/lib/backup-job"
 import { describeBackupGaps } from "@/lib/backup-audio"
+import { LibraryAvailabilityNotice } from "@/components/library-availability-notice"
+import { useUserSettings } from "@/hooks/use-user-settings"
 import { TimerTool } from "@/components/timer-tool"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -81,6 +83,8 @@ import {
   BookOpenCheck,
   RefreshCw,
   Upload,
+  CloudOff,
+  Smartphone,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useMobile } from "@/hooks/use-mobile"
@@ -123,6 +127,7 @@ export function LibraryScreen() {
   // a returning visit has its meditations in the very first render rather than 330-1005ms later.
   // The page still owns all of this — `loadData` below revalidates and every mutation site is
   // unchanged — the cache is only a mirror of what the page already holds.
+  const { settings, updateSettings } = useUserSettings()
   const [meditations, setMeditations] = useState<SavedMeditation[]>(() => meditationsResource.peek() ?? [])
   const [recordings, setRecordings] = useState<SavedMeditation[]>(() => recordingsResource.peek() ?? [])
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(() => meditationsResource.peek() === undefined)
@@ -342,6 +347,10 @@ export function LibraryScreen() {
       const report = await runExport()
       const gaps = report ? describeBackupGaps(report) : null
 
+      // Recorded per-account rather than per-device: a copy made from a laptop covers the phone
+      // too, so it should quiet the prompt there as well.
+      if (report) void updateSettings({ backup: { lastExportAt: Date.now() } })
+
       // A backup that could not include everything says so here rather than at restore time,
       // which is the worst possible moment to find out.
       toast(
@@ -364,7 +373,7 @@ export function LibraryScreen() {
         variant: "destructive",
       })
     }
-  }, [toast])
+  }, [toast, updateSettings])
 
   const handleImportBackup = useCallback(
     async (file: File) => {
@@ -2829,6 +2838,30 @@ export function LibraryScreen() {
                                         {durationDisplay}
                                       </span>
                                     </span>
+                                    {/*
+                                      Where the audio is, marked on the card itself. Without this
+                                      the only difference between a meditation that plays and one
+                                      whose audio is on another phone is that tapping the second
+                                      does nothing, which reads as a bug rather than a limit.
+                                    */}
+                                    {base.audioAvailability === "local" ? (
+                                      <span className="flex items-center gap-1" title="Saved on this device only">
+                                        <Smartphone className="h-4 w-4 text-gray-500" />
+                                        <span className="font-black truncate text-xs text-gray-500 tracking-tight">
+                                          On this device
+                                        </span>
+                                      </span>
+                                    ) : base.audioAvailability === "elsewhere" ? (
+                                      <span
+                                        className="flex items-center gap-1"
+                                        title={`Audio is on ${base.audioDeviceLabel ?? "another device"}`}
+                                      >
+                                        <CloudOff className="h-4 w-4 text-amber-600" />
+                                        <span className="font-black truncate text-xs text-amber-700 tracking-tight">
+                                          On {base.audioDeviceLabel ?? "another device"}
+                                        </span>
+                                      </span>
+                                    ) : null}
                                     {isWideLayout && (
                                       <>
                                         <span className="flex items-center gap-1">
@@ -3855,6 +3888,19 @@ export function LibraryScreen() {
               playerPortalElement,
             )}
         </div>
+        )}
+
+        {isAuthenticated && (
+          <LibraryAvailabilityNotice
+            meditations={meditations}
+            recordings={recordings}
+            lastExportAt={settings.backup.lastExportAt}
+            lastPromptDismissedAt={settings.backup.lastPromptDismissedAt}
+            onExportBackup={handleExportBackup}
+            onDismissBackupPrompt={() =>
+              void updateSettings({ backup: { lastPromptDismissedAt: Date.now() } })
+            }
+          />
         )}
 
         {isAuthenticated && (

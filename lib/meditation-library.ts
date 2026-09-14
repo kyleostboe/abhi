@@ -15,6 +15,14 @@ import {
   buildBackupReport,
   planBackupAudio,
 } from "@/lib/backup-audio"
+import {
+  ENTITLEMENT_COLUMNS,
+  canSaveAnotherRecording,
+  canSyncAnotherMeditation,
+  entitlementsFromRow,
+} from "@/lib/entitlements"
+import { currentDeviceLabel } from "@/lib/device-label"
+import { requestPersistentStorage } from "@/lib/storage-persistence"
 
 // Shown only if the usage route could not be reached. The real quota is whatever
 // lib/entitlements.ts grants the account, and the route reports it alongside the usage — this is
@@ -61,6 +69,17 @@ export interface SavedMeditation {
   duration: number
   createdAt: Date
   source: MeditationSource
+  /**
+   * Where this meditation's audio is.
+   *
+   * "elsewhere" is the state the sync allowance creates: the row is here, with its title and
+   * timeline and everything else, and the bytes are in the browser that made them. The library
+   * still lists it, because an account knowing what it owns is the point — but it cannot play it,
+   * and saying so is better than a card that silently does nothing.
+   */
+  audioAvailability: "synced" | "local" | "elsewhere"
+  /** Coarse name of the device holding the audio, when it is "elsewhere". */
+  audioDeviceLabel?: string | null
   metadata: {
     // Shared metadata
     meditationTitle?: string
@@ -124,7 +143,12 @@ export interface Playlist {
   updatedAt: Date
 }
 
-export interface SaveMeditationInput extends Omit<SavedMeditation, "id" | "createdAt" | "processedAudioUrl"> {
+export interface SaveMeditationInput
+  extends Omit<
+    SavedMeditation,
+    // Where the audio ends up is decided by the save, not supplied to it.
+    "id" | "createdAt" | "processedAudioUrl" | "audioAvailability" | "audioDeviceLabel"
+  > {
   processedAudioData?: Blob | null
   sourceAudioData?: Blob | null
   /**
@@ -376,13 +400,68 @@ const recoverProcessedAudioFromR2 = async (
   return recovered
 }
 
+/** Postgres raises this hint when a save would take an account past its sync allowance. */
+const ENTITLEMENT_LIMIT_HINT = "abhi_entitlement_limit"
+
+const isEntitlementLimitError = (error: unknown): boolean => {
+  if (!error || typeof error !== "object") return false
+  const candidate = error as { hint?: unknown; message?: unknown }
+  return (
+    candidate.hint === ENTITLEMENT_LIMIT_HINT ||
+    (typeof candidate.message === "string" && candidate.message.includes(ENTITLEMENT_LIMIT_HINT))
+  )
+}
+
+/**
+ * Whether this save's audio can go to R2, or has to stay in the browser that made it.
+ *
+ * Asked before the upload so that a save past the allowance does not spend the bytes to find out.
+ * The database enforces the same rule and is the one that actually decides — this is here to make
+ * the common case cheap, not to be trusted, which is why `saveMeditation` still handles being
+ * told no after the fact.
+ *
+ * Any failure answers "yes". Guessing wrong in this direction costs an upload the trigger then
+ * refuses, and the save still completes locally; guessing wrong in the other direction would
+ * leave audio on one device because a count query timed out.
+ */
+const hasSyncRoom = async (
+  supabase: ReturnType<typeof createClient>,
+  profileId: string,
+  source: MeditationSource,
+): Promise<boolean> => {
+  const isRecordingSave = source === "recording"
+  try {
+    const [{ data: entitlementRow }, { count }] = await Promise.all([
+      supabase.from("account_entitlements").select(ENTITLEMENT_COLUMNS).eq("profile_id", profileId).maybeSingle(),
+      (isRecordingSave
+        ? supabase.from("meditations").select("id", { count: "exact", head: true }).eq("source", "recording")
+        : supabase.from("meditations").select("id", { count: "exact", head: true }).neq("source", "recording")
+      )
+        .eq("profile_id", profileId)
+        .not("audio_key", "is", null),
+    ])
+
+    const entitlements = entitlementsFromRow(entitlementRow)
+    const synced = count ?? 0
+    return isRecordingSave
+      ? canSaveAnotherRecording(entitlements, synced)
+      : canSyncAnotherMeditation(entitlements, synced)
+  } catch (error) {
+    log.warn("[library] Could not check the sync allowance; attempting the upload:", error)
+    return true
+  }
+}
+
 const normalizeSupabaseMeditation = (
   row: any,
   processedAudioUrl: string,
   sourceAudioUrl?: string,
   recordings?: Record<string, Blob>,
+  hasLocalAudio = false,
 ): SavedMeditation => ({
   id: row.id,
+  audioAvailability: row.audio_key ? "synced" : hasLocalAudio ? "local" : "elsewhere",
+  audioDeviceLabel: row.audio_key ? null : (row.audio_device_label ?? null),
   title: row.title,
   originalFileName: row.original_filename || row.description || "Unknown",
   processedAudioUrl,
@@ -599,9 +678,15 @@ export class MeditationLibrary {
     const metadataToPersist = sanitizeMetadataForStorage({ ...meditation.metadata }, timelineRecordings, "pending")
     const durationInSeconds = Math.round(meditation.duration)
 
-    const audioKey = await uploadAudioToR2(processedBlob, resolveAudioExtension(meditation.metadata, processedBlob))
+    // Past the sync allowance the audio stays in this browser and the row is written anyway, so
+    // the account keeps a complete index of itself — which is what lets another device say where
+    // the audio actually is, rather than the library simply being short of what was saved.
+    const canSync = await hasSyncRoom(supabase, auth.userId!, meditation.source)
+    let audioKey = canSync
+      ? await uploadAudioToR2(processedBlob, resolveAudioExtension(meditation.metadata, processedBlob))
+      : null
 
-    const insertMeditationRow = (source: string) =>
+    const insertMeditationRow = (source: string, key: string | null) =>
       supabase
         .from("meditations")
         .insert({
@@ -612,19 +697,32 @@ export class MeditationLibrary {
           metadata: metadataToPersist,
           original_filename: meditation.originalFileName,
           profile_id: auth.userId!,
-          audio_key: audioKey,
+          audio_key: key,
+          // Only meaningful while the audio is local: once it is in R2 it is not on any one
+          // device, and a stale label would send someone to the wrong phone.
+          audio_device_label: key ? null : currentDeviceLabel(),
         })
         .select()
         .single()
 
-    let { data, error } = await insertMeditationRow(meditation.source)
+    let { data, error } = await insertMeditationRow(meditation.source, audioKey)
+
+    // The database is the one that decides, and it can disagree with the check above — two saves
+    // racing for the last slot, or an allowance lowered between them. Saving locally is the right
+    // answer to that, not failing: the person made a meditation and it should still be theirs.
+    if (error && audioKey && isEntitlementLimitError(error)) {
+      log.warn("[library] Sync allowance reached; saving this meditation's audio locally")
+      void deleteAudioObjectFromR2(audioKey)
+      audioKey = null
+      ;({ data, error } = await insertMeditationRow(meditation.source, null))
+    }
 
     // Databases that haven't run scripts/012_rename_encoder_source_to_creator.sql still
     // enforce the pre-rename constraint, which allows 'encoder' but not 'creator'. Fall back
     // to the legacy value so saves keep working; reads normalize 'encoder' back to 'creator'.
     if (error && meditation.source === "creator" && error.message?.includes("meditations_source_check")) {
       log.warn("DB rejected source='creator' (migration 012 not applied) - retrying with legacy 'encoder'")
-      ;({ data, error } = await insertMeditationRow("encoder"))
+      ;({ data, error } = await insertMeditationRow("encoder", audioKey))
     }
 
     if (error) {
@@ -638,6 +736,12 @@ export class MeditationLibrary {
     const finalizedMetadata = sanitizeMetadataForStorage({ ...meditation.metadata }, timelineRecordings, meditationId)
 
     await supabase.from("meditations").update({ metadata: finalizedMetadata }).eq("id", meditationId)
+
+    // Asked here rather than at startup because this is the moment there is something to lose,
+    // and because browsers weigh the request on engagement — someone who has just saved a
+    // meditation is exactly who should be granted it. Best effort: the answer only changes how
+    // soon a backup is suggested, never whether the save works.
+    void requestPersistentStorage()
 
     log.debug("Saving audio to IndexedDB...")
     try {
@@ -653,11 +757,15 @@ export class MeditationLibrary {
       throw error
     }
 
+    // The audio is in this browser either way — it was just written to IndexedDB — so a save that
+    // could not sync comes back as "local", never as "elsewhere". Elsewhere is what another
+    // device sees, not what the device that made it does.
     return normalizeSupabaseMeditation(
-      { ...data, metadata: finalizedMetadata },
+      { ...data, audio_key: audioKey, metadata: finalizedMetadata },
       buildObjectUrl(processedBlob),
       buildObjectUrl(providedSourceBlob),
       timelineRecordings,
+      true,
     )
   }
 
@@ -798,7 +906,15 @@ export class MeditationLibrary {
         }
 
         const sourceUrl = buildObjectUrl(audio?.sourceAudio ?? null)
-        meditations.push(normalizeSupabaseMeditation(row, processedUrl, sourceUrl, audio?.timelineRecordings))
+        meditations.push(
+          normalizeSupabaseMeditation(
+            row,
+            processedUrl,
+            sourceUrl,
+            audio?.timelineRecordings,
+            Boolean(audio?.processedAudio),
+          ),
+        )
       } catch (error) {
         log.warn("Unable to resolve audio for meditation", row.id, error)
         meditations.push(normalizeSupabaseMeditation(row, ""))
