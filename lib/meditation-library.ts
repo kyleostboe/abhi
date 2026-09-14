@@ -10,6 +10,11 @@ import {
   type AudioRecord,
 } from "./storage/indexed-db"
 import { log } from "@/lib/log"
+import {
+  type BackupReport,
+  buildBackupReport,
+  planBackupAudio,
+} from "@/lib/backup-audio"
 
 // Shown only if the usage route could not be reached. The real quota is whatever
 // lib/entitlements.ts grants the account, and the route reports it alongside the usage — this is
@@ -304,6 +309,71 @@ const fetchR2DownloadUrls = async (meditationIds: string[]): Promise<Record<stri
     log.warn("R2 download URL fetch error:", error)
     return {}
   }
+}
+
+/**
+ * Storage keys of the timeline events that are recorded voice.
+ *
+ * `recordingStoragePath` is set on every event when a meditation is saved, not only the recorded
+ * ones, so its presence says nothing about whether there is a blob to go with it — `eventType` is
+ * the marker that does. Older rows may predate it, which under-reports rather than inventing a
+ * missing recording that was never there.
+ */
+const timelineRecordingKeys = (metadata: SavedMeditation["metadata"] | undefined): string[] => {
+  if (!Array.isArray(metadata?.timeline)) return []
+  return metadata.timeline
+    .filter((event) => event.eventType === "recorded_voice")
+    .map((event) => event.recordingStoragePath || event.id)
+    .filter((key): key is string => Boolean(key))
+}
+
+/**
+ * Pulls processed audio back from R2 for the meditations the local cache has lost.
+ *
+ * Chunked because the download-url route caps a request at 200 ids and silently drops the rest —
+ * a library past that size would otherwise come back partly empty for a reason nothing reported.
+ *
+ * Best effort per meditation: an expired URL or a failed fetch costs that one its audio and is
+ * recorded in the report, rather than throwing away an export that is otherwise complete.
+ */
+const R2_RECOVERY_BATCH_SIZE = 200
+
+const recoverProcessedAudioFromR2 = async (
+  ids: string[],
+  onProgress?: (progress: number, message: string) => void,
+): Promise<Map<string, Blob>> => {
+  const recovered = new Map<string, Blob>()
+  if (ids.length === 0) return recovered
+
+  const urls: Record<string, string> = {}
+  for (let start = 0; start < ids.length; start += R2_RECOVERY_BATCH_SIZE) {
+    Object.assign(urls, await fetchR2DownloadUrls(ids.slice(start, start + R2_RECOVERY_BATCH_SIZE)))
+  }
+
+  let done = 0
+  for (const id of ids) {
+    done += 1
+    onProgress?.(Math.round((done / ids.length) * 100), `Fetching audio ${done} of ${ids.length}...`)
+
+    const url = urls[id]
+    if (!url) {
+      log.warn(`[backup] No download URL for meditation ${id}; its audio will be missing`)
+      continue
+    }
+
+    try {
+      const response = await fetch(url)
+      if (!response.ok) {
+        log.warn(`[backup] Could not download audio for ${id}:`, response.status, response.statusText)
+        continue
+      }
+      recovered.set(id, await response.blob())
+    } catch (error) {
+      log.warn(`[backup] Download failed for ${id}:`, error)
+    }
+  }
+
+  return recovered
 }
 
 const normalizeSupabaseMeditation = (
@@ -1045,9 +1115,24 @@ export class MeditationLibrary {
     }
   }
 
-  static async exportBackup(): Promise<Blob> {
+  /**
+   * Zip the whole account: audio, metadata, notes, sessions, playlists and settings.
+   *
+   * Audio is taken from the local cache where it is there and pulled back from R2 where it is
+   * not. Reading only the cache is what made this quietly unsafe — on a device that never held
+   * the blobs, or after Safari cleared site data, the export still succeeded and still contained
+   * every row, every note and no audio whatsoever.
+   *
+   * What R2 cannot supply, the report says plainly. Source audio and a Creator timeline's voice
+   * clips were never uploaded, so an empty cache is the end of the line for them; the zip carries
+   * an `export-report.json` saying exactly what is in it, and the caller gets the same summary to
+   * put in front of the person who asked for the backup.
+   */
+  static async exportBackup(
+    onProgress?: (progress: number, message: string) => void,
+  ): Promise<{ blob: Blob; report: BackupReport }> {
     const auth = getAuthState()
-    
+
     if (auth.status !== "authenticated" || !auth.userId) {
       throw new Error("Backup export is only available for authenticated users")
     }
@@ -1064,9 +1149,33 @@ export class MeditationLibrary {
 
     const zip = new JSZip()
 
-    // Add audio blobs as separate files
     const audioRecords = await getAllAudioRecords()
     const audioMap = new Map(audioRecords.map((record) => [record.id, record]))
+
+    const plan = planBackupAudio(
+      (data as Array<{ id: string; audio_key?: string | null; metadata?: unknown }>).map((row) => {
+        const audioRecord = audioMap.get(row.id)
+        const rowMetadata = (row.metadata || {}) as SavedMeditation["metadata"]
+        return {
+          id: row.id,
+          hasLocalProcessed: Boolean(audioRecord?.processedAudio),
+          processedKey: row.audio_key || null,
+          recordingKeys: timelineRecordingKeys(rowMetadata),
+          availableRecordingKeys: Object.keys(audioRecord?.timelineRecordings ?? {}),
+        }
+      }),
+    )
+
+    const recovered = await recoverProcessedAudioFromR2(plan.fetchFromR2, onProgress)
+    // Merged in so that everything downstream — the extension recorded in meditations.json as
+    // much as the zipped bytes — sees one set of blobs and cannot disagree with itself about
+    // which of them exist.
+    for (const [id, blob] of recovered) {
+      const existing = audioMap.get(id)
+      audioMap.set(id, existing ? { ...existing, processedAudio: blob } : { id, processedAudio: blob })
+    }
+
+    onProgress?.(100, "Packaging backup...")
 
     // Add metadata JSON (without audio URLs), including the real extension of each zipped file
     const metadata = data.map((row: any) => {
@@ -1086,6 +1195,11 @@ export class MeditationLibrary {
     })
 
     zip.file("meditations.json", JSON.stringify(metadata, null, 2))
+
+    const report = buildBackupReport(plan, recovered.keys(), data.length, new Date().toISOString())
+    // Written into the zip as well as returned, because the toast is gone in a few seconds and
+    // the file is what someone still has a year from now.
+    zip.file("export-report.json", JSON.stringify(report, null, 2))
 
     // Everything else the account is made of. A backup that restores your audio but loses what
     // you wrote and how long you have been sitting is not a backup of your practice.
@@ -1126,7 +1240,7 @@ export class MeditationLibrary {
       }
     }
 
-    return await zip.generateAsync({ type: "blob" })
+    return { blob: await zip.generateAsync({ type: "blob" }), report }
   }
 
   static async importBackup(file: File, onProgress?: (progress: number, message: string) => void): Promise<void> {

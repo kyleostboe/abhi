@@ -8,6 +8,7 @@ import type { MouseEvent, ChangeEvent } from "react"
 import { usePersistedChoice, usePersistedFlag } from "@/hooks/use-persisted-choice"
 import { useBackupJob } from "@/hooks/use-backup-job"
 import { runExport, runImport } from "@/lib/backup-job"
+import { describeBackupGaps } from "@/lib/backup-audio"
 import { TimerTool } from "@/components/timer-tool"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -338,12 +339,23 @@ export function LibraryScreen() {
     try {
       toast({ title: "Exporting backup...", description: "This may take a moment for large libraries." })
 
-      await runExport()
+      const report = await runExport()
+      const gaps = report ? describeBackupGaps(report) : null
 
-      toast({
-        title: "Backup exported",
-        description: "Your meditations and audio were saved to a ZIP file.",
-      })
+      // A backup that could not include everything says so here rather than at restore time,
+      // which is the worst possible moment to find out.
+      toast(
+        gaps
+          ? {
+              title: "Backup exported, with gaps",
+              description: `${gaps} Everything else was saved to the ZIP file.`,
+              variant: "destructive",
+            }
+          : {
+              title: "Backup exported",
+              description: "Your meditations and audio were saved to a ZIP file.",
+            },
+      )
     } catch (error) {
       log.error("Unable to export backup", error)
       toast({
