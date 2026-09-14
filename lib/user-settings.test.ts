@@ -137,3 +137,37 @@ describe("formatDayBoundary", () => {
     expect(formatDayBoundary(Number.NaN)).toBe("4am")
   })
 })
+
+describe("backup settings", () => {
+  it("defaults to never exported and never dismissed", () => {
+    const settings = normalizeSettings({})
+    expect(settings.backup).toEqual({ lastExportAt: null, lastPromptDismissedAt: null })
+  })
+
+  it("keeps a stored timestamp", () => {
+    const at = Date.UTC(2026, 0, 1)
+    expect(normalizeSettings({ backup: { lastExportAt: at } }).backup.lastExportAt).toBe(at)
+  })
+
+  // "Never exported" has to stay distinguishable from "exported long ago" — the prompt treats
+  // them differently — so a junk value becomes null rather than an epoch-zero date.
+  it.each([null, undefined, 0, -1, Number.NaN, Number.POSITIVE_INFINITY, "2026-01-01", {}])(
+    "treats %p as never",
+    (value) => {
+      expect(normalizeSettings({ backup: { lastExportAt: value } }).backup.lastExportAt).toBeNull()
+    },
+  )
+
+  it("survives a non-object backup blob", () => {
+    expect(normalizeSettings({ backup: "nope" }).backup).toEqual({
+      lastExportAt: null,
+      lastPromptDismissedAt: null,
+    })
+  })
+
+  it("merges one backup field without dropping the other", () => {
+    const current = normalizeSettings({ backup: { lastExportAt: 1000, lastPromptDismissedAt: 2000 } })
+    const merged = mergeSettings(current, { backup: { lastExportAt: 3000 } })
+    expect(merged.backup).toEqual({ lastExportAt: 3000, lastPromptDismissedAt: 2000 })
+  })
+})

@@ -2,7 +2,7 @@ import "server-only"
 
 import type { SupabaseClient } from "@supabase/supabase-js"
 
-import { type Entitlements, entitlementsFor } from "@/lib/entitlements"
+import { ENTITLEMENT_COLUMNS, type Entitlements, entitlementsFromRow } from "@/lib/entitlements"
 import { log } from "@/lib/log"
 
 /**
@@ -21,24 +21,14 @@ export async function getEntitlements(
 ): Promise<Entitlements> {
   const { data, error } = await supabase
     .from("account_entitlements")
-    .select(
-      "tier, synced_meditation_limit, recording_limit, storage_quota_bytes, max_upload_bytes, journal_attachments",
-    )
+    .select(ENTITLEMENT_COLUMNS)
     .eq("profile_id", profileId)
     .maybeSingle()
 
   if (error) {
     log.warn("[entitlements] Falling back to the free tier:", error.message)
-    return entitlementsFor("free")
+    return entitlementsFromRow(null)
   }
 
-  if (!data) return entitlementsFor("free")
-
-  return entitlementsFor(data.tier, {
-    syncedMeditationLimit: data.synced_meditation_limit,
-    recordingLimit: data.recording_limit,
-    storageQuotaBytes: data.storage_quota_bytes,
-    maxUploadBytes: data.max_upload_bytes,
-    journalAttachments: data.journal_attachments,
-  })
+  return entitlementsFromRow(data)
 }

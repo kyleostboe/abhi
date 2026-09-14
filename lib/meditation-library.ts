@@ -10,6 +10,19 @@ import {
   type AudioRecord,
 } from "./storage/indexed-db"
 import { log } from "@/lib/log"
+import {
+  type BackupReport,
+  buildBackupReport,
+  planBackupAudio,
+} from "@/lib/backup-audio"
+import {
+  ENTITLEMENT_COLUMNS,
+  canSaveAnotherRecording,
+  canSyncAnotherMeditation,
+  entitlementsFromRow,
+} from "@/lib/entitlements"
+import { currentDeviceLabel } from "@/lib/device-label"
+import { requestPersistentStorage } from "@/lib/storage-persistence"
 
 // Shown only if the usage route could not be reached. The real quota is whatever
 // lib/entitlements.ts grants the account, and the route reports it alongside the usage — this is
@@ -56,6 +69,17 @@ export interface SavedMeditation {
   duration: number
   createdAt: Date
   source: MeditationSource
+  /**
+   * Where this meditation's audio is.
+   *
+   * "elsewhere" is the state the sync allowance creates: the row is here, with its title and
+   * timeline and everything else, and the bytes are in the browser that made them. The library
+   * still lists it, because an account knowing what it owns is the point — but it cannot play it,
+   * and saying so is better than a card that silently does nothing.
+   */
+  audioAvailability: "synced" | "local" | "elsewhere"
+  /** Coarse name of the device holding the audio, when it is "elsewhere". */
+  audioDeviceLabel?: string | null
   metadata: {
     // Shared metadata
     meditationTitle?: string
@@ -119,7 +143,12 @@ export interface Playlist {
   updatedAt: Date
 }
 
-export interface SaveMeditationInput extends Omit<SavedMeditation, "id" | "createdAt" | "processedAudioUrl"> {
+export interface SaveMeditationInput
+  extends Omit<
+    SavedMeditation,
+    // Where the audio ends up is decided by the save, not supplied to it.
+    "id" | "createdAt" | "processedAudioUrl" | "audioAvailability" | "audioDeviceLabel"
+  > {
   processedAudioData?: Blob | null
   sourceAudioData?: Blob | null
   /**
@@ -306,13 +335,133 @@ const fetchR2DownloadUrls = async (meditationIds: string[]): Promise<Record<stri
   }
 }
 
+/**
+ * Storage keys of the timeline events that are recorded voice.
+ *
+ * `recordingStoragePath` is set on every event when a meditation is saved, not only the recorded
+ * ones, so its presence says nothing about whether there is a blob to go with it — `eventType` is
+ * the marker that does. Older rows may predate it, which under-reports rather than inventing a
+ * missing recording that was never there.
+ */
+const timelineRecordingKeys = (metadata: SavedMeditation["metadata"] | undefined): string[] => {
+  if (!Array.isArray(metadata?.timeline)) return []
+  return metadata.timeline
+    .filter((event) => event.eventType === "recorded_voice")
+    .map((event) => event.recordingStoragePath || event.id)
+    .filter((key): key is string => Boolean(key))
+}
+
+/**
+ * Pulls processed audio back from R2 for the meditations the local cache has lost.
+ *
+ * Chunked because the download-url route caps a request at 200 ids and silently drops the rest —
+ * a library past that size would otherwise come back partly empty for a reason nothing reported.
+ *
+ * Best effort per meditation: an expired URL or a failed fetch costs that one its audio and is
+ * recorded in the report, rather than throwing away an export that is otherwise complete.
+ */
+const R2_RECOVERY_BATCH_SIZE = 200
+
+const recoverProcessedAudioFromR2 = async (
+  ids: string[],
+  onProgress?: (progress: number, message: string) => void,
+): Promise<Map<string, Blob>> => {
+  const recovered = new Map<string, Blob>()
+  if (ids.length === 0) return recovered
+
+  const urls: Record<string, string> = {}
+  for (let start = 0; start < ids.length; start += R2_RECOVERY_BATCH_SIZE) {
+    Object.assign(urls, await fetchR2DownloadUrls(ids.slice(start, start + R2_RECOVERY_BATCH_SIZE)))
+  }
+
+  let done = 0
+  for (const id of ids) {
+    done += 1
+    onProgress?.(Math.round((done / ids.length) * 100), `Fetching audio ${done} of ${ids.length}...`)
+
+    const url = urls[id]
+    if (!url) {
+      log.warn(`[backup] No download URL for meditation ${id}; its audio will be missing`)
+      continue
+    }
+
+    try {
+      const response = await fetch(url)
+      if (!response.ok) {
+        log.warn(`[backup] Could not download audio for ${id}:`, response.status, response.statusText)
+        continue
+      }
+      recovered.set(id, await response.blob())
+    } catch (error) {
+      log.warn(`[backup] Download failed for ${id}:`, error)
+    }
+  }
+
+  return recovered
+}
+
+/** Postgres raises this hint when a save would take an account past its sync allowance. */
+const ENTITLEMENT_LIMIT_HINT = "abhi_entitlement_limit"
+
+const isEntitlementLimitError = (error: unknown): boolean => {
+  if (!error || typeof error !== "object") return false
+  const candidate = error as { hint?: unknown; message?: unknown }
+  return (
+    candidate.hint === ENTITLEMENT_LIMIT_HINT ||
+    (typeof candidate.message === "string" && candidate.message.includes(ENTITLEMENT_LIMIT_HINT))
+  )
+}
+
+/**
+ * Whether this save's audio can go to R2, or has to stay in the browser that made it.
+ *
+ * Asked before the upload so that a save past the allowance does not spend the bytes to find out.
+ * The database enforces the same rule and is the one that actually decides — this is here to make
+ * the common case cheap, not to be trusted, which is why `saveMeditation` still handles being
+ * told no after the fact.
+ *
+ * Any failure answers "yes". Guessing wrong in this direction costs an upload the trigger then
+ * refuses, and the save still completes locally; guessing wrong in the other direction would
+ * leave audio on one device because a count query timed out.
+ */
+const hasSyncRoom = async (
+  supabase: ReturnType<typeof createClient>,
+  profileId: string,
+  source: MeditationSource,
+): Promise<boolean> => {
+  const isRecordingSave = source === "recording"
+  try {
+    const [{ data: entitlementRow }, { count }] = await Promise.all([
+      supabase.from("account_entitlements").select(ENTITLEMENT_COLUMNS).eq("profile_id", profileId).maybeSingle(),
+      (isRecordingSave
+        ? supabase.from("meditations").select("id", { count: "exact", head: true }).eq("source", "recording")
+        : supabase.from("meditations").select("id", { count: "exact", head: true }).neq("source", "recording")
+      )
+        .eq("profile_id", profileId)
+        .not("audio_key", "is", null),
+    ])
+
+    const entitlements = entitlementsFromRow(entitlementRow)
+    const synced = count ?? 0
+    return isRecordingSave
+      ? canSaveAnotherRecording(entitlements, synced)
+      : canSyncAnotherMeditation(entitlements, synced)
+  } catch (error) {
+    log.warn("[library] Could not check the sync allowance; attempting the upload:", error)
+    return true
+  }
+}
+
 const normalizeSupabaseMeditation = (
   row: any,
   processedAudioUrl: string,
   sourceAudioUrl?: string,
   recordings?: Record<string, Blob>,
+  hasLocalAudio = false,
 ): SavedMeditation => ({
   id: row.id,
+  audioAvailability: row.audio_key ? "synced" : hasLocalAudio ? "local" : "elsewhere",
+  audioDeviceLabel: row.audio_key ? null : (row.audio_device_label ?? null),
   title: row.title,
   originalFileName: row.original_filename || row.description || "Unknown",
   processedAudioUrl,
@@ -529,9 +678,15 @@ export class MeditationLibrary {
     const metadataToPersist = sanitizeMetadataForStorage({ ...meditation.metadata }, timelineRecordings, "pending")
     const durationInSeconds = Math.round(meditation.duration)
 
-    const audioKey = await uploadAudioToR2(processedBlob, resolveAudioExtension(meditation.metadata, processedBlob))
+    // Past the sync allowance the audio stays in this browser and the row is written anyway, so
+    // the account keeps a complete index of itself — which is what lets another device say where
+    // the audio actually is, rather than the library simply being short of what was saved.
+    const canSync = await hasSyncRoom(supabase, auth.userId!, meditation.source)
+    let audioKey = canSync
+      ? await uploadAudioToR2(processedBlob, resolveAudioExtension(meditation.metadata, processedBlob))
+      : null
 
-    const insertMeditationRow = (source: string) =>
+    const insertMeditationRow = (source: string, key: string | null) =>
       supabase
         .from("meditations")
         .insert({
@@ -542,19 +697,32 @@ export class MeditationLibrary {
           metadata: metadataToPersist,
           original_filename: meditation.originalFileName,
           profile_id: auth.userId!,
-          audio_key: audioKey,
+          audio_key: key,
+          // Only meaningful while the audio is local: once it is in R2 it is not on any one
+          // device, and a stale label would send someone to the wrong phone.
+          audio_device_label: key ? null : currentDeviceLabel(),
         })
         .select()
         .single()
 
-    let { data, error } = await insertMeditationRow(meditation.source)
+    let { data, error } = await insertMeditationRow(meditation.source, audioKey)
+
+    // The database is the one that decides, and it can disagree with the check above — two saves
+    // racing for the last slot, or an allowance lowered between them. Saving locally is the right
+    // answer to that, not failing: the person made a meditation and it should still be theirs.
+    if (error && audioKey && isEntitlementLimitError(error)) {
+      log.warn("[library] Sync allowance reached; saving this meditation's audio locally")
+      void deleteAudioObjectFromR2(audioKey)
+      audioKey = null
+      ;({ data, error } = await insertMeditationRow(meditation.source, null))
+    }
 
     // Databases that haven't run scripts/012_rename_encoder_source_to_creator.sql still
     // enforce the pre-rename constraint, which allows 'encoder' but not 'creator'. Fall back
     // to the legacy value so saves keep working; reads normalize 'encoder' back to 'creator'.
     if (error && meditation.source === "creator" && error.message?.includes("meditations_source_check")) {
       log.warn("DB rejected source='creator' (migration 012 not applied) - retrying with legacy 'encoder'")
-      ;({ data, error } = await insertMeditationRow("encoder"))
+      ;({ data, error } = await insertMeditationRow("encoder", audioKey))
     }
 
     if (error) {
@@ -568,6 +736,12 @@ export class MeditationLibrary {
     const finalizedMetadata = sanitizeMetadataForStorage({ ...meditation.metadata }, timelineRecordings, meditationId)
 
     await supabase.from("meditations").update({ metadata: finalizedMetadata }).eq("id", meditationId)
+
+    // Asked here rather than at startup because this is the moment there is something to lose,
+    // and because browsers weigh the request on engagement — someone who has just saved a
+    // meditation is exactly who should be granted it. Best effort: the answer only changes how
+    // soon a backup is suggested, never whether the save works.
+    void requestPersistentStorage()
 
     log.debug("Saving audio to IndexedDB...")
     try {
@@ -583,11 +757,15 @@ export class MeditationLibrary {
       throw error
     }
 
+    // The audio is in this browser either way — it was just written to IndexedDB — so a save that
+    // could not sync comes back as "local", never as "elsewhere". Elsewhere is what another
+    // device sees, not what the device that made it does.
     return normalizeSupabaseMeditation(
-      { ...data, metadata: finalizedMetadata },
+      { ...data, audio_key: audioKey, metadata: finalizedMetadata },
       buildObjectUrl(processedBlob),
       buildObjectUrl(providedSourceBlob),
       timelineRecordings,
+      true,
     )
   }
 
@@ -728,7 +906,15 @@ export class MeditationLibrary {
         }
 
         const sourceUrl = buildObjectUrl(audio?.sourceAudio ?? null)
-        meditations.push(normalizeSupabaseMeditation(row, processedUrl, sourceUrl, audio?.timelineRecordings))
+        meditations.push(
+          normalizeSupabaseMeditation(
+            row,
+            processedUrl,
+            sourceUrl,
+            audio?.timelineRecordings,
+            Boolean(audio?.processedAudio),
+          ),
+        )
       } catch (error) {
         log.warn("Unable to resolve audio for meditation", row.id, error)
         meditations.push(normalizeSupabaseMeditation(row, ""))
@@ -1045,9 +1231,24 @@ export class MeditationLibrary {
     }
   }
 
-  static async exportBackup(): Promise<Blob> {
+  /**
+   * Zip the whole account: audio, metadata, notes, sessions, playlists and settings.
+   *
+   * Audio is taken from the local cache where it is there and pulled back from R2 where it is
+   * not. Reading only the cache is what made this quietly unsafe — on a device that never held
+   * the blobs, or after Safari cleared site data, the export still succeeded and still contained
+   * every row, every note and no audio whatsoever.
+   *
+   * What R2 cannot supply, the report says plainly. Source audio and a Creator timeline's voice
+   * clips were never uploaded, so an empty cache is the end of the line for them; the zip carries
+   * an `export-report.json` saying exactly what is in it, and the caller gets the same summary to
+   * put in front of the person who asked for the backup.
+   */
+  static async exportBackup(
+    onProgress?: (progress: number, message: string) => void,
+  ): Promise<{ blob: Blob; report: BackupReport }> {
     const auth = getAuthState()
-    
+
     if (auth.status !== "authenticated" || !auth.userId) {
       throw new Error("Backup export is only available for authenticated users")
     }
@@ -1064,9 +1265,33 @@ export class MeditationLibrary {
 
     const zip = new JSZip()
 
-    // Add audio blobs as separate files
     const audioRecords = await getAllAudioRecords()
     const audioMap = new Map(audioRecords.map((record) => [record.id, record]))
+
+    const plan = planBackupAudio(
+      (data as Array<{ id: string; audio_key?: string | null; metadata?: unknown }>).map((row) => {
+        const audioRecord = audioMap.get(row.id)
+        const rowMetadata = (row.metadata || {}) as SavedMeditation["metadata"]
+        return {
+          id: row.id,
+          hasLocalProcessed: Boolean(audioRecord?.processedAudio),
+          processedKey: row.audio_key || null,
+          recordingKeys: timelineRecordingKeys(rowMetadata),
+          availableRecordingKeys: Object.keys(audioRecord?.timelineRecordings ?? {}),
+        }
+      }),
+    )
+
+    const recovered = await recoverProcessedAudioFromR2(plan.fetchFromR2, onProgress)
+    // Merged in so that everything downstream — the extension recorded in meditations.json as
+    // much as the zipped bytes — sees one set of blobs and cannot disagree with itself about
+    // which of them exist.
+    for (const [id, blob] of recovered) {
+      const existing = audioMap.get(id)
+      audioMap.set(id, existing ? { ...existing, processedAudio: blob } : { id, processedAudio: blob })
+    }
+
+    onProgress?.(100, "Packaging backup...")
 
     // Add metadata JSON (without audio URLs), including the real extension of each zipped file
     const metadata = data.map((row: any) => {
@@ -1086,6 +1311,11 @@ export class MeditationLibrary {
     })
 
     zip.file("meditations.json", JSON.stringify(metadata, null, 2))
+
+    const report = buildBackupReport(plan, recovered.keys(), data.length, new Date().toISOString())
+    // Written into the zip as well as returned, because the toast is gone in a few seconds and
+    // the file is what someone still has a year from now.
+    zip.file("export-report.json", JSON.stringify(report, null, 2))
 
     // Everything else the account is made of. A backup that restores your audio but loses what
     // you wrote and how long you have been sitting is not a backup of your practice.
@@ -1126,7 +1356,7 @@ export class MeditationLibrary {
       }
     }
 
-    return await zip.generateAsync({ type: "blob" })
+    return { blob: await zip.generateAsync({ type: "blob" }), report }
   }
 
   static async importBackup(file: File, onProgress?: (progress: number, message: string) => void): Promise<void> {

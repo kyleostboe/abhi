@@ -34,6 +34,16 @@ export type UserSettings = {
     openingBell: boolean
     closingBell: boolean
   }
+  backup: {
+    /**
+     * Epoch ms of the last successful export, or null if there has never been one. Per-account
+     * rather than per-device on purpose: exporting from a laptop is a copy of the account, so it
+     * should quiet the prompt on the phone too.
+     */
+    lastExportAt: number | null
+    /** Epoch ms the backup prompt was last dismissed, so declining it buys a real reprieve. */
+    lastPromptDismissedAt: number | null
+  }
 }
 
 export const DEFAULT_USER_SETTINGS: UserSettings = {
@@ -46,6 +56,10 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
     bellVolume: 0.8,
     openingBell: true,
     closingBell: true,
+  },
+  backup: {
+    lastExportAt: null,
+    lastPromptDismissedAt: null,
   },
 }
 
@@ -75,6 +89,18 @@ const stringOr = (value: unknown, fallback: string): string =>
   typeof value === "string" && value.trim().length > 0 ? value.trim() : fallback
 
 /**
+ * A stored epoch-ms timestamp, or null.
+ *
+ * Null rather than a default date because "never" is a real state here and has to stay
+ * distinguishable from "a long time ago" — the backup prompt treats the two differently.
+ * Non-positive and non-finite values are the same as absent.
+ */
+const timestampOrNull = (value: unknown): number | null => {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return null
+  return Math.trunc(value)
+}
+
+/**
  * Coerces stored JSON into a complete settings object. Unknown keys are dropped and invalid
  * values fall back to their default rather than throwing — a preference is never important
  * enough to fail a page load over.
@@ -82,6 +108,7 @@ const stringOr = (value: unknown, fallback: string): string =>
 export const normalizeSettings = (stored: unknown): UserSettings => {
   const source = isRecord(stored) ? stored : {}
   const timerSource = isRecord(source.timer) ? source.timer : {}
+  const backupSource = isRecord(source.backup) ? source.backup : {}
   const defaults = DEFAULT_USER_SETTINGS
 
   return {
@@ -100,6 +127,10 @@ export const normalizeSettings = (stored: unknown): UserSettings => {
       openingBell: boolOr(timerSource.openingBell, defaults.timer.openingBell),
       closingBell: boolOr(timerSource.closingBell, defaults.timer.closingBell),
     },
+    backup: {
+      lastExportAt: timestampOrNull(backupSource.lastExportAt),
+      lastPromptDismissedAt: timestampOrNull(backupSource.lastPromptDismissedAt),
+    },
   }
 }
 
@@ -109,6 +140,7 @@ export const mergeSettings = (current: UserSettings, patch: DeepPartial<UserSett
     ...current,
     ...patch,
     timer: { ...current.timer, ...(patch.timer ?? {}) },
+    backup: { ...current.backup, ...(patch.backup ?? {}) },
   })
 
 export type DeepPartial<T> = {

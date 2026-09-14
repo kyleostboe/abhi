@@ -2,12 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 // The job only exists to outlive a page, so the library itself is stubbed: what is under test is
 // the state that survives, not the zipping.
-const exportBackup = vi.fn<() => Promise<Blob>>()
+const exportBackup = vi.fn<
+  (onProgress?: (progress: number, message: string) => void) => Promise<{ blob: Blob; report: unknown }>
+>()
 const importBackup = vi.fn<(file: File, onProgress?: (progress: number, message: string) => void) => Promise<void>>()
 
 vi.mock("@/lib/meditation-library", () => ({
   MeditationLibrary: {
-    exportBackup: () => exportBackup(),
+    exportBackup: (onProgress?: (progress: number, message: string) => void) => exportBackup(onProgress),
     importBackup: (file: File, onProgress?: (progress: number, message: string) => void) =>
       importBackup(file, onProgress),
   },

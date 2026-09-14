@@ -1,6 +1,7 @@
 "use client"
 
 import { MeditationLibrary } from "@/lib/meditation-library"
+import type { BackupReport } from "@/lib/backup-audio"
 
 /**
  * The one in-flight backup, held outside the page that started it.
@@ -24,7 +25,10 @@ export type BackupJobKind = "export" | "import"
 export interface BackupJobState {
   /** What is running, or null when nothing is. */
   kind: BackupJobKind | null
-  /** Import progress. Export reports no percentage — it is one long zip with no milestones. */
+  /**
+   * Progress for either job. Export reports a percentage only while it is pulling audio back
+   * from R2, which is the part with countable milestones; the zip itself is one long step.
+   */
   progress: { progress: number; message: string } | null
 }
 
@@ -60,17 +64,22 @@ export function isBackupRunning(): boolean {
  * Resolves when the job finishes, rejecting on failure, so the page that started it can still
  * raise a toast — but the job's *state* is here, so a page that arrives mid-job sees it too.
  */
-export async function runExport(): Promise<void> {
-  if (isBackupRunning()) return
+export async function runExport(): Promise<BackupReport | null> {
+  if (isBackupRunning()) return null
   publish({ kind: "export", progress: null })
   try {
-    const blob = await MeditationLibrary.exportBackup()
+    const { blob, report } = await MeditationLibrary.exportBackup((progress, message) => {
+      publish({ kind: "export", progress: { progress, message } })
+    })
     const url = URL.createObjectURL(blob)
     const anchor = document.createElement("a")
     anchor.href = url
     anchor.download = `abhi-backup-${new Date().toISOString().split("T")[0]}.zip`
     anchor.click()
     URL.revokeObjectURL(url)
+    // Handed back so the page can say what the file does not contain. The zip carries the same
+    // report, but nobody opens a backup they have not needed yet.
+    return report
   } finally {
     publish(IDLE)
   }
