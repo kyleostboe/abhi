@@ -91,9 +91,29 @@ export async function getTextObject(key: string): Promise<string | null> {
 /** Deletes any object by key (same operation as deleteAudioObject, named for general use). */
 export const deleteObject = deleteAudioObject
 
-/** Mints a short-lived presigned URL the browser can PUT the audio blob to directly. */
-export async function createUploadUrl(key: string, contentType: string): Promise<string> {
-  const command = new PutObjectCommand({ Bucket: getBucket(), Key: key, ContentType: contentType })
+/**
+ * Mints a short-lived presigned URL the browser can PUT the audio blob to directly.
+ *
+ * `contentLength` is required, and not merely as a courtesy to the quota check: signing it puts
+ * `content-length` into `X-Amz-SignedHeaders`, so R2 rejects any body that is not exactly that
+ * size. Without it the caller declares a size, passes the quota check, and can then upload
+ * anything at all — the check would be advisory, and an upload route with an advisory size limit
+ * is free file hosting for whoever notices first.
+ */
+export async function createUploadUrl(
+  key: string,
+  contentType: string,
+  contentLength: number,
+): Promise<string> {
+  if (!Number.isInteger(contentLength) || contentLength < 0) {
+    throw new Error(`Refusing to sign an upload URL for an unmeasured body: ${contentLength}`)
+  }
+  const command = new PutObjectCommand({
+    Bucket: getBucket(),
+    Key: key,
+    ContentType: contentType,
+    ContentLength: contentLength,
+  })
   return getSignedUrl(getR2Client(), command, { expiresIn: UPLOAD_URL_EXPIRY_SECONDS })
 }
 

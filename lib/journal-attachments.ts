@@ -101,10 +101,12 @@ const uploadToStorage = async (
     headers: { "Content-Type": "application/json" },
     // The journal scope puts the object at {user}/attachments/{filename}, matching what the
     // note's `![[attachments/…]]` link expects once the bucket is read as a vault.
-    body: JSON.stringify({ ext, contentType, scope: "journal-attachment", filename }),
+    // The size is signed into the URL, so the PUT below has to match it exactly.
+    body: JSON.stringify({ ext, contentType, contentLength: blob.size, scope: "journal-attachment", filename }),
   })
   if (!response.ok) {
-    throw new Error("Could not prepare the upload.")
+    const refusal = (await response.json().catch(() => ({}))) as { error?: string }
+    throw new Error(refusal.error || "Could not prepare the upload.")
   }
   const { uploadUrl, key } = (await response.json()) as { uploadUrl: string; key: string }
 
