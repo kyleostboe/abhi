@@ -18,9 +18,11 @@ pnpm typecheck          # tsc --noEmit
 pnpm lint               # eslint
 ```
 
-Use **pnpm**. Both `pnpm-lock.yaml` and `package-lock.json` are committed; if you change
-dependencies, regenerate both (`pnpm install`, then `npm install --package-lock-only`) so they
-do not drift.
+Use **pnpm**. `pnpm-lock.yaml` is committed and is the only lockfile — `package-lock.json` is
+deliberately absent, because two lockfiles are two tools' answers to the same question and they
+drift. If you change dependencies, commit the regenerated `pnpm-lock.yaml` along with the change;
+without it every install re-resolves the `^` ranges in `package.json` and a deploy can quietly
+pick up a version nobody chose.
 
 ## Architecture
 

@@ -11,9 +11,10 @@ import {
 } from "./storage/indexed-db"
 import { log } from "@/lib/log"
 
-// Free-tier storage allowance shown to authenticated users, kept comfortably under R2's own
-// free tier so the app's other usage has headroom.
-const FREE_STORAGE_QUOTA_BYTES = 5 * 1024 * 1024 * 1024
+// Shown only if the usage route could not be reached. The real quota is whatever
+// lib/entitlements.ts grants the account, and the route reports it alongside the usage — this is
+// a placeholder for a bar that has nothing to draw, not a second opinion about the limit.
+const FALLBACK_QUOTA_BYTES = 2 * 1024 * 1024 * 1024
 
 /**
  * Thrown when an operation needs an account and there isn't one.
@@ -237,7 +238,8 @@ const uploadAudioToR2 = async (blob: Blob, ext: string): Promise<string | null> 
     const urlResponse = await fetch("/api/storage/upload-url", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeader },
-      body: JSON.stringify({ ext, contentType }),
+      // The size is signed into the URL, so the PUT below has to match it exactly.
+      body: JSON.stringify({ ext, contentType, contentLength: blob.size }),
     })
     if (!urlResponse.ok) {
       log.warn("Unable to get R2 upload URL:", urlResponse.status, urlResponse.statusText)
@@ -1248,11 +1250,14 @@ export class MeditationLibrary {
         headers: { ...authHeader },
       })
       if (!response.ok) throw new Error(`Usage request failed with status ${response.status}`)
-      const { usedBytes } = (await response.json()) as { usedBytes: number }
-      return { usedBytes, quotaBytes: FREE_STORAGE_QUOTA_BYTES }
+      const { usedBytes, quotaBytes } = (await response.json()) as {
+        usedBytes: number
+        quotaBytes?: number
+      }
+      return { usedBytes, quotaBytes: quotaBytes ?? FALLBACK_QUOTA_BYTES }
     } catch (error) {
       log.warn("Unable to fetch R2 storage usage:", error)
-      return { usedBytes: 0, quotaBytes: FREE_STORAGE_QUOTA_BYTES }
+      return { usedBytes: 0, quotaBytes: FALLBACK_QUOTA_BYTES }
     }
   }
 }
