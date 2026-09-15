@@ -41,7 +41,12 @@ import { PracticeSummary } from "@/components/journal/practice-summary"
 import { type SessionNoteDraft, draftHasContent, draftSubtitle, draftTitle } from "@/lib/journal-draft"
 import { clearSessionNoteDraft, getSessionNoteDraft } from "@/lib/storage/session-note-draft"
 import { JournalRefProvider } from "@/components/journal/journal-refs"
-import { compressImage, encodeVoiceNote, saveAttachment } from "@/lib/journal-attachments"
+import {
+  AttachmentsNotIncludedError,
+  compressImage,
+  encodeVoiceNote,
+  saveAttachment,
+} from "@/lib/journal-attachments"
 import { slugify } from "@/lib/journal-markdown"
 import { cn } from "@/lib/utils"
 import { log } from "@/lib/log"
@@ -299,8 +304,14 @@ export function JournalScreen() {
       })
       editorHandle.current?.insertAttachment(attachment.filename, "image")
     } catch (error) {
-      log.error("[journal] Image attach failed:", error)
-      toast({ title: "Couldn't add the image", description: "Please try again.", variant: "destructive" })
+      // A refused attachment is not a failed one. "Please try again" against a plan limit is
+      // advice that cannot work, and following it is how a limit reads as a broken app.
+      if (error instanceof AttachmentsNotIncludedError) {
+        toast({ title: "Images need a subscription", description: error.message })
+      } else {
+        log.error("[journal] Image attach failed:", error)
+        toast({ title: "Couldn't add the image", description: "Please try again.", variant: "destructive" })
+      }
     } finally {
       setIsBusy(false)
     }
@@ -327,8 +338,12 @@ export function JournalScreen() {
         })
         editorHandle.current?.insertAttachment(attachment.filename, "audio")
       } catch (error) {
-        log.error("[journal] Voice note failed:", error)
-        toast({ title: "Couldn't save the voice note", description: "Please try again.", variant: "destructive" })
+        if (error instanceof AttachmentsNotIncludedError) {
+          toast({ title: "Voice notes need a subscription", description: error.message })
+        } else {
+          log.error("[journal] Voice note failed:", error)
+          toast({ title: "Couldn't save the voice note", description: "Please try again.", variant: "destructive" })
+        }
       } finally {
         setIsBusy(false)
       }

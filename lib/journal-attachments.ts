@@ -89,6 +89,20 @@ export const encodeVoiceNote = async (
   }
 }
 
+/**
+ * Thrown when the account's plan does not include attachments.
+ *
+ * A distinct type because the difference matters to the person: "try again" is the right advice
+ * for a failed upload and useless for a refused one, and a retry loop against a limit is how a
+ * paywall becomes an infuriating bug rather than a choice.
+ */
+export class AttachmentsNotIncludedError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "AttachmentsNotIncludedError"
+  }
+}
+
 /** Requests a presigned URL and PUTs the blob directly to storage. Returns the object key. */
 const uploadToStorage = async (
   blob: Blob,
@@ -105,7 +119,12 @@ const uploadToStorage = async (
     body: JSON.stringify({ ext, contentType, contentLength: blob.size, scope: "journal-attachment", filename }),
   })
   if (!response.ok) {
-    const refusal = (await response.json().catch(() => ({}))) as { error?: string }
+    const refusal = (await response.json().catch(() => ({}))) as { error?: string; reason?: string }
+    if (response.status === 403 && refusal.reason === "attachments-not-included") {
+      throw new AttachmentsNotIncludedError(
+        refusal.error || "Images and voice notes in the journal need a subscription.",
+      )
+    }
     throw new Error(refusal.error || "Could not prepare the upload.")
   }
   const { uploadUrl, key } = (await response.json()) as { uploadUrl: string; key: string }
