@@ -62,10 +62,11 @@ const FREE: Entitlements = {
   recordingLimit: 10,
   storageQuotaBytes: 2 * GB,
   maxUploadBytes: 300 * MB,
-  // Open for now. Whether attachments become the paid line is still an open product question, and
-  // the route already enforces this flag — so moving them behind the subscription is this one
-  // literal, not a change anywhere else.
-  journalAttachments: true,
+  // Note *text* stays unlimited and free — it is kilobytes, and a vault holding only some of your
+  // writing is not the vault the storage layout promises. Attachments are the opposite: a phone
+  // photo is megabytes and a voice note is more, so they are the part of the journal that
+  // actually costs something to keep.
+  journalAttachments: false,
 }
 
 const SUPPORTER: Entitlements = {

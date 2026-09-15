@@ -208,6 +208,24 @@ describe("remainingMeditationSlots", () => {
   })
 })
 
+describe("journal attachments", () => {
+  // Note text is never gated; the megabytes are. These pin that split so a future edit to the
+  // tier tables has to be deliberate about it.
+  it("is not included on the free tier", () => {
+    expect(free.journalAttachments).toBe(false)
+  })
+
+  it("is included for supporters", () => {
+    expect(supporter.journalAttachments).toBe(true)
+  })
+
+  it("can be comped onto a free account without changing its tier", () => {
+    const comped = entitlementsFor("free", { journalAttachments: true })
+    expect(comped.journalAttachments).toBe(true)
+    expect(comped.tier).toBe("free")
+  })
+})
+
 describe("tier shape", () => {
   const tiers: Entitlements[] = [free, supporter]
 
