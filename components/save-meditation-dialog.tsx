@@ -9,7 +9,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { AccountRequiredError, MeditationLibrary, type SavedMeditation, type Playlist } from "@/lib/meditation-library"
+import {
+  AccountRequiredError,
+  LibraryFullError,
+  MeditationLibrary,
+  type SavedMeditation,
+  type Playlist,
+} from "@/lib/meditation-library"
 import { playlistsResource } from "@/lib/app-data"
 import { encodeDistributionAudio, type AudioFormatMetadata } from "@/lib/audio-utils"
 import { BookmarkPlus, Plus } from "lucide-react"
@@ -367,6 +373,14 @@ export function SaveMeditationDialog({
         })
         onBeforeAuthRedirect?.()
         login()
+        return
+      }
+
+      // A full library is a choice, not a failure. The audio is still in the tool behind this
+      // dialog, so the download that keeps it is one dismissal away — which is why this is not
+      // styled as an error and does not tell anyone to try again.
+      if (error instanceof LibraryFullError) {
+        toast({ title: "Library full", description: error.message })
         return
       }
 

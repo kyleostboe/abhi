@@ -22,6 +22,7 @@ import {
   entitlementsFromRow,
 } from "@/lib/entitlements"
 import { currentDeviceLabel } from "@/lib/device-label"
+import { parentIdOf } from "@/lib/meditation-variants"
 import { requestPersistentStorage } from "@/lib/storage-persistence"
 
 // Shown only if the usage route could not be reached. The real quota is whatever
@@ -41,6 +42,29 @@ export class AccountRequiredError extends Error {
   constructor(action = "do that") {
     super(`Sign in to ${action}.`)
     this.name = "AccountRequiredError"
+  }
+}
+
+/**
+ * Thrown when a save would take the account past its synced-meditation allowance.
+ *
+ * A refusal rather than a silent local save. Audio kept in one browser is audio the browser can
+ * evict — Safari clears script-writable storage after about a week without a visit — so quietly
+ * keeping it there trades a limit someone can act on for a loss they cannot predict. Better to
+ * say the library is full while the audio is still in their hands and can be downloaded.
+ */
+export class LibraryFullError extends Error {
+  /** Which allowance was reached, since the two have different remedies. */
+  readonly kind: "meditation" | "recording"
+
+  constructor(kind: "meditation" | "recording") {
+    super(
+      kind === "recording"
+        ? "Your recordings are full. Remove one, or subscribe for unlimited recordings."
+        : "Your library is full. Download this meditation, remove one from your library, or subscribe.",
+    )
+    this.name = "LibraryFullError"
+    this.kind = kind
   }
 }
 
@@ -428,7 +452,14 @@ const hasSyncRoom = async (
   supabase: ReturnType<typeof createClient>,
   profileId: string,
   source: MeditationSource,
+  metadata: SavedMeditation["metadata"] | undefined,
 ): Promise<boolean> => {
+  // A length of something already in the library is not a second meditation. The Library groups
+  // variants under one card, and the allowance counts cards — otherwise the default quick-adjust
+  // presets would spend four slots on one meditation and the limit would hit at a number nobody
+  // could see on screen.
+  if (parentIdOf(metadata) !== null) return true
+
   const isRecordingSave = source === "recording"
   try {
     const [{ data: entitlementRow }, { count }] = await Promise.all([
@@ -438,7 +469,8 @@ const hasSyncRoom = async (
         : supabase.from("meditations").select("id", { count: "exact", head: true }).neq("source", "recording")
       )
         .eq("profile_id", profileId)
-        .not("audio_key", "is", null),
+        .not("audio_key", "is", null)
+        .is("metadata->>linkedParentId", null),
     ])
 
     const entitlements = entitlementsFromRow(entitlementRow)
@@ -678,13 +710,17 @@ export class MeditationLibrary {
     const metadataToPersist = sanitizeMetadataForStorage({ ...meditation.metadata }, timelineRecordings, "pending")
     const durationInSeconds = Math.round(meditation.duration)
 
-    // Past the sync allowance the audio stays in this browser and the row is written anyway, so
-    // the account keeps a complete index of itself — which is what lets another device say where
-    // the audio actually is, rather than the library simply being short of what was saved.
-    const canSync = await hasSyncRoom(supabase, auth.userId!, meditation.source)
-    let audioKey = canSync
-      ? await uploadAudioToR2(processedBlob, resolveAudioExtension(meditation.metadata, processedBlob))
-      : null
+    // A full library is said out loud, not worked around. Keeping the audio only in this browser
+    // would trade a limit someone can act on for an eviction they cannot predict, and the moment
+    // to tell them is now — while the audio is still in front of them and can be downloaded.
+    if (!(await hasSyncRoom(supabase, auth.userId!, meditation.source, meditation.metadata))) {
+      throw new LibraryFullError(meditation.source === "recording" ? "recording" : "meditation")
+    }
+
+    const audioKey = await uploadAudioToR2(
+      processedBlob,
+      resolveAudioExtension(meditation.metadata, processedBlob),
+    )
 
     const insertMeditationRow = (source: string, key: string | null) =>
       supabase
@@ -708,13 +744,12 @@ export class MeditationLibrary {
     let { data, error } = await insertMeditationRow(meditation.source, audioKey)
 
     // The database is the one that decides, and it can disagree with the check above — two saves
-    // racing for the last slot, or an allowance lowered between them. Saving locally is the right
-    // answer to that, not failing: the person made a meditation and it should still be theirs.
+    // racing for the last slot, or an allowance lowered between them. The uploaded object is
+    // orphaned by that refusal, so it goes now rather than counting against a quota for a
+    // meditation that was never saved.
     if (error && audioKey && isEntitlementLimitError(error)) {
-      log.warn("[library] Sync allowance reached; saving this meditation's audio locally")
       void deleteAudioObjectFromR2(audioKey)
-      audioKey = null
-      ;({ data, error } = await insertMeditationRow(meditation.source, null))
+      throw new LibraryFullError(meditation.source === "recording" ? "recording" : "meditation")
     }
 
     // Databases that haven't run scripts/012_rename_encoder_source_to_creator.sql still

@@ -60,7 +60,12 @@ import {
   type DetectSilenceOptions,
   type SilenceRegion,
 } from "@/lib/adjuster-workflow"
-import { AccountRequiredError, MeditationLibrary, type SavedMeditation } from "@/lib/meditation-library"
+import {
+  AccountRequiredError,
+  LibraryFullError,
+  MeditationLibrary,
+  type SavedMeditation,
+} from "@/lib/meditation-library"
 import { saveToolSession, getToolSession, clearToolSession } from "@/lib/storage/tool-session"
 import { useDebouncedSave } from "@/hooks/use-debounced-save"
 import {
@@ -2700,6 +2705,8 @@ export function HomeScreen() {
       } catch (error) {
         if (error instanceof AccountRequiredError) {
           toast({ title: "Sign in to keep recordings", description: error.message, variant: "destructive" })
+        } else if (error instanceof LibraryFullError) {
+          toast({ title: "Recordings full", description: error.message })
         } else {
           log.error("[creator] Failed to keep recording:", error)
           toast({ title: "Couldn't keep the recording", description: "Please try again.", variant: "destructive" })

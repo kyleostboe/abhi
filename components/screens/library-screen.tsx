@@ -9,6 +9,7 @@ import { usePersistedChoice, usePersistedFlag } from "@/hooks/use-persisted-choi
 import { useBackupJob } from "@/hooks/use-backup-job"
 import { runExport, runImport } from "@/lib/backup-job"
 import { describeBackupGaps } from "@/lib/backup-audio"
+import { isVariantOf, parentIdOf } from "@/lib/meditation-variants"
 import { LibraryAvailabilityNotice } from "@/components/library-availability-notice"
 import { useUserSettings } from "@/hooks/use-user-settings"
 import { TimerTool } from "@/components/timer-tool"
@@ -488,9 +489,11 @@ export function LibraryScreen() {
       const groups = new Map<string, MeditationGroup>()
 
       items.forEach((meditation) => {
-        const rawParentId =
-          typeof meditation.metadata?.linkedParentId === "string" ? meditation.metadata.linkedParentId.trim() : ""
-        const hasLinkedParent = rawParentId.length > 0 && rawParentId !== meditation.id
+        // Shared with the sync allowance (lib/meditation-variants.ts) on purpose: the limit counts
+        // the cards this grouping produces, so a difference of opinion about what a variant is
+        // would be a limit nobody could reconcile with what they see.
+        const rawParentId = parentIdOf(meditation.metadata) ?? ""
+        const hasLinkedParent = isVariantOf(meditation.id, meditation.metadata)
         let parent: SavedMeditation | undefined
 
         if (hasLinkedParent) {
@@ -2038,8 +2041,7 @@ export function LibraryScreen() {
   const findPersistedVariantMeditation = useCallback(
     (parentId: string, durationModeId: string): SavedMeditation | undefined =>
       meditations.find((item) => {
-        const linkedParentId =
-          typeof item.metadata?.linkedParentId === "string" ? item.metadata.linkedParentId.trim() : ""
+        const linkedParentId = parentIdOf(item.metadata) ?? ""
         const linkedDurationId =
           typeof item.metadata?.linkedDurationId === "string" ? item.metadata.linkedDurationId.trim() : ""
         return linkedParentId === parentId && linkedDurationId === durationModeId
